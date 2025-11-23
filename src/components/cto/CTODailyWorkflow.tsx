@@ -1,10 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Checkbox, Row, Col, Progress, Button, Space, Typography, Badge, Alert, Statistic, Divider } from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, RocketOutlined, TeamOutlined, BugOutlined, FileTextOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Card, 
+  Row, 
+  Col, 
+  Progress, 
+  Button, 
+  Space, 
+  Typography, 
+  Badge, 
+  Alert, 
+  Statistic, 
+  Divider,
+  List,
+  Tag,
+  Tooltip,
+  Modal,
+  Input,
+  message,
+  Spin,
+  Timeline,
+  Table,
+  Select,
+  Checkbox
+} from 'antd';
+import { 
+  CheckCircleOutlined, 
+  ClockCircleOutlined, 
+  ExclamationCircleOutlined, 
+  RocketOutlined, 
+  TeamOutlined, 
+  BugOutlined, 
+  FileTextOutlined,
+  WarningOutlined,
+  DatabaseOutlined,
+  DeploymentUnitOutlined,
+  UserOutlined,
+  CodeOutlined,
+  SendOutlined,
+  ThunderboltOutlined,
+  BarChartOutlined
+} from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 interface DailyTask {
   id: string;
@@ -12,7 +53,47 @@ interface DailyTask {
   task_name: string;
   task_description?: string;
   is_completed: boolean;
+  completed?: boolean;
   priority: string;
+  created_at?: string;
+}
+
+interface AutoPriority {
+  id: string;
+  type: 'incident' | 'error_spike' | 'roadmap' | 'team' | 'deployment';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  action: string;
+  source_data?: any;
+}
+
+interface CodeReviewItem {
+  id: string;
+  pr_number?: string;
+  pr_title: string;
+  status: string;
+  created_at: string;
+  author_id?: string;
+  reviewer_id?: string;
+  quality_score?: number;
+  time_in_queue_hours?: number;
+  priority_score?: number;
+}
+
+interface DailyReport {
+  id?: string;
+  report_date: string;
+  completed_tasks: string[];
+  sprint_status: string;
+  blockers: string[];
+  engineering_risks: string[];
+  uptime_log: string;
+  security_findings: string[];
+  deployment_notes: string[];
+  meeting_summaries: string[];
+  next_day_priorities: string[];
+  submitted: boolean;
 }
 
 const taskCategories = [
@@ -29,11 +110,19 @@ export default function CTODailyWorkflow() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<DailyTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [autoPriorities, setAutoPriorities] = useState<AutoPriority[]>([]);
+  const [codeReviews, setCodeReviews] = useState<CodeReviewItem[]>([]);
+  const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [today] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchTodayTasks();
     initializeDefaultTasks();
+    fetchAutoPriorities();
+    fetchCodeReviewQueue();
+    fetchDailyReport();
   }, []);
 
   const initializeDefaultTasks = async () => {
@@ -44,42 +133,39 @@ export default function CTODailyWorkflow() {
 
     if (!existing || existing.length === 0) {
       const defaultTasks = [
-        // Morning Review
         { task_category: 'morning_review', task_name: 'Infrastructure & System Health Check', priority: 'high' },
         { task_category: 'morning_review', task_name: 'Active Sprint Check-In', priority: 'high' },
         { task_category: 'morning_review', task_name: 'Security Review (Quick Scan)', priority: 'normal' },
-        // Development
         { task_category: 'development', task_name: 'Review Pull Requests', priority: 'high' },
         { task_category: 'development', task_name: 'Manage Developer Team', priority: 'high' },
         { task_category: 'development', task_name: 'System & Feature Planning', priority: 'normal' },
-        // Strategic
         { task_category: 'strategic', task_name: 'Architecture Governance', priority: 'normal' },
         { task_category: 'strategic', task_name: 'Technology Roadmap Review', priority: 'normal' },
         { task_category: 'strategic', task_name: 'Data & Analytics Management', priority: 'normal' },
-        // Coordination
         { task_category: 'coordination', task_name: 'CEO Sync Meeting', priority: 'high' },
         { task_category: 'coordination', task_name: 'CFO Sync (if needed)', priority: 'normal' },
         { task_category: 'coordination', task_name: 'Department Syncs (as needed)', priority: 'low' },
-        // Stability
         { task_category: 'stability', task_name: 'Security Maintenance', priority: 'normal' },
         { task_category: 'stability', task_name: 'Backup & Redundancy Check', priority: 'normal' },
         { task_category: 'stability', task_name: 'Deployment Reliability Review', priority: 'normal' },
-        // Product
         { task_category: 'product', task_name: 'Feature Scoping', priority: 'normal' },
         { task_category: 'product', task_name: 'QA Testing Review', priority: 'normal' },
-        // Documentation
         { task_category: 'documentation', task_name: 'Sprint Updates', priority: 'normal' },
         { task_category: 'documentation', task_name: 'Deployment Notes', priority: 'normal' },
         { task_category: 'documentation', task_name: 'Daily CTO Report', priority: 'high' },
       ];
 
-      await supabase.from('cto_daily_checklist').insert(
+      const { error: insertError } = await supabase.from('cto_daily_checklist').insert(
         defaultTasks.map(task => ({
           ...task,
           checklist_date: today,
           task_description: getTaskDescription(task.task_name),
         }))
       );
+      
+      if (insertError) {
+        console.error('Error initializing default tasks:', insertError);
+      }
       fetchTodayTasks();
     }
   };
@@ -120,11 +206,192 @@ export default function CTODailyWorkflow() {
         .order('task_category', { ascending: true })
         .order('priority', { ascending: false });
 
-      setTasks(data || []);
+      setTasks((data || []).map(t => ({ ...t, is_completed: t.completed || false })));
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAutoPriorities = async () => {
+    try {
+      const priorities: AutoPriority[] = [];
+
+      // 1. Check incidents
+      const { data: incidents } = await supabase
+        .from('it_incidents')
+        .select('*')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      incidents?.forEach(incident => {
+        const severity = incident.severity === 'critical' ? 'critical' : 
+                        incident.severity === 'high' ? 'high' : 
+                        incident.severity === 'medium' ? 'medium' : 'low';
+        priorities.push({
+          id: `incident-${incident.id}`,
+          type: 'incident',
+          severity,
+          title: incident.title,
+          description: incident.description || '',
+          action: `Review and resolve: ${incident.title}`,
+          source_data: incident
+        });
+      });
+
+      // 2. Check error spikes (simulated - would need error tracking system)
+      // For now, check for recent incidents with 'bug' type
+      const { data: bugs } = await supabase
+        .from('it_incidents')
+        .select('*')
+        .eq('incident_type', 'bug')
+        .gte('created_at', dayjs().subtract(24, 'hours').toISOString())
+        .order('created_at', { ascending: false });
+
+      if (bugs && bugs.length > 5) {
+        priorities.push({
+          id: 'error-spike',
+          type: 'error_spike',
+          severity: 'high',
+          title: `Error Spike Detected: ${bugs.length} bugs in last 24h`,
+          description: `Unusual spike in bug reports. Review error logs and system health.`,
+          action: 'Add to Morning Technical Review'
+        });
+      }
+
+      // 3. Check roadmap changes (slip alerts)
+      const { data: roadmapAlerts } = await supabase
+        .from('cto_roadmap_slip_alerts')
+        .select('*, initiative:cto_roadmap_initiatives(title)')
+        .eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      roadmapAlerts?.forEach(alert => {
+        priorities.push({
+          id: `roadmap-${alert.id}`,
+          type: 'roadmap',
+          severity: alert.severity === 'critical' ? 'critical' : 'high',
+          title: `Roadmap Slip: ${alert.initiative?.title || 'Unknown Initiative'}`,
+          description: alert.message || 'Initiative is behind schedule',
+          action: 'Review roadmap and adjust timeline',
+          source_data: alert
+        });
+      });
+
+      // 4. Check team performance (workload imbalance)
+      const { data: developers, error: devError } = await supabase
+        .from('cto_developers')
+        .select('*')
+        .eq('availability_status', 'available');
+      
+      if (devError) {
+        console.warn('Error fetching developers:', devError);
+      }
+
+      if (developers && developers.length > 0) {
+        const maxTickets = Math.max(...developers.map(d => d.active_tickets_count || 0));
+        const minTickets = Math.min(...developers.map(d => d.active_tickets_count || 0));
+        const imbalance = maxTickets - minTickets;
+
+        if (imbalance > 3 && developers) {
+          const overloaded = developers.find(d => d.active_tickets_count === maxTickets);
+          priorities.push({
+            id: 'team-imbalance',
+            type: 'team',
+            severity: 'medium',
+            title: `Dev Workload Imbalance: Team member is overloaded`,
+            description: `Workload gap of ${imbalance} tickets (max: ${maxTickets}, min: ${minTickets}). Consider reassigning tasks.`,
+            action: 'Reassign 2 tasks to balance workload',
+            source_data: { developers, imbalance, overloaded }
+          });
+        }
+      }
+
+      // 5. Check deployment failures (from architecture changes)
+      try {
+        const { data: failedDeployments, error: deployError } = await supabase
+          .from('cto_architecture_changes')
+          .select('*')
+          .eq('status', 'rolled_back')
+          .gte('created_at', dayjs().subtract(7, 'days').toISOString())
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (deployError) {
+          console.warn('Error fetching deployment failures (table may not exist):', deployError);
+        } else if (failedDeployments && failedDeployments.length > 0) {
+          priorities.push({
+            id: 'deployment-failures',
+            type: 'deployment',
+            severity: 'high',
+            title: `${failedDeployments.length} Deployment Failure(s) in Last 7 Days`,
+            description: 'Recent deployments have been rolled back. Review deployment process.',
+            action: 'Review deployment reliability and rollback procedures',
+            source_data: failedDeployments
+          });
+        }
+      } catch (e) {
+        // Table might not exist, ignore
+        console.warn('Could not check deployment failures:', e);
+      }
+
+      setAutoPriorities(priorities);
+    } catch (error) {
+      console.error('Error fetching auto priorities:', error);
+    }
+  };
+
+  const fetchCodeReviewQueue = async () => {
+    try {
+      const { data: reviews } = await supabase
+        .from('cto_code_reviews')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+
+      const reviewsWithMetrics = (reviews || []).map(review => {
+        const created = dayjs(review.created_at);
+        const now = dayjs();
+        const hoursInQueue = now.diff(created, 'hour');
+        
+        // Calculate priority score: older = higher priority, quality score affects it
+        let priorityScore = hoursInQueue * 10; // Base score from time
+        if (review.quality_score) {
+          priorityScore += (100 - review.quality_score); // Lower quality = higher priority
+        }
+
+        return {
+          ...review,
+          time_in_queue_hours: hoursInQueue,
+          priority_score: priorityScore
+        };
+      }).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+
+      setCodeReviews(reviewsWithMetrics);
+    } catch (error) {
+      console.error('Error fetching code reviews:', error);
+    }
+  };
+
+  const fetchDailyReport = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cto_daily_reports')
+        .select('*')
+        .eq('report_date', today)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = not found, which is OK
+        console.warn('Error fetching daily report:', error);
+      }
+      
+      setDailyReport(data || null);
+    } catch (error) {
+      console.warn('Error fetching daily report:', error);
+      setDailyReport(null);
     }
   };
 
@@ -144,7 +411,132 @@ export default function CTODailyWorkflow() {
     }
   };
 
-  const completedCount = tasks.filter(t => t.is_completed).length;
+  const handleAcknowledgeIncident = async (incidentId: string) => {
+    try {
+      // Update incident status
+      await supabase
+        .from('it_incidents')
+        .update({ status: 'investigating' })
+        .eq('id', incidentId);
+
+      // Auto-create DevOps task
+      const { data: incident } = await supabase
+        .from('it_incidents')
+        .select('*')
+        .eq('id', incidentId)
+        .single();
+
+      if (incident) {
+        // Create task in daily checklist
+        const { error: taskError } = await supabase
+          .from('cto_daily_checklist')
+          .insert({
+            checklist_date: today,
+            task_category: 'stability',
+            task_name: `DevOps: Resolve ${incident.title}`,
+            task_description: `Auto-created from incident: ${incident.description || ''}`,
+            priority: incident.severity === 'critical' ? 'urgent' : 
+                     incident.severity === 'high' ? 'high' : 'normal',
+            completed: false
+          });
+        
+        if (taskError) {
+          console.error('Error creating DevOps task:', taskError);
+          message.error('Failed to create DevOps task');
+          return;
+        }
+
+        message.success('Incident acknowledged. DevOps task created automatically.');
+        fetchTodayTasks();
+        fetchAutoPriorities();
+      }
+    } catch (error) {
+      console.error('Error acknowledging incident:', error);
+      message.error('Failed to acknowledge incident');
+    }
+  };
+
+  const generateDailyReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const completedTasks = tasks.filter(t => t.is_completed || t.completed).map(t => t.task_name);
+      const pendingTasks = tasks.filter(t => !t.is_completed && !t.completed).map(t => t.task_name);
+      
+      // Get sprint status
+      const { data: activeSprint } = await supabase
+        .from('cto_sprints')
+        .select('*')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      // Get blockers
+      const { data: blockedTickets } = await supabase
+        .from('cto_sprint_tickets')
+        .select('*')
+        .eq('status', 'blocked')
+        .limit(10);
+
+      const blockers = blockedTickets?.map(t => t.title) || [];
+
+      // Get risks from auto priorities
+      const risks = autoPriorities
+        .filter(p => p.severity === 'high' || p.severity === 'critical')
+        .map(p => p.title);
+
+      const report: DailyReport = {
+        report_date: today,
+        completed_tasks: completedTasks,
+        sprint_status: activeSprint ? `${activeSprint.sprint_name} - ${activeSprint.status}` : 'No active sprint',
+        blockers,
+        engineering_risks: risks,
+        uptime_log: 'All systems operational',
+        security_findings: [],
+        deployment_notes: [],
+        meeting_summaries: [],
+        next_day_priorities: autoPriorities.slice(0, 5).map(p => p.action),
+        submitted: false
+      };
+
+      setDailyReport(report);
+      setReportModalVisible(true);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      message.error('Failed to generate report');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const saveAndSendReport = async () => {
+    if (!dailyReport) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const reportData = {
+        ...dailyReport,
+        submitted: true,
+        submitted_at: new Date().toISOString(),
+        created_by: user?.id
+      };
+
+      // Upsert report
+      const { error } = await supabase
+        .from('cto_daily_reports')
+        .upsert(reportData, { onConflict: 'report_date,created_by' });
+
+      if (error) throw error;
+
+      message.success('Daily report saved and ready to send to CEO');
+      setReportModalVisible(false);
+      fetchDailyReport();
+    } catch (error: any) {
+      console.error('Error saving report:', error);
+      message.error(error.message || 'Failed to save report');
+    }
+  };
+
+  const completedCount = tasks.filter(t => t.is_completed || t.completed).length;
   const totalCount = tasks.length;
   const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -158,8 +550,175 @@ export default function CTODailyWorkflow() {
     }
   };
 
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'red';
+      case 'high': return 'orange';
+      case 'medium': return 'gold';
+      case 'low': return 'blue';
+      default: return 'default';
+    }
+  };
+
+  const codeReviewColumns = [
+    {
+      title: 'PR Title',
+      dataIndex: 'pr_title',
+      key: 'pr_title',
+      render: (text: string, record: CodeReviewItem) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>{text}</Text>
+          {record.pr_number && <Text type="secondary" style={{ fontSize: '12px' }}>#{record.pr_number}</Text>}
+        </Space>
+      ),
+    },
+    {
+      title: 'Time in Queue',
+      dataIndex: 'time_in_queue_hours',
+      key: 'time_in_queue_hours',
+      render: (hours: number) => {
+        if (hours < 24) return <Tag color="green">{hours}h</Tag>;
+        if (hours < 48) return <Tag color="orange">{hours}h</Tag>;
+        return <Tag color="red">{hours}h</Tag>;
+      },
+      sorter: (a: CodeReviewItem, b: CodeReviewItem) => 
+        (a.time_in_queue_hours || 0) - (b.time_in_queue_hours || 0),
+    },
+    {
+      title: 'Priority',
+      dataIndex: 'priority_score',
+      key: 'priority_score',
+      render: (score: number) => {
+        if (score > 200) return <Tag color="red">Critical</Tag>;
+        if (score > 100) return <Tag color="orange">High</Tag>;
+        return <Tag color="blue">Normal</Tag>;
+      },
+      sorter: (a: CodeReviewItem, b: CodeReviewItem) => 
+        (b.priority_score || 0) - (a.priority_score || 0),
+    },
+    {
+      title: 'Quality Score',
+      dataIndex: 'quality_score',
+      key: 'quality_score',
+      render: (score?: number) => {
+        if (!score) return '-';
+        const color = score >= 80 ? 'green' : score >= 60 ? 'orange' : 'red';
+        return <Tag color={color}>{score}/100</Tag>;
+      },
+    },
+  ];
+
   return (
     <div>
+      {/* Command Center Header */}
+      <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <Row gutter={16} align="middle">
+          <Col flex="auto">
+            <Space direction="vertical" size={0}>
+              <Title level={2} style={{ color: 'white', margin: 0 }}>
+                <ThunderboltOutlined /> CTO Command Center
+              </Title>
+              <Text style={{ color: 'rgba(255,255,255,0.9)' }}>
+                Mission Control for Today's Technology Operations
+              </Text>
+            </Space>
+          </Col>
+          <Col>
+            <Space>
+              <Button 
+                type="primary" 
+                size="large"
+                icon={<BarChartOutlined />}
+                onClick={generateDailyReport}
+                loading={generatingReport}
+              >
+                Generate Daily Report
+              </Button>
+              <Button 
+                size="large"
+                icon={<SendOutlined />}
+                onClick={() => setReportModalVisible(true)}
+                disabled={!dailyReport}
+              >
+                View/Edit Report
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Auto-Generated Priorities */}
+      {autoPriorities.length > 0 && (
+        <Card 
+          title={
+            <Space>
+              <WarningOutlined style={{ color: '#fa8c16' }} />
+              <span>Auto-Generated Today's Priorities</span>
+              <Badge count={autoPriorities.length} style={{ backgroundColor: '#fa8c16' }} />
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          <List
+            dataSource={autoPriorities}
+            renderItem={(priority) => (
+              <List.Item>
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <Space>
+                    <Tag color={getSeverityColor(priority.severity)}>{priority.severity.toUpperCase()}</Tag>
+                    <Text strong>{priority.title}</Text>
+                  </Space>
+                  <Text type="secondary">{priority.description}</Text>
+                  <Space>
+                    <Text type="secondary">Action: </Text>
+                    <Text code>{priority.action}</Text>
+                    {priority.type === 'incident' && priority.source_data && (
+                      <Button
+                        size="small"
+                        type="link"
+                        onClick={() => handleAcknowledgeIncident(priority.source_data.id)}
+                      >
+                        Acknowledge & Create DevOps Task
+                      </Button>
+                    )}
+                  </Space>
+                </Space>
+              </List.Item>
+            )}
+          />
+        </Card>
+      )}
+
+      {/* Code Review Queue */}
+      <Card 
+        title={
+          <Space>
+            <CodeOutlined />
+            <span>Code Review Queue</span>
+            <Badge count={codeReviews.length} style={{ backgroundColor: '#1890ff' }} />
+          </Space>
+        }
+        extra={
+          <Button onClick={() => navigate('/cto?tab=code-review')}>
+            View All Reviews
+          </Button>
+        }
+        style={{ marginBottom: 24 }}
+      >
+        {codeReviews.length > 0 ? (
+          <Table
+            dataSource={codeReviews}
+            columns={codeReviewColumns}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+            size="small"
+          />
+        ) : (
+          <Alert message="No pending code reviews" type="success" showIcon />
+        )}
+      </Card>
+
+      {/* Progress Overview */}
       <Row gutter={16} className="mb-6">
         <Col xs={24} sm={12} md={8}>
           <Card>
@@ -180,7 +739,7 @@ export default function CTODailyWorkflow() {
           <Card>
             <Statistic
               title="High Priority Tasks"
-              value={tasks.filter(t => t.priority === 'high' || t.priority === 'urgent').filter(t => !t.is_completed).length}
+              value={tasks.filter(t => (t.priority === 'high' || t.priority === 'urgent') && !t.is_completed && !t.completed).length}
               valueStyle={{ color: '#fa8c16' }}
               prefix={<ExclamationCircleOutlined />}
             />
@@ -195,11 +754,8 @@ export default function CTODailyWorkflow() {
               <Button type="primary" onClick={() => navigate('/cto?tab=sprint')}>
                 View Active Sprint
               </Button>
-              <Button onClick={() => navigate('/cto?tab=code-review')}>
-                Code Review Queue
-              </Button>
-              <Button onClick={() => navigate('/cto?tab=daily-report')}>
-                Submit Daily Report
+              <Button onClick={() => navigate('/cto?tab=morning-review')}>
+                Morning Technical Review
               </Button>
             </Space>
           </Card>
@@ -221,7 +777,7 @@ export default function CTODailyWorkflow() {
       <Row gutter={[16, 16]}>
         {taskCategories.map(category => {
           const categoryTasks = tasks.filter(t => t.task_category === category.key);
-          const categoryCompleted = categoryTasks.filter(t => t.is_completed).length;
+          const categoryCompleted = categoryTasks.filter(t => t.is_completed || t.completed).length;
           const categoryTotal = categoryTasks.length;
 
           return (
@@ -247,11 +803,11 @@ export default function CTODailyWorkflow() {
                   {categoryTasks.map(task => (
                     <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Checkbox
-                checked={task.is_completed}
-                onChange={() => toggleTask(task.id, task.is_completed)}
+                        checked={task.is_completed || task.completed || false}
+                        onChange={() => toggleTask(task.id, task.is_completed || task.completed || false)}
                       />
                       <div style={{ flex: 1 }}>
-                        <Text delete={task.is_completed} style={{ fontSize: '13px' }}>
+                        <Text delete={task.is_completed || task.completed} style={{ fontSize: '13px' }}>
                           {task.task_name}
                         </Text>
                         {task.task_description && (
@@ -280,9 +836,63 @@ export default function CTODailyWorkflow() {
           );
         })}
       </Row>
+
+      {/* Daily Report Modal */}
+      <Modal
+        title="CTO Daily Report - Ready to Send to CEO"
+        open={reportModalVisible}
+        onCancel={() => setReportModalVisible(false)}
+        onOk={saveAndSendReport}
+        width={800}
+        okText="Save & Mark Ready to Send"
+      >
+        {dailyReport ? (
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Title level={5}>Completed Tasks</Title>
+              <List
+                size="small"
+                dataSource={dailyReport.completed_tasks}
+                renderItem={item => <List.Item>{item}</List.Item>}
+              />
+            </div>
+            <div>
+              <Title level={5}>Sprint Status</Title>
+              <Text>{dailyReport.sprint_status}</Text>
+            </div>
+            {dailyReport.blockers.length > 0 && (
+              <div>
+                <Title level={5}>Blockers</Title>
+                <List
+                  size="small"
+                  dataSource={dailyReport.blockers}
+                  renderItem={item => <List.Item><Text type="danger">{item}</Text></List.Item>}
+                />
+              </div>
+            )}
+            {dailyReport.engineering_risks.length > 0 && (
+              <div>
+                <Title level={5}>Engineering Risks</Title>
+                <List
+                  size="small"
+                  dataSource={dailyReport.engineering_risks}
+                  renderItem={item => <List.Item><Text type="warning">{item}</Text></List.Item>}
+                />
+              </div>
+            )}
+            <div>
+              <Title level={5}>Next Day Priorities</Title>
+              <List
+                size="small"
+                dataSource={dailyReport.next_day_priorities}
+                renderItem={item => <List.Item>{item}</List.Item>}
+              />
+            </div>
+          </Space>
+        ) : (
+          <Spin />
+        )}
+      </Modal>
     </div>
   );
 }
-
-
-
