@@ -99,8 +99,9 @@ export const AdvancedTreasuryManagement: React.FC = () => {
     setLoading(true);
     try {
       // Fetch bank accounts
-      // @ts-ignore - Type compatibility
+      // @ts-ignore - bank_accounts table type not in generated types
       const { data: banks } = await supabase
+        // @ts-ignore
         .from('bank_accounts')
         .select('*')
         .order('current_balance', { ascending: false });

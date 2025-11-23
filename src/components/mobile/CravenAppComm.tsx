@@ -87,6 +87,7 @@ const CravenAppComm = () => {
           activeOrder = assignment;
         } else {
           // Fallback: check orders table directly for assigned orders
+          // @ts-ignore - Type instantiation depth
           const { data: directOrder } = await supabase
             .from('orders')
             .select('*')
@@ -116,8 +117,9 @@ const CravenAppComm = () => {
         let customerPhone = order.customer_phone || '';
 
         if (customerId && !customerName) {
-          // @ts-ignore - Type compatibility
+          // @ts-ignore - customer_profiles table type not in generated types
           const { data: customerProfile } = await supabase
+            // @ts-ignore
             .from('customer_profiles')
             .select('full_name, phone')
             .eq('user_id', customerId)
