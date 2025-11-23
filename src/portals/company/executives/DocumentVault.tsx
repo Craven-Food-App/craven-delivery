@@ -14,6 +14,8 @@ import {
   Loader,
   Alert,
   Anchor,
+  Modal,
+  Paper,
 } from '@mantine/core';
 import { IconFolder, IconDownload, IconEye, IconAlertCircle, IconFileText } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,6 +36,10 @@ const DocumentVault: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [documentContent, setDocumentContent] = useState<string>('');
+  const [documentLoading, setDocumentLoading] = useState(false);
 
   useEffect(() => {
     loadDocuments();
@@ -173,6 +179,159 @@ const DocumentVault: React.FC = () => {
     }
   };
 
+  const isHtmlUrl = (url: string): boolean => {
+    return url.toLowerCase().endsWith('.html') || url.toLowerCase().includes('.html') || url.toLowerCase().includes('text/html');
+  };
+
+  const isPdfUrl = (url: string): boolean => {
+    return url.toLowerCase().endsWith('.pdf') || url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf');
+  };
+
+  const handleViewDocument = async (doc: Document) => {
+    if (!doc.pdf_url) return;
+
+    setSelectedDocument(doc);
+    setViewModalVisible(true);
+    setDocumentLoading(true);
+    setDocumentContent('');
+
+    try {
+      // Check if it's an HTML file
+      if (isHtmlUrl(doc.pdf_url)) {
+        // Try to fetch the HTML content directly first
+        let htmlContent = '';
+        let fetchError = null;
+
+        try {
+          const response = await fetch(doc.pdf_url);
+          if (response.ok) {
+            htmlContent = await response.text();
+          } else {
+            fetchError = new Error(`HTTP ${response.status}`);
+          }
+        } catch (fetchErr) {
+          fetchError = fetchErr;
+        }
+
+        // If direct fetch failed, try Supabase storage
+        if (!htmlContent && (doc.pdf_url.includes('supabase.co') || doc.pdf_url.includes('storage') || fetchError)) {
+          // Extract bucket and path from URL
+          let bucket = '';
+          let filePath = '';
+
+          // Try to parse Supabase storage URL
+          const storageMatch = doc.pdf_url.match(/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+          if (storageMatch) {
+            bucket = storageMatch[1];
+            filePath = storageMatch[2];
+          } else {
+            // Try alternative format
+            const urlParts = doc.pdf_url.split('/');
+            const bucketIndex = urlParts.findIndex(part => part === 'storage' || part.includes('storage'));
+            if (bucketIndex >= 0 && bucketIndex < urlParts.length - 1) {
+              bucket = urlParts[bucketIndex + 1];
+              filePath = urlParts.slice(bucketIndex + 2).join('/');
+            }
+          }
+
+          if (bucket && filePath) {
+            const { data, error } = await supabase.storage
+              .from(bucket)
+              .download(filePath);
+
+            if (!error && data) {
+              htmlContent = await data.text();
+            } else {
+              // Try getting public URL instead
+              const { data: urlData } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(filePath);
+
+              if (urlData?.publicUrl) {
+                const response = await fetch(urlData.publicUrl);
+                if (response.ok) {
+                  htmlContent = await response.text();
+                }
+              }
+            }
+          }
+        }
+
+        if (htmlContent) {
+          setDocumentContent(htmlContent);
+        } else {
+          throw new Error('Failed to load HTML document content');
+        }
+      } else {
+        // For PDFs or other files, just set empty content (will use iframe)
+        setDocumentContent('');
+      }
+    } catch (error: any) {
+      console.error('Error loading document:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to load document',
+        color: 'red',
+      });
+    } finally {
+      setDocumentLoading(false);
+    }
+  };
+
+  const handleDownloadDocument = async (doc: Document) => {
+    if (!doc.pdf_url) return;
+
+    try {
+      // If it's a direct URL, use it
+      if (doc.pdf_url.startsWith('http://') || doc.pdf_url.startsWith('https://')) {
+        // Check if it's a Supabase storage URL
+        if (doc.pdf_url.includes('supabase.co') || doc.pdf_url.includes('storage')) {
+          const urlParts = doc.pdf_url.split('/');
+          const bucketIndex = urlParts.findIndex(part => part.includes('storage'));
+          if (bucketIndex >= 0 && bucketIndex < urlParts.length - 1) {
+            const bucket = urlParts[bucketIndex + 1];
+            const filePath = urlParts.slice(bucketIndex + 2).join('/');
+            
+            const { data, error } = await supabase.storage
+              .from(bucket)
+              .download(filePath);
+
+            if (!error && data) {
+              const url = URL.createObjectURL(data);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${doc.title || doc.type}.${isPdfUrl(doc.pdf_url) ? 'pdf' : 'html'}`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              notifications.show({
+                title: 'Success',
+                message: 'Document downloaded',
+                color: 'green',
+              });
+            } else {
+              throw new Error('Failed to download document');
+            }
+          } else {
+            // Direct download
+            window.open(doc.pdf_url, '_blank');
+          }
+        } else {
+          // Direct download
+          window.open(doc.pdf_url, '_blank');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error downloading document:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to download document',
+        color: 'red',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -249,9 +408,7 @@ const DocumentVault: React.FC = () => {
                             size="xs"
                             variant="light"
                             leftSection={<IconEye size={14} />}
-                            component="a"
-                            href={doc.pdf_url}
-                            target="_blank"
+                            onClick={() => handleViewDocument(doc)}
                           >
                             View
                           </Button>
@@ -259,9 +416,7 @@ const DocumentVault: React.FC = () => {
                             size="xs"
                             variant="light"
                             leftSection={<IconDownload size={14} />}
-                            component="a"
-                            href={doc.pdf_url}
-                            download
+                            onClick={() => handleDownloadDocument(doc)}
                           >
                             Download
                           </Button>
@@ -280,6 +435,66 @@ const DocumentVault: React.FC = () => {
             </Alert>
           )}
         </Card>
+
+        {/* Document View Modal */}
+        <Modal
+          opened={viewModalVisible}
+          onClose={() => {
+            setViewModalVisible(false);
+            setSelectedDocument(null);
+            setDocumentContent('');
+          }}
+          title={selectedDocument?.title || 'Document Viewer'}
+          size="xl"
+          fullScreen
+        >
+          {documentLoading ? (
+            <Center py="xl">
+              <Loader size="lg" />
+            </Center>
+          ) : selectedDocument && selectedDocument.pdf_url ? (
+            <Paper p="md" withBorder>
+              {isHtmlUrl(selectedDocument.pdf_url) && documentContent ? (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    overflow: 'auto',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '4px',
+                    padding: '20px',
+                    backgroundColor: '#fff',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: documentContent }}
+                />
+              ) : isPdfUrl(selectedDocument.pdf_url) ? (
+                <iframe
+                  src={selectedDocument.pdf_url}
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    border: 'none',
+                  }}
+                  title={selectedDocument.title}
+                />
+              ) : (
+                <iframe
+                  src={selectedDocument.pdf_url}
+                  style={{
+                    width: '100%',
+                    height: '80vh',
+                    border: 'none',
+                  }}
+                  title={selectedDocument.title}
+                />
+              )}
+            </Paper>
+          ) : (
+            <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
+              Unable to load document
+            </Alert>
+          )}
+        </Modal>
       </Stack>
     </Container>
   );
