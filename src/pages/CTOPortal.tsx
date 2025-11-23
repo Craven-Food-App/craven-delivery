@@ -46,6 +46,7 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
@@ -92,6 +93,9 @@ function CTOPortalContent() {
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const toast = useToast();
+  
+  // Track user activity
+  useActivityTracking('cto');
 
   // TORRANCE STROMAN: IMMEDIATE FULL ACCESS CHECK - BEFORE ANYTHING ELSE
   const email = user?.email?.toLowerCase() || '';

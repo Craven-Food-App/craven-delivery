@@ -240,6 +240,49 @@ const MyDocuments: React.FC = () => {
         .eq('executive_id', currentExec.id)
         .order('created_at', { ascending: false });
 
+      // If no documents found, try to sync from appointments
+      if ((!execDocs || execDocs.length === 0) && user.email) {
+        console.log('No documents in executive_documents, attempting to sync from appointments...');
+        try {
+          // Call sync function
+          const { error: syncError } = await supabase.rpc('sync_executive_documents_from_appointments', {
+            p_user_email: user.email
+          });
+          if (syncError) {
+            console.warn('Sync function not available or failed:', syncError);
+            // Try calling the edge function instead
+            const syncResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/governance-sync-appointment-documents`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+              },
+              body: JSON.stringify({ user_email: user.email }),
+            });
+            if (syncResponse.ok) {
+              console.log('Documents synced via edge function');
+              // Re-fetch documents
+              const { data: syncedDocs } = await supabase
+                .from('executive_documents')
+                .select('*')
+                .eq('executive_id', currentExec.id)
+                .order('created_at', { ascending: false });
+              execDocs = syncedDocs;
+            }
+          } else {
+            // Re-fetch documents after sync
+            const { data: syncedDocs } = await supabase
+              .from('executive_documents')
+              .select('*')
+              .eq('executive_id', currentExec.id)
+              .order('created_at', { ascending: false });
+            execDocs = syncedDocs;
+          }
+        } catch (syncErr) {
+          console.warn('Error syncing documents:', syncErr);
+        }
+      }
+
       // Also try fetching ALL documents to see what's available
       const { data: allDocsDebug, error: allDocsError } = await supabase
         .from('executive_documents')

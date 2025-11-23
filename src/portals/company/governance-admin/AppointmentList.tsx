@@ -383,16 +383,38 @@ const AppointmentList: React.FC = () => {
           });
         }
 
-        // Send email
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-appointment-documents-email', {
-          body: { appointmentId },
+        // Send email - use fetch to get better error details
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
+        
+        if (!accessToken) {
+          throw new Error('Not authenticated. Please log in and try again.');
+        }
+
+        const supabaseUrl = 'https://xaxbucnjlrfkccsfiddq.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGJ1Y25qbHJma2Njc2ZpZGRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyODMyODAsImV4cCI6MjA3Mjg1OTI4MH0.3ETuLETgSEj6W8gYi7WAoUFDPNo4IwTjuSnVtt1BCFE';
+
+        const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-appointment-documents-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+          },
+          body: JSON.stringify({ appointmentId }),
         });
 
-        if (emailError) throw emailError;
+        const emailData = await emailResponse.json();
+        
+        if (!emailResponse.ok) {
+          const errorMessage = emailData?.error || emailData?.message || `HTTP ${emailResponse.status}: ${emailResponse.statusText}`;
+          const errorDetails = emailData?.details ? ` Details: ${emailData.details}` : '';
+          throw new Error(`${errorMessage}${errorDetails}`);
+        }
 
         notifications.show({
           title: 'Email Sent',
-          message: `Email sent to ${nathanAppt.appointment.email} with ${emailData?.documentsCount || 0} documents`,
+          message: `Email sent to ${nathanAppt.proposed_officer_email || emailData?.recipient || 'Nathan Curry'} with ${emailData?.documentsCount || 0} documents`,
           color: 'green',
           autoClose: 5000,
         });

@@ -28,27 +28,51 @@ serve(async (req) => {
 
     const body = await req.json();
     const appointment_id = body.appointment_id;
+    const user_email = body.user_email;
 
-    if (!appointment_id) {
+    let appointment: any = null;
+
+    // If appointment_id provided, use it
+    if (appointment_id) {
+      const { data: appt, error: appointmentError } = await supabaseAdmin
+        .from('executive_appointments')
+        .select('*')
+        .eq('id', appointment_id)
+        .single();
+
+      if (appointmentError || !appt) {
+        return new Response(
+          JSON.stringify({ error: 'Appointment not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      appointment = appt;
+    } 
+    // If user_email provided, find appointment by email
+    else if (user_email) {
+      const { data: appointments, error: appointmentsError } = await supabaseAdmin
+        .from('executive_appointments')
+        .select('*')
+        .ilike('proposed_officer_email', user_email)
+        .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE', 'DRAFT', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW', 'BOARD_ADOPTED'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (appointmentsError || !appointments || appointments.length === 0) {
+        return new Response(
+          JSON.stringify({ error: `No appointments found for email: ${user_email}` }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      appointment = appointments[0];
+    } else {
       return new Response(
-        JSON.stringify({ error: 'Missing appointment_id' }),
+        JSON.stringify({ error: 'Missing appointment_id or user_email' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get appointment
-    const { data: appointment, error: appointmentError } = await supabaseAdmin
-      .from('executive_appointments')
-      .select('*')
-      .eq('id', appointment_id)
-      .single();
-
-    if (appointmentError || !appointment) {
-      return new Response(
-        JSON.stringify({ error: 'Appointment not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const appointment_id_to_use = appointment.id;
 
     // Find executive user by email
     let executiveId: string | null = null;
@@ -92,7 +116,7 @@ serve(async (req) => {
       const { data: existingDoc } = await supabaseAdmin
         .from('executive_documents')
         .select('id')
-        .eq('appointment_id', appointment_id)
+        .eq('appointment_id', appointment_id_to_use)
         .eq('type', type)
         .maybeSingle();
 
@@ -121,7 +145,7 @@ serve(async (req) => {
             role: appointment.proposed_title,
             executive_id: executiveId,
             file_url: docUrl,
-            appointment_id: appointment_id,
+            appointment_id: appointment_id_to_use,
             signature_status: 'pending',
             status: 'generated',
           });
@@ -147,7 +171,7 @@ serve(async (req) => {
         const { data: documents } = await supabaseAdmin
           .from('executive_documents')
           .select('signature_status')
-          .eq('appointment_id', appointment_id);
+          .eq('appointment_id', appointment_id_to_use);
 
         const allSigned = documents && documents.length > 0 && documents.every(d => d.signature_status === 'signed');
         const someSigned = documents && documents.some(d => d.signature_status === 'signed');
@@ -173,7 +197,7 @@ serve(async (req) => {
               status: targetStatus,
               updated_at: new Date().toISOString(),
             })
-            .eq('id', appointment_id);
+            .eq('id', appointment_id_to_use);
         }
       }
     }
@@ -181,11 +205,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        appointment_id,
+        appointment_id: appointment_id_to_use,
         documents_synced: syncedDocs.length,
         documents: syncedDocs,
         errors: errors.length > 0 ? errors : undefined,
         executive_id: executiveId,
+        user_email: user_email || appointment.proposed_officer_email,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

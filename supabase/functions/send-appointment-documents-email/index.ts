@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,27 +44,49 @@ serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // Get appointment details
-    const { data: appointment, error: appointmentError } = await supabaseAdmin
-      .from('appointments')
-      .select('*, appointee_user_id')
+    // Get appointment details - try executive_appointments first (new system)
+    let execAppointment: any = null;
+    let appointment: any = null;
+    
+    const { data: execApptData, error: execApptError } = await supabaseAdmin
+      .from('executive_appointments')
+      .select('*')
       .eq('id', appointmentId)
-      .single();
+      .maybeSingle();
 
-    if (appointmentError || !appointment) {
-      // Try executive_appointments table as fallback
-      const { data: execAppointment } = await supabaseAdmin
-        .from('executive_appointments')
-        .select('*')
+    if (execApptError) {
+      console.error('Error fetching from executive_appointments:', execApptError);
+    } else if (execApptData) {
+      execAppointment = execApptData;
+      console.log(`Found appointment in executive_appointments: ${appointmentId}`);
+    } else {
+      // Try old appointments table as fallback
+      const { data: apptData, error: apptError } = await supabaseAdmin
+        .from('appointments')
+        .select('*, appointee_user_id')
         .eq('id', appointmentId)
-        .single();
+        .maybeSingle();
 
-      if (!execAppointment) {
-        return new Response(
-          JSON.stringify({ error: 'Appointment not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (apptError) {
+        console.error('Error fetching from appointments:', apptError);
+      } else if (apptData) {
+        appointment = apptData;
+        console.log(`Found appointment in appointments table: ${appointmentId}`);
       }
+    }
+
+    if (!execAppointment && !appointment) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Appointment not found',
+          details: `No appointment found with ID: ${appointmentId}`,
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle executive_appointments (new system)
+    if (execAppointment) {
 
       // Use executive_appointments data
       const appointeeEmail = execAppointment.proposed_officer_email;
@@ -156,28 +179,90 @@ serve(async (req: Request) => {
         id: doc.id,
       }));
 
-      // Call the existing send-executive-document-email function
-      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-executive-document-email`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: appointeeEmail,
-          executiveName: appointeeName,
-          documentTitle: `${documents.length} Document${documents.length > 1 ? 's' : ''} Ready for Signature`,
-          documents: documentList,
-          executiveId: null, // Not using exec_users for appointments
-          temporaryPassword: temporaryPassword || null, // Include temp password if provided
-          userCreated: userCreated || false, // Indicate if user was just created
-        }),
+      // Send email directly using Resend (avoiding JWT validation issues with function-to-function calls)
+      const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N HR <hr@craven.com>";
+      const companyWebsiteUrl = Deno.env.get('COMPANY_WEBSITE_URL') || 'https://cravenusa.com';
+      
+      // Build email content
+      const documentTitle = `${documents.length} Document${documents.length > 1 ? 's' : ''} Ready for Signature`;
+      const documentLinks = documentList.map(doc => 
+        `<li style="margin: 6px 0;"><a href="${doc.url}" style="color: #ff7a45; text-decoration: none;">${doc.title}</a></li>`
+      ).join('');
+      
+      // Build login credentials section if user was just created
+      let loginCredentialsHtml = '';
+      if (userCreated && temporaryPassword) {
+        loginCredentialsHtml = `
+<div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0; border-radius: 6px;">
+  <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">🔐 Your Account Has Been Created</h3>
+  <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.6;">
+    Your executive portal account has been set up. Use these credentials to log in:
+  </p>
+  <div style="background-color: #ffffff; padding: 15px; border-radius: 4px; margin: 15px 0;">
+    <p style="margin: 5px 0; color: #1a1a1a; font-size: 14px;"><strong>Email:</strong> ${appointeeEmail}</p>
+    <p style="margin: 5px 0; color: #1a1a1a; font-size: 14px;"><strong>Temporary Password:</strong> <code style="background-color: #f5f5f5; padding: 4px 8px; border-radius: 3px; font-family: monospace;">${temporaryPassword}</code></p>
+  </div>
+  <p style="margin: 15px 0 0 0; color: #ff6b00; font-size: 14px; font-weight: bold;">
+    ⚠️ Important: Please change your password after your first login for security.
+  </p>
+</div>`;
+      }
+      
+      const portalUrl = signatureToken 
+        ? `${companyWebsiteUrl}/executive/sign?token=${signatureToken}`
+        : `${companyWebsiteUrl}/executive/sign`;
+      
+      const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #ff7a45 0%, #ff8c00 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+      <h1 style="margin: 0; font-size: 28px;">Executive Appointment Documents</h1>
+    </div>
+    <div style="background: #ffffff; padding: 30px; border-radius: 0 0 8px 8px;">
+      <h2 style="color: #1a1a1a; font-size: 24px;">Hello ${appointeeName},</h2>
+      <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+        Your executive appointment documents are ready for review and signature.
+      </p>
+      ${loginCredentialsHtml}
+      <div style="background-color: #f9f9f9; padding: 16px; border-radius: 6px; margin: 20px 0;">
+        <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">Included Documents</h3>
+        <ul style="margin: 0; padding-left: 18px; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+          ${documentLinks}
+        </ul>
+      </div>
+      <div style="text-align: center; margin: 40px 0 30px 0;">
+        <a href="${portalUrl}" 
+           style="display: inline-block; background: linear-gradient(135deg, #ff7a45 0%, #ff8c00 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 122, 69, 0.3);">
+          Access Signing Portal
+        </a>
+      </div>
+      <p style="color: #4a4a4a; font-size: 14px; line-height: 1.6;">
+        If you have any questions, please contact executive@cravenusa.com
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const emailResult = await resend.emails.send({
+        from: fromEmail,
+        to: [appointeeEmail],
+        subject: documentTitle,
+        html: emailHtml,
       });
 
-      if (!emailResponse.ok) {
-        const errorText = await emailResponse.text();
-        throw new Error(`Failed to send email: ${errorText}`);
+      if (emailResult.error) {
+        throw new Error(`Failed to send email: ${emailResult.error.message || JSON.stringify(emailResult.error)}`);
       }
+
+      console.log(`Email sent successfully to ${appointeeEmail}, Resend ID: ${emailResult.data?.id}`);
 
       return new Response(
         JSON.stringify({ 
@@ -185,6 +270,7 @@ serve(async (req: Request) => {
           message: 'Email sent successfully',
           documentsCount: documents.length,
           recipient: appointeeEmail,
+          emailId: emailResult.data?.id,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -262,10 +348,12 @@ serve(async (req: Request) => {
     }));
 
     // Call the existing send-executive-document-email function
+    // For internal function-to-function calls, use service role key in both Authorization and apikey headers
     const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-executive-document-email`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseServiceKey}`,
+        'apikey': supabaseServiceKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -294,8 +382,20 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     console.error("Error sending appointment documents email:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+    });
+    
     return new Response(
-      JSON.stringify({ error: error.message || "Unknown error occurred" }),
+      JSON.stringify({ 
+        error: error.message || "Unknown error occurred",
+        details: error.details || error.hint || '',
+        code: error.code || '',
+        name: error.name || 'Error',
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

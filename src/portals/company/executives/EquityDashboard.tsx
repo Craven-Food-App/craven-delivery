@@ -57,36 +57,121 @@ const EquityDashboard: React.FC = () => {
   }, []);
 
   const loadEquityData = async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      console.log('Loading equity data for user:', user.id, user.email);
 
       // Load equity ledger entries
-      const { data: ledgerEntries } = await supabase
+      const { data: ledgerEntries, error: ledgerError } = await supabase
         .from('equity_ledger')
-        .select('shares_amount, transaction_type')
-        .eq('recipient_user_id', user.id);
+        .select('id, shares_amount, transaction_type, transaction_date, created_at, recipient_user_id')
+        .eq('recipient_user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (ledgerError) {
+        console.error('Error loading equity ledger:', ledgerError);
+        console.error('Error details:', {
+          message: ledgerError.message,
+          details: ledgerError.details,
+          hint: ledgerError.hint,
+          code: ledgerError.code,
+        });
+        notifications.show({
+          title: 'Error',
+          message: `Failed to load equity ledger: ${ledgerError.message}`,
+          color: 'red',
+        });
+      } else {
+        console.log('Equity ledger entries:', ledgerEntries?.length || 0, ledgerEntries);
+        if (ledgerEntries && ledgerEntries.length > 0) {
+          console.log('Sample ledger entry:', ledgerEntries[0]);
+        }
+      }
 
       // Load certificates
-      const { data: certs } = await supabase
+      const { data: certs, error: certsError } = await supabase
         .from('share_certificates')
         .select('*')
         .eq('recipient_user_id', user.id)
         .eq('status', 'issued')
         .order('issue_date', { ascending: false });
 
+      if (certsError) {
+        console.error('Error loading certificates:', certsError);
+      } else {
+        console.log('Certificates:', certs?.length || 0);
+      }
+
       // Load vesting schedules
-      const { data: schedules } = await supabase
+      const { data: schedules, error: schedulesError } = await supabase
         .from('vesting_schedules')
-        .select('*')
+        .select('id, recipient_user_id, total_shares, vested_shares, unvested_shares, vesting_type, start_date, end_date')
         .eq('recipient_user_id', user.id)
         .order('start_date', { ascending: false });
 
+      if (schedulesError) {
+        console.error('Error loading vesting schedules:', schedulesError);
+        console.error('Error details:', {
+          message: schedulesError.message,
+          details: schedulesError.details,
+          hint: schedulesError.hint,
+          code: schedulesError.code,
+        });
+        notifications.show({
+          title: 'Error',
+          message: `Failed to load vesting schedules: ${schedulesError.message}`,
+          color: 'red',
+        });
+      } else {
+        console.log('Vesting schedules:', schedules?.length || 0, schedules);
+        if (schedules && schedules.length > 0) {
+          console.log('Sample vesting schedule:', schedules[0]);
+        }
+      }
+
       // Calculate summary
-      const totalGranted = ledgerEntries?.filter(e => e.transaction_type === 'grant').reduce((sum, e) => sum + Number(e.shares_amount), 0) || 0;
+      const totalGranted = ledgerEntries?.filter(e => e.transaction_type === 'grant').reduce((sum, e) => sum + Number(e.shares_amount || 0), 0) || 0;
       const totalVested = schedules?.reduce((sum, s) => sum + Number(s.vested_shares || 0), 0) || 0;
       const totalUnvested = totalGranted - totalVested;
       const vestedPercentage = totalGranted > 0 ? (totalVested / totalGranted) * 100 : 0;
+
+      console.log('Equity summary calculated:', {
+        totalGranted,
+        totalVested,
+        totalUnvested,
+        vestedPercentage,
+        ledgerEntriesCount: ledgerEntries?.length || 0,
+        schedulesCount: schedules?.length || 0,
+        user_id: user.id,
+        user_email: user.email,
+      });
+
+      // Diagnostic: Check if user has exec_users record
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('id, user_id, role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      console.log('Exec user record:', execUser ? 'Found' : 'NOT FOUND', execUser);
+
+      // If no data found, show helpful message
+      if ((!ledgerEntries || ledgerEntries.length === 0) && (!schedules || schedules.length === 0)) {
+        console.warn('⚠️ NO EQUITY DATA FOUND');
+        console.warn('User ID:', user.id);
+        console.warn('User Email:', user.email);
+        console.warn('Exec User Record:', execUser ? 'EXISTS' : 'MISSING');
+        console.warn('Possible issues:');
+        console.warn('1. No equity grants issued to this user yet');
+        console.warn('2. recipient_user_id in database does not match user.id');
+        console.warn('3. RLS policies blocking access (check exec_users record exists)');
+      }
 
       setSummary({
         total_granted: totalGranted,

@@ -39,10 +39,14 @@ import SupportTickets from '@/components/admin/SupportTickets';
 import AuditLogs from '@/components/admin/AuditLogs';
 import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
 import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [expandedSection, setExpandedSection] = useState<string | null>('merchants');
+  
+  // Track user activity
+  useActivityTracking('admin');
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);

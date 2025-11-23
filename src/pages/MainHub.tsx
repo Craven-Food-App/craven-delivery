@@ -22,6 +22,7 @@ import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
 import cravenLogo from "@/assets/craven-logo.png";
 import { usePermission } from '@/hooks/usePermission';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -50,6 +51,9 @@ const MainHub: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [employeeInfo, setEmployeeInfo] = useState<EmployeeInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track user activity
+  useActivityTracking('hub');
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
   
@@ -177,8 +181,22 @@ const MainHub: React.FC = () => {
     const { email, pin } = values;
 
     try {
-      // First, check CEO PIN using database verification (most secure)
-      if (email.toLowerCase() === 'tstroman.ceo@cravenusa.com') {
+      // Check for ALL executives (CEO, CTO, CFO, COO, etc.) using database verification
+      // First, check if user is an executive via exec_users or ceo_access_credentials
+      const { data: execUser } = await supabase
+        .from("exec_users")
+        .select("role, title, user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      const { data: hasAccessCred } = await supabase
+        .from("ceo_access_credentials")
+        .select("user_email")
+        .eq("user_email", email.toLowerCase())
+        .maybeSingle();
+
+      // If user is an executive OR has access credentials, verify PIN
+      if (execUser || hasAccessCred) {
         const { data: isValidPin, error: pinError } = await supabase
           .rpc('verify_ceo_pin', { 
             check_email: email.toLowerCase(), 
@@ -188,19 +206,24 @@ const MainHub: React.FC = () => {
         if (!pinError && isValidPin) {
           const { data: profiles } = await supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
           
-          const ceoInfo: EmployeeInfo = {
+          // Determine role and position
+          const isCEO = execUser?.role === 'ceo' || email.toLowerCase() === 'tstroman.ceo@cravenusa.com';
+          const position = execUser?.title || profiles?.role || "Executive";
+          const employeeNumber = isCEO ? "CEO001" : execUser?.role?.toUpperCase() + "001" || "EXEC001";
+          
+          const execInfo: EmployeeInfo = {
             id: user.id,
-            employee_number: "CEO001",
-            full_name: profiles?.full_name || "Torrance Stroman",
+            employee_number: employeeNumber,
+            full_name: profiles?.full_name || "Executive",
             email: user.email || email,
-            position: "Chief Executive Officer",
-            isCEO: true,
+            position: position,
+            isCEO: isCEO,
           };
 
-          sessionStorage.setItem("hub_employee_info", JSON.stringify(ceoInfo));
-          setEmployeeInfo(ceoInfo);
+          sessionStorage.setItem("hub_employee_info", JSON.stringify(execInfo));
+          setEmployeeInfo(execInfo);
           setPinModalVisible(false);
-          message.success("Welcome, CEO Stroman! PIN verified.");
+          message.success(`Welcome, ${profiles?.full_name || position}! PIN verified.`);
           setPinLoading(false);
           return;
         }
@@ -234,32 +257,7 @@ const MainHub: React.FC = () => {
         }
       }
 
-      // Check CEO role via exec_users table
-      // @ts-ignore - Type instantiation depth issue
-      const { data: execUser } = await supabase
-        .from("exec_users")
-        .select("email, role")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (execUser && pin === CEO_PIN) {
-        const { data: profiles } = await supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
-        const ceoInfo: EmployeeInfo = {
-          id: user.id,
-          employee_number: "CEO001",
-          full_name: profiles?.full_name || "Torrance Stroman",
-          email: user.email || email,
-          position: "Chief Executive Officer",
-          isCEO: true,
-        };
-
-        sessionStorage.setItem("hub_employee_info", JSON.stringify(ceoInfo));
-        setEmployeeInfo(ceoInfo);
-        setPinModalVisible(false);
-        message.success("Welcome, CEO! PIN verified.");
-        setPinLoading(false);
-        return;
-      }
+      // Note: execUser was already checked above, so we skip the duplicate check here
 
       // Verify employee PIN - try multiple methods
       let employee: any = null;

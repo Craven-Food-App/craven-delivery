@@ -66,6 +66,7 @@ import {
   IconMail,
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -656,6 +657,9 @@ function CFOPortalContent() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const toast = useToast();
+  
+  // Track user activity
+  useActivityTracking('cfo');
 
   const fetchData = useCallback(async () => {
     setLoading(true);

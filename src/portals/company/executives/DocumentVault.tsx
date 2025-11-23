@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import { IconFolder, IconDownload, IconEye, IconAlertCircle, IconFileText } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { notifications } from '@mantine/notifications';
 
 interface Document {
   id: string;
@@ -43,37 +44,113 @@ const DocumentVault: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's appointments
-      const { data: appointments } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('appointee_user_id', user.id);
+      // Get exec_users.id for current user
+      const { data: currentExec, error: execError } = await supabase
+        .from('exec_users')
+        .select('id, user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      const appointmentIds = appointments?.map(a => a.id) || [];
-
-      if (appointmentIds.length === 0) {
+      if (execError || !currentExec) {
+        console.error('Unable to verify executive status:', execError);
         setDocuments([]);
         setLoading(false);
         return;
       }
 
-      // Load documents for these appointments
+      // Fetch documents from executive_documents table (primary source)
       let query = supabase
-        .from('board_documents')
-        .select('*')
-        .in('related_appointment_id', appointmentIds)
+        .from('executive_documents')
+        .select('id, type, file_url, signature_status, created_at, appointment_id')
+        .eq('executive_id', currentExec.id)
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('signing_status', statusFilter);
+      const { data: execDocs, error: execDocsError } = await query;
+
+      if (execDocsError) {
+        console.error('Error fetching executive_documents:', execDocsError);
       }
 
-      const { data, error } = await query;
+      // Also fetch from executive_appointments URLs
+      const { data: appointments } = await supabase
+        .from('executive_appointments')
+        .select('id, proposed_officer_email, proposed_officer_name, appointment_letter_url, board_resolution_url, certificate_url, employment_agreement_url, confidentiality_ip_url, stock_subscription_url, deferred_compensation_url, pre_incorporation_consent_url, created_at')
+        .eq('proposed_officer_email', user.email)
+        .in('status', ['APPROVED', 'SENT_TO_BOARD', 'ACTIVE', 'DRAFT', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW', 'BOARD_ADOPTED']);
 
-      if (error) throw error;
-      setDocuments(data || []);
+      // Build document list from appointments
+      const appointmentDocs: Document[] = [];
+      if (appointments && appointments.length > 0) {
+        appointments.forEach((appointment) => {
+          const docFields = [
+            { field: 'appointment_letter_url', type: 'appointment_letter', title: 'Appointment Letter' },
+            { field: 'board_resolution_url', type: 'board_resolution', title: 'Board Resolution' },
+            { field: 'certificate_url', type: 'certificate', title: 'Stock Certificate' },
+            { field: 'employment_agreement_url', type: 'employment_agreement', title: 'Employment Agreement' },
+            { field: 'confidentiality_ip_url', type: 'confidentiality_ip', title: 'Confidentiality & IP Assignment' },
+            { field: 'stock_subscription_url', type: 'stock_subscription', title: 'Stock Subscription' },
+            { field: 'deferred_compensation_url', type: 'deferred_compensation', title: 'Deferred Compensation' },
+            { field: 'pre_incorporation_consent_url', type: 'pre_incorporation_consent', title: 'Pre-Incorporation Consent' },
+          ];
+
+          docFields.forEach(({ field, type, title }) => {
+            const url = (appointment as any)[field];
+            if (url) {
+              // Check if this document already exists in execDocs
+              const existingDoc = execDocs?.find((d: any) => d.appointment_id === appointment.id && d.type === type);
+              if (!existingDoc) {
+                appointmentDocs.push({
+                  id: `appointment-${appointment.id}-${type}`,
+                  title,
+                  type,
+                  signing_status: 'pending',
+                  created_at: appointment.created_at || new Date().toISOString(),
+                  pdf_url: url,
+                });
+              }
+            }
+          });
+        });
+      }
+
+      // Merge execDocs and appointmentDocs
+      const mergedDocs: Document[] = [];
+      
+      // Add execDocs
+      if (execDocs) {
+        execDocs.forEach((doc: any) => {
+          mergedDocs.push({
+            id: doc.id,
+            title: doc.type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Document',
+            type: doc.type,
+            signing_status: doc.signature_status === 'signed' ? 'completed' : doc.signature_status === 'pending' ? 'pending' : 'pending',
+            created_at: doc.created_at,
+            pdf_url: doc.file_url,
+          });
+        });
+      }
+
+      // Add appointmentDocs that aren't already in mergedDocs
+      appointmentDocs.forEach((apptDoc) => {
+        const exists = mergedDocs.some(d => d.id === apptDoc.id || (d.type === apptDoc.type && d.signing_status === apptDoc.signing_status));
+        if (!exists) {
+          mergedDocs.push(apptDoc);
+        }
+      });
+
+      // Filter by status if needed
+      const filteredDocs = statusFilter === 'all' 
+        ? mergedDocs 
+        : mergedDocs.filter(doc => doc.signing_status === statusFilter);
+
+      setDocuments(filteredDocs);
     } catch (error: any) {
       console.error('Error loading documents:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to load documents',
+        color: 'red',
+      });
     } finally {
       setLoading(false);
     }

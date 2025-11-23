@@ -13,14 +13,15 @@ import {
   Loader,
   Alert,
   NumberFormatter,
+  Button,
 } from '@mantine/core';
 import { IconChartPie, IconAlertCircle } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CapTable {
   id: string;
-  total_authorized: number;
-  total_issued: number;
+  total_authorized: number; // Note: column is total_authorized, not total_authorized_shares
+  total_issued: number; // Note: column is total_issued, not total_issued_shares
   total_unissued: number;
   equity_pool: number;
   trust_shares: number;
@@ -29,6 +30,7 @@ interface CapTable {
   founder_percentage: number;
   pool_percentage: number;
   as_of_date: string;
+  company_id?: string | null;
 }
 
 const CapTableOverview: React.FC = () => {
@@ -64,12 +66,50 @@ const CapTableOverview: React.FC = () => {
     );
   }
 
+  const initializeCapTable = async () => {
+    setLoading(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/initialize-cap-table`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initialize cap table');
+      }
+
+      // Reload cap table
+      await loadCapTable();
+    } catch (error: any) {
+      console.error('Error initializing cap table:', error);
+      alert(`Failed to initialize cap table: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!capTable) {
     return (
       <Container size="xl" py="xl">
-        <Alert icon={<IconAlertCircle size={16} />} title="No Cap Table" color="blue">
+        <Alert 
+          icon={<IconAlertCircle size={16} />} 
+          title="No Cap Table" 
+          color="blue"
+          mb="md"
+        >
           Cap table has not been initialized. Please set up the initial capitalization.
         </Alert>
+        <Button onClick={initializeCapTable} loading={loading}>
+          Initialize Cap Table
+        </Button>
       </Container>
     );
   }

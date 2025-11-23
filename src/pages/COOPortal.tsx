@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Typography, Row, Col, Statistic, Tabs, Table, Badge, Card, Button, Space, Divider, Modal, Form, Input, InputNumber, Select, message, Popconfirm } from 'antd';
 import { DashboardOutlined, CarOutlined, ShopOutlined, FileProtectOutlined, AlertOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, MailOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useExecAuth } from '@/hooks/useExecAuth';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
@@ -15,6 +16,10 @@ const { TabPane } = Tabs;
 export default function COOPortal() {
   const { loading, user, execUser, isAuthorized, signOut } = useExecAuth();
   const navigate = useNavigate();
+  
+  // Track user activity
+  useActivityTracking('coo');
+  
   const [metrics, setMetrics] = useState({
     activeOrders: 0,
     driversOnRoad: 0,

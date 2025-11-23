@@ -4,6 +4,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconBuilding, IconChevronDown, IconLogout, IconUser } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import CompanySidebar from './CompanySidebar';
 
 interface CompanyShellProps {
@@ -14,6 +15,9 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
   const [opened, { toggle }] = useDisclosure();
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = React.useState<string>('');
+  
+  // Track user activity
+  useActivityTracking('company');
 
   React.useEffect(() => {
     const getUser = async () => {

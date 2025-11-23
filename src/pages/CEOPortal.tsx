@@ -40,8 +40,10 @@ import { EquityDashboard } from '@/components/ceo/EquityDashboard';
 import ExecutiveCommunicationsCenter from '@/components/executive/ExecutiveCommunicationsCenter';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import { useExecAuth } from '@/hooks/useExecAuth';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import CEOSignatureManager from '@/components/ceo/CEOSignatureManager';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
+import ActiveUsersMonitor from '@/components/ceo/ActiveUsersMonitor';
 // No Card components: full-page Ant layout
 
 interface CEOMetrics {
@@ -64,6 +66,9 @@ const CEOPortal: React.FC = () => {
   const [metrics, setMetrics] = useState<CEOMetrics | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  // Track user activity
+  useActivityTracking('ceo');
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => {
     const totalEmployees = metrics?.totalEmployees ?? 0;
@@ -92,6 +97,7 @@ const CEOPortal: React.FC = () => {
       { id: 'signature', label: 'Sign Documents', icon: IconPencil as any },
       { id: 'communications', label: 'Direct Communications', icon: IconMail as any },
       { id: 'word', label: 'Draft Briefings', icon: IconFileText as any },
+      { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
     ];
   }, [metrics?.totalEmployees, metrics?.pendingApprovals]);
 
@@ -146,6 +152,8 @@ const CEOPortal: React.FC = () => {
         return <ExecutiveCommunicationsCenter defaultTab="messages" />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="ceo" />;
+      case 'active-users':
+        return <ActiveUsersMonitor />;
       default:
         return <QuickActions onNavigate={setActiveTab} />;
     }

@@ -29,6 +29,7 @@ serve(async (req) => {
     const body = await req.json();
     const {
       recipient_user_id,
+      recipient_email,
       shares_amount,
       share_class = 'Common',
       price_per_share = 0.0001,
@@ -36,35 +37,208 @@ serve(async (req) => {
       vesting_period_months = 48,
       cliff_months = 12,
       start_date,
-      resolution_id,
+      resolution_id: resolutionIdInput,
       appointment_id,
     } = body;
 
-    if (!recipient_user_id || !shares_amount) {
+    // Handle resolution_id - could be UUID or resolution_number
+    let resolution_id: string | null = null;
+    if (resolutionIdInput) {
+      // Check if it's a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(resolutionIdInput)) {
+        resolution_id = resolutionIdInput;
+      } else {
+        // It's a resolution number, look it up
+        console.log(`Looking up resolution by number: ${resolutionIdInput}`);
+        const { data: resolution, error: resolutionError } = await supabaseAdmin
+          .from('governance_board_resolutions')
+          .select('id')
+          .eq('resolution_number', resolutionIdInput)
+          .maybeSingle();
+        
+        if (resolutionError) {
+          console.error('Error looking up resolution:', resolutionError);
+          return new Response(
+            JSON.stringify({ error: `Failed to find resolution: ${resolutionError.message}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        if (!resolution) {
+          return new Response(
+            JSON.stringify({ error: `Resolution not found with number: ${resolutionIdInput}` }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        resolution_id = resolution.id;
+        console.log(`Found resolution UUID: ${resolution_id} for number: ${resolutionIdInput}`);
+      }
+    }
+
+    if (!shares_amount || shares_amount <= 0) {
       return new Response(
-        JSON.stringify({ error: 'Missing recipient_user_id or shares_amount' }),
+        JSON.stringify({ error: 'Missing or invalid shares_amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If recipient_user_id is not provided, try to find user by email
+    let finalRecipientUserId = recipient_user_id;
+    
+    if (!finalRecipientUserId && recipient_email) {
+      console.log(`Searching for user by email: ${recipient_email}`);
+      const searchEmail = recipient_email.toLowerCase().trim();
+      
+      // PRIMARY: Search all users first (most reliable)
+      try {
+        console.log('Searching for user by email:', recipient_email);
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listError) {
+          console.error('Error listing users:', listError);
+        } else if (users && users.length > 0) {
+          console.log(`Searching through ${users.length} users`);
+          
+          // Exact match (case-insensitive)
+          let foundUser = users.find(u => {
+            const userEmail = u.email?.toLowerCase().trim();
+            return userEmail === searchEmail;
+          });
+          
+          // Try original case if exact match failed
+          if (!foundUser) {
+            foundUser = users.find(u => {
+              const userEmail = u.email?.toLowerCase().trim();
+              return userEmail === recipient_email.toLowerCase().trim();
+            });
+          }
+          
+          // Try partial match for CEO emails
+          if (!foundUser && (searchEmail.includes('ceo') || searchEmail.includes('stroman') || searchEmail.includes('craven'))) {
+            foundUser = users.find(u => {
+              const userEmail = u.email?.toLowerCase().trim();
+              return userEmail && (userEmail.includes('ceo') || userEmail.includes('stroman') || userEmail.includes('craven'));
+            });
+          }
+          
+          if (foundUser) {
+            finalRecipientUserId = foundUser.id;
+            console.log(`✓ Found user in listUsers: ${finalRecipientUserId} (${foundUser.email})`);
+          } else {
+            console.log(`✗ User not found. Sample emails: ${users.slice(0, 10).map(u => u.email).filter(Boolean).join(', ')}`);
+          }
+        }
+        
+        // FALLBACK: Try getUserByEmail if listUsers didn't find it
+        if (!finalRecipientUserId) {
+          try {
+            const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(recipient_email);
+            if (!getUserError && user) {
+              finalRecipientUserId = user.id;
+              console.log(`✓ Found user via getUserByEmail: ${finalRecipientUserId} (${user.email})`);
+            }
+          } catch (err: any) {
+            console.log('getUserByEmail failed:', err.message);
+          }
+        }
+        
+        // FALLBACK: Check exec_users for CEO
+        if (!finalRecipientUserId && (searchEmail.includes('ceo') || searchEmail.includes('stroman') || searchEmail.includes('craven'))) {
+          console.log('Checking exec_users for CEO...');
+          const { data: execUsers, error: execError } = await supabaseAdmin
+            .from('exec_users')
+            .select('user_id, title, role')
+            .not('user_id', 'is', null);
+          
+          if (!execError && execUsers && execUsers.length > 0) {
+            const ceoExec = execUsers.find(eu => 
+              eu.role === 'ceo' || 
+              (eu.title && (eu.title.toLowerCase().includes('ceo') || eu.title.toLowerCase().includes('chief executive')))
+            );
+            
+            if (ceoExec?.user_id) {
+              finalRecipientUserId = ceoExec.user_id;
+              console.log(`✓ Found CEO user via exec_users: ${finalRecipientUserId}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Exception in user search:', error);
+      }
+      
+      // If still not found, return error
+      if (!finalRecipientUserId) {
+        console.error(`✗ User not found with email: ${recipient_email}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            error: `User not found with email: ${recipient_email}. Please ensure the user exists in the system.`,
+            hint: 'The user must have an account before equity can be granted.',
+          }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!finalRecipientUserId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing recipient_user_id or recipient_email' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Get or create cap table
-    const { data: capTable } = await supabaseAdmin
+    let capTable = await supabaseAdmin
       .from('cap_tables')
       .select('*')
       .limit(1)
       .maybeSingle();
 
-    if (!capTable) {
-      return new Response(
-        JSON.stringify({ error: 'Cap table not initialized' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!capTable.data) {
+      console.log('Cap table not found, creating default cap table...');
+      // Create default cap table with 100 million shares (using correct column names)
+      const { data: newCapTable, error: createError } = await supabaseAdmin
+        .from('cap_tables')
+        .insert({
+          total_authorized: 100000000, // 100 million (correct column name)
+          par_value: 0.0001,
+          total_issued: 0, // correct column name
+          total_unissued: 100000000,
+          equity_pool: 20000000, // 20 million (20%)
+          trust_shares: 60000000, // 60 million (60%)
+          founder_shares: 20000000, // 20 million (20%)
+          trust_percentage: 60.00,
+          founder_percentage: 20.00,
+          pool_percentage: 20.00,
+          as_of_date: new Date().toISOString().split('T')[0],
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating cap table:', createError);
+        return new Response(
+          JSON.stringify({ error: `Failed to create cap table: ${createError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      capTable = { data: newCapTable };
+      console.log('Default cap table created successfully');
     }
 
+    const capTableData = capTable.data;
+
     // Check if we have enough unissued shares
-    if (capTable.total_unissued < shares_amount) {
+    if (capTableData.total_unissued < shares_amount) {
       return new Response(
-        JSON.stringify({ error: 'Insufficient unissued shares in cap table' }),
+        JSON.stringify({ 
+          error: 'Insufficient unissued shares in cap table',
+          available: capTableData.total_unissued,
+          requested: shares_amount,
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -109,7 +283,7 @@ serve(async (req) => {
     const { data: vestingRecord, error: vestingError } = await supabaseAdmin
       .from('vesting_schedules')
       .insert({
-        recipient_user_id,
+        recipient_user_id: finalRecipientUserId,
         total_shares: shares_amount,
         vesting_type,
         cliff_months,
@@ -124,69 +298,153 @@ serve(async (req) => {
       .single();
 
     if (vestingError) {
+      console.error('Error creating vesting schedule:', vestingError);
       throw vestingError;
     }
+
+    console.log('✓ Vesting schedule created:', vestingRecord.id);
 
     // Create equity ledger entry for grant
     const { data: ledgerEntry, error: ledgerError } = await supabaseAdmin
       .from('equity_ledger')
       .insert({
         transaction_type: 'grant',
-        recipient_user_id,
+        recipient_user_id: finalRecipientUserId,
         shares_amount,
         share_class,
         price_per_share,
         transaction_date: vestingStartDate,
         effective_date: vestingStartDate,
         resolution_id,
+        grant_id: vestingRecord.id, // Link to vesting schedule
         notes: `Equity grant: ${shares_amount} shares, ${vesting_type} vesting over ${vesting_period_months} months`,
       })
       .select()
       .single();
 
     if (ledgerError) {
+      console.error('Error creating equity ledger entry:', ledgerError);
       throw ledgerError;
     }
 
-    // Update cap table (deduct from unissued, add to equity pool tracking)
-    await supabaseAdmin
+    console.log('✓ Equity ledger entry created:', ledgerEntry.id);
+
+    // Update cap table (deduct from unissued, add to issued)
+    // Get current values first to ensure we have the right data
+    const currentUnissued = Number(capTableData.total_unissued || 0);
+    const currentIssued = Number(capTableData.total_issued || 0);
+    const newUnissued = currentUnissued - shares_amount;
+    const newIssued = currentIssued + shares_amount;
+
+    console.log('Updating cap table:', {
+      current_unissued: currentUnissued,
+      current_issued: currentIssued,
+      shares_amount,
+      new_unissued: newUnissued,
+      new_issued: newIssued,
+    });
+
+    const { data: updatedCapTable, error: capTableUpdateError } = await supabaseAdmin
       .from('cap_tables')
       .update({
-        total_unissued: capTable.total_unissued - shares_amount,
+        total_unissued: newUnissued,
+        total_issued: newIssued,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', capTable.id);
+      .eq('id', capTableData.id)
+      .select()
+      .single();
+
+    if (capTableUpdateError) {
+      console.error('Error updating cap table:', capTableUpdateError);
+      throw capTableUpdateError;
+    }
+
+    console.log('✓ Cap table updated successfully:', {
+      id: updatedCapTable.id,
+      total_issued: updatedCapTable.total_issued,
+      total_unissued: updatedCapTable.total_unissued,
+    });
 
     // Log the action
-    await supabaseAdmin.rpc('log_governance_action', {
-      p_action_type: 'equity_granted',
-      p_action_category: 'equity',
-      p_target_type: 'equity_grant',
-      p_target_id: vestingRecord.id,
-      p_target_name: `${shares_amount} shares granted`,
-      p_description: `Equity grant: ${shares_amount} shares to user ${recipient_user_id}`,
-      p_metadata: {
-        shares_amount,
-        vesting_type,
-        vesting_period_months,
-        resolution_id,
-        appointment_id,
-      },
+    try {
+      await supabaseAdmin.rpc('log_governance_action', {
+        p_action_type: 'equity_granted',
+        p_action_category: 'equity',
+        p_target_type: 'equity_grant',
+        p_target_id: vestingRecord.id,
+        p_target_name: `${shares_amount} shares granted`,
+        p_description: `Equity grant: ${shares_amount} shares to user ${finalRecipientUserId}`,
+        p_metadata: {
+          shares_amount,
+          vesting_type,
+          vesting_period_months,
+          resolution_id,
+          appointment_id,
+          vesting_schedule_id: vestingRecord.id,
+          ledger_entry_id: ledgerEntry.id,
+        },
+      });
+      console.log('✓ Governance action logged');
+    } catch (logError) {
+      console.warn('Failed to log governance action (non-critical):', logError);
+    }
+
+    // Get recipient user info for response
+    let recipientInfo: any = { user_id: finalRecipientUserId };
+    try {
+      const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(finalRecipientUserId);
+      if (user) {
+        recipientInfo = {
+          user_id: finalRecipientUserId,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email,
+        };
+      }
+    } catch (err) {
+      console.warn('Could not fetch recipient user info:', err);
+    }
+
+    console.log('✓ Equity grant completed:', {
+      recipient: recipientInfo,
+      shares_amount,
+      vesting_type,
+      vesting_schedule_id: vestingRecord.id,
+      ledger_entry_id: ledgerEntry.id,
     });
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Equity grant created successfully',
+        message: `Equity grant created successfully: ${shares_amount.toLocaleString()} shares granted to ${recipientInfo.email || recipientInfo.user_id}`,
         vesting_schedule: vestingRecord,
         ledger_entry: ledgerEntry,
+        cap_table_updated: true,
+        shares_granted: shares_amount,
+        recipient: recipientInfo,
+        recipient_user_id: finalRecipientUserId,
+        recipient_email: recipientInfo.email,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
     console.error('Error in governance-grant-equity:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ 
+        error: error.message || 'Internal server error',
+        details: error.details || error.hint || '',
+        code: error.code || '',
+        name: error.name || 'Error',
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

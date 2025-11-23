@@ -61,12 +61,10 @@ const ShareCertificateViewer: React.FC = () => {
             .eq('user_id', cert.recipient_user_id)
             .maybeSingle();
 
-          const { data: { user } } = await supabase.auth.admin.getUserById(cert.recipient_user_id);
-
           return {
             ...cert,
-            recipient_name: profile?.full_name || user?.email?.split('@')[0] || 'Unknown',
-            recipient_email: profile?.email || user?.email || '',
+            recipient_name: profile?.full_name || 'Unknown',
+            recipient_email: profile?.email || '',
           };
         })
       );

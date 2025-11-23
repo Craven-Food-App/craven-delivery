@@ -13,6 +13,7 @@ import DocumentTemplates from './DocumentTemplates';
 import RoleManagement from './RoleManagement';
 import CapTableOverview from './CapTableOverview';
 import EquityGrantForm from './EquityGrantForm';
+import EquityGrantsList from './EquityGrantsList';
 import ShareCertificateViewer from './ShareCertificateViewer';
 import { BoardSetupModule } from '@/components/board/BoardSetupModule';
 import UserAccountManager from '@/components/admin/UserAccountManager';
@@ -135,7 +136,10 @@ const GovernanceAdminDashboard: React.FC = () => {
             </Tabs.Panel>
 
             <Tabs.Panel value="equity-grant" pt="md">
-              <EquityGrantForm />
+              <Stack gap="xl">
+                <EquityGrantsList />
+                <EquityGrantForm />
+              </Stack>
             </Tabs.Panel>
 
             <Tabs.Panel value="certificates" pt="md">

@@ -90,13 +90,23 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
   const fetchInfrastructureData = async () => {
     setLoading(true);
     try {
+      // Try to fetch from it_infrastructure table, but handle gracefully if it doesn't exist
       const { data: servicesData, error: servicesError } = await supabase
         .from('it_infrastructure')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (servicesError) throw servicesError;
-      setServices((servicesData || []) as Service[]);
+      if (servicesError) {
+        // If table doesn't exist or RLS blocks access, use empty array
+        if (servicesError.code === 'PGRST116' || servicesError.message?.includes('does not exist') || servicesError.message?.includes('permission denied')) {
+          console.warn('it_infrastructure table not found or not accessible, using empty services array');
+          setServices([]);
+        } else {
+          throw servicesError;
+        }
+      } else {
+        setServices((servicesData || []) as Service[]);
+      }
 
       // Mock cloud resources data
       setCloudResources([
@@ -125,9 +135,15 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
           status: 'operational',
         },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching infrastructure data:', error);
-      toast.error('Failed to load infrastructure data', 'Error');
+      // Don't show error if it's just a missing table - use empty data instead
+      if (error?.code === 'PGRST116' || error?.message?.includes('does not exist') || error?.message?.includes('permission denied')) {
+        console.warn('Infrastructure table not available, using empty data');
+        setServices([]);
+      } else {
+        toast.error(error?.message || 'Failed to load infrastructure data', 'Error');
+      }
     } finally {
       setLoading(false);
     }
@@ -154,7 +170,14 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
       onConfirm: async () => {
         try {
           const { error } = await supabase.from('it_infrastructure').delete().eq('id', id);
-          if (error) throw error;
+          if (error) {
+            // Handle case where table doesn't exist
+            if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+              toast.error('Infrastructure table not available', 'Error');
+              return;
+            }
+            throw error;
+          }
           toast.success('Service deleted successfully', 'Success');
           fetchInfrastructureData();
         } catch (error: any) {
@@ -171,11 +194,23 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
           .from('it_infrastructure')
           .update(values)
           .eq('id', editingService.id);
-        if (error) throw error;
+        if (error) {
+          if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+            toast.error('Infrastructure table not available. Please create the table first.', 'Error');
+            return;
+          }
+          throw error;
+        }
         toast.success('Service updated successfully', 'Success');
       } else {
         const { error } = await supabase.from('it_infrastructure').insert(values);
-        if (error) throw error;
+        if (error) {
+          if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+            toast.error('Infrastructure table not available. Please create the table first.', 'Error');
+            return;
+          }
+          throw error;
+        }
         toast.success('Service created successfully', 'Success');
       }
       setServiceModalOpened(false);
