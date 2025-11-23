@@ -705,7 +705,7 @@ const AppointmentList: React.FC = () => {
                   <List.Item>Stock Subscription Agreement (if equity included)</List.Item>
                   <List.Item>Pre-Incorporation Consent (if Formation Mode enabled)</List.Item>
                 </List>
-                <Alert icon={<IconClock size={14} />} title="Note" color="yellow" variant="light" mt="xs" size="sm">
+                <Alert icon={<IconClock size={14} />} title="Note" color="yellow" variant="light" mt="xs">
                   Document generation may take a few moments. Refresh to see updated status.
                 </Alert>
               </div>
@@ -797,7 +797,7 @@ const AppointmentList: React.FC = () => {
                 </Group>
               </div>
 
-              <Alert icon={<IconAlertCircle size={14} />} title="Troubleshooting" color="yellow" variant="light" size="sm">
+              <Alert icon={<IconAlertCircle size={14} />} title="Troubleshooting" color="yellow" variant="light">
                 <Text size="xs" mb="xs"><strong>Documents not generating?</strong> Click the refresh icon on the appointment row to retry.</Text>
                 <Text size="xs" mb="xs"><strong>Stuck in DRAFT?</strong> Use the "Fix Nathan Curry Appointments" button (or similar) to trigger workflow manually.</Text>
                 <Text size="xs"><strong>User account issues?</strong> Ensure email is valid and unique. Account is created automatically during activation.</Text>

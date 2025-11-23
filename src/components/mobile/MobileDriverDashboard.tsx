@@ -764,17 +764,18 @@ export const MobileDriverDashboard: React.FC = () => {
           const currentSessionData = currentSession?.session_data || {};
           
           // Update session to keep driver_state as 'online_searching' and is_online as true
+          // @ts-ignore - session_data type compatibility
           await supabase.from('driver_sessions').upsert({
             driver_id: user.id,
             is_online: true,
             last_activity: new Date().toISOString(),
             session_data: {
-              ...currentSessionData,
+              ...(currentSessionData as any || {}),
               driver_state: 'online_searching', // Ensure state is maintained
-              online_since: currentSessionData?.online_since || new Date().toISOString(),
-              vehicle_type: currentSessionData?.vehicle_type || selectedVehicle,
-              earning_mode: currentSessionData?.earning_mode || earningMode,
-              current_city: currentSessionData?.current_city || currentCity,
+              online_since: (currentSessionData as any)?.online_since || new Date().toISOString(),
+              vehicle_type: (currentSessionData as any)?.vehicle_type || selectedVehicle,
+              earning_mode: (currentSessionData as any)?.earning_mode || earningMode,
+              current_city: (currentSessionData as any)?.current_city || currentCity,
               ...(endTime && { end_time: endTime.toISOString() }),
             }
           }, {

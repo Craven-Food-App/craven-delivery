@@ -90,10 +90,13 @@ export const EnhancedCFODashboard: React.FC = () => {
     setLoading(true);
     try {
       // Fetch comprehensive financial data
+      // @ts-ignore - Type compatibility for financial tables
       const [orders, invoices, receivables, bankAccounts] = await Promise.all([
         supabase.from('orders').select('total_amount, created_at').gte('created_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('invoices').select('amount, due_date, status'),
+        // @ts-ignore
         supabase.from('receivables').select('amount, due_date, status'),
+        // @ts-ignore
         supabase.from('bank_accounts').select('current_balance, currency'),
       ]);
 
@@ -428,11 +431,11 @@ export const EnhancedCFODashboard: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: kpi.color,
-                  }}
-                >
-                  <kpi.icon size={20} />
-                </Box>
+                  color: kpi.color,
+                }}
+              >
+                {React.createElement(kpi.icon as any, { size: 20 })}
+              </Box>
                 <Box style={{ flex: 1 }}>
                   <Text size="xl" fw={700} c={getStatusColor(kpi.status)}>
                     {kpi.value}

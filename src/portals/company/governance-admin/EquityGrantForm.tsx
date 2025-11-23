@@ -336,7 +336,7 @@ const EquityGrantForm: React.FC = () => {
                   { value: 'immediate', label: 'Immediate (No vesting)' },
                 ]}
                 value={formData.vesting_type}
-                onChange={(value) => setFormData({ ...formData, vesting_type: value || 'graded' })}
+                onChange={(value) => setFormData({ ...formData, vesting_type: (value || 'graded') as 'graded' | 'cliff' | 'immediate' })}
                 required
               />
 
