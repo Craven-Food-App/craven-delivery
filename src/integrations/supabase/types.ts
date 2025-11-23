@@ -5981,7 +5981,7 @@ export type Database = {
           role: string
           title: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           access_level?: number
@@ -6005,7 +6005,7 @@ export type Database = {
           role: string
           title?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           access_level?: number
@@ -6029,7 +6029,7 @@ export type Database = {
           role?: string
           title?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -12775,6 +12775,50 @@ export type Database = {
           },
         ]
       }
+      user_activity_log: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          location: string | null
+          metadata: Json | null
+          portal_type: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          metadata?: Json | null
+          portal_type?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          metadata?: Json | null
+          portal_type?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_notification_preferences: {
         Row: {
           created_at: string
@@ -12938,6 +12982,56 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          current_location: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          last_activity_at: string | null
+          portal_type: string
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_location?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          portal_type: string
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_location?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_activity_at?: string | null
+          portal_type?: string
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_subscriptions: {
         Row: {
@@ -13579,6 +13673,7 @@ export type Database = {
           zone_name: string
         }[]
       }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
       clock_in:
         | {
             Args: { p_user_id: string; p_work_location: string }
@@ -13629,6 +13724,16 @@ export type Database = {
       create_driver_profile_from_application: {
         Args: { target_user_id: string }
         Returns: boolean
+      }
+      create_executive_user: {
+        Args: {
+          p_access_level?: number
+          p_department?: string
+          p_role: string
+          p_title?: string
+          p_user_id: string
+        }
+        Returns: string
       }
       create_group_conversation: {
         Args: {

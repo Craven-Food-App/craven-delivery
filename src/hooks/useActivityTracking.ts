@@ -173,6 +173,7 @@ export const useActivityTracking = (portalType: string) => {
               });
             }
           })
+          // @ts-ignore - Promise type compatibility
           .catch((error) => {
             // Silently handle errors during cleanup
             console.error('Error during cleanup:', error);

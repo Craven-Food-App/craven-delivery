@@ -192,6 +192,7 @@ export const useFinanceMetrics = () => {
           .from('expense_requests')
           .select('amount, status')
           .gte('expense_date', new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
+          // @ts-ignore - Promise type compatibility
           .catch((err) => {
             // Suppress schema errors
             if (

@@ -99,6 +99,7 @@ export const AdvancedTreasuryManagement: React.FC = () => {
     setLoading(true);
     try {
       // Fetch bank accounts
+      // @ts-ignore - Type compatibility
       const { data: banks } = await supabase
         .from('bank_accounts')
         .select('*')

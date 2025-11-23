@@ -393,7 +393,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
             <MantineTable
               data={cloudResources}
               loading={loading}
-              rowKey={(r, idx) => `${r.provider}-${r.service}-${idx}`}
+              rowKey={(r: any) => `${r.provider}-${r.service}`}
               columns={[
                 { title: 'Provider', dataIndex: 'provider' },
                 { title: 'Service', dataIndex: 'service' },

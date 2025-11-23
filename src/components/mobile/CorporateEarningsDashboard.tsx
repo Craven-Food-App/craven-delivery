@@ -84,17 +84,17 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
 
         // Calculate total daily earnings (base pay + tips) and tips separately
         const dayTotalEarnings = dayEarnings?.reduce((sum, e) => {
-          const total = (e.total_cents || (e.amount_cents || 0) + (e.tip_cents || 0));
+          const total = (e.amount_cents || 0) + (e.tip_cents || 0);
           return sum + total;
         }, 0) / 100 || 0;
         const dayTips = dayEarnings?.reduce((sum, e) => sum + (e.tip_cents || 0), 0) / 100 || 0;
         
         // Debug logging for each day
-        console.log(`Day ${idx} (${dayStart.toLocaleDateString()}):`, {
+        console.log(`Day ${i} (${dayStart.toLocaleDateString()}):`, {
           earningsCount: dayEarnings?.length || 0,
           totalEarnings: dayTotalEarnings,
           tips: dayTips,
-          rawTotalCents: dayEarnings?.reduce((sum, e) => sum + (e.total_cents || (e.amount_cents || 0) + (e.tip_cents || 0)), 0) || 0,
+          rawTotalCents: dayEarnings?.reduce((sum, e) => sum + ((e.amount_cents || 0) + (e.tip_cents || 0)), 0) || 0,
           rawTipCents: dayEarnings?.reduce((sum, e) => sum + (e.tip_cents || 0), 0) || 0
         });
 

@@ -59,7 +59,7 @@ const TransactionsDashboard = () => {
       if (response.data) setPayoutData(response.data);
 
       // Fetch orders - TS has deep instantiation issues with long Supabase query chains
-      // @ts-expect-error - Supabase type inference depth limit
+      // @ts-ignore - Supabase type inference depth limit
       const ordersResponse = await supabase
         .from('orders')
         .select('id, order_number, total_cents, created_at')

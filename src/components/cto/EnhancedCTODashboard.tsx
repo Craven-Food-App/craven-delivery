@@ -421,11 +421,11 @@ export const EnhancedCTODashboard: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: kpi.color,
-                  }}
-                >
-                  <kpi.icon size={20} />
-                </Box>
+                  color: kpi.color,
+                }}
+              >
+                {React.createElement(kpi.icon as any, { size: 20 })}
+              </Box>
                 <Box style={{ flex: 1 }}>
                   <Text size="xl" fw={700} c={getStatusColor(kpi.status)}>
                     {kpi.value}

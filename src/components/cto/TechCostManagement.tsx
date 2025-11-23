@@ -285,7 +285,7 @@ export const TechCostManagement: React.FC = () => {
             <MantineTable
               data={vendorSpend}
               loading={loading}
-              rowKey={(r, idx) => `${r.vendor}-${idx}`}
+              rowKey={(r: any) => `${r.vendor}-${r.service}`}
               columns={[
                 { title: 'Vendor', dataIndex: 'vendor' },
                 { title: 'Service', dataIndex: 'service' },

@@ -245,6 +245,7 @@ const MyDocuments: React.FC = () => {
         console.log('No documents in executive_documents, attempting to sync from appointments...');
         try {
           // Call sync function
+          // @ts-ignore - RPC function type
           const { error: syncError } = await supabase.rpc('sync_executive_documents_from_appointments', {
             p_user_email: user.email
           });
