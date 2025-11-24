@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, ChevronRight } from 'lucide-react';
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -42,11 +42,22 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const sidebarWidth = isSidebarOpen ? 'w-64' : 'w-20';
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const renderNavigation = (onNavigate?: () => void) => (
-    <nav className="flex-1 p-3 overflow-y-auto">
+    <nav style={{ flex: 1, padding: '12px', overflowY: 'auto' }}>
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeItemId === item.id;
@@ -59,14 +70,34 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
                 onNavigate();
               }
             }}
-            className={`flex items-center w-full py-3 px-3 rounded-lg text-sm font-medium transition duration-150 ${
-              isActive
-                ? 'bg-orange-500 text-white shadow-lg'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 500,
+              transition: 'all 150ms',
+              backgroundColor: isActive ? '#ff5f1f' : 'transparent',
+              color: isActive ? 'white' : '#4b5563',
+              boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.color = '#111827';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#4b5563';
+              }
+            }}
           >
-            <Icon size={20} className={isSidebarOpen ? 'mr-3' : 'mx-auto'} />
-            {isSidebarOpen && <span className="truncate">{item.label}</span>}
+            <Icon size={20} style={{ marginRight: isSidebarOpen ? '12px' : '0', marginLeft: isSidebarOpen ? '0' : 'auto' }} />
+            {isSidebarOpen && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>}
           </button>
         );
       })}
@@ -74,148 +105,200 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
   );
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f9fafb', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Desktop Sidebar */}
+      {!isMobile && (
       <div
-        className={`hidden lg:flex flex-col ${sidebarWidth} bg-white border-r border-gray-200 transition-all duration-300 ease-in-out shadow-xl`}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: isSidebarOpen ? '256px' : '80px',
+          backgroundColor: 'white',
+          borderRight: '1px solid #e5e7eb',
+          transition: 'all 300ms ease-in-out',
+          boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
+        }}
       >
-        <div className="p-4 flex items-center justify-between h-16 border-b border-gray-200">
+        <div style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', borderBottom: '1px solid #e5e7eb' }}>
           {isSidebarOpen ? (
-            <span className="text-xl font-extrabold text-orange-600 truncate">
+            <span style={{ fontSize: '20px', fontWeight: 800, color: '#ff5f1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {title}
             </span>
           ) : (
-            <div className="text-orange-600 font-extrabold text-xl mx-auto">{title.charAt(0)}</div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#ff5f1f', margin: '0 auto' }}>{title.charAt(0)}</div>
           )}
           <button
             onClick={() => setIsSidebarOpen((prev) => !prev)}
-            className={`text-gray-500 hover:text-gray-700 transition ${isSidebarOpen ? '' : 'rotate-180'}`}
+            style={{
+              color: '#6b7280',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'transform 0.3s',
+              transform: isSidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+            }}
           >
-            <ChevronRightIcon />
+            <ChevronRight size={20} />
           </button>
         </div>
         {renderNavigation()}
-        <div className="border-t border-gray-200 p-4">
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px' }}>
           {sidebarFooter ? (
             sidebarFooter
           ) : userInfo ? (
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  height: '40px',
+                  width: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '18px',
+                }}
+              >
                 {userInfo.initials}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{userInfo.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userInfo.role}</p>
-              </div>
+              {isSidebarOpen && (
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {userInfo.name}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {userInfo.role}
+                  </p>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
       </div>
+      )}
 
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+            style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            zIndex: 30,
+            display: isMobile ? 'block' : 'none',
+          }}
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed inset-y-0 right-0 z-40 w-64 bg-white border-l border-gray-200 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
-          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 40,
+          width: '256px',
+          backgroundColor: 'white',
+          borderLeft: '1px solid #e5e7eb',
+          boxShadow: '0 20px 25px rgba(0,0,0,0.15)',
+          transform: isMobileMenuOpen ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 300ms ease-in-out',
+          display: isMobile ? 'flex' : 'none',
+          flexDirection: 'column',
+        }}
       >
-        <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4">
-          <span className="text-lg font-bold text-orange-600 truncate">{title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', borderBottom: '1px solid #e5e7eb', padding: '0 16px' }}>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: '#ff5f1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="text-gray-500 hover:text-gray-700"
+            style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <X size={22} />
           </button>
         </div>
         {renderNavigation(() => setIsMobileMenuOpen(false))}
-        <div className="border-t border-gray-200 p-4">
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px' }}>
           {sidebarFooter ? (
             sidebarFooter
           ) : userInfo ? (
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  height: '40px',
+                  width: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '18px',
+                }}
+              >
                 {userInfo.initials}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{userInfo.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userInfo.role}</p>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {userInfo.name}
+                </p>
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {userInfo.role}
+                </p>
               </div>
             </div>
           ) : null}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-4 sm:px-6 py-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  className="lg:hidden p-2 rounded-lg border border-gray-200 text-gray-600"
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  aria-label="Open navigation"
-                >
-                  <Menu size={20} />
-                </button>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-                  {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {actionButtons}
-                {onBack && (
-                  <button
-                    onClick={onBack}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50"
-                  >
-                    Back to Hub
-                  </button>
-                )}
-                {onSignOut && (
-                  <button
-                    onClick={onSignOut}
-                    className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg shadow-md hover:bg-orange-700"
-                  >
-                    Sign Out
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </header>
+      {/* Mobile App Bar */}
+      {isMobile && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '64px',
+            backgroundColor: 'white',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 16px',
+            zIndex: 20,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          }}
+        >
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              marginRight: '16px',
+              color: '#4b5563',
+            }}
+          >
+            <Menu size={24} />
+          </button>
+          <span style={{ fontSize: '18px', fontWeight: 700, color: '#ff5f1f' }}>{title}</span>
+          <div style={{ flex: 1 }} />
+          {actionButtons}
+        </div>
+      )}
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 bg-gray-50">
-          {children}
-        </main>
-      </div>
+      {/* Main Content */}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', backgroundColor: '#f9fafb', marginTop: isMobile ? '64px' : '0' }}>
+        {children}
+      </main>
     </div>
   );
 };
 
-const ChevronRightIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    className={`h-5 w-5 ${className ?? ''}`}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-  </svg>
-);
-
 export default ExecutivePortalLayout;
-

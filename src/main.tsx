@@ -5,6 +5,7 @@ import { DatesProvider } from '@mantine/dates';
 import 'dayjs/locale/en';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
+import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
@@ -56,16 +57,33 @@ const theme: MantineThemeOverride = createTheme({
   },
 });
 
+const muiTheme = createMUITheme({
+  palette: {
+    primary: {
+      main: '#ff5f1f',
+    },
+    secondary: {
+      main: '#ff8147',
+    },
+  },
+  typography: {
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+  },
+});
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <MantineProvider theme={theme}>
-      <DatesProvider settings={{ firstDayOfWeek: 0 }}>
-        <ModalsProvider>
-          <Notifications />
-          <App />
-        </ModalsProvider>
-      </DatesProvider>
-    </MantineProvider>
+    <MUIThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <MantineProvider theme={theme}>
+        <DatesProvider settings={{ firstDayOfWeek: 0 }}>
+          <ModalsProvider>
+            <Notifications />
+            <App />
+          </ModalsProvider>
+        </DatesProvider>
+      </MantineProvider>
+    </MUIThemeProvider>
   </React.StrictMode>
 );
 
