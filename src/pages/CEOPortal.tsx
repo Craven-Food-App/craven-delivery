@@ -614,7 +614,7 @@ const CEOPortal: React.FC = () => {
 
             {/* Premium Executive KPIs Panel */}
             {/* @ts-ignore - MUI Grid2 optional */}
-            <Grid2 xs={12} lg={4}>
+            <Grid2 xs={12}>
               <Card 
                 sx={{ 
                   backgroundColor: 'white',
@@ -639,89 +639,94 @@ const CEOPortal: React.FC = () => {
                     </Typography>
                   </Box>
                 </Box>
-                <Stack spacing={2} sx={{ p: 3 }}>
-                  {kpiData.map((kpi, idx) => {
-                    const percentage = Math.min((kpi.value / kpi.target) * 100, 100);
-                    const exceeds = percentage > 100;
-                    return (
-                      <Card
-                        key={idx}
-                        sx={{
-                          backgroundColor: exceeds ? '#f0fdf4' : '#fafafa',
-                          borderColor: exceeds ? '#bbf7d0' : '#e5e7eb',
-                          border: '1px solid',
-                          transition: 'all 0.2s ease',
-                          cursor: 'pointer',
-                          padding: 2,
-                          borderRadius: 1,
-                          '&:hover': {
-                            transform: 'translateX(4px)',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          },
-                        }}
-                      >
-                        <CardContent sx={{ p: '0 !important' }}>
-                          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                            <Typography variant="body2" fontWeight={700} sx={{ letterSpacing: '0.2px', color: '#1e293b' }}>
-                              {kpi.name}
-                            </Typography>
-                            <Box
-                              sx={{
-                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                borderRadius: '50%',
-                                padding: '4px',
-                                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
-                              }}
-                            >
-                              <CheckCircle size={14} color="white" strokeWidth={3} />
-                            </Box>
-                          </Stack>
-                          <Stack direction="row" alignItems="flex-end" spacing={1} sx={{ mb: 2 }}>
-                            <Typography 
-                              variant="h4" 
-                              fontWeight={900} 
-                              sx={{ 
-                                lineHeight: 1,
-                                fontFamily: 'system-ui, -apple-system, sans-serif',
-                                color: '#0f172a',
-                              }}
-                            >
-                              {kpi.value}
-                              {kpi.unit}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#94a3b8', mb: 0.5, fontWeight: 500 }}>
-                              / {kpi.target}
-                              {kpi.unit}
-                            </Typography>
-                            {exceeds && (
-                              <Chip 
-                                size="small"
-                                label={`+${Math.round(percentage - 100)}%`}
-                                color="success"
-                                variant="outlined"
-                                sx={{ 
-                                  marginBottom: '4px',
-                                  fontSize: '0.7rem',
-                                  height: '20px',
+                <Box sx={{ p: 3 }}>
+                  <Grid2 container spacing={2}>
+                    {kpiData.map((kpi, idx) => {
+                      const percentage = Math.min((kpi.value / kpi.target) * 100, 100);
+                      const exceeds = percentage > 100;
+                      return (
+                        // @ts-ignore - MUI Grid2 optional
+                        <Grid2 key={idx} xs={12} sm={6}>
+                          <Card
+                            sx={{
+                              backgroundColor: exceeds ? '#f0fdf4' : '#fafafa',
+                              borderColor: exceeds ? '#bbf7d0' : '#e5e7eb',
+                              border: '1px solid',
+                              transition: 'all 0.2s ease',
+                              cursor: 'pointer',
+                              padding: 2,
+                              borderRadius: 1,
+                              height: '100%',
+                              '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: '0 !important' }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="body2" fontWeight={700} sx={{ letterSpacing: '0.2px', color: '#1e293b' }}>
+                                  {kpi.name}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                    borderRadius: '50%',
+                                    padding: '4px',
+                                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+                                  }}
+                                >
+                                  <CheckCircle size={14} color="white" strokeWidth={3} />
+                                </Box>
+                              </Stack>
+                              <Stack direction="row" alignItems="flex-end" spacing={1} sx={{ mb: 2 }}>
+                                <Typography 
+                                  variant="h4" 
+                                  fontWeight={900} 
+                                  sx={{ 
+                                    lineHeight: 1,
+                                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                                    color: '#0f172a',
+                                  }}
+                                >
+                                  {kpi.value}
+                                  {kpi.unit}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#94a3b8', mb: 0.5, fontWeight: 500 }}>
+                                  / {kpi.target}
+                                  {kpi.unit}
+                                </Typography>
+                                {exceeds && (
+                                  <Chip 
+                                    size="small"
+                                    label={`+${Math.round(percentage - 100)}%`}
+                                    color="success"
+                                    variant="outlined"
+                                    sx={{ 
+                                      marginBottom: '4px',
+                                      fontSize: '0.7rem',
+                                      height: '20px',
+                                    }}
+                                  />
+                                )}
+                              </Stack>
+                              <LinearProgress
+                                variant="determinate"
+                                value={percentage}
+                                color={exceeds ? 'success' : 'primary'}
+                                sx={{
+                                  height: 8,
+                                  borderRadius: 4,
+                                  boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
                                 }}
                               />
-                            )}
-                          </Stack>
-                          <LinearProgress
-                            variant="determinate"
-                            value={percentage}
-                            color={exceeds ? 'success' : 'primary'}
-                            sx={{
-                              height: 8,
-                              borderRadius: 4,
-                              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
-                            }}
-                          />
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
+                            </CardContent>
+                          </Card>
+                        </Grid2>
+                      );
+                    })}
+                  </Grid2>
+                </Box>
               </Card>
             </Grid2>
           </Grid2>
