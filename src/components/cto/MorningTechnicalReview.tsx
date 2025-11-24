@@ -172,14 +172,16 @@ export default function MorningTechnicalReview() {
       setErrors(errorsRes.data || []);
 
       // Fetch error clusters (with error handling)
+      let clustersData: ErrorCluster[] = [];
       try {
         const { data: clusters } = await supabase
-          .from('error_clusters')
+          .from('error_clusters' as any)
           .select('*')
           .eq('is_resolved', false)
           .order('percentage_of_total', { ascending: false })
           .limit(10);
-        setErrorClusters(clusters || []);
+        clustersData = (clusters || []) as unknown as ErrorCluster[];
+        setErrorClusters(clustersData);
       } catch (e) {
         console.warn('Error clusters table may not exist:', e);
         // Generate clusters from errors if table doesn't exist
@@ -189,12 +191,12 @@ export default function MorningTechnicalReview() {
       // Fetch root cause suggestions
       try {
         const { data: causes } = await supabase
-          .from('root_cause_suggestions')
+          .from('root_cause_suggestions' as any)
           .select('*')
           .eq('is_confirmed', false)
           .order('confidence_score', { ascending: false })
           .limit(10);
-        setRootCauses(causes || []);
+        setRootCauses((causes || []) as unknown as RootCauseSuggestion[]);
       } catch (e) {
         console.warn('Root cause suggestions table may not exist:', e);
       }
@@ -202,11 +204,11 @@ export default function MorningTechnicalReview() {
       // Fetch rollback recommendations
       try {
         const { data: rollbacks } = await supabase
-          .from('rollback_recommendations')
+          .from('rollback_recommendations' as any)
           .select('*')
           .eq('status', 'pending')
           .order('failure_rate', { ascending: false });
-        setRollbackRecs(rollbacks || []);
+        setRollbackRecs((rollbacks || []) as unknown as RollbackRecommendation[]);
       } catch (e) {
         console.warn('Rollback recommendations table may not exist:', e);
       }
@@ -214,12 +216,12 @@ export default function MorningTechnicalReview() {
       // Fetch performance diagnostics
       try {
         const { data: diags } = await supabase
-          .from('performance_diagnostics')
+          .from('performance_diagnostics' as any)
           .select('*')
           .eq('is_resolved', false)
           .order('created_at', { ascending: false })
           .limit(20);
-        setPerformanceDiags(diags || []);
+        setPerformanceDiags((diags || []) as unknown as PerformanceDiagnostic[]);
       } catch (e) {
         console.warn('Performance diagnostics table may not exist:', e);
       }
@@ -227,11 +229,11 @@ export default function MorningTechnicalReview() {
       // Fetch auto escalations
       try {
         const { data: escalations } = await supabase
-          .from('auto_escalations')
+          .from('auto_escalations' as any)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(10);
-        setAutoEscalations(escalations || []);
+        setAutoEscalations((escalations || []) as unknown as AutoEscalation[]);
       } catch (e) {
         console.warn('Auto escalations table may not exist:', e);
       }
@@ -249,7 +251,8 @@ export default function MorningTechnicalReview() {
 
       // Calculate database connections from infrastructure data
       const dbConnectionsService = infraRes.data?.find(s => s.service_name === 'Database Connections');
-      const dbConnections = dbConnectionsService?.metadata?.active_connections || 0;
+      const metadata = dbConnectionsService?.metadata as any;
+      const dbConnections = metadata?.active_connections || 0;
 
       const errorRate = (errorsRes.data?.length || 0) / 100;
       const activeIncidents = incidentsRes.data?.length || 0;
@@ -266,7 +269,7 @@ export default function MorningTechnicalReview() {
       await checkAndEscalate(avgUptime, errorRate, incidentsRes.data || []);
 
       // Generate root cause suggestions
-      await generateRootCauseSuggestions(clusters || []);
+      await generateRootCauseSuggestions(clustersData || []);
 
       // Check for rollback recommendations
       await checkRollbackRecommendations();
@@ -330,7 +333,7 @@ export default function MorningTechnicalReview() {
 
             // Log escalation
             try {
-              await supabase.from('auto_escalations').insert({
+              await supabase.from('auto_escalations' as any).insert({
                 trigger_type: 'uptime_drop',
                 original_severity: incident.severity,
                 escalated_severity: newSeverity,
@@ -361,7 +364,7 @@ export default function MorningTechnicalReview() {
               .eq('id', incident.id);
 
             try {
-              await supabase.from('auto_escalations').insert({
+              await supabase.from('auto_escalations' as any).insert({
                 trigger_type: 'error_rate_spike',
                 original_severity: incident.severity,
                 escalated_severity: newSeverity,
@@ -409,7 +412,7 @@ export default function MorningTechnicalReview() {
           suggestions.push({
             error_cluster_id: cluster.id,
             suggestion_type: 'recent_deployment',
-            title: `Recent Deployment: ${latestDeploy.change_title}`,
+            title: `Recent Deployment: ${latestDeploy.title}`,
             description: `A deployment was made ${dayjs(latestDeploy.created_at).fromNow()}. This may be causing the errors.`,
             confidence_score: 75,
             related_deployment_id: latestDeploy.id,
@@ -444,7 +447,7 @@ export default function MorningTechnicalReview() {
         // Insert suggestions
         for (const suggestion of suggestions) {
           try {
-            await supabase.from('root_cause_suggestions').upsert(suggestion, {
+            await supabase.from('root_cause_suggestions' as any).upsert(suggestion, {
               onConflict: 'error_cluster_id,suggestion_type'
             });
           } catch (e) {
@@ -455,12 +458,12 @@ export default function MorningTechnicalReview() {
 
       // Refresh root causes
       const { data: causes } = await supabase
-        .from('root_cause_suggestions')
+        .from('root_cause_suggestions' as any)
         .select('*')
         .eq('is_confirmed', false)
         .order('confidence_score', { ascending: false })
         .limit(10);
-      setRootCauses(causes || []);
+      setRootCauses((causes || []) as unknown as RootCauseSuggestion[]);
     } catch (error) {
       console.error('Error generating root cause suggestions:', error);
     }
@@ -494,9 +497,9 @@ export default function MorningTechnicalReview() {
         if (failureRate > threshold) {
           // Create rollback recommendation
           try {
-            await supabase.from('rollback_recommendations').upsert({
+            await supabase.from('rollback_recommendations' as any).upsert({
               deployment_id: deployment.id,
-              deployment_version: deployment.change_title,
+              deployment_version: deployment.title,
               failure_rate: failureRate,
               threshold_rate: threshold,
               error_count: errorsAfterDeploy.length,
@@ -520,11 +523,11 @@ export default function MorningTechnicalReview() {
 
       // Refresh recommendations
       const { data: rollbacks } = await supabase
-        .from('rollback_recommendations')
+        .from('rollback_recommendations' as any)
         .select('*')
         .eq('status', 'pending')
         .order('failure_rate', { ascending: false });
-      setRollbackRecs(rollbacks || []);
+      setRollbackRecs((rollbacks || []) as unknown as RollbackRecommendation[]);
     } catch (error) {
       console.error('Error checking rollback recommendations:', error);
     }
@@ -535,7 +538,7 @@ export default function MorningTechnicalReview() {
       const { data: { user } } = await supabase.auth.getUser();
       
       await supabase
-        .from('rollback_recommendations')
+        .from('rollback_recommendations' as any)
         .update({
           status: 'approved',
           approved_by: user?.id,

@@ -965,7 +965,7 @@ export const AdvancedTreasuryManagement: React.FC = () => {
               value={transferForm.values.transfer_date}
               onChange={(date) => {
                 if (date) {
-                  transferForm.setFieldValue('transfer_date', date);
+                  transferForm.setFieldValue('transfer_date', date as any);
                 }
               }}
             />

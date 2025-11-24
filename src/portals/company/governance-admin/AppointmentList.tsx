@@ -1463,13 +1463,13 @@ const AppointmentList: React.FC = () => {
                   label="Effective Date"
                   required
                   value={editForm.values.effective_date}
-                  onChange={(value) => editForm.setFieldValue('effective_date', value)}
+                  onChange={(value) => editForm.setFieldValue('effective_date', value as any)}
                 />
 
                 <DatePickerInput
                   label="Board Meeting Date (Optional)"
                   value={editForm.values.board_meeting_date}
-                  onChange={(value) => editForm.setFieldValue('board_meeting_date', value)}
+                  onChange={(value) => editForm.setFieldValue('board_meeting_date', value as any)}
                 />
               </div>
 

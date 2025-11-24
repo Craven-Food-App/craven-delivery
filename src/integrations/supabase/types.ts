@@ -471,6 +471,33 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          currency: string
+          current_balance: number
+          id: string
+          institution: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          currency?: string
+          current_balance?: number
+          id?: string
+          institution?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          currency?: string
+          current_balance?: number
+          id?: string
+          institution?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       batch_orders: {
         Row: {
           batch_id: string | null
@@ -7725,6 +7752,24 @@ export type Database = {
           },
         ]
       }
+      finance_roles: {
+        Row: {
+          created_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_reports: {
         Row: {
           created_at: string | null
@@ -10737,6 +10782,69 @@ export type Database = {
           updated_at?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      receivables: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          customer: string
+          due_date: string
+          id: string
+          issue_date: string
+          reference: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          customer: string
+          due_date: string
+          id?: string
+          issue_date: string
+          reference?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          customer?: string
+          due_date?: string
+          id?: string
+          issue_date?: string
+          reference?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      reconciliations: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          period: string
+          status: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period: string
+          status?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period?: string
+          status?: string
+          type?: string
         }
         Relationships: []
       }
