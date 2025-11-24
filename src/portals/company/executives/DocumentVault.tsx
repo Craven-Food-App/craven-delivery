@@ -449,9 +449,9 @@ const DocumentVault: React.FC = () => {
           fullScreen
         >
           {documentLoading ? (
-            <Center py="xl">
-              <Loader size="lg" />
-            </Center>
+              <Stack align="center" py="xl">
+                <Loader size="lg" />
+              </Stack>
           ) : selectedDocument && selectedDocument.pdf_url ? (
             <Paper p="md" withBorder>
               {isHtmlUrl(selectedDocument.pdf_url) && documentContent ? (

@@ -182,7 +182,7 @@ export const TeamResourceManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAlerts((data || []) as PerformanceAlert[]);
+      setAlerts((data || []) as any);
     } catch (error) {
       console.error('Error fetching alerts:', error);
     }
@@ -198,7 +198,7 @@ export const TeamResourceManagement: React.FC = () => {
         .maybeSingle();
 
       if (error) throw error;
-      setPrediction(data as WorkforcePrediction | null);
+      setPrediction(data as any);
     } catch (error) {
       console.error('Error fetching prediction:', error);
     }

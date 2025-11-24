@@ -2415,6 +2415,59 @@ export type Database = {
           },
         ]
       }
+      cto_architecture_changes: {
+        Row: {
+          change_type: string
+          created_at: string | null
+          deployed_at: string | null
+          description: string | null
+          id: string
+          impact_level: string | null
+          proposed_by: string | null
+          rollback_notes: string | null
+          rolled_back_at: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          change_type: string
+          created_at?: string | null
+          deployed_at?: string | null
+          description?: string | null
+          id?: string
+          impact_level?: string | null
+          proposed_by?: string | null
+          rollback_notes?: string | null
+          rolled_back_at?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          change_type?: string
+          created_at?: string | null
+          deployed_at?: string | null
+          description?: string | null
+          id?: string
+          impact_level?: string | null
+          proposed_by?: string | null
+          rollback_notes?: string | null
+          rolled_back_at?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_architecture_changes_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cto_code_reviews: {
         Row: {
           author_id: string | null
@@ -2517,8 +2570,74 @@ export type Database = {
         }
         Relationships: []
       }
+      cto_daily_reports: {
+        Row: {
+          blockers: string[] | null
+          completed_tasks: string[] | null
+          created_at: string | null
+          created_by: string | null
+          deployment_notes: string[] | null
+          engineering_risks: string[] | null
+          id: string
+          meeting_summaries: string[] | null
+          next_day_priorities: string[] | null
+          report_date: string
+          security_findings: string[] | null
+          sprint_status: string | null
+          submitted: boolean | null
+          submitted_at: string | null
+          updated_at: string | null
+          uptime_log: string | null
+        }
+        Insert: {
+          blockers?: string[] | null
+          completed_tasks?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          deployment_notes?: string[] | null
+          engineering_risks?: string[] | null
+          id?: string
+          meeting_summaries?: string[] | null
+          next_day_priorities?: string[] | null
+          report_date: string
+          security_findings?: string[] | null
+          sprint_status?: string | null
+          submitted?: boolean | null
+          submitted_at?: string | null
+          updated_at?: string | null
+          uptime_log?: string | null
+        }
+        Update: {
+          blockers?: string[] | null
+          completed_tasks?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          deployment_notes?: string[] | null
+          engineering_risks?: string[] | null
+          id?: string
+          meeting_summaries?: string[] | null
+          next_day_priorities?: string[] | null
+          report_date?: string
+          security_findings?: string[] | null
+          sprint_status?: string | null
+          submitted?: boolean | null
+          submitted_at?: string | null
+          updated_at?: string | null
+          uptime_log?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_daily_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cto_developers: {
         Row: {
+          availability_status: string | null
           created_at: string | null
           email: string
           full_name: string
@@ -2531,6 +2650,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          availability_status?: string | null
           created_at?: string | null
           email: string
           full_name: string
@@ -2543,6 +2663,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          availability_status?: string | null
           created_at?: string | null
           email?: string
           full_name?: string
@@ -2561,6 +2682,422 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_github_sync_log: {
+        Row: {
+          data_synced: Json | null
+          error_message: string | null
+          github_id: number | null
+          github_url: string | null
+          id: string
+          initiative_id: string | null
+          sync_status: string | null
+          sync_type: string
+          synced_at: string | null
+        }
+        Insert: {
+          data_synced?: Json | null
+          error_message?: string | null
+          github_id?: number | null
+          github_url?: string | null
+          id?: string
+          initiative_id?: string | null
+          sync_status?: string | null
+          sync_type: string
+          synced_at?: string | null
+        }
+        Update: {
+          data_synced?: Json | null
+          error_message?: string | null
+          github_id?: number | null
+          github_url?: string | null
+          id?: string
+          initiative_id?: string | null
+          sync_status?: string | null
+          sync_type?: string
+          synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_github_sync_log_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_roadmap_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_performance_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          developer_id: string | null
+          id: string
+          message: string
+          severity: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          developer_id?: string | null
+          id?: string
+          message: string
+          severity: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          developer_id?: string | null
+          id?: string
+          message?: string
+          severity?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_performance_alerts_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_redistribution_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          impact_score: number | null
+          overloaded_developer_id: string | null
+          reason: string
+          status: string | null
+          suggested_reassign_to: string | null
+          task_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          overloaded_developer_id?: string | null
+          reason: string
+          status?: string | null
+          suggested_reassign_to?: string | null
+          task_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          overloaded_developer_id?: string | null
+          reason?: string
+          status?: string | null
+          suggested_reassign_to?: string | null
+          task_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_redistribution_suggestions_overloaded_developer_id_fkey"
+            columns: ["overloaded_developer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cto_redistribution_suggestions_suggested_reassign_to_fkey"
+            columns: ["suggested_reassign_to"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_roadmap_dependencies: {
+        Row: {
+          auto_block_enabled: boolean | null
+          blocked_at: string | null
+          created_at: string | null
+          dependency_type: string | null
+          dependent_initiative_id: string
+          depends_on_initiative_id: string
+          id: string
+          is_blocking: boolean | null
+          required_milestone: string | null
+          unblocked_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_block_enabled?: boolean | null
+          blocked_at?: string | null
+          created_at?: string | null
+          dependency_type?: string | null
+          dependent_initiative_id: string
+          depends_on_initiative_id: string
+          id?: string
+          is_blocking?: boolean | null
+          required_milestone?: string | null
+          unblocked_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_block_enabled?: boolean | null
+          blocked_at?: string | null
+          created_at?: string | null
+          dependency_type?: string | null
+          dependent_initiative_id?: string
+          depends_on_initiative_id?: string
+          id?: string
+          is_blocking?: boolean | null
+          required_milestone?: string | null
+          unblocked_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_roadmap_dependencies_dependent_initiative_id_fkey"
+            columns: ["dependent_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_roadmap_initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_roadmap_dependencies_depends_on_initiative_id_fkey"
+            columns: ["depends_on_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_roadmap_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_roadmap_initiatives: {
+        Row: {
+          actual_end_date: string | null
+          completed_milestones: number | null
+          created_at: string | null
+          days_behind_schedule: number | null
+          description: string | null
+          escalation_sent: boolean | null
+          escalation_sent_at: string | null
+          github_deployments_count: number | null
+          github_issues_count: number | null
+          github_milestone_id: number | null
+          github_milestone_url: string | null
+          github_prs_count: number | null
+          health_score: string | null
+          id: string
+          last_github_sync_at: string | null
+          last_progress_update: string | null
+          metadata: Json | null
+          owner_id: string | null
+          priority: string | null
+          progress_percentage: number | null
+          quarter: string
+          slip_detected_at: string | null
+          start_date: string | null
+          status: string | null
+          tags: string[] | null
+          target_end_date: string
+          title: string
+          total_milestones: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          actual_end_date?: string | null
+          completed_milestones?: number | null
+          created_at?: string | null
+          days_behind_schedule?: number | null
+          description?: string | null
+          escalation_sent?: boolean | null
+          escalation_sent_at?: string | null
+          github_deployments_count?: number | null
+          github_issues_count?: number | null
+          github_milestone_id?: number | null
+          github_milestone_url?: string | null
+          github_prs_count?: number | null
+          health_score?: string | null
+          id?: string
+          last_github_sync_at?: string | null
+          last_progress_update?: string | null
+          metadata?: Json | null
+          owner_id?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          quarter: string
+          slip_detected_at?: string | null
+          start_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          target_end_date: string
+          title: string
+          total_milestones?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          actual_end_date?: string | null
+          completed_milestones?: number | null
+          created_at?: string | null
+          days_behind_schedule?: number | null
+          description?: string | null
+          escalation_sent?: boolean | null
+          escalation_sent_at?: string | null
+          github_deployments_count?: number | null
+          github_issues_count?: number | null
+          github_milestone_id?: number | null
+          github_milestone_url?: string | null
+          github_prs_count?: number | null
+          health_score?: string | null
+          id?: string
+          last_github_sync_at?: string | null
+          last_progress_update?: string | null
+          metadata?: Json | null
+          owner_id?: string | null
+          priority?: string | null
+          progress_percentage?: number | null
+          quarter?: string
+          slip_detected_at?: string | null
+          start_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          target_end_date?: string
+          title?: string
+          total_milestones?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_roadmap_initiatives_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_roadmap_milestones: {
+        Row: {
+          completed_date: string | null
+          created_at: string | null
+          description: string | null
+          github_issue_id: number | null
+          github_issue_url: string | null
+          id: string
+          initiative_id: string
+          order_index: number | null
+          status: string | null
+          target_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          github_issue_id?: number | null
+          github_issue_url?: string | null
+          id?: string
+          initiative_id: string
+          order_index?: number | null
+          status?: string | null
+          target_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          github_issue_id?: number | null
+          github_issue_url?: string | null
+          id?: string
+          initiative_id?: string
+          order_index?: number | null
+          status?: string | null
+          target_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_roadmap_milestones_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_roadmap_initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_roadmap_slip_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_message: string
+          created_at: string | null
+          days_behind: number
+          escalation_sent: boolean | null
+          escalation_sent_at: string | null
+          id: string
+          initiative_id: string
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: string | null
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message: string
+          created_at?: string | null
+          days_behind: number
+          escalation_sent?: boolean | null
+          escalation_sent_at?: string | null
+          id?: string
+          initiative_id: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_message?: string
+          created_at?: string | null
+          days_behind?: number
+          escalation_sent?: boolean | null
+          escalation_sent_at?: string | null
+          id?: string
+          initiative_id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_roadmap_slip_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cto_roadmap_slip_alerts_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "cto_roadmap_initiatives"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2663,6 +3200,39 @@ export type Database = {
           team?: string | null
           updated_at?: string | null
           velocity?: number | null
+        }
+        Relationships: []
+      }
+      cto_workforce_predictions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          predicted_bottlenecks: Json | null
+          predicted_capacity: number | null
+          predicted_velocity: number | null
+          prediction_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          predicted_bottlenecks?: Json | null
+          predicted_capacity?: number | null
+          predicted_velocity?: number | null
+          prediction_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          predicted_bottlenecks?: Json | null
+          predicted_capacity?: number | null
+          predicted_velocity?: number | null
+          prediction_date?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -12476,6 +13046,285 @@ export type Database = {
           },
         ]
       }
+      tech_actual_costs: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          period: string
+          recorded_at: string | null
+          usage_metrics: Json | null
+          vendor_id: string | null
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period: string
+          recorded_at?: string | null
+          usage_metrics?: Json | null
+          vendor_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period?: string
+          recorded_at?: string | null
+          usage_metrics?: Json | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_actual_costs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tech_actual_costs_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "tech_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_budgets: {
+        Row: {
+          budgeted_amount: number
+          category_id: string | null
+          created_at: string | null
+          id: string
+          period: string
+          updated_at: string | null
+        }
+        Insert: {
+          budgeted_amount?: number
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          period: string
+          updated_at?: string | null
+        }
+        Update: {
+          budgeted_amount?: number
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          period?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_cost_alert_notifications: {
+        Row: {
+          alert_id: string | null
+          error_message: string | null
+          id: string
+          notification_type: string
+          recipient_email: string | null
+          sent_at: string | null
+          slack_channel: string | null
+          status: string | null
+        }
+        Insert: {
+          alert_id?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          recipient_email?: string | null
+          sent_at?: string | null
+          slack_channel?: string | null
+          status?: string | null
+        }
+        Update: {
+          alert_id?: string | null
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          recipient_email?: string | null
+          sent_at?: string | null
+          slack_channel?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_cost_alert_notifications_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_cost_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          category_id: string | null
+          created_at: string | null
+          estimated_impact: number | null
+          id: string
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          severity: string
+          status: string | null
+          title: string
+          variance_percentage: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          category_id?: string | null
+          created_at?: string | null
+          estimated_impact?: number | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity: string
+          status?: string | null
+          title: string
+          variance_percentage?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          category_id?: string | null
+          created_at?: string | null
+          estimated_impact?: number | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string | null
+          title?: string
+          variance_percentage?: number | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_cost_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "tech_cost_alerts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tech_cost_alerts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "tech_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_cost_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          parent_category_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          parent_category_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_cost_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_cost_forecasts: {
+        Row: {
+          assumptions: Json | null
+          category_id: string | null
+          confidence_level: number | null
+          created_at: string | null
+          forecast_period: string
+          forecast_type: string
+          forecasted_amount: number
+          id: string
+        }
+        Insert: {
+          assumptions?: Json | null
+          category_id?: string | null
+          confidence_level?: number | null
+          created_at?: string | null
+          forecast_period: string
+          forecast_type: string
+          forecasted_amount: number
+          id?: string
+        }
+        Update: {
+          assumptions?: Json | null
+          category_id?: string | null
+          confidence_level?: number | null
+          created_at?: string | null
+          forecast_period?: string
+          forecast_type?: string
+          forecasted_amount?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_cost_forecasts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tech_knowledge_base: {
         Row: {
           author_id: string | null
@@ -12523,6 +13372,115 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      tech_licenses: {
+        Row: {
+          cost_per_license: number | null
+          created_at: string | null
+          id: string
+          last_usage_check: string | null
+          license_type: string
+          optimization_recommendation: string | null
+          total_licenses: number
+          unused_licenses: number | null
+          updated_at: string | null
+          used_licenses: number | null
+          vendor_id: string | null
+        }
+        Insert: {
+          cost_per_license?: number | null
+          created_at?: string | null
+          id?: string
+          last_usage_check?: string | null
+          license_type: string
+          optimization_recommendation?: string | null
+          total_licenses: number
+          unused_licenses?: number | null
+          updated_at?: string | null
+          used_licenses?: number | null
+          vendor_id?: string | null
+        }
+        Update: {
+          cost_per_license?: number | null
+          created_at?: string | null
+          id?: string
+          last_usage_check?: string | null
+          license_type?: string
+          optimization_recommendation?: string | null
+          total_licenses?: number
+          unused_licenses?: number | null
+          updated_at?: string | null
+          used_licenses?: number | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_licenses_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "tech_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tech_vendors: {
+        Row: {
+          annual_cost: number | null
+          billing_cycle: string | null
+          category_id: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_shadow_tool: boolean | null
+          metadata: Json | null
+          monthly_cost: number
+          name: string
+          service_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          annual_cost?: number | null
+          billing_cycle?: string | null
+          category_id?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_shadow_tool?: boolean | null
+          metadata?: Json | null
+          monthly_cost: number
+          name: string
+          service_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          annual_cost?: number | null
+          billing_cycle?: string | null
+          category_id?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_shadow_tool?: boolean | null
+          metadata?: Json | null
+          monthly_cost?: number
+          name?: string
+          service_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_vendors_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tech_cost_categories"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -13625,6 +14583,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      auto_create_cost_alerts: { Args: never; Returns: number }
       backfill_executive_documents_from_appointments: {
         Args: never
         Returns: {
@@ -13664,6 +14623,17 @@ export type Database = {
       check_all_documents_signed: {
         Args: { p_appointment_id: string }
         Returns: boolean
+      }
+      check_cost_variances: {
+        Args: never
+        Returns: {
+          actual: number
+          budgeted: number
+          category_id: string
+          category_name: string
+          variance: number
+          variance_pct: number
+        }[]
       }
       check_point_in_zones: {
         Args: { lat: number; lng: number }
@@ -13954,7 +14924,7 @@ export type Database = {
       get_employee_clock_status: {
         Args: { p_user_id: string }
         Returns: {
-          clock_in_at: string
+          clock_in_time: string
           current_entry_id: string
           is_clocked_in: boolean
           total_hours_today: number
