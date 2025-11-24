@@ -17,7 +17,13 @@ import {
   Collapse,
   List,
   ThemeIcon,
+  TextInput,
+  Textarea,
+  Select,
+  NumberInput,
+  Checkbox,
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -37,8 +43,10 @@ import {
   IconMail,
   IconShield,
   IconInfoCircle,
+  IconEdit,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from '@mantine/form';
 import dayjs from 'dayjs';
 
 interface ExecutiveAppointment {
@@ -76,7 +84,10 @@ const AppointmentList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<ExecutiveAppointment | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<ExecutiveAppointment | null>(null);
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [selectedDocumentUrl, setSelectedDocumentUrl] = useState<string>('');
   const [selectedDocumentName, setSelectedDocumentName] = useState<string>('');
   const [documentContent, setDocumentContent] = useState<string>('');
@@ -487,6 +498,96 @@ const AppointmentList: React.FC = () => {
       });
     } finally {
       setMergingNathan(false);
+    }
+  };
+
+  const editForm = useForm({
+    initialValues: {
+      proposed_officer_name: '',
+      proposed_officer_email: '',
+      proposed_title: '',
+      appointment_type: '',
+      effective_date: null as Date | null,
+      board_meeting_date: null as Date | null,
+      term_length_months: undefined as number | undefined,
+      authority_granted: '',
+      compensation_structure: '',
+      equity_included: false,
+      equity_details: '',
+      notes: '',
+      formation_mode: false,
+    },
+  });
+
+  const handleEditAppointment = (appointment: ExecutiveAppointment) => {
+    setEditingAppointment(appointment);
+    editForm.setValues({
+      proposed_officer_name: appointment.proposed_officer_name,
+      proposed_officer_email: appointment.proposed_officer_email || '',
+      proposed_title: appointment.proposed_title,
+      appointment_type: appointment.appointment_type,
+      effective_date: appointment.effective_date ? dayjs(appointment.effective_date).toDate() : null,
+      board_meeting_date: appointment.board_meeting_date ? dayjs(appointment.board_meeting_date).toDate() : null,
+      term_length_months: appointment.term_length_months || undefined,
+      authority_granted: appointment.authority_granted || '',
+      compensation_structure: appointment.compensation_structure || '',
+      equity_included: appointment.equity_included || false,
+      equity_details: appointment.equity_details || '',
+      notes: appointment.notes || '',
+      formation_mode: appointment.formation_mode || false,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateAppointment = async (values: typeof editForm.values) => {
+    if (!editingAppointment) return;
+    
+    setUpdating(true);
+    try {
+      const updateData: any = {
+        proposed_officer_name: values.proposed_officer_name,
+        proposed_officer_email: values.proposed_officer_email || null,
+        proposed_title: values.proposed_title,
+        appointment_type: values.appointment_type,
+        effective_date: values.effective_date ? dayjs(values.effective_date).toISOString() : editingAppointment.effective_date,
+        board_meeting_date: values.board_meeting_date ? dayjs(values.board_meeting_date).toISOString() : null,
+        term_length_months: values.term_length_months || null,
+        authority_granted: values.authority_granted || null,
+        compensation_structure: values.compensation_structure || null,
+        equity_included: values.equity_included || false,
+        equity_details: values.equity_details || null,
+        notes: values.notes || null,
+        formation_mode: values.formation_mode || false,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('executive_appointments')
+        .update(updateData)
+        .eq('id', editingAppointment.id);
+
+      if (error) throw error;
+
+      notifications.show({
+        title: 'Success',
+        message: 'Appointment updated successfully! You can now regenerate documents with the new information.',
+        color: 'green',
+        icon: <IconCheck size={16} />,
+      });
+
+      setEditModalOpen(false);
+      setEditingAppointment(null);
+      editForm.reset();
+      fetchAppointments();
+    } catch (error: any) {
+      console.error('Error updating appointment:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to update appointment',
+        color: 'red',
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -927,8 +1028,17 @@ const AppointmentList: React.FC = () => {
                               setSelectedAppointment(appointment);
                               setViewModalOpen(true);
                             }}
+                            title="View Details"
                           >
                             <IconEye size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="green"
+                            onClick={() => handleEditAppointment(appointment)}
+                            title="Edit Appointment"
+                          >
+                            <IconEdit size={16} />
                           </ActionIcon>
                           <ActionIcon
                             variant="subtle"
@@ -1302,6 +1412,134 @@ const AppointmentList: React.FC = () => {
               </Button>
             </Group>
           </Paper>
+        )}
+      </Modal>
+
+      {/* Edit Appointment Modal */}
+      <Modal
+        opened={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingAppointment(null);
+        }}
+        title="Edit Executive Appointment"
+        size="xl"
+      >
+        {editingAppointment && (
+          <form onSubmit={editForm.onSubmit(handleUpdateAppointment)}>
+            <Stack gap="md">
+              <TextInput
+                label="Officer Name"
+                required
+                {...editForm.getInputProps('proposed_officer_name')}
+              />
+
+              <TextInput
+                label="Officer Email"
+                type="email"
+                {...editForm.getInputProps('proposed_officer_email')}
+              />
+
+              <TextInput
+                label="Title/Position"
+                required
+                {...editForm.getInputProps('proposed_title')}
+              />
+
+              <Select
+                label="Appointment Type"
+                required
+                data={[
+                  { value: 'officer', label: 'Corporate Officer' },
+                  { value: 'director', label: 'Board Director' },
+                  { value: 'executive', label: 'Executive' },
+                  { value: 'advisor', label: 'Advisor' },
+                ]}
+                {...editForm.getInputProps('appointment_type')}
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <DatePickerInput
+                  label="Effective Date"
+                  required
+                  value={editForm.values.effective_date}
+                  onChange={(value) => editForm.setFieldValue('effective_date', value)}
+                />
+
+                <DatePickerInput
+                  label="Board Meeting Date (Optional)"
+                  value={editForm.values.board_meeting_date}
+                  onChange={(value) => editForm.setFieldValue('board_meeting_date', value)}
+                />
+              </div>
+
+              <NumberInput
+                label="Term Length (Months)"
+                min={0}
+                {...editForm.getInputProps('term_length_months')}
+              />
+
+              <Textarea
+                label="Authority Granted"
+                rows={3}
+                {...editForm.getInputProps('authority_granted')}
+              />
+
+              <Textarea
+                label="Compensation Structure"
+                rows={3}
+                {...editForm.getInputProps('compensation_structure')}
+              />
+
+              <Checkbox
+                label="Equity Included"
+                {...editForm.getInputProps('equity_included', { type: 'checkbox' })}
+              />
+
+              {editForm.values.equity_included && (
+                <Textarea
+                  label="Equity Details"
+                  rows={3}
+                  {...editForm.getInputProps('equity_details')}
+                />
+              )}
+
+              <Textarea
+                label="Notes"
+                rows={3}
+                {...editForm.getInputProps('notes')}
+              />
+
+              <Checkbox
+                label="Formation Mode (Pre-Incorporation)"
+                {...editForm.getInputProps('formation_mode', { type: 'checkbox' })}
+              />
+
+              <Alert color="blue" variant="light">
+                After updating, use the "Regenerate Documents" button to create new documents with the updated information.
+              </Alert>
+
+              <Group justify="flex-end" mt="md">
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setEditModalOpen(false);
+                    setEditingAppointment(null);
+                    editForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={updating}
+                  leftSection={<IconCheck size={16} />}
+                >
+                  Update Appointment
+                </Button>
+              </Group>
+            </Stack>
+          </form>
         )}
       </Modal>
     </Container>

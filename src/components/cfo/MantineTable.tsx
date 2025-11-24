@@ -192,3 +192,4 @@ export function MantineTable<T extends Record<string, any>>({
   );
 }
 
+

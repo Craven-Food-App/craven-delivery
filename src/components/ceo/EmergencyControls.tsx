@@ -1,17 +1,33 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { Card, Switch, Button, Modal, Input, message, Alert } from 'antd';
 import {
-  PauseCircleOutlined,
-  PlayCircleOutlined,
-  WarningOutlined,
-  BellOutlined,
-  ToolOutlined,
-  DollarOutlined,
-} from '@ant-design/icons';
+  Card,
+  Switch,
+  Button,
+  Modal,
+  Textarea,
+  Group,
+  Stack,
+  Title,
+  Text,
+  Box,
+  Grid,
+  Alert,
+  Badge,
+  Loader,
+  Divider,
+} from '@mantine/core';
+import {
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconAlertTriangle,
+  IconBell,
+  IconTools,
+  IconCurrencyDollar,
+  IconShield,
+} from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-
-const { TextArea } = Input;
+import { notifications } from '@mantine/notifications';
 
 interface SystemSetting {
   id: string;
@@ -29,6 +45,7 @@ export const EmergencyControls: React.FC = () => {
   const [confirmModal, setConfirmModal] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState<SystemSetting | null>(null);
   const [confirmationReason, setConfirmationReason] = useState('');
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -46,7 +63,11 @@ export const EmergencyControls: React.FC = () => {
       setSettings(data || []);
     } catch (error) {
       console.error('Error fetching settings:', error);
-      message.error('Failed to load system settings');
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load system settings',
+        color: 'red',
+      });
     } finally {
       setLoading(false);
     }
@@ -62,6 +83,7 @@ export const EmergencyControls: React.FC = () => {
   };
 
   const updateSetting = async (setting: SystemSetting) => {
+    setUpdatingId(setting.id);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const newEnabled = !setting.setting_value.enabled;
@@ -87,152 +109,307 @@ export const EmergencyControls: React.FC = () => {
         p_severity: setting.is_critical ? 'critical' : 'high'
       });
 
-      message.success(`${newEnabled ? 'Enabled' : 'Disabled'} ${setting.description}`);
+      notifications.show({
+        title: newEnabled ? 'Setting Enabled' : 'Setting Disabled',
+        message: `${setting.description} has been ${newEnabled ? 'enabled' : 'disabled'}`,
+        color: newEnabled ? 'green' : 'gray',
+        icon: newEnabled ? <IconPlayerPlay size={18} /> : <IconPlayerPause size={18} />,
+      });
       setConfirmModal(false);
       setConfirmationReason('');
       fetchSettings();
     } catch (error: any) {
       console.error('Error updating setting:', error);
-      message.error(error.message || 'Failed to update setting');
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to update setting',
+        color: 'red',
+      });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const getSettingIcon = (key: string) => {
+  const getSettingIcon = (key: string, enabled: boolean) => {
+    const iconProps = { size: 32, strokeWidth: 2 };
     const icons: Record<string, any> = {
-      system_maintenance_mode: <ToolOutlined className="text-2xl" />,
-      orders_paused: <PauseCircleOutlined className="text-2xl" />,
-      payment_processing: <DollarOutlined className="text-2xl" />,
-      emergency_alerts: <BellOutlined className="text-2xl" />,
+      system_maintenance_mode: <IconTools {...iconProps} />,
+      orders_paused: <IconPlayerPause {...iconProps} />,
+      payment_processing: <IconCurrencyDollar {...iconProps} />,
+      emergency_alerts: <IconBell {...iconProps} />,
     };
-    return icons[key] || <WarningOutlined className="text-2xl" />;
+    const IconComponent = icons[key] || <IconShield {...iconProps} />;
+    return (
+      <Box
+        style={{
+          background: enabled
+            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+            : 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)',
+          padding: '16px',
+          borderRadius: '16px',
+          boxShadow: enabled ? '0 4px 12px rgba(16, 185, 129, 0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+          color: enabled ? 'white' : '#9ca3af',
+        }}
+      >
+        {IconComponent}
+      </Box>
+    );
   };
 
-  const getSettingColor = (setting: SystemSetting) => {
-    if (setting.is_critical) {
-      return setting.setting_value.enabled ? 'border-red-500' : 'border-green-500';
-    }
-    return setting.setting_value.enabled ? 'border-green-500' : 'border-gray-300';
-  };
+  if (loading) {
+    return (
+      <Box style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+        <Loader size="lg" />
+      </Box>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Emergency Controls</h2>
-        <p className="text-slate-600">System-wide toggles and emergency settings</p>
-      </div>
+    <Stack gap="xl">
+      {/* Header */}
+      <Box>
+        <Title order={2} fw={800} c="dark.9" style={{ letterSpacing: '-0.5px', marginBottom: '8px' }}>
+          Emergency Controls
+        </Title>
+        <Text size="md" c="gray.6" fw={500}>
+          System-wide toggles and emergency settings
+        </Text>
+      </Box>
 
+      {/* Warning Alert */}
       <Alert
-        message="⚠️ Critical Controls"
-        description="These settings affect the entire platform. Use with caution."
-        type="warning"
-        showIcon
-        className="mb-4"
-      />
+        icon={<IconAlertTriangle size={20} />}
+        title="Critical Controls"
+        color="orange"
+        radius="md"
+        styles={{
+          root: {
+            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+            borderColor: '#fbbf24',
+          },
+          title: {
+            fontWeight: 700,
+            fontSize: '14px',
+          },
+        }}
+      >
+        These settings affect the entire platform. Use with caution.
+      </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {settings.map((setting) => (
-          <Card
-            key={setting.id}
-            className={`border-2 ${getSettingColor(setting)} hover:shadow-lg transition-shadow`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className={setting.setting_value.enabled ? 'text-green-600' : 'text-gray-400'}>
-                  {getSettingIcon(setting.setting_key)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">
-                    {setting.description}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    {setting.is_critical && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                        CRITICAL
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-500 capitalize">
-                      {setting.category}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Switch
-                checked={setting.setting_value.enabled}
-                onChange={() => toggleSetting(setting)}
-                loading={loading}
-                checkedChildren={<PlayCircleOutlined />}
-                unCheckedChildren={<PauseCircleOutlined />}
-                className={setting.setting_value.enabled ? 'bg-green-600' : ''}
-              />
-            </div>
-            {setting.setting_value.enabled && setting.setting_value.reason && (
-              <div className="mt-3 p-2 bg-yellow-50 rounded text-sm text-yellow-800">
-                <strong>Reason:</strong> {setting.setting_value.reason}
-              </div>
-            )}
-          </Card>
-        ))}
-      </div>
+      {/* Settings Grid */}
+      <Grid gutter="lg">
+        {settings.map((setting) => {
+          const isEnabled = setting.setting_value.enabled;
+          const isUpdating = updatingId === setting.id;
+          
+          return (
+            <Grid.Col key={setting.id} span={{ base: 12, md: 6 }}>
+              <Card
+                withBorder
+                radius="lg"
+                padding="xl"
+                style={{
+                  borderWidth: '2px',
+                  borderColor: setting.is_critical
+                    ? isEnabled
+                      ? '#ef4444'
+                      : '#10b981'
+                    : isEnabled
+                    ? '#10b981'
+                    : '#e5e7eb',
+                  background: 'white',
+                  boxShadow: isEnabled
+                    ? '0 4px 16px rgba(16, 185, 129, 0.15)'
+                    : '0 2px 8px rgba(0,0,0,0.05)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = isEnabled
+                    ? '0 4px 16px rgba(16, 185, 129, 0.15)'
+                    : '0 2px 8px rgba(0,0,0,0.05)';
+                }}
+              >
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <Group gap="lg" style={{ flex: 1 }}>
+                    {getSettingIcon(setting.setting_key, isEnabled)}
+                    <Stack gap="xs" style={{ flex: 1 }}>
+                      <Group gap="xs" align="center">
+                        <Title order={4} fw={700} c="dark.9">
+                          {setting.description}
+                        </Title>
+                        {setting.is_critical && (
+                          <Badge
+                            size="sm"
+                            variant="filled"
+                            color="red"
+                            style={{ fontWeight: 700, textTransform: 'uppercase' }}
+                          >
+                            Critical
+                          </Badge>
+                        )}
+                      </Group>
+                      <Group gap="xs">
+                        <Badge
+                          size="sm"
+                          variant="light"
+                          color="gray"
+                          style={{ textTransform: 'capitalize' }}
+                        >
+                          {setting.category}
+                        </Badge>
+                        <Badge
+                          size="sm"
+                          variant={isEnabled ? 'filled' : 'light'}
+                          color={isEnabled ? 'green' : 'gray'}
+                          style={{ fontWeight: 700 }}
+                        >
+                          {isEnabled ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </Group>
+                    </Stack>
+                  </Group>
+                  <Switch
+                    checked={isEnabled}
+                    onChange={() => toggleSetting(setting)}
+                    disabled={isUpdating}
+                    size="lg"
+                    color={isEnabled ? 'green' : 'gray'}
+                    styles={{
+                      track: {
+                        backgroundColor: isEnabled ? '#10b981' : '#e5e7eb',
+                      },
+                    }}
+                  />
+                </Group>
+                {isEnabled && setting.setting_value.reason && (
+                  <Box
+                    mt="md"
+                    p="md"
+                    style={{
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      borderRadius: '8px',
+                      border: '1px solid #fbbf24',
+                    }}
+                  >
+                    <Text size="sm" fw={600} c="orange.9" mb="xs">
+                      Reason:
+                    </Text>
+                    <Text size="sm" c="dark.7">
+                      {setting.setting_value.reason}
+                    </Text>
+                  </Box>
+                )}
+              </Card>
+            </Grid.Col>
+          );
+        })}
+      </Grid>
 
+      {/* Confirmation Modal */}
       <Modal
-        title={
-          <div className="flex items-center gap-2">
-            <WarningOutlined className="text-red-600" />
-            <span>Confirm Critical Action</span>
-          </div>
-        }
-        open={confirmModal}
-        onCancel={() => {
+        opened={confirmModal}
+        onClose={() => {
           setConfirmModal(false);
           setConfirmationReason('');
         }}
-        footer={null}
-        width={500}
+        title={
+          <Group gap="xs">
+            <IconAlertTriangle size={24} color="#ef4444" />
+            <Title order={3} fw={800} c="dark.9">
+              Confirm Critical Action
+            </Title>
+          </Group>
+        }
+        size="md"
+        radius="lg"
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '24px',
+          },
+          body: {
+            padding: '24px',
+          },
+        }}
       >
         {selectedSetting && (
-          <div className="space-y-4">
+          <Stack gap="xl">
             <Alert
-              message="This is a critical system setting"
-              description={`You are about to ${selectedSetting.setting_value.enabled ? 'DISABLE' : 'ENABLE'} ${selectedSetting.description}. This action will be logged.`}
-              type="error"
-              showIcon
-            />
+              icon={<IconAlertTriangle size={20} />}
+              title="Critical System Setting"
+              color="red"
+              radius="md"
+              styles={{
+                root: {
+                  background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                  borderColor: '#ef4444',
+                },
+                title: {
+                  fontWeight: 700,
+                },
+              }}
+            >
+              You are about to {selectedSetting.setting_value.enabled ? 'DISABLE' : 'ENABLE'}{' '}
+              {selectedSetting.description}. This action will be logged and audited.
+            </Alert>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Reason for this action <span className="text-red-500">*</span>
-              </label>
-              <TextArea
+            <Box>
+              <Text size="sm" fw={600} c="dark.7" mb="xs">
+                Reason for this action <Text span c="red" fw={700}>*</Text>
+              </Text>
+              <Textarea
                 rows={3}
                 value={confirmationReason}
                 onChange={(e) => setConfirmationReason(e.target.value)}
                 placeholder="Explain why this action is necessary..."
+                radius="md"
+                required
+                styles={{
+                  input: {
+                    borderColor: '#e2e8f0',
+                    '&:focus': {
+                      borderColor: '#3b82f6',
+                    },
+                  },
+                }}
               />
-            </div>
+            </Box>
 
-            <div className="flex gap-3">
+            <Group justify="flex-end" mt="md">
               <Button
+                variant="subtle"
                 onClick={() => {
                   setConfirmModal(false);
                   setConfirmationReason('');
                 }}
-                className="flex-1"
+                radius="md"
               >
                 Cancel
               </Button>
               <Button
-                type="primary"
-                danger
+                color="red"
                 onClick={() => updateSetting(selectedSetting)}
                 disabled={!confirmationReason.trim()}
-                className="flex-1"
+                leftSection={<IconAlertTriangle size={16} />}
+                radius="md"
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                }}
               >
                 Confirm Action
               </Button>
-            </div>
-          </div>
+            </Group>
+          </Stack>
         )}
       </Modal>
-    </div>
+    </Stack>
   );
 };

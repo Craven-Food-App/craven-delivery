@@ -1,13 +1,37 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Modal, message, InputNumber, Input, Select } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, DollarOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Badge,
+  Modal,
+  Textarea,
+  Group,
+  Stack,
+  Title,
+  Text,
+  Card,
+  Box,
+  Grid,
+  Divider,
+  Loader,
+  ActionIcon,
+  Table,
+  ScrollArea,
+  Pagination,
+  Select,
+} from '@mantine/core';
+import {
+  IconCheck,
+  IconX,
+  IconCurrencyDollar,
+  IconPlus,
+  IconFileText,
+  IconTrendingUp,
+} from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs from 'dayjs';
 import { ExpenseRequestForm } from '@/components/finance/ExpenseRequestForm';
-
-const { TextArea } = Input;
-const { Option } = Select;
+import { notifications } from '@mantine/notifications';
 
 interface Approval {
   id: string;
@@ -27,18 +51,11 @@ export const FinancialApprovals: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [expenseFormVisible, setExpenseFormVisible] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchApprovals();
-    
-    // Check screen size
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const fetchApprovals = async () => {
@@ -53,7 +70,11 @@ export const FinancialApprovals: React.FC = () => {
       setApprovals(data || []);
     } catch (error) {
       console.error('Error fetching approvals:', error);
-      message.error('Failed to load approvals');
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to load approvals',
+        color: 'red',
+      });
     } finally {
       setLoading(false);
     }
@@ -85,13 +106,22 @@ export const FinancialApprovals: React.FC = () => {
         p_severity: 'high'
       });
 
-      message.success(`✅ Approved $${approval.amount.toLocaleString()} request`);
+      notifications.show({
+        title: 'Approval Granted',
+        message: `Approved $${approval.amount.toLocaleString()} request`,
+        color: 'green',
+        icon: <IconCheck size={18} />,
+      });
       setModalVisible(false);
       setReviewNotes('');
       fetchApprovals();
     } catch (error: any) {
       console.error('Error approving:', error);
-      message.error(error.message || 'Failed to approve');
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to approve',
+        color: 'red',
+      });
     }
   };
 
@@ -121,301 +151,463 @@ export const FinancialApprovals: React.FC = () => {
         p_severity: 'high'
       });
 
-      message.success('Request denied');
+      notifications.show({
+        title: 'Request Denied',
+        message: 'Financial request has been denied',
+        color: 'red',
+        icon: <IconX size={18} />,
+      });
       setModalVisible(false);
       setReviewNotes('');
       fetchApprovals();
     } catch (error: any) {
       console.error('Error denying:', error);
-      message.error(error.message || 'Failed to deny');
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to deny',
+        color: 'red',
+      });
     }
   };
 
-  // Mobile columns - simplified view
-  const mobileColumns = [
-    {
-      title: 'Requester',
-      key: 'name',
-      render: (_: any, record: Approval) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{record.requester_name}</span>
-          <span className="text-xs text-gray-500">{record.description.substring(0, 30)}...</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      width: 80,
-      render: (amount: number) => (
-        <span className="font-bold text-green-600">${(amount / 1000).toFixed(0)}k</span>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 70,
-      render: (status: string) => {
-        const colors: Record<string, string> = {
-          pending: 'gold',
-          approved: 'green',
-          denied: 'red',
-          'on-hold': 'orange',
-        };
-        return <Tag color={colors[status]}>{status.toUpperCase().substring(0, 3)}</Tag>;
-      },
-    },
-    {
-      title: 'Action',
-      key: 'actions',
-      width: 70,
-      render: (_: any, record: Approval) => (
-        record.status === 'pending' ? (
-          <Button
-            type="primary"
-            size="small"
-            icon={<CheckCircleOutlined />}
-            onClick={() => {
-              setSelectedApproval(record);
-              setModalVisible(true);
-            }}
-          >
-            View
-          </Button>
-        ) : null
-      ),
-    },
-  ];
-
-  // Desktop columns - full view
-  const desktopColumns = [
-    {
-      title: 'Type',
-      dataIndex: 'request_type',
-      key: 'request_type',
-      render: (type: string) => {
-        const colors: Record<string, string> = {
-          expense: 'blue',
-          budget: 'purple',
-          bonus: 'green',
-          raise: 'orange',
-          investment: 'red',
-        };
-        return <Tag color={colors[type]}>{type.toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: 'Requester',
-      dataIndex: 'requester_name',
-      key: 'requester_name',
-    },
-    {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount: number) => (
-        <span className="font-bold text-green-600">${amount.toLocaleString()}</span>
-      ),
-      sorter: (a: Approval, b: Approval) => a.amount - b.amount,
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-    },
-    {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      render: (priority: string) => {
-        const colors: Record<string, string> = {
-          low: 'default',
-          normal: 'blue',
-          high: 'orange',
-          urgent: 'red',
-        };
-        return <Tag color={colors[priority]}>{priority.toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: 'Date',
-      dataIndex: 'requested_date',
-      key: 'requested_date',
-      render: (date: string) => dayjs(date).format('MMM D, YYYY'),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        const colors: Record<string, string> = {
-          pending: 'gold',
-          approved: 'green',
-          denied: 'red',
-          'on-hold': 'orange',
-        };
-        return <Tag color={colors[status]}>{status.toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: Approval) => (
-        record.status === 'pending' ? (
-          <div className="space-x-2">
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => {
-                setSelectedApproval(record);
-                setModalVisible(true);
-              }}
-            >
-              Review
-            </Button>
-          </div>
-        ) : null
-      ),
-    },
-  ];
-
-  const columns = isMobile ? mobileColumns : desktopColumns;
-
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const totalPendingAmount = pendingApprovals.reduce((sum, a) => sum + a.amount, 0);
+  const paginatedApprovals = approvals.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: 'yellow',
+      approved: 'green',
+      denied: 'red',
+      'on-hold': 'orange',
+    };
+    return colors[status] || 'gray';
+  };
+
+  const getPriorityColor = (priority: string) => {
+    const colors: Record<string, string> = {
+      low: 'gray',
+      normal: 'blue',
+      high: 'orange',
+      urgent: 'red',
+    };
+    return colors[priority] || 'gray';
+  };
+
+  const getTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      expense: 'blue',
+      budget: 'purple',
+      bonus: 'green',
+      raise: 'orange',
+      investment: 'red',
+    };
+    return colors[type] || 'gray';
+  };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header - Responsive */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2">Financial Approvals</h2>
-          <p className="text-sm sm:text-base text-slate-600">Review and approve financial requests</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-          <div className="text-left sm:text-right">
-            <div className="text-xs sm:text-sm text-slate-600">Pending Requests</div>
-            <div className={`font-bold text-orange-600 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>{pendingApprovals.length}</div>
-            <div className="text-xs sm:text-sm text-slate-500">${totalPendingAmount.toLocaleString()} total</div>
-          </div>
+    <Stack gap="xl">
+      {/* Header */}
+      <Group justify="space-between" align="flex-end">
+        <Box>
+          <Title order={2} fw={800} c="dark.9" style={{ letterSpacing: '-0.5px', marginBottom: '8px' }}>
+            Financial Approvals
+          </Title>
+          <Text size="md" c="gray.6" fw={500}>
+            Review and approve financial requests
+          </Text>
+        </Box>
+        <Group>
+          <Card
+            withBorder
+            radius="md"
+            padding="md"
+            style={{
+              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              borderColor: '#fbbf24',
+            }}
+          >
+            <Stack gap={4} align="center">
+              <Text size="xs" fw={700} c="gray.6" tt="uppercase" style={{ letterSpacing: '0.5px' }}>
+                Pending Requests
+              </Text>
+              <Text size="2xl" fw={900} c="orange.7" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                {pendingApprovals.length}
+              </Text>
+              <Text size="sm" fw={600} c="dark.6">
+                ${totalPendingAmount.toLocaleString()} total
+              </Text>
+            </Stack>
+          </Card>
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
+            leftSection={<IconPlus size={18} />}
             onClick={() => setExpenseFormVisible(true)}
-            size={isMobile ? 'middle' : 'large'}
+            size="lg"
+            radius="md"
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+            }}
           >
             Add Expense Request
           </Button>
-        </div>
-      </div>
+        </Group>
+      </Group>
 
-      {/* Table - Mobile Optimized */}
-      <div className="overflow-hidden">
-        <Table
-          columns={columns}
-          dataSource={approvals}
-          rowKey="id"
-          loading={loading}
-          pagination={{ 
-            pageSize: isMobile ? 5 : 10,
-            showSizeChanger: !isMobile,
-            size: isMobile ? 'small' : 'default'
-          }}
-          className="shadow-lg"
-          scroll={{ x: isMobile ? 600 : 'auto' }}
-          size={isMobile ? 'small' : 'default'}
-        />
-      </div>
+      {/* Table */}
+      <Card
+        withBorder
+        radius="lg"
+        padding={0}
+        style={{
+          background: 'white',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+          overflow: 'hidden',
+        }}
+      >
+        {loading ? (
+          <Box p="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+            <Loader size="lg" />
+          </Box>
+        ) : (
+          <>
+            <ScrollArea>
+              <Table
+                horizontalSpacing="lg"
+                verticalSpacing="md"
+                style={{ minWidth: 800 }}
+                styles={{
+                  thead: {
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                    borderBottom: '2px solid #e2e8f0',
+                  },
+                  th: {
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    color: '#64748b',
+                    padding: '16px',
+                  },
+                  td: {
+                    padding: '16px',
+                    borderBottom: '1px solid #f1f5f9',
+                  },
+                  tr: {
+                    '&:hover': {
+                      background: '#f8fafc',
+                    },
+                  },
+                }}
+              >
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Type</Table.Th>
+                    <Table.Th>Requester</Table.Th>
+                    <Table.Th>Amount</Table.Th>
+                    <Table.Th>Description</Table.Th>
+                    <Table.Th>Priority</Table.Th>
+                    <Table.Th>Date</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {paginatedApprovals.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={8} style={{ textAlign: 'center', padding: '48px' }}>
+                        <Stack align="center" gap="md">
+                          <IconFileText size={48} color="#cbd5e1" />
+                          <Text c="gray.5" fw={500}>
+                            No financial approvals found
+                          </Text>
+                        </Stack>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    paginatedApprovals.map((approval) => (
+                      <Table.Tr key={approval.id}>
+                        <Table.Td>
+                          <Badge
+                            size="lg"
+                            variant="light"
+                            color={getTypeColor(approval.request_type)}
+                            style={{ fontWeight: 700, textTransform: 'uppercase' }}
+                          >
+                            {approval.request_type}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text fw={600} c="dark.9">
+                            {approval.requester_name}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="lg" fw={900} c="green.7" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                            ${approval.amount.toLocaleString()}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="dark.7" lineClamp={1} style={{ maxWidth: '300px' }}>
+                            {approval.description}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            size="md"
+                            variant="filled"
+                            color={getPriorityColor(approval.priority)}
+                            style={{ fontWeight: 700 }}
+                          >
+                            {approval.priority.toUpperCase()}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm" c="gray.6">
+                            {dayjs(approval.requested_date).format('MMM D, YYYY')}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge
+                            size="lg"
+                            variant="light"
+                            color={getStatusColor(approval.status)}
+                            style={{ fontWeight: 700, textTransform: 'uppercase' }}
+                          >
+                            {approval.status}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          {approval.status === 'pending' ? (
+                            <Group justify="flex-end" gap="xs">
+                              <Button
+                                size="sm"
+                                variant="light"
+                                color="green"
+                                leftSection={<IconCheck size={16} />}
+                                onClick={() => {
+                                  setSelectedApproval(approval);
+                                  setModalVisible(true);
+                                }}
+                                radius="md"
+                              >
+                                Review
+                              </Button>
+                            </Group>
+                          ) : (
+                            <Text size="xs" c="gray.5" style={{ textAlign: 'right' }}>
+                              Completed
+                            </Text>
+                          )}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))
+                  )}
+                </Table.Tbody>
+              </Table>
+            </ScrollArea>
+            {approvals.length > pageSize && (
+              <Box p="md" style={{ borderTop: '1px solid #e2e8f0' }}>
+                <Group justify="space-between">
+                  <Text size="sm" c="gray.6">
+                    Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, approvals.length)} of {approvals.length} approvals
+                  </Text>
+                  <Group>
+                    <Select
+                      value={pageSize.toString()}
+                      onChange={(value) => {
+                        setPageSize(Number(value));
+                        setCurrentPage(1);
+                      }}
+                      data={['10', '25', '50', '100']}
+                      style={{ width: 80 }}
+                      size="sm"
+                    />
+                    <Pagination
+                      value={currentPage}
+                      onChange={setCurrentPage}
+                      total={Math.ceil(approvals.length / pageSize)}
+                      size="sm"
+                      radius="md"
+                    />
+                  </Group>
+                </Group>
+              </Box>
+            )}
+          </>
+        )}
+      </Card>
 
+      {/* Review Modal */}
       <Modal
-        title={`Review: ${selectedApproval?.description}`}
-        open={modalVisible}
-        onCancel={() => {
+        opened={modalVisible}
+        onClose={() => {
           setModalVisible(false);
           setReviewNotes('');
         }}
-        footer={null}
-        width={isMobile ? '90%' : 600}
+        title={
+          <Title order={3} fw={800} c="dark.9">
+            Review Approval Request
+          </Title>
+        }
+        size="lg"
+        radius="lg"
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '24px',
+          },
+          body: {
+            padding: '24px',
+          },
+        }}
       >
         {selectedApproval && (
-          <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-lg">
-              <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Requester</div>
-                  <div className="font-semibold">{selectedApproval.requester_name}</div>
-                </div>
-                <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Amount</div>
-                  <div className={`font-bold text-green-600 ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+          <Stack gap="xl">
+            <Card
+              withBorder
+              radius="md"
+              padding="lg"
+              style={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+                borderColor: '#e2e8f0',
+              }}
+            >
+              <Grid>
+                <Grid.Col span={6}>
+                  <Text size="xs" fw={700} c="gray.5" tt="uppercase" style={{ letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Requester
+                  </Text>
+                  <Text size="md" fw={600} c="dark.9">
+                    {selectedApproval.requester_name}
+                  </Text>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Text size="xs" fw={700} c="gray.5" tt="uppercase" style={{ letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Amount
+                  </Text>
+                  <Text size="2xl" fw={900} c="green.7" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     ${selectedApproval.amount.toLocaleString()}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Type</div>
-                  <div className="font-semibold capitalize">{selectedApproval.request_type}</div>
-                </div>
-                <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Priority</div>
-                  <Tag color={selectedApproval.priority === 'urgent' ? 'red' : 'orange'}>
+                  </Text>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Text size="xs" fw={700} c="gray.5" tt="uppercase" style={{ letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Type
+                  </Text>
+                  <Badge
+                    size="lg"
+                    variant="light"
+                    color={getTypeColor(selectedApproval.request_type)}
+                    style={{ fontWeight: 700, textTransform: 'uppercase' }}
+                  >
+                    {selectedApproval.request_type}
+                  </Badge>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Text size="xs" fw={700} c="gray.5" tt="uppercase" style={{ letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Priority
+                  </Text>
+                  <Badge
+                    size="lg"
+                    variant="filled"
+                    color={getPriorityColor(selectedApproval.priority)}
+                    style={{ fontWeight: 700 }}
+                  >
                     {selectedApproval.priority.toUpperCase()}
-                  </Tag>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="text-xs sm:text-sm text-slate-600 mb-1">Description</div>
-                <div className="text-sm">{selectedApproval.description}</div>
-              </div>
-            </div>
+                  </Badge>
+                </Grid.Col>
+                <Grid.Col span={12}>
+                  <Divider />
+                  <Text size="xs" fw={700} c="gray.5" tt="uppercase" style={{ letterSpacing: '0.5px', marginTop: '16px', marginBottom: '8px' }}>
+                    Description
+                  </Text>
+                  <Text size="sm" c="dark.7" style={{ lineHeight: 1.6 }}>
+                    {selectedApproval.description}
+                  </Text>
+                </Grid.Col>
+              </Grid>
+            </Card>
 
-            <div>
-              <label className="block text-xs sm:text-sm font-medium mb-2">Review Notes</label>
-              <TextArea
+            <Box>
+              <Text size="sm" fw={600} c="dark.7" mb="xs">
+                Review Notes
+              </Text>
+              <Textarea
                 rows={4}
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="Add notes about your decision..."
+                radius="md"
+                styles={{
+                  input: {
+                    borderColor: '#e2e8f0',
+                    '&:focus': {
+                      borderColor: '#3b82f6',
+                    },
+                  },
+                }}
               />
-            </div>
+            </Box>
 
-            <div className={`flex gap-3 ${isMobile ? 'flex-col' : ''}`}>
+            <Group justify="flex-end" mt="xl">
               <Button
-                type="primary"
-                size="large"
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleApprove(selectedApproval)}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                block={isMobile}
+                variant="subtle"
+                onClick={() => {
+                  setModalVisible(false);
+                  setReviewNotes('');
+                }}
+                radius="md"
               >
-                Approve
+                Cancel
               </Button>
               <Button
-                danger
-                size="large"
-                icon={<CloseCircleOutlined />}
+                color="red"
+                variant="light"
+                leftSection={<IconX size={16} />}
                 onClick={() => handleDeny(selectedApproval)}
-                className="flex-1"
-                block={isMobile}
+                radius="md"
               >
                 Deny
               </Button>
-            </div>
-          </div>
+              <Button
+                color="green"
+                leftSection={<IconCheck size={16} />}
+                onClick={() => handleApprove(selectedApproval)}
+                radius="md"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                }}
+              >
+                Approve
+              </Button>
+            </Group>
+          </Stack>
         )}
       </Modal>
 
       {/* Add Expense Request Modal */}
       <Modal
-        title="New Expense Request"
-        open={expenseFormVisible}
-        onCancel={() => setExpenseFormVisible(false)}
-        footer={null}
-        width={isMobile ? '95%' : 800}
-        destroyOnClose
+        opened={expenseFormVisible}
+        onClose={() => setExpenseFormVisible(false)}
+        title={
+          <Title order={3} fw={800} c="dark.9">
+            New Expense Request
+          </Title>
+        }
+        size="xl"
+        radius="lg"
+        styles={{
+          header: {
+            background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '24px',
+          },
+          body: {
+            padding: '24px',
+          },
+        }}
       >
         <ExpenseRequestForm
           onSuccess={() => {
@@ -425,6 +617,6 @@ export const FinancialApprovals: React.FC = () => {
           onCancel={() => setExpenseFormVisible(false)}
         />
       </Modal>
-    </div>
+    </Stack>
   );
 };

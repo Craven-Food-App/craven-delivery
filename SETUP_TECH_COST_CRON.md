@@ -109,3 +109,4 @@ SELECT cron.unschedule('tech-cost-optimize-weekly');
 - **If 401 errors**: Verify your service role key is correct
 - **If function not found**: Make sure you've deployed the edge function: `supabase functions deploy tech-cost-monitor`
 
+

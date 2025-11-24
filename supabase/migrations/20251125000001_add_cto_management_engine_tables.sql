@@ -132,3 +132,4 @@ CREATE TRIGGER update_cto_workforce_predictions_updated_at BEFORE UPDATE ON publ
 CREATE TRIGGER update_cto_redistribution_suggestions_updated_at BEFORE UPDATE ON public.cto_redistribution_suggestions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_cto_performance_thresholds_updated_at BEFORE UPDATE ON public.cto_performance_thresholds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

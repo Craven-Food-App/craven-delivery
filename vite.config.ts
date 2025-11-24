@@ -34,17 +34,17 @@ export default defineConfig(({ mode }) => {
   return {
     // Use relative paths only when building for Capacitor so native apps can load bundles
     base,
-  server: {
-    host: "::",
-    port: 8080,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
+    server: {
+      host: "::",
+      port: 8080,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
-  },
   plugins: [
     react(),
     stripLovableAttributes(),
@@ -53,6 +53,15 @@ export default defineConfig(({ mode }) => {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@mui/x-data-grid',
+      '@mui/x-date-pickers',
+    ],
+    exclude: [],
   },
   };
 });

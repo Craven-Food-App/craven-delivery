@@ -1,7 +1,36 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, Modal, Form, message, Space } from 'antd';
-import { BulbOutlined, PlusOutlined, SaveOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Tooltip,
+  Paper,
+  Chip,
+  Stack,
+  Alert,
+  CircularProgress,
+  Zoom,
+  Fade,
+} from '@mui/material';
+import {
+  LightbulbOutlined,
+  Add,
+  Edit,
+  Delete,
+  Save,
+  Close,
+  DragIndicator,
+  AutoGraph,
+} from '@mui/icons-material';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MindMapNode {
@@ -12,25 +41,35 @@ interface MindMapNode {
   children: MindMapNode[];
   parentId?: string;
   color?: string;
+  level?: number;
 }
 
 export const StrategicMindMap: React.FC = () => {
   const [nodes, setNodes] = useState<MindMapNode[]>([
-    { id: '1', text: 'Craven Delivery', x: 400, y: 300, children: [] }
+    { 
+      id: '1', 
+      text: 'Craven Delivery', 
+      x: 500, 
+      y: 300, 
+      children: [],
+      level: 0,
+      color: '#1976d2'
+    }
   ]);
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
   const [editingNode, setEditingNode] = useState<MindMapNode | null>(null);
-  const [form] = Form.useForm();
+  const [editText, setEditText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      fetchMindMap();
-    } catch (err: any) {
-      console.error('Error initializing mind map:', err);
-      setError('Failed to load mind map');
-    }
+    fetchMindMap();
   }, []);
 
   const fetchMindMap = async () => {
@@ -43,21 +82,19 @@ export const StrategicMindMap: React.FC = () => {
         .maybeSingle();
 
       if (data && !error && data.map_data) {
-        // Validate the data structure
         if (Array.isArray(data.map_data) && data.map_data.length > 0) {
           setNodes(data.map_data);
         }
       }
     } catch (error: any) {
-      // Silently fail - table might not exist yet
       console.warn('Mind map table not available yet:', error?.message || error);
-      // Keep default nodes
     } finally {
       setLoading(false);
     }
   };
 
   const saveMindMap = async () => {
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('ceo_mindmaps')
@@ -70,47 +107,34 @@ export const StrategicMindMap: React.FC = () => {
         });
 
       if (error) {
-        // If table doesn't exist, show helpful message
         if (error.code === '42P01' || error.message?.includes('does not exist')) {
-          message.warning('Mind map table not created yet. Please run DEPLOY-MINDMAP.sql first.');
+          setError('Mind map table not created yet. Please run DEPLOY-MINDMAP.sql first.');
         } else {
           throw error;
         }
       } else {
-        message.success('Mind map saved!');
+        setError(null);
       }
     } catch (error: any) {
       console.error('Error saving mind map:', error);
-      message.error('Failed to save mind map: ' + (error?.message || 'Unknown error'));
+      setError('Failed to save mind map: ' + (error?.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const addChildNode = (parentId: string) => {
-    const parentNode = findNode(nodes, parentId);
-    if (!parentNode) return;
+  const findNode = useCallback((nodeList: MindMapNode[], id: string): MindMapNode | null => {
+    for (const node of nodeList) {
+      if (node.id === id) return node;
+      if (node.children && node.children.length > 0) {
+        const found = findNode(node.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
 
-    const newId = Date.now().toString();
-    const childCount = (parentNode.children || []).length;
-    const angle = (childCount * 60) * (Math.PI / 180);
-    const radius = 150;
-
-    const newNode: MindMapNode = {
-      id: newId,
-      text: 'New Node',
-      x: (parentNode.x || 0) + Math.cos(angle) * radius,
-      y: (parentNode.y || 0) + Math.sin(angle) * radius,
-      children: [],
-      parentId: parentId,
-      color: '#' + Math.floor(Math.random()*16777215).toString(16)
-    };
-
-    setNodes(updateNode(nodes, parentId, node => ({
-      ...node,
-      children: [...(node.children || []), newNode]
-    })));
-  };
-
-  const updateNode = (nodeList: MindMapNode[], id: string, updater: (node: MindMapNode) => MindMapNode): MindMapNode[] => {
+  const updateNode = useCallback((nodeList: MindMapNode[], id: string, updater: (node: MindMapNode) => MindMapNode): MindMapNode[] => {
     return nodeList.map(node => {
       if (node.id === id) {
         const updated = updater(node);
@@ -121,22 +145,46 @@ export const StrategicMindMap: React.FC = () => {
       }
       return { ...node, children: node.children || [] };
     });
-  };
+  }, []);
 
-  const findNode = (nodeList: MindMapNode[], id: string): MindMapNode | null => {
-    for (const node of nodeList) {
-      if (node.id === id) return node;
-      if (node.children && node.children.length > 0) {
-        const found = findNode(node.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
+  const addChildNode = (parentId: string) => {
+    const parentNode = findNode(nodes, parentId);
+    if (!parentNode) return;
+
+    const newId = Date.now().toString();
+    const childCount = (parentNode.children || []).length;
+    const angle = (childCount * 60) * (Math.PI / 180);
+    const radius = 180;
+    const level = (parentNode.level || 0) + 1;
+
+    const colors = [
+      '#1976d2', '#2e7d32', '#ed6c02', '#9c27b0', 
+      '#d32f2f', '#0288d1', '#388e3c', '#f57c00'
+    ];
+
+    const newNode: MindMapNode = {
+      id: newId,
+      text: 'New Node',
+      x: (parentNode.x || 0) + Math.cos(angle) * radius,
+      y: (parentNode.y || 0) + Math.sin(angle) * radius,
+      children: [],
+      parentId: parentId,
+      level: level,
+      color: colors[level % colors.length]
+    };
+
+    setNodes(prevNodes => updateNode(prevNodes, parentId, node => ({
+      ...node,
+      children: [...(node.children || []), newNode]
+    })));
+
+    setSelectedNode(newNode);
   };
 
   const deleteNode = (id: string) => {
     if (id === '1') {
-      message.warning('Cannot delete root node!');
+      setError('Cannot delete root node!');
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
@@ -156,190 +204,464 @@ export const StrategicMindMap: React.FC = () => {
       }
       return updated;
     });
-    message.success('Node deleted');
+
+    if (selectedNode?.id === id) {
+      setSelectedNode(null);
+    }
   };
 
   const handleEdit = (node: MindMapNode) => {
     setEditingNode(node);
-    form.setFieldsValue({ text: node.text });
+    setEditText(node.text);
   };
 
   const handleSaveEdit = () => {
-    const values = form.getFieldsValue();
-    if (!editingNode) return;
+    if (!editingNode || !editText.trim()) return;
 
-    setNodes(updateNode(nodes, editingNode.id, node => ({
+    setNodes(prevNodes => updateNode(prevNodes, editingNode.id, node => ({
       ...node,
-      text: values.text
+      text: editText.trim()
     })));
 
     setEditingNode(null);
-    form.resetFields();
-    message.success('Node updated');
-  };
-
-  const renderNode = (node: MindMapNode, depth: number = 0): JSX.Element | null => {
-    if (!node || !node.id || !node.text) return null;
-    if (depth > 10) return null; // Prevent infinite recursion
+    setEditText('');
     
-    const nodeSize = depth === 0 ? { width: 120, height: 80 } : { width: 100, height: 60 };
-    
-    try {
-      return (
-        <g key={node.id}>
-          {(node.children || []).map(child => {
-            if (!child || !child.id) return null;
-            return (
-              <line
-                key={`line-${node.id}-${child.id}`}
-                x1={node.x || 0}
-                y1={(node.y || 0) + nodeSize.height / 2}
-                x2={child.x || 0}
-                y2={(child.y || 0) + 30}
-                stroke="#94a3b8"
-                strokeWidth="2"
-              />
-            );
-          })}
-          
-          {(node.children || []).map(child => renderNode(child, depth + 1))}
-          
-          <g>
-            <rect
-              x={(node.x || 0) - nodeSize.width / 2}
-              y={(node.y || 0) - nodeSize.height / 2}
-              width={nodeSize.width}
-              height={nodeSize.height}
-              rx="8"
-              fill={node.color || (depth === 0 ? '#3b82f6' : '#8b5cf6')}
-              stroke={selectedNode?.id === node.id ? '#f59e0b' : '#475569'}
-              strokeWidth={selectedNode?.id === node.id ? '3' : '2'}
-              className="cursor-pointer hover:brightness-110 transition-all"
-              onClick={() => setSelectedNode(node)}
-            />
-            <text
-              x={node.x || 0}
-              y={node.y || 0}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="white"
-              fontSize={depth === 0 ? '16' : '14'}
-              fontWeight="bold"
-              className="pointer-events-none select-none"
-            >
-              {node.text || 'Untitled'}
-            </text>
-          </g>
-        </g>
-      );
-    } catch (error) {
-      console.error('Error rendering node:', error);
-      return null;
+    if (selectedNode?.id === editingNode.id) {
+      setSelectedNode({ ...selectedNode, text: editText.trim() });
     }
   };
 
-  if (error) {
+  const handleNodeClick = (node: MindMapNode, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setSelectedNode(node);
+  };
+
+  const handleNodeDragStart = (node: MindMapNode, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsDragging(true);
+    setSelectedNode(node);
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (rect) {
+      setDragOffset({
+        x: event.clientX - rect.left - (node.x || 0),
+        y: event.clientY - rect.top - (node.y || 0)
+      });
+    }
+  };
+
+  const handleNodeDrag = useCallback((event: MouseEvent) => {
+    if (!isDragging || !selectedNode) return;
+    
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (rect) {
+      const newX = event.clientX - rect.left - dragOffset.x;
+      const newY = event.clientY - rect.top - dragOffset.y;
+      
+      setNodes(prevNodes => updateNode(prevNodes, selectedNode.id, node => ({
+        ...node,
+        x: newX,
+        y: newY
+      })));
+    }
+  }, [isDragging, selectedNode, dragOffset, updateNode]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleNodeDrag);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleNodeDrag);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleNodeDrag, handleMouseUp]);
+
+  const renderNode = (node: MindMapNode, depth: number = 0): JSX.Element | null => {
+    if (!node || !node.id || !node.text) return null;
+    if (depth > 8) return null;
+    
+    const nodeSize = depth === 0 ? { width: 140, height: 90 } : { width: 120, height: 70 };
+    const isSelected = selectedNode?.id === node.id;
+    const fontSize = depth === 0 ? 18 : 14;
+    
     return (
-      <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-        <p className="text-red-600">Error: {error}</p>
-        <Button onClick={() => setError(null)} className="mt-2">Retry</Button>
-      </div>
+      <g key={node.id}>
+        {/* Render connections to children */}
+        {(node.children || []).map(child => {
+          if (!child || !child.id) return null;
+          return (
+            <line
+              key={`line-${node.id}-${child.id}`}
+              x1={node.x || 0}
+              y1={(node.y || 0) + nodeSize.height / 2}
+              x2={child.x || 0}
+              y2={(child.y || 0) - nodeSize.height / 2}
+              stroke="#90caf9"
+              strokeWidth={isSelected ? 3 : 2}
+              strokeDasharray={depth > 2 ? "5,5" : "0"}
+              opacity={0.6}
+              style={{ transition: 'all 0.3s ease' }}
+            />
+          );
+        })}
+        
+        {/* Render child nodes */}
+        {(node.children || []).map(child => renderNode(child, depth + 1))}
+        
+        {/* Render node */}
+        <g
+          onClick={(e) => handleNodeClick(node, e)}
+          onMouseDown={(e) => handleNodeDragStart(node, e)}
+          style={{ cursor: 'move' }}
+        >
+          {/* Node shadow */}
+          <rect
+            x={(node.x || 0) - nodeSize.width / 2 + 2}
+            y={(node.y || 0) - nodeSize.height / 2 + 2}
+            width={nodeSize.width}
+            height={nodeSize.height}
+            rx="12"
+            fill="rgba(0,0,0,0.1)"
+            opacity={0.3}
+          />
+          
+          {/* Node background */}
+          <rect
+            x={(node.x || 0) - nodeSize.width / 2}
+            y={(node.y || 0) - nodeSize.height / 2}
+            width={nodeSize.width}
+            height={nodeSize.height}
+            rx="12"
+            fill={node.color || (depth === 0 ? '#1976d2' : '#9c27b0')}
+            stroke={isSelected ? '#ff9800' : '#ffffff'}
+            strokeWidth={isSelected ? 4 : 2}
+            style={{
+              transition: 'all 0.3s ease',
+              filter: isSelected ? 'drop-shadow(0 4px 12px rgba(255, 152, 0, 0.4))' : 'drop-shadow(0 2px 8px rgba(0,0,0,0.15))',
+            }}
+          />
+          
+          {/* Node text */}
+          <text
+            x={node.x || 0}
+            y={node.y || 0}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="white"
+            fontSize={fontSize}
+            fontWeight={depth === 0 ? 700 : 600}
+            style={{
+              pointerEvents: 'none',
+              userSelect: 'none',
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+            }}
+          >
+            {node.text || 'Untitled'}
+          </text>
+          
+          {/* Drag indicator */}
+          {isSelected && (
+            <circle
+              cx={(node.x || 0) + nodeSize.width / 2 - 8}
+              cy={(node.y || 0) - nodeSize.height / 2 + 8}
+              r={6}
+              fill="#ff9800"
+              opacity={0.8}
+            />
+          )}
+        </g>
+      </g>
     );
-  }
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-            <BulbOutlined /> Strategic Mind Map
-          </h2>
-          <p className="text-slate-600">Visualize strategic relationships and brainstorm initiatives</p>
-        </div>
+    <Box sx={{ width: '100%', height: '100%' }}>
+      {/* Header */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h4" fontWeight={800} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LightbulbOutlined sx={{ fontSize: 32, color: 'primary.main' }} />
+            Strategic Mind Map
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Visualize strategic relationships and brainstorm initiatives
+          </Typography>
+        </Box>
         <Button
-          type="primary"
-          icon={<SaveOutlined />}
+          variant="contained"
+          startIcon={<Save />}
           onClick={saveMindMap}
-          loading={loading}
+          disabled={loading}
+          sx={{
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+            },
+          }}
         >
-          Save Mind Map
+          {loading ? <CircularProgress size={20} color="inherit" /> : 'Save Mind Map'}
         </Button>
-      </div>
+      </Stack>
+
+      {/* Error Alert */}
+      {error && (
+        <Fade in={!!error}>
+          <Alert 
+            severity={error.includes('Cannot delete') ? 'warning' : 'error'} 
+            onClose={() => setError(null)}
+            sx={{ mb: 2 }}
+          >
+            {error}
+          </Alert>
+        </Fade>
+      )}
 
       {/* Mind Map Canvas */}
-      <Card>
-        <div className="border-2 border-gray-200 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
-          <svg width="100%" height="600px" className="bg-white">
-            {nodes.map(node => renderNode(node)).filter(Boolean)}
-          </svg>
-        </div>
-
-        {/* Controls */}
-        {selectedNode && (
-          <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <strong className="text-lg">Node: {selectedNode.text}</strong>
-                {selectedNode.parentId && <div className="text-sm text-gray-500">Parent: {findNode(nodes, selectedNode.parentId)?.text}</div>}
-              </div>
-              <Space>
-                <Button
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => addChildNode(selectedNode.id)}
-                >
-                  Add Child
-                </Button>
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleEdit(selectedNode)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => deleteNode(selectedNode.id)}
-                >
-                  Delete
-                </Button>
-              </Space>
-            </div>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <div className="mt-4 text-sm text-gray-600 bg-blue-50 p-4 rounded-lg">
-          <strong>How to use:</strong>
-          <ol className="list-decimal list-inside space-y-1 mt-2">
-            <li>Click on a node to select it</li>
-            <li>Use "Add Child" to create a new branch</li>
-            <li>Use "Edit" to change the text</li>
-            <li>Use "Delete" to remove a node (except root)</li>
-            <li>Click "Save Mind Map" to persist changes</li>
-          </ol>
-        </div>
-      </Card>
-
-      {/* Edit Modal */}
-      <Modal
-        title="Edit Node"
-        open={!!editingNode}
-        onOk={handleSaveEdit}
-        onCancel={() => {
-          setEditingNode(null);
-          form.resetFields();
+      <Card
+        elevation={3}
+        sx={{
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
         }}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="text" label="Node Text" rules={[{ required: true }]}>
-            <Input placeholder="Enter node text" />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+        <CardContent sx={{ p: 0, position: 'relative' }}>
+          <Box
+            ref={containerRef}
+            sx={{
+              width: '100%',
+              height: '600px',
+              overflow: 'hidden',
+              position: 'relative',
+              background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.6) 0%, transparent 50%)',
+            }}
+          >
+            <svg
+              ref={svgRef}
+              width="100%"
+              height="100%"
+              style={{
+                cursor: isDragging ? 'grabbing' : 'default',
+              }}
+            >
+              <defs>
+                <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#1976d2" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#1565c0" stopOpacity={1} />
+                </linearGradient>
+              </defs>
+              {nodes.map(node => renderNode(node)).filter(Boolean)}
+            </svg>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Node Controls */}
+      {selectedNode && (
+        <Zoom in={!!selectedNode}>
+          <Paper
+            elevation={4}
+            sx={{
+              mt: 3,
+              p: 3,
+              background: 'linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)',
+              border: '2px solid',
+              borderColor: 'primary.main',
+              borderRadius: 2,
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Box>
+                <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
+                  {selectedNode.text}
+                </Typography>
+                {selectedNode.parentId && (
+                  <Chip
+                    label={`Parent: ${findNode(nodes, selectedNode.parentId)?.text || 'Unknown'}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                  />
+                )}
+                {selectedNode.level !== undefined && (
+                  <Chip
+                    label={`Level ${selectedNode.level}`}
+                    size="small"
+                    color="primary"
+                    sx={{ mt: 1, ml: 1 }}
+                  />
+                )}
+              </Box>
+              <Stack direction="row" spacing={1}>
+                <Tooltip title="Add Child Node">
+                  <IconButton
+                    color="primary"
+                    onClick={() => addChildNode(selectedNode.id)}
+                    sx={{
+                      background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+                      color: 'white',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+                        transform: 'scale(1.1)',
+                      },
+                    }}
+                  >
+                    <Add />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Edit Node">
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleEdit(selectedNode)}
+                    sx={{
+                      background: 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)',
+                      color: 'white',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #1b5e20 0%, #0d3e0f 100%)',
+                        transform: 'scale(1.1)',
+                      },
+                    }}
+                  >
+                    <Edit />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Node">
+                  <IconButton
+                    color="error"
+                    onClick={() => deleteNode(selectedNode.id)}
+                    disabled={selectedNode.id === '1'}
+                    sx={{
+                      background: 'linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%)',
+                      color: 'white',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #b71c1c 0%, #8b0000 100%)',
+                        transform: 'scale(1.1)',
+                      },
+                      '&.Mui-disabled': {
+                        background: '#e0e0e0',
+                        color: '#9e9e9e',
+                      },
+                    }}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Deselect">
+                  <IconButton
+                    onClick={() => setSelectedNode(null)}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Close />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Stack>
+            
+            <Typography variant="body2" color="text.secondary">
+              Drag the node to reposition it. Use the buttons above to manage this node.
+            </Typography>
+          </Paper>
+        </Zoom>
+      )}
+
+      {/* Instructions */}
+      <Paper
+        elevation={1}
+        sx={{
+          mt: 3,
+          p: 2,
+          background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AutoGraph sx={{ fontSize: 20 }} />
+          How to use:
+        </Typography>
+        <Stack component="ol" spacing={0.5} sx={{ pl: 3, m: 0 }}>
+          <Typography component="li" variant="body2">
+            Click on a node to select it
+          </Typography>
+          <Typography component="li" variant="body2">
+            Drag nodes to reposition them
+          </Typography>
+          <Typography component="li" variant="body2">
+            Use "Add Child" to create a new branch
+          </Typography>
+          <Typography component="li" variant="body2">
+            Use "Edit" to change the node text
+          </Typography>
+          <Typography component="li" variant="body2">
+            Use "Delete" to remove a node (root node cannot be deleted)
+          </Typography>
+          <Typography component="li" variant="body2">
+            Click "Save Mind Map" to persist your changes
+          </Typography>
+        </Stack>
+      </Paper>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editingNode}
+        onClose={() => {
+          setEditingNode(null);
+          setEditText('');
+        }}
+        maxWidth="sm"
+        fullWidth
+        TransitionComponent={Zoom}
+      >
+        <DialogTitle sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)', color: 'white' }}>
+          Edit Node
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Node Text"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSaveEdit();
+              }
+            }}
+            variant="outlined"
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => {
+              setEditingNode(null);
+              setEditText('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveEdit}
+            disabled={!editText.trim()}
+            sx={{
+              background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+              },
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
-

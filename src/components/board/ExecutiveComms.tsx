@@ -29,7 +29,6 @@ dayjs.extend(relativeTime);
 const { TextArea } = Input;
 const { Option } = Select;
 const { Text, Title } = Typography;
-const { TabPane } = Tabs;
 
 const sanitizeHandle = (handle: string) =>
   (handle || '')
@@ -199,8 +198,8 @@ export const ExecutiveComms: React.FC = () => {
       // Fetch admin employees
       const { data: employeeData, error: empError } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, job_title, email, department')
-        .in('job_title', [
+        .select('id, first_name, last_name, position, email, department_id, departments(name)')
+        .in('position', [
           'Chief Executive Officer',
           'Chief Financial Officer', 
           'Chief Operating Officer', 
@@ -241,8 +240,8 @@ export const ExecutiveComms: React.FC = () => {
       const employees: Contact[] = (employeeData || []).map(emp => ({
         id: emp.id,
         name: `${emp.first_name} ${emp.last_name}`,
-        title: emp.job_title,
-        role: emp.department || 'admin',
+        title: emp.position,
+        role: (emp.departments as any)?.name || 'admin',
         type: 'admin' as const,
         email: emp.email
       }));
@@ -644,82 +643,139 @@ export const ExecutiveComms: React.FC = () => {
 
         {/* Messages List */}
         <Card style={{ borderRadius: '12px' }}>
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <TabPane 
-              tab={
-                <span>
-                  <MailOutlined />
-                  Inbox
-                  {unreadCount > 0 && <Badge count={unreadCount} style={{ marginLeft: 8 }} />}
-                </span>
-              } 
-              key="inbox"
-            >
-              {loading ? (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                  <Spin size="large" />
-                </div>
-              ) : inboxMessages.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="No messages in your inbox"
-                />
-              ) : (
-                <List
-                  dataSource={inboxMessages}
-                  renderItem={(msg) => {
-                    const isUnread = !msg.read_by || !msg.read_by.includes(currentExecId);
-                    return (
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'inbox',
+                label: (
+                  <span>
+                    <MailOutlined />
+                    Inbox
+                    {unreadCount > 0 && <Badge count={unreadCount} style={{ marginLeft: 8 }} />}
+                  </span>
+                ),
+                children: loading ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <Spin size="large" />
+                  </div>
+                ) : inboxMessages.length === 0 ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="No messages in your inbox"
+                  />
+                ) : (
+                  <List
+                    dataSource={inboxMessages}
+                    renderItem={(msg) => {
+                      const isUnread = !msg.read_by || !msg.read_by.includes(currentExecId);
+                      return (
+                        <List.Item
+                          key={msg.id}
+                          style={{
+                            cursor: 'pointer',
+                            background: isUnread ? '#f0f9ff' : 'transparent',
+                            padding: window.innerWidth < 768 ? '12px' : '16px',
+                            borderRadius: '8px',
+                            marginBottom: '8px',
+                            border: isUnread ? '1px solid #91d5ff' : '1px solid #f0f0f0'
+                          }}
+                          onClick={() => viewMessage(msg)}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <Badge dot={isUnread} offset={[-5, 5]}>
+                                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+                              </Badge>
+                            }
+                            title={
+                              <Space wrap size={[4, 8]} style={{ width: '100%' }}>
+                                <Text strong style={{ 
+                                  fontSize: window.innerWidth < 768 ? '14px' : '16px',
+                                  wordBreak: 'normal'
+                                }}>{msg.subject}</Text>
+                                <Tag color={getPriorityColor(msg.priority)} style={{ margin: 0 }}>
+                                  {getPriorityIcon(msg.priority)} {msg.priority.toUpperCase()}
+                                </Tag>
+                                {msg.is_confidential && (
+                                  <Tag color="gold" icon={<SafetyOutlined />} style={{ margin: 0 }}>
+                                    CONFIDENTIAL
+                                  </Tag>
+                                )}
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                                <Text type="secondary" style={{ wordBreak: 'normal' }}>
+                                  From: {msg.from_user?.title || 'Unknown'}
+                                  {msg.from_user?.mention_handle && (
+                                    <span style={{ marginLeft: 4 }}>
+                                      (@{msg.from_user.mention_handle})
+                                    </span>
+                                  )}
+                                </Text>
+                                <Text type="secondary" ellipsis style={{ 
+                                  maxWidth: '100%',
+                                  wordBreak: 'normal',
+                                  fontSize: window.innerWidth < 768 ? '13px' : '14px'
+                                }}>
+                                  {msg.message.substring(0, window.innerWidth < 768 ? 50 : 100)}...
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                  <ClockCircleOutlined /> {dayjs(msg.created_at).fromNow()}
+                                </Text>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      );
+                    }}
+                  />
+                )
+              },
+              {
+                key: 'sent',
+                label: (
+                  <span>
+                    <SendOutlined />
+                    Sent ({sentMessages.length})
+                  </span>
+                ),
+                children: sentMessages.length === 0 ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="No sent messages"
+                  />
+                ) : (
+                  <List
+                    dataSource={sentMessages}
+                    renderItem={(msg) => (
                       <List.Item
                         key={msg.id}
                         style={{
                           cursor: 'pointer',
-                          background: isUnread ? '#f0f9ff' : 'transparent',
-                          padding: window.innerWidth < 768 ? '12px' : '16px',
+                          padding: '16px',
                           borderRadius: '8px',
                           marginBottom: '8px',
-                          border: isUnread ? '1px solid #91d5ff' : '1px solid #f0f0f0'
+                          border: '1px solid #f0f0f0'
                         }}
                         onClick={() => viewMessage(msg)}
                       >
                         <List.Item.Meta
-                          avatar={
-                            <Badge dot={isUnread} offset={[-5, 5]}>
-                              <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
-                            </Badge>
-                          }
+                          avatar={<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#52c41a' }} />}
                           title={
-                            <Space wrap size={[4, 8]} style={{ width: '100%' }}>
-                              <Text strong style={{ 
-                                fontSize: window.innerWidth < 768 ? '14px' : '16px',
-                                wordBreak: 'normal'
-                              }}>{msg.subject}</Text>
-                              <Tag color={getPriorityColor(msg.priority)} style={{ margin: 0 }}>
-                                {getPriorityIcon(msg.priority)} {msg.priority.toUpperCase()}
+                            <Space>
+                              <Text strong style={{ fontSize: '16px' }}>{msg.subject}</Text>
+                              <Tag color={getPriorityColor(msg.priority)}>
+                                {msg.priority.toUpperCase()}
                               </Tag>
-                              {msg.is_confidential && (
-                                <Tag color="gold" icon={<SafetyOutlined />} style={{ margin: 0 }}>
-                                  CONFIDENTIAL
-                                </Tag>
-                              )}
                             </Space>
                           }
                           description={
-                            <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                              <Text type="secondary" style={{ wordBreak: 'normal' }}>
-                                From: {msg.from_user?.title || 'Unknown'}
-                                {msg.from_user?.mention_handle && (
-                                  <span style={{ marginLeft: 4 }}>
-                                    (@{msg.from_user.mention_handle})
-                                  </span>
-                                )}
-                              </Text>
-                              <Text type="secondary" ellipsis style={{ 
-                                maxWidth: '100%',
-                                wordBreak: 'normal',
-                                fontSize: window.innerWidth < 768 ? '13px' : '14px'
-                              }}>
-                                {msg.message.substring(0, window.innerWidth < 768 ? 50 : 100)}...
+                            <Space direction="vertical" size={0}>
+                              <Text type="secondary">
+                                To: {msg.to_user_ids?.length} recipient(s)
                               </Text>
                               <Text type="secondary" style={{ fontSize: '12px' }}>
                                 <ClockCircleOutlined /> {dayjs(msg.created_at).fromNow()}
@@ -728,143 +784,83 @@ export const ExecutiveComms: React.FC = () => {
                           }
                         />
                       </List.Item>
-                    );
-                  }}
-                />
-              )}
-            </TabPane>
-            
-            <TabPane 
-              tab={
-                <span>
-                  <SendOutlined />
-                  Sent ({sentMessages.length})
-                </span>
-              } 
-              key="sent"
-            >
-              {sentMessages.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="No sent messages"
-                />
-              ) : (
-                <List
-                  dataSource={sentMessages}
-                  renderItem={(msg) => (
-                    <List.Item
-                      key={msg.id}
-                      style={{
-                        cursor: 'pointer',
-                        padding: '16px',
-                        borderRadius: '8px',
-                        marginBottom: '8px',
-                        border: '1px solid #f0f0f0'
-                      }}
-                      onClick={() => viewMessage(msg)}
-                    >
-                      <List.Item.Meta
-                        avatar={<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#52c41a' }} />}
-                        title={
-                          <Space>
-                            <Text strong style={{ fontSize: '16px' }}>{msg.subject}</Text>
-                            <Tag color={getPriorityColor(msg.priority)}>
-                              {msg.priority.toUpperCase()}
-                            </Tag>
-                          </Space>
-                        }
-                        description={
-                          <Space direction="vertical" size={0}>
-                            <Text type="secondary">
-                              To: {msg.to_user_ids?.length} recipient(s)
-                            </Text>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              <ClockCircleOutlined /> {dayjs(msg.created_at).fromNow()}
-                            </Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              )}
-            </TabPane>
-
-            <TabPane
-              tab={
-                <span>
-                  <MailOutlined />
-                  Executive Communications
-                </span>
+                    )}
+                  />
+                )
+              },
+              {
+                key: 'email',
+                label: (
+                  <span>
+                    <MailOutlined />
+                    Executive Communications
+                  </span>
+                ),
+                children: <BusinessEmailSystem />
+              },
+              {
+                key: 'trash',
+                label: (
+                  <span>
+                    <DeleteOutlined />
+                    Trash {trashCount > 0 && <Badge count={trashCount} style={{ marginLeft: 8 }} />}
+                  </span>
+                ),
+                children: trashMessages.length === 0 ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description="Trash is empty"
+                  />
+                ) : (
+                  <List
+                    dataSource={trashMessages}
+                    renderItem={(msg) => (
+                      <List.Item
+                        key={msg.id}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '16px',
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          border: '1px solid #f0f0f0'
+                        }}
+                        onClick={() => viewMessage(msg)}
+                      >
+                        <List.Item.Meta
+                          avatar={
+                            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#fa8c16' }} />
+                          }
+                          title={
+                            <Space>
+                              <Text strong style={{ fontSize: '16px' }}>{msg.subject}</Text>
+                              <Tag color={getPriorityColor(msg.priority)}>
+                                {msg.priority.toUpperCase()}
+                              </Tag>
+                            </Space>
+                          }
+                          description={
+                            <Space direction="vertical" size={0}>
+                              <Text type="secondary">
+                                From: {msg.from_user?.title || 'Unknown'}
+                                {msg.from_user?.mention_handle && (
+                                  <span style={{ marginLeft: 4 }}>
+                                    (@{msg.from_user.mention_handle})
+                                  </span>
+                                )}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                <ClockCircleOutlined /> {dayjs(msg.created_at).fromNow()}
+                              </Text>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                )
               }
-              key="email"
-            >
-              <BusinessEmailSystem />
-            </TabPane>
-
-            <TabPane
-              tab={
-                <span>
-                  <DeleteOutlined />
-                  Trash {trashCount > 0 && <Badge count={trashCount} style={{ marginLeft: 8 }} />}
-                </span>
-              }
-              key="trash"
-            >
-              {trashMessages.length === 0 ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="Trash is empty"
-                />
-              ) : (
-                <List
-                  dataSource={trashMessages}
-                  renderItem={(msg) => (
-                    <List.Item
-                      key={msg.id}
-                      style={{
-                        cursor: 'pointer',
-                        padding: '16px',
-                        borderRadius: '8px',
-                        marginBottom: '8px',
-                        border: '1px solid #f0f0f0'
-                      }}
-                      onClick={() => viewMessage(msg)}
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#fa8c16' }} />
-                        }
-                        title={
-                          <Space>
-                            <Text strong style={{ fontSize: '16px' }}>{msg.subject}</Text>
-                            <Tag color={getPriorityColor(msg.priority)}>
-                              {msg.priority.toUpperCase()}
-                            </Tag>
-                          </Space>
-                        }
-                        description={
-                          <Space direction="vertical" size={0}>
-                            <Text type="secondary">
-                              From: {msg.from_user?.title || 'Unknown'}
-                              {msg.from_user?.mention_handle && (
-                                <span style={{ marginLeft: 4 }}>
-                                  (@{msg.from_user.mention_handle})
-                                </span>
-                              )}
-                            </Text>
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              <ClockCircleOutlined /> {dayjs(msg.created_at).fromNow()}
-                            </Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              )}
-            </TabPane>
-          </Tabs>
+            ]}
+          />
         </Card>
       </Space>
 

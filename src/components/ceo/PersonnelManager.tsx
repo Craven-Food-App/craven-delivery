@@ -10,6 +10,7 @@ import {
   MailOutlined,
   TrophyOutlined,
   UserOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { POSITIONS, buildEmails } from '@/config/positions';
@@ -69,10 +70,16 @@ export const PersonnelManager: React.FC = () => {
   const [loadingEmails, setLoadingEmails] = useState(false);
   const [positions, setPositions] = useState<any[]>([]);
   const [viewFilter, setViewFilter] = useState<'all' | 'officers' | 'employees'>('all');
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any | null>(null);
+  const [isAppointmentModalVisible, setIsAppointmentModalVisible] = useState(false);
+  const [appointmentForm] = Form.useForm();
 
   useEffect(() => {
     fetchEmployees();
     fetchDepartments();
+    fetchAppointments();
     
     // Check screen size
     const checkMobile = () => {
@@ -125,6 +132,74 @@ export const PersonnelManager: React.FC = () => {
     } catch (error) {
       console.error('Error fetching departments:', error);
       message.error('Failed to load departments');
+    }
+  };
+
+  const fetchAppointments = async () => {
+    setLoadingAppointments(true);
+    try {
+      const { data, error } = await supabase
+        .from('board_resolutions')
+        .select('*')
+        .eq('resolution_type', 'appointment')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === '42P01') {
+          setAppointments([]);
+          return;
+        }
+        throw error;
+      }
+      setAppointments(data || []);
+    } catch (error: any) {
+      console.error('Error fetching appointments:', error);
+      message.error('Failed to load appointments');
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  const handleEditAppointment = (appointment: any) => {
+    setEditingAppointment(appointment);
+    appointmentForm.setFieldsValue({
+      resolution_title: appointment.resolution_title,
+      resolution_text: appointment.resolution_text,
+      subject_person_name: appointment.subject_person_name,
+      subject_person_email: appointment.subject_person_email,
+      subject_position: appointment.subject_position,
+      effective_date: appointment.effective_date ? dayjs(appointment.effective_date) : null,
+    });
+    setIsAppointmentModalVisible(true);
+  };
+
+  const handleUpdateAppointment = async (values: any) => {
+    if (!editingAppointment) return;
+    
+    try {
+      const { error } = await supabase
+        .from('board_resolutions')
+        .update({
+          resolution_title: values.resolution_title,
+          resolution_text: values.resolution_text,
+          subject_person_name: values.subject_person_name,
+          subject_person_email: values.subject_person_email,
+          subject_position: values.subject_position,
+          effective_date: values.effective_date ? dayjs(values.effective_date).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingAppointment.id);
+
+      if (error) throw error;
+
+      message.success('Appointment updated successfully!');
+      setIsAppointmentModalVisible(false);
+      setEditingAppointment(null);
+      appointmentForm.resetFields();
+      fetchAppointments();
+    } catch (error: any) {
+      console.error('Error updating appointment:', error);
+      message.error(error.message || 'Failed to update appointment');
     }
   };
 
@@ -1360,6 +1435,107 @@ export const PersonnelManager: React.FC = () => {
         />
       </div>
 
+      {/* Executive Appointments Section */}
+      <div className="mt-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">Executive Appointments</h3>
+            <p className="text-sm text-slate-600">View and edit board resolutions for executive appointments</p>
+          </div>
+        </div>
+        <div className="overflow-hidden">
+          <Table
+            dataSource={appointments}
+            rowKey="id"
+            loading={loadingAppointments}
+            pagination={{ 
+              pageSize: isMobile ? 5 : 10, 
+              showSizeChanger: !isMobile,
+              showTotal: (total) => `Total ${total} appointments`,
+              size: isMobile ? 'small' : 'default',
+            }}
+            className="shadow-lg"
+            scroll={{ x: isMobile ? 1000 : 1400 }}
+            size={isMobile ? 'small' : 'default'}
+            locale={{ emptyText: 'No appointments found' }}
+            columns={[
+              {
+                title: 'Resolution #',
+                dataIndex: 'resolution_number',
+                key: 'resolution_number',
+                width: 150,
+                render: (text: string) => <span className="font-mono text-sm">{text}</span>,
+              },
+              {
+                title: 'Title',
+                dataIndex: 'resolution_title',
+                key: 'resolution_title',
+                width: 250,
+                render: (text: string) => <span className="font-semibold">{text}</span>,
+              },
+              {
+                title: 'Person',
+                key: 'person',
+                width: 200,
+                render: (_: any, record: any) => (
+                  <div>
+                    <div className="font-medium">{record.subject_person_name || 'N/A'}</div>
+                    <div className="text-xs text-slate-500">{record.subject_person_email || ''}</div>
+                  </div>
+                ),
+              },
+              {
+                title: 'Position',
+                dataIndex: 'subject_position',
+                key: 'subject_position',
+                width: 180,
+                render: (text: string) => <Tag color="blue">{text}</Tag>,
+              },
+              {
+                title: 'Effective Date',
+                dataIndex: 'effective_date',
+                key: 'effective_date',
+                width: 130,
+                render: (date: string) => date ? dayjs(date).format('MMM D, YYYY') : 'N/A',
+              },
+              {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                width: 120,
+                render: (status: string) => {
+                  const colors: Record<string, string> = {
+                    approved: 'green',
+                    pending: 'orange',
+                    rejected: 'red',
+                    draft: 'gray',
+                  };
+                  return <Tag color={colors[status?.toLowerCase()] || 'default'}>{status?.toUpperCase() || 'UNKNOWN'}</Tag>;
+                },
+              },
+              {
+                title: 'Actions',
+                key: 'actions',
+                width: 100,
+                fixed: 'right' as const,
+                render: (_: any, record: any) => (
+                  <Space>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => handleEditAppointment(record)}
+                    >
+                      Edit
+                    </Button>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </div>
+      </div>
+
       {/* Edit Employee Modal */}
       <Modal
         title={`✏️ Edit ${selectedEmployee ? `${(selectedEmployee as any).first_name} ${(selectedEmployee as any).last_name}` : 'Employee'}`}
@@ -2028,6 +2204,88 @@ export const PersonnelManager: React.FC = () => {
           pagination={{ pageSize: 10 }}
           size="small"
         />
+      </Modal>
+
+      {/* Edit Appointment Modal */}
+      <Modal
+        title={`✏️ Edit Executive Appointment${editingAppointment ? ` - ${editingAppointment.resolution_number}` : ''}`}
+        open={isAppointmentModalVisible}
+        onCancel={() => {
+          setIsAppointmentModalVisible(false);
+          setEditingAppointment(null);
+          appointmentForm.resetFields();
+        }}
+        footer={null}
+        width={isMobile ? '90%' : 700}
+      >
+        <Form layout="vertical" form={appointmentForm} onFinish={handleUpdateAppointment}>
+          <Form.Item
+            label="Resolution Title"
+            name="resolution_title"
+            rules={[{ required: true, message: 'Required' }]}
+          >
+            <Input placeholder="e.g., Appointment of John Doe as Chief Financial Officer" />
+          </Form.Item>
+
+          <Form.Item
+            label="Resolution Text"
+            name="resolution_text"
+            rules={[{ required: true, message: 'Required' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Full resolution text..." />
+          </Form.Item>
+
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <Form.Item
+              label="Person Name"
+              name="subject_person_name"
+              rules={[{ required: true, message: 'Required' }]}
+            >
+              <Input placeholder="Full name" />
+            </Form.Item>
+
+            <Form.Item
+              label="Person Email"
+              name="subject_person_email"
+              rules={[{ required: true, type: 'email', message: 'Valid email required' }]}
+            >
+              <Input placeholder="email@example.com" />
+            </Form.Item>
+          </div>
+
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <Form.Item
+              label="Position"
+              name="subject_position"
+              rules={[{ required: true, message: 'Required' }]}
+            >
+              <Input placeholder="e.g., Chief Financial Officer" />
+            </Form.Item>
+
+            <Form.Item
+              label="Effective Date"
+              name="effective_date"
+              rules={[{ required: true, message: 'Required' }]}
+            >
+              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+            </Form.Item>
+          </div>
+
+          <Form.Item>
+            <Space className="w-full justify-end">
+              <Button onClick={() => {
+                setIsAppointmentModalVisible(false);
+                setEditingAppointment(null);
+                appointmentForm.resetFields();
+              }}>
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit">
+                Update Appointment
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

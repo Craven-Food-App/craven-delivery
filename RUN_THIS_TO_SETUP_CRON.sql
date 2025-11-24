@@ -23,3 +23,4 @@ SELECT * FROM cron.job WHERE jobname = 'tech-cost-monitor-daily';
 
 -- That's it! The cron job is now scheduled.
 
+

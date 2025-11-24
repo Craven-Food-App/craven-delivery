@@ -64,6 +64,8 @@ import {
   IconTypography,
   IconInfoCircle,
   IconMail,
+  IconClock,
+  IconCalendar,
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
@@ -71,6 +73,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, AreaChart, Area, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import { DataGrid, GridColDef, GridToolbar, GridActionsCellItem } from '@mui/x-data-grid';
+import { Card as MuiCard, CardContent, Typography, IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material';
+import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
 import {
   Aperture,
@@ -890,25 +895,23 @@ function ManagerConsole() {
   const [roleModal, setRoleModal] = useState(false);
   const form = useForm({
     initialValues: {
-      user_label: '',
       user_id: '',
       role: '',
     },
     validate: {
-      user_label: (value) => (!value ? 'User label is required' : null),
       role: (value) => (!value ? 'Role is required' : null),
     },
   });
   const [isMobile, setIsMobile] = useState(false);
   const refreshRoles = useCallback(async () => {
-    const { data } = await supabase.from('finance_roles').select('user_id, role, user_label');
+    const { data } = await supabase.from('finance_roles').select('user_id, role');
     setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
   }, []);
 
   const handleRemoveRole = useCallback((record: any) => {
     modals.openConfirmModal({
       title: `Remove ${record.role} role`,
-      children: <Text>Remove {record.user_label || 'this user'} from {record.role}?</Text>,
+      children: <Text>Remove user {record.user_id ? record.user_id.slice(0, 8) + '...' : 'this user'} from {record.role}?</Text>,
       labels: { confirm: 'Remove', cancel: 'Cancel' },
       confirmProps: { color: 'red' },
       onConfirm: async () => {
@@ -937,9 +940,19 @@ function ManagerConsole() {
         const [inv, rec, tasks, recon, fr] = await Promise.all([
           supabase.from('invoices').select('id, amount, due_date, status'),
           supabase.from('receivables').select('id, amount, due_date, status'),
-          supabase.from('close_tasks').select('id, status'),
-          supabase.from('reconciliations').select('id, status'),
-          supabase.from('finance_roles').select('user_id, role, user_label')
+          supabase.from('close_tasks').select('id, status').then(result => {
+            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
+              return { data: [], error: null };
+            }
+            return result;
+          }),
+          supabase.from('reconciliations').select('id, status').then(result => {
+            if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
+              return { data: [], error: null };
+            }
+            return result;
+          }),
+          supabase.from('finance_roles').select('user_id, role')
         ]);
         const now = Date.now();
         const apPending = (inv.data || []).filter(i=> i.status==='pending' || i.status==='approved').length;
@@ -1023,7 +1036,6 @@ function ManagerConsole() {
           size={isMobile ? 'small' : 'default'}
           scroll={{ x: isMobile ? 600 : 'auto' }}
           columns={[
-            { title: 'User', dataIndex: 'user_label' },
             { title: 'User ID', dataIndex: 'user_id' },
             { title: 'Role', dataIndex: 'role' },
             {
@@ -1036,7 +1048,6 @@ function ManagerConsole() {
                     size="sm"
                     onClick={() => {
                       form.setValues({
-                        user_label: record.user_label,
                         user_id: record.user_id,
                         role: record.role,
                       });
@@ -1063,7 +1074,7 @@ function ManagerConsole() {
         <form onSubmit={form.onSubmit(async (vals) => {
           setLoading(true);
           try {
-            const { error } = await supabase.from('finance_roles').insert({ user_id: vals.user_id, user_label: vals.user_label, role: vals.role });
+            const { error } = await supabase.from('finance_roles').insert({ user_id: vals.user_id || crypto.randomUUID(), role: vals.role });
             if (error) throw error;
             await refreshRoles();
             setRoleModal(false);
@@ -1073,14 +1084,9 @@ function ManagerConsole() {
         })}>
           <Stack>
             <TextInput
-              label="User (name or email)"
-              {...form.getInputProps('user_label')}
-              required
-            />
-            <TextInput
-              label="User ID (optional)"
+              label="User ID"
               {...form.getInputProps('user_id')}
-              description="If known; otherwise leave blank"
+              description="Enter user UUID or leave blank to generate one"
             />
             <Select
               label="Role"
@@ -1111,12 +1117,10 @@ function RoleManagement() {
   const [loading, setLoading] = useState(false);
   const form = useForm({
     initialValues: {
-      user_label: '',
       user_id: '',
       role: '',
     },
     validate: {
-      user_label: (value) => (!value ? 'User label is required' : null),
       role: (value) => (!value ? 'Role is required' : null),
     },
   });
@@ -1124,7 +1128,7 @@ function RoleManagement() {
     (async () => {
       setLoading(true);
       try {
-        const { data } = await supabase.from('finance_roles').select('user_id, user_label, role').order('user_label', { ascending: true });
+        const { data } = await supabase.from('finance_roles').select('user_id, role').order('created_at', { ascending: true });
         setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
       } finally { setLoading(false); }
     })();
@@ -1135,9 +1139,9 @@ function RoleManagement() {
       <form onSubmit={form.onSubmit(async (vals) => {
         setLoading(true);
         try {
-          const { error } = await supabase.from('finance_roles').insert({ user_id: vals.user_id || crypto.randomUUID(), user_label: vals.user_label, role: vals.role });
+          const { error } = await supabase.from('finance_roles').insert({ user_id: vals.user_id || crypto.randomUUID(), role: vals.role });
           if (error) throw error;
-          const { data } = await supabase.from('finance_roles').select('user_id, user_label, role').order('user_label', { ascending: true });
+          const { data } = await supabase.from('finance_roles').select('user_id, role').order('created_at', { ascending: true });
           setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
           form.reset();
           toast.success('Role assigned', 'Success');
@@ -1145,14 +1149,10 @@ function RoleManagement() {
       })}>
         <Group align="flex-end" mb="md">
           <TextInput
-            placeholder="User email or name"
-            {...form.getInputProps('user_label')}
-            style={{ flex: 1, minWidth: 200 }}
-          />
-          <TextInput
             placeholder="User ID (optional)"
             {...form.getInputProps('user_id')}
             style={{ flex: 1, minWidth: 200 }}
+            description="Leave blank to auto-generate"
           />
           <Select
             placeholder="Role"
@@ -1176,7 +1176,6 @@ function RoleManagement() {
         data={roles}
         loading={loading}
         columns={[
-          { title: 'User', dataIndex: 'user_label' },
           { title: 'User ID', dataIndex: 'user_id' },
           { title: 'Role', dataIndex: 'role' },
         ]}
@@ -1556,38 +1555,62 @@ function ApprovalsPanel() {
 }
 
 function AccountsPayable() {
+  const toast = useToast();
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [allInvoices, setAllInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string>('pending');
   const [creatingRun, setCreatingRun] = useState(false);
   const [runDate, setRunDate] = useState<Date>(new Date());
   const [linking, setLinking] = useState(false);
   const [runs, setRuns] = useState<any[]>([]);
-  const [selectedInvoices, setSelectedInvoices] = useState<any[]>([]);
   const [selectedRun, setSelectedRun] = useState<string | undefined>(undefined);
   const [isMobile, setIsMobile] = useState(false);
+  const [filterText, setFilterText] = useState('');
+  const [gridSelection, setGridSelection] = useState<string[]>([]);
+  
   const statusColors: Record<string, string> = useMemo(() => ({
     pending: 'gold',
     approved: 'blue',
     paid: 'green',
     rejected: 'red',
+    'Awaiting Payment': 'blue',
+    'Pending Approval': 'gold',
+    'Overdue': 'red',
   }), []);
 
-  const loadInvoicesAndRuns = useCallback(async (statusFilter: string) => {
+  const loadInvoicesAndRuns = useCallback(async () => {
     const [inv, pr] = await Promise.all([
       supabase
         .from('invoices')
-        .select('id, vendor, invoice_number, amount, due_date, status, invoice_date, payment_run_id')
-        .eq('status', statusFilter)
+        .select('id, vendor, invoice_number, amount, due_date, status')
         .order('due_date', { ascending: true }),
       supabase
         .from('payment_runs')
         .select('id, scheduled_date, status, total_amount, processed_at')
         .order('scheduled_date', { ascending: false })
+        .then(result => {
+          // Handle missing table gracefully
+          if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
+            return { data: [], error: null };
+          }
+          return result;
+        })
     ]);
-    setInvoices((inv.data || []).map((d: any) => ({ key: d.id, ...d })));
+    const invoiceData = (inv.data || []).map((d: any) => {
+      const dueDate = new Date(d.due_date);
+      const today = new Date();
+      const daysPastDue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+      return { 
+        id: d.id,
+        key: d.id,
+        ...d,
+        daysPastDue,
+        amount: Number(d.amount) || 0,
+      };
+    });
+    setAllInvoices(invoiceData);
+    setInvoices(invoiceData);
     setRuns((pr.data || []).map((r: any) => ({ key: r.id, ...r })));
-    setSelectedInvoices([]);
   }, []);
 
   const handleInvoiceStatusChange = useCallback(async (invoiceId: string, nextStatus: string) => {
@@ -1599,43 +1622,67 @@ function AccountsPayable() {
         .eq('id', invoiceId);
       if (error) throw error;
       toast.success(`Invoice marked ${nextStatus}`, 'Success');
-      await loadInvoicesAndRuns(status);
+      await loadInvoicesAndRuns();
     } catch (err) {
       console.error('Error updating invoice status', err);
       toast.error('Unable to update invoice', 'Error');
     } finally {
       setLoading(false);
     }
-  }, [loadInvoicesAndRuns, status]);
+  }, [loadInvoicesAndRuns, toast]);
 
   const handleBulkStatusChange = useCallback(async (nextStatus: string) => {
-    if (!selectedInvoices.length) {
+    if (!gridSelection.length) {
       toast.info('Select at least one invoice', 'Info');
       return;
     }
     setLoading(true);
     try {
-      const ids = selectedInvoices.map((i) => i.key);
       const { error } = await supabase
         .from('invoices')
         .update({ status: nextStatus })
-        .in('id', ids);
+        .in('id', gridSelection);
       if (error) throw error;
-      toast.success(`Updated ${ids.length} invoices to ${nextStatus}`, 'Success');
-      await loadInvoicesAndRuns(status);
+      toast.success(`Updated ${gridSelection.length} invoices to ${nextStatus}`, 'Success');
+      await loadInvoicesAndRuns();
+      setGridSelection([]);
     } catch (err) {
       console.error('Bulk invoice update failed', err);
       toast.error('Failed to update invoices', 'Error');
     } finally {
       setLoading(false);
     }
-  }, [selectedInvoices, loadInvoicesAndRuns, status]);
+  }, [gridSelection, loadInvoicesAndRuns, toast]);
+
+  // Calculate metrics
+  const metrics = useMemo(() => {
+    const totalSpend = allInvoices
+      .filter(i => i.status !== 'paid')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    const overdueAmount = allInvoices
+      .filter(inv => inv.daysPastDue > 0 && inv.status !== 'paid')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    const pendingApprovalCount = allInvoices.filter(i => i.status === 'pending' || i.status === 'Pending Approval').length;
+    const mockDPO = 45; // Mock DPO calculation
+    return { totalSpend, overdueAmount, pendingApprovalCount, mockDPO };
+  }, [allInvoices]);
+
+  // Filter invoices based on search text
+  const filteredInvoices = useMemo(() => {
+    if (!filterText) return invoices;
+    const lowerFilter = filterText.toLowerCase();
+    return invoices.filter(inv => 
+      inv.vendor?.toLowerCase().includes(lowerFilter) ||
+      inv.invoice_number?.toLowerCase().includes(lowerFilter) ||
+      inv.status?.toLowerCase().includes(lowerFilter)
+    );
+  }, [invoices, filterText]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        await loadInvoicesAndRuns(status);
+        await loadInvoicesAndRuns();
       } finally {
         setLoading(false);
       }
@@ -1645,94 +1692,304 @@ function AccountsPayable() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, [status]);
+  }, [loadInvoicesAndRuns]);
+  // DataGrid columns
+  const columns: GridColDef[] = [
+    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'vendor', headerName: 'Vendor', width: 200, flex: 1 },
+    { 
+      field: 'amount', 
+      headerName: 'Amount', 
+      width: 140,
+      valueFormatter: (value) => `$${value?.toLocaleString() || '0'}`,
+      type: 'number',
+    },
+    { 
+      field: 'due_date', 
+      headerName: 'Due Date', 
+      width: 140,
+      valueFormatter: (value) => value ? new Date(value).toLocaleDateString() : '',
+    },
+    { 
+      field: 'status', 
+      headerName: 'Status', 
+      width: 160,
+      renderCell: (params) => (
+        <Badge color={statusColors[params.value] || 'gray'} style={{ textTransform: 'capitalize' }}>
+          {params.value}
+        </Badge>
+      ),
+    },
+    { 
+      field: 'daysPastDue', 
+      headerName: 'Days Past Due', 
+      width: 140,
+      renderCell: (params) => (
+        <Text c={params.value > 0 ? 'red' : 'dimmed'}>
+          {params.value > 0 ? `${params.value} days` : 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 180,
+      sortable: false,
+      renderCell: (params) => (
+        <Group gap="xs">
+          {params.row.status !== 'approved' && params.row.status !== 'Approved' && (
+            <Button size="xs" onClick={() => handleInvoiceStatusChange(params.row.id, 'approved')}>
+              Approve
+            </Button>
+          )}
+          {params.row.status !== 'paid' && params.row.status !== 'Paid' && (
+            <Button size="xs" variant="filled" onClick={() => handleInvoiceStatusChange(params.row.id, 'paid')}>
+              Pay Now
+            </Button>
+          )}
+        </Group>
+      ),
+    },
+  ];
+
+  // Chart data calculations
+  const monthlySpendData = useMemo(() => {
+    const months = [1, 2, 3, 4, 5, 6].map(m => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + m - 1);
+      const ym = d.toISOString().slice(0, 7);
+      const sum = (state: string) => allInvoices
+        .filter(i => i.status === state && new Date(i.due_date).toISOString().slice(0, 7) === ym)
+        .reduce((s, i) => s + (i.amount || 0), 0);
+      return { 
+        month: d.toLocaleDateString('en-US', { month: 'short' }), 
+        pending: sum('pending') / 1000,
+        approved: sum('approved') / 1000,
+      };
+    });
+    return months;
+  }, [allInvoices]);
+
+  const agingData = useMemo(() => {
+    const buckets = {
+      '0-30 Days': 0,
+      '31-60 Days': 0,
+      '61-90 Days': 0,
+      '90+ Days': 0,
+    };
+    allInvoices.forEach(inv => {
+      if (inv.status === 'paid' || inv.status === 'Paid') return;
+      const days = inv.daysPastDue || 0;
+      if (days <= 30) buckets['0-30 Days'] += inv.amount || 0;
+      else if (days <= 60) buckets['31-60 Days'] += inv.amount || 0;
+      else if (days <= 90) buckets['61-90 Days'] += inv.amount || 0;
+      else buckets['90+ Days'] += inv.amount || 0;
+    });
+    return Object.entries(buckets).map(([name, value]) => ({ name, value }));
+  }, [allInvoices]);
+
+  const vendorSpendData = useMemo(() => {
+    const vendorMap = new Map<string, number>();
+    allInvoices.forEach(inv => {
+      const current = vendorMap.get(inv.vendor) || 0;
+      vendorMap.set(inv.vendor, current + (inv.amount || 0));
+    });
+    return Array.from(vendorMap.entries())
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([vendor, amount]) => ({ vendor, amount: amount / 1000 }));
+  }, [allInvoices]);
+
   return (
-    <div>
-      <Grid gutter="md" mb={12}>
-        <Grid.Col span={{ base: 24, md: 12 }}>
-          <Box style={{ position: 'relative' }}>
-            <InfoIcon content="This chart shows accounts payable aging by due date. It categorizes invoices into buckets (Current, 0-30 days, 31-60 days, etc.) to help identify which payments are overdue or coming due." title="AP Aging Chart" />
-            <Text fw={600}>AP Aging (by Due Date)</Text>
-          </Box>
-          <Box style={{ height: 220, background:'#fff', position: 'relative' }}>
-            <ChartContainer config={{ current:{label:'Current', color:'#94a3b8'}, b30:{label:'0-30', color:'#22c55e'}, b60:{label:'31-60', color:'#eab308'}, b90:{label:'61-90', color:'#f97316'}, b90p:{label:'90+', color:'#ef4444'} }}>
-              <BarChart data={[(() => {
-                const now = Date.now();
-                const buckets = { current:0, b30:0, b60:0, b90:0, b90p:0 } as any;
-                invoices.forEach(i => {
-                  const days = Math.floor((new Date(i.due_date).getTime() - now)/86400000);
-                  const amt = i.amount || 0;
-                  if (days >= 0) buckets.current += amt; else if (days >= -30) buckets.b30 += amt; else if (days >= -60) buckets.b60 += amt; else if (days >= -90) buckets.b90 += amt; else buckets.b90p += amt;
-                });
-                return { name:'Aging', ...buckets };
-              })()]}
-              margin={{ left: 12, right: 12, top: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" hide />
-                <YAxis tickFormatter={(v)=>`$${v.toLocaleString()}`} width={72} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="current" fill="var(--color-current)" />
-                <Bar dataKey="b30" fill="var(--color-b30)" />
-                <Bar dataKey="b60" fill="var(--color-b60)" />
-                <Bar dataKey="b90" fill="var(--color-b90)" />
-                <Bar dataKey="b90p" fill="var(--color-b90p)" />
-              </BarChart>
-            </ChartContainer>
-          </Box>
+    <Stack gap="lg" style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
+      <Box>
+        <Title order={1} mb="xs">Accounts Payable Operations Hub</Title>
+        <Text c="dimmed" size="md">Filter, sort, and action invoices immediately. All analytics update in real-time.</Text>
+      </Box>
+
+      {/* KPI Cards */}
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
+            <Group justify="space-between" mb="xs">
+              <Box>
+                <Text size="sm" c="dimmed" fw={500}>Total Current Payable</Text>
+                <Text size="xl" fw={700} c="indigo">${metrics.totalSpend.toLocaleString()}</Text>
+              </Box>
+              <IconCurrencyDollar size={32} color="var(--mantine-color-indigo-6)" />
+            </Group>
+            <Text size="xs" c="dimmed">Total open and pending payment obligations.</Text>
+          </Card>
         </Grid.Col>
-        <Grid.Col span={{ base: 24, md: 12 }}>
-          <Box style={{ position: 'relative' }}>
-            <InfoIcon content="This chart forecasts upcoming cash needs based on approved and pending invoices. Use this to plan cash flow and ensure sufficient funds are available for upcoming payments." title="Upcoming Cash Needs" />
-            <Text fw={600}>Upcoming Cash Needs (Approved/Pending)</Text>
-          </Box>
-          <Box style={{ height: 220, background:'#fff', position: 'relative' }}>
-            <ChartContainer config={{ pending:{label:'Pending', color:'#60a5fa'}, approved:{label:'Approved', color:'#34d399'} }}>
-              <LineChart data={[1,2,3,4,5,6].map(m => {
-                const d = new Date(); d.setMonth(d.getMonth()+m-1); const ym = d.toISOString().slice(0,7);
-                const sum = (state:string) => invoices.filter(i=> (i.status===state) && new Date(i.due_date).toISOString().slice(0,7)===ym).reduce((s,i)=> s+(i.amount||0),0);
-                return { period: ym, pending: sum('pending'), approved: sum('approved') };
-              })} margin={{ left:12, right:12, top:8, bottom:8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={(v)=>`$${v.toLocaleString()}`} width={72} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="pending" stroke="var(--color-pending)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="approved" stroke="var(--color-approved)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ChartContainer>
-          </Box>
+        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
+            <Group justify="space-between" mb="xs">
+              <Box>
+                <Text size="sm" c="dimmed" fw={500}>Overdue Risk ($)</Text>
+                <Text size="xl" fw={700} c="red">${metrics.overdueAmount.toLocaleString()}</Text>
+              </Box>
+              <IconClock size={32} color="var(--mantine-color-red-6)" />
+            </Group>
+            <Text size="xs" c="dimmed">Immediate risk to vendor relationships.</Text>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
+            <Group justify="space-between" mb="xs">
+              <Box>
+                <Text size="sm" c="dimmed" fw={500}>Days Payable Outstanding</Text>
+                <Text size="xl" fw={700} c="green">{metrics.mockDPO} days</Text>
+              </Box>
+              <IconCalendar size={32} color="var(--mantine-color-green-6)" />
+            </Group>
+            <Text size="xs" c="dimmed">Target DPO is 50 days (improving).</Text>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
+            <Group justify="space-between" mb="xs">
+              <Box>
+                <Text size="sm" c="dimmed" fw={500}>Invoices Pending Approval</Text>
+                <Text size="xl" fw={700} c="yellow">{metrics.pendingApprovalCount} items</Text>
+              </Box>
+              <IconTrendingUp size={32} color="var(--mantine-color-yellow-6)" />
+            </Group>
+            <Text size="xs" c="dimmed">Potential bottlenecks in payment cycle.</Text>
+          </Card>
         </Grid.Col>
       </Grid>
-      <Group gap="xs" mb={12} wrap>
-        <Text>Status:</Text>
-        <Button variant={status==='pending'? 'filled':'default'} onClick={() => setStatus('pending')}>Pending</Button>
-        <Button variant={status==='approved'? 'filled':'default'} onClick={() => setStatus('approved')}>Approved</Button>
-        <Button variant={status==='paid'? 'filled':'default'} onClick={() => setStatus('paid')}>Paid</Button>
-        <Divider orientation="vertical" />
-        <Button onClick={async () => {
-          setCreatingRun(true);
-        }}>Create Payment Run</Button>
-        <Button onClick={() => setLinking(true)} disabled={!selectedInvoices.length}>Link to Run</Button>
-        <Button onClick={() => handleBulkStatusChange('approved')} disabled={!selectedInvoices.length}>Approve Selected</Button>
-        <Button onClick={() => handleBulkStatusChange('paid')} disabled={!selectedInvoices.length}>Mark Selected Paid</Button>
-        <Button onClick={async () => {
-          // Approve all pending invoices (demo flow)
-          setLoading(true);
-          try {
-            const pendingIds = invoices.filter((i) => i.status === 'pending').map((i) => i.key);
-            if (pendingIds.length) {
-              const { error } = await supabase.from('invoices').update({ status: 'approved' }).in('id', pendingIds);
-              if (error) throw error;
-              toast.success('Approved pending invoices', 'Success');
-              await loadInvoicesAndRuns(status);
-            } else {
-              toast.info('No pending invoices', 'Info');
+
+      {/* Invoice Data Grid */}
+      <Paper p="md" radius="md" withBorder>
+        <Stack gap="md">
+          <Group justify="space-between" align="center">
+            <Title order={4}>Invoice Management Grid</Title>
+            <Group gap="xs">
+              <Button size="sm" onClick={() => setCreatingRun(true)}>Create Payment Run</Button>
+              <Button size="sm" onClick={() => setLinking(true)} disabled={!gridSelection.length}>Link to Run</Button>
+              <Button size="sm" onClick={() => handleBulkStatusChange('approved')} disabled={!gridSelection.length}>Approve Selected</Button>
+              <Button size="sm" onClick={() => handleBulkStatusChange('paid')} disabled={!gridSelection.length}>Mark Selected Paid</Button>
+            </Group>
+          </Group>
+          <TextInput
+            placeholder="Filter by Vendor or Status..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            rightSection={
+              filterText ? (
+                <ActionIcon onClick={() => setFilterText('')}>
+                  <ClearIcon />
+                </ActionIcon>
+              ) : (
+                <SearchIcon />
+              )
             }
-          } finally {
-            setLoading(false);
-          }
-        }}>Approve Pending</Button>
-      </Group>
+          />
+          <Box style={{ width: '100%', height: 600 }}>
+            {filteredInvoices && filteredInvoices.length > 0 ? (
+              <DataGrid
+                rows={filteredInvoices}
+                columns={columns}
+                loading={loading}
+                getRowId={(row) => String(row.id || row.key)}
+                checkboxSelection
+                disableRowSelectionOnClick
+                onRowSelectionModelChange={(newSelection) => {
+                  setGridSelection(Array.isArray(newSelection) ? newSelection.map(String) : []);
+                }}
+                rowSelectionModel={Array.isArray(gridSelection) ? gridSelection : []}
+                pageSizeOptions={[10, 25, 50, 100]}
+                initialState={{
+                  pagination: { paginationModel: { page: 0, pageSize: 10 } },
+                  sorting: { sortModel: [{ field: 'due_date', sort: 'asc' }] },
+                }}
+                disableColumnFilter
+                disableColumnSelector
+                disableDensitySelector
+                sx={{
+                  '& .MuiDataGrid-cell:hover': {
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  },
+                }}
+              />
+            ) : (
+              <Box p="xl" style={{ textAlign: 'center' }}>
+                <Text c="dimmed">No invoices found</Text>
+              </Box>
+            )}
+          </Box>
+        </Stack>
+      </Paper>
+
+      {/* Charts */}
+      <Grid gutter="md">
+        <Grid.Col span={{ base: 12, lg: 4 }}>
+          <Paper p="md" radius="md" withBorder>
+            <Title order={4} mb="md">Top 5 Vendor Spend Concentration</Title>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={vendorSpendData}
+                  dataKey="amount"
+                  nameKey="vendor"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ vendor, amount }) => `${vendor}: $${amount.toFixed(1)}k`}
+                >
+                  {vendorSpendData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f97316', '#ef4444', '#6366f1'][index % 5]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, lg: 8 }}>
+          <Paper p="md" radius="md" withBorder>
+            <Title order={4} mb="md">Monthly AP Spend Trend ($k)</Title>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={monthlySpendData}>
+                <defs>
+                  <linearGradient id="pendingGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="approvedGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#34d399" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <RechartsTooltip />
+                <Legend />
+                <Area type="monotone" dataKey="pending" stackId="1" stroke="#60a5fa" fill="url(#pendingGradient)" name="Pending" />
+                <Area type="monotone" dataKey="approved" stackId="1" stroke="#34d399" fill="url(#approvedGradient)" name="Approved" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid.Col>
+        <Grid.Col span={12}>
+          <Paper p="md" radius="md" withBorder>
+            <Title order={4} mb="md">Invoice Aging Report (Awaiting/Overdue)</Title>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={agingData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <RechartsTooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
+                <Bar dataKey="value" fill="#f97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
+        </Grid.Col>
+      </Grid>
+
+      {/* Modals */}
       <Modal
         title="Create Payment Run"
         opened={creatingRun}
@@ -1744,12 +2001,12 @@ function AccountsPayable() {
           setLoading(true);
           try {
             const dueBefore = runDate;
-            const selected = invoices.filter((i) => new Date(i.due_date) <= dueBefore && (i.status === 'approved' || i.status === 'pending'));
+            const selected = filteredInvoices.filter((i) => new Date(i.due_date) <= dueBefore && (i.status === 'approved' || i.status === 'pending'));
             const total = selected.reduce((s, i) => s + (i.amount || 0), 0);
             const { error } = await supabase.from('payment_runs').insert({ scheduled_date: dueBefore.toISOString().slice(0,10), status: 'draft', total_amount: total });
             if (error) throw error;
             toast.success(`Payment run created for $${total.toLocaleString()}`, 'Success');
-            await loadInvoicesAndRuns(status);
+            await loadInvoicesAndRuns();
             setCreatingRun(false);
           } finally {
             setLoading(false);
@@ -1778,18 +2035,18 @@ function AccountsPayable() {
       >
         <form onSubmit={async (e) => {
           e.preventDefault();
-          if (!selectedRun || !selectedInvoices.length) { 
+          if (!selectedRun || !gridSelection.length) { 
             toast.info('Select a run and invoices', 'Info'); 
             return; 
           }
           setLoading(true);
           try {
-            const ids = selectedInvoices.map(i=> i.key);
-            const { error } = await supabase.from('invoices').update({ payment_run_id: selectedRun }).in('id', ids);
+            const { error } = await supabase.from('invoices').update({ payment_run_id: selectedRun }).in('id', gridSelection);
             if (error) throw error;
             toast.success('Invoices linked to run', 'Success');
             setLinking(false);
-            await loadInvoicesAndRuns(status);
+            await loadInvoicesAndRuns();
+            setGridSelection([]);
           } finally {
             setLoading(false);
           }
@@ -1810,91 +2067,7 @@ function AccountsPayable() {
           </Stack>
         </form>
       </Modal>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={invoices}
-          loading={loading}
-          rowSelection={{ 
-            selectedRowKeys: selectedInvoices.map(s=>s.key), 
-            onChange: (_keys, sel)=> setSelectedInvoices(sel as any[]) 
-          }}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          columns={[
-            { title: 'Vendor', dataIndex: 'vendor' },
-            { title: 'Invoice #', dataIndex: 'invoice_number' },
-            { title: 'Invoice Date', dataIndex: 'invoice_date', render: (v: string) => new Date(v).toLocaleDateString() },
-            { title: 'Due', dataIndex: 'due_date', render: (v: string) => new Date(v).toLocaleDateString() },
-            { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            {
-              title: 'Status',
-              dataIndex: 'status',
-              render: (value: string) => (
-                <Badge color={statusColors[value] || 'gray'} style={{ textTransform: 'capitalize' }}>
-                  {value}
-                </Badge>
-              ),
-            },
-            {
-              title: 'Actions',
-              key: 'actions',
-              width: 220,
-              render: (_: any, record: any) => (
-                <Group gap="xs" wrap>
-                  {record.status !== 'approved' && (
-                    <Button size="sm" onClick={() => handleInvoiceStatusChange(record.key, 'approved')}>
-                      Approve
-                    </Button>
-                  )}
-                  {record.status !== 'paid' && (
-                    <Button size="sm" variant="filled" onClick={() => handleInvoiceStatusChange(record.key, 'paid')}>
-                      Mark Paid
-                    </Button>
-                  )}
-                </Group>
-              ),
-            },
-          ]}
-        />
-      </Box>
-      <Divider />
-      <Title order={5}>Payment Runs</Title>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={runs}
-          loading={loading}
-          rowKey={(r)=> r.id}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          columns={[
-            { title: 'Scheduled', dataIndex: 'scheduled_date', width: 140 },
-            { title: 'Status', dataIndex: 'status', width: 120 },
-            { title: 'Total', dataIndex: 'total_amount', render: (v:number)=> `$${(v||0).toLocaleString()}`, width: 140 },
-            { title: 'Processed', dataIndex: 'processed_at', render: (v:string)=> v ? new Date(v).toLocaleString() : '-', width: 180 },
-            { title: 'Actions', key: 'actions', render: (_:any, rec:any) => (
-              <Group gap="xs">
-                <Button size="sm" onClick={async () => {
-                  // mark run processed and mark linked invoices as paid
-                  setLoading(true);
-                  try {
-                    const { error: e1 } = await supabase.from('payment_runs').update({ status: 'processed', processed_at: new Date().toISOString() }).eq('id', rec.id);
-                    if (e1) throw e1;
-                    const { error: e2 } = await supabase.from('invoices').update({ status: 'paid' }).eq('payment_run_id', rec.id);
-                    if (e2) throw e2;
-                    toast.success('Run processed', 'Success');
-                    await loadInvoicesAndRuns(status);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}>Process Run</Button>
-              </Group>
-            )},
-          ]}
-        />
-      </Box>
-    </div>
+    </Stack>
   );
 }
 
