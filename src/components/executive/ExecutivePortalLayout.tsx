@@ -96,7 +96,7 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
               }
             }}
           >
-            <Icon size={20} style={{ marginRight: isSidebarOpen ? '12px' : '0', marginLeft: isSidebarOpen ? '0' : 'auto' }} />
+            <Icon size={20} />
             {isSidebarOpen && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>}
           </button>
         );

@@ -206,7 +206,7 @@ export default function CTODailyWorkflow() {
         .order('task_category', { ascending: true })
         .order('priority', { ascending: false });
 
-      setTasks((data || []).map(t => ({ ...t, is_completed: t.completed || false })));
+      setTasks(data || []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -275,7 +275,7 @@ export default function CTODailyWorkflow() {
           type: 'roadmap',
           severity: alert.severity === 'critical' ? 'critical' : 'high',
           title: `Roadmap Slip: ${alert.initiative?.title || 'Unknown Initiative'}`,
-          description: alert.message || 'Initiative is behind schedule',
+          description: alert.alert_message || 'Initiative is behind schedule',
           action: 'Review roadmap and adjust timeline',
           source_data: alert
         });
@@ -292,12 +292,15 @@ export default function CTODailyWorkflow() {
       }
 
       if (developers && developers.length > 0) {
-        const maxTickets = Math.max(...developers.map(d => d.active_tickets_count || 0));
-        const minTickets = Math.min(...developers.map(d => d.active_tickets_count || 0));
+        // @ts-ignore - active_tickets_count added dynamically
+        const maxTickets = Math.max(...developers.map(d => (d as any).active_tickets_count || 0));
+        // @ts-ignore - active_tickets_count added dynamically
+        const minTickets = Math.min(...developers.map(d => (d as any).active_tickets_count || 0));
         const imbalance = maxTickets - minTickets;
 
         if (imbalance > 3 && developers) {
-          const overloaded = developers.find(d => d.active_tickets_count === maxTickets);
+          // @ts-ignore - active_tickets_count added dynamically
+          const overloaded = developers.find(d => (d as any).active_tickets_count === maxTickets);
           priorities.push({
             id: 'team-imbalance',
             type: 'team',

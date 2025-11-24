@@ -478,14 +478,14 @@ const MainHub: React.FC = () => {
         console.log('Parsed clock status from database:', {
           raw: status.is_clocked_in,
           parsed: isClockedIn,
-          clockInAt: status.clock_in_at,
+          clockInAt: status.clock_in_time,
           currentEntryId: status.current_entry_id
         });
         
         // ALWAYS update with database state - this is the source of truth
         const newStatus = {
           isClockedIn: isClockedIn,
-          clockInAt: status.clock_in_at || null,
+          clockInAt: status.clock_in_time || null,
           hoursToday: Number(status.total_hours_today) || 0,
           weeklyHours: Number(status.weekly_hours) || 0,
           currentEntryId: status.current_entry_id || null
@@ -506,8 +506,8 @@ const MainHub: React.FC = () => {
         }
         
         // Update current duration if clocked in
-        if (isClockedIn && status.clock_in_at) {
-          const duration = calculateDuration(status.clock_in_at, new Date());
+        if (isClockedIn && status.clock_in_time) {
+          const duration = calculateDuration(status.clock_in_time, new Date());
           setCurrentDuration(duration);
         } else {
           setCurrentDuration('00:00:00');
@@ -792,7 +792,7 @@ const MainHub: React.FC = () => {
                   // Update with server data but preserve isClockedIn = true
                   return {
                     isClockedIn: true, // Always keep this true if we're verifying clock in
-                    clockInAt: status.clock_in_at || prev.clockInAt,
+                    clockInAt: status.clock_in_time || prev.clockInAt,
                     hoursToday: Number(status.total_hours_today) || prev.hoursToday,
                     weeklyHours: Number(status.weekly_hours) || prev.weeklyHours,
                     currentEntryId: status.current_entry_id || prev.currentEntryId

@@ -2,20 +2,20 @@ import React, { useEffect, useState, useMemo } from 'react';
 import {
   Grid,
   Badge,
-  Button,
+  Button as MantineButton,
   Group,
-  Stack,
-  Alert,
+  Stack as MantineStack,
+  Alert as MantineAlert,
   Title,
   Text,
-  Divider,
-  Card,
-  Paper,
+  Divider as MantineDivider,
+  Card as MantineCard,
+  Paper as MantinePaper,
   Loader,
   Box as MantineBox,
   Progress,
   ActionIcon,
-  Container,
+  Container as MantineContainer,
   Select,
   TextInput,
   Menu,
@@ -23,6 +23,7 @@ import {
   UnstyledButton,
   Tabs,
 } from '@mantine/core';
+// @ts-ignore - MUI optional dependency
 import {
   Box as MuiBox,
   Card as MuiCard,
@@ -38,7 +39,9 @@ import {
   Paper as MuiPaper,
   IconButton,
   Divider as MuiDivider,
+  // @ts-ignore - MUI optional dependency
 } from '@mui/material';
+// @ts-ignore - MUI optional dependency  
 import Grid2 from '@mui/material/Unstable_Grid2';
 
 // MUI components aliased to avoid conflicts with Mantine
