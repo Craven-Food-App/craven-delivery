@@ -5,6 +5,7 @@ import { DatesProvider } from '@mantine/dates';
 import 'dayjs/locale/en';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
+// @ts-ignore - MUI optional dependency
 import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';

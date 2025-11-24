@@ -585,11 +585,10 @@ export const TechnologyRoadmap: React.FC = () => {
                             {initiative.progress_percentage > 0 && (
                               <Progress
                                 value={initiative.progress_percentage}
-                                color={getHealthColor(initiative.health_score)}
-                                size="sm"
-                                mt="xs"
-                                label={`${initiative.progress_percentage}%`}
-                              />
+                                 color={getHealthColor(initiative.health_score)}
+                                 size="sm"
+                                 mt="xs"
+                               />
                             )}
                             {initiative.dependencies && initiative.dependencies.length > 0 && (
                               <Alert icon={<IconLink size={14} />} color="blue" mt="xs" title="Dependencies">
