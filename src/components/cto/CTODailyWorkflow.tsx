@@ -459,8 +459,8 @@ export default function CTODailyWorkflow() {
   const generateDailyReport = async () => {
     setGeneratingReport(true);
     try {
-      const completedTasks = tasks.filter(t => t.is_completed || t.completed).map(t => t.task_name);
-      const pendingTasks = tasks.filter(t => !t.is_completed && !t.completed).map(t => t.task_name);
+      const completedTasks = tasks.filter(t => t.is_completed).map(t => t.task_name);
+      const pendingTasks = tasks.filter(t => !t.is_completed).map(t => t.task_name);
       
       // Get sprint status
       const { data: activeSprint } = await supabase
