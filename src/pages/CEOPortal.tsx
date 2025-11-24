@@ -44,7 +44,8 @@ import {
 // @ts-ignore - MUI optional dependency  
 import Grid2 from '@mui/material/Unstable_Grid2';
 
-// MUI components aliased to avoid conflicts with Mantine
+
+// Use MUI components as default since file uses MUI syntax
 const Box = MuiBox;
 const Card = MuiCard;
 const Button = MuiButton;
@@ -239,18 +240,18 @@ const CEOPortal: React.FC = () => {
 
   const actionButtons = (
     <Group wrap="wrap">
-      <Button
-        color="red"
-        leftSection={<IconAlertTriangle size={16} />}
+      <MuiButton
+        color="error"
+        startIcon={<IconAlertTriangle size={16} />}
         onClick={() => setActiveTab('emergency')}
       >
         Emergency
-      </Button>
-      <Button variant="default" onClick={handleNavigateToCFO}>CFO Portal</Button>
-      <Button onClick={() => navigate('/admin')}>
+      </MuiButton>
+      <MuiButton variant="outlined" onClick={handleNavigateToCFO}>CFO Portal</MuiButton>
+      <MuiButton variant="contained" onClick={() => navigate('/admin')}>
         Admin Portal
-      </Button>
-      <Button variant="default" onClick={() => navigate('/board')}>Board Portal</Button>
+      </MuiButton>
+      <MuiButton variant="outlined" onClick={() => navigate('/board')}>Board Portal</MuiButton>
     </Group>
   );
 
@@ -1319,10 +1320,10 @@ const CEOPortal: React.FC = () => {
           background: 'linear-gradient(to bottom right, #0f172a, #1e293b)',
         }}
       >
-        <Stack align="center" gap="md">
+        <MantineStack align="center" gap="md">
           <Loader size="xl" color="blue" />
           <Text c="white" size="lg">Verifying access...</Text>
-        </Stack>
+        </MantineStack>
       </Box>
     );
   }
@@ -1339,8 +1340,8 @@ const CEOPortal: React.FC = () => {
           padding: '1rem',
         }}
       >
-        <Card w="100%" maw={500} p="xl">
-          <Stack gap="md" align="center">
+        <MantineCard w="100%" maw={500} p="xl">
+          <MantineStack gap="md" align="center">
             <Title order={2} c="red" ta="center" fw={700}>
               Access Denied
             </Title>
@@ -1352,15 +1353,15 @@ const CEOPortal: React.FC = () => {
               Logged in as: <Text component="span" fw={600}>{user?.email}</Text>
             </Text>
             <Group gap="md" mt="md" w="100%">
-              <Button variant="default" onClick={() => navigate('/')} style={{ flex: 1 }}>
+              <MantineButton variant="default" onClick={() => navigate('/')} style={{ flex: 1 }}>
                 Go Home
-              </Button>
-              <Button color="red" onClick={signOut} style={{ flex: 1 }}>
+              </MantineButton>
+              <MantineButton color="red" onClick={signOut} style={{ flex: 1 }}>
                 Sign Out
-              </Button>
+              </MantineButton>
             </Group>
-          </Stack>
-        </Card>
+          </MantineStack>
+        </MantineCard>
       </Box>
     );
   }
@@ -1381,9 +1382,9 @@ const CEOPortal: React.FC = () => {
         role: 'Executive Leadership',
       }}
     >
-      <Stack gap="md">
+      <MantineStack gap="md">
         {(metrics?.criticalAlerts ?? 0) > 0 && (
-          <Alert
+          <MantineAlert
             title={`${metrics.criticalAlerts} Critical Alert${metrics.criticalAlerts! > 1 ? 's' : ''}`}
             color="red"
             icon={<IconAlertTriangle size={16} />}
@@ -1397,15 +1398,15 @@ const CEOPortal: React.FC = () => {
           >
             <Group justify="space-between" align="center" w="100%">
               <Text>Immediate action required. Click to view details.</Text>
-              <Button size="sm" color="red" onClick={() => setActiveTab('emergency')}>
+              <MantineButton size="sm" color="red" onClick={() => setActiveTab('emergency')}>
                 View Now
-              </Button>
+              </MantineButton>
             </Group>
-          </Alert>
+          </MantineAlert>
         )}
 
         {renderContent()}
-      </Stack>
+      </MantineStack>
     </ExecutivePortalLayout>
   );
 };
