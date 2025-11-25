@@ -2561,6 +2561,7 @@ export type Database = {
       cto_daily_checklist: {
         Row: {
           checklist_date: string
+          completed: boolean | null
           completed_at: string | null
           created_at: string | null
           id: string
@@ -2573,6 +2574,7 @@ export type Database = {
         }
         Insert: {
           checklist_date?: string
+          completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           id?: string
@@ -2585,6 +2587,7 @@ export type Database = {
         }
         Update: {
           checklist_date?: string
+          completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           id?: string
@@ -9192,6 +9195,279 @@ export type Database = {
           },
         ]
       }
+      mobile_app_analytics_events: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          driver_id: string | null
+          event_name: string
+          event_type: string
+          id: string
+          properties: Json | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          event_name: string
+          event_type: string
+          id?: string
+          properties?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          event_name?: string
+          event_type?: string
+          id?: string
+          properties?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_app_analytics_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_app_analytics_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mobile_app_error_logs: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          driver_id: string | null
+          error_context: Json | null
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          error_context?: Json | null
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          error_context?: Json | null
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_app_error_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_app_error_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mobile_app_feature_completion: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          driver_id: string | null
+          feature_name: string
+          feature_status: string
+          id: string
+          properties: Json | null
+          time_spent_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          feature_name: string
+          feature_status: string
+          id?: string
+          properties?: Json | null
+          time_spent_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          feature_name?: string
+          feature_status?: string
+          id?: string
+          properties?: Json | null
+          time_spent_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_app_feature_completion_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_app_feature_completion_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mobile_app_performance_metrics: {
+        Row: {
+          api_response_time_ms: number | null
+          crash_count: number | null
+          created_at: string | null
+          device_info: Json | null
+          driver_id: string | null
+          error_count: number | null
+          id: string
+          load_time_ms: number | null
+          memory_usage_mb: number | null
+          network_latency_ms: number | null
+          render_time_ms: number | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          api_response_time_ms?: number | null
+          crash_count?: number | null
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          error_count?: number | null
+          id?: string
+          load_time_ms?: number | null
+          memory_usage_mb?: number | null
+          network_latency_ms?: number | null
+          render_time_ms?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          api_response_time_ms?: number | null
+          crash_count?: number | null
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          error_count?: number | null
+          id?: string
+          load_time_ms?: number | null
+          memory_usage_mb?: number | null
+          network_latency_ms?: number | null
+          render_time_ms?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_app_performance_metrics_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_app_performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mobile_app_uptime_downtime: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          driver_id: string | null
+          duration_seconds: number | null
+          end_time: string | null
+          id: string
+          session_id: string
+          start_time: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          session_id: string
+          start_time: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          driver_id?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          session_id?: string
+          start_time?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_app_uptime_downtime_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mobile_app_uptime_downtime_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       ms365_email_accounts: {
         Row: {
           access_level: number | null
@@ -14997,7 +15273,28 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_avg_performance_metrics: {
+        Args: { days_back?: number }
+        Returns: {
+          avg_api_response_time_ms: number
+          avg_load_time_ms: number
+          avg_memory_usage_mb: number
+          avg_network_latency_ms: number
+          avg_render_time_ms: number
+          total_crashes: number
+          total_errors: number
+        }[]
+      }
       get_current_user_email: { Args: never; Returns: string }
+      get_daily_uptime_percentage: {
+        Args: { target_date?: string }
+        Returns: {
+          online_seconds: number
+          total_seconds: number
+          uptime_percentage: number
+        }[]
+      }
+      get_db_connection_count: { Args: never; Returns: number }
       get_department_name: { Args: { dept_id: string }; Returns: string }
       get_document_statistics: {
         Args: never
@@ -15049,6 +15346,19 @@ export type Database = {
           id: string
           metadata: Json
           storage_path: string
+        }[]
+      }
+      get_feature_completion_stats: {
+        Args: { days_back?: number }
+        Returns: {
+          abandoned_count: number
+          avg_completion_percentage: number
+          avg_time_spent_seconds: number
+          completed_count: number
+          completion_rate: number
+          failed_count: number
+          feature_name: string
+          total_attempts: number
         }[]
       }
       get_or_create_conversation: {
