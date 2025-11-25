@@ -44,16 +44,40 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    // Check if user has developer permissions
-    const { data: permissions, error: permError } = await supabase
-      .from("developer_permissions")
-      .select("can_read, can_write, can_merge")
-      .eq("developer_id", user.id)
-      .eq("is_active", true)
-      .single();
+    // Check for full access (Torrance Stroman, owner, or admin)
+    const hasFullAccess = user.email === 'torrancestroman@gmail.com' || 
+                         user.email === 'craven@usa.com';
+    
+    let permissions = { can_read: false, can_write: false, can_merge: false };
+    
+    if (hasFullAccess) {
+      // Grant full permissions to admins/owners
+      permissions = { can_read: true, can_write: true, can_merge: true };
+    } else {
+      // Check for admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      if (roleData?.role === "admin") {
+        permissions = { can_read: true, can_write: true, can_merge: true };
+      } else {
+        // Check developer permissions table
+        const { data: devPermissions, error: permError } = await supabase
+          .from("developer_permissions")
+          .select("can_read, can_write, can_merge")
+          .eq("developer_id", user.id)
+          .eq("is_active", true)
+          .single();
 
-    if (permError || !permissions) {
-      throw new Error("No developer permissions found");
+        if (permError || !devPermissions) {
+          throw new Error("No developer permissions found");
+        }
+        permissions = devPermissions;
+      }
     }
 
     const { action, repository, path, branch, content, commit_message, pr_title, pr_body, base_branch, old_content }: GitHubRequest = await req.json();
