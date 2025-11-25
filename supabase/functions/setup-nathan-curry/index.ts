@@ -201,20 +201,22 @@ serve(async (req) => {
       console.log('Portal PIN configured for Hub access');
     }
 
-    // Step 5: Grant Company Portal access (CRAVEN_EXECUTIVE role only)
+    // Step 5: Grant Company Portal access (CRAVEN_EXECUTIVE and CRAVEN_CTO roles)
+    const rolesToGrant = [
+      { user_id: actualUserId, role: 'CRAVEN_EXECUTIVE' },
+      { user_id: actualUserId, role: 'CRAVEN_CTO' },
+    ];
+
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
-        user_id: actualUserId,
-        role: 'CRAVEN_EXECUTIVE',
-      }, {
+      .upsert(rolesToGrant, {
         onConflict: 'user_id,role',
       });
 
     if (roleError) {
-      console.error('Error granting company role:', roleError);
+      console.error('Error granting company roles:', roleError);
     } else {
-      console.log('Company Portal access granted (CRAVEN_EXECUTIVE)');
+      console.log('Company Portal access granted (CRAVEN_EXECUTIVE and CRAVEN_CTO)');
     }
 
     // Step 6: Remove any roles that would grant restricted access
