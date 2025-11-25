@@ -600,7 +600,7 @@ serve(async (req) => {
       console.warn('Unreplaced placeholders found:', uniquePlaceholders);
       
       // Replace remaining placeholders with defaults based on their name
-      uniquePlaceholders.forEach(placeholder => {
+      uniquePlaceholders.forEach((placeholder: string) => {
         const key = placeholder.replace(/\{\{|\}\}/g, '').trim();
         let defaultValue = '';
         

@@ -179,9 +179,18 @@ serve(async (req) => {
         const resendApiKey = Deno.env.get('RESEND_API_KEY');
         if (resendApiKey) {
           const emails = [];
-          if (overloadedDev?.user_profiles?.email) emails.push(overloadedDev.user_profiles.email);
-          if (reassignDev?.user_profiles?.email) emails.push(reassignDev.user_profiles.email);
-          if (cto?.user_profiles?.email) emails.push(cto.user_profiles.email);
+          if (Array.isArray(overloadedDev?.user_profiles)) {
+            const profile = overloadedDev.user_profiles[0];
+            if (profile?.email) emails.push(profile.email);
+          }
+          if (Array.isArray(reassignDev?.user_profiles)) {
+            const profile = reassignDev.user_profiles[0];
+            if (profile?.email) emails.push(profile.email);
+          }
+          if (Array.isArray(cto?.user_profiles)) {
+            const profile = cto.user_profiles[0];
+            if (profile?.email) emails.push(profile.email);
+          }
 
           await fetch('https://api.resend.com/emails', {
             method: 'POST',

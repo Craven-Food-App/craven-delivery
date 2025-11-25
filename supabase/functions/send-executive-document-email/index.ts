@@ -228,7 +228,7 @@ serve(async (req: Request) => {
             }
 
             if (pdfBytes && pdfBytes.length > 0) {
-              const base64 = base64Encode(pdfBytes);
+              const base64 = base64Encode(pdfBytes.buffer);
               attachments.push({
                 filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
                 content: base64,
@@ -732,7 +732,7 @@ For the most up-to-date instructions, visit: ${portalUrl}/instructions
     // Convert README to base64 for attachment
     // Use TextEncoder to properly encode UTF-8, then base64
     const readmeBytes = new TextEncoder().encode(readmeContent);
-    const readmeBase64 = base64Encode(readmeBytes);
+    const readmeBase64 = base64Encode(readmeBytes.buffer);
     
     // Add README to attachments
     const allAttachments = [
@@ -757,7 +757,7 @@ For the most up-to-date instructions, visit: ${portalUrl}/instructions
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: (emailResponse.data as any)?.id || emailResponse.id,
+        messageId: (emailResponse.data as any)?.id || (emailResponse as any)?.id,
         to,
         documentTitle 
       }),
