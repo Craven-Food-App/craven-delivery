@@ -500,8 +500,8 @@ export const EnhancedCTODashboard: React.FC = () => {
       setPerformanceData(realData);
 
       // Calculate changes
-      const previousMonth = last12Months[last12Months.length - 2] || last12Months[0];
-      const currentMonth = last12Months[last12Months.length - 1];
+      const previousMonth = last12MonthsData[last12MonthsData.length - 2] || last12MonthsData[0];
+      const currentMonth = last12MonthsData[last12MonthsData.length - 1];
 
       const calculateChange = (current: number, previous: number) => {
         if (previous === 0) return 0;
@@ -602,9 +602,9 @@ export const EnhancedCTODashboard: React.FC = () => {
           value: `${mobileUptime.uptime_percentage.toFixed(2)}%`,
           change: 0,
           changeUnit: 'today',
-          trend: mobileUptime.uptime_percentage >= 95 ? 'up' : mobileUptime.uptime_percentage >= 90 ? 'neutral' : 'down',
+          trend: (mobileUptime.uptime_percentage >= 95 ? 'up' : mobileUptime.uptime_percentage >= 90 ? 'neutral' : 'down') as 'up' | 'neutral' | 'down',
           benchmark: 'Target: >95%',
-          status: mobileUptime.uptime_percentage >= 95 ? 'excellent' : mobileUptime.uptime_percentage >= 90 ? 'good' : mobileUptime.uptime_percentage >= 80 ? 'warning' : 'critical',
+          status: (mobileUptime.uptime_percentage >= 95 ? 'excellent' : mobileUptime.uptime_percentage >= 90 ? 'good' : mobileUptime.uptime_percentage >= 80 ? 'warning' : 'critical') as 'excellent' | 'good' | 'warning' | 'critical',
           icon: IconServer,
           color: mobileUptime.uptime_percentage >= 95 ? '#10b981' : mobileUptime.uptime_percentage >= 90 ? '#f59e0b' : '#ef4444',
           description: `Online: ${Math.floor(mobileUptime.online_seconds / 3600)}h ${Math.floor((mobileUptime.online_seconds % 3600) / 60)}m`,
@@ -615,9 +615,9 @@ export const EnhancedCTODashboard: React.FC = () => {
           value: `${mobileErrorRate.toFixed(2)}/hr`,
           change: 0,
           changeUnit: 'last 24h',
-          trend: mobileErrorRate < 0.1 ? 'up' : mobileErrorRate < 1 ? 'neutral' : 'down',
+          trend: (mobileErrorRate < 0.1 ? 'up' : mobileErrorRate < 1 ? 'neutral' : 'down') as 'up' | 'neutral' | 'down',
           benchmark: 'Target: <0.1/hr',
-          status: mobileErrorRate < 0.1 ? 'excellent' : mobileErrorRate < 1 ? 'good' : mobileErrorRate < 5 ? 'warning' : 'critical',
+          status: (mobileErrorRate < 0.1 ? 'excellent' : mobileErrorRate < 1 ? 'good' : mobileErrorRate < 5 ? 'warning' : 'critical') as 'excellent' | 'good' | 'warning' | 'critical',
           icon: IconBug,
           color: mobileErrorRate < 0.1 ? '#10b981' : mobileErrorRate < 1 ? '#f59e0b' : '#ef4444',
           description: 'Error rate from mobile app',

@@ -45,13 +45,13 @@ class MobileAnalyticsService {
         
         // Try to get driver_id from drivers table
         const { data: driver } = await supabase
-          .from('drivers')
+          .from('drivers' as any)
           .select('id')
           .eq('user_id', user.id)
           .single();
         
         if (driver) {
-          this.currentDriverId = driver.id;
+          this.currentDriverId = (driver as any).id;
         }
       }
 
@@ -119,7 +119,7 @@ class MobileAnalyticsService {
 
     try {
       const { error } = await supabase
-        .from('mobile_app_analytics_events')
+        .from('mobile_app_analytics_events' as any)
         .insert({
           user_id: this.currentUserId,
           driver_id: this.currentDriverId,
@@ -155,7 +155,7 @@ class MobileAnalyticsService {
         const duration = Math.floor((now.getTime() - this.uptimeSessionStart.getTime()) / 1000);
         
         await supabase
-          .from('mobile_app_uptime_downtime')
+          .from('mobile_app_uptime_downtime' as any)
           .insert({
             user_id: this.currentUserId,
             driver_id: this.currentDriverId,
@@ -174,7 +174,7 @@ class MobileAnalyticsService {
 
       // Insert current status (will be updated when status changes)
       await supabase
-        .from('mobile_app_uptime_downtime')
+        .from('mobile_app_uptime_downtime' as any)
         .insert({
           user_id: this.currentUserId,
           driver_id: this.currentDriverId,
@@ -231,7 +231,7 @@ class MobileAnalyticsService {
 
     try {
       await supabase
-        .from('mobile_app_performance_metrics')
+        .from('mobile_app_performance_metrics' as any)
         .insert({
           user_id: this.currentUserId,
           driver_id: this.currentDriverId,
@@ -259,7 +259,7 @@ class MobileAnalyticsService {
     try {
       // Track in error logs table
       await supabase
-        .from('mobile_app_error_logs')
+        .from('mobile_app_error_logs' as any)
         .insert({
           user_id: this.currentUserId,
           driver_id: this.currentDriverId,

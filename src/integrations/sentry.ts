@@ -16,15 +16,16 @@ export const initSentry = () => {
       maxBreadcrumbs: errorReportingConfig.MAX_BREADCRUMBS,
       attachStacktrace: errorReportingConfig.ATTACH_STACKTRACE,
       integrations: [
-        new Sentry.BrowserTracing({
-          // Set sampling rate for performance monitoring
+        // @ts-ignore - BrowserTracing may not be available in all versions
+        ...(Sentry.BrowserTracing ? [new Sentry.BrowserTracing({
           tracePropagationTargets: ["localhost", /^https:\/\/.*\.supabase\.co/],
-        }),
-        new Sentry.Replay({
+        })] : []),
+        // @ts-ignore - Replay may not be available in all versions
+        ...(Sentry.Replay ? [new Sentry.Replay({
           maskAllText: true,
           blockAllMedia: true,
           sampleRate: errorReportingConfig.SAMPLE_RATE,
-        }),
+        })] : []),
       ],
       beforeSend(event, hint) {
         // Filter out known harmless errors

@@ -16,7 +16,7 @@ export interface BackgroundLocationPlugin extends Plugin {
   addListener(
     eventName: 'locationUpdate',
     listenerFunc: (location: LocationData) => void
-  ): PluginListenerHandle;
+  ): Promise<PluginListenerHandle>;
 }
 
 // For web, we'll use the browser geolocation API
@@ -63,14 +63,14 @@ class BackgroundLocationWeb implements BackgroundLocationPlugin {
     }
   }
 
-  addListener(
+  async addListener(
     eventName: 'locationUpdate',
     listenerFunc: (location: LocationData) => void
-  ): PluginListenerHandle {
+  ): Promise<PluginListenerHandle> {
     this.listeners.push(listenerFunc);
 
     return {
-      remove: () => {
+      remove: async () => {
         const index = this.listeners.indexOf(listenerFunc);
         if (index > -1) {
           this.listeners.splice(index, 1);
@@ -78,12 +78,16 @@ class BackgroundLocationWeb implements BackgroundLocationPlugin {
       },
     };
   }
+
+  async removeAllListeners(): Promise<void> {
+    this.listeners = [];
+  }
 }
 
 // For native platforms, we'll use Capacitor's plugin system
 // Note: You'll need to create a native plugin for full background support
 const BackgroundLocation = Capacitor.isNativePlatform()
-  ? (Capacitor.Plugins.BackgroundLocation as BackgroundLocationPlugin) || new BackgroundLocationWeb()
+  ? ((Capacitor as any).Plugins?.BackgroundLocation as BackgroundLocationPlugin) || new BackgroundLocationWeb()
   : new BackgroundLocationWeb();
 
 export const useBackgroundLocation = () => {
@@ -107,10 +111,10 @@ export const useBackgroundLocation = () => {
     }
   };
 
-  const addLocationListener = (
+  const addLocationListener = async (
     callback: (location: LocationData) => void
-  ): PluginListenerHandle => {
-    return BackgroundLocation.addListener('locationUpdate', callback);
+  ): Promise<PluginListenerHandle> => {
+    return await BackgroundLocation.addListener('locationUpdate', callback);
   };
 
   return {
