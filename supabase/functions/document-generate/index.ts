@@ -227,7 +227,7 @@ serve(async (req) => {
     if (signatureLayout.length > 0) {
       try {
         const pageDimensions = await getPdfPageDimensions(pdfBuffer);
-        signatureAnchors = convertLayoutToAnchors(signatureLayout, pageDimensions);
+        signatureAnchors = convertLayoutToAnchors(signatureLayout as any, pageDimensions);
         console.log('Signature anchors calculated:', Object.keys(signatureAnchors).length, 'anchors');
       } catch (anchorError) {
         console.error('Error calculating signature anchors:', anchorError);

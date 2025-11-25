@@ -105,7 +105,8 @@ serve(async (req) => {
                 // If user already exists, try to find it
                 if (createError.message?.toLowerCase().includes('already') || 
                     createError.message?.toLowerCase().includes('registered')) {
-                  const { data: { user: foundUser } } = await supabaseAdmin.auth.admin.getUserByEmail(execAppointment.proposed_officer_email);
+                  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+                  const foundUser = users?.find(u => u.email?.toLowerCase() === execAppointment.proposed_officer_email.toLowerCase());
                   if (foundUser) {
                     user = foundUser;
                     console.log(`Found existing user ${user.id} after creation attempt`);

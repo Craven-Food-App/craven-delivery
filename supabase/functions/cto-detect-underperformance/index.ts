@@ -253,7 +253,7 @@ serve(async (req) => {
         }
       } catch (emailError) {
         console.error('Error sending email for alert:', emailError);
-        emailResults.push({ alert_id: alert.id, status: 'failed', error: emailError.message });
+        emailResults.push({ alert_id: alert.id, status: 'failed', error: (emailError as Error).message });
       }
     }
 
