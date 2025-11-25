@@ -678,7 +678,7 @@ const BusinessEmailSystem: React.FC = () => {
         // Fetch real emails from database table (if it exists)
         // For now, start with empty array - only show real emails from database
         const { data: emailData, error } = await supabase
-          .from('executive_emails')
+          .from('executive_emails' as any)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100);

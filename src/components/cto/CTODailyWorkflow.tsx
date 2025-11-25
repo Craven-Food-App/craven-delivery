@@ -532,13 +532,13 @@ export default function CTODailyWorkflow() {
 
       // Get real deployment notes from architecture changes
       const { data: recentDeployments } = await supabase
-        .from('cto_architecture_changes')
+        .from('cto_architecture_changes' as any)
         .select('change_title, status, created_at')
         .gte('created_at', dayjs().subtract(24, 'hours').toISOString())
         .order('created_at', { ascending: false })
         .limit(10);
       
-      const deploymentNotes = recentDeployments?.map(d => 
+      const deploymentNotes = (recentDeployments as any)?.map((d: any) => 
         `${dayjs(d.created_at).format('HH:mm')} - ${d.change_title} [${d.status}]`
       ) || [];
 

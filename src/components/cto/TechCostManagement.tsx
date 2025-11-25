@@ -216,7 +216,7 @@ export const TechCostManagement: React.FC = () => {
           // If we have current month data, use that as monthly cost
           const currentMonthCost = vendorCosts.find((c: any) => c.period === currentMonth);
           if (currentMonthCost) {
-            monthly_cost = parseFloat(currentMonthCost.amount) || monthly_cost;
+            monthly_cost = parseFloat(String(currentMonthCost.amount)) || monthly_cost;
             annual_cost = monthly_cost * 12;
           }
         }
