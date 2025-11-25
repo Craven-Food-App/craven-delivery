@@ -89,6 +89,8 @@ export const TechCostManagement: React.FC = () => {
   const [alerts, setAlerts] = useState<CostAlert[]>([]);
   const [optimizations, setOptimizations] = useState<Optimization[]>([]);
   const [forecasts, setForecasts] = useState<any[]>([]);
+  const [actualCosts, setActualCosts] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [refreshing, setRefreshing] = useState(false);
@@ -126,6 +128,8 @@ export const TechCostManagement: React.FC = () => {
         fetchAlerts(),
         fetchOptimizations(),
         fetchForecasts(),
+        fetchActualCosts(),
+        fetchBudgets(),
       ]);
     } catch (error) {
       console.error('Error fetching cost data:', error);
@@ -139,25 +143,7 @@ export const TechCostManagement: React.FC = () => {
     const { data, error } = await supabase.rpc('check_cost_variances');
     if (error) {
       console.error('Error fetching variances:', error);
-      // Fallback to mock data if function doesn't exist yet
-      setCostCategories([
-        {
-          category_id: '1',
-          category_name: 'Cloud Infrastructure',
-          budgeted: 50000,
-          actual: 48500,
-          variance: -1500,
-          variance_pct: -3,
-        },
-        {
-          category_id: '2',
-          category_name: 'Software Licenses',
-          budgeted: 15000,
-          actual: 15200,
-          variance: 200,
-          variance_pct: 1.3,
-        },
-      ]);
+      setCostCategories([]);
     } else {
       setCostCategories(
         (data || []).map((v: any) => ({
@@ -173,36 +159,85 @@ export const TechCostManagement: React.FC = () => {
   };
 
   const fetchVendors = async () => {
-    const { data, error } = await supabase
-      .from('tech_vendors')
-      .select('*')
-      .eq('is_active', true)
-      .order('monthly_cost', { ascending: false });
+    try {
+      // Fetch active vendors - only show vendors created in 2025 or later (no fake 2024 data)
+      const { data: vendors, error: vendorsError } = await supabase
+        .from('tech_vendors')
+        .select('*')
+        .eq('is_active', true)
+        .gte('created_at', '2025-01-01')
+        .order('monthly_cost', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching vendors:', error);
-      // Fallback data
-      setVendorSpend([
-        {
-          id: '1',
-          vendor: 'Supabase',
-          service: 'Database & Storage',
-          monthly_cost: 2500,
-          annual_cost: 30000,
-        },
-      ]);
-    } else {
-      setVendorSpend(
-        (data || []).map((v: any) => ({
+      if (vendorsError) {
+        console.error('Error fetching vendors:', vendorsError);
+        setVendorSpend([]);
+        return;
+      }
+
+      if (!vendors || vendors.length === 0) {
+        setVendorSpend([]);
+        return;
+      }
+
+      // Get current month and last 12 months for calculations
+      const currentDate = new Date();
+      const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Fetch actual costs for the last 12 months (will be stored by fetchActualCosts)
+      const { data: vendorCostsData, error: costsError } = await supabase
+        .from('tech_actual_costs')
+        .select('vendor_id, period, amount')
+        .gte('period', `${currentDate.getFullYear() - 1}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`)
+        .lte('period', currentMonth);
+
+      if (costsError) {
+        console.error('Error fetching actual costs:', costsError);
+      }
+
+      // Calculate real monthly and annual costs from actual spending
+      const vendorSpendData = vendors.map((v: any) => {
+        // Find actual costs for this vendor
+        const vendorCosts = (vendorCostsData || []).filter((ac: any) => ac.vendor_id === v.id);
+        
+        // Calculate average monthly cost from actual costs (last 12 months)
+        let monthly_cost = parseFloat(v.monthly_cost) || 0;
+        let annual_cost = parseFloat(v.annual_cost) || monthly_cost * 12;
+
+        if (vendorCosts.length > 0) {
+          // Calculate average monthly cost from actual spending
+          const totalSpent = vendorCosts.reduce((sum: number, cost: any) => sum + parseFloat(cost.amount || 0), 0);
+          const monthsWithData = new Set(vendorCosts.map((c: any) => c.period)).size;
+          
+          if (monthsWithData > 0) {
+            monthly_cost = totalSpent / monthsWithData;
+            annual_cost = monthly_cost * 12;
+          }
+          
+          // If we have current month data, use that as monthly cost
+          const currentMonthCost = vendorCosts.find((c: any) => c.period === currentMonth);
+          if (currentMonthCost) {
+            monthly_cost = parseFloat(currentMonthCost.amount) || monthly_cost;
+            annual_cost = monthly_cost * 12;
+          }
+        }
+
+        return {
           id: v.id,
           vendor: v.name,
           service: v.service_name,
-          monthly_cost: parseFloat(v.monthly_cost) || 0,
-          annual_cost: parseFloat(v.annual_cost) || v.monthly_cost * 12,
+          monthly_cost: Math.round(monthly_cost * 100) / 100, // Round to 2 decimals
+          annual_cost: Math.round(annual_cost * 100) / 100,
           contract_end: v.contract_end_date,
           is_shadow_tool: v.is_shadow_tool,
-        }))
-      );
+        };
+      });
+
+      // Sort by monthly cost descending
+      vendorSpendData.sort((a, b) => b.monthly_cost - a.monthly_cost);
+      setVendorSpend(vendorSpendData);
+    } catch (error) {
+      console.error('Error in fetchVendors:', error);
+      setVendorSpend([]);
     }
   };
 
@@ -247,6 +282,32 @@ export const TechCostManagement: React.FC = () => {
 
     if (!error && data) {
       setForecasts(data);
+    }
+  };
+
+  const fetchActualCosts = async () => {
+    const currentDate = new Date();
+    const { data, error } = await supabase
+      .from('tech_actual_costs')
+      .select('period, amount, category_id')
+      .gte('period', `${currentDate.getFullYear() - 1}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`)
+      .lte('period', `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+
+    if (!error && data) {
+      setActualCosts(data);
+    }
+  };
+
+  const fetchBudgets = async () => {
+    const currentDate = new Date();
+    const { data, error } = await supabase
+      .from('tech_budgets')
+      .select('period, budgeted_amount, category_id')
+      .gte('period', `${currentDate.getFullYear() - 1}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`)
+      .lte('period', `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
+
+    if (!error && data) {
+      setBudgets(data);
     }
   };
 
@@ -679,44 +740,50 @@ export const TechCostManagement: React.FC = () => {
             <Title order={4} mb="md">
               Vendor Spend Analysis
             </Title>
-            <MantineTable
-              data={vendorSpend}
-              loading={loading}
-              rowKey={(r: any) => `${r.vendor}-${r.service}`}
-              columns={[
-                { title: 'Vendor', dataIndex: 'vendor' },
-                { title: 'Service', dataIndex: 'service' },
-                {
-                  title: 'Monthly Cost',
-                  dataIndex: 'monthly_cost',
-                  render: (v: number) => `$${v.toLocaleString()}`,
-                },
-                {
-                  title: 'Annual Cost',
-                  dataIndex: 'annual_cost',
-                  render: (v: number) => `$${v.toLocaleString()}`,
-                },
-                {
-                  title: 'Contract End',
-                  dataIndex: 'contract_end',
-                  render: (v: string) => (v ? new Date(v).toLocaleDateString() : 'N/A'),
-                },
-                {
-                  title: 'Status',
-                  dataIndex: 'is_shadow_tool',
-                  render: (v: boolean) =>
-                    v ? (
-                      <Badge color="red" variant="light">
-                        Shadow Tool
-                      </Badge>
-                    ) : (
-                      <Badge color="green" variant="light">
-                        Approved
-                      </Badge>
-                    ),
-                },
-              ]}
-            />
+            {vendorSpend.length === 0 && !loading ? (
+              <Text c="dimmed" ta="center" py="xl">
+                No active vendors found. Add vendors in the Tech Cost Management system.
+              </Text>
+            ) : (
+              <MantineTable
+                data={vendorSpend}
+                loading={loading}
+                rowKey={(r: any) => `${r.vendor}-${r.service}`}
+                columns={[
+                  { title: 'Vendor', dataIndex: 'vendor' },
+                  { title: 'Service', dataIndex: 'service' },
+                  {
+                    title: 'Monthly Cost',
+                    dataIndex: 'monthly_cost',
+                    render: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  },
+                  {
+                    title: 'Annual Cost',
+                    dataIndex: 'annual_cost',
+                    render: (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  },
+                  {
+                    title: 'Contract End',
+                    dataIndex: 'contract_end',
+                    render: (v: string) => (v ? new Date(v).toLocaleDateString() : 'N/A'),
+                  },
+                  {
+                    title: 'Status',
+                    dataIndex: 'is_shadow_tool',
+                    render: (v: boolean) =>
+                      v ? (
+                        <Badge color="red" variant="light">
+                          Shadow Tool
+                        </Badge>
+                      ) : (
+                        <Badge color="green" variant="light">
+                          Approved
+                        </Badge>
+                      ),
+                  },
+                ]}
+              />
+            )}
           </Card>
         </Tabs.Panel>
 
@@ -726,28 +793,24 @@ export const TechCostManagement: React.FC = () => {
               <Title order={4} mb="md">
                 12-Month Burn Rate Forecast
               </Title>
-              <FuturisticChart
-                data={Array.from({ length: 12 }, (_, i) => {
-                  const month = new Date();
-                  month.setMonth(month.getMonth() + i);
-                  const monthStr = month.toLocaleString('default', { month: 'short', year: 'numeric' });
-                  
-                  // Calculate projected burn rate based on current trend
-                  const growthRate = totalVariancePct > 0 ? 1 + totalVariancePct / 100 : 1;
-                  const projected = totalActual * Math.pow(growthRate, i);
-                  
-                  return {
-                    month: monthStr,
-                    'Projected Cost': projected,
+              {forecasts.length === 0 ? (
+                <Text c="dimmed" ta="center" py="xl">
+                  No forecast data available. Forecasts are generated from real cost trends.
+                </Text>
+              ) : (
+                <FuturisticChart
+                  data={forecasts.map((forecast: any) => ({
+                    month: new Date(forecast.forecast_period + '-01').toLocaleString('default', { month: 'short', year: 'numeric' }),
+                    'Projected Cost': parseFloat(forecast.forecasted_amount || 0),
                     'Budget': totalBudgeted,
-                  };
-                })}
-                type="composed"
-                title=""
-                height={400}
-                colors={['#ef4444', '#3b82f6']}
-                dataKeys={{ revenue: 'Projected Cost', profit: 'Budget' }}
-              />
+                  }))}
+                  type="composed"
+                  title=""
+                  height={400}
+                  colors={['#ef4444', '#3b82f6']}
+                  dataKeys={{ revenue: 'Projected Cost', profit: 'Budget' }}
+                />
+              )}
             </Card>
 
             <Grid gutter="md">
@@ -759,20 +822,30 @@ export const TechCostManagement: React.FC = () => {
                   <Stack gap="xs">
                     <Group justify="space-between">
                       <Text size="sm">Current Monthly</Text>
-                      <Text fw={600}>${(totalActual / 1000).toFixed(0)}K</Text>
+                      <Text fw={600}>${totalActual > 0 ? (totalActual / 1000).toFixed(0) + 'K' : 'N/A'}</Text>
                     </Group>
-                    <Group justify="space-between">
-                      <Text size="sm">6-Month Projection</Text>
-                      <Text fw={600} c="orange">
-                        ${((totalActual * Math.pow(1 + totalVariancePct / 100, 6)) / 1000).toFixed(0)}K
-                      </Text>
-                    </Group>
-                    <Group justify="space-between">
-                      <Text size="sm">12-Month Projection</Text>
-                      <Text fw={600} c="red">
-                        ${((totalActual * Math.pow(1 + totalVariancePct / 100, 12)) / 1000).toFixed(0)}K
-                      </Text>
-                    </Group>
+                    {forecasts.length > 0 ? (
+                      <>
+                        {forecasts.filter((f: any) => f.forecast_period >= '2025-06').slice(0, 1).map((forecast: any) => (
+                          <Group key={forecast.id} justify="space-between">
+                            <Text size="sm">6-Month Forecast</Text>
+                            <Text fw={600} c="orange">
+                              ${(parseFloat(forecast.forecasted_amount || 0) / 1000).toFixed(0)}K
+                            </Text>
+                          </Group>
+                        ))}
+                        {forecasts.filter((f: any) => f.forecast_period >= '2025-12').slice(0, 1).map((forecast: any) => (
+                          <Group key={forecast.id} justify="space-between">
+                            <Text size="sm">12-Month Forecast</Text>
+                            <Text fw={600} c="red">
+                              ${(parseFloat(forecast.forecasted_amount || 0) / 1000).toFixed(0)}K
+                            </Text>
+                          </Group>
+                        ))}
+                      </>
+                    ) : (
+                      <Text size="sm" c="dimmed">No forecast data available</Text>
+                    )}
                   </Stack>
                 </Card>
               </Grid.Col>
@@ -782,27 +855,16 @@ export const TechCostManagement: React.FC = () => {
                     Scaling Impact Analysis
                   </Title>
                   <Stack gap="xs">
-                    <Group justify="space-between">
-                      <Text size="sm">2x User Growth</Text>
-                      <Text fw={600} c="blue">
-                        +${((totalActual * 0.6) / 1000).toFixed(0)}K/mo
-                      </Text>
-                    </Group>
-                    <Group justify="space-between">
-                      <Text size="sm">5x User Growth</Text>
-                      <Text fw={600} c="orange">
-                        +${((totalActual * 1.5) / 1000).toFixed(0)}K/mo
-                      </Text>
-                    </Group>
-                    <Group justify="space-between">
-                      <Text size="sm">10x User Growth</Text>
-                      <Text fw={600} c="red">
-                        +${((totalActual * 3) / 1000).toFixed(0)}K/mo
-                      </Text>
-                    </Group>
-                    <Text size="xs" c="dimmed" mt="xs">
-                      *Estimates based on infrastructure scaling patterns
-                    </Text>
+                    {totalActual > 0 ? (
+                      <>
+                        <Text size="sm" c="dimmed" mb="xs">Scaling estimates require historical cost data</Text>
+                        <Text size="xs" c="dimmed">
+                          Add real vendor costs and usage data to generate scaling projections
+                        </Text>
+                      </>
+                    ) : (
+                      <Text size="sm" c="dimmed">No cost data available for scaling analysis</Text>
+                    )}
                   </Stack>
                 </Card>
               </Grid.Col>
@@ -815,22 +877,78 @@ export const TechCostManagement: React.FC = () => {
             <Title order={4} mb="md">
               12-Month Cost Trend
             </Title>
-            <FuturisticChart
-              data={Array.from({ length: 12 }, (_, i) => {
-                const month = new Date();
-                month.setMonth(month.getMonth() - (11 - i));
-                return {
-                  month: month.toLocaleString('default', { month: 'short' }),
-                  Budget: totalBudgeted * (0.95 + Math.random() * 0.1),
-                  Actual: totalActual * (0.9 + Math.random() * 0.2),
-                };
-              })}
-              type="composed"
-              title=""
-              height={400}
-              colors={['#3b82f6', '#10b981']}
-              dataKeys={{ revenue: 'Budget', profit: 'Actual' }}
-            />
+            {actualCosts.length === 0 && budgets.length === 0 ? (
+              <Text c="dimmed" ta="center" py="xl">
+                No cost data available. Add vendors and budgets to see trends.
+              </Text>
+            ) : (
+              <FuturisticChart
+                data={(() => {
+                  // Only show real data from database - no fake generation
+                  const chartData: any[] = [];
+                  const now = new Date();
+                  
+                  // Aggregate actual costs by period
+                  const actualCostsByPeriod: Record<string, number> = {};
+                  actualCosts.forEach((cost: any) => {
+                    if (!actualCostsByPeriod[cost.period]) {
+                      actualCostsByPeriod[cost.period] = 0;
+                    }
+                    actualCostsByPeriod[cost.period] += parseFloat(cost.amount || 0);
+                  });
+                  
+                  // Aggregate budgets by period
+                  const budgetsByPeriod: Record<string, number> = {};
+                  budgets.forEach((budget: any) => {
+                    if (!budgetsByPeriod[budget.period]) {
+                      budgetsByPeriod[budget.period] = 0;
+                    }
+                    budgetsByPeriod[budget.period] += parseFloat(budget.budgeted_amount || 0);
+                  });
+                  
+                  // Get all periods that have data
+                  const allPeriods = new Set([...Object.keys(actualCostsByPeriod), ...Object.keys(budgetsByPeriod)]);
+                  
+                  // Only show months that have real data - NO FAKE ZEROS
+                  allPeriods.forEach(period => {
+                    const [year, month] = period.split('-');
+                    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+                    const chartEntry: any = {
+                      month: date.toLocaleString('default', { month: 'short', year: 'numeric' }),
+                    };
+                    
+                    // Only include Budget if we have real budget data
+                    if (budgetsByPeriod[period] !== undefined) {
+                      chartEntry.Budget = budgetsByPeriod[period];
+                    }
+                    
+                    // Only include Actual if we have real actual cost data
+                    if (actualCostsByPeriod[period] !== undefined) {
+                      chartEntry.Actual = actualCostsByPeriod[period];
+                    }
+                    
+                    // Only add to chart if we have at least one real value
+                    if (chartEntry.Budget !== undefined || chartEntry.Actual !== undefined) {
+                      chartData.push(chartEntry);
+                    }
+                  });
+                  
+                  // Sort by date
+                  chartData.sort((a, b) => {
+                    const dateA = new Date(a.month + ' 1');
+                    const dateB = new Date(b.month + ' 1');
+                    return dateA.getTime() - dateB.getTime();
+                  });
+                  
+                  return chartData;
+                })()}
+                type="composed"
+                title=""
+                height={400}
+                colors={['#3b82f6', '#10b981']}
+                dataKeys={{ revenue: 'Budget', profit: 'Actual' }}
+              />
+            )}
           </Card>
         </Tabs.Panel>
       </Tabs>

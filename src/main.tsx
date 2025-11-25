@@ -13,6 +13,10 @@ import '@mantine/carousel/styles.css';
 import App from './App.tsx';
 import './index.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { initSentry } from '@/integrations/sentry';
+
+// Initialize Sentry before React renders
+initSentry();
 
 // Suppress known harmless console warnings
 const originalWarn = console.warn;

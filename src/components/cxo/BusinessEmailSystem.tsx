@@ -52,59 +52,7 @@ interface Email {
 const DEFAULT_GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
 const TextArea = Input.TextArea;
 
-const INITIAL_EMAILS: Email[] = [
-  {
-    id: '1',
-    subject: 'Project Status Update',
-    sender: 'Alice Johnson (via Zoho)',
-    recipient: 'You',
-    body: 'The Q3 report is finalized and ready for your review. Please check the attached document for detailed metrics and next steps.',
-    timestamp: '10:30 AM',
-    folder: 'inbox',
-    read: false,
-    priority: 'high',
-  },
-  {
-    id: '2',
-    subject: 'Meeting Confirmation',
-    sender: 'Calendar Bot',
-    recipient: 'You',
-    body: 'Your meeting with the marketing team on Nov 10th is confirmed.',
-    timestamp: '9:15 AM',
-    folder: 'inbox',
-    read: true,
-  },
-  {
-    id: '3',
-    subject: 'Draft: Quarterly Goals',
-    sender: 'You',
-    recipient: 'Bob Smith',
-    body: 'Just a draft outlining the core Q4 goals for the team...',
-    timestamp: 'Yesterday',
-    folder: 'drafts',
-    read: true,
-  },
-  {
-    id: '4',
-    subject: 'Follow-up on Customer CX',
-    sender: 'Charlie Doe (via Zoho)',
-    recipient: 'You',
-    body: 'We received excellent feedback from the latest customer survey! Great work team.',
-    timestamp: '3 days ago',
-    folder: 'inbox',
-    read: false,
-  },
-  {
-    id: '5',
-    subject: 'Re: Team Lunch',
-    sender: 'You',
-    recipient: 'Team',
-    body: 'Yes, pizza sounds perfect for Friday!',
-    timestamp: '5:00 PM',
-    folder: 'sent',
-    read: true,
-  },
-];
+// REMOVED INITIAL_EMAILS - No placeholder data. Only real emails from database.
 
 const BASE_FOLDERS: Folder[] = [
   { id: 'inbox', name: 'Inbox', icon: Inbox },
@@ -594,6 +542,7 @@ const BusinessEmailSystem: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [execHandles, setExecHandles] = useState<ExecHandle[]>([]);
   const [handlesLoading, setHandlesLoading] = useState(false);
+  const [emailsLoading, setEmailsLoading] = useState(false);
 
   const folderCounts = useMemo(() => {
     const counts: Record<FolderId, number> = {
@@ -721,9 +670,52 @@ const BusinessEmailSystem: React.FC = () => {
   const viewerVisible = !!selectedEmail && !isComposing;
   const listVisible = !isComposing;
 
-  // Load emails on mount - start with initial mock data
+  // Fetch real emails from database - NO PLACEHOLDER DATA
   useEffect(() => {
-    setEmails(INITIAL_EMAILS);
+    const fetchEmails = async () => {
+      setEmailsLoading(true);
+      try {
+        // Fetch real emails from database table (if it exists)
+        // For now, start with empty array - only show real emails from database
+        const { data: emailData, error } = await supabase
+          .from('executive_emails')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+        
+        if (error) {
+          // Table might not exist yet - that's fine, show empty
+          if (error.code !== 'PGRST116' && !error.message?.includes('does not exist')) {
+            console.error('Error fetching emails:', error);
+          }
+          setEmails([]);
+        } else if (emailData && emailData.length > 0) {
+          // Transform database emails to component format
+          const transformedEmails: Email[] = emailData.map((email: any) => ({
+            id: email.id,
+            subject: email.subject || '(No Subject)',
+            sender: email.sender_name || email.sender_email || 'Unknown',
+            recipient: email.recipient_name || email.recipient_email || 'Unknown',
+            body: email.body || email.message || '',
+            timestamp: email.created_at ? new Date(email.created_at).toLocaleString() : new Date().toLocaleString(),
+            folder: (email.folder || 'inbox') as FolderId,
+            read: email.read || false,
+            priority: email.priority || undefined,
+          }));
+          setEmails(transformedEmails);
+        } else {
+          // No emails in database - show empty, not placeholder data
+          setEmails([]);
+        }
+      } catch (error) {
+        console.error('Error fetching emails:', error);
+        setEmails([]); // Show empty, not placeholder data
+      } finally {
+        setEmailsLoading(false);
+      }
+    };
+    
+    fetchEmails();
   }, []);
 
   useEffect(() => {

@@ -50,82 +50,158 @@ interface BuildMetric {
 export const DevOpsDashboard: React.FC = () => {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [buildMetrics, setBuildMetrics] = useState<BuildMetric[]>([]);
+  const [mttr, setMttr] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('deployments');
   const toast = useToast();
 
   useEffect(() => {
     fetchDevOpsData();
-    const interval = setInterval(fetchDevOpsData, 30000);
+    fetchMTTR();
+    const interval = setInterval(() => {
+      fetchDevOpsData();
+      fetchMTTR();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchMTTR = async () => {
+    try {
+      const { data: rolledBack } = await supabase
+        .from('cto_architecture_changes')
+        .select('deployed_at, rolled_back_at')
+        .eq('status', 'rolled_back')
+        .not('deployed_at', 'is', null)
+        .not('rolled_back_at', 'is', null)
+        .limit(10);
+
+      if (rolledBack && rolledBack.length > 0) {
+        const recoveryTimes = rolledBack.map((change: any) => {
+          const deployed = new Date(change.deployed_at).getTime();
+          const rolledBack = new Date(change.rolled_back_at).getTime();
+          return (rolledBack - deployed) / (1000 * 60 * 60); // Convert to hours
+        });
+        const avgMTTR = recoveryTimes.reduce((sum, time) => sum + time, 0) / recoveryTimes.length;
+        setMttr(avgMTTR);
+      } else {
+        setMttr(0);
+      }
+    } catch (error) {
+      console.error('Error calculating MTTR:', error);
+      setMttr(0);
+    }
+  };
 
   const fetchDevOpsData = async () => {
     setLoading(true);
     try {
-      // Mock deployment data
-      const mockDeployments: Deployment[] = [
-        {
-          id: '1',
-          branch: 'main',
-          environment: 'production',
-          status: 'success',
-          duration: 245,
-          commit: 'a1b2c3d',
-          deployed_at: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          branch: 'develop',
-          environment: 'staging',
-          status: 'success',
-          duration: 198,
-          commit: 'e4f5g6h',
-          deployed_at: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: '3',
-          branch: 'feature/new-api',
-          environment: 'staging',
-          status: 'failed',
-          duration: 312,
-          commit: 'i7j8k9l',
-          deployed_at: new Date(Date.now() - 7200000).toISOString(),
-        },
-      ];
+      // Fetch real deployments from cto_architecture_changes
+      const { data: architectureChanges, error } = await supabase
+        .from('cto_architecture_changes')
+        .select('*')
+        .in('status', ['completed', 'deployed', 'rolled_back'])
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      setDeployments(mockDeployments);
+      if (error) {
+        console.error('Error fetching deployments:', error);
+        setDeployments([]);
+      } else {
+        // Transform architecture changes to deployment format
+        const realDeployments: Deployment[] = (architectureChanges || []).map((change: any) => {
+          // Extract branch/environment from change_type or metadata
+          const changeType = change.change_type || change.change_type || 'infrastructure';
+          const environment = changeType.includes('production') || change.status === 'deployed' ? 'production' : 'staging';
+          
+          // Extract branch from title or use change_type
+          const branchMatch = change.change_title?.match(/(main|master|develop|feature\/[^\s]+)/i);
+          const branch = branchMatch ? branchMatch[1].toLowerCase() : changeType;
+          
+          // Extract commit hash from description or migration_files if available
+          const commitMatch = change.change_description?.match(/\b([a-f0-9]{7,})\b/i) || 
+                             change.migration_files?.[0]?.match(/\b([a-f0-9]{7,})\b/i);
+          const commit = commitMatch ? commitMatch[1].substring(0, 7) : 'unknown';
+          
+          // Calculate duration from actual timestamps only - no fake data
+          const duration = change.deployed_at && change.created_at
+            ? Math.floor((new Date(change.deployed_at).getTime() - new Date(change.created_at).getTime()) / 1000)
+            : null; // No fake default - show null if no real data
+          
+          return {
+            id: change.id,
+            branch: branch,
+            environment: environment,
+            status: change.status === 'rolled_back' ? 'failed' : change.status === 'completed' || change.status === 'deployed' ? 'success' : 'in_progress',
+            duration: duration,
+            commit: commit,
+            deployed_at: change.deployed_at || change.created_at,
+          };
+        });
 
-      // Generate build metrics for last 12 weeks
-      const metrics: BuildMetric[] = Array.from({ length: 12 }, (_, i) => {
-        const week = new Date();
-        week.setDate(week.getDate() - (11 - i) * 7);
-        return {
-          period: `Week ${i + 1}`,
-          total: 20 + Math.floor(Math.random() * 10),
-          successful: 18 + Math.floor(Math.random() * 8),
-          failed: 1 + Math.floor(Math.random() * 3),
-          avgDuration: 200 + Math.random() * 100,
-        };
-      });
+        setDeployments(realDeployments);
 
-      setBuildMetrics(metrics);
+        // Calculate build metrics from real deployment data
+        const now = new Date();
+        const metrics: BuildMetric[] = [];
+        
+        for (let i = 11; i >= 0; i--) {
+          const weekStart = new Date(now);
+          weekStart.setDate(weekStart.getDate() - (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 7);
+          
+          const weekDeployments = realDeployments.filter(d => {
+            const deployDate = new Date(d.deployed_at);
+            return deployDate >= weekStart && deployDate < weekEnd;
+          });
+          
+          const successful = weekDeployments.filter(d => d.status === 'success').length;
+          const failed = weekDeployments.filter(d => d.status === 'failed').length;
+          const total = weekDeployments.length;
+          const avgDuration = total > 0
+            ? weekDeployments.reduce((sum, d) => sum + d.duration, 0) / total
+            : 0;
+          
+          metrics.push({
+            period: `Week ${12 - i}`,
+            total: total,
+            successful: successful,
+            failed: failed,
+            avgDuration: avgDuration,
+          });
+        }
+        
+        setBuildMetrics(metrics);
+      }
     } catch (error) {
       console.error('Error fetching DevOps data:', error);
       toast.error('Failed to load DevOps data', 'Error');
+      setDeployments([]);
+      setBuildMetrics([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const deploymentFrequency = deployments.filter(d => d.status === 'success').length;
+  // Calculate deployment frequency (successful deployments in last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentDeployments = deployments.filter(d => {
+    const deployDate = new Date(d.deployed_at);
+    return deployDate >= sevenDaysAgo && d.status === 'success';
+  });
+  const deploymentFrequency = recentDeployments.length;
+
+  // Calculate success rate from all deployments
   const successRate = deployments.length > 0
     ? (deployments.filter(d => d.status === 'success').length / deployments.length) * 100
-    : 100;
+    : 0;
+
+  // Calculate average build duration
   const avgDuration = deployments.length > 0
     ? deployments.reduce((sum, d) => sum + d.duration, 0) / deployments.length
     : 0;
-  const mttr = 2.5; // Mean time to recovery in hours
+
 
   return (
     <Stack gap="lg" p="md">
@@ -190,7 +266,7 @@ export const DevOpsDashboard: React.FC = () => {
               <IconTrendingUp size={20} color="#f59e0b" />
             </Group>
             <Text size="xl" fw={700} c="yellow">
-              {mttr.toFixed(1)}h
+              {mttr > 0 ? `${mttr.toFixed(1)}h` : 'N/A'}
             </Text>
             <Text size="xs" c="dimmed" mt={4}>
               Average recovery time
@@ -214,50 +290,58 @@ export const DevOpsDashboard: React.FC = () => {
             <Title order={4} mb="md">
               Deployment History
             </Title>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Branch</Table.Th>
-                  <Table.Th>Environment</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Duration</Table.Th>
-                  <Table.Th>Commit</Table.Th>
-                  <Table.Th>Deployed At</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {deployments.map((deployment) => (
-                  <Table.Tr key={deployment.id}>
-                    <Table.Td>
-                      <Text fw={600}>{deployment.branch}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light" color={deployment.environment === 'production' ? 'red' : 'blue'}>
-                        {deployment.environment}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={deployment.status === 'success' ? 'green' : deployment.status === 'failed' ? 'red' : 'yellow'}
-                        variant="light"
-                        leftSection={deployment.status === 'success' ? <IconCheck size={12} /> : <IconX size={12} />}
-                      >
-                        {deployment.status}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>{deployment.duration}s</Table.Td>
-                    <Table.Td>
-                      <Text ff="monospace" size="sm">
-                        {deployment.commit}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{new Date(deployment.deployed_at).toLocaleString()}</Text>
-                    </Table.Td>
+            {deployments.length === 0 ? (
+              <Alert color="blue" title="No deployments found">
+                <Text size="sm">
+                  No deployment history available. Deployments will appear here once architecture changes are marked as completed or deployed.
+                </Text>
+              </Alert>
+            ) : (
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Branch</Table.Th>
+                    <Table.Th>Environment</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th>Duration</Table.Th>
+                    <Table.Th>Commit</Table.Th>
+                    <Table.Th>Deployed At</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
+                </Table.Thead>
+                <Table.Tbody>
+                  {deployments.map((deployment) => (
+                    <Table.Tr key={deployment.id}>
+                      <Table.Td>
+                        <Text fw={600}>{deployment.branch}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge variant="light" color={deployment.environment === 'production' ? 'red' : 'blue'}>
+                          {deployment.environment.toUpperCase()}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge
+                          color={deployment.status === 'success' ? 'green' : deployment.status === 'failed' ? 'red' : 'yellow'}
+                          variant="light"
+                          leftSection={deployment.status === 'success' ? <IconCheck size={12} /> : <IconX size={12} />}
+                        >
+                          {deployment.status === 'success' ? '✓ SUCCESS' : deployment.status === 'failed' ? 'X FAILED' : 'IN PROGRESS'}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>{deployment.duration}s</Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" size="sm">
+                          {deployment.commit}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{new Date(deployment.deployed_at).toLocaleString()}</Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
           </Card>
         </Tabs.Panel>
 

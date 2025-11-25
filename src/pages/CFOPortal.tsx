@@ -2004,7 +2004,14 @@ function AccountsPayable() {
             const selected = filteredInvoices.filter((i) => new Date(i.due_date) <= dueBefore && (i.status === 'approved' || i.status === 'pending'));
             const total = selected.reduce((s, i) => s + (i.amount || 0), 0);
             const { error } = await supabase.from('payment_runs').insert({ scheduled_date: dueBefore.toISOString().slice(0,10), status: 'draft', total_amount: total });
-            if (error) throw error;
+            if (error) {
+              if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+                toast.error('Payment runs table not found. Please run the database migration.', 'Error');
+              } else {
+                throw error;
+              }
+              return;
+            }
             toast.success(`Payment run created for $${total.toLocaleString()}`, 'Success');
             await loadInvoicesAndRuns();
             setCreatingRun(false);

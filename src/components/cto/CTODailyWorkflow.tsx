@@ -118,55 +118,69 @@ export default function CTODailyWorkflow() {
   const [today] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
-    fetchTodayTasks();
-    initializeDefaultTasks();
-    fetchAutoPriorities();
-    fetchCodeReviewQueue();
-    fetchDailyReport();
+    // Initialize tasks first, then fetch everything else
+    const initialize = async () => {
+      await initializeDefaultTasks();
+      await fetchTodayTasks();
+      fetchAutoPriorities();
+      fetchCodeReviewQueue();
+      fetchDailyReport();
+    };
+    initialize();
   }, []);
 
   const initializeDefaultTasks = async () => {
-    const { data: existing } = await supabase
-      .from('cto_daily_checklist')
-      .select('id')
-      .eq('checklist_date', today);
+    try {
+      const { data: existing } = await supabase
+        .from('cto_daily_checklist')
+        .select('id')
+        .eq('checklist_date', today);
 
-    if (!existing || existing.length === 0) {
-      const defaultTasks = [
-        { task_category: 'morning_review', task_name: 'Infrastructure & System Health Check', priority: 'high' },
-        { task_category: 'morning_review', task_name: 'Active Sprint Check-In', priority: 'high' },
-        { task_category: 'morning_review', task_name: 'Security Review (Quick Scan)', priority: 'normal' },
-        { task_category: 'development', task_name: 'Review Pull Requests', priority: 'high' },
-        { task_category: 'development', task_name: 'Manage Developer Team', priority: 'high' },
-        { task_category: 'development', task_name: 'System & Feature Planning', priority: 'normal' },
-        { task_category: 'strategic', task_name: 'Architecture Governance', priority: 'normal' },
-        { task_category: 'strategic', task_name: 'Technology Roadmap Review', priority: 'normal' },
-        { task_category: 'strategic', task_name: 'Data & Analytics Management', priority: 'normal' },
-        { task_category: 'coordination', task_name: 'CEO Sync Meeting', priority: 'high' },
-        { task_category: 'coordination', task_name: 'CFO Sync (if needed)', priority: 'normal' },
-        { task_category: 'coordination', task_name: 'Department Syncs (as needed)', priority: 'low' },
-        { task_category: 'stability', task_name: 'Security Maintenance', priority: 'normal' },
-        { task_category: 'stability', task_name: 'Backup & Redundancy Check', priority: 'normal' },
-        { task_category: 'stability', task_name: 'Deployment Reliability Review', priority: 'normal' },
-        { task_category: 'product', task_name: 'Feature Scoping', priority: 'normal' },
-        { task_category: 'product', task_name: 'QA Testing Review', priority: 'normal' },
-        { task_category: 'documentation', task_name: 'Sprint Updates', priority: 'normal' },
-        { task_category: 'documentation', task_name: 'Deployment Notes', priority: 'normal' },
-        { task_category: 'documentation', task_name: 'Daily CTO Report', priority: 'high' },
-      ];
+      if (!existing || existing.length === 0) {
+        const defaultTasks = [
+          { task_category: 'morning_review', task_name: 'Infrastructure & System Health Check', priority: 'high' },
+          { task_category: 'morning_review', task_name: 'Active Sprint Check-In', priority: 'high' },
+          { task_category: 'morning_review', task_name: 'Security Review (Quick Scan)', priority: 'normal' },
+          { task_category: 'development', task_name: 'Review Pull Requests', priority: 'high' },
+          { task_category: 'development', task_name: 'Manage Developer Team', priority: 'high' },
+          { task_category: 'development', task_name: 'System & Feature Planning', priority: 'normal' },
+          { task_category: 'strategic', task_name: 'Architecture Governance', priority: 'normal' },
+          { task_category: 'strategic', task_name: 'Technology Roadmap Review', priority: 'normal' },
+          { task_category: 'strategic', task_name: 'Data & Analytics Management', priority: 'normal' },
+          { task_category: 'coordination', task_name: 'CEO Sync Meeting', priority: 'high' },
+          { task_category: 'coordination', task_name: 'CFO Sync (if needed)', priority: 'normal' },
+          { task_category: 'coordination', task_name: 'Department Syncs (as needed)', priority: 'low' },
+          { task_category: 'stability', task_name: 'Security Maintenance', priority: 'normal' },
+          { task_category: 'stability', task_name: 'Backup & Redundancy Check', priority: 'normal' },
+          { task_category: 'stability', task_name: 'Deployment Reliability Review', priority: 'normal' },
+          { task_category: 'product', task_name: 'Feature Scoping', priority: 'normal' },
+          { task_category: 'product', task_name: 'QA Testing Review', priority: 'normal' },
+          { task_category: 'documentation', task_name: 'Sprint Updates', priority: 'normal' },
+          { task_category: 'documentation', task_name: 'Deployment Notes', priority: 'normal' },
+          { task_category: 'documentation', task_name: 'Daily CTO Report', priority: 'high' },
+        ];
 
-      const { error: insertError } = await supabase.from('cto_daily_checklist').insert(
-        defaultTasks.map(task => ({
-          ...task,
-          checklist_date: today,
-          task_description: getTaskDescription(task.task_name),
-        }))
-      );
-      
-      if (insertError) {
-        console.error('Error initializing default tasks:', insertError);
+        // Use upsert with onConflict to prevent duplicates even if race condition occurs
+        const { error: insertError } = await supabase.from('cto_daily_checklist').upsert(
+          defaultTasks.map(task => ({
+            ...task,
+            checklist_date: today,
+            task_description: getTaskDescription(task.task_name),
+            completed: false,
+            is_completed: false, // Support both column names
+          })),
+          {
+            onConflict: 'checklist_date,task_category,task_name',
+            ignoreDuplicates: false
+          }
+        );
+        
+        if (insertError) {
+          console.error('Error initializing default tasks:', insertError);
+        }
       }
-      fetchTodayTasks();
+    } catch (error) {
+      console.error('Error in initializeDefaultTasks:', error);
     }
   };
 
@@ -241,8 +255,7 @@ export default function CTODailyWorkflow() {
         });
       });
 
-      // 2. Check error spikes (simulated - would need error tracking system)
-      // For now, check for recent incidents with 'bug' type
+      // 2. Check error spikes - using real bug incidents from it_incidents table
       const { data: bugs } = await supabase
         .from('it_incidents')
         .select('*')
@@ -261,11 +274,12 @@ export default function CTODailyWorkflow() {
         });
       }
 
-      // 3. Check roadmap changes (slip alerts)
+      // 3. Check roadmap changes (slip alerts) - only 2025 and later
       const { data: roadmapAlerts } = await supabase
         .from('cto_roadmap_slip_alerts')
-        .select('*, initiative:cto_roadmap_initiatives(title)')
+        .select('*, initiative:cto_roadmap_initiatives(title, year)')
         .eq('resolved', false)
+        .gte('initiative.year', 2025)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -400,10 +414,12 @@ export default function CTODailyWorkflow() {
 
   const toggleTask = async (taskId: string, completed: boolean) => {
     try {
+      // Update both column names to support either schema
       await supabase
         .from('cto_daily_checklist')
         .update({
           completed: !completed,
+          is_completed: !completed,
           completed_at: !completed ? new Date().toISOString() : null,
         })
         .eq('id', taskId);
@@ -486,16 +502,75 @@ export default function CTODailyWorkflow() {
         .filter(p => p.severity === 'high' || p.severity === 'critical')
         .map(p => p.title);
 
+      // Get real uptime data from infrastructure
+      const { data: infrastructure } = await supabase
+        .from('it_infrastructure')
+        .select('service_name, uptime_percent, status')
+        .order('service_name');
+      
+      const avgUptime = infrastructure && infrastructure.length > 0
+        ? infrastructure.reduce((sum, s) => sum + (s.uptime_percent || 0), 0) / infrastructure.length
+        : 99.9;
+      
+      const operationalServices = infrastructure?.filter(s => s.status === 'operational').length || 0;
+      const totalServices = infrastructure?.length || 0;
+      const uptimeLog = totalServices > 0
+        ? `${operationalServices}/${totalServices} services operational. Average uptime: ${avgUptime.toFixed(2)}%`
+        : 'Infrastructure monitoring not available';
+
+      // Get real security findings
+      const { data: securityFindings } = await supabase
+        .from('security_audits')
+        .select('finding, severity, status')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      const securityFindingsList = securityFindings?.map(f => 
+        `[${f.severity.toUpperCase()}] ${f.finding}`
+      ) || [];
+
+      // Get real deployment notes from architecture changes
+      const { data: recentDeployments } = await supabase
+        .from('cto_architecture_changes')
+        .select('change_title, status, created_at')
+        .gte('created_at', dayjs().subtract(24, 'hours').toISOString())
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      const deploymentNotes = recentDeployments?.map(d => 
+        `${dayjs(d.created_at).format('HH:mm')} - ${d.change_title} [${d.status}]`
+      ) || [];
+
+      // Get real meeting summaries from CEO meetings (if table exists)
+      let meetingSummaries: string[] = [];
+      try {
+        const { data: todayMeetings } = await supabase
+          .from('ceo_meetings')
+          .select('title, meeting_type, status, notes')
+          .eq('status', 'completed')
+          .gte('scheduled_at', dayjs().startOf('day').toISOString())
+          .lte('scheduled_at', dayjs().endOf('day').toISOString())
+          .order('scheduled_at', { ascending: false });
+        
+        meetingSummaries = todayMeetings?.map(m => 
+          `${m.title} (${m.meeting_type})${m.notes ? `: ${m.notes.substring(0, 100)}` : ''}`
+        ) || [];
+      } catch (e) {
+        // Table might not exist, use empty array
+        console.warn('Could not fetch meeting summaries:', e);
+      }
+
       const report: DailyReport = {
         report_date: today,
         completed_tasks: completedTasks,
         sprint_status: activeSprint ? `${activeSprint.sprint_name} - ${activeSprint.status}` : 'No active sprint',
         blockers,
         engineering_risks: risks,
-        uptime_log: 'All systems operational',
-        security_findings: [],
-        deployment_notes: [],
-        meeting_summaries: [],
+        uptime_log: uptimeLog,
+        security_findings: securityFindingsList,
+        deployment_notes: deploymentNotes,
+        meeting_summaries: meetingSummaries,
         next_day_priorities: autoPriorities.slice(0, 5).map(p => p.action),
         submitted: false
       };

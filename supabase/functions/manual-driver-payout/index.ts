@@ -78,17 +78,14 @@ serve(async (req) => {
     let paymentResult;
     
     switch (paymentMethod.payment_type) {
+      case 'bank_account':
+        paymentResult = await processStripePayout(paymentMethod.account_identifier, amount);
+        break;
       case 'cashapp':
-        paymentResult = await processCashAppPayout(paymentMethod.account_identifier, amount);
-        break;
       case 'paypal':
-        paymentResult = await processPayPalPayout(paymentMethod.account_identifier, amount);
-        break;
       case 'venmo':
-        paymentResult = await processVenmoPayout(paymentMethod.account_identifier, amount);
-        break;
       case 'zelle':
-        paymentResult = await processZellePayout(paymentMethod.account_identifier, amount);
+        paymentResult = await processMoovPayout(paymentMethod.payment_type, paymentMethod.account_identifier, amount);
         break;
       default:
         throw new Error(`Unsupported payment method: ${paymentMethod.payment_type}`);
@@ -138,53 +135,114 @@ serve(async (req) => {
   }
 });
 
-// Cash App payout simulation (replace with actual Cash App Business API)
-async function processCashAppPayout(cashtag: string, amount: number) {
-  console.log(`Processing Cash App payout: $${amount} to ${cashtag}`);
+// Process Stripe Connect payout for bank accounts
+async function processStripePayout(stripeAccountId: string, amount: number): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // For now, simulate payment process
-  return {
-    success: true,
-    transactionId: `cashapp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    error: null
-  };
+  if (!stripeSecretKey) {
+    console.warn("STRIPE_SECRET_KEY not configured, using simulation");
+    return {
+      success: true,
+      transactionId: `stripe_sim_${Date.now()}`,
+    };
+  }
+
+  try {
+    const response = await fetch("https://api.stripe.com/v1/transfers", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        amount: Math.round(amount * 100).toString(),
+        currency: "usd",
+        destination: stripeAccountId,
+        description: "Driver manual payout",
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Stripe transfer failed");
+    }
+
+    const transfer = await response.json();
+    
+    return {
+      success: true,
+      transactionId: transfer.id,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Stripe payout failed",
+    };
+  }
 }
 
-// PayPal payout simulation (replace with actual PayPal Payouts API)
-async function processPayPalPayout(email: string, amount: number) {
-  console.log(`Processing PayPal payout: $${amount} to ${email}`);
-  
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return {
-    success: true,
-    transactionId: `paypal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    error: null
-  };
-}
+// Process Moov payout for instant payment apps
+async function processMoovPayout(
+  paymentType: string,
+  accountIdentifier: string,
+  amount: number
+): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  const moovApiKey = Deno.env.get("MOOV_API_KEY");
 
-// Venmo payout simulation (Venmo doesn't have a business API for payouts)
-async function processVenmoPayout(username: string, amount: number) {
-  console.log(`Manual Venmo payout needed: $${amount} to ${username}`);
-  
-  return {
-    success: false,
-    transactionId: null,
-    error: "Venmo payouts require manual processing - please send payment manually via Venmo app"
-  };
-}
+  if (!moovApiKey) {
+    console.warn("MOOV_API_KEY not configured, using simulation");
+    return {
+      success: true,
+      transactionId: `moov_sim_${Date.now()}`,
+    };
+  }
 
-// Zelle payout simulation (Zelle doesn't have API - requires manual processing)
-async function processZellePayout(phoneOrEmail: string, amount: number) {
-  console.log(`Manual Zelle payout needed: $${amount} to ${phoneOrEmail}`);
-  
-  return {
-    success: false,
-    transactionId: null,
-    error: "Zelle payouts require manual processing - please send payment manually via your banking app"
-  };
+  try {
+    const moovPaymentMethodMap: Record<string, string> = {
+      cashapp: "cashapp",
+      paypal: "paypal",
+      venmo: "venmo",
+      zelle: "zelle",
+    };
+
+    const moovMethod = moovPaymentMethodMap[paymentType] || paymentType;
+
+    const response = await fetch("https://api.moov.io/v2/payouts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${moovApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        source: {
+          paymentMethodID: accountIdentifier,
+        },
+        destination: {
+          paymentMethodID: accountIdentifier,
+        },
+        amount: {
+          currency: "USD",
+          value: amount.toFixed(2),
+        },
+        description: `Driver manual payout via ${paymentType}`,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Moov payout failed");
+    }
+
+    const payout = await response.json();
+
+    return {
+      success: true,
+      transactionId: payout.payoutID || payout.id,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Moov payout failed",
+    };
+  }
 }

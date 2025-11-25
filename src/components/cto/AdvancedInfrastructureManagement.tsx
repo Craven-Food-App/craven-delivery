@@ -65,6 +65,7 @@ interface CloudResource {
 export const AdvancedInfrastructureManagement: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [cloudResources, setCloudResources] = useState<CloudResource[]>([]);
+  const [costHistory, setCostHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('services');
   const [serviceModalOpened, setServiceModalOpened] = useState(false);
@@ -90,14 +91,13 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
   const fetchInfrastructureData = async () => {
     setLoading(true);
     try {
-      // Try to fetch from it_infrastructure table, but handle gracefully if it doesn't exist
+      // Fetch services from it_infrastructure table
       const { data: servicesData, error: servicesError } = await supabase
         .from('it_infrastructure')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (servicesError) {
-        // If table doesn't exist or RLS blocks access, use empty array
         if (servicesError.code === 'PGRST116' || servicesError.message?.includes('does not exist') || servicesError.message?.includes('permission denied')) {
           console.warn('it_infrastructure table not found or not accessible, using empty services array');
           setServices([]);
@@ -108,39 +108,104 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
         setServices((servicesData || []) as Service[]);
       }
 
-      // Mock cloud resources data
-      setCloudResources([
-        {
-          provider: 'Supabase',
-          service: 'Database',
-          region: 'US East',
-          cost: 2500,
-          utilization: 65,
-          status: 'operational',
-        },
-        {
-          provider: 'Supabase',
-          service: 'Storage',
-          region: 'US East',
-          cost: 450,
-          utilization: 42,
-          status: 'operational',
-        },
-        {
-          provider: 'Vercel',
-          service: 'Hosting',
-          region: 'Global',
-          cost: 200,
-          utilization: 85,
-          status: 'operational',
-        },
-      ]);
+      // Fetch real cloud resources from tech_vendors table
+      const { data: vendorsData, error: vendorsError } = await supabase
+        .from('tech_vendors')
+        .select(`
+          *,
+          category:tech_cost_categories(name)
+        `)
+        .eq('is_active', true)
+        .order('monthly_cost', { ascending: false });
+
+      if (vendorsError) {
+        if (vendorsError.code === 'PGRST116' || vendorsError.message?.includes('does not exist')) {
+          console.warn('tech_vendors table not found, using empty cloud resources');
+          setCloudResources([]);
+        } else {
+          console.error('Error fetching cloud resources:', vendorsError);
+          setCloudResources([]);
+        }
+      } else {
+        // Transform vendors data to cloud resources format
+        // ONLY include resources with real region and utilization data - NO PLACEHOLDER DEFAULTS
+        const resources: CloudResource[] = (vendorsData || [])
+          .filter((vendor: any) => {
+            // Only include vendors that have real utilization data in metadata
+            const hasUtilization = vendor.metadata?.utilization !== undefined || vendor.metadata?.usage_percent !== undefined;
+            const hasRegion = vendor.metadata?.region || vendor.metadata?.location;
+            // Require at least utilization OR region to be present (prefer both)
+            return hasUtilization || hasRegion;
+          })
+          .map((vendor: any) => {
+            // Only use real data from metadata - NO DEFAULTS
+            const region = vendor.metadata?.region || vendor.metadata?.location || null;
+            const utilization = vendor.metadata?.utilization !== undefined 
+              ? vendor.metadata.utilization 
+              : vendor.metadata?.usage_percent !== undefined 
+                ? vendor.metadata.usage_percent 
+                : null;
+            
+            return {
+              provider: vendor.name,
+              service: vendor.service_name,
+              region: region || 'N/A', // Show N/A only if truly no data, but filter out vendors without any metadata
+              cost: Number(vendor.monthly_cost) || 0,
+              utilization: utilization !== null ? Number(utilization) : null,
+              status: vendor.is_active ? 'operational' : 'inactive',
+            };
+          })
+          .filter((resource: CloudResource) => {
+            // Final filter: only show resources that have at least utilization OR region data
+            return resource.utilization !== null || (resource.region && resource.region !== 'N/A');
+          });
+        
+        setCloudResources(resources);
+      }
+
+      // Fetch cost history from tech_actual_costs AND real budgets from tech_budgets
+      const currentPeriod = new Date().toISOString().slice(0, 7); // YYYY-MM format
+      const { data: costsData } = await supabase
+        .from('tech_actual_costs')
+        .select('period, amount')
+        .order('period', { ascending: true })
+        .limit(6);
+      
+      // Fetch real budget data from tech_budgets table
+      const { data: budgetsData } = await supabase
+        .from('tech_budgets')
+        .select('period, budgeted_amount')
+        .order('period', { ascending: true })
+        .limit(6);
+      
+      // Combine actual costs with real budgets - only show periods with real data
+      if (costsData || budgetsData) {
+        const allPeriods = new Set([
+          ...(costsData || []).map((c: any) => c.period),
+          ...(budgetsData || []).map((b: any) => b.period)
+        ]);
+        
+        const combinedData = Array.from(allPeriods).map(period => {
+          const cost = (costsData || []).find((c: any) => c.period === period);
+          const budget = (budgetsData || []).find((b: any) => b.period === period);
+          
+          return {
+            period,
+            amount: cost ? Number(cost.amount) : null,
+            budgeted_amount: budget ? Number(budget.budgeted_amount) : null,
+          };
+        }).filter(item => item.amount !== null || item.budgeted_amount !== null); // Only include periods with at least one real value
+        
+        setCostHistory(combinedData);
+      } else {
+        setCostHistory([]);
+      }
     } catch (error: any) {
       console.error('Error fetching infrastructure data:', error);
-      // Don't show error if it's just a missing table - use empty data instead
       if (error?.code === 'PGRST116' || error?.message?.includes('does not exist') || error?.message?.includes('permission denied')) {
         console.warn('Infrastructure table not available, using empty data');
         setServices([]);
+        setCloudResources([]);
       } else {
         toast.error(error?.message || 'Failed to load infrastructure data', 'Error');
       }
@@ -224,8 +289,13 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
   const totalCost = cloudResources.reduce((sum, r) => sum + r.cost, 0);
   const avgUptime = services.length > 0
     ? services.reduce((sum, s) => sum + (s.uptime_percent || 0), 0) / services.length
-    : 99.9;
+    : 0;
   const operationalServices = services.filter(s => s.status === 'operational').length;
+  // Only calculate average from resources with real utilization data
+  const resourcesWithUtilization = cloudResources.filter(r => r.utilization !== null);
+  const avgUtilization = resourcesWithUtilization.length > 0
+    ? Math.round(resourcesWithUtilization.reduce((sum, r) => sum + (r.utilization || 0), 0) / resourcesWithUtilization.length)
+    : null;
 
   return (
     <Stack gap="lg" p="md">
@@ -249,11 +319,11 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
               <Text size="sm" c="dimmed">Avg Uptime</Text>
               <IconServer size={20} color="#10b981" />
             </Group>
-            <Text size="xl" fw={700} c="green">
-              {avgUptime.toFixed(2)}%
+            <Text size="xl" fw={700} c={avgUptime >= 99.9 ? "green" : avgUptime >= 99 ? "yellow" : "red"}>
+              {services.length > 0 ? avgUptime.toFixed(2) : '0.00'}%
             </Text>
             <Text size="xs" c="dimmed" mt={4}>
-              Across {services.length} services
+              Across {services.length} {services.length === 1 ? 'service' : 'services'}
             </Text>
           </Card>
         </Grid.Col>
@@ -292,12 +362,10 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
               <IconTrendingDown size={20} color="#8b5cf6" />
             </Group>
             <Text size="xl" fw={700} c="violet">
-              {cloudResources.length > 0
-                ? Math.round(cloudResources.reduce((sum, r) => sum + r.utilization, 0) / cloudResources.length)
-                : 0}%
+              {avgUtilization !== null ? `${avgUtilization}%` : 'N/A'}
             </Text>
             <Text size="xs" c="dimmed" mt={4}>
-              Average utilization
+              {avgUtilization !== null ? 'Average utilization' : 'No utilization data'}
             </Text>
           </Card>
         </Grid.Col>
@@ -390,11 +458,17 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
             <Title order={4} mb="md">
               Cloud Resource Management
             </Title>
-            <MantineTable
-              data={cloudResources}
-              loading={loading}
-              rowKey={(r: any) => `${r.provider}-${r.service}`}
-              columns={[
+            {cloudResources.length === 0 && !loading ? (
+              <Text c="dimmed" ta="center" py="xl">
+                No cloud resources with real utilization/region data available. 
+                Add vendors with metadata (region, utilization) to see cloud resources here.
+              </Text>
+            ) : (
+              <MantineTable
+                data={cloudResources}
+                loading={loading}
+                rowKey={(r: any) => `${r.provider}-${r.service}`}
+                columns={[
                 { title: 'Provider', dataIndex: 'provider' },
                 { title: 'Service', dataIndex: 'service' },
                 { title: 'Region', dataIndex: 'region' },
@@ -406,12 +480,17 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
                 {
                   title: 'Utilization',
                   dataIndex: 'utilization',
-                  render: (util: number) => (
-                    <Group gap="xs">
-                      <Text fw={600}>{util}%</Text>
-                      <Progress value={util} size="sm" color={util > 80 ? 'red' : util > 60 ? 'yellow' : 'green'} style={{ width: 100 }} />
-                    </Group>
-                  ),
+                  render: (util: number | null) => {
+                    if (util === null || util === undefined) {
+                      return <Text c="dimmed" size="sm">No data</Text>;
+                    }
+                    return (
+                      <Group gap="xs">
+                        <Text fw={600}>{util}%</Text>
+                        <Progress value={util} size="sm" color={util > 80 ? 'red' : util > 60 ? 'yellow' : 'green'} style={{ width: 100 }} />
+                      </Group>
+                    );
+                  },
                 },
                 {
                   title: 'Status',
@@ -423,7 +502,8 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
                   ),
                 },
               ]}
-            />
+              />
+            )}
           </Card>
         </Tabs.Panel>
 
@@ -434,22 +514,35 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
                 <Title order={4} mb="md">
                   6-Month Cost Trend
                 </Title>
-                <FuturisticChart
-                  data={Array.from({ length: 6 }, (_, i) => {
-                    const month = new Date();
-                    month.setMonth(month.getMonth() - (5 - i));
-                    return {
-                      month: month.toLocaleString('default', { month: 'short' }),
-                      Cost: totalCost * (0.9 + Math.random() * 0.2),
-                      Budget: totalCost * 1.1,
-                    };
-                  })}
-                  type="composed"
-                  title=""
-                  height={300}
-                  colors={['#3b82f6', '#ef4444']}
-                  dataKeys={{ revenue: 'Cost', profit: 'Budget' }}
-                />
+                {costHistory.length > 0 ? (
+                  <FuturisticChart
+                    data={costHistory.map((item: any) => {
+                      const monthLabel = new Date(item.period + '-01').toLocaleString('default', { month: 'short', year: 'numeric' });
+                      const chartData: any = { month: monthLabel };
+                      
+                      // Only include Cost if we have real actual cost data
+                      if (item.amount !== null) {
+                        chartData.Cost = Number(item.amount);
+                      }
+                      
+                      // Only include Budget if we have real budget data
+                      if (item.budgeted_amount !== null) {
+                        chartData.Budget = Number(item.budgeted_amount);
+                      }
+                      
+                      return chartData;
+                    })}
+                    type="composed"
+                    title=""
+                    height={300}
+                    colors={['#3b82f6', '#ef4444']}
+                    dataKeys={{ revenue: 'Cost', profit: 'Budget' }}
+                  />
+                ) : (
+                  <Text c="dimmed" ta="center" py="xl">
+                    No cost history data available. Add actual costs and budgets to see trends.
+                  </Text>
+                )}
               </Card>
             </Grid.Col>
             <Grid.Col span={{ base: 12, md: 4 }}>

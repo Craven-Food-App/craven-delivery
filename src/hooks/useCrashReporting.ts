@@ -1,4 +1,7 @@
 import { useEffect } from 'react';
+import * as Sentry from "@sentry/react";
+import { errorReportingConfig } from "@/config/environment";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CrashReport {
   error: Error;
@@ -13,31 +16,77 @@ interface CrashReport {
 
 export const useCrashReporting = () => {
   useEffect(() => {
+    if (!errorReportingConfig.ENABLED) {
+      return;
+    }
+
     // Global error handler for unhandled errors
     const handleGlobalError = (event: ErrorEvent) => {
-      const crashReport: CrashReport = {
-        error: new Error(event.message),
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        sessionId: getSessionId()
-      };
+      // Filter out known harmless errors
+      if (event.message?.includes('LockManager') || 
+          event.message?.includes('CacheStorage') ||
+          event.message?.includes('Failed to open cache')) {
+        return;
+      }
 
-      reportCrash(crashReport);
+      if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+        Sentry.captureException(event.error || new Error(event.message), {
+          contexts: {
+            error: {
+              message: event.message,
+              filename: event.filename,
+              lineno: event.lineno,
+              colno: event.colno,
+            },
+          },
+          tags: {
+            errorType: 'global_error',
+          },
+        });
+      }
     };
 
     // Global handler for unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const crashReport: CrashReport = {
-        error: new Error(event.reason?.toString() || 'Unhandled Promise Rejection'),
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        sessionId: getSessionId()
-      };
+      // Filter out known harmless rejections
+      if (event.reason?.toString().includes('LockManager') ||
+          event.reason?.toString().includes('CacheStorage')) {
+        return;
+      }
 
-      reportCrash(crashReport);
+      if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+        Sentry.captureException(
+          new Error(event.reason?.toString() || 'Unhandled Promise Rejection'),
+          {
+            contexts: {
+              rejection: {
+                reason: event.reason,
+              },
+            },
+            tags: {
+              errorType: 'unhandled_rejection',
+            },
+          }
+        );
+      }
     };
+
+    // Set user context when available
+    const setUserContext = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && errorReportingConfig.ENABLED) {
+          Sentry.setUser({
+            id: user.id,
+            email: user.email,
+          });
+        }
+      } catch (error) {
+        // Silently fail - user context is optional
+      }
+    };
+
+    setUserContext();
 
     // Add event listeners
     window.addEventListener('error', handleGlobalError);
@@ -49,37 +98,24 @@ export const useCrashReporting = () => {
     };
   }, []);
 
-  const reportCrash = async (crashReport: CrashReport) => {
-    try {
-      // In production, send to crash reporting service
-      if (process.env.NODE_ENV === 'production') {
-        // Example: Send to Sentry, Bugsnag, or custom endpoint
-        console.error('Crash Report:', crashReport);
-        
-        // await fetch('/api/crashes', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(crashReport)
-        // });
-      } else {
-        console.error('Development Crash Report:', crashReport);
-      }
-    } catch (error) {
-      console.error('Failed to report crash:', error);
-    }
-  };
-
   const reportCustomError = (error: Error, context?: string) => {
-    const crashReport: CrashReport = {
-      error,
-      componentStack: context,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      sessionId: getSessionId()
-    };
-
-    reportCrash(crashReport);
+    if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+      Sentry.captureException(error, {
+        tags: {
+          context: context || 'custom_error',
+        },
+        extra: {
+          componentStack: context,
+        },
+      });
+    } else {
+      console.error('Crash Report:', {
+        error: error.message,
+        stack: error.stack,
+        context,
+        timestamp: new Date().toISOString(),
+      });
+    }
   };
 
   return {

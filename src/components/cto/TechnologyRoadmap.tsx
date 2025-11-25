@@ -111,10 +111,11 @@ export const TechnologyRoadmap: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load initiatives
+      // Load initiatives - only show 2025 and later (no fake 2024 data)
       const { data: initData, error: initError } = await supabase
         .from('cto_roadmap_initiatives')
         .select('*')
+        .gte('year', 2025)
         .order('year', { ascending: true })
         .order('quarter', { ascending: true });
 

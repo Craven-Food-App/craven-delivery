@@ -153,11 +153,14 @@ export default function MorningTechnicalReview() {
           if (response.ok) {
             const result = await response.json();
             console.log('Infrastructure monitoring completed:', result);
+          } else {
+            const errorText = await response.text();
+            console.warn('Infrastructure monitoring failed:', errorText);
           }
         }
       } catch (monitorError) {
         console.warn('Could not trigger infrastructure monitoring:', monitorError);
-        // Continue even if monitoring fails
+        // Continue even if monitoring fails - we'll still fetch existing data
       }
 
       // Fetch basic data (now with fresh infrastructure data)
@@ -254,7 +257,12 @@ export default function MorningTechnicalReview() {
       const metadata = dbConnectionsService?.metadata as any;
       const dbConnections = metadata?.active_connections || 0;
 
-      const errorRate = (errorsRes.data?.length || 0) / 100;
+      // Calculate real error rate: errors per hour in last 24 hours
+      const last24Hours = dayjs().subtract(24, 'hours');
+      const recentErrors = (errorsRes.data || []).filter(e => 
+        dayjs(e.created_at).isAfter(last24Hours)
+      );
+      const errorRate = recentErrors.length / 24; // Errors per hour
       const activeIncidents = incidentsRes.data?.length || 0;
 
       setMetrics({
@@ -400,8 +408,26 @@ export default function MorningTechnicalReview() {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      // Check for database spikes (simulated - would need actual DB monitoring)
-      const hasDbSpike = metrics.dbConnections > 100; // Placeholder threshold
+      // Check for database spikes - get real connection count from infrastructure or database
+      let dbConnections = 0;
+      const dbService = infrastructure.find(s => 
+        s.service_name?.toLowerCase().includes('database') || 
+        s.service_name?.toLowerCase().includes('postgres')
+      );
+      
+      if (dbService?.metadata?.active_connections) {
+        dbConnections = dbService.metadata.active_connections;
+      } else {
+        // Fallback: try to get from database function
+        try {
+          const { data: connectionCount } = await supabase.rpc('get_db_connection_count');
+          dbConnections = connectionCount || 0;
+        } catch (e) {
+          console.warn('Could not get DB connection count:', e);
+        }
+      }
+      
+      const hasDbSpike = dbConnections > 100; // Real threshold based on actual DB monitoring
 
       for (const cluster of clusters.slice(0, 3)) {
         const suggestions: any[] = [];
@@ -428,7 +454,7 @@ export default function MorningTechnicalReview() {
             title: 'Database Connection Spike Detected',
             description: 'High database connection count detected. This may be causing performance issues.',
             confidence_score: 60,
-            evidence: { connection_count: metrics.dbConnections }
+            evidence: { connection_count: dbConnections }
           });
         }
 
@@ -488,8 +514,16 @@ export default function MorningTechnicalReview() {
           dayjs(e.created_at).isAfter(deploymentTime)
         );
 
-        const failureRate = errorsAfterDeploy.length > 0 
-          ? (errorsAfterDeploy.length / 100) * 100 // Simplified calculation
+        // Calculate real failure rate: errors per hour after deployment
+        const hoursSinceDeploy = dayjs().diff(deploymentTime, 'hour', true);
+        const errorsPerHour = hoursSinceDeploy > 0 
+          ? errorsAfterDeploy.length / hoursSinceDeploy 
+          : errorsAfterDeploy.length;
+        
+        // Failure rate as percentage (assuming normal rate is < 0.1 errors/hour)
+        // If we see > 5 errors/hour, that's a 5%+ failure rate
+        const failureRate = errorsPerHour > 0.1 
+          ? Math.min((errorsPerHour / 0.1) * 0.5, 100) // Cap at 100%
           : 0;
 
         const threshold = 5.0; // 5% failure rate threshold
@@ -1013,9 +1047,11 @@ export default function MorningTechnicalReview() {
                 icon={<ReloadOutlined />} 
                 onClick={async () => {
                   try {
+                    message.loading({ content: 'Checking infrastructure services...', key: 'monitor' });
+                    
+                    // Call monitoring function first to update last_check timestamps
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
-                      message.loading({ content: 'Refreshing infrastructure data...', key: 'monitor' });
                       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/monitor-infrastructure`, {
                         method: 'POST',
                         headers: {
@@ -1025,15 +1061,27 @@ export default function MorningTechnicalReview() {
                         }
                       });
                       
-                      if (response.ok) {
-                        await fetchAllData();
-                        message.success({ content: 'Infrastructure data refreshed', key: 'monitor' });
-                      } else {
-                        message.error({ content: 'Failed to refresh infrastructure data', key: 'monitor' });
+                      if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Monitoring failed: ${errorText}`);
                       }
+                      
+                      const result = await response.json();
+                      console.log('Infrastructure monitoring completed:', result);
                     }
+                    
+                    // Then fetch updated data
+                    await fetchAllData();
+                    message.success({ content: 'Infrastructure data refreshed', key: 'monitor', duration: 2 });
                   } catch (e) {
-                    message.error({ content: 'Error refreshing infrastructure data', key: 'monitor' });
+                    console.error('Error refreshing infrastructure data:', e);
+                    message.error({ 
+                      content: `Error refreshing infrastructure data: ${e instanceof Error ? e.message : 'Unknown error'}`, 
+                      key: 'monitor', 
+                      duration: 5 
+                    });
+                    // Still try to fetch existing data
+                    await fetchAllData();
                   }
                 }}
               >

@@ -52,7 +52,6 @@ import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
-import CTODailyWorkflow from '@/components/cto/CTODailyWorkflow';
 import MorningTechnicalReview from '@/components/cto/MorningTechnicalReview';
 import SprintManagement from '@/components/cto/SprintManagement';
 import CodeReviewQueue from '@/components/cto/CodeReviewQueue';
@@ -127,7 +126,6 @@ function CTOPortalContent() {
     { id: 'team', label: 'Team & Resources', icon: Users },
     { id: 'roadmap', label: 'Technology Roadmap', icon: Rocket },
     { id: 'costs', label: 'Tech Cost Management', icon: Settings },
-    { id: 'workflow', label: 'Daily Workflow', icon: Code },
     { id: 'morning-review', label: 'Morning Review', icon: BarChart3 },
     { id: 'sprint', label: 'Sprint Management', icon: Rocket },
     { id: 'code-review', label: 'Code Reviews', icon: Code },
@@ -167,8 +165,6 @@ function CTOPortalContent() {
         return <TechnologyRoadmap />;
       case 'costs':
         return <TechCostManagement />;
-      case 'workflow':
-        return <CTODailyWorkflow />;
       case 'morning-review':
         return <MorningTechnicalReview />;
       case 'sprint':

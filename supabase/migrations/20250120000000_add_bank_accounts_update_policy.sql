@@ -54,10 +54,55 @@ CREATE TABLE IF NOT EXISTS public.invoices (
   invoice_date date not null,
   due_date date not null,
   status text not null default 'pending', -- pending|approved|paid
+  payment_run_id uuid,
   created_at timestamptz not null default now()
 );
 
 CREATE INDEX IF NOT EXISTS invoices_due_idx ON public.invoices (due_date);
+
+-- Create payment_runs table if it doesn't exist (for payment batch processing)
+CREATE TABLE IF NOT EXISTS public.payment_runs (
+  id uuid primary key default gen_random_uuid(),
+  scheduled_date date not null default (now()::date),
+  status text not null default 'draft', -- draft|approved|processed
+  total_amount numeric not null default 0,
+  processed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+-- Add payment_run_id column to invoices if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'invoices' 
+    AND column_name = 'payment_run_id'
+  ) THEN
+    ALTER TABLE public.invoices 
+    ADD COLUMN payment_run_id uuid;
+  END IF;
+END $$;
+
+-- Create index on payment_run_id if it doesn't exist
+CREATE INDEX IF NOT EXISTS invoices_payment_run_idx ON public.invoices (payment_run_id);
+
+-- Add foreign key constraint if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_schema = 'public' 
+    AND table_name = 'invoices' 
+    AND constraint_name = 'invoices_payment_run_id_fkey'
+  ) THEN
+    ALTER TABLE public.invoices 
+    ADD CONSTRAINT invoices_payment_run_id_fkey 
+    FOREIGN KEY (payment_run_id) 
+    REFERENCES public.payment_runs(id) 
+    ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Create bank_accounts table if it doesn't exist (for treasury operations)
 -- This ensures the table exists before adding policies
@@ -76,6 +121,7 @@ ALTER TABLE public.receivables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_runs ENABLE ROW LEVEL SECURITY;
 
 -- Create read policies for receivables, reconciliations, and invoices
 DROP POLICY IF EXISTS receivables_read ON public.receivables;
@@ -98,6 +144,61 @@ DROP POLICY IF EXISTS bank_accounts_read ON public.bank_accounts;
 CREATE POLICY bank_accounts_read ON public.bank_accounts
 FOR SELECT
 USING (auth.role() IN ('authenticated', 'service_role'));
+
+-- Create read policy for payment_runs
+DROP POLICY IF EXISTS payment_runs_read ON public.payment_runs;
+CREATE POLICY payment_runs_read ON public.payment_runs
+FOR SELECT
+USING (auth.role() IN ('authenticated', 'service_role'));
+
+-- Create write policy for payment_runs (allows finance roles and admins)
+DROP POLICY IF EXISTS payment_runs_write ON public.payment_runs;
+CREATE POLICY payment_runs_write ON public.payment_runs
+FOR INSERT
+WITH CHECK (
+  auth.role() = 'service_role' 
+  OR EXISTS (
+    SELECT 1 FROM public.finance_roles fr
+    WHERE fr.user_id = auth.uid() 
+    AND fr.role IN ('Treasury', 'Controller', 'CFO', 'AP')
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() 
+    AND ur.role = 'admin'
+  )
+);
+
+-- Create update policy for payment_runs
+DROP POLICY IF EXISTS payment_runs_update ON public.payment_runs;
+CREATE POLICY payment_runs_update ON public.payment_runs
+FOR UPDATE
+USING (
+  auth.role() = 'service_role' 
+  OR EXISTS (
+    SELECT 1 FROM public.finance_roles fr
+    WHERE fr.user_id = auth.uid() 
+    AND fr.role IN ('Treasury', 'Controller', 'CFO', 'AP')
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() 
+    AND ur.role = 'admin'
+  )
+)
+WITH CHECK (
+  auth.role() = 'service_role' 
+  OR EXISTS (
+    SELECT 1 FROM public.finance_roles fr
+    WHERE fr.user_id = auth.uid() 
+    AND fr.role IN ('Treasury', 'Controller', 'CFO', 'AP')
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() 
+    AND ur.role = 'admin'
+  )
+);
 
 -- Create insert policy if it doesn't exist
 -- Uses direct query to check finance_roles table (works even if has_finance_role function doesn't exist yet)
