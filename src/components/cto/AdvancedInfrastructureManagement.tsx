@@ -49,8 +49,6 @@ interface Service {
   status: 'operational' | 'degraded' | 'down' | 'maintenance';
   uptime_percent: number;
   response_time_ms: number;
-  region?: string;
-  cost_per_month?: number;
 }
 
 interface CloudResource {
@@ -79,8 +77,6 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
       status: 'operational',
       uptime_percent: 99.9,
       response_time_ms: 45,
-      region: '',
-      cost_per_month: 0,
     },
   });
 
@@ -91,21 +87,31 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
   const fetchInfrastructureData = async () => {
     setLoading(true);
     try {
+      // Verify user has access
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.id);
+      
       // Fetch services from it_infrastructure table
       const { data: servicesData, error: servicesError } = await supabase
         .from('it_infrastructure')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('last_check', { ascending: false });
 
       if (servicesError) {
+        console.error('Error fetching services:', servicesError);
         if (servicesError.code === 'PGRST116' || servicesError.message?.includes('does not exist') || servicesError.message?.includes('permission denied')) {
           console.warn('it_infrastructure table not found or not accessible, using empty services array');
           setServices([]);
         } else {
+          toast.error(`Failed to load services: ${servicesError.message}`, 'Error');
           throw servicesError;
         }
       } else {
-        setServices((servicesData || []) as Service[]);
+        console.log('Fetched services:', servicesData);
+        console.log('Number of services fetched:', servicesData?.length || 0);
+        const servicesArray = (servicesData || []) as Service[];
+        setServices(servicesArray);
+        console.log('Services state set to:', servicesArray);
       }
 
       // Fetch real cloud resources from tech_vendors table
@@ -254,10 +260,20 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const handleSubmitService = async (values: any) => {
     try {
+      // Only include fields that exist in the it_infrastructure schema
+      const allowedFields = ['service_name', 'service_provider', 'status', 'uptime_percent', 'response_time_ms', 'metadata'];
+      const filteredValues: any = {};
+      
+      allowedFields.forEach(field => {
+        if (values[field] !== undefined) {
+          filteredValues[field] = values[field];
+        }
+      });
+
       if (editingService) {
         const { error } = await supabase
           .from('it_infrastructure')
-          .update(values)
+          .update(filteredValues)
           .eq('id', editingService.id);
         if (error) {
           if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
@@ -268,7 +284,11 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
         }
         toast.success('Service updated successfully', 'Success');
       } else {
-        const { error } = await supabase.from('it_infrastructure').insert(values);
+        const { data: newService, error } = await supabase
+          .from('it_infrastructure')
+          .insert(filteredValues)
+          .select()
+          .single();
         if (error) {
           if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
             toast.error('Infrastructure table not available. Please create the table first.', 'Error');
@@ -277,10 +297,13 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
           throw error;
         }
         toast.success('Service created successfully', 'Success');
+        console.log('New service created:', newService);
+        // Close modal first
+        setServiceModalOpened(false);
+        serviceForm.reset();
+        // Always refetch to ensure we have the latest data from the server
+        await fetchInfrastructureData();
       }
-      setServiceModalOpened(false);
-      serviceForm.reset();
-      fetchInfrastructureData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to save service', 'Error');
     }
@@ -624,12 +647,6 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
                 />
               </Grid.Col>
             </Grid>
-            <TextInput label="Region" placeholder="US East" {...serviceForm.getInputProps('region')} />
-            <NumberInput
-              label="Cost per Month ($)"
-              min={0}
-              {...serviceForm.getInputProps('cost_per_month')}
-            />
             <Group justify="flex-end" mt="md">
               <Button variant="subtle" onClick={() => setServiceModalOpened(false)}>
                 Cancel

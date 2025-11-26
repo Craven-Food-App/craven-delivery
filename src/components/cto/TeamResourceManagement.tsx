@@ -117,51 +117,89 @@ export const TeamResourceManagement: React.FC = () => {
   const fetchTeamData = async () => {
     setLoading(true);
     try {
-      const { data: developers, error } = await supabase
+      // Try to fetch from cto_developers, but handle gracefully if table doesn't exist
+      // Note: Removed the join to user_profiles as it causes relationship errors
+      const { data: developers, error: developersError } = await supabase
         .from('cto_developers')
-        .select(`
-          *,
-          user_profiles:user_id (
-            email,
-            full_name
-          )
-        `);
+        .select('*');
 
-      if (error) throw error;
+      if (developersError) {
+        // Check if table doesn't exist or permission denied
+        if (developersError.code === 'PGRST116' || 
+            developersError.message?.includes('does not exist') || 
+            developersError.message?.includes('permission denied') ||
+            developersError.message?.includes('relationship')) {
+          console.warn('cto_developers table not found or not accessible, using empty team members');
+          setTeamMembers([]);
+        } else {
+          console.error('Error fetching developers:', developersError);
+          throw developersError;
+        }
+      } else {
+        // Fetch user profiles separately if needed
+        const userIds = (developers || []).map((dev: any) => dev.user_id).filter(Boolean);
+        let userProfilesMap: Record<string, any> = {};
+        
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('user_id, email, full_name')
+            .in('user_id', userIds);
+          
+          if (profiles) {
+            profiles.forEach((profile: any) => {
+              userProfilesMap[profile.user_id] = profile;
+            });
+          }
+        }
 
-      const members: TeamMember[] = (developers || []).map((dev: any) => {
-        const profile = Array.isArray(dev.user_profiles) ? dev.user_profiles[0] : dev.user_profiles;
-        return {
-          id: dev.user_id,
-          name: profile?.full_name || dev.user_id,
-          role: dev.role || 'Developer',
-          sprintVelocity: 0, // Will be calculated
-          codeReviews: 0,
-          pullRequests: 0,
-          availability: dev.availability_status === 'available' ? 100 : dev.availability_status === 'busy' ? 50 : 0,
-        };
-      });
-
-      setTeamMembers(members);
+        const members: TeamMember[] = (developers || []).map((dev: any) => {
+          const profile = userProfilesMap[dev.user_id];
+          return {
+            id: dev.user_id || dev.id,
+            name: profile?.full_name || dev.full_name || dev.email || dev.user_id || 'Unknown',
+            role: dev.role || 'Developer',
+            sprintVelocity: 0, // Will be calculated
+            codeReviews: 0,
+            pullRequests: 0,
+            availability: dev.availability_status === 'available' ? 100 : dev.availability_status === 'busy' ? 50 : 0,
+          };
+        });
+        setTeamMembers(members);
+      }
 
       // Fetch sprint metrics
-      const { data: sprints } = await supabase
+      const { data: sprints, error: sprintsError } = await supabase
         .from('cto_sprints')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(8);
 
-      const metrics: SprintMetrics[] = (sprints || []).map((sprint: any) => ({
-        sprint: sprint.sprint_name || `Sprint ${sprint.id}`,
-        velocity: sprint.velocity_target || 0,
-        completed: 0,
-        planned: sprint.velocity_target || 0,
-      }));
-
-      setSprintMetrics(metrics);
-    } catch (error) {
+      if (sprintsError) {
+        // Handle gracefully if table doesn't exist
+        if (sprintsError.code === 'PGRST116' || sprintsError.message?.includes('does not exist')) {
+          console.warn('cto_sprints table not found, using empty sprint metrics');
+          setSprintMetrics([]);
+        } else {
+          console.error('Error fetching sprints:', sprintsError);
+          // Don't throw, just set empty array
+          setSprintMetrics([]);
+        }
+      } else {
+        const metrics: SprintMetrics[] = (sprints || []).map((sprint: any) => ({
+          sprint: sprint.sprint_name || `Sprint ${sprint.id}`,
+          velocity: sprint.velocity_target || 0,
+          completed: 0,
+          planned: sprint.velocity_target || 0,
+        }));
+        setSprintMetrics(metrics);
+      }
+    } catch (error: any) {
       console.error('Error fetching team data:', error);
-      toast.error('Failed to load team data', 'Error');
+      toast.error(`Failed to load team data: ${error.message || 'Unknown error'}`, 'Error');
+      // Set empty arrays as fallback
+      setTeamMembers([]);
+      setSprintMetrics([]);
     } finally {
       setLoading(false);
     }
@@ -169,22 +207,51 @@ export const TeamResourceManagement: React.FC = () => {
 
   const fetchAlerts = async () => {
     try {
+      // Fetch alerts without the problematic join
       const { data, error } = await supabase
         .from('cto_performance_alerts')
-        .select(`
-          *,
-          user_profiles:developer_id (
-            email,
-            full_name
-          )
-        `)
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAlerts((data || []) as any);
+      if (error) {
+        if (error.code === 'PGRST116' || 
+            error.message?.includes('does not exist') ||
+            error.message?.includes('relationship')) {
+          console.warn('cto_performance_alerts table not found, using empty alerts');
+          setAlerts([]);
+          return;
+        }
+        throw error;
+      }
+
+      // Fetch user profiles separately if we have developer_ids
+      const developerIds = (data || []).map((alert: any) => alert.developer_id).filter(Boolean);
+      let userProfilesMap: Record<string, any> = {};
+      
+      if (developerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, email, full_name')
+          .in('user_id', developerIds);
+        
+        if (profiles) {
+          profiles.forEach((profile: any) => {
+            userProfilesMap[profile.user_id] = profile;
+          });
+        }
+      }
+
+      // Attach profiles to alerts
+      const alertsWithProfiles = (data || []).map((alert: any) => ({
+        ...alert,
+        user_profiles: userProfilesMap[alert.developer_id] || null,
+      }));
+
+      setAlerts(alertsWithProfiles as any);
     } catch (error) {
       console.error('Error fetching alerts:', error);
+      setAlerts([]);
     }
   };
 
@@ -197,44 +264,78 @@ export const TeamResourceManagement: React.FC = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          console.warn('cto_workforce_predictions table not found, no prediction available');
+          setPrediction(null);
+          return;
+        }
+        throw error;
+      }
       setPrediction(data as any);
     } catch (error) {
       console.error('Error fetching prediction:', error);
+      setPrediction(null);
     }
   };
 
   const fetchSuggestions = async () => {
     try {
+      // Fetch suggestions without complex joins that cause relationship errors
       const { data, error } = await supabase
         .from('cto_redistribution_suggestions')
-        .select(`
-          *,
-          overloaded_dev:overloaded_developer_id (
-            user_profiles:user_id (
-              email,
-              full_name
-            )
-          ),
-          reassign_dev:suggested_reassign_to (
-            user_profiles:user_id (
-              email,
-              full_name
-            )
-          ),
-          ticket:ticket_id (
-            ticket_number,
-            title
-          )
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('priority', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || 
+            error.message?.includes('does not exist') ||
+            error.message?.includes('relationship')) {
+          console.warn('cto_redistribution_suggestions table not found, using empty suggestions');
+          setSuggestions([]);
+          return;
+        }
+        throw error;
+      }
+
+      // Fetch related data separately if needed
+      const developerIds = [
+        ...(data || []).map((s: any) => s.overloaded_developer_id).filter(Boolean),
+        ...(data || []).map((s: any) => s.suggested_reassign_to).filter(Boolean),
+      ];
+      let userProfilesMap: Record<string, any> = {};
+      
+      if (developerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, email, full_name')
+          .in('user_id', developerIds);
+        
+        if (profiles) {
+          profiles.forEach((profile: any) => {
+            userProfilesMap[profile.user_id] = profile;
+          });
+        }
+      }
+
+      // Attach profiles to suggestions
+      const suggestionsWithProfiles = (data || []).map((suggestion: any) => ({
+        ...suggestion,
+        overloaded_dev: {
+          user_profiles: userProfilesMap[suggestion.overloaded_developer_id] || null,
+        },
+        reassign_dev: {
+          user_profiles: userProfilesMap[suggestion.suggested_reassign_to] || null,
+        },
+        ticket: null, // Will need separate fetch if ticket table exists
+      }));
+
       // @ts-ignore - Type mismatch with database schema
-      setSuggestions((data || []) as any);
+      setSuggestions(suggestionsWithProfiles as any);
     } catch (error) {
       console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
     }
   };
 
@@ -250,15 +351,30 @@ export const TeamResourceManagement: React.FC = () => {
         },
       });
 
+      if (!response.ok) {
+        // Try to parse error response
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // If JSON parse fails, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        toast.error(errorMessage, 'Error');
+        return;
+      }
+
       const result = await response.json();
       if (result.success) {
-        toast.success(`Detected ${result.alerts_created} performance alerts`, 'Analysis Complete');
+        toast.success(`Detected ${result.alerts_created || 0} performance alerts`, 'Analysis Complete');
         fetchAlerts();
       } else {
         toast.error(result.error || 'Failed to detect underperformance', 'Error');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to run analysis', 'Error');
+      console.error('Error running underperformance detection:', error);
+      toast.error(error.message || 'Failed to run analysis. Please try again.', 'Error');
     } finally {
       setAnalyzing(false);
     }
@@ -276,15 +392,29 @@ export const TeamResourceManagement: React.FC = () => {
         },
       });
 
+      if (!response.ok) {
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = response.statusText || errorMessage;
+        }
+        toast.error(errorMessage, 'Error');
+        return;
+      }
+
       const result = await response.json();
       if (result.success) {
         toast.success('Workforce planning analysis complete', 'Analysis Complete');
         setPrediction(result.prediction);
+        fetchPrediction();
       } else {
         toast.error(result.error || 'Failed to run analysis', 'Error');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to run analysis', 'Error');
+      console.error('Error running workforce planning:', error);
+      toast.error(error.message || 'Failed to run analysis. Please try again.', 'Error');
     } finally {
       setAnalyzing(false);
     }
@@ -302,15 +432,28 @@ export const TeamResourceManagement: React.FC = () => {
         },
       });
 
+      if (!response.ok) {
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = response.statusText || errorMessage;
+        }
+        toast.error(errorMessage, 'Error');
+        return;
+      }
+
       const result = await response.json();
       if (result.success) {
-        toast.success(`Created ${result.suggestions_created} redistribution suggestions`, 'Analysis Complete');
+        toast.success(`Created ${result.suggestions_created || 0} redistribution suggestions`, 'Analysis Complete');
         fetchSuggestions();
       } else {
         toast.error(result.error || 'Failed to run analysis', 'Error');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to run analysis', 'Error');
+      console.error('Error running task redistribution:', error);
+      toast.error(error.message || 'Failed to run analysis. Please try again.', 'Error');
     } finally {
       setAnalyzing(false);
     }

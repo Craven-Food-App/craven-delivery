@@ -66,12 +66,19 @@ const BoardPortal: React.FC = () => {
     if (isAuthorized) {
       fetchDashboardMetrics();
       
-      // Set up auto-refresh every 60 seconds
+      // Set up auto-refresh every 60 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
+      // This only updates component state, NEVER causes page reloads
       const interval = setInterval(() => {
-        fetchDashboardMetrics();
+        // Wrap in try-catch to prevent any errors from causing issues
+        try {
+          fetchDashboardMetrics();
+        } catch (error) {
+          console.error('Error in auto-refresh interval:', error);
+          // Silently handle - don't cause page reload or navigation
+        }
       }, 60000);
       
-      // Set up real-time subscription for orders and employees
+      // Set up real-time subscription for orders and employees - COMPONENT-LEVEL DATA REFRESH ONLY
       const channel = supabase
         .channel('board_metrics_updates')
         .on(
@@ -82,7 +89,12 @@ const BoardPortal: React.FC = () => {
             table: 'orders',
           },
           () => {
-            fetchDashboardMetrics();
+            // Only update state, never navigate or reload
+            try {
+              fetchDashboardMetrics();
+            } catch (error) {
+              console.error('Error in real-time subscription callback:', error);
+            }
           }
         )
         .on(
@@ -93,7 +105,12 @@ const BoardPortal: React.FC = () => {
             table: 'employees',
           },
           () => {
-            fetchDashboardMetrics();
+            // Only update state, never navigate or reload
+            try {
+              fetchDashboardMetrics();
+            } catch (error) {
+              console.error('Error in real-time subscription callback:', error);
+            }
           }
         )
         .on(
@@ -104,7 +121,12 @@ const BoardPortal: React.FC = () => {
             table: 'ceo_financial_approvals',
           },
           () => {
-            fetchDashboardMetrics();
+            // Only update state, never navigate or reload
+            try {
+              fetchDashboardMetrics();
+            } catch (error) {
+              console.error('Error in real-time subscription callback:', error);
+            }
           }
         )
         .subscribe();

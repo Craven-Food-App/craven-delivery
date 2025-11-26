@@ -58,9 +58,17 @@ export const DevOpsDashboard: React.FC = () => {
   useEffect(() => {
     fetchDevOpsData();
     fetchMTTR();
+    // Set up auto-refresh every 30 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
+    // This only updates component state, NEVER causes page reloads
     const interval = setInterval(() => {
-      fetchDevOpsData();
-      fetchMTTR();
+      // Wrap in try-catch to prevent any errors from causing issues
+      try {
+        fetchDevOpsData();
+        fetchMTTR();
+      } catch (error) {
+        console.error('Error in auto-refresh interval:', error);
+        // Silently handle - don't cause page reload or navigation
+      }
     }, 30000);
     return () => clearInterval(interval);
   }, []);

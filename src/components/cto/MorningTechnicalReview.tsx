@@ -130,8 +130,48 @@ export default function MorningTechnicalReview() {
 
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
+    
+    // Set up automated infrastructure monitoring every 15 minutes
+    const monitoringInterval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/monitor-infrastructure`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            console.log('Automated infrastructure monitoring completed');
+            // Refresh data after monitoring completes
+            setTimeout(() => fetchAllData(), 2000);
+          }
+        }
+      } catch (error) {
+        console.error('Automated monitoring error:', error);
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+    
+    // Set up auto-refresh every 30 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
+    // This only updates component state, NEVER causes page reloads
+    const interval = setInterval(() => {
+      // Wrap in try-catch to prevent any errors from causing issues
+      try {
+        fetchAllData();
+      } catch (error) {
+        console.error('Error in auto-refresh interval:', error);
+        // Silently handle - don't cause page reload or navigation
+      }
+    }, 30000);
+    
+    return () => {
+      clearInterval(interval);
+      clearInterval(monitoringInterval);
+    };
   }, []);
 
   const fetchAllData = async () => {

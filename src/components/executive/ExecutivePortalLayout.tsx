@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronRight, Home, LogOut } from 'lucide-react';
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -142,7 +142,74 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
           </button>
         </div>
         {renderNavigation()}
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px' }}>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Back to Hub and Sign Out Buttons */}
+          {(onBack || onSignOut) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: isSidebarOpen ? '8px' : '0',
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: '#f3f4f6',
+                    color: '#111827',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                    justifyContent: isSidebarOpen ? 'flex-start' : 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }}
+                  title={isSidebarOpen ? '' : 'Back to Hub'}
+                >
+                  <Home size={18} />
+                  {isSidebarOpen && <span>Back to Hub</span>}
+                </button>
+              )}
+              {onSignOut && (
+                <button
+                  onClick={onSignOut}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: isSidebarOpen ? '8px' : '0',
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                    justifyContent: isSidebarOpen ? 'flex-start' : 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fecaca';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                  }}
+                  title={isSidebarOpen ? '' : 'Sign Out'}
+                >
+                  <LogOut size={18} />
+                  {isSidebarOpen && <span>Sign Out</span>}
+                </button>
+              )}
+            </div>
+          )}
           {sidebarFooter ? (
             sidebarFooter
           ) : userInfo ? (
@@ -223,7 +290,78 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
           </button>
         </div>
         {renderNavigation(() => setIsMobileMenuOpen(false))}
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px' }}>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Back to Hub and Sign Out Buttons */}
+          {(onBack || onSignOut) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+              {onBack && (
+                <button
+                  onClick={() => {
+                    onBack();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: '#f3f4f6',
+                    color: '#111827',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                    justifyContent: 'flex-start',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  }}
+                >
+                  <Home size={18} />
+                  <span>Back to Hub</span>
+                </button>
+              )}
+              {onSignOut && (
+                <button
+                  onClick={() => {
+                    onSignOut();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                    justifyContent: 'flex-start',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fecaca';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                  }}
+                >
+                  <LogOut size={18} />
+                  <span>Sign Out</span>
+                </button>
+              )}
+            </div>
+          )}
           {sidebarFooter ? (
             sidebarFooter
           ) : userInfo ? (
@@ -289,7 +427,52 @@ const ExecutivePortalLayout: React.FC<ExecutivePortalLayoutProps> = ({
           </button>
           <span style={{ fontSize: '18px', fontWeight: 700, color: '#ff5f1f' }}>{title}</span>
           <div style={{ flex: 1 }} />
-          {actionButtons}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {onBack && (
+              <button
+                onClick={onBack}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  backgroundColor: '#f3f4f6',
+                  color: '#111827',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                title="Back to Hub"
+              >
+                <Home size={16} />
+                <span>Hub</span>
+              </button>
+            )}
+            {onSignOut && (
+              <button
+                onClick={onSignOut}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  backgroundColor: '#fee2e2',
+                  color: '#dc2626',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+                title="Sign Out"
+              >
+                <LogOut size={16} />
+              </button>
+            )}
+            {actionButtons}
+          </div>
         </div>
       )}
 

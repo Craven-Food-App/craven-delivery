@@ -682,12 +682,19 @@ function CFOPortalContent() {
   useEffect(() => {
     fetchData();
     
-    // Set up auto-refresh every 60 seconds
+    // Set up auto-refresh every 60 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
+    // This only updates component state, NEVER causes page reloads
     const interval = setInterval(() => {
-      fetchData();
+      // Wrap in try-catch to prevent any errors from causing issues
+      try {
+        fetchData();
+      } catch (error) {
+        console.error('Error in auto-refresh interval:', error);
+        // Silently handle - don't cause page reload or navigation
+      }
     }, 60000);
     
-    // Set up real-time subscription for orders
+    // Set up real-time subscription for orders - COMPONENT-LEVEL DATA REFRESH ONLY
     const ordersChannel = supabase
       .channel('cfo_orders_updates')
       .on(
@@ -698,7 +705,12 @@ function CFOPortalContent() {
           table: 'orders',
         },
         () => {
-          fetchData();
+          // Only update state, never navigate or reload
+          try {
+            fetchData();
+          } catch (error) {
+            console.error('Error in real-time subscription callback:', error);
+          }
         }
       )
       .subscribe();

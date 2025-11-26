@@ -1,7 +1,7 @@
 import React from 'react';
-import { AppShell, Burger, Group, Text, Badge, Avatar, Menu, UnstyledButton } from '@mantine/core';
+import { AppShell, Burger, Group, Text, Badge, Avatar, Menu, UnstyledButton, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconBuilding, IconChevronDown, IconLogout, IconUser } from '@tabler/icons-react';
+import { IconBuilding, IconChevronDown, IconLogout, IconUser, IconHome } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
@@ -28,6 +28,10 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
     };
     getUser();
   }, []);
+
+  const handleBackToHub = () => {
+    navigate('/hub');
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -70,34 +74,48 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
               </Badge>
             </div>
           </Group>
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <UnstyledButton>
-                <Group gap="xs">
-                  <Avatar size="sm" color="orange" radius="xl">
-                    {userEmail.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Text size="sm" c="dimmed" visibleFrom="sm">
-                    {userEmail.split('@')[0]}
-                  </Text>
-                  <IconChevronDown size={16} />
-                </Group>
-              </UnstyledButton>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item leftSection={<IconUser size={14} />}>
-                Profile
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                leftSection={<IconLogout size={14} />}
-                onClick={handleSignOut}
-                color="red"
-              >
-                Sign Out
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+          <Group gap="xs">
+            <Button
+              leftSection={<IconHome size={16} />}
+              variant="light"
+              color="orange"
+              onClick={handleBackToHub}
+              visibleFrom="sm"
+            >
+              Back to Hub
+            </Button>
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <UnstyledButton>
+                  <Group gap="xs">
+                    <Avatar size="sm" color="orange" radius="xl">
+                      {userEmail.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Text size="sm" c="dimmed" visibleFrom="sm">
+                      {userEmail.split('@')[0]}
+                    </Text>
+                    <IconChevronDown size={16} />
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconHome size={14} />} onClick={handleBackToHub} hiddenFrom="sm">
+                  Back to Hub
+                </Menu.Item>
+                <Menu.Item leftSection={<IconUser size={14} />}>
+                  Profile
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconLogout size={14} />}
+                  onClick={handleSignOut}
+                  color="red"
+                >
+                  Sign Out
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 

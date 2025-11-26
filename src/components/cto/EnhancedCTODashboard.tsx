@@ -106,7 +106,17 @@ export const EnhancedCTODashboard: React.FC = () => {
   useEffect(() => {
     fetchEnhancedData();
     initializeDailyWorkflow();
-    const interval = setInterval(fetchEnhancedData, 30000); // Refresh every 30 seconds
+    // Set up auto-refresh every 30 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
+    // This only updates component state, NEVER causes page reloads
+    const interval = setInterval(() => {
+      // Wrap in try-catch to prevent any errors from causing issues
+      try {
+        fetchEnhancedData();
+      } catch (error) {
+        console.error('Error in auto-refresh interval:', error);
+        // Silently handle - don't cause page reload or navigation
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -125,27 +135,56 @@ export const EnhancedCTODashboard: React.FC = () => {
         .select('id')
         .eq('checklist_date', today);
 
+      // Only create default tasks if none exist for today
       if (!existing || existing.length === 0) {
+        // Get real data to generate contextual tasks
+        const [
+          { data: openIncidents },
+          { data: pendingReviews },
+          { data: activeSprint },
+          { data: openTickets }
+        ] = await Promise.all([
+          supabase.from('it_incidents').select('id').eq('status', 'open'),
+          supabase.from('cto_code_reviews').select('id').eq('status', 'pending'),
+          supabase.from('cto_sprints').select('id').eq('status', 'active').maybeSingle(),
+          supabase.from('it_help_desk_tickets').select('id').eq('status', 'open').limit(10)
+        ]);
+
         const defaultTasks = [
+          // Always include these core tasks
           { task_category: 'morning_review', task_name: 'Infrastructure & System Health Check', priority: 'high' },
-          { task_category: 'morning_review', task_name: 'Active Sprint Check-In', priority: 'high' },
-          { task_category: 'morning_review', task_name: 'Security Review (Quick Scan)', priority: 'normal' },
           { task_category: 'development', task_name: 'Review Pull Requests', priority: 'high' },
+          
+          // Conditional tasks based on real data
+          ...(openIncidents && openIncidents.length > 0 ? [{
+            task_category: 'morning_review' as const,
+            task_name: `Review ${openIncidents.length} Open Incident${openIncidents.length > 1 ? 's' : ''}`,
+            priority: 'high' as const
+          }] : []),
+          
+          ...(pendingReviews && pendingReviews.length > 0 ? [{
+            task_category: 'development' as const,
+            task_name: `Complete ${pendingReviews.length} Pending Code Review${pendingReviews.length > 1 ? 's' : ''}`,
+            priority: 'high' as const
+          }] : []),
+          
+          ...(activeSprint ? [{
+            task_category: 'morning_review' as const,
+            task_name: 'Active Sprint Check-In',
+            priority: 'high' as const
+          }] : []),
+          
+          ...(openTickets && openTickets.length > 5 ? [{
+            task_category: 'development' as const,
+            task_name: `High Ticket Volume: ${openTickets.length} Open Tickets`,
+            priority: 'medium' as const
+          }] : []),
+          
+          // Standard tasks
+          { task_category: 'morning_review', task_name: 'Security Review (Quick Scan)', priority: 'normal' },
           { task_category: 'development', task_name: 'Manage Developer Team', priority: 'high' },
-          { task_category: 'development', task_name: 'System & Feature Planning', priority: 'normal' },
           { task_category: 'strategic', task_name: 'Architecture Governance', priority: 'normal' },
-          { task_category: 'strategic', task_name: 'Technology Roadmap Review', priority: 'normal' },
-          { task_category: 'strategic', task_name: 'Data & Analytics Management', priority: 'normal' },
           { task_category: 'coordination', task_name: 'CEO Sync Meeting', priority: 'high' },
-          { task_category: 'coordination', task_name: 'CFO Sync (if needed)', priority: 'normal' },
-          { task_category: 'coordination', task_name: 'Department Syncs (as needed)', priority: 'low' },
-          { task_category: 'stability', task_name: 'Security Maintenance', priority: 'normal' },
-          { task_category: 'stability', task_name: 'Backup & Redundancy Check', priority: 'normal' },
-          { task_category: 'stability', task_name: 'Deployment Reliability Review', priority: 'normal' },
-          { task_category: 'product', task_name: 'Feature Scoping', priority: 'normal' },
-          { task_category: 'product', task_name: 'QA Testing Review', priority: 'normal' },
-          { task_category: 'documentation', task_name: 'Sprint Updates', priority: 'normal' },
-          { task_category: 'documentation', task_name: 'Deployment Notes', priority: 'normal' },
           { task_category: 'documentation', task_name: 'Daily CTO Report', priority: 'high' },
         ];
 
@@ -362,7 +401,7 @@ export const EnhancedCTODashboard: React.FC = () => {
         mobilePerfRes,
         mobileErrorsRes
       ] = await Promise.all([
-        supabase.from('it_infrastructure').select('*').order('created_at', { ascending: false }),
+        supabase.from('it_infrastructure').select('*').order('last_check', { ascending: false }),
         supabase.from('it_incidents').select('*').eq('status', 'open'),
         supabase.from('it_incidents').select('*').eq('incident_type', 'bug').limit(10),
         supabase.rpc('get_daily_uptime_percentage', { target_date: new Date().toISOString().split('T')[0] }),
@@ -450,14 +489,15 @@ export const EnhancedCTODashboard: React.FC = () => {
           const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
           const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
           
-          // Fetch real uptime data for this month
+          // Note: it_infrastructure doesn't have monthly historical data
+          // Services represent current state, not time-series data
+          // For now, we'll calculate current average uptime (not month-specific)
+          // TODO: If monthly trends are needed, create it_infrastructure_history table
           const { data: uptimeData } = await supabase
             .from('it_infrastructure')
-            .select('uptime_percent')
-            .gte('created_at', date.toISOString())
-            .lt('created_at', nextMonth.toISOString());
+            .select('uptime_percent');
           
-          // Only include month if we have real data - no fake fallbacks
+          // Calculate current average uptime (not month-specific)
           const monthUptime = uptimeData && uptimeData.length > 0
             ? uptimeData.reduce((sum: number, s: any) => sum + (s.uptime_percent || 0), 0) / uptimeData.length
             : null;

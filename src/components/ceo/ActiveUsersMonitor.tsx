@@ -48,33 +48,59 @@ const ActiveUsersMonitor: React.FC = () => {
   const [activeTab, setActiveTab] = useState('active');
 
   useEffect(() => {
+    // Initial fetch
     fetchActiveUsers();
     fetchActivityLog();
     
-    // Set up real-time subscription for active sessions
-    const channel = supabase
-      .channel('active-users')
+    // REAL-TIME SUBSCRIPTIONS - Zero delay updates
+    // Subscribe to user_sessions changes (INSERT, UPDATE, DELETE)
+    const sessionsChannel = supabase
+      .channel('active-users-realtime')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'user_sessions',
         },
-        () => {
-          fetchActiveUsers();
+        async (payload) => {
+          // Zero-delay update - refresh immediately when any change occurs
+          await fetchActiveUsers();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Subscribed to user_sessions realtime');
+        }
+      });
 
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchActiveUsers();
-    }, 30000);
+    // Subscribe to user_activity_log changes - Zero delay
+    const activityChannel = supabase
+      .channel('activity-log-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events
+          schema: 'public',
+          table: 'user_activity_log',
+        },
+        async (payload) => {
+          // Zero-delay update - refresh immediately when any activity occurs
+          await fetchActivityLog();
+          // Also refresh active users in case session changed
+          await fetchActiveUsers();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Subscribed to user_activity_log realtime');
+        }
+      });
 
+    // Cleanup subscriptions on unmount
     return () => {
-      channel.unsubscribe();
-      clearInterval(interval);
+      sessionsChannel.unsubscribe();
+      activityChannel.unsubscribe();
     };
   }, []);
 
@@ -127,11 +153,20 @@ const ActiveUsersMonitor: React.FC = () => {
       const users: ActiveUser[] = data.map((session: any) => {
         const profile = profilesMap.get(session.user_id);
         const execUser = execUsersMap.get(session.user_id);
+        
+        // Prioritize: full_name -> title -> email username -> user_id
+        const fullName = profile?.full_name || 
+                         execUser?.title || 
+                         (profile?.email ? profile.email.split('@')[0] : null) ||
+                         `User ${session.user_id.substring(0, 8)}`;
+        
+        const email = profile?.email || '';
+        
         return {
           id: session.id,
           user_id: session.user_id,
-          full_name: profile?.full_name || 'Unknown',
-          email: profile?.email || '',
+          full_name: fullName,
+          email: email,
           portal_type: session.portal_type,
           current_location: session.current_location || '',
           last_activity_at: session.last_activity_at,
@@ -180,24 +215,45 @@ const ActiveUsersMonitor: React.FC = () => {
         return;
       }
 
-      // Fetch user_profiles separately
+      // Fetch user_profiles and exec_users separately
       const userIds = [...new Set(data.map((log: any) => log.user_id))];
-      const { data: profilesData } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', userIds);
+      
+      const [profilesRes, execUsersRes] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', userIds),
+        supabase
+          .from('exec_users')
+          .select('user_id, title, role')
+          .in('user_id', userIds)
+      ]);
 
       const profilesMap = new Map(
-        (profilesData || []).map((p: any) => [p.user_id, p])
+        (profilesRes.data || []).map((p: any) => [p.user_id, p])
+      );
+      
+      const execUsersMap = new Map(
+        (execUsersRes.data || []).map((eu: any) => [eu.user_id, eu])
       );
 
       const logs: ActivityLog[] = data.map((log: any) => {
         const profile = profilesMap.get(log.user_id);
+        const execUser = execUsersMap.get(log.user_id);
+        
+        // Prioritize: full_name -> title -> email username -> user_id
+        const fullName = profile?.full_name || 
+                         execUser?.title || 
+                         (profile?.email ? profile.email.split('@')[0] : null) ||
+                         `User ${log.user_id.substring(0, 8)}`;
+        
+        const email = profile?.email || '';
+        
         return {
           id: log.id,
           user_id: log.user_id,
-          full_name: profile?.full_name || 'Unknown',
-          email: profile?.email || '',
+          full_name: fullName,
+          email: email,
           activity_type: log.activity_type,
           portal_type: log.portal_type || '',
           location: log.location || '',
