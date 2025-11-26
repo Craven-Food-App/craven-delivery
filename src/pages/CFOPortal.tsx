@@ -2966,8 +2966,11 @@ function WordProcessor() {
 
 export default function CFOPortal() {
   return (
-    <EmbeddedToastProvider>
-      <CFOPortalContent />
-    </EmbeddedToastProvider>
+    <ThemeProvider theme={financePortalTheme}>
+      <CssBaseline />
+      <EmbeddedToastProvider>
+        <CFOPortalContent />
+      </EmbeddedToastProvider>
+    </ThemeProvider>
   );
 }
