@@ -1,66 +1,90 @@
-import React, { useState } from 'react';
-import {
-  Stack,
-  Title,
-  Text,
-  Card,
-  Group,
-  Badge,
-  Button,
-  Grid,
-  Progress,
-  Tabs,
-  Table,
-  Alert,
-  NumberInput,
-  Divider,
-} from '@mantine/core';
-import {
-  IconFileText,
-  IconCalculator,
-  IconAlertTriangle,
-  IconTrendingUp,
-  IconDownload,
-  IconCalendar,
-} from '@tabler/icons-react';
+import React, { useState, useEffect } from 'react';
+import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Table, NumberInput, Divider, Alert } from '@mantine/core';
+import { IconCalculator, IconCalendar, IconCertificate, IconDownload } from '@tabler/icons-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface TaxCalendarItem {
+  id: string;
+  due_date: string;
+  description: string;
+  amount: number;
+  status: string;
+}
+
+interface TaxCredit {
+  id: string;
+  credit_name: string;
+  credit_type: string;
+  estimated_value: number;
+  eligibility_status: string;
+}
 
 export const EnhancedTaxPlanning: React.FC = () => {
-  const [estimatedIncome, setEstimatedIncome] = useState(1000000);
-  
-  const calculateTaxes = () => {
+  const [estimatedIncome, setEstimatedIncome] = useState(0);
+  const [taxCalendar, setTaxCalendar] = useState<TaxCalendarItem[]>([]);
+  const [taxCredits, setTaxCredits] = useState<TaxCredit[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTaxData();
+  }, []);
+
+  const fetchTaxData = async () => {
+    try {
+      const [calendarRes, creditsRes, estimateRes] = await Promise.all([
+        supabase.from('tax_calendar').select('*').order('due_date'),
+        supabase.from('tax_credits').select('*'),
+        supabase.from('tax_estimates').select('*').order('created_at', { ascending: false }).limit(1).single()
+      ]);
+
+      if (calendarRes.data) setTaxCalendar(calendarRes.data);
+      if (creditsRes.data) setTaxCredits(creditsRes.data);
+      if (estimateRes.data) setEstimatedIncome(estimateRes.data.estimated_income);
+    } catch (error) {
+      console.error('Error fetching tax data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateTaxes = (income: number) => {
     const federalRate = 0.21;
-    const stateRate = 0.06;
-    
-    const federalTax = estimatedIncome * federalRate;
-    const stateTax = estimatedIncome * stateRate;
+    const stateRate = 0.065;
+    const federalTax = income * federalRate;
+    const stateTax = income * stateRate;
     const totalTax = federalTax + stateTax;
-    const effectiveRate = (totalTax / estimatedIncome) * 100;
-    
+    const effectiveRate = income > 0 ? (totalTax / income) * 100 : 0;
+
     return { federalTax, stateTax, totalTax, effectiveRate };
   };
 
-  const taxes = calculateTaxes();
+  const taxes = calculateTaxes(estimatedIncome);
 
-  const taxCalendar = [
-    { date: 'April 15', description: 'Q1 Estimated Payment Due', amount: taxes.totalTax / 4 },
-    { date: 'June 15', description: 'Q2 Estimated Payment Due', amount: taxes.totalTax / 4 },
-    { date: 'September 15', description: 'Q3 Estimated Payment Due', amount: taxes.totalTax / 4 },
-    { date: 'January 15', description: 'Q4 Estimated Payment Due', amount: taxes.totalTax / 4 },
-  ];
+  const saveTaxEstimate = async (newIncome: number) => {
+    const newTaxes = calculateTaxes(newIncome);
+    try {
+      await supabase.from('tax_estimates').insert({
+        estimated_income: newIncome,
+        federal_tax: newTaxes.federalTax,
+        state_tax: newTaxes.stateTax,
+        total_tax: newTaxes.totalTax,
+        effective_rate: newTaxes.effectiveRate,
+        tax_year: new Date().getFullYear()
+      });
+    } catch (error) {
+      console.error('Error saving tax estimate:', error);
+    }
+  };
 
   return (
     <Stack gap="lg" p={{ base: 16, md: 24 }}>
       <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>Tax Planning & Strategy</Title>
-          <Text c="dimmed" size="sm">
-            Manage tax planning, estimate liabilities, and ensure compliance
-          </Text>
+          <Text c="dimmed" size="sm">Manage tax planning, estimate liabilities, and ensure compliance</Text>
         </div>
         <Group>
-          <Button variant="light" leftSection={<IconDownload size={16} />}>
-            Export Tax Report
-          </Button>
+          <Button variant="light" leftSection={<IconDownload size={16} />}>Export Tax Report</Button>
         </Group>
       </Group>
 
@@ -69,60 +93,45 @@ export const EnhancedTaxPlanning: React.FC = () => {
           <Card withBorder p="md">
             <Group justify="space-between">
               <div>
-                <Text size="sm" c="dimmed">
-                  Federal Tax
-                </Text>
+                <Text size="sm" c="dimmed">Federal Tax</Text>
                 <Title order={3}>${taxes.federalTax.toLocaleString()}</Title>
-                <Text size="xs" c="dimmed">
-                  21% rate
-                </Text>
+                <Text size="xs" c="dimmed">21% rate</Text>
               </div>
-              <IconFileText size={32} color="blue" />
+              <IconCalculator size={32} color="blue" />
             </Group>
           </Card>
         </Grid.Col>
-
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Card withBorder p="md">
             <Group justify="space-between">
               <div>
-                <Text size="sm" c="dimmed">
-                  State Tax
-                </Text>
+                <Text size="sm" c="dimmed">State Tax</Text>
                 <Title order={3}>${taxes.stateTax.toLocaleString()}</Title>
-                <Text size="xs" c="dimmed">
-                  6% rate
-                </Text>
+                <Text size="xs" c="dimmed">6.5% rate</Text>
               </div>
               <IconCalculator size={32} color="orange" />
             </Group>
           </Card>
         </Grid.Col>
-
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Card withBorder p="md">
             <Group justify="space-between">
               <div>
-                <Text size="sm" c="dimmed">
-                  Total Tax Liability
-                </Text>
+                <Text size="sm" c="dimmed">Total Tax Liability</Text>
                 <Title order={3}>${taxes.totalTax.toLocaleString()}</Title>
               </div>
-              <IconAlertTriangle size={32} color="red" />
+              <IconCertificate size={32} color="red" />
             </Group>
           </Card>
         </Grid.Col>
-
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Card withBorder p="md">
             <Group justify="space-between">
               <div>
-                <Text size="sm" c="dimmed">
-                  Effective Rate
-                </Text>
+                <Text size="sm" c="dimmed">Effective Rate</Text>
                 <Title order={3}>{taxes.effectiveRate.toFixed(1)}%</Title>
               </div>
-              <IconTrendingUp size={32} color="green" />
+              <IconCalculator size={32} color="green" />
             </Group>
           </Card>
         </Grid.Col>
@@ -130,122 +139,91 @@ export const EnhancedTaxPlanning: React.FC = () => {
 
       <Tabs defaultValue="calculator">
         <Tabs.List>
-          <Tabs.Tab value="calculator" leftSection={<IconCalculator size={16} />}>
-            Tax Calculator
-          </Tabs.Tab>
-          <Tabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
-            Tax Calendar
-          </Tabs.Tab>
-          <Tabs.Tab value="credits" leftSection={<IconTrendingUp size={16} />}>
-            Tax Credits
-          </Tabs.Tab>
+          <Tabs.Tab value="calculator" leftSection={<IconCalculator size={16} />}>Tax Calculator</Tabs.Tab>
+          <Tabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>Tax Calendar</Tabs.Tab>
+          <Tabs.Tab value="credits" leftSection={<IconCertificate size={16} />}>Tax Credits</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="calculator" pt="md">
           <Card withBorder p="md">
             <Stack gap="md">
-              <Alert color="blue" icon={<IconCalculator />}>
-                Adjust your estimated taxable income to calculate tax liability
-              </Alert>
-              
               <NumberInput
-                label="Estimated Taxable Income"
+                label="Estimated Annual Income"
                 value={estimatedIncome}
-                onChange={(val) => setEstimatedIncome(Number(val))}
+                onChange={(val) => {
+                  const newValue = val as number;
+                  setEstimatedIncome(newValue);
+                  saveTaxEstimate(newValue);
+                }}
                 prefix="$"
                 thousandSeparator=","
-                size="lg"
+                min={0}
               />
-
               <Divider />
-
-              <Grid>
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={500}>
-                    Federal Tax (21%)
-                  </Text>
-                  <Title order={4}>${taxes.federalTax.toLocaleString()}</Title>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={500}>
-                    State Tax (6%)
-                  </Text>
-                  <Title order={4}>${taxes.stateTax.toLocaleString()}</Title>
-                </Grid.Col>
-              </Grid>
-
-              <Alert color="orange">
-                <Text fw={500}>Quarterly Estimated Payment</Text>
-                <Title order={3}>${(taxes.totalTax / 4).toLocaleString()}</Title>
-              </Alert>
+              <Text fw={500}>Tax Calculation Results</Text>
+              <Group justify="space-between"><Text>Federal Tax (21%):</Text><Text fw={500}>${taxes.federalTax.toLocaleString()}</Text></Group>
+              <Group justify="space-between"><Text>State Tax (6.5%):</Text><Text fw={500}>${taxes.stateTax.toLocaleString()}</Text></Group>
+              <Divider />
+              <Group justify="space-between"><Text fw={700}>Total Tax Liability:</Text><Text fw={700} c="blue">${taxes.totalTax.toLocaleString()}</Text></Group>
+              <Group justify="space-between"><Text>Effective Tax Rate:</Text><Text fw={500}>{taxes.effectiveRate.toFixed(2)}%</Text></Group>
             </Stack>
           </Card>
         </Tabs.Panel>
 
         <Tabs.Panel value="calendar" pt="md">
-          <Card withBorder>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Due Date</Table.Th>
-                  <Table.Th>Description</Table.Th>
-                  <Table.Th>Amount</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {taxCalendar.map((item, idx) => (
-                  <Table.Tr key={idx}>
-                    <Table.Td>{item.date}</Table.Td>
-                    <Table.Td>{item.description}</Table.Td>
-                    <Table.Td>${item.amount.toLocaleString()}</Table.Td>
-                    <Table.Td>
-                      <Badge color="yellow">Upcoming</Badge>
-                    </Table.Td>
+          <Card withBorder p="md">
+            {loading ? (
+              <Text>Loading tax calendar...</Text>
+            ) : taxCalendar.length === 0 ? (
+              <Alert color="blue"><Text>No tax payments scheduled. Add tax deadlines to track upcoming obligations.</Text></Alert>
+            ) : (
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Due Date</Table.Th>
+                    <Table.Th>Description</Table.Th>
+                    <Table.Th>Amount</Table.Th>
+                    <Table.Th>Status</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
+                </Table.Thead>
+                <Table.Tbody>
+                  {taxCalendar.map(item => (
+                    <Table.Tr key={item.id}>
+                      <Table.Td><Text fw={500}>{new Date(item.due_date).toLocaleDateString()}</Text></Table.Td>
+                      <Table.Td>{item.description}</Table.Td>
+                      <Table.Td>{item.amount > 0 ? `$${item.amount.toLocaleString()}` : 'TBD'}</Table.Td>
+                      <Table.Td><Badge color={item.status === 'paid' ? 'green' : item.status === 'overdue' ? 'red' : 'yellow'}>{item.status}</Badge></Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
           </Card>
         </Tabs.Panel>
 
         <Tabs.Panel value="credits" pt="md">
-          <Stack gap="md">
-            <Card withBorder p="md">
-              <Group justify="space-between">
-                <div>
-                  <Text fw={500}>R&D Tax Credit</Text>
-                  <Text size="sm" c="dimmed">
-                    Research and development tax credit eligibility
-                  </Text>
-                </div>
-                <Badge color="green">Eligible</Badge>
-              </Group>
-            </Card>
-
-            <Card withBorder p="md">
-              <Group justify="space-between">
-                <div>
-                  <Text fw={500}>Work Opportunity Tax Credit</Text>
-                  <Text size="sm" c="dimmed">
-                    Hiring incentive for qualified employees
-                  </Text>
-                </div>
-                <Badge color="blue">Review</Badge>
-              </Group>
-            </Card>
-
-            <Card withBorder p="md">
-              <Group justify="space-between">
-                <div>
-                  <Text fw={500}>Energy Efficiency Credit</Text>
-                  <Text size="sm" c="dimmed">
-                    Credits for energy-efficient improvements
-                  </Text>
-                </div>
-                <Badge color="gray">Not Eligible</Badge>
-              </Group>
-            </Card>
+          <Stack gap="sm">
+            {loading ? (
+              <Text>Loading tax credits...</Text>
+            ) : taxCredits.length === 0 ? (
+              <Alert color="blue"><Text>No tax credits tracked. Add potential tax credits to monitor eligibility and savings.</Text></Alert>
+            ) : (
+              taxCredits.map(credit => (
+                <Card key={credit.id} withBorder p="md">
+                  <Group justify="space-between">
+                    <div><Text fw={500}>{credit.credit_name}</Text><Text size="sm" c="dimmed">{credit.credit_type}</Text></div>
+                    <div style={{ textAlign: 'right' }}>
+                      <Text fw={700} c={credit.eligibility_status === 'Eligible' ? 'green' : credit.eligibility_status === 'Under Review' ? 'blue' : 'dimmed'}>
+                        ${credit.estimated_value.toLocaleString()}
+                      </Text>
+                      <Badge color={credit.eligibility_status === 'Eligible' ? 'green' : credit.eligibility_status === 'Under Review' ? 'yellow' : 'gray'} mt="xs">
+                        {credit.eligibility_status}
+                      </Badge>
+                    </div>
+                  </Group>
+                </Card>
+              ))
+            )}
           </Stack>
         </Tabs.Panel>
       </Tabs>

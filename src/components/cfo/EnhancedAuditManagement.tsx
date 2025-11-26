@@ -1,17 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Timeline, Alert, Progress } from '@mantine/core';
 import { IconScale, IconFileCheck, IconCalendar, IconAlertTriangle, IconCheck, IconDownload } from '@tabler/icons-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AuditRequest {
+  id: string;
+  title: string;
+  assigned_to: string;
+  due_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AuditTimelineItem {
+  id: string;
+  title: string;
+  phase: string;
+  date: string;
+  status: string;
+  created_at: string;
+}
 
 export const EnhancedAuditManagement: React.FC = () => {
-  const auditRequests = [
-    { id: 1, title: 'Bank Reconciliations Q4', assignedTo: 'Treasury', dueDate: '2024-02-15', status: 'pending' },
-    { id: 2, title: 'Revenue Recognition Schedule', assignedTo: 'Controller', dueDate: '2024-02-10', status: 'completed' },
-    { id: 3, title: 'Expense Report Summary', assignedTo: 'AP Team', dueDate: '2024-02-12', status: 'in_progress' },
-  ];
+  const [auditRequests, setAuditRequests] = useState<AuditRequest[]>([]);
+  const [timeline, setTimeline] = useState<AuditTimelineItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAuditData();
+  }, []);
+
+  const fetchAuditData = async () => {
+    try {
+      const [requestsRes, timelineRes] = await Promise.all([
+        supabase.from('audit_requests').select('*').order('due_date'),
+        supabase.from('audit_timeline').select('*').order('date')
+      ]);
+
+      if (requestsRes.data) setAuditRequests(requestsRes.data);
+      if (timelineRes.data) setTimeline(timelineRes.data);
+    } catch (error) {
+      console.error('Error fetching audit data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const completedRequests = auditRequests.filter(r => r.status === 'completed').length;
-  const totalRequests = auditRequests.length;
+  const totalRequests = auditRequests.length || 1;
   const auditProgress = (completedRequests / totalRequests) * 100;
+
+  const currentPhase = timeline.find(t => t.status === 'in_progress')?.phase || 'In Progress';
+  const daysUntilReview = timeline.length > 0 ? Math.ceil((new Date(timeline[timeline.length - 1].date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
 
   return (
     <Stack gap="lg" p={{ base: 16, md: 24 }}>
@@ -29,7 +70,7 @@ export const EnhancedAuditManagement: React.FC = () => {
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Card withBorder p="md">
             <Group justify="space-between">
-              <div><Text size="sm" c="dimmed">Audit Status</Text><Title order={3}>In Progress</Title></div>
+              <div><Text size="sm" c="dimmed">Audit Status</Text><Title order={3}>{currentPhase}</Title></div>
               <IconScale size={32} color="blue" />
             </Group>
           </Card>
@@ -45,7 +86,7 @@ export const EnhancedAuditManagement: React.FC = () => {
         <Grid.Col span={{ base: 12, md: 3 }}>
           <Card withBorder p="md">
             <Group justify="space-between">
-              <div><Text size="sm" c="dimmed">Days Until Review</Text><Title order={3}>15</Title></div>
+              <div><Text size="sm" c="dimmed">Days Until Review</Text><Title order={3}>{daysUntilReview > 0 ? daysUntilReview : 'TBD'}</Title></div>
               <IconCalendar size={32} color="orange" />
             </Group>
           </Card>
@@ -66,29 +107,48 @@ export const EnhancedAuditManagement: React.FC = () => {
 
         <Tabs.Panel value="timeline" pt="md">
           <Card withBorder p="md">
-            <Timeline active={2} bulletSize={24} lineWidth={2}>
-              <Timeline.Item bullet={<IconCheck size={12} />} title="Audit Planning & Kickoff"><Text size="sm" c="dimmed">December 2023</Text><Badge color="green" mt="xs">Complete</Badge></Timeline.Item>
-              <Timeline.Item bullet={<IconCheck size={12} />} title="Interim Testing"><Text size="sm" c="dimmed">January 2024</Text><Badge color="green" mt="xs">Complete</Badge></Timeline.Item>
-              <Timeline.Item bullet={<IconFileCheck size={12} />} title="Year-End Fieldwork"><Text size="sm" c="dimmed">February 2024</Text><Badge color="yellow" mt="xs">In Progress</Badge></Timeline.Item>
-              <Timeline.Item bullet={<IconAlertTriangle size={12} />} title="Draft Report Review"><Text size="sm" c="dimmed">March 2024</Text><Badge color="gray" mt="xs">Upcoming</Badge></Timeline.Item>
-              <Timeline.Item bullet={<IconScale size={12} />} title="Final Report & Presentation"><Text size="sm" c="dimmed">March 2024</Text><Badge color="gray" mt="xs">Upcoming</Badge></Timeline.Item>
-            </Timeline>
+            {loading ? (
+              <Text>Loading timeline...</Text>
+            ) : timeline.length === 0 ? (
+              <Alert color="blue"><Text>No audit timeline items yet. Create timeline phases to track audit progress.</Text></Alert>
+            ) : (
+              <Timeline active={timeline.findIndex(t => t.status === 'in_progress')} bulletSize={24} lineWidth={2}>
+                {timeline.map(item => (
+                  <Timeline.Item 
+                    key={item.id} 
+                    bullet={item.status === 'complete' ? <IconCheck size={12} /> : item.status === 'in_progress' ? <IconFileCheck size={12} /> : <IconCalendar size={12} />} 
+                    title={item.title}
+                  >
+                    <Text size="sm" c="dimmed">{item.phase}</Text>
+                    <Badge color={item.status === 'complete' ? 'green' : item.status === 'in_progress' ? 'yellow' : 'gray'} mt="xs">
+                      {item.status.replace('_', ' ')}
+                    </Badge>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
+            )}
           </Card>
         </Tabs.Panel>
 
         <Tabs.Panel value="requests" pt="md">
           <Stack gap="sm">
-            {auditRequests.map(req => (
-              <Card key={req.id} withBorder p="md">
-                <Group justify="space-between">
-                  <div>
-                    <Group gap="sm"><Text fw={500}>{req.title}</Text><Badge color={req.status === 'completed' ? 'green' : req.status === 'in_progress' ? 'yellow' : 'gray'}>{req.status.replace('_', ' ')}</Badge></Group>
-                    <Text size="sm" c="dimmed">Assigned to: {req.assignedTo} • Due: {req.dueDate}</Text>
-                  </div>
-                  {req.status === 'completed' ? <Badge color="green" size="lg">✓</Badge> : <Button size="sm" variant="light">Upload Response</Button>}
-                </Group>
-              </Card>
-            ))}
+            {loading ? (
+              <Text>Loading requests...</Text>
+            ) : auditRequests.length === 0 ? (
+              <Alert color="blue"><Text>No audit requests yet. Requests will appear here when auditors submit information requests.</Text></Alert>
+            ) : (
+              auditRequests.map(req => (
+                <Card key={req.id} withBorder p="md">
+                  <Group justify="space-between">
+                    <div>
+                      <Group gap="sm"><Text fw={500}>{req.title}</Text><Badge color={req.status === 'completed' ? 'green' : req.status === 'in_progress' ? 'yellow' : 'gray'}>{req.status.replace('_', ' ')}</Badge></Group>
+                      <Text size="sm" c="dimmed">Assigned to: {req.assigned_to} • Due: {new Date(req.due_date).toLocaleDateString()}</Text>
+                    </div>
+                    {req.status === 'completed' ? <Badge color="green" size="lg">✓</Badge> : <Button size="sm" variant="light">Upload Response</Button>}
+                  </Group>
+                </Card>
+              ))
+            )}
           </Stack>
         </Tabs.Panel>
 
