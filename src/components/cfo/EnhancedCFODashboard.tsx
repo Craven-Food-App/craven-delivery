@@ -15,6 +15,7 @@ import {
   Center,
   Tooltip,
   ActionIcon,
+  Button,
 } from '@mantine/core';
 import {
   IconTrendingUp,
@@ -30,10 +31,12 @@ import {
   IconTarget,
   IconUsers,
   IconClock,
+  IconUserPlus,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdvancedKPI {
   title: string;
@@ -72,6 +75,8 @@ export const EnhancedCFODashboard: React.FC = () => {
   const [financialData, setFinancialData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -326,6 +331,34 @@ export const EnhancedCFODashboard: React.FC = () => {
     }
   };
 
+  const handleSetupJustinSweet = async () => {
+    setSetupLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('setup-justin-sweet');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "✅ CFO Account Activated!",
+        description: "Justin Sweet's account is now ready. Check console for login details.",
+      });
+      
+      console.log('🔐 Justin Sweet CFO Account Setup:', data);
+      console.log('📧 Email: jsweet.cfo@cravenusa.com');
+      console.log('🔑 Temp Password: JustCrave516!');
+      console.log('📌 Hub PIN: 101307');
+    } catch (error: any) {
+      console.error('Setup error:', error);
+      toast({
+        title: "Setup Failed",
+        description: error.message || 'Failed to activate account',
+        variant: "destructive",
+      });
+    } finally {
+      setSetupLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Center p={40}>
@@ -339,6 +372,38 @@ export const EnhancedCFODashboard: React.FC = () => {
 
   return (
     <Stack gap="lg" p={isMobile ? 16 : 24}>
+      {/* TEMPORARY: Justin Sweet Account Setup Button */}
+      <Alert
+        color="orange"
+        title="⚠️ TEMPORARY SETUP BUTTON"
+        icon={<IconUserPlus size={16} />}
+        withCloseButton={false}
+        styles={{
+          root: { 
+            backgroundColor: 'rgba(251, 146, 60, 0.1)',
+            border: '2px solid rgba(251, 146, 60, 0.3)',
+          }
+        }}
+      >
+        <Group justify="space-between" align="center">
+          <Box>
+            <Text size="sm" fw={500}>Activate Justin Sweet CFO Account</Text>
+            <Text size="xs" c="dimmed">
+              Email: jsweet.cfo@cravenusa.com | Will set temp password & PIN
+            </Text>
+          </Box>
+          <Button
+            leftSection={<IconUserPlus size={16} />}
+            onClick={handleSetupJustinSweet}
+            loading={setupLoading}
+            color="orange"
+            size="sm"
+          >
+            {setupLoading ? 'Activating...' : 'Activate Account'}
+          </Button>
+        </Group>
+      </Alert>
+
       {/* Header with AI Badge */}
       <Group justify="space-between" wrap="wrap">
         <Box>
