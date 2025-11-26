@@ -101,7 +101,7 @@ import { MantineTable } from '@/components/cfo/MantineTable';
 import { EnhancedCFODashboard } from '@/components/cfo/EnhancedCFODashboard';
 import { AdvancedTreasuryManagement } from '@/components/cfo/AdvancedTreasuryManagement';
 import { EnhancedFPandA } from '@/components/cfo/EnhancedFPandA';
-import { CFOPortalInstructionManual } from '@/components/cfo/CFOPortalInstructionManual';
+import { CFOKnowledgeBase } from '@/components/cfo/CFOKnowledgeBase';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 
@@ -835,7 +835,7 @@ function CFOPortalContent() {
       case 'wordprocessor':
         return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
       case 'manual':
-        return <CFOPortalInstructionManual />;
+        return <CFOKnowledgeBase />;
       default:
         return <EnhancedCFODashboard />;
     }
