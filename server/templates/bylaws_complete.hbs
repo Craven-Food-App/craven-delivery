@@ -85,10 +85,6 @@
       text-transform: uppercase;
     }
 
-    .small-caps {
-      font-variant: small-caps;
-    }
-
     .block {
       margin-top: 0.3em;
       margin-bottom: 0.5em;
@@ -180,8 +176,10 @@
     </div>
 
     <div class="meta-header">
-      These Bylaws govern the internal affairs and corporate governance of {{company_name}},
-      including the rights and obligations of its shareholders, directors, and officers.
+      These Bylaws govern the internal affairs and corporate governance of {{company_name}}
+      (the “Corporation”), including the rights and obligations of its shareholders,
+      directors, and officers, and are adopted pursuant to the Delaware General Corporation
+      Law, 8 Del. C. § 101 et seq. (the “DGCL”).
     </div>
 
     <!-- ARTICLE I -->
@@ -189,78 +187,93 @@
       <h3>ARTICLE I – OFFICES</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Registered Office.</span>
-        The registered office of {{company_name}} (the "Corporation") in the State of {{state_of_incorporation}}
-        shall be as set forth in the Corporation's Certificate of Incorporation, as amended
-        from time to time, or at such other location within the State of {{state_of_incorporation}} as the Board
-        of Directors (the "Board") may designate in accordance with applicable law.
+        <span class="section-title">Section 1.1 Registered Office.</span>
+        The registered office of {{company_name}} (hereinafter, the “Corporation”) in the State
+        of {{state_of_incorporation}} shall be the office designated in the Corporation’s Certificate of
+        Incorporation, as amended from time to time, or at such other location within the
+        State of {{state_of_incorporation}} as the Board of Directors (the “Board”) may from time to time
+        designate in accordance with applicable provisions of the DGCL. The registered agent
+        at such address shall likewise be as stated in the Certificate of Incorporation or
+        as otherwise appointed by the Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Principal Executive Office.</span>
-        The principal executive office and primary place of business of the Corporation shall
-        be located {{#if principal_office_city}}in {{principal_office_city}}, {{principal_office_state}}{{else}}as designated by the Board{{/if}}, {{#if principal_office_address}}presently at {{principal_office_address}}, {{/if}}or at such other
-        place or places, within or outside the State of {{state_of_incorporation}}, as may from time to time be
-        determined by resolution of the Board.
+        <span class="section-title">Section 1.2 Principal Executive Office.</span>
+        The principal executive office and primary place of business of the Corporation
+        shall initially be located in {{principal_office_city}}, {{principal_office_state}}, presently at {{principal_office_address}},
+        or at such other place or places, within or outside the State of {{state_of_incorporation}}, as may
+        from time to time be determined by resolution of the Board. The Board may designate
+        additional executive, operational, or administrative offices as it deems necessary or
+        appropriate for the conduct of the Corporation’s business.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. Other Offices.</span>
-        The Corporation may also have such other offices, within or outside the State of {{state_of_incorporation}},
-        as the Board may from time to time determine or the business of the Corporation may require.
+        <span class="section-title">Section 1.3 Other Offices.</span>
+        The Corporation may also have such other offices, within or outside the State of
+        {{state_of_incorporation}}, as the Board may from time to time determine or the business of the
+        Corporation may require. The failure to maintain any such additional office shall
+        not impair the corporate existence of the Corporation or the validity of any
+        corporate acts taken in accordance with these Bylaws and the DGCL.
       </p>
     </div>
 
     <!-- ARTICLE II -->
     <div class="article">
-      <h3>ARTICLE II – SHARE CAPITAL</h3>
+      <h3>ARTICLE II – CAPITAL STOCK</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Authorized Capital.</span>
-        The Corporation is authorized to issue {{authorized_shares}} shares of
-        Common Stock, par value ${{par_value}} per share, as set forth in the Corporation's Certificate
-        of Incorporation. The powers, designations, preferences, and rights, and the qualifications,
-        limitations, and restrictions thereof, shall be as set forth therein and as provided by
-        the {{state_of_incorporation}} General Corporation Law ("{{state_abbreviation}}GCL").
+        <span class="section-title">Section 2.1 Authorized Shares.</span>
+        The total number of shares of stock which the Corporation shall have authority to
+        issue, and the classes and series thereof, shall be as set forth in the Certificate
+        of Incorporation, as the same may be amended from time to time. As of the adoption of
+        these Bylaws, the Corporation is authorized to issue {{authorized_shares}}
+        shares of Common Stock, par value {{par_value}} per share (“Common Stock”),
+        all of which shall have the rights, powers, preferences, and limitations specified
+        in the Certificate of Incorporation and applicable law.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Issuance of Shares.</span>
-        Shares of the Corporation may be issued for such lawful consideration, at such times, and
-        upon such terms as shall be determined from time to time by the Board, subject to the
-        provisions of the Certificate of Incorporation and applicable law.
+        <span class="section-title">Section 2.2 Consideration for Shares.</span>
+        Subject to the provisions of the Certificate of Incorporation and the DGCL, shares
+        of the Corporation may be issued for such lawful consideration (including, without
+        limitation, cash, property, or services actually rendered to the Corporation) as
+        shall be authorized from time to time by the Board. The judgment of the Board as to
+        the value of the consideration received for shares shall be conclusive to the
+        fullest extent permitted by law.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. Shareholder Ownership Structure.</span>
-        As of the date of adoption of these Bylaws, the ownership structure of the issued and
-        outstanding Common Stock is as follows, subject to adjustment and future issuances:
-      </p>
-
-      <ul>
-        {{#if shareholders}}
-          {{#each shareholders}}
-            <li>{{this.name}} – {{this.shares}} shares ({{this.percentage}}%)</li>
-          {{/each}}
-        {{else}}
-          <li>Invero Business Trust – 60,000,000 shares (60%)</li>
-          <li>Torrance Stroman – 20,000,000 shares (20%)</li>
-          <li>Unissued authorized Common Stock – 20,000,000 shares (20%) reserved for equity
-            incentive plans, executive and employee issuances, advisors, and future financing transactions.</li>
-        {{/if}}
-      </ul>
-
-      <p class="block">
-        <span class="section-title">Section 4. Form of Shares.</span>
-        Shares of the Corporation may be certificated or uncertificated, as determined by the Board,
-        and shall be recorded in the books of the Corporation as required by law.
+        <span class="section-title">Section 2.3 Form of Shares; Certificated and Uncertificated.</span>
+        Shares of the Corporation’s capital stock may be represented by certificates or may
+        be issued in uncertificated form, as determined from time to time by resolution of
+        the Board, subject to the requirements of the DGCL. If certificates are issued, such
+        certificates shall be in such form as shall be approved by the Board and shall be
+        signed by, or in the name of, the Corporation by the Chair of the Board, the Chief
+        Executive Officer (“CEO”), the President (if any), or any Vice President, and by the
+        Secretary or an Assistant Secretary.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 5. Transfer of Shares.</span>
-        Transfers of shares shall be made on the books of the Corporation only upon receipt of
-        proper transfer instructions and compliance with any applicable restrictions, including
-        those set forth in shareholder agreements, equity plans, or applicable securities laws.
+        <span class="section-title">Section 2.4 Transfer of Shares.</span>
+        Transfers of shares of the Corporation shall be made only on the books of the
+        Corporation by the holder of record thereof or by such holder’s duly authorized
+        attorney or representative, upon (a) in the case of certificated shares, surrender
+        for cancellation of certificates for the number of shares to be transferred, duly
+        endorsed or accompanied by proper instruments of assignment and transfer, or (b) in
+        the case of uncertificated shares, compliance with appropriate instructions and
+        procedures established by the Corporation and its transfer agent, if any. All
+        transfers shall be subject to such restrictions on transfer and ownership as may be
+        imposed by law, the Certificate of Incorporation, these Bylaws, or any agreement
+        among the shareholders and the Corporation duly approved by the Board.
+      </p>
+
+      <p class="block">
+        <span class="section-title">Section 2.5 Lost, Stolen, or Destroyed Certificates.</span>
+        The Corporation may issue a new share certificate in place of any certificate
+        theretofore issued which is alleged to have been lost, stolen, or destroyed, upon
+        such terms and conditions as the Board may require, including, without limitation,
+        the furnishing of an affidavit of loss and an indemnity bond in form and substance
+        satisfactory to the Corporation.
       </p>
     </div>
 
@@ -269,65 +282,85 @@
       <h3>ARTICLE III – MEETINGS OF SHAREHOLDERS</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Annual Meetings.</span>
-        An annual meeting of shareholders shall be held each year at such date, time, and place,
-        within or outside the State of {{state_of_incorporation}}, as shall be fixed by the Board. At such annual
-        meeting, shareholders shall elect directors and transact such other business as may properly
-        come before the meeting.
+        <span class="section-title">Section 3.1 Place of Meetings.</span>
+        Meetings of the shareholders shall be held at such place, within or outside the State
+        of {{state_of_incorporation}}, as may from time to time be designated by the Board and stated in the
+        notice of such meeting. The Board may, in its sole discretion, determine that any
+        meeting of shareholders shall be held solely by means of remote communication in the
+        manner authorized by the DGCL.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Special Meetings.</span>
-        Special meetings of the shareholders may be called at any time by the Board, the Chair of
-        the Board, or the Chief Executive Officer (the "CEO"), and shall be called by the Secretary
-        upon the written request of shareholders holding such percentage of the outstanding shares
-        as may be required by the Certificate of Incorporation or applicable law.
+        <span class="section-title">Section 3.2 Annual Meetings.</span>
+        An annual meeting of shareholders for the election of directors and for the
+        transaction of such other proper business as may come before the meeting shall be
+        held each year on such date and at such time as may be fixed by resolution of the
+        Board. Failure to hold the annual meeting at the designated time or to transact any
+        business at such meeting shall not work a forfeiture or dissolution of the
+        Corporation and shall not affect otherwise valid corporate acts.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. Place and Means of Meetings.</span>
-        Meetings of shareholders shall be held at such place, within or outside the State of {{state_of_incorporation}},
-        as may be designated in the notice of meeting or solely by means of remote communication
-        as permitted by applicable law and determined by the Board.
+        <span class="section-title">Section 3.3 Special Meetings.</span>
+        Special meetings of the shareholders may be called at any time and for any proper
+        purpose or purposes by (a) the Board, (b) the Chair of the Board, or (c) the CEO.
+        Shareholders shall not be entitled to call a special meeting of shareholders unless
+        expressly authorized to do so in the Certificate of Incorporation. Any such special
+        meeting shall be held at such date, time, and place as shall be fixed by the person
+        or body calling such meeting and stated in the notice thereof.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 4. Notice of Meetings.</span>
-        Written notice stating the date, time, place (or means of remote communication), and, in the
-        case of a special meeting, the purpose or purposes of the meeting, shall be given not less
-        than ten (10) nor more than sixty (60) days prior to the meeting to each shareholder entitled
-        to vote thereat, except as otherwise provided by law.
+        <span class="section-title">Section 3.4 Notice of Meetings.</span>
+        Written notice of each meeting of shareholders, whether annual or special, stating
+        the date, time, and place (or means of remote communication, if any) of the meeting,
+        and, in the case of a special meeting, the purpose or purposes for which the meeting
+        is called, shall be given not less than ten (10) nor more than sixty (60) days before
+        the date of the meeting to each shareholder entitled to vote thereat, except to the
+        extent that a longer or shorter period of notice may be required by the DGCL or the
+        Certificate of Incorporation.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 5. Quorum.</span>
-        Except as otherwise provided by law, the Certificate of Incorporation, or these Bylaws, a
-        majority of the shares entitled to vote, present in person or represented by proxy, shall
-        constitute a quorum at any meeting of shareholders.
+        <span class="section-title">Section 3.5 Quorum.</span>
+        Except as otherwise provided by law, the Certificate of Incorporation, or these
+        Bylaws, the holders of a majority of the shares of the Corporation entitled to vote
+        at any meeting of shareholders, present in person or represented by proxy, shall
+        constitute a quorum for the transaction of business thereat. If, however, such
+        quorum shall not be present or represented at any meeting of shareholders, the
+        holders of a majority of the shares so present or represented may adjourn the
+        meeting from time to time, without further notice, until a quorum shall be present
+        or represented.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 6. Voting.</span>
-        Except as otherwise provided by law, the Certificate of Incorporation, or these Bylaws, each
-        outstanding share entitled to vote shall be entitled to one (1) vote upon each matter submitted
-        to a vote of shareholders. Unless otherwise required by law, the Certificate of Incorporation,
-        or these Bylaws, action shall be approved if the votes cast in favor exceed the votes cast against.
+        <span class="section-title">Section 3.6 Voting.</span>
+        Except as otherwise provided by the DGCL, the Certificate of Incorporation, or these
+        Bylaws, each outstanding share of Common Stock shall entitle the holder thereof to
+        one (1) vote on each matter submitted to a vote of shareholders. Except as otherwise
+        required by law, the Certificate of Incorporation, or these Bylaws, the affirmative
+        vote of a majority of the shares present in person or represented by proxy at a
+        meeting at which a quorum is present and entitled to vote shall be the act of the
+        shareholders.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 7. Proxies.</span>
-        A shareholder may vote in person or by proxy executed in writing or by electronic transmission,
-        by the shareholder or by such shareholder's duly authorized attorney-in-fact, in accordance
-        with applicable law.
+        <span class="section-title">Section 3.7 Proxies.</span>
+        Each shareholder entitled to vote at a meeting of shareholders may authorize another
+        person or persons to act for such shareholder by proxy, which shall be given in
+        writing or by electronic transmission as permitted by the DGCL. Every proxy shall be
+        revocable unless expressly stated to be irrevocable in compliance with applicable law.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 8. Action Without a Meeting.</span>
-        Any action required or permitted to be taken at a meeting of shareholders may be taken without
-        a meeting, without prior notice, and without a vote, if a consent in writing or by electronic
-        transmission, setting forth the action so taken, is signed or otherwise approved by shareholders
-        having not less than the minimum number of votes that would be necessary to authorize or take
-        such action at a meeting at which all shares entitled to vote thereon were present and voted.
+        <span class="section-title">Section 3.8 Action by Written Consent.</span>
+        Unless otherwise provided in the Certificate of Incorporation, any action required or
+        permitted to be taken at a meeting of shareholders may be taken without a meeting,
+        without prior notice, and without a vote, if a consent or consents in writing, setting
+        forth the action so taken, shall be signed by the holders of outstanding shares
+        having not less than the minimum number of votes that would be necessary to authorize
+        or take such action at a meeting at which all shares entitled to vote thereon were
+        present and voted, all in accordance with the DGCL.
       </p>
     </div>
 
@@ -336,74 +369,87 @@
       <h3>ARTICLE IV – BOARD OF DIRECTORS</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. General Powers.</span>
-        The business and affairs of the Corporation shall be managed under the direction of the Board,
-        which shall exercise all such powers of the Corporation and do all such lawful acts and things
-        as are not by law, the Certificate of Incorporation, or these Bylaws directed or required to be
-        exercised or done by the shareholders.
+        <span class="section-title">Section 4.1 General Powers.</span>
+        The business and affairs of the Corporation shall be managed and controlled by or
+        under the direction of the Board, which shall exercise all such powers of the
+        Corporation and do all such lawful acts and things as are not, by the DGCL, the
+        Certificate of Incorporation, or these Bylaws, directed or required to be exercised
+        or done by the shareholders.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Number and Qualifications.</span>
-        The number of directors constituting the entire Board shall be fixed from time to time by
-        resolution of the Board, but shall not be less than one (1). Directors need not be shareholders
-        of the Corporation unless otherwise required by resolution of the Board or the Certificate
-        of Incorporation.
+        <span class="section-title">Section 4.2 Number and Qualifications of Directors.</span>
+        The number of directors that shall constitute the whole Board shall be fixed from
+        time to time by resolution of the Board, but in no event shall be less than one (1),
+        unless a greater minimum number is required by law. Directors need not be
+        shareholders of the Corporation unless otherwise required by resolution of the Board
+        or the Certificate of Incorporation.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. Election and Term.</span>
-        Directors shall be elected at the annual meeting of shareholders and shall hold office until
-        their successors are duly elected and qualified or until their earlier resignation, removal,
+        <span class="section-title">Section 4.3 Election and Term.</span>
+        Directors shall be elected at each annual meeting of shareholders by the holders of
+        shares entitled to vote thereon. Each director shall hold office until the next
+        annual meeting of shareholders and until such director’s successor shall have been
+        duly elected and qualified, or until such director’s earlier resignation, removal,
         or death.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 4. Regular Meetings.</span>
-        Regular meetings of the Board shall be held at such times and places as may from time to time
-        be fixed by resolution of the Board or by the Chair of the Board. No additional notice of such
-        regular meetings shall be required.
+        <span class="section-title">Section 4.4 Regular Meetings.</span>
+        Regular meetings of the Board may be held at such times and places as may from time
+        to time be determined by resolution of the Board or by the Chair of the Board. No
+        additional notice of such regular meetings shall be required other than such
+        resolution or entry in the minutes of the Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 5. Special Meetings.</span>
-        Special meetings of the Board may be called by the Chair of the Board, the CEO, or by any two
-        (2) directors then in office. Notice of any special meeting of the Board shall be given to each
-        director at least twenty-four (24) hours prior to the meeting, unless such notice period is
-        waived by the directors.
+        <span class="section-title">Section 4.5 Special Meetings.</span>
+        Special meetings of the Board may be called at any time by the Chair of the Board,
+        the CEO, or any two (2) directors then in office. Notice of any special meeting of
+        the Board shall be given to each director at least twenty-four (24) hours prior to
+        the meeting, either personally, by telephone, by electronic mail, or by other form of
+        electronic transmission, or on such shorter or longer notice as may be approved by
+        the directors.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 6. Quorum and Voting.</span>
-        A majority of the directors then in office shall constitute a quorum for the transaction of
-        business. The act of a majority of the directors present at a meeting at which a quorum is
-        present shall be the act of the Board, unless a greater number is required by law, the
-        Certificate of Incorporation, or these Bylaws.
+        <span class="section-title">Section 4.6 Quorum and Voting.</span>
+        Except as otherwise required by law, the Certificate of Incorporation, or these
+        Bylaws, a majority of the directors then in office shall constitute a quorum for the
+        transaction of business at any meeting of the Board. The act of a majority of the
+        directors present at a meeting at which a quorum is present shall be the act of the
+        Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 7. Action Without a Meeting.</span>
-        Any action required or permitted to be taken at a meeting of the Board or of any committee
-        thereof may be taken without a meeting if all members of the Board or such committee consent
-        thereto in writing or by electronic transmission, and such writing or writings or electronic
-        transmissions are filed with the minutes of proceedings of the Board or committee.
+        <span class="section-title">Section 4.7 Action Without Meeting.</span>
+        Unless otherwise restricted by the Certificate of Incorporation or these Bylaws, any
+        action required or permitted to be taken at any meeting of the Board or of any
+        committee thereof may be taken without a meeting if all members of the Board or such
+        committee, as the case may be, consent thereto in writing or by electronic
+        transmission, and such writing or writings or electronic transmissions are filed
+        with the minutes of proceedings of the Board or committee.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 8. Committees.</span>
-        The Board may designate one or more committees, each consisting of one or more directors, and
-        may delegate to any such committee any of the authority of the Board to the extent permitted
-        by law. Each such committee shall keep regular minutes of its meetings and report its actions
-        to the Board.
+        <span class="section-title">Section 4.8 Committees.</span>
+        The Board may, by resolution adopted by a majority of the directors then in office,
+        designate one or more committees, each committee to consist of one or more of the
+        directors of the Corporation. Any such committee, to the extent provided in such
+        resolution and not restricted by law, the Certificate of Incorporation, or these
+        Bylaws, shall have and may exercise all the powers and authority of the Board in the
+        management of the business and affairs of the Corporation.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 9. Resignation and Removal.</span>
-        Any director may resign at any time by delivering written or electronic notice to the Board,
-        the Chair, or the Secretary. Any director or the entire Board may be removed with or without
-        cause by the holders of a majority of the shares then entitled to vote at an election of
-        directors, subject to any limitations set forth in the Certificate of Incorporation or
-        applicable law.
+        <span class="section-title">Section 4.9 Resignation and Removal.</span>
+        Any director may resign at any time upon written or electronic notice to the Board,
+        the Chair of the Board, or the Secretary. Such resignation shall take effect at the
+        time specified therein, or, if no time is specified, upon receipt. Any director or
+        the entire Board may be removed, with or without cause, by the holders of a majority
+        of the shares then entitled to vote at an election of directors, except as otherwise
+        provided by the DGCL, the Certificate of Incorporation, or any applicable agreement.
       </p>
     </div>
 
@@ -412,366 +458,215 @@
       <h3>ARTICLE V – OFFICERS</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Officers.</span>
-        The officers of the Corporation shall include, at a minimum, a Chief Executive Officer
-        ("CEO"), a Chief Financial Officer ("CFO"), and a Secretary. The Corporation may also have
-        such other officers as the Board may deem appropriate, including without limitation a
-        Chief Technology Officer ("CTO"), Chief Experience Officer ("CXO"), and such vice presidents
-        and assistant officers as the Board may designate from time to time.
+        <span class="section-title">Section 5.1 Officers.</span>
+        The officers of the Corporation shall include, at a minimum, a Chief Executive
+        Officer (“CEO”), a Chief Financial Officer (“CFO”), a Chief Technology Officer
+        (“CTO”), and a Secretary. The Corporation may also have such other officers,
+        including without limitation a Chief Experience Officer (“CXO”), a President, one or
+        more Vice Presidents, Assistant Secretaries, Assistant Treasurers, or other
+        executive or administrative officers, as the Board may from time to time determine.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Appointment and Term.</span>
-        The officers of the Corporation shall be appointed by the Board and shall hold office at the
-        pleasure of the Board and until their successors are duly appointed and qualified or until
-        their earlier resignation, removal, or death.
+        <span class="section-title">Section 5.2 Appointment; Initial Officers.</span>
+        The officers of the Corporation shall be appointed by the Board and shall hold office
+        at the pleasure of the Board and until their successors are duly appointed and
+        qualified or until their earlier resignation, removal, or death. As of the adoption
+        of these Bylaws, the Corporation recognizes the following initial officers:
+      </p>
+
+      <ul>
+        <li><strong>Chief Executive Officer:</strong> {{ceo_name}}</li>
+        <li><strong>Chief Financial Officer:</strong> {{cfo_name}}</li>
+        <li><strong>Chief Technology Officer:</strong> {{cxo_name}}</li>
+        <li><strong>Secretary:</strong> {{secretary_name}} ({{secretary_title}})</li>
+      </ul>
+
+      <p class="block">
+        <span class="section-title">Section 5.3 Removal.</span>
+        Any officer may be removed, either with or without cause, by the Board at any time,
+        without prejudice to the contractual rights, if any, of the person so removed. The
+        appointment of an officer shall not of itself create contractual rights.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. Removal.</span>
-        Any officer may be removed, with or without cause, by the Board at any time, without
-        prejudice to the contractual rights, if any, of the person so removed.
+        <span class="section-title">Section 5.4 Chief Executive Officer.</span>
+        The CEO shall be the chief executive officer of the Corporation and, subject to the
+        control and oversight of the Board, shall have general and active supervision,
+        direction, and control over the business, properties, and affairs of the
+        Corporation. The CEO shall have the authority to implement and enforce executive
+        performance standards, meeting attendance requirements, and operational directives
+        consistent with these Bylaws and with any resolutions or policies adopted by the
+        Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 4. Chief Executive Officer.</span>
-        The CEO shall be the chief executive officer of the Corporation and shall, subject to the
-        oversight of the Board, have general supervision, direction, and control over the business,
-        operations, and affairs of the Corporation. The CEO shall have authority to implement and
-        enforce executive performance standards, meeting attendance requirements, and operational
-        directives consistent with these Bylaws and any resolutions of the Board.
+        <span class="section-title">Section 5.5 Chief Financial Officer.</span>
+        The CFO shall be the chief financial officer of the Corporation and shall be
+        responsible for all financial matters of the Corporation, including without
+        limitation budgeting, accounting, financial reporting, treasury functions, and
+        oversight of financial controls, subject to the authority of the CEO and the Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 5. Chief Financial Officer.</span>
-        The CFO shall be the chief financial officer of the Corporation and shall have primary
-        responsibility for the financial affairs of the Corporation, including oversight of
-        accounting, budgeting, reporting, and treasury functions, subject to the direction of
-        the CEO and the Board.
+        <span class="section-title">Section 5.6 Chief Technology Officer.</span>
+        The CTO shall be the senior executive officer responsible for the technology
+        strategy, architecture, product and platform engineering, and technical operations
+        of the Corporation. The CTO shall oversee the design, development, security,
+        maintenance, and scalability of the Corporation’s technology stack, including all
+        software, systems, and AI or automation infrastructure deployed in connection with
+        the Corporation’s business, subject to the direction of the CEO and the Board.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 6. Chief Technology Officer.</span>
-        The CTO, if appointed, shall be responsible for the technological strategy, product and
-        platform engineering, infrastructure, and related functions of the Corporation, subject
-        to the direction of the CEO and the Board.
+        <span class="section-title">Section 5.7 Other Officers.</span>
+        The Board may appoint such other officers as it deems necessary or appropriate for
+        the conduct of the Corporation’s business, who shall have such titles, authority,
+        and responsibilities as may be determined from time to time by the Board or the CEO.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 7. Chief Experience Officer.</span>
-        The CXO, if appointed, shall be responsible for overseeing customer, driver, merchant,
-        and user experience across all {{company_name}} platforms and services, subject to the direction
-        of the CEO and the Board.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 8. Secretary.</span>
-        The Secretary shall keep, or cause to be kept, the minutes of all meetings of the Board,
-        committees of the Board, and shareholders, and shall be responsible for maintaining
-        corporate records, giving notices of meetings, and performing such other duties as may
-        be prescribed by the Board or the CEO.
+        <span class="section-title">Section 5.8 Secretary.</span>
+        The Secretary shall attend all meetings of the Board and, where requested, of the
+        shareholders, and shall maintain or cause to be maintained minutes of such meetings
+        in the corporate records. The Secretary shall be the custodian of the corporate
+        seal, if any, and of the Corporation’s minute books, stock books, and other records,
+        and shall give or cause to be given all notices required by law or by these Bylaws.
       </p>
     </div>
 
     <!-- ARTICLE VI -->
     <div class="article">
-      <h3>ARTICLE VI – EXECUTIVE ATTENDANCE, ACCOUNTABILITY, COMPENSATION ADJUSTMENTS, AND DISCIPLINE</h3>
+      <h3>ARTICLE VI – INDEMNIFICATION</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Mandatory Executive Meetings.</span>
-        All executive officers of the Corporation, including without limitation the CEO, CFO, CTO,
-        CXO, and any other C-level or senior executive officers, are required to attend the following
-        meetings unless excused in advance:
-      </p>
-      <ul>
-        <li>Executive leadership meetings and strategic planning sessions;</li>
-        <li>Mandatory operational and performance review meetings designated by the CEO;</li>
-        <li>Crisis-response or emergency meetings designated as mandatory by the CEO or the Board;</li>
-        <li>Meetings of the Board at which their attendance is requested by the Board or the CEO.</li>
-      </ul>
-
-      <p class="block">
-        <span class="section-title">Section 2. Notice of Absence.</span>
-        Executives shall provide reasonable advance notice if they are unable to attend a mandatory
-        meeting. Failure to provide such notice shall constitute an unexcused absence. The CEO, or
-        such other officer or committee as the Board may designate, shall determine whether an absence
-        is excused or unexcused.
+        <span class="section-title">Section 6.1 Indemnification.</span>
+        To the fullest extent permitted by the DGCL, the Corporation shall indemnify any
+        person who is or was a director or officer of the Corporation, or who is or was
+        serving at the request of the Corporation as a director, officer, employee, or agent
+        of another corporation, partnership, joint venture, trust, or other enterprise,
+        against any and all expenses (including attorneys’ fees), judgments, fines, and
+        amounts paid in settlement actually and reasonably incurred by such person in
+        connection with any threatened, pending, or completed action, suit, or proceeding,
+        whether civil, criminal, administrative, or investigative, to which such person is
+        or was a party by reason of the fact that such person is or was in any such capacity.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 3. No-Call / No-Show.</span>
-        Any failure by an executive to attend a mandatory meeting without prior notice (a "no-call /
-        no-show") shall be deemed a material breach of the executive's duties and responsibilities to
-        the Corporation and may subject the executive to immediate disciplinary review and remedial action.
+        <span class="section-title">Section 6.2 Advancement of Expenses.</span>
+        Expenses (including attorneys’ fees) incurred by an indemnified person in defending
+        or investigating a proceeding shall be advanced by the Corporation prior to the final
+        disposition of such proceeding upon receipt of an undertaking by or on behalf of such
+        person to repay such amount if it shall ultimately be determined that such person is
+        not entitled to be indemnified by the Corporation.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 4. Compensation Adjustments.</span>
-        In connection with unexcused absences, no-call / no-show incidents, or other failures to
-        perform executive duties, the Corporation may implement non-punitive, performance-based adjustments
-        to executive compensation, which may include, without limitation:
-      </p>
-      <ul>
-        <li>Reduction, suspension, or forfeiture of monthly executive stipends;</li>
-        <li>Reduction, suspension, or forfeiture of performance bonuses or incentive compensation;</li>
-        <li>Suspension or adjustment of executive perquisites or non-salary benefits;</li>
-        <li>Delay, reduction, or suspension of equity vesting schedules, to the extent permitted by
-          the applicable equity plan and award agreements;</li>
-        <li>Temporary limitation or reallocation of executive authority, roles, or responsibilities.</li>
-      </ul>
-
-      <p class="block">
-        Such compensation adjustments shall not be deemed "fines" or penalties, but rather lawful
-        adjustments to reflect the extent of performance and fulfillment of executive duties.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 5. Executive Discipline.</span>
-        In addition to compensation adjustments, the CEO, subject to the oversight of the Board, or
-        the Board directly, may impose disciplinary actions on executives for repeated or significant
-        violations of their duties, including, without limitation:
-      </p>
-      <ul>
-        <li>Written warnings or formal reprimands;</li>
-        <li>Placement on performance improvement plans with defined milestones;</li>
-        <li>Temporary suspension from certain duties or authority;</li>
-        <li>Reassignment or reduction in executive role;</li>
-        <li>Recommendation to the Board for removal from office or termination of employment for cause.</li>
-      </ul>
-
-      <p class="block">
-        <span class="section-title">Section 6. Escalation and Board Review.</span>
-        Two (2) or more unexcused absences or no-call / no-show incidents by an executive within
-        any ninety (90) day period shall trigger mandatory review by the Board (or a committee thereof),
-        which may determine whether additional compensation adjustments, disciplinary actions, or removal
-        for cause are warranted.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 7. Recordkeeping.</span>
-        The Secretary, or such other officer as the CEO may designate, shall maintain an Executive
-        Compliance Log documenting attendance at mandatory meetings, notices of absences, determinations
-        of excused or unexcused absences, no-call / no-show incidents, and any related compensation
-        adjustments or disciplinary actions.
+        <span class="section-title">Section 6.3 Non-Exclusivity.</span>
+        The right to indemnification and advancement of expenses conferred by this Article
+        shall not be exclusive of any other right which any person may have or hereafter
+        acquire under any statute, the Certificate of Incorporation, these Bylaws, agreement,
+        vote of shareholders or disinterested directors, or otherwise.
       </p>
     </div>
 
     <!-- ARTICLE VII -->
-    <div class="article page-break">
-      <h3>ARTICLE VII – INDEMNIFICATION</h3>
+    <div class="article">
+      <h3>ARTICLE VII – CORPORATE RECORDS AND SEAL</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Indemnification.</span>
-        To the fullest extent permitted by the {{state_abbreviation}}GCL, the Corporation shall indemnify any person who
-        is or was a director or officer of the Corporation, or who is or was serving at the request
-        of the Corporation as a director, officer, employee, or agent of another corporation,
-        partnership, joint venture, trust, or other enterprise, against any and all expenses,
-        liabilities, and losses reasonably incurred by such person in connection with any threatened,
-        pending, or completed action, suit, or proceeding, whether civil, criminal, administrative,
-        or investigative.
+        <span class="section-title">Section 7.1 Records.</span>
+        The Corporation shall maintain accurate and complete books and records of account,
+        minutes of the proceedings of its shareholders, the Board, and committees of the
+        Board, and a record of its shareholders, all in such form and manner as required by
+        law.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Advancement of Expenses.</span>
-        Expenses (including attorneys' fees) incurred by an indemnified person in defending or
-        investigating a proceeding shall be advanced by the Corporation prior to the final disposition
-        of such proceeding upon receipt of an undertaking by or on behalf of such person to repay
-        such amount if it shall ultimately be determined that such person is not entitled to be
-        indemnified by the Corporation.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 3. Non-Exclusivity.</span>
-        The rights to indemnification and advancement of expenses set forth in this Article shall not
-        be exclusive of any other rights which any person may have or hereafter acquire under any
-        statute, provision of the Certificate of Incorporation, agreement, vote of shareholders or
-        disinterested directors, or otherwise.
+        <span class="section-title">Section 7.2 Corporate Seal.</span>
+        The Corporation may adopt a corporate seal in such form as the Board may determine,
+        but the absence of a seal shall not affect the validity of any instrument executed on
+        behalf of the Corporation.
       </p>
     </div>
 
     <!-- ARTICLE VIII -->
     <div class="article">
-      <h3>ARTICLE VIII – CORPORATE RECORDS AND SEAL</h3>
+      <h3>ARTICLE VIII – CONTRACTS, CHECKS, AND TRANSFERS</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Records.</span>
-        The Corporation shall maintain accurate and complete books and records of account, minutes
-        of the proceedings of its shareholders, Board, and committees of the Board, and a record
-        of its shareholders, all in such form and manner as required by law.
+        <span class="section-title">Section 8.1 Contracts.</span>
+        The Board may authorize any officer or officers, or any agent or agents, to enter
+        into any contract or execute and deliver any instrument in the name and on behalf of
+        the Corporation, and such authority may be general or confined to specific instances.
       </p>
 
       <p class="block">
-        <span class="section-title">Section 2. Corporate Seal.</span>
-        The Corporation may adopt a corporate seal in such form as the Board may determine. The
-        absence of a corporate seal on any document shall not affect its validity.
+        <span class="section-title">Section 8.2 Checks and Drafts.</span>
+        All checks, drafts, or other orders for the payment of money, notes, or other
+        evidences of indebtedness issued in the name of the Corporation shall be signed by
+        such officer or officers, agent or agents of the Corporation and in such manner as
+        shall from time to time be determined by resolution of the Board.
+      </p>
+
+      <p class="block">
+        <span class="section-title">Section 8.3 Transfer of Securities.</span>
+        Any shares or other securities owned by the Corporation may be transferred, assigned,
+        or endorsed for transfer on behalf of the Corporation by such officer or officers or
+        agent or agents as the Board may authorize.
       </p>
     </div>
 
     <!-- ARTICLE IX -->
     <div class="article">
-      <h3>ARTICLE IX – CONTRACTS, CHECKS, AND TRANSFERS</h3>
+      <h3>ARTICLE IX – FISCAL YEAR</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Contracts.</span>
-        The Board may authorize any officer or officers, or agent or agents, to enter into any contract
-        or execute and deliver any instrument in the name of and on behalf of the Corporation, and such
-        authority may be general or confined to specific instances.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 2. Checks and Drafts.</span>
-        All checks, drafts, or other orders for the payment of money, notes, or other evidences of
-        indebtedness issued in the name of the Corporation shall be signed by such officer or officers,
-        or agent or agents, of the Corporation and in such manner as shall from time to time be
-        determined by resolution of the Board.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 3. Transfer of Securities.</span>
-        Any shares or other securities owned by the Corporation may be transferred, assigned, or
-        endorsed for transfer on behalf of the Corporation by such officer or officers, or agent
-        or agents, as the Board may authorize.
+        <span class="section-title">Section 9.1 Fiscal Year.</span>
+        The fiscal year of the Corporation shall be fixed by resolution of the Board and may
+        be changed from time to time by the Board as it deems appropriate.
       </p>
     </div>
 
     <!-- ARTICLE X -->
     <div class="article">
-      <h3>ARTICLE X – FISCAL YEAR</h3>
+      <h3>ARTICLE X – AMENDMENTS</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Fiscal Year.</span>
-        The fiscal year of the Corporation shall be {{#if fiscal_year}}{{fiscal_year}}{{else}}fixed by resolution of the Board and may be
-        changed by the Board from time to time as it deems appropriate{{/if}}.
+        <span class="section-title">Section 10.1 Amendments by the Board.</span>
+        The Board shall have the power to adopt, amend, or repeal these Bylaws, subject to
+        any limitations set forth in the Certificate of Incorporation, these Bylaws, or
+        applicable law.
+      </p>
+
+      <p class="block">
+        <span class="section-title">Section 10.2 Amendments by Shareholders.</span>
+        The shareholders may adopt, amend, or repeal these Bylaws by the affirmative vote of
+        the holders of a majority of the shares entitled to vote thereon, unless a greater
+        vote is required by law, the Certificate of Incorporation, or these Bylaws.
       </p>
     </div>
 
     <!-- ARTICLE XI -->
     <div class="article">
-      <h3>ARTICLE XI – AMENDMENTS</h3>
+      <h3>ARTICLE XI – GOVERNING LAW</h3>
 
       <p class="block">
-        <span class="section-title">Section 1. Amendments by the Board.</span>
-        The Board shall have the power to adopt, amend, or repeal these Bylaws, subject to any
-        limitations set forth in the Certificate of Incorporation, these Bylaws, or applicable law.
-      </p>
-
-      <p class="block">
-        <span class="section-title">Section 2. Amendments by Shareholders.</span>
-        The shareholders may adopt, amend, or repeal these Bylaws by the affirmative vote of the
-        holders of a majority of the shares entitled to vote thereon, unless a greater vote is
-        required by law, the Certificate of Incorporation, or these Bylaws.
+        <span class="section-title">Section 11.1 Governing Law.</span>
+        These Bylaws and the interpretation thereof shall be governed by and construed in
+        accordance with the laws of the State of {{governing_law}}, without regard to conflict-of-laws
+        principles.
       </p>
     </div>
 
-    <!-- ARTICLE XII -->
-    <div class="article">
-      <h3>ARTICLE XII – CEO AUTHORITY AND CORPORATE CONDUCT</h3>
-
-      <p class="block">
-        <span class="section-title">Section 1. CEO Authority.</span>
-        Subject to the oversight of the Board, the CEO shall have full authority over the day-to-day
-        management and operation of the Corporation, including without limitation:
-      </p>
-      <ul>
-        <li>Implementation of strategic and operational plans approved by the Board;</li>
-        <li>Supervision of executive officers and senior management;</li>
-        <li>Enforcement of executive attendance, accountability, and performance standards as set
-          forth in these Bylaws;</li>
-        <li>Issuance of operational directives binding on executives and employees, consistent with
-          applicable law and Board resolutions;</li>
-        <li>Initiation of disciplinary processes and recommendations to the Board regarding the
-          appointment, evaluation, and removal of officers.</li>
-      </ul>
-
-      <p class="block">
-        <span class="section-title">Section 2. Corporate Conduct.</span>
-        All directors, officers, employees, and agents of the Corporation shall perform their duties
-        in good faith, in a manner they reasonably believe to be in the best interests of the
-        Corporation, and with the care an ordinarily prudent person in a like position would use
-        under similar circumstances, consistent with applicable law, the Certificate of Incorporation,
-        these Bylaws, and the Corporation's internal policies and codes of conduct.
-      </p>
-    </div>
-
-    <!-- SIGNATURE SECTION -->
     <div class="signature-section page-break">
       <p class="execution-note">
-        IN WITNESS WHEREOF, the undersigned, being all of the duly appointed and acting members of
-        the Board of Directors of {{company_name}}, hereby adopt the foregoing Bylaws as the Bylaws of
-        the Corporation, effective as of {{adoption_date}}.
+        IN WITNESS WHEREOF, the undersigned, being all of the duly appointed and acting
+        members of the Board of Directors of {{company_name}}, hereby adopt the foregoing
+        Bylaws as the Bylaws of the Corporation, effective as of {{adoption_date}}.
       </p>
 
-      {{#if signers}}
-        {{#each signers}}
-          {{#if @first}}
-            <div class="signature-row">
-          {{/if}}
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{this.name}}<br />
-              {{this.title}}
-            </div>
-          </div>
-          {{#unless @last}}
-            {{#if (eq (mod @index 2) 1)}}
-              </div><div class="signature-row">
-            {{/if}}
-          {{else}}
-            </div>
-          {{/unless}}
-        {{/each}}
-      {{else}}
-        <div class="signature-row">
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{ceo_name}}<br />
-              Chief Executive Officer &amp; Director
-            </div>
-          </div>
-
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{cfo_name}}<br />
-              Chief Financial Officer
-            </div>
-          </div>
-
-          {{#if cxo_name}}
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{cxo_name}}<br />
-              Chief Experience Officer
-            </div>
-          </div>
-          {{/if}}
-        </div>
-
-        <div class="signature-row">
-          {{#if secretary_name}}
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{secretary_name}}<br />
-              {{#if secretary_title}}{{secretary_title}}{{else}}Secretary{{/if}}
-            </div>
-          </div>
-          {{/if}}
-
-          {{#if additional_director_name}}
-          <div class="signature-block">
-            <div class="signature-line"></div>
-            <div class="signature-label">
-              {{additional_director_name}}<br />
-              Director
-            </div>
-          </div>
-          {{/if}}
-        </div>
-      {{/if}}
+      {{{signers}}}
 
       <p class="execution-note">
         Executed and acknowledged via the {{company_name}} Executive Portal e-signature workflow.
