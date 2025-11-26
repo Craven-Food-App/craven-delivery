@@ -11,75 +11,74 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Crave'n Food App Design System */
-    --background: 0 0% 100%;
-    --foreground: 24 24% 12%;
+    /* Cyberpunk HUD Design System */
+    --background: 220 40% 3%;
+    --foreground: 180 100% 90%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 24 24% 12%;
+    --card: 220 35% 6%;
+    --card-foreground: 180 100% 90%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 24 24% 12%;
+    --popover: 220 40% 5%;
+    --popover-foreground: 180 100% 90%;
 
-    /* Appetizing orange-red primary */
-    --primary: 14 90% 53%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 22 100% 60%;
+    /* Neon cyan primary */
+    --primary: 180 100% 50%;
+    --primary-foreground: 220 40% 5%;
+    --primary-glow: 180 100% 60%;
 
-    /* Fresh secondary green */
-    --secondary: 142 71% 45%;
-    --secondary-foreground: 0 0% 100%;
+    /* Neon magenta secondary */
+    --secondary: 320 100% 50%;
+    --secondary-foreground: 220 40% 5%;
 
-    /* Driver status colors */
-    --status-online: 142 71% 45%;
-    --status-offline: 24 12% 45%;
-    --status-paused: 38 92% 50%;
-    --status-error: 0 84% 60%;
+    /* Status colors - cyberpunk style */
+    --status-online: 140 100% 50%;
+    --status-offline: 0 0% 40%;
+    --status-paused: 45 100% 50%;
+    --status-error: 0 100% 50%;
 
-    /* Neutral tones */
-    --muted: 24 6% 96%;
-    --muted-foreground: 24 12% 45%;
+    /* Neutral tones - dark with cyan tint */
+    --muted: 220 30% 15%;
+    --muted-foreground: 180 20% 60%;
 
-    --accent: 24 6% 94%;
-    --accent-foreground: 24 24% 12%;
+    /* Neon yellow accent */
+    --accent: 50 100% 50%;
+    --accent-foreground: 220 40% 5%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 220 40% 5%;
 
-    --border: 24 6% 90%;
-    --input: 24 6% 90%;
-    --ring: 14 90% 53%;
+    --border: 180 100% 30%;
+    --input: 180 50% 20%;
+    --ring: 180 100% 50%;
 
-    /* Food-inspired gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(14 95% 48%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(24 6% 98%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(150 65% 48%) 100%);
+    /* Cyberpunk gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+    --gradient-card: linear-gradient(145deg, rgba(0, 255, 255, 0.05) 0%, rgba(255, 0, 255, 0.05) 100%);
+    --gradient-accent: linear-gradient(90deg, hsl(var(--accent)) 0%, hsl(var(--primary)) 100%);
+    --gradient-cyber: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(255, 0, 255, 0.1) 50%, rgba(255, 255, 0, 0.1) 100%);
 
-    /* Shadows for depth */
-    --shadow-card: 0 4px 16px -4px hsl(24 24% 12% / 0.1);
-    --shadow-hover: 0 8px 24px -8px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.2);
+    /* Neon shadows & glows */
+    --shadow-card: 0 0 20px rgba(0, 255, 255, 0.3);
+    --shadow-hover: 0 0 30px rgba(0, 255, 255, 0.5);
+    --shadow-glow: 0 0 40px rgba(0, 255, 255, 0.4);
+    --shadow-neon-cyan: 0 0 20px rgba(0, 255, 255, 0.6), 0 0 40px rgba(0, 255, 255, 0.3);
+    --shadow-neon-magenta: 0 0 20px rgba(255, 0, 255, 0.6), 0 0 40px rgba(255, 0, 255, 0.3);
+    --shadow-neon-yellow: 0 0 20px rgba(255, 255, 0, 0.6), 0 0 40px rgba(255, 255, 0, 0.3);
 
-    /* Smooth transitions */
+    /* Fast transitions for HUD */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --radius: 0.75rem;
+    --radius: 0.25rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar - cyberpunk dark */
+    --sidebar-background: 220 40% 4%;
+    --sidebar-foreground: 180 100% 80%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 220 40% 5%;
+    --sidebar-accent: 220 35% 10%;
+    --sidebar-accent-foreground: 180 100% 80%;
+    --sidebar-border: 180 100% 20%;
+    --sidebar-ring: 180 100% 50%;
   }
 
 }
