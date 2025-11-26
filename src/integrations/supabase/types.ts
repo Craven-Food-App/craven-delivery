@@ -381,6 +381,45 @@ export type Database = {
           },
         ]
       }
+      auto_escalations: {
+        Row: {
+          escalated_at: string | null
+          escalated_to: string | null
+          escalation_reason: string
+          id: string
+          incident_id: string | null
+        }
+        Insert: {
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_reason: string
+          id?: string
+          incident_id?: string | null
+        }
+        Update: {
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_reason?: string
+          id?: string
+          incident_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_escalations_escalated_to_fkey"
+            columns: ["escalated_to"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "auto_escalations_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "it_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       background_check_reports: {
         Row: {
           admin_decision: string | null
@@ -2715,6 +2754,41 @@ export type Database = {
           },
         ]
       }
+      cto_documents: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cto_github_sync_log: {
         Row: {
           data_synced: Json | null
@@ -2759,6 +2833,53 @@ export type Database = {
           },
         ]
       }
+      cto_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          notification_type: string
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          severity: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cto_performance_alerts: {
         Row: {
           alert_type: string
@@ -2799,6 +2920,36 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      cto_performance_thresholds: {
+        Row: {
+          applies_to_role: string[] | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          threshold_type: string
+          threshold_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          applies_to_role?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          threshold_type: string
+          threshold_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          applies_to_role?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          threshold_type?: string
+          threshold_value?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       cto_redistribution_suggestions: {
         Row: {
@@ -6179,6 +6330,36 @@ export type Database = {
           },
         ]
       }
+      error_clusters: {
+        Row: {
+          count: number | null
+          created_at: string | null
+          error_pattern: string
+          first_seen: string | null
+          id: string
+          last_seen: string | null
+          severity: string | null
+        }
+        Insert: {
+          count?: number | null
+          created_at?: string | null
+          error_pattern: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          severity?: string | null
+        }
+        Update: {
+          count?: number | null
+          created_at?: string | null
+          error_pattern?: string
+          first_seen?: string | null
+          id?: string
+          last_seen?: string | null
+          severity?: string | null
+        }
+        Relationships: []
+      }
       exec_audit_logs: {
         Row: {
           action_category: string
@@ -8534,6 +8715,7 @@ export type Database = {
           reported_by: string | null
           resolution: string | null
           resolved_at: string | null
+          resolved_by: string | null
           severity: string | null
           status: string | null
           title: string
@@ -8548,6 +8730,7 @@ export type Database = {
           reported_by?: string | null
           resolution?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
           severity?: string | null
           status?: string | null
           title: string
@@ -8562,6 +8745,7 @@ export type Database = {
           reported_by?: string | null
           resolution?: string | null
           resolved_at?: string | null
+          resolved_by?: string | null
           severity?: string | null
           status?: string | null
           title?: string
@@ -8581,10 +8765,18 @@ export type Database = {
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "it_incidents_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       it_infrastructure: {
         Row: {
+          created_at: string | null
           id: string
           last_check: string | null
           metadata: Json | null
@@ -8595,6 +8787,7 @@ export type Database = {
           uptime_percent: number | null
         }
         Insert: {
+          created_at?: string | null
           id?: string
           last_check?: string | null
           metadata?: Json | null
@@ -8605,6 +8798,7 @@ export type Database = {
           uptime_percent?: number | null
         }
         Update: {
+          created_at?: string | null
           id?: string
           last_check?: string | null
           metadata?: Json | null
@@ -10420,6 +10614,36 @@ export type Database = {
             referencedColumns: ["employee_id"]
           },
         ]
+      }
+      performance_diagnostics: {
+        Row: {
+          diagnosed_at: string | null
+          id: string
+          metric_name: string
+          service_name: string
+          status: string | null
+          threshold: number | null
+          value: number | null
+        }
+        Insert: {
+          diagnosed_at?: string | null
+          id?: string
+          metric_name: string
+          service_name: string
+          status?: string | null
+          threshold?: number | null
+          value?: number | null
+        }
+        Update: {
+          diagnosed_at?: string | null
+          id?: string
+          metric_name?: string
+          service_name?: string
+          status?: string | null
+          threshold?: number | null
+          value?: number | null
+        }
+        Relationships: []
       }
       performance_reviews: {
         Row: {
@@ -12712,6 +12936,70 @@ export type Database = {
             columns: ["position_id"]
             isOneToOne: false
             referencedRelation: "positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rollback_recommendations: {
+        Row: {
+          created_at: string | null
+          deployment_id: string | null
+          id: string
+          priority: string | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string | null
+          deployment_id?: string | null
+          id?: string
+          priority?: string | null
+          reason: string
+        }
+        Update: {
+          created_at?: string | null
+          deployment_id?: string | null
+          id?: string
+          priority?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rollback_recommendations_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "cto_architecture_changes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      root_cause_suggestions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          incident_id: string | null
+          suggestion: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          suggestion: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          suggestion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "root_cause_suggestions_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "it_incidents"
             referencedColumns: ["id"]
           },
         ]

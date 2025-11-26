@@ -193,7 +193,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        messageId: (emailResponse.data as any)?.id || emailResponse.id,
+        messageId: (emailResponse.data as any)?.id || (emailResponse as any)?.id,
         to,
         documentCount: documents.length 
       }),

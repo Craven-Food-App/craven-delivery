@@ -38,15 +38,18 @@ serve(async (req) => {
     let userId: string | null = null;
     let userCreated = false;
     
-    // Method 1: Try getUserByEmail
+    // Method 1: Try listUsers to find user
     try {
-      const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(ceoEmail);
-      if (user && !getUserError) {
-        userId = user.id;
-        console.log(`CEO user found via getUserByEmail: ${userId}`);
+      const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (!listError && users) {
+        const foundUser = users.find(u => u.email?.toLowerCase() === ceoEmail.toLowerCase());
+        if (foundUser) {
+          userId = foundUser.id;
+          console.log(`CEO user found via listUsers: ${userId}`);
+        }
       }
     } catch (err: any) {
-      console.log('getUserByEmail failed, will try listUsers');
+      console.log('listUsers failed, will try to create user');
     }
     
     // Method 2: If not found, search in listUsers

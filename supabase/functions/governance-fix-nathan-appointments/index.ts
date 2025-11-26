@@ -103,17 +103,8 @@ serve(async (req) => {
                     userFound = true;
                     console.log(`Found existing user ${user.id} after creation attempt failed`);
                   } else {
-                    // If still not found, try to get user by email directly
-                    console.log(`Attempting to get user by email directly...`);
-                    const { data: { user: directUser }, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(appointment.proposed_officer_email);
-                    if (directUser && !getUserError) {
-                      user = directUser;
-                      userFound = true;
-                      console.log(`Found user ${user.id} via direct email lookup`);
-                    } else {
-                      console.warn(`Could not find or create user, but continuing anyway: ${createUserError.message}`);
-                      // Continue without user - workflow can still proceed
-                    }
+                    console.warn(`Could not find or create user, but continuing anyway: ${createUserError.message}`);
+                    // Continue without user - workflow can still proceed
                   }
                 } else {
                   console.warn(`User creation failed: ${createUserError.message}, but continuing anyway`);

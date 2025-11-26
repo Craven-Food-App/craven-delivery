@@ -84,6 +84,11 @@ export async function hasCompanyPortalAccess(roles?: string[]): Promise<boolean>
     'CRAVEN_CORPORATE_SECRETARY',
     'CRAVEN_BOARD_MEMBER',
     'CRAVEN_EXECUTIVE',
+    'CRAVEN_CEO',
+    'CRAVEN_CFO',
+    'CRAVEN_COO',
+    'CRAVEN_CTO',
+    'CRAVEN_CXO',
   ]);
 }
 

@@ -134,13 +134,14 @@ serve(async (req) => {
         // FALLBACK: Try getUserByEmail if listUsers didn't find it
         if (!finalRecipientUserId) {
           try {
-            const { data: { user }, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(recipient_email);
-            if (!getUserError && user) {
+            const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+            const user = users?.find(u => u.email?.toLowerCase() === recipient_email.toLowerCase());
+            if (user) {
               finalRecipientUserId = user.id;
-              console.log(`✓ Found user via getUserByEmail: ${finalRecipientUserId} (${user.email})`);
+              console.log(`✓ Found user via listUsers: ${finalRecipientUserId} (${user.email})`);
             }
           } catch (err: any) {
-            console.log('getUserByEmail failed:', err.message);
+            console.log('listUsers failed:', err.message);
           }
         }
         
@@ -225,7 +226,7 @@ serve(async (req) => {
         );
       }
 
-      capTable = { data: newCapTable };
+      capTable = { data: newCapTable, error: null, count: null, status: 200, statusText: 'OK' };
       console.log('Default cap table created successfully');
     }
 

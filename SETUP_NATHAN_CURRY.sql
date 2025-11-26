@@ -87,21 +87,49 @@ BEGIN
 
   RAISE NOTICE 'Step 4: Portal PIN access configured (PIN: %)', hub_pin;
 
-  -- Step 5: Grant Company Portal access (CRAVEN_EXECUTIVE role only)
-  -- This gives access to Executives tab but NOT Governance Admin, Board, or Template Manager
+  -- Step 5: Grant Company Portal access (CRAVEN_EXECUTIVE and CRAVEN_CTO roles)
+  -- This gives access to Executives and Leadership tabs but NOT Governance Admin, Board, or Template Manager
   INSERT INTO public.user_roles (
     user_id,
     role
   )
-  VALUES (
-    nathan_user_id,
-    'CRAVEN_EXECUTIVE'
-  )
+  VALUES 
+    (nathan_user_id, 'CRAVEN_EXECUTIVE'),
+    (nathan_user_id, 'CRAVEN_CTO')
   ON CONFLICT (user_id, role) DO NOTHING;
 
-  RAISE NOTICE 'Step 5: Company Portal access granted (CRAVEN_EXECUTIVE role)';
-  RAISE NOTICE '   - Access to: CTO Portal, Company Portal (Executives tab only)';
+  RAISE NOTICE 'Step 5: Company Portal access granted (CRAVEN_EXECUTIVE and CRAVEN_CTO roles)';
+  RAISE NOTICE '   - Access to: CTO Portal, Company Portal (Executives and Leadership tabs)';
   RAISE NOTICE '   - NO access to: Governance Administration, Board, Template Manager';
+
+  -- Step 5b: Create exec_users record for CTO portal access
+  INSERT INTO public.exec_users (
+    user_id,
+    role,
+    access_level,
+    title,
+    department,
+    first_name,
+    last_name,
+    email
+  )
+  VALUES (
+    nathan_user_id,
+    'cto',
+    7,
+    'Chief Technology Officer',
+    'Technology',
+    'Nathan',
+    'Curry',
+    'natecurry.cto@cravenusa.com'
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    role = EXCLUDED.role,
+    access_level = EXCLUDED.access_level,
+    title = EXCLUDED.title,
+    department = EXCLUDED.department;
+
+  RAISE NOTICE 'Step 5b: CTO exec_users record created for portal access';
 
   -- Step 6: Remove any roles that would grant restricted access
   DELETE FROM public.user_roles
