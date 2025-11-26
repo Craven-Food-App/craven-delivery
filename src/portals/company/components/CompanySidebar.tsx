@@ -14,10 +14,15 @@ import {
 import { fetchUserRoles, canManageGovernance, canVoteOnResolutions } from '@/lib/roles';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
+import { usePermission } from '@/hooks/usePermission';
 
 const CompanySidebar: React.FC = () => {
   const location = useLocation();
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  
+  // Permission checks for specific tabs
+  const hasExecutivesAccess = usePermission('company.executives.view');
+  const hasLeadershipAccess = usePermission('company.leadership.view');
 
   useEffect(() => {
     let mounted = true;
@@ -90,6 +95,7 @@ const CompanySidebar: React.FC = () => {
       icon: IconUserCheck,
       path: '/company/executives',
       roles: ['CRAVEN_EXECUTIVE'],
+      permission: 'company.executives.view', // CFOs get this automatically
       children: [
         { label: 'My Appointment', path: '/company/executives/my-appointment' },
         { label: 'Directory', path: '/company/executives/directory' },
@@ -100,6 +106,7 @@ const CompanySidebar: React.FC = () => {
       icon: IconWorld,
       path: '/company/leadership-public',
       roles: ['all'],
+      permission: 'company.leadership.view', // CFOs get this automatically
     },
     {
       label: 'Template Manager',
@@ -119,12 +126,21 @@ const CompanySidebar: React.FC = () => {
   return (
     <Stack gap="xs">
       {navItems.map((item) => {
-        // Check if user has access
-        const hasAccess =
+        // Check if user has access via roles OR permissions
+        let hasAccess =
           item.roles.includes('all') ||
           item.roles.some((role) => userRoles.includes(role)) ||
           (item.label === 'Governance Admin' && canManage) ||
           (item.label === 'Board' && canVote);
+        
+        // Check permission-based access for specific tabs
+        if (!hasAccess && item.permission) {
+          if (item.label === 'Executives') {
+            hasAccess = hasExecutivesAccess;
+          } else if (item.label === 'Leadership') {
+            hasAccess = hasLeadershipAccess;
+          }
+        }
 
         if (!hasAccess) return null;
 
