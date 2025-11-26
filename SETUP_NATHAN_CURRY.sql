@@ -102,6 +102,35 @@ BEGIN
   RAISE NOTICE '   - Access to: CTO Portal, Company Portal (Executives and Leadership tabs)';
   RAISE NOTICE '   - NO access to: Governance Administration, Board, Template Manager';
 
+  -- Step 5b: Create exec_users record for CTO portal access
+  INSERT INTO public.exec_users (
+    user_id,
+    role,
+    access_level,
+    title,
+    department,
+    first_name,
+    last_name,
+    email
+  )
+  VALUES (
+    nathan_user_id,
+    'cto',
+    7,
+    'Chief Technology Officer',
+    'Technology',
+    'Nathan',
+    'Curry',
+    'natecurry.cto@cravenusa.com'
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    role = EXCLUDED.role,
+    access_level = EXCLUDED.access_level,
+    title = EXCLUDED.title,
+    department = EXCLUDED.department;
+
+  RAISE NOTICE 'Step 5b: CTO exec_users record created for portal access';
+
   -- Step 6: Remove any roles that would grant restricted access
   DELETE FROM public.user_roles
   WHERE user_id = nathan_user_id

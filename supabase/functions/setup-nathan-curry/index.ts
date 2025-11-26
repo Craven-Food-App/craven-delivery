@@ -219,6 +219,28 @@ serve(async (req) => {
       console.log('Company Portal access granted (CRAVEN_EXECUTIVE and CRAVEN_CTO)');
     }
 
+    // Step 5b: Create exec_users record for CTO portal access
+    const { error: execError } = await supabaseAdmin
+      .from('exec_users')
+      .upsert({
+        user_id: actualUserId,
+        role: 'cto',
+        access_level: 7,
+        title: 'Chief Technology Officer',
+        department: 'Technology',
+        first_name: 'Nathan',
+        last_name: 'Curry',
+        email: 'natecurry.cto@cravenusa.com',
+      }, {
+        onConflict: 'user_id',
+      });
+
+    if (execError) {
+      console.error('Error creating exec_users record:', execError);
+    } else {
+      console.log('CTO exec_users record created for portal access');
+    }
+
     // Step 6: Remove any roles that would grant restricted access
     const { error: deleteRoleError } = await supabaseAdmin
       .from('user_roles')
