@@ -102,6 +102,15 @@ import { EnhancedCFODashboard } from '@/components/cfo/EnhancedCFODashboard';
 import { AdvancedTreasuryManagement } from '@/components/cfo/AdvancedTreasuryManagement';
 import { EnhancedFPandA } from '@/components/cfo/EnhancedFPandA';
 import { CFOKnowledgeBase } from '@/components/cfo/CFOKnowledgeBase';
+import { EnhancedPayroll } from '@/components/cfo/EnhancedPayroll';
+import { EnhancedTaxPlanning } from '@/components/cfo/EnhancedTaxPlanning';
+import { EnhancedFinancialControls } from '@/components/cfo/EnhancedFinancialControls';
+import { EnhancedBoardReporting } from '@/components/cfo/EnhancedBoardReporting';
+import { EnhancedInvestorRelations } from '@/components/cfo/EnhancedInvestorRelations';
+import { EnhancedAuditManagement } from '@/components/cfo/EnhancedAuditManagement';
+import { EnhancedRiskManagement } from '@/components/cfo/EnhancedRiskManagement';
+import { EnhancedCapitalStructure } from '@/components/cfo/EnhancedCapitalStructure';
+import { EnhancedScenarioPlanning } from '@/components/cfo/EnhancedScenarioPlanning';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 
@@ -739,9 +748,18 @@ function CFOPortalContent() {
     { id: 'manager', label: 'Manage Team', icon: Users },
     { id: 'ap', label: 'Run Payables', icon: FileText },
     { id: 'ar', label: 'Collect Receivables', icon: FileText },
+    { id: 'payroll', label: 'Payroll Management', icon: Users },
+    { id: 'tax', label: 'Tax Planning', icon: FileText },
+    { id: 'controls', label: 'Financial Controls', icon: ShieldAlert },
     { id: 'approvals', label: 'Approve Spend', icon: ShieldAlert },
     { id: 'forecast', label: 'Cash Flow Forecast', icon: Rocket },
     { id: 'bva', label: 'Track Budget vs Actuals', icon: Lightbulb },
+    { id: 'board', label: 'Board Reporting', icon: FileText },
+    { id: 'investor', label: 'Investor Relations', icon: DollarSign },
+    { id: 'audit', label: 'Audit Management', icon: FileText },
+    { id: 'risk', label: 'Risk Management', icon: ShieldAlert },
+    { id: 'capital', label: 'Capital Structure', icon: DollarSign },
+    { id: 'scenario', label: 'Scenario Planning', icon: Rocket },
     { id: 'close', label: 'Close Checklist', icon: FileText },
     { id: 'communications', label: 'Executive Communications', icon: Mail },
     { id: 'messages', label: 'Message Center', icon: Mail },
@@ -832,6 +850,24 @@ function CFOPortalContent() {
         return <CloseManagement />;
       case 'communications':
         return <BusinessEmailSystem />;
+      case 'payroll':
+        return <EnhancedPayroll />;
+      case 'tax':
+        return <EnhancedTaxPlanning />;
+      case 'controls':
+        return <EnhancedFinancialControls />;
+      case 'board':
+        return <EnhancedBoardReporting />;
+      case 'investor':
+        return <EnhancedInvestorRelations />;
+      case 'audit':
+        return <EnhancedAuditManagement />;
+      case 'risk':
+        return <EnhancedRiskManagement />;
+      case 'capital':
+        return <EnhancedCapitalStructure />;
+      case 'scenario':
+        return <EnhancedScenarioPlanning />;
       case 'wordprocessor':
         return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
       case 'manual':
