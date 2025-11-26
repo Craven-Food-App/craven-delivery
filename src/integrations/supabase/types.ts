@@ -381,6 +381,63 @@ export type Database = {
           },
         ]
       }
+      audit_requests: {
+        Row: {
+          assigned_to: string
+          created_at: string | null
+          due_date: string
+          id: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string | null
+          due_date: string
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      audit_timeline: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          phase: string
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          phase: string
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          phase?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       auto_escalations: {
         Row: {
           escalated_at: string | null
@@ -1190,6 +1247,36 @@ export type Database = {
           trust_percentage?: number
           trust_shares?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      capital_stack: {
+        Row: {
+          amount: number
+          created_at: string | null
+          holders: string
+          id: string
+          investment_type: string
+          percentage: number
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          holders: string
+          id?: string
+          investment_type: string
+          percentage?: number
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          holders?: string
+          id?: string
+          investment_type?: string
+          percentage?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3731,6 +3818,39 @@ export type Database = {
           status?: string
           total_amount?: number
           total_drivers?: number
+        }
+        Relationships: []
+      }
+      debt_instruments: {
+        Row: {
+          created_at: string | null
+          id: string
+          instrument_type: string
+          interest_rate: number
+          maturity_date: string
+          principal: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instrument_type: string
+          interest_rate?: number
+          maturity_date: string
+          principal?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instrument_type?: string
+          interest_rate?: number
+          maturity_date?: string
+          principal?: number
+          status?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -7954,6 +8074,39 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_controls: {
+        Row: {
+          category: string
+          control_name: string
+          created_at: string | null
+          id: string
+          last_tested: string | null
+          owner: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          control_name: string
+          created_at?: string | null
+          id?: string
+          last_tested?: string | null
+          owner: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          control_name?: string
+          created_at?: string | null
+          id?: string
+          last_tested?: string | null
+          owner?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       financial_reports: {
         Row: {
           created_at: string | null
@@ -8012,6 +8165,45 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      financial_scenarios: {
+        Row: {
+          base_expenses: number
+          base_revenue: number
+          created_at: string | null
+          id: string
+          optimistic_expenses: number
+          optimistic_revenue: number
+          pessimistic_expenses: number
+          pessimistic_revenue: number
+          scenario_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_expenses?: number
+          base_revenue?: number
+          created_at?: string | null
+          id?: string
+          optimistic_expenses?: number
+          optimistic_revenue?: number
+          pessimistic_expenses?: number
+          pessimistic_revenue?: number
+          scenario_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_expenses?: number
+          base_revenue?: number
+          created_at?: string | null
+          id?: string
+          optimistic_expenses?: number
+          optimistic_revenue?: number
+          pessimistic_expenses?: number
+          pessimistic_revenue?: number
+          scenario_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       fleet_vehicles: {
         Row: {
@@ -8403,6 +8595,80 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      investor_updates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          sent_date: string | null
+          status: string
+          update_content: string
+          update_title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          sent_date?: string | null
+          status?: string
+          update_content: string
+          update_title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          sent_date?: string | null
+          status?: string
+          update_content?: string
+          update_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_updates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investors: {
+        Row: {
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          investment_amount: number
+          investment_date: string
+          investor_name: string
+          investor_type: string
+          ownership_percent: number
+          updated_at: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          investment_amount?: number
+          investment_date: string
+          investor_name: string
+          investor_type: string
+          ownership_percent?: number
+          updated_at?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          investment_amount?: number
+          investment_date?: string
+          investor_name?: string
+          investor_type?: string
+          ownership_percent?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       invoices: {
         Row: {
@@ -12897,6 +13163,45 @@ export type Database = {
           },
         ]
       }
+      risk_register: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          impact: string
+          likelihood: string
+          mitigation: string | null
+          owner: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          impact: string
+          likelihood: string
+          mitigation?: string | null
+          owner?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          impact?: string
+          likelihood?: string
+          mitigation?: string | null
+          owner?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           allowed: boolean
@@ -13717,6 +14022,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tax_calendar: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          due_date: string
+          id: string
+          status: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          description: string
+          due_date: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      tax_credits: {
+        Row: {
+          created_at: string | null
+          credit_name: string
+          credit_type: string
+          eligibility_status: string
+          estimated_value: number
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_name: string
+          credit_type: string
+          eligibility_status: string
+          estimated_value?: number
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_name?: string
+          credit_type?: string
+          eligibility_status?: string
+          estimated_value?: number
+          id?: string
+        }
+        Relationships: []
+      }
+      tax_estimates: {
+        Row: {
+          created_at: string | null
+          effective_rate: number
+          estimated_income: number
+          federal_tax: number
+          id: string
+          state_tax: number
+          tax_year: number
+          total_tax: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          effective_rate?: number
+          estimated_income?: number
+          federal_tax?: number
+          id?: string
+          state_tax?: number
+          tax_year: number
+          total_tax?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          effective_rate?: number
+          estimated_income?: number
+          federal_tax?: number
+          id?: string
+          state_tax?: number
+          tax_year?: number
+          total_tax?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       tech_actual_costs: {
         Row: {
