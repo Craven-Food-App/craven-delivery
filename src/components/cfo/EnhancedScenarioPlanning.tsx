@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, Button, Tabs, Tab, TextField } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import { financePortalTheme } from '@/themes/financePortalTheme';
-import { FinancePortalLayout } from '@/components/finance/FinancePortalLayout';
-import { TrendingUp, TrendingDown, Download } from 'lucide-react';
+import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, NumberInput, Alert } from '@mantine/core';
+import { IconChartDots, IconTrendingUp, IconTrendingDown, IconDownload } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import '../../styles/neon-finance.css';
+
+interface FinancialScenario {
+  id: string;
+  scenario_name: string;
+  base_revenue: number;
+  base_expenses: number;
+  optimistic_revenue: number;
+  optimistic_expenses: number;
+  pessimistic_revenue: number;
+  pessimistic_expenses: number;
+}
 
 export const EnhancedScenarioPlanning: React.FC = () => {
   const [baseRevenue, setBaseRevenue] = useState(0);
   const [baseExpenses, setBaseExpenses] = useState(0);
   const [loading, setLoading] = useState(true);
   const [scenarioId, setScenarioId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     fetchScenarios();
@@ -90,107 +96,158 @@ export const EnhancedScenarioPlanning: React.FC = () => {
   const pessimisticMetrics = calculateMetrics(scenarios.pessimistic.revenue, scenarios.pessimistic.expenses);
 
   return (
-    <ThemeProvider theme={financePortalTheme}>
-      <FinancePortalLayout
-        title="Scenario Planning & Analysis"
-        subtitle="Model multiple future scenarios to support strategic planning and risk management"
-        actions={
-          <Button variant="outlined" startIcon={<Download size={16} />} sx={{ borderColor: '#ff6a00', color: '#ff6a00' }}>
-            Export Scenarios
-          </Button>
-        }
-      >
-        <Card sx={{ bgcolor: '#12121a', border: '1px solid rgba(255, 106, 0, 0.3)', p: 3, mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 3 }}>Scenario Assumptions</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-            <TextField
-              label="Base Case Revenue"
-              type="number"
-              value={baseRevenue}
-              onChange={(e) => {
-                const newValue = Number(e.target.value);
-                setBaseRevenue(newValue);
-                saveScenario(newValue, baseExpenses);
-              }}
-              fullWidth
-            />
-            <TextField
-              label="Base Case Expenses"
-              type="number"
-              value={baseExpenses}
-              onChange={(e) => {
-                const newValue = Number(e.target.value);
-                setBaseExpenses(newValue);
-                saveScenario(baseRevenue, newValue);
-              }}
-              fullWidth
-            />
-          </Box>
-        </Card>
+    <Stack gap="lg" p={{ base: 16, md: 24 }}>
+      <Group justify="space-between" wrap="wrap">
+        <div>
+          <Title order={2}>Scenario Planning & Analysis</Title>
+          <Text c="dimmed" size="sm">Model multiple future scenarios to support strategic planning and risk management</Text>
+        </div>
+        <Group>
+          <Button variant="light" leftSection={<IconDownload size={16} />}>Export Scenarios</Button>
+        </Group>
+      </Group>
 
-        {baseRevenue === 0 && baseExpenses === 0 ? (
-          <Card sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', p: 2 }}>
-            <Typography sx={{ color: '#60a5fa' }}>
-              Enter base case revenue and expenses above to generate scenario analysis.
-            </Typography>
+      {loading ? (
+        <Card withBorder p="md"><Text>Loading scenarios...</Text></Card>
+      ) : (
+        <>
+          <Card withBorder p="md">
+            <Title order={4} mb="md">Scenario Assumptions</Title>
+            <Grid>
+              <Grid.Col span={6}>
+                <NumberInput 
+                  label="Base Case Revenue" 
+                  value={baseRevenue} 
+                  onChange={(val) => {
+                    const newValue = Number(val);
+                    setBaseRevenue(newValue);
+                    saveScenario(newValue, baseExpenses);
+                  }} 
+                  prefix="$" 
+                  thousandSeparator="," 
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput 
+                  label="Base Case Expenses" 
+                  value={baseExpenses} 
+                  onChange={(val) => {
+                    const newValue = Number(val);
+                    setBaseExpenses(newValue);
+                    saveScenario(baseRevenue, newValue);
+                  }} 
+                  prefix="$" 
+                  thousandSeparator="," 
+                />
+              </Grid.Col>
+            </Grid>
           </Card>
-        ) : (
-          <Card sx={{ bgcolor: '#12121a', border: '1px solid rgba(255, 106, 0, 0.3)' }}>
-            <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} sx={{ borderBottom: 1, borderColor: 'rgba(255, 106, 0, 0.2)' }}>
-              <Tab label="Scenario Comparison" />
-              <Tab label="Base Case" />
-              <Tab label="Optimistic" />
-              <Tab label="Pessimistic" />
+
+          {baseRevenue === 0 && baseExpenses === 0 ? (
+            <Alert color="blue"><Text>Enter base case revenue and expenses above to generate scenario analysis.</Text></Alert>
+          ) : (
+            <Tabs defaultValue="comparison">
+              <Tabs.List>
+                <Tabs.Tab value="comparison" leftSection={<IconChartDots size={16} />}>Scenario Comparison</Tabs.Tab>
+                <Tabs.Tab value="base" leftSection={<IconTrendingUp size={16} />}>Base Case</Tabs.Tab>
+                <Tabs.Tab value="optimistic" leftSection={<IconTrendingUp size={16} />}>Optimistic</Tabs.Tab>
+                <Tabs.Tab value="pessimistic" leftSection={<IconTrendingDown size={16} />}>Pessimistic</Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="comparison" pt="md">
+                <Grid>
+                  <Grid.Col span={4}>
+                    <Card withBorder p="md" style={{ borderColor: '#60a5fa' }}>
+                      <Group justify="space-between" mb="md">
+                        <Title order={4}>Base Case</Title>
+                        <Badge color="blue">{scenarios.base.probability}% probability</Badge>
+                      </Group>
+                      <Stack gap="xs">
+                        <div><Text size="sm" c="dimmed">Revenue</Text><Title order={3}>${(scenarios.base.revenue / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Expenses</Text><Title order={3}>${(scenarios.base.expenses / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Profit</Text><Title order={3} c={baseMetrics.profit > 0 ? 'green' : 'red'}>${(baseMetrics.profit / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Margin</Text><Title order={3}>{baseMetrics.margin.toFixed(1)}%</Title></div>
+                        <div><Text size="sm" c="dimmed">Cash Runway</Text><Title order={3}>{baseMetrics.runway} months</Title></div>
+                      </Stack>
+                    </Card>
+                  </Grid.Col>
+
+                  <Grid.Col span={4}>
+                    <Card withBorder p="md" style={{ borderColor: '#34d399' }}>
+                      <Group justify="space-between" mb="md">
+                        <Title order={4}>Optimistic</Title>
+                        <Badge color="green">{scenarios.optimistic.probability}% probability</Badge>
+                      </Group>
+                      <Stack gap="xs">
+                        <div><Text size="sm" c="dimmed">Revenue</Text><Title order={3}>${(scenarios.optimistic.revenue / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Expenses</Text><Title order={3}>${(scenarios.optimistic.expenses / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Profit</Text><Title order={3} c="green">${(optimisticMetrics.profit / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Margin</Text><Title order={3}>{optimisticMetrics.margin.toFixed(1)}%</Title></div>
+                        <div><Text size="sm" c="dimmed">Cash Runway</Text><Title order={3}>{optimisticMetrics.runway} months</Title></div>
+                      </Stack>
+                    </Card>
+                  </Grid.Col>
+
+                  <Grid.Col span={4}>
+                    <Card withBorder p="md" style={{ borderColor: '#f97316' }}>
+                      <Group justify="space-between" mb="md">
+                        <Title order={4}>Pessimistic</Title>
+                        <Badge color="orange">{scenarios.pessimistic.probability}% probability</Badge>
+                      </Group>
+                      <Stack gap="xs">
+                        <div><Text size="sm" c="dimmed">Revenue</Text><Title order={3}>${(scenarios.pessimistic.revenue / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Expenses</Text><Title order={3}>${(scenarios.pessimistic.expenses / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Profit</Text><Title order={3} c={pessimisticMetrics.profit > 0 ? 'green' : 'red'}>${(pessimisticMetrics.profit / 1000000).toFixed(1)}M</Title></div>
+                        <div><Text size="sm" c="dimmed">Margin</Text><Title order={3}>{pessimisticMetrics.margin.toFixed(1)}%</Title></div>
+                        <div><Text size="sm" c="dimmed">Cash Runway</Text><Title order={3}>{pessimisticMetrics.runway} months</Title></div>
+                      </Stack>
+                    </Card>
+                  </Grid.Col>
+                </Grid>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="base" pt="md">
+                <Card withBorder p="md">
+                  <Title order={4} mb="md">Base Case Scenario</Title>
+                  <Text size="sm" mb="md">Most likely outcome based on current trends and assumptions</Text>
+                  <Grid>
+                    <Grid.Col span={6}><Text fw={500}>Annual Revenue:</Text><Text>${(scenarios.base.revenue / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Annual Expenses:</Text><Text>${(scenarios.base.expenses / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Net Profit:</Text><Text c={baseMetrics.profit > 0 ? 'green' : 'red'}>${(baseMetrics.profit / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Profit Margin:</Text><Text>{baseMetrics.margin.toFixed(1)}%</Text></Grid.Col>
+                  </Grid>
+                </Card>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="optimistic" pt="md">
+                <Card withBorder p="md">
+                  <Title order={4} mb="md">Optimistic Scenario</Title>
+                  <Text size="sm" mb="md">Best case outcome (+30% revenue, +10% expenses)</Text>
+                  <Grid>
+                    <Grid.Col span={6}><Text fw={500}>Annual Revenue:</Text><Text>${(scenarios.optimistic.revenue / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Annual Expenses:</Text><Text>${(scenarios.optimistic.expenses / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Net Profit:</Text><Text c="green">${(optimisticMetrics.profit / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Profit Margin:</Text><Text>{optimisticMetrics.margin.toFixed(1)}%</Text></Grid.Col>
+                  </Grid>
+                </Card>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="pessimistic" pt="md">
+                <Card withBorder p="md">
+                  <Title order={4} mb="md">Pessimistic Scenario</Title>
+                  <Text size="sm" mb="md">Worst case outcome (-30% revenue, -5% expenses)</Text>
+                  <Grid>
+                    <Grid.Col span={6}><Text fw={500}>Annual Revenue:</Text><Text>${(scenarios.pessimistic.revenue / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Annual Expenses:</Text><Text>${(scenarios.pessimistic.expenses / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Net Profit:</Text><Text c={pessimisticMetrics.profit > 0 ? 'green' : 'red'}>${(pessimisticMetrics.profit / 1000000).toFixed(1)}M</Text></Grid.Col>
+                    <Grid.Col span={6}><Text fw={500}>Profit Margin:</Text><Text>{pessimisticMetrics.margin.toFixed(1)}%</Text></Grid.Col>
+                  </Grid>
+                </Card>
+              </Tabs.Panel>
             </Tabs>
-
-            {activeTab === 0 && (
-              <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
-                <Card sx={{ bgcolor: '#1a1a24', border: '2px solid #60a5fa', p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h6">Base Case</Typography>
-                    <Typography variant="caption" sx={{ color: '#60a5fa' }}>{scenarios.base.probability}% probability</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Revenue</Typography><Typography variant="h5" className="neon-gradient">${(scenarios.base.revenue / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Expenses</Typography><Typography variant="h5">${(scenarios.base.expenses / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Profit</Typography><Typography variant="h5" sx={{ color: baseMetrics.profit > 0 ? '#22c55e' : '#ef4444' }}>${(baseMetrics.profit / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Margin</Typography><Typography variant="h5">{baseMetrics.margin.toFixed(1)}%</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Cash Runway</Typography><Typography variant="h5">{baseMetrics.runway} months</Typography></Box>
-                  </Box>
-                </Card>
-
-                <Card sx={{ bgcolor: '#1a1a24', border: '2px solid #34d399', p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h6">Optimistic</Typography>
-                    <Typography variant="caption" sx={{ color: '#34d399' }}>{scenarios.optimistic.probability}% probability</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Revenue</Typography><Typography variant="h5" className="neon-gradient">${(scenarios.optimistic.revenue / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Expenses</Typography><Typography variant="h5">${(scenarios.optimistic.expenses / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Profit</Typography><Typography variant="h5" sx={{ color: '#22c55e' }}>${(optimisticMetrics.profit / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Margin</Typography><Typography variant="h5">{optimisticMetrics.margin.toFixed(1)}%</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Cash Runway</Typography><Typography variant="h5">{optimisticMetrics.runway} months</Typography></Box>
-                  </Box>
-                </Card>
-
-                <Card sx={{ bgcolor: '#1a1a24', border: '2px solid #f97316', p: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h6">Pessimistic</Typography>
-                    <Typography variant="caption" sx={{ color: '#f97316' }}>{scenarios.pessimistic.probability}% probability</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Revenue</Typography><Typography variant="h5" className="neon-gradient">${(scenarios.pessimistic.revenue / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Expenses</Typography><Typography variant="h5">${(scenarios.pessimistic.expenses / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Profit</Typography><Typography variant="h5" sx={{ color: pessimisticMetrics.profit > 0 ? '#22c55e' : '#ef4444' }}>${(pessimisticMetrics.profit / 1000000).toFixed(1)}M</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Margin</Typography><Typography variant="h5">{pessimisticMetrics.margin.toFixed(1)}%</Typography></Box>
-                    <Box><Typography variant="body2" sx={{ color: '#a1a1aa' }}>Cash Runway</Typography><Typography variant="h5">{pessimisticMetrics.runway} months</Typography></Box>
-                  </Box>
-                </Card>
-              </Box>
-            )}
-          </Card>
-        )}
-      </FinancePortalLayout>
-    </ThemeProvider>
+          )}
+        </>
+      )}
+    </Stack>
   );
 };

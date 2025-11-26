@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, Button, Chip, Tabs, Tab, Alert } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import { financePortalTheme } from '@/themes/financePortalTheme';
-import { FinancePortalLayout } from '@/components/finance/FinancePortalLayout';
-import { NeonCard } from '@/components/finance/NeonCard';
-import { AlertTriangle, Shield, Download, BarChart3 } from 'lucide-react';
+import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Table, Alert } from '@mantine/core';
+import { IconAlertTriangle, IconShield, IconDownload, IconChartBar } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import '../../styles/neon-finance.css';
 
 interface Risk {
   id: string;
@@ -23,7 +17,6 @@ interface Risk {
 export const EnhancedRiskManagement: React.FC = () => {
   const [risks, setRisks] = useState<Risk[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     fetchRisks();
@@ -50,167 +43,120 @@ export const EnhancedRiskManagement: React.FC = () => {
   const lowRisks = risks.length - highRisks - mediumRisks;
 
   const getRiskColor = (value: string) => {
-    if (value === 'High') return 'error';
-    if (value === 'Medium') return 'warning';
-    return 'success';
+    if (value === 'High') return 'red';
+    if (value === 'Medium') return 'yellow';
+    return 'green';
   };
 
-  const columns: GridColDef[] = [
-    { field: 'title', headerName: 'Risk', flex: 1 },
-    { field: 'category', headerName: 'Category', width: 150 },
-    {
-      field: 'likelihood',
-      headerName: 'Likelihood',
-      width: 130,
-      renderCell: (params) => (
-        <Chip label={params.value} color={getRiskColor(params.value)} size="small" />
-      ),
-    },
-    {
-      field: 'impact',
-      headerName: 'Impact',
-      width: 130,
-      renderCell: (params) => (
-        <Chip label={params.value} color={getRiskColor(params.value)} size="small" />
-      ),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 130,
-      renderCell: (params) => (
-        <Chip
-          label={params.value}
-          color={params.value === 'mitigated' ? 'success' : params.value === 'monitoring' ? 'warning' : 'error'}
-          size="small"
-        />
-      ),
-    },
-  ];
-
   return (
-    <ThemeProvider theme={financePortalTheme}>
-      <FinancePortalLayout
-        title="Risk Management"
-        subtitle="Identify, assess, and mitigate financial and operational risks"
-        actions={
-          <Button variant="outlined" startIcon={<Download size={16} />}>
-            Export Risk Register
-          </Button>
-        }
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mb: 3 }}>
-          <NeonCard glow>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">High Priority Risks</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>{highRisks}</Typography>
-                </Box>
-                <AlertTriangle size={32} color="#ef4444" />
-              </Box>
-            </CardContent>
-          </NeonCard>
+    <Stack gap="lg" p={{ base: 16, md: 24 }}>
+      <Group justify="space-between" wrap="wrap">
+        <div>
+          <Title order={2}>Risk Management</Title>
+          <Text c="dimmed" size="sm">Identify, assess, and mitigate financial and operational risks</Text>
+        </div>
+        <Group>
+          <Button variant="light" leftSection={<IconDownload size={16} />}>Export Risk Register</Button>
+        </Group>
+      </Group>
 
-          <NeonCard>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Medium Priority Risks</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>{mediumRisks}</Typography>
-                </Box>
-                <AlertTriangle size={32} color="#f59e0b" />
-              </Box>
-            </CardContent>
-          </NeonCard>
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">High Priority Risks</Text><Title order={3}>{highRisks}</Title></div>
+              <IconAlertTriangle size={32} color="red" />
+            </Group>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">Medium Priority Risks</Text><Title order={3}>{mediumRisks}</Title></div>
+              <IconAlertTriangle size={32} color="orange" />
+            </Group>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">Low Priority Risks</Text><Title order={3}>{lowRisks}</Title></div>
+              <IconShield size={32} color="green" />
+            </Group>
+          </Card>
+        </Grid.Col>
+      </Grid>
 
-          <NeonCard>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Low Priority Risks</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>{lowRisks}</Typography>
-                </Box>
-                <Shield size={32} color="#22c55e" />
-              </Box>
-            </CardContent>
-          </NeonCard>
-        </Box>
+      <Tabs defaultValue="register">
+        <Tabs.List>
+          <Tabs.Tab value="register" leftSection={<IconAlertTriangle size={16} />}>Risk Register</Tabs.Tab>
+          <Tabs.Tab value="heatmap" leftSection={<IconChartBar size={16} />}>Risk Heat Map</Tabs.Tab>
+          <Tabs.Tab value="mitigation" leftSection={<IconShield size={16} />}>Mitigation Plans</Tabs.Tab>
+        </Tabs.List>
 
-        <NeonCard fadeIn>
-          <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab icon={<AlertTriangle size={16} />} label="Risk Register" iconPosition="start" />
-            <Tab icon={<BarChart3 size={16} />} label="Risk Heat Map" iconPosition="start" />
-            <Tab icon={<Shield size={16} />} label="Mitigation Plans" iconPosition="start" />
-          </Tabs>
-
-          <Box sx={{ p: 3 }}>
-            {activeTab === 0 && (
-              loading ? (
-                <Typography>Loading risks...</Typography>
-              ) : risks.length === 0 ? (
-                <Alert severity="info">No risks registered yet. Add risks to track and manage them.</Alert>
-              ) : (
-                <DataGrid
-                  rows={risks}
-                  columns={columns}
-                  autoHeight
-                  pageSizeOptions={[10, 25, 50]}
-                  initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                />
-              )
-            )}
-
-            {activeTab === 1 && (
-              risks.length === 0 ? (
-                <Alert severity="info">No risks to visualize. Add risks to see them on the heat map.</Alert>
-              ) : (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
-                  <Card sx={{ p: 2, backgroundColor: '#fee', border: '1px solid #fcc' }}>
-                    <Typography variant="subtitle1" textAlign="center" fontWeight={600}>High Likelihood</Typography>
-                    <Typography textAlign="center">{risks.filter(r => r.likelihood === 'High').length} risks</Typography>
-                  </Card>
-                  <Card sx={{ p: 2, backgroundColor: '#ffe', border: '1px solid #ffc' }}>
-                    <Typography variant="subtitle1" textAlign="center" fontWeight={600}>Medium Likelihood</Typography>
-                    <Typography textAlign="center">{risks.filter(r => r.likelihood === 'Medium').length} risks</Typography>
-                  </Card>
-                  <Card sx={{ p: 2, backgroundColor: '#efe', border: '1px solid #cfc' }}>
-                    <Typography variant="subtitle1" textAlign="center" fontWeight={600}>Low Likelihood</Typography>
-                    <Typography textAlign="center">{risks.filter(r => r.likelihood === 'Low').length} risks</Typography>
-                  </Card>
-                </Box>
-              )
-            )}
-
-            {activeTab === 2 && (
-              risks.length === 0 ? (
-                <Alert severity="info">No mitigation plans yet. Risks will appear here once added.</Alert>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Tabs.Panel value="register" pt="md">
+          <Card withBorder>
+            {loading ? (
+              <Text p="md">Loading risks...</Text>
+            ) : risks.length === 0 ? (
+              <Alert color="blue" m="md"><Text>No risks registered yet. Add risks to track and manage them.</Text></Alert>
+            ) : (
+              <Table>
+                <Table.Thead>
+                  <Table.Tr><Table.Th>Risk</Table.Th><Table.Th>Category</Table.Th><Table.Th>Likelihood</Table.Th><Table.Th>Impact</Table.Th><Table.Th>Status</Table.Th></Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
                   {risks.map(risk => (
-                    <Card key={risk.id}>
-                      <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Typography variant="h6">{risk.title}</Typography>
-                          <Chip label={risk.status} color={getRiskColor(risk.impact)} size="small" />
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Mitigation:</strong> {risk.mitigation || 'No mitigation plan yet'}
-                        </Typography>
-                        {risk.owner && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            <strong>Owner:</strong> {risk.owner}
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </Card>
+                    <Table.Tr key={risk.id}>
+                      <Table.Td>{risk.title}</Table.Td>
+                      <Table.Td><Badge variant="light">{risk.category}</Badge></Table.Td>
+                      <Table.Td><Badge color={getRiskColor(risk.likelihood)}>{risk.likelihood}</Badge></Table.Td>
+                      <Table.Td><Badge color={getRiskColor(risk.impact)}>{risk.impact}</Badge></Table.Td>
+                      <Table.Td><Badge color={risk.status === 'mitigated' ? 'green' : risk.status === 'monitoring' ? 'yellow' : 'red'}>{risk.status}</Badge></Table.Td>
+                    </Table.Tr>
                   ))}
-                </Box>
-              )
+                </Table.Tbody>
+              </Table>
             )}
-          </Box>
-        </NeonCard>
-      </FinancePortalLayout>
-    </ThemeProvider>
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="heatmap" pt="md">
+          <Card withBorder p="md">
+            {risks.length === 0 ? (
+              <Alert color="blue"><Text>No risks to visualize. Add risks to see them on the heat map.</Text></Alert>
+            ) : (
+              <>
+                <Title order={4} mb="md">Risk Heat Map</Title>
+                <Grid>
+                  <Grid.Col span={4}><Card p="sm" style={{ backgroundColor: '#fee', border: '1px solid #fcc' }}><Text fw={500} ta="center">High Likelihood</Text><Text ta="center">{risks.filter(r => r.likelihood === 'High').length} risks</Text></Card></Grid.Col>
+                  <Grid.Col span={4}><Card p="sm" style={{ backgroundColor: '#ffe', border: '1px solid #ffc' }}><Text fw={500} ta="center">Medium Likelihood</Text><Text ta="center">{risks.filter(r => r.likelihood === 'Medium').length} risks</Text></Card></Grid.Col>
+                  <Grid.Col span={4}><Card p="sm" style={{ backgroundColor: '#efe', border: '1px solid #cfc' }}><Text fw={500} ta="center">Low Likelihood</Text><Text ta="center">{risks.filter(r => r.likelihood === 'Low').length} risks</Text></Card></Grid.Col>
+                </Grid>
+              </>
+            )}
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="mitigation" pt="md">
+          <Stack gap="sm">
+            {risks.length === 0 ? (
+              <Alert color="blue"><Text>No mitigation plans yet. Risks will appear here once added.</Text></Alert>
+            ) : (
+              risks.map(risk => (
+                <Card key={risk.id} withBorder p="md">
+                  <Group justify="space-between" mb="xs">
+                    <Text fw={500}>{risk.title}</Text>
+                    <Badge color={getRiskColor(risk.impact)}>{risk.status}</Badge>
+                  </Group>
+                  <Text size="sm" c="dimmed"><strong>Mitigation:</strong> {risk.mitigation || 'No mitigation plan yet'}</Text>
+                  {risk.owner && <Text size="sm" c="dimmed" mt="xs"><strong>Owner:</strong> {risk.owner}</Text>}
+                </Card>
+              ))
+            )}
+          </Stack>
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   );
 };

@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, Button, Chip, Tabs, Tab, Alert, LinearProgress } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import { financePortalTheme } from '@/themes/financePortalTheme';
-import { FinancePortalLayout } from '@/components/finance/FinancePortalLayout';
-import { NeonCard } from '@/components/finance/NeonCard';
-import { FileCheck, Calendar, AlertTriangle, Download, Check } from 'lucide-react';
+import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Timeline, Alert, Progress } from '@mantine/core';
+import { IconScale, IconFileCheck, IconCalendar, IconAlertTriangle, IconCheck, IconDownload } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import '../../styles/neon-finance.css';
 
 interface AuditRequest {
   id: string;
@@ -15,6 +9,8 @@ interface AuditRequest {
   assigned_to: string;
   due_date: string;
   status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuditTimelineItem {
@@ -23,13 +19,13 @@ interface AuditTimelineItem {
   phase: string;
   date: string;
   status: string;
+  created_at: string;
 }
 
 export const EnhancedAuditManagement: React.FC = () => {
   const [auditRequests, setAuditRequests] = useState<AuditRequest[]>([]);
   const [timeline, setTimeline] = useState<AuditTimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     fetchAuditData();
@@ -55,146 +51,111 @@ export const EnhancedAuditManagement: React.FC = () => {
   const totalRequests = auditRequests.length || 1;
   const auditProgress = (completedRequests / totalRequests) * 100;
 
-  const columns: GridColDef[] = [
-    { field: 'title', headerName: 'Request', flex: 1 },
-    { field: 'assigned_to', headerName: 'Assigned To', width: 150 },
-    {
-      field: 'due_date',
-      headerName: 'Due Date',
-      width: 120,
-      valueFormatter: (value: any) => new Date(value).toLocaleDateString(),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 130,
-      renderCell: (params) => (
-        <Chip
-          label={params.value.replace('_', ' ')}
-          color={params.value === 'completed' ? 'success' : params.value === 'in_progress' ? 'warning' : 'default'}
-          size="small"
-        />
-      ),
-    },
-  ];
+  const currentPhase = timeline.find(t => t.status === 'in_progress')?.phase || 'In Progress';
+  const daysUntilReview = timeline.length > 0 ? Math.ceil((new Date(timeline[timeline.length - 1].date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
 
   return (
-    <ThemeProvider theme={financePortalTheme}>
-      <FinancePortalLayout
-        title="Audit Management"
-        subtitle="Coordinate financial audits, manage audit requests, ensure audit readiness"
-        actions={
-          <Button variant="outlined" startIcon={<Download size={16} />}>
-            Export Audit Package
-          </Button>
-        }
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 3, mb: 3 }}>
-          <NeonCard glow>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Audit Status</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>
-                    {timeline.find(t => t.status === 'in_progress')?.phase || 'In Progress'}
-                  </Typography>
-                </Box>
-                <FileCheck size={32} color="#ff6a00" />
-              </Box>
-            </CardContent>
-          </NeonCard>
+    <Stack gap="lg" p={{ base: 16, md: 24 }}>
+      <Group justify="space-between" wrap="wrap">
+        <div>
+          <Title order={2}>Audit Management</Title>
+          <Text c="dimmed" size="sm">Coordinate financial audits, manage audit requests, ensure audit readiness</Text>
+        </div>
+        <Group>
+          <Button variant="light" leftSection={<IconDownload size={16} />}>Export Audit Package</Button>
+        </Group>
+      </Group>
 
-          <NeonCard>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Requests Complete</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>{completedRequests}/{totalRequests}</Typography>
-                </Box>
-                <Check size={32} color="#22c55e" />
-              </Box>
-            </CardContent>
-          </NeonCard>
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">Audit Status</Text><Title order={3}>{currentPhase}</Title></div>
+              <IconScale size={32} color="blue" />
+            </Group>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">Requests Complete</Text><Title order={3}>{completedRequests}/{totalRequests}</Title></div>
+              <IconCheck size={32} color="green" />
+            </Group>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div><Text size="sm" c="dimmed">Days Until Review</Text><Title order={3}>{daysUntilReview > 0 ? daysUntilReview : 'TBD'}</Title></div>
+              <IconCalendar size={32} color="orange" />
+            </Group>
+          </Card>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <div><Text size="sm" c="dimmed" mb="xs">Completion Progress</Text><Title order={3}>{auditProgress.toFixed(0)}%</Title><Progress value={auditProgress} color="green" mt="xs" /></div>
+          </Card>
+        </Grid.Col>
+      </Grid>
 
-          <NeonCard>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">Days Until Review</Typography>
-                  <Typography variant="h4" sx={{ mt: 1 }}>TBD</Typography>
-                </Box>
-                <Calendar size={32} color="#f59e0b" />
-              </Box>
-            </CardContent>
-          </NeonCard>
+      <Tabs defaultValue="timeline">
+        <Tabs.List>
+          <Tabs.Tab value="timeline" leftSection={<IconCalendar size={16} />}>Audit Timeline</Tabs.Tab>
+          <Tabs.Tab value="requests" leftSection={<IconFileCheck size={16} />}>Information Requests</Tabs.Tab>
+          <Tabs.Tab value="findings" leftSection={<IconAlertTriangle size={16} />}>Audit Findings</Tabs.Tab>
+        </Tabs.List>
 
-          <NeonCard>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Completion Progress</Typography>
-              <Typography variant="h4" sx={{ mb: 2 }}>{auditProgress.toFixed(0)}%</Typography>
-              <LinearProgress variant="determinate" value={auditProgress} color="success" />
-            </CardContent>
-          </NeonCard>
-        </Box>
-
-        <NeonCard fadeIn>
-          <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tab icon={<Calendar size={16} />} label="Audit Timeline" iconPosition="start" />
-            <Tab icon={<FileCheck size={16} />} label="Information Requests" iconPosition="start" />
-            <Tab icon={<AlertTriangle size={16} />} label="Audit Findings" iconPosition="start" />
-          </Tabs>
-
-          <Box sx={{ p: 3 }}>
-            {activeTab === 0 && (
-              loading ? (
-                <Typography>Loading timeline...</Typography>
-              ) : timeline.length === 0 ? (
-                <Alert severity="info">No audit timeline items yet. Create timeline phases to track audit progress.</Alert>
-              ) : (
-                <Box>
-                  {timeline.map((item, idx) => (
-                    <Card key={item.id} sx={{ mb: 2, backgroundColor: 'background.paper' }}>
-                      <CardContent>
-                        <Typography variant="h6">{item.title}</Typography>
-                        <Typography variant="body2" color="text.secondary">{item.phase}</Typography>
-                        <Chip
-                          label={item.status.replace('_', ' ')}
-                          color={item.status === 'complete' ? 'success' : item.status === 'in_progress' ? 'warning' : 'default'}
-                          size="small"
-                          sx={{ mt: 1 }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </Box>
-              )
+        <Tabs.Panel value="timeline" pt="md">
+          <Card withBorder p="md">
+            {loading ? (
+              <Text>Loading timeline...</Text>
+            ) : timeline.length === 0 ? (
+              <Alert color="blue"><Text>No audit timeline items yet. Create timeline phases to track audit progress.</Text></Alert>
+            ) : (
+              <Timeline active={timeline.findIndex(t => t.status === 'in_progress')} bulletSize={24} lineWidth={2}>
+                {timeline.map(item => (
+                  <Timeline.Item 
+                    key={item.id} 
+                    bullet={item.status === 'complete' ? <IconCheck size={12} /> : item.status === 'in_progress' ? <IconFileCheck size={12} /> : <IconCalendar size={12} />} 
+                    title={item.title}
+                  >
+                    <Text size="sm" c="dimmed">{item.phase}</Text>
+                    <Badge color={item.status === 'complete' ? 'green' : item.status === 'in_progress' ? 'yellow' : 'gray'} mt="xs">
+                      {item.status.replace('_', ' ')}
+                    </Badge>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
             )}
+          </Card>
+        </Tabs.Panel>
 
-            {activeTab === 1 && (
-              loading ? (
-                <Typography>Loading requests...</Typography>
-              ) : auditRequests.length === 0 ? (
-                <Alert severity="info">No audit requests yet. Requests will appear here when auditors submit information requests.</Alert>
-              ) : (
-                <DataGrid
-                  rows={auditRequests}
-                  columns={columns}
-                  autoHeight
-                  pageSizeOptions={[10, 25, 50]}
-                  initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                />
-              )
+        <Tabs.Panel value="requests" pt="md">
+          <Stack gap="sm">
+            {loading ? (
+              <Text>Loading requests...</Text>
+            ) : auditRequests.length === 0 ? (
+              <Alert color="blue"><Text>No audit requests yet. Requests will appear here when auditors submit information requests.</Text></Alert>
+            ) : (
+              auditRequests.map(req => (
+                <Card key={req.id} withBorder p="md">
+                  <Group justify="space-between">
+                    <div>
+                      <Group gap="sm"><Text fw={500}>{req.title}</Text><Badge color={req.status === 'completed' ? 'green' : req.status === 'in_progress' ? 'yellow' : 'gray'}>{req.status.replace('_', ' ')}</Badge></Group>
+                      <Text size="sm" c="dimmed">Assigned to: {req.assigned_to} • Due: {new Date(req.due_date).toLocaleDateString()}</Text>
+                    </div>
+                    {req.status === 'completed' ? <Badge color="green" size="lg">✓</Badge> : <Button size="sm" variant="light">Upload Response</Button>}
+                  </Group>
+                </Card>
+              ))
             )}
+          </Stack>
+        </Tabs.Panel>
 
-            {activeTab === 2 && (
-              <Alert severity="info" icon={<FileCheck />}>
-                <Typography variant="subtitle1">No Significant Findings</Typography>
-                <Typography variant="body2">Audit in progress. Findings will be reported as identified.</Typography>
-              </Alert>
-            )}
-          </Box>
-        </NeonCard>
-      </FinancePortalLayout>
-    </ThemeProvider>
+        <Tabs.Panel value="findings" pt="md">
+          <Alert color="blue" icon={<IconFileCheck />}><Text fw={500}>No Significant Findings</Text><Text size="sm">Audit in progress. Findings will be reported as identified.</Text></Alert>
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   );
 };

@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, Button, Tabs, Tab, TextField } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import { financePortalTheme } from '@/themes/financePortalTheme';
-import { FinancePortalLayout } from '@/components/finance/FinancePortalLayout';
-import { NeonMetricCard } from '@/components/finance/NeonMetricCard';
-import { ZoomIn, Mail, Users, PieChart, Download, Send } from 'lucide-react';
+import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Table, Alert, Textarea } from '@mantine/core';
+import { IconZoomMoney, IconMail, IconUsers, IconChartPie, IconDownload, IconSend } from '@tabler/icons-react';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { supabase } from '@/integrations/supabase/client';
-import '../../styles/neon-finance.css';
 
 interface Investor {
   id: string;
@@ -23,7 +18,6 @@ export const EnhancedInvestorRelations: React.FC = () => {
   const [updateDraft, setUpdateDraft] = useState('');
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -66,146 +60,206 @@ export const EnhancedInvestorRelations: React.FC = () => {
   const totalOwnership = investors.reduce((sum, inv) => sum + inv.ownership_percent, 0);
 
   return (
-    <ThemeProvider theme={financePortalTheme}>
-      <FinancePortalLayout
-        title="Investor Relations"
-        subtitle="Manage investor communications, updates, and fundraising activities"
-        actions={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" startIcon={<Mail size={16} />} sx={{ borderColor: '#ff6a00', color: '#ff6a00' }}>
-              Schedule Call
-            </Button>
-            <Button variant="contained" startIcon={<Download size={16} />} sx={{ bgcolor: '#ff6a00' }}>
-              Data Room
-            </Button>
-          </Box>
-        }
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3, mb: 4 }}>
-          <NeonMetricCard title="Total Investors" value={investors.length} icon={<Users size={20} />} glow />
-          <NeonMetricCard title="Total Capital Raised" value={`$${(totalCapitalRaised / 1000000).toFixed(1)}M`} icon={<ZoomIn size={20} />} />
-          <NeonMetricCard title="Investor Ownership" value={`${totalOwnership.toFixed(1)}%`} icon={<PieChart size={20} />} />
-          <NeonMetricCard title="Next Update Due" value={`${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getDate() - new Date().getDate()} days`} icon={<Mail size={20} />} />
-        </Box>
+    <Stack gap="lg" p={{ base: 16, md: 24 }}>
+      <Group justify="space-between" wrap="wrap">
+        <div>
+          <Title order={2}>Investor Relations</Title>
+          <Text c="dimmed" size="sm">Manage investor communications, updates, and fundraising activities</Text>
+        </div>
+        <Group>
+          <Button variant="light" leftSection={<IconMail size={16} />}>Schedule Call</Button>
+          <Button leftSection={<IconDownload size={16} />} color="blue">Data Room</Button>
+        </Group>
+      </Group>
 
-        <Card sx={{ bgcolor: '#12121a', border: '1px solid rgba(255, 106, 0, 0.3)' }}>
-          <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} sx={{ borderBottom: 1, borderColor: 'rgba(255, 106, 0, 0.2)' }}>
-            <Tab label="Investor List" />
-            <Tab label="Monthly Updates" />
-            <Tab label="Cap Table" />
-          </Tabs>
+      <Grid>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div>
+                <Text size="sm" c="dimmed">Total Investors</Text>
+                <Title order={3}>{investors.length}</Title>
+              </div>
+              <IconUsers size={32} color="blue" />
+            </Group>
+          </Card>
+        </Grid.Col>
 
-          {activeTab === 0 && (
-            <Box sx={{ p: 3 }}>
-              {investors.length === 0 ? (
-                <Typography sx={{ color: '#6b7280', textAlign: 'center', py: 4 }}>
-                  No investors recorded yet. Add investor information to track relationships and ownership.
-                </Typography>
-              ) : (
-                <Box sx={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255, 106, 0, 0.2)' }}>
-                        <th style={{ textAlign: 'left', padding: '12px', color: '#a1a1aa' }}>Investor Name</th>
-                        <th style={{ textAlign: 'left', padding: '12px', color: '#a1a1aa' }}>Type</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#a1a1aa' }}>Ownership</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#a1a1aa' }}>Investment</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#a1a1aa' }}>Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {investors.map((investor) => (
-                        <tr key={investor.id} style={{ borderBottom: '1px solid rgba(255, 106, 0, 0.1)' }}>
-                          <td style={{ padding: '12px', color: '#fff', fontWeight: 600 }}>{investor.investor_name}</td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', backgroundColor: 'rgba(255, 106, 0, 0.1)', color: '#ff6a00' }}>
-                              {investor.investor_type}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: 'right', padding: '12px', color: '#fff' }}>{investor.ownership_percent.toFixed(1)}%</td>
-                          <td style={{ textAlign: 'right', padding: '12px', color: '#fff' }}>${(investor.investment_amount / 1000000).toFixed(1)}M</td>
-                          <td style={{ textAlign: 'right', padding: '12px', color: '#a1a1aa' }}>{new Date(investor.investment_date).toLocaleDateString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </Box>
-              )}
-            </Box>
-          )}
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div>
+                <Text size="sm" c="dimmed">Total Capital Raised</Text>
+                <Title order={3}>${(totalCapitalRaised / 1000000).toFixed(1)}M</Title>
+              </div>
+              <IconZoomMoney size={32} color="green" />
+            </Group>
+          </Card>
+        </Grid.Col>
 
-          {activeTab === 1 && (
-            <Box sx={{ p: 3 }}>
-              <Box sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 1, p: 2, mb: 3 }}>
-                <Typography variant="body1" fontWeight={600} sx={{ color: '#60a5fa', mb: 0.5 }}>
-                  Next Monthly Update Due: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#a1a1aa' }}>
-                  Send consistent monthly updates to maintain investor confidence
-                </Typography>
-              </Box>
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div>
+                <Text size="sm" c="dimmed">Investor Ownership</Text>
+                <Title order={3}>{totalOwnership.toFixed(1)}%</Title>
+              </div>
+              <IconChartPie size={32} color="orange" />
+            </Group>
+          </Card>
+        </Grid.Col>
 
-              <Card sx={{ bgcolor: '#1a1a24', border: '1px solid rgba(255, 106, 0, 0.2)', p: 3, mb: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>Draft Monthly Update</Typography>
-                <TextField
-                  multiline
-                  rows={10}
-                  fullWidth
-                  placeholder="Key highlights:&#10;- Financial performance&#10;- Major milestones&#10;- Team updates&#10;- Key metrics&#10;- Asks from investors"
-                  value={updateDraft}
-                  onChange={(e) => setUpdateDraft(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    startIcon={<Send size={16} />}
-                    onClick={sendUpdate}
-                    disabled={!updateDraft.trim()}
-                    sx={{ bgcolor: '#ff6a00' }}
-                  >
-                    Send Update
-                  </Button>
-                </Box>
-              </Card>
-            </Box>
-          )}
+        <Grid.Col span={{ base: 12, md: 3 }}>
+          <Card withBorder p="md">
+            <Group justify="space-between">
+              <div>
+                <Text size="sm" c="dimmed">Next Update Due</Text>
+                <Title order={3}>{new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getDate() - new Date().getDate()} days</Title>
+              </div>
+              <IconMail size={32} color="purple" />
+            </Group>
+          </Card>
+        </Grid.Col>
+      </Grid>
 
-          {activeTab === 2 && (
-            <Box sx={{ p: 3 }}>
-              <Box sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 1, p: 2, mb: 3 }}>
-                <Typography variant="body1" fontWeight={600} sx={{ color: '#60a5fa', mb: 0.5 }}>Cap Table Summary</Typography>
-                <Typography variant="body2" sx={{ color: '#a1a1aa' }}>
-                  Detailed cap table visualization available in Capital Structure tab
-                </Typography>
-              </Box>
+      <Tabs defaultValue="investors">
+        <Tabs.List>
+          <Tabs.Tab value="investors" leftSection={<IconUsers size={16} />}>Investor List</Tabs.Tab>
+          <Tabs.Tab value="updates" leftSection={<IconMail size={16} />}>Monthly Updates</Tabs.Tab>
+          <Tabs.Tab value="captable" leftSection={<IconChartPie size={16} />}>Cap Table</Tabs.Tab>
+        </Tabs.List>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 3, mb: 3 }}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#a1a1aa', mb: 1 }}>Total Investor Ownership</Typography>
-                  <Typography variant="h4" className="neon-gradient">{totalOwnership.toFixed(1)}%</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#a1a1aa', mb: 1 }}>Number of Investors</Typography>
-                  <Typography variant="h4" className="neon-gradient">{investors.length}</Typography>
-                </Box>
-              </Box>
+        <Tabs.Panel value="investors" pt="md">
+          <Card withBorder>
+            {loading ? (
+              <Text p="md">Loading investors...</Text>
+            ) : investors.length === 0 ? (
+              <Alert color="blue" m="md"><Text>No investors recorded yet. Add investor information to track relationships and ownership.</Text></Alert>
+            ) : (
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Investor Name</Table.Th>
+                    <Table.Th>Type</Table.Th>
+                    <Table.Th>Ownership</Table.Th>
+                    <Table.Th>Investment</Table.Th>
+                    <Table.Th>Date</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {investors.map((investor) => (
+                    <Table.Tr key={investor.id}>
+                      <Table.Td>{investor.investor_name}</Table.Td>
+                      <Table.Td><Badge variant="light">{investor.investor_type}</Badge></Table.Td>
+                      <Table.Td>{investor.ownership_percent.toFixed(1)}%</Table.Td>
+                      <Table.Td>${(investor.investment_amount / 1000000).toFixed(1)}M</Table.Td>
+                      <Table.Td>{new Date(investor.investment_date).toLocaleDateString()}</Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="updates" pt="md">
+          <Stack gap="md">
+            <Alert color="blue" icon={<IconMail />}>
+              <Text fw={500}>Next Monthly Update Due: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</Text>
+              <Text size="sm">Send consistent monthly updates to maintain investor confidence</Text>
+            </Alert>
+
+            <Card withBorder p="md">
+              <Title order={4} mb="md">Draft Monthly Update</Title>
+              <Textarea
+                placeholder="Key highlights:&#10;- Financial performance&#10;- Major milestones&#10;- Team updates&#10;- Key metrics&#10;- Asks from investors"
+                minRows={10}
+                value={updateDraft}
+                onChange={(e) => setUpdateDraft(e.target.value)}
+              />
+              <Group justify="flex-end" mt="md">
+                <Button
+                  leftSection={<IconSend size={16} />}
+                  onClick={sendUpdate}
+                  disabled={!updateDraft.trim()}
+                >
+                  Send Update
+                </Button>
+              </Group>
+            </Card>
+
+            <Card withBorder p="md">
+              <Title order={4} mb="md">Update Template</Title>
+              <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-line' }}>
+                <strong>Monthly Investor Update - [Month, Year]</strong>
+                {'\n\n'}
+                <strong>Executive Summary</strong>
+                {'\n'}- Key achievement or milestone
+                {'\n'}- Brief financial snapshot
+                {'\n\n'}
+                <strong>Financial Performance</strong>
+                {'\n'}- Revenue: [Amount] ([% change] vs prior month)
+                {'\n'}- Expenses: [Amount]
+                {'\n'}- Cash Position: [Amount]
+                {'\n'}- Burn Rate: [Amount/month]
+                {'\n'}- Runway: [Months]
+                {'\n\n'}
+                <strong>Key Metrics</strong>
+                {'\n'}- Customer count
+                {'\n'}- User growth
+                {'\n'}- Engagement metrics
+                {'\n\n'}
+                <strong>Major Accomplishments</strong>
+                {'\n'}- Product launches
+                {'\n'}- Partnerships
+                {'\n'}- Team hires
+                {'\n\n'}
+                <strong>Challenges & How We're Addressing Them</strong>
+                {'\n\n'}
+                <strong>Looking Ahead</strong>
+                {'\n'}- Next month's priorities
+                {'\n\n'}
+                <strong>How You Can Help</strong>
+                {'\n'}- Specific asks from investors
+              </Text>
+            </Card>
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="captable" pt="md">
+          <Card withBorder p="md">
+            <Alert color="blue" icon={<IconChartPie />}>
+              <Text fw={500}>Cap Table Summary</Text>
+              <Text size="sm">Detailed cap table visualization available in Capital Structure tab</Text>
+            </Alert>
+
+            <Stack gap="md" mt="md">
+              <Grid>
+                <Grid.Col span={6}>
+                  <Text size="sm" fw={500} c="dimmed">Total Investor Ownership</Text>
+                  <Title order={3}>{totalOwnership.toFixed(1)}%</Title>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Text size="sm" fw={500} c="dimmed">Number of Investors</Text>
+                  <Title order={3}>{investors.length}</Title>
+                </Grid.Col>
+              </Grid>
 
               {investors.length > 0 && (
-                <Box>
-                  <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>Top Investors:</Typography>
+                <div>
+                  <Text size="sm" fw={500} mb="xs">Top Investors:</Text>
                   {investors.slice(0, 5).map(inv => (
-                    <Box key={inv.id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, p: 1, bgcolor: '#1a1a24', borderRadius: 1 }}>
-                      <Typography variant="body2">{inv.investor_name}</Typography>
-                      <Typography variant="body2" sx={{ color: '#ff6a00', fontWeight: 600 }}>{inv.ownership_percent.toFixed(1)}%</Typography>
-                    </Box>
+                    <Group key={inv.id} justify="space-between" mb="xs">
+                      <Text size="sm">{inv.investor_name}</Text>
+                      <Badge>{inv.ownership_percent.toFixed(1)}%</Badge>
+                    </Group>
                   ))}
-                </Box>
+                </div>
               )}
-            </Box>
-          )}
-        </Card>
-      </FinancePortalLayout>
-    </ThemeProvider>
+            </Stack>
+          </Card>
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   );
 };
