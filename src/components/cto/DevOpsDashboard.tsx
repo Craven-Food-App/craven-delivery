@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Grid,
   Group,
@@ -58,22 +58,20 @@ export const DevOpsDashboard: React.FC = () => {
   useEffect(() => {
     fetchDevOpsData();
     fetchMTTR();
-    // Set up auto-refresh every 30 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
-    // This only updates component state, NEVER causes page reloads
+    // Increased to 60 seconds to reduce refresh frequency and prevent page reloads
+    // This only updates component state, NEVER causes parent re-renders
     const interval = setInterval(() => {
-      // Wrap in try-catch to prevent any errors from causing issues
       try {
         fetchDevOpsData();
         fetchMTTR();
       } catch (error) {
         console.error('Error in auto-refresh interval:', error);
-        // Silently handle - don't cause page reload or navigation
       }
-    }, 30000);
+    }, 60000); // Changed from 30000 to 60000 (60 seconds)
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDevOpsData, fetchMTTR]);
 
-  const fetchMTTR = async () => {
+  const fetchMTTR = useCallback(async () => {
     try {
       const { data: rolledBack } = await supabase
         .from('cto_architecture_changes')
@@ -98,9 +96,9 @@ export const DevOpsDashboard: React.FC = () => {
       console.error('Error calculating MTTR:', error);
       setMttr(0);
     }
-  };
+  }, []);
 
-  const fetchDevOpsData = async () => {
+  const fetchDevOpsData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch real deployments from cto_architecture_changes
@@ -189,7 +187,7 @@ export const DevOpsDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   // Calculate deployment frequency (successful deployments in last 7 days)
   const sevenDaysAgo = new Date();
