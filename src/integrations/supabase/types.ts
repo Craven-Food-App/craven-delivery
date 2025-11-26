@@ -15691,6 +15691,10 @@ export type Database = {
       }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       has_universal_access: { Args: never; Returns: boolean }
+      hash_and_update_pin: {
+        Args: { p_email: string; p_new_pin: string }
+        Returns: boolean
+      }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_c_level_position: { Args: { position_text: string }; Returns: boolean }
