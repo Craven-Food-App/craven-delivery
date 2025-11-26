@@ -108,6 +108,12 @@ export const templates: TemplateMeta[] = [
     title: "IRS Form 83(b) – Info Sheet", 
     placeholders: ["taxpayer_name","taxpayer_address","company_name","date_of_transfer","stock_class","number_of_shares","fair_market_value","amount_paid"], 
     compile: Handlebars.compile(TPL("irs_83b.hbs")) 
+  },
+  { 
+    id: "bylaws_complete", 
+    title: "Corporate Bylaws (Complete)", 
+    placeholders: ["company_name","state_of_incorporation","state_abbreviation","adoption_date","registered_office_address","principal_office_address","principal_office_city","principal_office_state","authorized_shares","par_value","shareholders","fiscal_year","ceo_name","cfo_name","cxo_name","cto_name","secretary_name","secretary_title","additional_director_name","signers"], 
+    compile: Handlebars.compile(TPL("bylaws_complete.hbs")) 
   }
 ];
 
