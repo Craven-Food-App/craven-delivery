@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { isCLevelPosition, getExecRoleFromPosition } from '@/utils/roleUtils';
@@ -47,6 +47,13 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
   const [execUser, setExecUser] = useState<ExecUser | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  const initialAuthCheckDone = useRef(false);
+
+  // Keep navigateRef updated
+  useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   const resolveExecFromEmployee = useCallback(
     async (authUser: SupabaseAuthUser): Promise<boolean> => {
@@ -147,11 +154,12 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
     if (!isHQ && currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
       window.location.href = 'https://hq.cravenusa.com/hub';
     } else {
-      navigate('/hub');
+      navigateRef.current('/hub');
     }
-  }, [navigate]);
+  }, []); // No dependencies - using ref for navigate
 
   const checkAuth = useCallback(async () => {
+    console.log('[useExecAuth] checkAuth called');
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       const currentUser = userData?.user as SupabaseAuthUser | null;
@@ -230,16 +238,32 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
   }, [redirectToHub, requiredRole, resolveExecFromEmployee]);
 
   useEffect(() => {
-    checkAuth();
+    // Only run initial check once
+    if (!initialAuthCheckDone.current) {
+      console.log('[useExecAuth] Running initial auth check');
+      initialAuthCheckDone.current = true;
+      checkAuth();
+    }
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[useExecAuth] Auth state change:', event);
+      
       if (event === 'SIGNED_OUT') {
+        console.log('[useExecAuth] User signed out');
         setUser(null);
         setExecUser(null);
         setIsAuthorized(false);
         redirectToHub();
       } else if (event === 'SIGNED_IN' && session?.user) {
+        // Only re-check on actual sign in, not on token refresh
+        console.log('[useExecAuth] User signed in, re-checking auth');
         checkAuth();
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Explicitly ignore token refresh - no need to re-check everything
+        console.log('[useExecAuth] Token refreshed, ignoring (no re-check needed)');
+      } else if (event === 'INITIAL_SESSION') {
+        // Explicitly ignore initial session - already handled above
+        console.log('[useExecAuth] Initial session detected, ignoring (already checked)');
       }
     });
 
