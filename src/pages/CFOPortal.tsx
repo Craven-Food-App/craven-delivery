@@ -746,7 +746,7 @@ function CFOPortalContent() {
     { id: 'communications', label: 'Executive Communications', icon: Mail },
     { id: 'messages', label: 'Message Center', icon: Mail },
     { id: 'wordprocessor', label: 'Draft Documents', icon: FileText },
-    { id: 'manual', label: 'Instruction Manual', icon: FileText },
+    { id: 'manual', label: 'CFO Knowledge', icon: FileText },
   ], [transactions.length, payouts.length]);
 
   const openPortal = (path: string, subdomain?: string) => {
