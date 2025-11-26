@@ -86,6 +86,20 @@ export const EnhancedCTODashboard: React.FC = () => {
   const [mobilePerformance, setMobilePerformance] = useState<any | null>(null);
   const [mobileErrorRate, setMobileErrorRate] = useState<number>(0);
   
+  // System health score state (calculated from real metrics)
+  const [systemHealthScore, setSystemHealthScore] = useState<number>(0);
+  const [healthMetrics, setHealthMetrics] = useState<{
+    reliability: { score: number; status: string };
+    performance: { score: number; status: string };
+    security: { score: number; status: string };
+    efficiency: { score: number; status: string };
+  }>({
+    reliability: { score: 0, status: 'Unknown' },
+    performance: { score: 0, status: 'Unknown' },
+    security: { score: 0, status: 'Unknown' },
+    efficiency: { score: 0, status: 'Unknown' },
+  });
+  
   // Daily Workflow state
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<any[]>([]);
@@ -698,6 +712,70 @@ export const EnhancedCTODashboard: React.FC = () => {
       }
       setPredictiveInsights(insights);
 
+      // Calculate System Health Score from real metrics
+      const reliabilityScore = (
+        (avgUptime / 100) * 40 + // Uptime weighted 40%
+        (activeIncidents.length === 0 ? 30 : Math.max(0, 30 - activeIncidents.length * 5)) + // Incidents weighted 30%
+        (services.filter((s: any) => s.status === 'operational').length / Math.max(services.length, 1)) * 30 // Service status weighted 30%
+      );
+      
+      const performanceScore = (
+        (avgResponseTime < 50 ? 100 : avgResponseTime < 100 ? 80 : avgResponseTime < 200 ? 60 : 40) * 0.5 + // Response time weighted 50%
+        (errorRate < 0.1 ? 50 : errorRate < 1 ? 40 : errorRate < 5 ? 30 : 20) // Error rate weighted 50%
+      );
+      
+      const securityScoreMetric = securityScore; // Already calculated 0-100
+      
+      const efficiencyScore = (
+        (deploymentFrequency > 10 ? 100 : deploymentFrequency > 5 ? 80 : deploymentFrequency > 2 ? 60 : 40) * 0.5 + // Deployment frequency weighted 50%
+        (mttr < 1 ? 50 : mttr < 4 ? 40 : mttr < 8 ? 30 : 20) // MTTR weighted 50%
+      );
+      
+      // Overall system health is weighted average
+      const overallHealth = (
+        reliabilityScore * 0.35 + // Reliability is most important
+        performanceScore * 0.30 + // Performance is second
+        securityScoreMetric * 0.20 + // Security is third
+        efficiencyScore * 0.15 // Efficiency is fourth
+      );
+      
+      setSystemHealthScore(Math.round(overallHealth));
+      
+      const getStatusLabel = (score: number): string => {
+        if (score >= 90) return 'Excellent';
+        if (score >= 80) return 'Strong';
+        if (score >= 70) return 'Good';
+        if (score >= 60) return 'Fair';
+        return 'Needs Attention';
+      };
+      
+      const getStatusColor = (score: number): string => {
+        if (score >= 90) return 'green';
+        if (score >= 80) return 'blue';
+        if (score >= 70) return 'yellow';
+        if (score >= 60) return 'orange';
+        return 'red';
+      };
+      
+      setHealthMetrics({
+        reliability: { 
+          score: Math.round(reliabilityScore), 
+          status: getStatusLabel(reliabilityScore) 
+        },
+        performance: { 
+          score: Math.round(performanceScore), 
+          status: getStatusLabel(performanceScore) 
+        },
+        security: { 
+          score: Math.round(securityScoreMetric), 
+          status: getStatusLabel(securityScoreMetric) 
+        },
+        efficiency: { 
+          score: Math.round(efficiencyScore), 
+          status: getStatusLabel(efficiencyScore) 
+        },
+      });
+
       // Detect anomalies
       const detectedAnomalies: Anomaly[] = [];
       if (Math.abs(calculateChange(avgUptime, previousMonth.Uptime)) > 0.5) {
@@ -940,15 +1018,23 @@ export const EnhancedCTODashboard: React.FC = () => {
                 size={200}
                 thickness={20}
                 sections={[
-                  { value: 92, color: '#10b981', tooltip: 'Overall Health: 92%' },
+                  { 
+                    value: systemHealthScore, 
+                    color: systemHealthScore >= 90 ? '#10b981' : systemHealthScore >= 80 ? '#3b82f6' : systemHealthScore >= 70 ? '#f59e0b' : '#ef4444', 
+                    tooltip: `Overall Health: ${systemHealthScore}%` 
+                  },
                 ]}
                 label={
                   <Center>
-                    <Text size="xl" fw={700} c="green">
-                      92%
+                    <Text 
+                      size="xl" 
+                      fw={700} 
+                      c={systemHealthScore >= 90 ? 'green' : systemHealthScore >= 80 ? 'blue' : systemHealthScore >= 70 ? 'yellow' : 'red'}
+                    >
+                      {systemHealthScore}%
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Excellent
+                      {systemHealthScore >= 90 ? 'Excellent' : systemHealthScore >= 80 ? 'Strong' : systemHealthScore >= 70 ? 'Good' : systemHealthScore >= 60 ? 'Fair' : 'Needs Attention'}
                     </Text>
                   </Center>
                 }
@@ -956,19 +1042,47 @@ export const EnhancedCTODashboard: React.FC = () => {
               <Stack gap="xs" style={{ width: '100%' }}>
                 <Group justify="space-between">
                   <Text size="sm">Reliability</Text>
-                  <Badge color="green">Strong</Badge>
+                  <Badge color={
+                    healthMetrics.reliability.score >= 90 ? 'green' : 
+                    healthMetrics.reliability.score >= 80 ? 'blue' : 
+                    healthMetrics.reliability.score >= 70 ? 'yellow' : 
+                    healthMetrics.reliability.score >= 60 ? 'orange' : 'red'
+                  }>
+                    {healthMetrics.reliability.status}
+                  </Badge>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm">Performance</Text>
-                  <Badge color="green">Strong</Badge>
+                  <Badge color={
+                    healthMetrics.performance.score >= 90 ? 'green' : 
+                    healthMetrics.performance.score >= 80 ? 'blue' : 
+                    healthMetrics.performance.score >= 70 ? 'yellow' : 
+                    healthMetrics.performance.score >= 60 ? 'orange' : 'red'
+                  }>
+                    {healthMetrics.performance.status}
+                  </Badge>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm">Security</Text>
-                  <Badge color="green">Strong</Badge>
+                  <Badge color={
+                    healthMetrics.security.score >= 90 ? 'green' : 
+                    healthMetrics.security.score >= 80 ? 'blue' : 
+                    healthMetrics.security.score >= 70 ? 'yellow' : 
+                    healthMetrics.security.score >= 60 ? 'orange' : 'red'
+                  }>
+                    {healthMetrics.security.status}
+                  </Badge>
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm">Efficiency</Text>
-                  <Badge color="blue">Good</Badge>
+                  <Badge color={
+                    healthMetrics.efficiency.score >= 90 ? 'green' : 
+                    healthMetrics.efficiency.score >= 80 ? 'blue' : 
+                    healthMetrics.efficiency.score >= 70 ? 'yellow' : 
+                    healthMetrics.efficiency.score >= 60 ? 'orange' : 'red'
+                  }>
+                    {healthMetrics.efficiency.status}
+                  </Badge>
                 </Group>
               </Stack>
             </Stack>
