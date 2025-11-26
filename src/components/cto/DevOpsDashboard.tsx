@@ -55,22 +55,6 @@ export const DevOpsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('deployments');
   const toast = useToast();
 
-  useEffect(() => {
-    fetchDevOpsData();
-    fetchMTTR();
-    // Increased to 60 seconds to reduce refresh frequency and prevent page reloads
-    // This only updates component state, NEVER causes parent re-renders
-    const interval = setInterval(() => {
-      try {
-        fetchDevOpsData();
-        fetchMTTR();
-      } catch (error) {
-        console.error('Error in auto-refresh interval:', error);
-      }
-    }, 60000); // Changed from 30000 to 60000 (60 seconds)
-    return () => clearInterval(interval);
-  }, [fetchDevOpsData, fetchMTTR]);
-
   const fetchMTTR = useCallback(async () => {
     try {
       const { data: rolledBack } = await supabase
@@ -188,6 +172,23 @@ export const DevOpsDashboard: React.FC = () => {
       setLoading(false);
     }
   }, [toast]);
+
+  // Set up data fetching and auto-refresh
+  useEffect(() => {
+    fetchDevOpsData();
+    fetchMTTR();
+    // Increased to 60 seconds to reduce refresh frequency and prevent page reloads
+    // This only updates component state, NEVER causes parent re-renders
+    const interval = setInterval(() => {
+      try {
+        fetchDevOpsData();
+        fetchMTTR();
+      } catch (error) {
+        console.error('Error in auto-refresh interval:', error);
+      }
+    }, 60000); // Changed from 30000 to 60000 (60 seconds)
+    return () => clearInterval(interval);
+  }, [fetchDevOpsData, fetchMTTR]);
 
   // Calculate deployment frequency (successful deployments in last 7 days)
   const sevenDaysAgo = new Date();
