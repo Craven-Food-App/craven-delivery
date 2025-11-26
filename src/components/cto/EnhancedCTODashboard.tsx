@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Grid,
   Group,
@@ -110,6 +110,9 @@ export const EnhancedCTODashboard: React.FC = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [today] = useState(new Date().toISOString().split('T')[0]);
 
+  // Use ref to store fetch function and prevent dependency issues
+  const fetchEnhancedDataRef = useRef<() => Promise<void>>();
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
@@ -118,21 +121,23 @@ export const EnhancedCTODashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchEnhancedData();
+    if (fetchEnhancedDataRef.current) {
+      fetchEnhancedDataRef.current();
+    }
     initializeDailyWorkflow();
-    // Set up auto-refresh every 30 seconds - COMPONENT-LEVEL DATA REFRESH ONLY
-    // This only updates component state, NEVER causes page reloads
+    // Increased to 60 seconds to reduce refresh frequency and prevent page reloads
+    // This only updates component state, NEVER causes parent re-renders
     const interval = setInterval(() => {
-      // Wrap in try-catch to prevent any errors from causing issues
       try {
-        fetchEnhancedData();
+        if (fetchEnhancedDataRef.current) {
+          fetchEnhancedDataRef.current();
+        }
       } catch (error) {
         console.error('Error in auto-refresh interval:', error);
-        // Silently handle - don't cause page reload or navigation
       }
-    }, 30000);
+    }, 60000); // Changed from 30000 to 60000 (60 seconds)
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Empty dependencies - using ref
 
   const initializeDailyWorkflow = async () => {
     await initializeDefaultTasks();
@@ -402,7 +407,7 @@ export const EnhancedCTODashboard: React.FC = () => {
     }
   };
 
-  const fetchEnhancedData = async () => {
+  const fetchEnhancedData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch infrastructure data and mobile app analytics
@@ -803,7 +808,12 @@ export const EnhancedCTODashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Assign fetch function to ref after it's defined
+  useEffect(() => {
+    fetchEnhancedDataRef.current = fetchEnhancedData;
+  }, [fetchEnhancedData]);
 
   const getStatusColor = (status: AdvancedKPI['status']) => {
     switch (status) {
