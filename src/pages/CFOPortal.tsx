@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Box, IconButton, Alert, Typography } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
-import { financePortalTheme } from '@/themes/financePortalTheme';
-import { FinanceSidebar } from '@/components/finance/FinanceSidebar';
-import { Menu, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
+import { CyberpunkHeader } from '@/components/cfo/CyberpunkHeader';
+import { CyberpunkTabNav } from '@/components/cfo/CyberpunkTabNav';
+import { CyberpunkDashboard } from '@/components/cfo/CyberpunkDashboard';
 
 // Import all Enhanced components
-import { EnhancedCFODashboard } from '@/components/cfo/EnhancedCFODashboard';
 import { EnhancedFPandA } from '@/components/cfo/EnhancedFPandA';
 import { AdvancedTreasuryManagement } from '@/components/cfo/AdvancedTreasuryManagement';
 import { EnhancedPayroll } from '@/components/cfo/EnhancedPayroll';
@@ -23,28 +21,13 @@ import { EnhancedRiskManagement } from '@/components/cfo/EnhancedRiskManagement'
 import { EnhancedCapitalStructure } from '@/components/cfo/EnhancedCapitalStructure';
 import { EnhancedScenarioPlanning } from '@/components/cfo/EnhancedScenarioPlanning';
 
-import '../styles/neon-finance.css';
+import '../styles/cyberpunk-hud.css';
 
 function CFOPortalContent() {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState('overview');
 
   useActivityTracking('cfo');
-
-  useEffect(() => {
-    // Set up auto-refresh every 60 seconds
-    const interval = setInterval(() => {
-      try {
-        setLastUpdated(new Date());
-      } catch (error) {
-        console.error('Error in auto-refresh:', error);
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -57,9 +40,9 @@ function CFOPortalContent() {
   };
 
   const renderContent = () => {
-    switch (activeSection) {
+    switch (activeTab) {
       case 'overview':
-        return <EnhancedCFODashboard />;
+        return <CyberpunkDashboard />;
       case 'fpa':
         return <EnhancedFPandA />;
       case 'treasury':
@@ -83,84 +66,29 @@ function CFOPortalContent() {
       case 'scenario':
         return <EnhancedScenarioPlanning />;
       default:
-        return <EnhancedCFODashboard />;
+        return <CyberpunkDashboard />;
     }
   };
 
   return (
-    <ThemeProvider theme={financePortalTheme}>
+    <Box className="hud-container">
+      {/* Header */}
+      <CyberpunkHeader onSignOut={handleSignOut} />
+
+      {/* Tab Navigation */}
+      <CyberpunkTabNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Main Content */}
       <Box
         sx={{
-          display: 'flex',
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0a0a0f 0%, #12121a 100%)',
+          p: 3,
+          position: 'relative',
+          zIndex: 2,
         }}
       >
-        {/* Sidebar */}
-        <FinanceSidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          onSignOut={handleSignOut}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-
-        {/* Main Content */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            minHeight: '100vh',
-            overflow: 'auto',
-          }}
-        >
-          {/* Mobile Menu Button */}
-          <Box
-            sx={{
-              display: { xs: 'flex', md: 'none' },
-              alignItems: 'center',
-              p: 2,
-              borderBottom: '1px solid rgba(255, 106, 0, 0.2)',
-            }}
-          >
-            <IconButton onClick={() => setSidebarOpen(true)} sx={{ color: '#ff6a00' }}>
-              <Menu size={24} />
-            </IconButton>
-            <Typography variant="h6" sx={{ ml: 2, color: '#ff6a00', fontWeight: 700 }}>
-              CFO Portal
-            </Typography>
-          </Box>
-
-          {/* Status Alert */}
-          <Box sx={{ p: 3, pb: 0 }}>
-            <Alert
-              severity="success"
-              icon={<CheckCircle size={20} />}
-              sx={{
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                color: '#22c55e',
-                '& .MuiAlert-icon': { color: '#22c55e' },
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-                <Typography variant="body2" fontWeight={600}>
-                  Finance systems operational
-                </Typography>
-                <Typography variant="caption">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </Typography>
-              </Box>
-            </Alert>
-          </Box>
-
-          {/* Content Area */}
-          <Box sx={{ p: 3 }}>
-            {renderContent()}
-          </Box>
-        </Box>
+        {renderContent()}
       </Box>
-    </ThemeProvider>
+    </Box>
   );
 }
 
