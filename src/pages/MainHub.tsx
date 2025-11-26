@@ -23,6 +23,7 @@ import { cravenDriverTheme } from "@/config/antd-theme";
 import cravenLogo from "@/assets/craven-logo.png";
 import { usePermission } from '@/hooks/usePermission';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import PinChangeModal from '@/components/hub/PinChangeModal';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -56,6 +57,7 @@ const MainHub: React.FC = () => {
   useActivityTracking('hub');
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
+  const [showPinChangeModal, setShowPinChangeModal] = useState(false);
   
   // Time clock state - initialize with default values
   const [clockStatus, setClockStatus] = useState<{
@@ -204,6 +206,14 @@ const MainHub: React.FC = () => {
           });
 
         if (!pinError && isValidPin) {
+          // Check if user has temporary PIN flag - prompt for PIN change
+          if (user.user_metadata?.requires_pin_change === true) {
+            setPinModalVisible(false);
+            setPinLoading(false);
+            setShowPinChangeModal(true);
+            return;
+          }
+
           const { data: profiles } = await supabase.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle();
           
           // Determine role and position
@@ -1780,6 +1790,22 @@ const MainHub: React.FC = () => {
             </div>
           </div>
         </Modal>
+        
+        {/* PIN Change Modal */}
+        <PinChangeModal
+          visible={showPinChangeModal}
+          userEmail={user?.email || ''}
+          onSuccess={() => {
+            setShowPinChangeModal(false);
+            // Re-show PIN verification modal to allow login with new PIN
+            setPinModalVisible(true);
+            message.success('PIN updated! Please verify with your new PIN.');
+          }}
+          onCancel={() => {
+            setShowPinChangeModal(false);
+            message.warning('You must set a new PIN to access the Hub.');
+          }}
+        />
       </Layout>
     </ConfigProvider>
   );
