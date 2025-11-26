@@ -1,103 +1,15 @@
 // @ts-nocheck
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import {
-  Grid,
-  Group,
-  Stack,
-  Button,
-  Text,
-  Title,
-  Card,
-  Paper,
-  Badge,
-  Alert,
-  Divider,
-  Modal,
-  TextInput,
-  NumberInput,
-  Select,
-  Checkbox,
-  Slider,
-  Tooltip,
-  Popover,
-  Loader,
-  Box,
-  Table,
-  ActionIcon,
-  Textarea,
-  ScrollArea,
-} from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
-import { modals } from '@mantine/modals';
-import {
-  IconCurrencyDollar,
-  IconChartBar,
-  IconBuildingBank,
-  IconTrendingUp,
-  IconFileSearch,
-  IconCheck,
-  IconArrowLeft,
-  IconUsers,
-  IconFileText,
-  IconBook,
-  IconCircleCheck,
-  IconChartLine,
-  IconCalculator,
-  IconSquareCheck,
-  IconWallet,
-  IconFile,
-  IconDeviceFloppy,
-  IconTrash,
-  IconPlus,
-  IconPrinter,
-  IconShare,
-  IconBold,
-  IconItalic,
-  IconUnderline,
-  IconStrikethrough,
-  IconAlignLeft,
-  IconAlignCenter,
-  IconAlignRight,
-  IconList,
-  IconListNumbers,
-  IconPalette,
-  IconTypography,
-  IconInfoCircle,
-  IconMail,
-  IconClock,
-  IconCalendar,
-} from '@tabler/icons-react';
-import { useForm } from '@mantine/form';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { financePortalTheme } from '@/themes/financePortalTheme';
+import '@/styles/neon-finance.css';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, AreaChart, Area, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { DataGrid, GridColDef, GridToolbar, GridActionsCellItem } from '@mui/x-data-grid';
-import { Card as MuiCard, CardContent, Typography, IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
-import {
-  Aperture,
-  DollarSign,
-  TrendingDown,
-  Clock,
-  Scale,
-  Sigma,
-  BarChart3,
-  Users,
-  Rocket,
-  Lightbulb,
-  ShieldAlert,
-  FileText,
-  Mail,
-} from 'lucide-react';
-import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
-import { FinancePortal } from '@/components/finance/FinancePortal';
-import { MantineTable } from '@/components/cfo/MantineTable';
 import { EnhancedCFODashboard } from '@/components/cfo/EnhancedCFODashboard';
 import { AdvancedTreasuryManagement } from '@/components/cfo/AdvancedTreasuryManagement';
 import { EnhancedFPandA } from '@/components/cfo/EnhancedFPandA';
