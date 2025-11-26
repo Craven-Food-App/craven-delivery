@@ -40,13 +40,18 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
         }
 
         // Check both user_roles and exec_users in parallel
-        const [roles, execUserResult] = await Promise.all([
+        const [roles, execUserResult, companyPerms] = await Promise.all([
           fetchUserRoles(),
           supabase
             .from('exec_users')
             .select('role')
             .eq('user_id', user.id)
             .maybeSingle(),
+          // Check if user has any company.* permissions (for CFO limited access)
+          Promise.all([
+            supabase.rpc('has_permission', { p_user_id: user.id, p_permission: 'company.executives.view' }),
+            supabase.rpc('has_permission', { p_user_id: user.id, p_permission: 'company.leadership.view' }),
+          ]),
         ]);
 
         const authorized = hasAnyRole(roles, allowedRoles);
@@ -59,6 +64,10 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
             return execRole === normalizedRole || execRole === 'CEO';
           });
           setIsAuthorized(hasAccess);
+        } else if (!authorized) {
+          // Check if user has any company portal permissions (CFO with limited access)
+          const hasAnyCompanyPermission = companyPerms[0].data || companyPerms[1].data;
+          setIsAuthorized(hasAnyCompanyPermission);
         } else {
           setIsAuthorized(authorized);
         }
