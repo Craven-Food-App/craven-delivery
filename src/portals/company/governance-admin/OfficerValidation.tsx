@@ -305,7 +305,7 @@ const OfficerValidation: React.FC = () => {
               <tbody>
                 {appointments.map((appointment) => {
                   const signedCount = appointment.documents.filter((d) => d.signature_status === 'signed').length;
-                  const totalDocs = appointment.documents.length;
+                  const TOTAL_REQUIRED_DOCUMENTS = 14; // Per Fortune 500 Executive Appointment Workflow
                   return (
                     <tr key={appointment.id}>
                       <td>
@@ -318,8 +318,8 @@ const OfficerValidation: React.FC = () => {
                         </Text>
                       </td>
                       <td>
-                        <Badge color={signedCount === totalDocs ? 'green' : 'orange'}>
-                          {signedCount} / {totalDocs} signed
+                        <Badge color={signedCount === TOTAL_REQUIRED_DOCUMENTS ? 'green' : 'orange'}>
+                          {signedCount} / {TOTAL_REQUIRED_DOCUMENTS} signed
                         </Badge>
                       </td>
                       <td>
