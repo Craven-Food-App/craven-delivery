@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Equity Award Agreement</title>
+  <style>
+    body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
+    h1 { text-align: center; margin-bottom: 30px; font-size: 18px; text-transform: uppercase; }
+    .section { margin: 20px 0; }
+    .label { font-weight: bold; display: inline-block; width: 150px; }
+    .value { display: inline-block; }
+    .signature-block { margin-top: 60px; display: flex; justify-content: space-between; }
+    .signature-box { width: 45%; }
+    .signature-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 5px; }
+    table { width: 100%; margin: 20px 0; }
+    th, td { padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Equity Award Agreement</h1>
+  
+  <div class="section">
+    <p><strong>Company:</strong> {{company.legalName}}</p>
+    <p><strong>Grant Date:</strong> {{grantDate}}</p>
+  </div>
+
+  <div class="section">
+    <h2>Participant Information</h2>
+    <p><span class="label">Name:</span> <span class="value">{{officer.fullName}}</span></p>
+    <p><span class="label">Title:</span> <span class="value">{{officer.title}}</span></p>
+    <p><span class="label">Email:</span> <span class="value">{{officer.email}}</span></p>
+  </div>
+
+  <div class="section">
+    <h2>Award Details</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+      <tr>
+        <th>Award Type</th>
+        <td>{{awardType}}</td>
+      </tr>
+      <tr>
+        <th>Shares Granted</th>
+        <td>{{sharesGranted}}</td>
+      </tr>
+      <tr>
+        <th>Strike Price</th>
+        <td>${{strikePrice}}</td>
+      </tr>
+      <tr>
+        <th>Vesting Schedule</th>
+        <td>{{vestingSchedule}}</td>
+      </tr>
+      <tr>
+        <th>Cliff Period</th>
+        <td>{{cliffPeriod}}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Terms and Conditions</h2>
+    <p>This equity award is subject to the following terms:</p>
+    <ol>
+      <li>This award is granted under and subject to the {{company.legalName}} Equity Incentive Plan (the "Plan").</li>
+      <li>Vesting is contingent upon continued service with the Company.</li>
+      <li>Unvested equity shall be forfeited upon termination for cause or voluntary resignation.</li>
+      <li>Upon change of control, vesting acceleration may apply as defined in the Plan.</li>
+      <li>Participant acknowledges receipt and review of the Plan document.</li>
+      <li>This award does not constitute a contract of employment or guarantee of continued service.</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Acknowledgment</h2>
+    <p>By signing below, Participant acknowledges that they have read, understood, and agree to be bound by the terms of this Equity Award Agreement and the {{company.legalName}} Equity Incentive Plan.</p>
+  </div>
+
+  <div class="signature-block">
+    <div class="signature-box">
+      <p><strong>Company</strong></p>
+      <p>{{company.legalName}}</p>
+      <div class="signature-line">
+        <p>{{ceoName}}, Chief Executive Officer</p>
+        <p>Date: _________________</p>
+      </div>
+    </div>
+    
+    <div class="signature-box">
+      <p><strong>Participant</strong></p>
+      <p>{{officer.fullName}}</p>
+      <div class="signature-line">
+        <p>Signature</p>
+        <p>Date: _________________</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
