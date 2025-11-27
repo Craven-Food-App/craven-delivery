@@ -476,9 +476,9 @@ export default function ExecutiveSigningPortal() {
   }
 
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar - Fixed, no scroll */}
-      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4 h-screen overflow-hidden">
+      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4 sticky top-0 h-screen overflow-hidden">
         <div>
           <h2 className="font-bold text-lg mb-2">Your Signatures</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -522,9 +522,9 @@ export default function ExecutiveSigningPortal() {
       </div>
 
       {/* Main Document Viewer */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col">
         {/* Header - Fixed */}
-        <div className="border-b bg-card p-4 flex-shrink-0">
+        <div className="border-b bg-card p-4 flex-shrink-0 sticky top-0 z-10 bg-background">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <FileText className="w-6 h-6 text-primary" />
@@ -557,7 +557,7 @@ export default function ExecutiveSigningPortal() {
         </div>
 
         {/* Document Drop Zone */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 p-6">
           <div
             ref={documentViewerRef}
             onDragOver={handleDragOver}
