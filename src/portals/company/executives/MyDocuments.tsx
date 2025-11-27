@@ -233,14 +233,68 @@ const MyDocuments: React.FC = () => {
 
       console.log('Current exec_user:', currentExec);
 
-      // Fetch documents from executive_documents table
+      // Fetch documents from executive_documents table by executive_id
       let { data: execDocs, error: execDocsError } = await supabase
         .from('executive_documents')
         .select('*')
         .eq('executive_id', currentExec.id)
         .order('created_at', { ascending: false });
 
-      // If no documents found, try to sync from appointments
+      console.log('Documents fetched by executive_id:', execDocs?.length || 0);
+
+      // FALLBACK 1: If no documents found by executive_id, try by officer_name matching appointments
+      if ((!execDocs || execDocs.length === 0) && user.email) {
+        console.log('No documents by executive_id, trying fallback queries...');
+        
+        // Try to find appointments for this user and get their officer_name
+        const { data: userAppointments } = await supabase
+          .from('executive_appointments')
+          .select('proposed_officer_name')
+          .ilike('proposed_officer_email', user.email)
+          .limit(1)
+          .maybeSingle();
+
+        if (userAppointments?.proposed_officer_name) {
+          const { data: docsByName } = await supabase
+            .from('executive_documents')
+            .select('*')
+            .ilike('officer_name', userAppointments.proposed_officer_name)
+            .order('created_at', { ascending: false });
+          
+          if (docsByName && docsByName.length > 0) {
+            console.log('Found documents by officer_name:', docsByName.length);
+            execDocs = docsByName;
+          }
+        }
+      }
+
+      // FALLBACK 2: If still no documents found, try by appointment linked to this user's email
+      if ((!execDocs || execDocs.length === 0) && user.email) {
+        console.log('Still no documents, trying appointment-based query...');
+        
+        // Find appointments for this user
+        const { data: userAppointments } = await supabase
+          .from('executive_appointments')
+          .select('id')
+          .ilike('proposed_officer_email', user.email);
+
+        if (userAppointments && userAppointments.length > 0) {
+          const appointmentIds = userAppointments.map(a => a.id);
+          
+          const { data: docsByAppointment } = await supabase
+            .from('executive_documents')
+            .select('*')
+            .in('appointment_id', appointmentIds)
+            .order('created_at', { ascending: false });
+
+          if (docsByAppointment && docsByAppointment.length > 0) {
+            console.log('Found documents by appointment_id:', docsByAppointment.length);
+            execDocs = docsByAppointment;
+          }
+        }
+      }
+
+      // If no documents found after all fallbacks, try to sync from appointments
       if ((!execDocs || execDocs.length === 0) && user.email) {
         console.log('No documents in executive_documents, attempting to sync from appointments...');
         try {
@@ -420,14 +474,24 @@ const MyDocuments: React.FC = () => {
             console.log('Added pre_incorporation_consent document');
           }
 
-          // Other appointment documents
+          // All 20 appointment documents per Fortune 500 Executive Appointment Workflow
           const docFields = [
             { field: 'appointment_letter_url', type: 'appointment_letter' },
             { field: 'board_resolution_url', type: 'board_resolution' },
             { field: 'certificate_url', type: 'certificate' },
+            { field: 'certificate_of_incorporation_url', type: 'certificate_of_incorporation' },
+            { field: 'bylaws_url', type: 'company_bylaws' },
+            { field: 'bylaws_acknowledgment_url', type: 'bylaws_acknowledgment' },
             { field: 'employment_agreement_url', type: 'employment_agreement' },
             { field: 'confidentiality_ip_url', type: 'confidentiality_ip' },
+            { field: 'fiduciary_ethics_url', type: 'fiduciary_duty_ethics' },
+            { field: 'conflict_disclosure_url', type: 'conflict_of_interest' },
+            { field: 'officer_indemnification_url', type: 'officer_indemnification' },
+            { field: 'equity_plan_url', type: 'equity_incentive_plan' },
             { field: 'stock_subscription_url', type: 'stock_subscription' },
+            { field: 'option_rsu_award_url', type: 'option_rsu_award' },
+            { field: 'founders_agreement_url', type: 'founders_agreement' },
+            { field: 'shareholders_agreement_url', type: 'shareholders_agreement' },
             { field: 'deferred_compensation_url', type: 'deferred_compensation' },
           ];
 
@@ -540,13 +604,31 @@ const MyDocuments: React.FC = () => {
   const getDocumentTypeName = (type: string) => {
     const names: Record<string, string> = {
       pre_incorporation_consent: 'Pre-Incorporation Consent',
-      appointment_letter: 'Appointment Letter',
+      certificate_of_incorporation: 'Certificate of Incorporation',
+      company_bylaws: 'Company Bylaws',
+      bylaws_acknowledgment: 'Bylaws Acknowledgment & Consent',
       board_resolution: 'Board Resolution',
-      certificate: 'Stock Certificate',
+      appointment_letter: 'Appointment Letter',
+      offer_letter: 'Offer Letter',
       employment_agreement: 'Employment Agreement',
       confidentiality_ip: 'Confidentiality & IP Assignment',
-      stock_subscription: 'Stock Subscription',
-      deferred_compensation: 'Deferred Compensation',
+      fiduciary_duty_ethics: 'Fiduciary Duty & Ethics Acknowledgment',
+      fiduciary_ethics_ack: 'Fiduciary Duty & Ethics Acknowledgment',
+      conflict_of_interest: 'Conflict of Interest Disclosure',
+      conflict_of_interest_disclosure: 'Conflict of Interest Disclosure',
+      officer_indemnification: 'Officer Indemnification Agreement',
+      equity_incentive_plan: 'Equity Incentive Plan',
+      stock_subscription: 'Stock Subscription Agreement',
+      stock_issuance: 'Stock Subscription Agreement',
+      option_rsu_award: 'Option/RSU Award Agreement',
+      founders_agreement: "Founders' Agreement",
+      shareholders_agreement: "Shareholders' Agreement",
+      deferred_compensation: 'Deferred Compensation Addendum',
+      deferred_comp_addendum: 'Deferred Compensation Addendum',
+      certificate: 'Stock Certificate',
+      background_check: 'Background Check',
+      compensation_approval: 'Compensation Approval',
+      executive_activation: 'System Activation',
     };
     return names[type] || type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
@@ -861,8 +943,39 @@ const MyDocuments: React.FC = () => {
 
   const pendingDocs = documents.filter(d => d.signature_status === 'pending');
   const signedDocs = documents.filter(d => d.signature_status === 'signed');
-  const TOTAL_REQUIRED_DOCUMENTS = 14; // Per Fortune 500 Executive Appointment Workflow
-  const progressPercent = TOTAL_REQUIRED_DOCUMENTS > 0 ? Math.round((signedDocs.length / TOTAL_REQUIRED_DOCUMENTS) * 100) : 0;
+  
+  // Count documents that require executive signature (13 out of 20 workflow documents)
+  const executiveSignatureRequiredTypes = [
+    'pre_incorporation_consent',
+    'appointment_letter', 
+    'employment_agreement',
+    'confidentiality_ip',
+    'bylaws_acknowledgment',
+    'fiduciary_duty_ethics',
+    'conflict_of_interest',
+    'officer_indemnification',
+    'stock_subscription',
+    'option_rsu_award',
+    'founders_agreement',
+    'shareholders_agreement',
+    'deferred_compensation'
+  ];
+  
+  const documentsRequiringSignature = documents.filter(d => 
+    executiveSignatureRequiredTypes.includes(d.type)
+  );
+  const signedDocsRequiringSignature = signedDocs.filter(d => 
+    executiveSignatureRequiredTypes.includes(d.type)
+  );
+  
+  // Use actual count or default to expected count based on typical executive
+  const TOTAL_REQUIRED_DOCUMENTS = documentsRequiringSignature.length > 0 
+    ? documentsRequiringSignature.length 
+    : 7; // Minimum universal documents
+  
+  const progressPercent = TOTAL_REQUIRED_DOCUMENTS > 0 
+    ? Math.round((signedDocsRequiringSignature.length / TOTAL_REQUIRED_DOCUMENTS) * 100) 
+    : 0;
 
   return (
     <Stack gap="md">
@@ -872,7 +985,7 @@ const MyDocuments: React.FC = () => {
           <Stack gap="sm">
             <Group justify="space-between">
               <Text fw={600} size="lg">Document Signing Progress</Text>
-              <Text size="sm" c="dimmed">{signedDocs.length} of {TOTAL_REQUIRED_DOCUMENTS} signed</Text>
+              <Text size="sm" c="dimmed">{signedDocsRequiringSignature.length} of {TOTAL_REQUIRED_DOCUMENTS} signed</Text>
             </Group>
             <Progress value={progressPercent} size="lg" radius="xl" />
             <Text size="xs" c="dimmed">

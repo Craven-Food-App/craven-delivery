@@ -74,24 +74,43 @@ serve(async (req) => {
 
     const appointment_id_to_use = appointment.id;
 
-    // Find executive user by email
+    // Find executive user by email with improved logging
     let executiveId: string | null = null;
     if (appointment.proposed_officer_email) {
+      console.log('[EXEC LOOKUP] Searching for executive with email:', appointment.proposed_officer_email);
+      
       const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
       const user = users?.find(u => u.email?.toLowerCase() === appointment.proposed_officer_email.toLowerCase());
       
       if (user) {
-        const { data: execUser } = await supabaseAdmin
+        console.log('[EXEC LOOKUP] Found auth user:', user.id, user.email);
+        
+        const { data: execUser, error: execUserError } = await supabaseAdmin
           .from('exec_users')
-          .select('id')
+          .select('id, role, full_name')
           .eq('user_id', user.id)
           .maybeSingle();
         
+        if (execUserError) {
+          console.error('[EXEC LOOKUP] Error querying exec_users:', execUserError);
+        }
+        
         if (execUser) {
           executiveId = execUser.id;
+          console.log('[EXEC LOOKUP] Found exec_user:', {
+            id: execUser.id,
+            role: execUser.role,
+            name: execUser.full_name
+          });
+        } else {
+          console.warn('[EXEC LOOKUP] No exec_users record found for user_id:', user.id);
         }
+      } else {
+        console.warn('[EXEC LOOKUP] No auth user found with email:', appointment.proposed_officer_email);
       }
     }
+    
+    console.log('[EXEC LOOKUP] Final executiveId:', executiveId || 'NULL');
 
     // Document mapping - All 14 required documents per Fortune 500 Executive Appointment Workflow
     const documentFields = [
