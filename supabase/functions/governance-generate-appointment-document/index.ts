@@ -340,8 +340,8 @@ serve(async (req) => {
       
       // Static defaults for formation document
       templateData.incorporator_name = 'Torrance Stroman';
-      templateData.founder_invero_percent = '60%';
-      templateData.founder_torrance_percent = '20%';
+      templateData.founder_invero_percent = '55%';
+      templateData.founder_torrance_percent = '18%';
       
       // Add company settings fields for formation document
       const { data: companySettings } = await supabaseAdmin

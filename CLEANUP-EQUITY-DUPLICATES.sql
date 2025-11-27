@@ -1,5 +1,5 @@
 -- Keep ONLY these equity records:
--- 1. Torrance Stroman - 80% (id: 684f7d11-6551-45b8-a468-f5699fdc4025)
+-- 1. Torrance Stroman - 18% / 18,000,000 shares (id: 684f7d11-6551-45b8-a468-f5699fdc4025)
 -- 2. Justin Sweet - 10% (id: 1b94040d-9610-4fc7-9c7e-1b5ea379c98e)
 -- 3. Terri Crawford - 3% (id: 56d50376-efeb-44ab-8724-de2d3bbfdda8)
 
