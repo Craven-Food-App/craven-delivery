@@ -46,6 +46,7 @@ import { seedTemplatesFromUI } from '@/utils/seedTemplatesFromCode';
 import { seedEmailTemplatesFromUI } from '@/utils/seedEmailTemplatesFromCode';
 import { clearAllDocumentTemplates, verifyRequiredTemplates } from '@/utils/clearDocumentTemplates';
 import { fixTemplatePlaceholdersFromUI } from '@/utils/fixTemplatePlaceholders';
+import { seedFortune500TemplatesFromUI } from '@/utils/seedFortune500Templates';
 import { VisualTemplateEditor } from './VisualTemplateEditor';
 import { SignatureFieldEditor } from './SignatureFieldEditor';
 
@@ -643,6 +644,30 @@ export const TemplateManager: React.FC = () => {
                   }}
                 >
                   Import Email Templates
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconFileText size={16} />}
+                  onClick={async () => {
+                    if (!confirm('Import Fortune 500 executive appointment templates? These will be rendered from server-side Handlebars templates.')) return;
+                    const result = await seedFortune500TemplatesFromUI();
+                    if (result.success) {
+                      notifications.show({
+                        title: 'Success',
+                        message: result.message,
+                        color: 'green',
+                      });
+                      await fetchTemplates();
+                    } else {
+                      notifications.show({
+                        title: 'Error',
+                        message: result.message,
+                        color: 'red',
+                      });
+                    }
+                  }}
+                >
+                  Import Fortune 500 Templates
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
