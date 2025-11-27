@@ -123,7 +123,7 @@ export default function ExecutiveSigningPortal() {
 
         // Fetch HTML for all documents
         const htmlCache: Record<string, string> = {};
-        for (const doc of docsData.documents) {
+        for (const doc of allDocuments) {
           try {
             const response = await fetch(doc.file_url);
             const html = await response.text();
