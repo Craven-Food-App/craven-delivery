@@ -73,11 +73,11 @@ const OfficerValidation: React.FC = () => {
   const fetchPendingValidations = async () => {
     setLoading(true);
     try {
-      // Fetch appointments ready for secretary review
+      // Fetch appointments ready for validation (authorized to offer by board)
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('executive_appointments')
         .select('*')
-        .eq('status', 'READY_FOR_SECRETARY_REVIEW')
+        .eq('status', 'authorized_to_offer')
         .order('created_at', { ascending: false });
 
       if (appointmentsError) throw appointmentsError;

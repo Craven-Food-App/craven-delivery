@@ -81,18 +81,13 @@ serve(async (req) => {
 
     // Determine target status based on resolution and document status
     let targetStatus = appointment.status;
-    const statusOrder = ['DRAFT', 'SENT_TO_BOARD', 'BOARD_ADOPTED', 'AWAITING_SIGNATURES', 'READY_FOR_SECRETARY_REVIEW', 'SECRETARY_APPROVED', 'ACTIVATING', 'ACTIVE'];
+    const statusOrder = ['draft', 'selected', 'pending_comp_approval', 'ready_for_board_authorization', 'authorized_to_offer', 'pending_employment_agreement', 'pending_ip_confidentiality', 'pending_personal_governance', 'pending_fiduciary_binding', 'pending_conflict_clearance', 'pending_indemnification', 'pending_equity_authorization', 'shareholder_active', 'plan_active', 'equity_vesting_active', 'compensation_live', 'fully_appointed_active', 'rejected'];
     const currentIndex = statusOrder.indexOf(appointment.status);
 
-    // If resolution is ADOPTED
-    if (resolutionStatus === 'ADOPTED') {
-      if (allSigned) {
-        targetStatus = 'READY_FOR_SECRETARY_REVIEW';
-      } else if (someSigned) {
-        targetStatus = 'AWAITING_SIGNATURES';
-      } else {
-        targetStatus = 'BOARD_ADOPTED';
-      }
+    // If resolution is ADOPTED or EXECUTED, appointment should be authorized to offer
+    if (resolutionStatus === 'ADOPTED' || resolutionStatus === 'EXECUTED') {
+      // Once board adopts/executes resolution, appointment is authorized to offer
+      targetStatus = 'authorized_to_offer';
     } else if (resolutionStatus === 'PENDING_VOTE' || resolutionStatus === 'REJECTED') {
       // Don't advance if resolution not adopted
       targetStatus = appointment.status;
@@ -100,7 +95,9 @@ serve(async (req) => {
 
     // Only update if target status is ahead of current
     const targetIndex = statusOrder.indexOf(targetStatus);
-    if (targetIndex > currentIndex) {
+    console.log('Status comparison:', { currentStatus: appointment.status, currentIndex, targetStatus, targetIndex });
+    
+    if (targetIndex > currentIndex || currentIndex === -1) {
       const { error: updateError } = await supabaseAdmin
         .from('executive_appointments')
         .update({
