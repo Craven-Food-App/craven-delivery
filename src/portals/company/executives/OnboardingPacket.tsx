@@ -16,17 +16,11 @@ import {
 } from '@mantine/core';
 import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
 
-interface OnboardingDocument {
-  id: string;
-  title: string;
-  type: string;
-  signing_status: string;
-  html_template?: string;
-  pdf_url?: string;
-}
+type OnboardingDocument = Database['public']['Tables']['executive_documents']['Row'];
 
 interface Onboarding {
   id: string;
@@ -70,12 +64,14 @@ const OnboardingPacket: React.FC = () => {
         // @ts-ignore - Database query type compatibility
         setOnboarding(onboardingData);
 
-        // Load documents for this appointment
+        // Load executive documents for signing (only those with signature requirements)
         const { data: docs, error: docsError } = await supabase
-          .from('board_documents')
+          .from('executive_documents')
           .select('*')
-          .eq('related_appointment_id', onboardingData.appointment_id)
-          .order('created_at', { ascending: true });
+          .eq('appointment_id', onboardingData.appointment_id)
+          .neq('status', 'generated_for_board_only')
+          .order('signing_stage', { ascending: true })
+          .order('signing_order', { ascending: true });
 
         if (docsError) throw docsError;
         setDocuments(docs || []);
@@ -93,9 +89,10 @@ const OnboardingPacket: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'signed':
         return 'green';
       case 'pending':
+      case 'sent':
         return 'yellow';
       default:
         return 'blue';
@@ -104,16 +101,42 @@ const OnboardingPacket: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'signed':
         return <IconCheck size={16} />;
       case 'pending':
+      case 'sent':
         return <IconClock size={16} />;
       default:
         return <IconFileText size={16} />;
     }
   };
 
-  const completedCount = documents.filter(doc => doc.signing_status === 'completed').length;
+  const getDocumentTypeName = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'pre_incorporation_consent': 'Pre-Incorporation Consent',
+      'certificate_of_incorporation': 'Certificate of Incorporation',
+      'company_bylaws': 'Company Bylaws',
+      'bylaws_acknowledgment': 'Bylaws Acknowledgment & Consent',
+      'board_resolution': 'Board Resolution (Appointment)',
+      'appointment_letter': 'Executive Appointment Letter',
+      'employment_agreement': 'Employment Agreement',
+      'confidentiality_ip': 'Confidentiality & IP Assignment',
+      'fiduciary_duty_ethics': 'Fiduciary Duty & Ethics Acknowledgment',
+      'conflict_of_interest': 'Conflict of Interest Disclosure',
+      'stock_subscription': 'Stock Subscription Agreement',
+      'equity_incentive_plan': 'Equity Incentive Plan',
+      'option_rsu_award': 'Option/RSU Award Agreement',
+      'deferred_compensation': 'Deferred Compensation Agreement',
+      'officer_indemnification': 'Officer Indemnification Agreement',
+    };
+    return typeMap[type] || type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const getDocumentUrl = (doc: OnboardingDocument): string | null => {
+    return doc.file_url || doc.signed_file_url || null;
+  };
+
+  const completedCount = documents.filter(doc => doc.signature_status === 'signed').length;
   const totalCount = documents.length;
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
@@ -195,49 +218,54 @@ const OnboardingPacket: React.FC = () => {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {documents.map((doc) => (
-                <Table.Tr key={doc.id}>
-                  <Table.Td>
-                    <Text fw={500}>{doc.title}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge variant="light">{doc.type}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge
-                      color={getStatusColor(doc.signing_status)}
-                      leftSection={getStatusIcon(doc.signing_status)}
-                    >
-                      {doc.signing_status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
-                      {doc.signing_status !== 'completed' && (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconSignature size={14} />}
-                          onClick={() => handleSignDocument(doc)}
-                        >
-                          Sign
-                        </Button>
-                      )}
-                      {doc.pdf_url && (
-                        <Button
-                          size="xs"
-                          variant="subtle"
-                          component="a"
-                          href={doc.pdf_url}
-                          target="_blank"
-                        >
-                          View
-                        </Button>
-                      )}
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
+              {documents.map((doc) => {
+                const docUrl = getDocumentUrl(doc);
+                const status = doc.signature_status || 'pending';
+                const stage = doc.signing_stage || 0;
+                return (
+                  <Table.Tr key={doc.id}>
+                    <Table.Td>
+                      <Text fw={500}>{getDocumentTypeName(doc.type)}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light">Stage {stage}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge
+                        color={getStatusColor(status)}
+                        leftSection={getStatusIcon(status)}
+                      >
+                        {status}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        {status !== 'signed' && (
+                          <Button
+                            size="xs"
+                            variant="light"
+                            leftSection={<IconSignature size={14} />}
+                            onClick={() => handleSignDocument(doc)}
+                          >
+                            Sign
+                          </Button>
+                        )}
+                        {docUrl && (
+                          <Button
+                            size="xs"
+                            variant="subtle"
+                            component="a"
+                            href={docUrl}
+                            target="_blank"
+                          >
+                            View
+                          </Button>
+                        )}
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
             </Table.Tbody>
           </Table>
 
@@ -271,7 +299,7 @@ const OnboardingPacket: React.FC = () => {
             setSigningModalOpen(false);
             setSelectedDocument(null);
           }}
-          title={`Sign ${selectedDocument?.title}`}
+          title={`Sign ${selectedDocument ? getDocumentTypeName(selectedDocument.type) : 'Document'}`}
           size="lg"
         >
           <Stack gap="md">
