@@ -19,6 +19,14 @@ function mapTemplateIdToType(templateId: GovernanceTemplateId): string {
     'cap_table_exhibit': 'capitalization_table_exhibit',
     'banking_resolution': 'corporate_banking_resolution',
     'registered_agent_resolution': 'board_resolution',
+    'certificate_of_incorporation': 'certificate_of_incorporation',
+    'bylaws_complete': 'bylaws',
+    'bylaws_acknowledgment': 'bylaws_acknowledgment',
+    'fiduciary_duty_ethics': 'fiduciary_duty_acknowledgment',
+    'conflict_of_interest_disclosure': 'conflict_of_interest_disclosure',
+    'officer_indemnification': 'officer_indemnification',
+    'equity_incentive_plan': 'equity_incentive_plan',
+    'option_rsu_award': 'stock_option_award',
   };
   return mapping[templateId] || 'board_resolution';
 }
