@@ -13,12 +13,15 @@ import {
   Loader,
   Table,
   Modal,
+  Paper,
+  SimpleGrid,
 } from '@mantine/core';
-import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature } from '@tabler/icons-react';
+import { IconFileText, IconCheck, IconClock, IconAlertCircle, IconSignature, IconDownload, IconCircleCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { notifications } from '@mantine/notifications';
 import { useNavigate } from 'react-router-dom';
+import { PACKET_LABELS, PacketId } from '@/utils/executiveDocumentFlow';
 
 type OnboardingDocument = Database['public']['Tables']['executive_documents']['Row'];
 
@@ -144,6 +147,11 @@ const OnboardingPacket: React.FC = () => {
     return doc.file_url || doc.signed_file_url || null;
   };
 
+  const getDocumentIcon = (doc: OnboardingDocument) => {
+    const status = doc.signature_status || 'pending';
+    return getStatusIcon(status);
+  };
+
   const completedCount = documents.filter(doc => doc.signature_status === 'signed').length;
   const totalCount = documents.length;
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -214,75 +222,89 @@ const OnboardingPacket: React.FC = () => {
           </Stack>
         </Card>
 
-        <Card padding="lg" radius="md" withBorder>
-          <Title order={4} mb="md">Documents to Sign</Title>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Document</Table.Th>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {documents.map((doc) => {
-                const docUrl = getDocumentUrl(doc);
-                const status = doc.signature_status || 'pending';
-                const stage = doc.signing_stage || 0;
-                return (
-                  <Table.Tr key={doc.id}>
-                    <Table.Td>
-                      <Text fw={500}>{getDocumentTypeName(doc.type)}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light">Stage {stage}</Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={getStatusColor(status)}
-                        leftSection={getStatusIcon(status)}
-                      >
-                        {status}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        {status !== 'signed' && (
-                          <Button
-                            size="xs"
-                            variant="light"
-                            leftSection={<IconSignature size={14} />}
-                            onClick={() => handleSignDocument(doc)}
-                          >
-                            Sign
-                          </Button>
-                        )}
-                        {docUrl && (
-                          <Button
-                            size="xs"
-                            variant="subtle"
-                            component="a"
-                            href={docUrl}
-                            target="_blank"
-                          >
-                            View
-                          </Button>
-                        )}
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
+        <Stack gap="xl">
+          {Object.entries(PACKET_LABELS).map(([packetId, label]) => {
+            const stageDocuments = documents.filter(doc => doc.packet_id === packetId);
+            if (stageDocuments.length === 0) return null;
 
-          {documents.length === 0 && (
-            <Alert icon={<IconAlertCircle size={16} />} title="No Documents" color="blue" mt="md">
-              No documents have been assigned to your onboarding packet yet.
-            </Alert>
-          )}
-        </Card>
+            const stageCompletedCount = stageDocuments.filter(d => d.signature_status === 'signed').length;
+            const stageProgress = (stageCompletedCount / stageDocuments.length) * 100;
+
+            return (
+              <Paper key={packetId} shadow="sm" p="lg" withBorder>
+                <Stack gap="md">
+                  <Group justify="space-between">
+                    <div>
+                      <Text size="lg" fw={600}>{label}</Text>
+                      <Text size="sm" c="dimmed">
+                        {stageCompletedCount} of {stageDocuments.length} documents signed
+                      </Text>
+                    </div>
+                    <Badge 
+                      color={stageCompletedCount === stageDocuments.length ? 'green' : 'yellow'} 
+                      size="lg"
+                    >
+                      {stageCompletedCount === stageDocuments.length ? 'COMPLETE' : 'IN PROGRESS'}
+                    </Badge>
+                  </Group>
+
+                  <Progress value={stageProgress} size="sm" color="green" />
+
+                  <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+                    {stageDocuments.map((doc) => (
+                      <Paper key={doc.id} shadow="xs" p="md" withBorder bg="gray.0">
+                        <Stack gap="md">
+                          <Group justify="space-between">
+                            <div>
+                              <Group gap="xs">
+                                {getDocumentIcon(doc)}
+                                <Text fw={500} size="sm">{getDocumentTypeName(doc.type)}</Text>
+                              </Group>
+                              <Text size="xs" c="dimmed" mt={4}>
+                                Stage {doc.signing_stage || 0}, Order {doc.signing_order || 0}
+                              </Text>
+                            </div>
+                            <Badge color={getStatusColor(doc.signature_status || 'pending')} size="sm">
+                              {doc.signature_status || 'pending'}
+                            </Badge>
+                          </Group>
+
+                          {doc.signature_status === 'pending' && (
+                            <Button
+                              onClick={() => handleSignDocument(doc)}
+                              leftSection={<IconSignature size={16} />}
+                              color="green"
+                              size="sm"
+                            >
+                              Sign Document
+                            </Button>
+                          )}
+
+                          {doc.signature_status === 'signed' && doc.signed_at && (
+                            <Alert icon={<IconCircleCheck size={16} />} color="green" p="xs">
+                              <Text size="xs">Signed on {new Date(doc.signed_at).toLocaleDateString()}</Text>
+                            </Alert>
+                          )}
+
+                          {(doc.file_url || doc.signed_file_url) && (
+                            <Button
+                              variant="outline"
+                              onClick={() => window.open(getDocumentUrl(doc), '_blank')}
+                              leftSection={<IconDownload size={16} />}
+                              size="sm"
+                            >
+                              View Document
+                            </Button>
+                          )}
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </SimpleGrid>
+                </Stack>
+              </Paper>
+            );
+          })}
+        </Stack>
 
         {completedCount === totalCount && totalCount > 0 && (
           <Alert icon={<IconCheck size={16} />} title="All Documents Signed" color="green">
