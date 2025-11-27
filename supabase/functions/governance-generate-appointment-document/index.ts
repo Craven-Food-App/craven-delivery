@@ -724,6 +724,14 @@ serve(async (req) => {
       'confidentiality_ip': 'confidentiality_ip_url',
       'stock_subscription': 'stock_subscription_url',
       'pre_incorporation_consent': 'pre_incorporation_consent_url',
+      'certificate_of_incorporation': 'certificate_of_incorporation_url',
+      'bylaws': 'bylaws_url',
+      'bylaws_acknowledgment': 'bylaws_acknowledgment_url',
+      'fiduciary_ethics_ack': 'fiduciary_ethics_url',
+      'conflict_disclosure': 'conflict_disclosure_url',
+      'officer_indemnification': 'officer_indemnification_url',
+      'equity_incentive_plan': 'equity_plan_url',
+      'option_rsu_award': 'option_rsu_award_url',
     };
 
     const documentField = documentFieldMap[document_type];
