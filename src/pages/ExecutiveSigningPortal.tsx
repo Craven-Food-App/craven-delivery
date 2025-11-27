@@ -228,6 +228,13 @@ export default function ExecutiveSigningPortal() {
     e.preventDefault();
     setIsDragging(false);
 
+    // Handle repositioning existing signature
+    if (repositioningId) {
+      handleSignatureDrop(e);
+      return;
+    }
+
+    // Handle placing new signature
     if (!draggedItemType) return;
     if (!documentViewerRef.current) return;
 
@@ -251,7 +258,7 @@ export default function ExecutiveSigningPortal() {
 
     setPlacedSignatures([...placedSignatures, newSignature]);
     setDraggedItemType(null);
-    message.success(`${draggedItemType === 'signature' ? 'Signature' : 'Initial'} placed`);
+    message.success(`${draggedItemType === 'signature' ? 'Signature' : 'Initial'} placed - drag to reposition or lock in place`);
   };
 
   const handleLockSignature = (signatureId: string) => {
@@ -266,6 +273,49 @@ export default function ExecutiveSigningPortal() {
   const handleDeleteSignature = (signatureId: string) => {
     setPlacedSignatures(prev => prev.filter(sig => sig.id !== signatureId));
     message.info('Signature removed');
+  };
+
+  // Repositioning signatures
+  const [repositioningId, setRepositioningId] = useState<string | null>(null);
+
+  const handleSignatureDragStart = (e: React.DragEvent, signatureId: string) => {
+    const signature = placedSignatures.find(s => s.id === signatureId);
+    if (!signature || signature.isLocked) {
+      e.preventDefault();
+      return;
+    }
+    setRepositioningId(signatureId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleSignatureDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!repositioningId) return;
+    if (!documentViewerRef.current) return;
+
+    const rect = documentViewerRef.current.getBoundingClientRect();
+    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setPlacedSignatures(prev =>
+      prev.map(sig =>
+        sig.id === repositioningId
+          ? {
+              ...sig,
+              xPercent: Math.max(0, Math.min(95, xPercent)),
+              yPercent: Math.max(0, Math.min(95, yPercent)),
+            }
+          : sig
+      )
+    );
+
+    setRepositioningId(null);
+  };
+
+  const handleSignatureDragEnd = () => {
+    setRepositioningId(null);
   };
 
   // Document navigation
@@ -578,6 +628,9 @@ export default function ExecutiveSigningPortal() {
             {currentDocSignatures.map(sig => (
               <div
                 key={sig.id}
+                draggable={!sig.isLocked}
+                onDragStart={(e) => handleSignatureDragStart(e, sig.id)}
+                onDragEnd={handleSignatureDragEnd}
                 style={{
                   position: 'absolute',
                   left: `${sig.xPercent}%`,
@@ -591,6 +644,7 @@ export default function ExecutiveSigningPortal() {
                   src={sig.dataUrl}
                   alt={sig.type}
                   className="max-w-[200px] bg-white p-1"
+                  draggable={false}
                 />
                 {sig.isLocked && (
                   <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
