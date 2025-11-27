@@ -19,44 +19,64 @@ SET
 WHERE id IN (SELECT id FROM public.cap_tables LIMIT 1);
 
 -- Step 2: Update or Insert Invero Business Trust equity record
-INSERT INTO public.employee_equity (
-  id,
-  employee_id,
-  shares_total,
-  shares_percentage,
-  equity_type,
-  strike_price,
-  vesting_schedule,
-  grant_date,
-  shareholder_name,
-  shareholder_type,
-  is_majority_shareholder,
-  share_class,
-  consideration_type
-)
-VALUES (
-  'invero-trust-55-percent',
-  NULL,
-  55000000,
-  55.00,
-  'Common Stock',
-  0.00,
-  '{"type": "immediate"}',
-  CURRENT_DATE,
-  'Invero Business Trust',
-  'trust',
-  true,
-  'Common',
-  'Cash'
-)
-ON CONFLICT (id) DO UPDATE SET
-  shares_total = 55000000,
-  shares_percentage = 55.00,
-  strike_price = 0.00,
-  vesting_schedule = '{"type": "immediate"}',
-  shareholder_name = 'Invero Business Trust',
-  is_majority_shareholder = true,
-  updated_at = NOW();
+DO $$
+DECLARE
+  trust_record_id UUID;
+BEGIN
+  -- Check if Invero Business Trust record already exists
+  SELECT id INTO trust_record_id
+  FROM public.employee_equity
+  WHERE shareholder_name = 'Invero Business Trust'
+    AND employee_id IS NULL
+  LIMIT 1;
+
+  IF trust_record_id IS NOT NULL THEN
+    -- Update existing record
+    UPDATE public.employee_equity
+    SET
+      shares_total = 55000000,
+      shares_percentage = 55.00,
+      strike_price = 0.00,
+      vesting_schedule = '{"type": "immediate"}'::jsonb,
+      shareholder_name = 'Invero Business Trust',
+      shareholder_type = 'trust',
+      is_majority_shareholder = true,
+      share_class = 'Common',
+      consideration_type = 'Cash',
+      updated_at = NOW()
+    WHERE id = trust_record_id;
+  ELSE
+    -- Insert new record
+    INSERT INTO public.employee_equity (
+      employee_id,
+      shares_total,
+      shares_percentage,
+      equity_type,
+      strike_price,
+      vesting_schedule,
+      grant_date,
+      shareholder_name,
+      shareholder_type,
+      is_majority_shareholder,
+      share_class,
+      consideration_type
+    )
+    VALUES (
+      NULL,
+      55000000,
+      55.00,
+      'Common Stock',
+      0.00,
+      '{"type": "immediate"}'::jsonb,
+      CURRENT_DATE,
+      'Invero Business Trust',
+      'trust',
+      true,
+      'Common',
+      'Cash'
+    );
+  END IF;
+END $$;
 
 -- Step 3: Find Torrance Stroman's employee_id
 DO $$
@@ -127,7 +147,7 @@ SELECT
   eq.share_class
 FROM public.employee_equity eq
 LEFT JOIN public.employees e ON eq.employee_id = e.id
-WHERE eq.id IN ('invero-trust-55-percent', '684f7d11-6551-45b8-a468-f5699fdc4025')
+WHERE eq.id = '684f7d11-6551-45b8-a468-f5699fdc4025'
    OR eq.shareholder_name = 'Invero Business Trust'
    OR (e.first_name ILIKE '%torrance%' AND e.last_name ILIKE '%stroman%')
 ORDER BY eq.shares_percentage DESC;
