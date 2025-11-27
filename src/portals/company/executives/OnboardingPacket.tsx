@@ -153,35 +153,37 @@ const OnboardingPacket: React.FC = () => {
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   const handleSignDocument = async (document: OnboardingDocument) => {
-    // Navigate directly to signing portal with token
     try {
       if (document.signature_token) {
         navigate(`/executive/sign?token=${document.signature_token}`);
-      } else {
-        // Generate token if missing
-        const signatureToken = crypto.randomUUID();
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 30);
-
-        const { error: updateError } = await supabase
-          .from('executive_documents')
-          .update({
-            signature_token: signatureToken,
-            signature_token_expires_at: expirationDate.toISOString(),
-          })
-          .eq('id', document.id);
-
-        if (updateError) {
-          notifications.show({
-            title: 'Error',
-            message: 'Failed to generate signing link',
-            color: 'red',
-          });
-          return;
-        }
-
-        navigate(`/executive/sign?token=${signatureToken}`);
+        return;
       }
+
+      if (!appointmentId) {
+        notifications.show({
+          title: 'Error',
+          message: 'Unable to access signing portal',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Generate token via edge function (uses service role to bypass RLS)
+      const { data, error } = await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: appointmentId }
+      });
+
+      if (error || !data?.ok) {
+        console.error('Error generating signature token:', error || data?.error);
+        notifications.show({
+          title: 'Error',
+          message: 'Failed to generate signing link',
+          color: 'red',
+        });
+        return;
+      }
+
+      navigate(`/executive/sign?token=${data.token}`);
     } catch (error: any) {
       notifications.show({
         title: 'Error',
@@ -200,42 +202,35 @@ const OnboardingPacket: React.FC = () => {
       if (docWithToken?.signature_token) {
         // Use existing token
         navigate(`/executive/sign?token=${docWithToken.signature_token}`);
-      } else {
-        // Generate a new token for the appointment
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !appointmentId) {
-          notifications.show({
-            title: 'Error',
-            message: 'Unable to access signing portal',
-            color: 'red',
-          });
-          return;
-        }
-
-        // Generate token and update documents
-        const signatureToken = crypto.randomUUID();
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 30); // 30 days expiration
-
-        const { error: updateError } = await supabase
-          .from('executive_documents')
-          .update({
-            signature_token: signatureToken,
-            signature_token_expires_at: expirationDate.toISOString(),
-          })
-          .eq('appointment_id', appointmentId);
-
-        if (updateError) {
-          notifications.show({
-            title: 'Error',
-            message: 'Failed to generate signing link',
-            color: 'red',
-          });
-          return;
-        }
-
-        navigate(`/executive/sign?token=${signatureToken}`);
+        return;
       }
+
+      if (!appointmentId) {
+        notifications.show({
+          title: 'Error',
+          message: 'Unable to access signing portal',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Generate token via edge function (uses service role to bypass RLS)
+      const { data, error } = await supabase.functions.invoke('generate-executive-signature-token', {
+        body: { appointment_id: appointmentId }
+      });
+
+      if (error || !data?.ok) {
+        console.error('Error generating signature token:', error || data?.error);
+        notifications.show({
+          title: 'Error',
+          message: 'Failed to generate signing link',
+          color: 'red',
+        });
+        return;
+      }
+
+      navigate(`/executive/sign?token=${data.token}`);
+
     } catch (error: any) {
       notifications.show({
         title: 'Error',
