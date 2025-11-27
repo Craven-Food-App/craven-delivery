@@ -93,16 +93,23 @@ serve(async (req) => {
       }
     }
 
-    // Document mapping
+    // Document mapping - All 14 required documents per Fortune 500 Executive Appointment Workflow
     const documentFields = [
       { field: 'pre_incorporation_consent_url', type: 'pre_incorporation_consent' },
-      { field: 'appointment_letter_url', type: 'appointment_letter' },
+      { field: 'certificate_of_incorporation_url', type: 'certificate_of_incorporation' },
+      { field: 'bylaws_url', type: 'company_bylaws' },
+      { field: 'bylaws_acknowledgment_url', type: 'bylaws_acknowledgment' },
       { field: 'board_resolution_url', type: 'board_resolution' },
-      { field: 'certificate_url', type: 'certificate' },
+      { field: 'appointment_letter_url', type: 'appointment_letter' },
       { field: 'employment_agreement_url', type: 'employment_agreement' },
       { field: 'confidentiality_ip_url', type: 'confidentiality_ip' },
+      { field: 'fiduciary_ethics_url', type: 'fiduciary_duty_ethics' },
+      { field: 'conflict_disclosure_url', type: 'conflict_of_interest' },
       { field: 'stock_subscription_url', type: 'stock_subscription' },
+      { field: 'equity_plan_url', type: 'equity_incentive_plan' },
+      { field: 'option_rsu_award_url', type: 'option_rsu_award' },
       { field: 'deferred_compensation_url', type: 'deferred_compensation' },
+      { field: 'officer_indemnification_url', type: 'officer_indemnification' },
     ];
 
     const syncedDocs: any[] = [];
@@ -125,7 +132,6 @@ serve(async (req) => {
         const needsToken = !existingDoc.signature_token;
         const updateData: any = {
           file_url: docUrl,
-          updated_at: new Date().toISOString(),
         };
         
         if (needsToken) {
@@ -208,7 +214,6 @@ serve(async (req) => {
             .from('executive_appointments')
             .update({
               status: targetStatus,
-              updated_at: new Date().toISOString(),
             })
             .eq('id', appointment_id_to_use);
         }
