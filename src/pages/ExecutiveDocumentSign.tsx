@@ -44,6 +44,7 @@ const ExecutiveDocumentSign = () => {
   const [typedName, setTypedName] = useState('');
   const [isSigning, setIsSigning] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [documentHtml, setDocumentHtml] = useState<string>('');
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -66,8 +67,22 @@ const ExecutiveDocumentSign = () => {
         return;
       }
 
-      setDocument(data.document as ExecutiveDocument);
-      setTypedName(data.document?.officer_name || '');
+      const doc = data.document as ExecutiveDocument;
+      setDocument(doc);
+      setTypedName(doc.officer_name || '');
+
+      // Fetch the HTML content from the file_url
+      if (doc.file_url) {
+        try {
+          const response = await fetch(doc.file_url);
+          const html = await response.text();
+          setDocumentHtml(html);
+        } catch (err) {
+          console.error('Failed to fetch document HTML:', err);
+          setError('Failed to load document content');
+        }
+      }
+
       setLoading(false);
     };
 
@@ -209,8 +224,9 @@ const ExecutiveDocumentSign = () => {
               <Divider style={{ margin: '16px 0' }} />
               <iframe
                 title="Document Preview"
-                src={document.file_url}
+                srcDoc={documentHtml}
                 style={{ width: '100%', minHeight: '600px', border: '1px solid #d9d9d9', borderRadius: 8 }}
+                sandbox="allow-same-origin"
               />
               {document.signed_file_url && (
                 <Button
