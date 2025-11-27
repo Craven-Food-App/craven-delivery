@@ -73,6 +73,14 @@ interface ExecutiveAppointment {
   confidentiality_ip_url?: string;
   stock_subscription_url?: string;
   pre_incorporation_consent_url?: string;
+  certificate_of_incorporation_url?: string;
+  bylaws_url?: string;
+  bylaws_acknowledgment_url?: string;
+  fiduciary_ethics_url?: string;
+  conflict_disclosure_url?: string;
+  officer_indemnification_url?: string;
+  equity_plan_url?: string;
+  option_rsu_award_url?: string;
   formation_mode?: boolean;
   created_at: string;
   updated_at: string;
@@ -665,19 +673,35 @@ const AppointmentList: React.FC = () => {
 
   const getDocumentStatus = (appointment: ExecutiveAppointment) => {
     const docs: Record<string, string | undefined> = {
+      // Core Employment Documents
       'Appointment Letter': appointment.appointment_letter_url,
-      'Board Resolution': appointment.board_resolution_url,
-      'Certificate': appointment.certificate_url,
       'Employment Agreement': appointment.employment_agreement_url,
       'Confidentiality & IP': appointment.confidentiality_ip_url,
-      'Stock Subscription': appointment.stock_subscription_url,
+      
+      // Board & Governance
+      'Board Resolution': appointment.board_resolution_url,
+      'Bylaws Acknowledgment': appointment.bylaws_acknowledgment_url,
+      'Fiduciary Duty & Ethics': appointment.fiduciary_ethics_url,
+      'Conflict of Interest Disclosure': appointment.conflict_disclosure_url,
+      'Officer Indemnification': appointment.officer_indemnification_url,
+      
+      // Compensation
       'Deferred Compensation': appointment.deferred_compensation_url,
     };
     
-    // Always include formation document in the list if formation_mode is true
-    // This ensures the count shows 8/8 even if the document hasn't been generated yet
+    // Formation documents (only if formation_mode is true)
     if (appointment.formation_mode) {
       docs['Pre-Incorporation Consent'] = appointment.pre_incorporation_consent_url;
+      docs['Certificate of Incorporation'] = appointment.certificate_of_incorporation_url;
+      docs['Bylaws'] = appointment.bylaws_url;
+    }
+    
+    // Equity documents (only if equity_included is true)
+    if (appointment.equity_included) {
+      docs['Stock Certificate'] = appointment.certificate_url;
+      docs['Stock Subscription'] = appointment.stock_subscription_url;
+      docs['Equity Incentive Plan'] = appointment.equity_plan_url;
+      docs['Option/RSU Award'] = appointment.option_rsu_award_url;
     }
     
     return docs;
@@ -1126,6 +1150,7 @@ const AppointmentList: React.FC = () => {
                 Generated Documents
               </Text>
               <Stack gap="xs">
+                {/* Core Employment Documents */}
                 <Group justify="space-between">
                   <Text size="sm">Appointment Letter</Text>
                   {selectedAppointment.appointment_letter_url ? (
@@ -1138,49 +1163,6 @@ const AppointmentList: React.FC = () => {
                           selectedAppointment.appointment_letter_url!,
                           'Appointment Letter'
                         )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm">
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="sm">Board Resolution</Text>
-                  {selectedAppointment.board_resolution_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.board_resolution_url!,
-                          'Board Resolution'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm">
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="sm">Certificate</Text>
-                  {selectedAppointment.certificate_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(selectedAppointment.certificate_url!, 'Certificate')
                       }
                     >
                       View
@@ -1238,17 +1220,18 @@ const AppointmentList: React.FC = () => {
                   )}
                 </Group>
 
+                {/* Board & Formation Documents */}
                 <Group justify="space-between">
-                  <Text size="sm">Stock Subscription</Text>
-                  {selectedAppointment.stock_subscription_url ? (
+                  <Text size="sm">Board Resolution</Text>
+                  {selectedAppointment.board_resolution_url ? (
                     <Button
                       size="xs"
                       variant="light"
                       leftSection={<IconEye size={14} />}
                       onClick={() =>
                         handleViewDocument(
-                          selectedAppointment.stock_subscription_url!,
-                          'Stock Subscription'
+                          selectedAppointment.board_resolution_url!,
+                          'Board Resolution'
                         )
                       }
                     >
@@ -1261,6 +1244,305 @@ const AppointmentList: React.FC = () => {
                   )}
                 </Group>
 
+                {selectedAppointment.formation_mode && (
+                  <>
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Pre-Incorporation Consent</Text>
+                        <Badge color="blue" variant="light" size="xs">
+                          Formation
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.pre_incorporation_consent_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.pre_incorporation_consent_url!,
+                              'Pre-Incorporation Consent'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Certificate of Incorporation</Text>
+                        <Badge color="blue" variant="light" size="xs">
+                          Formation
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.certificate_of_incorporation_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.certificate_of_incorporation_url!,
+                              'Certificate of Incorporation'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Bylaws</Text>
+                        <Badge color="blue" variant="light" size="xs">
+                          Formation
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.bylaws_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.bylaws_url!,
+                              'Bylaws'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+                  </>
+                )}
+
+                {/* Governance Documents */}
+                <Group justify="space-between">
+                  <Text size="sm">Bylaws Acknowledgment</Text>
+                  {selectedAppointment.bylaws_acknowledgment_url ? (
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconEye size={14} />}
+                      onClick={() =>
+                        handleViewDocument(
+                          selectedAppointment.bylaws_acknowledgment_url!,
+                          'Bylaws Acknowledgment'
+                        )
+                      }
+                    >
+                      View
+                    </Button>
+                  ) : (
+                    <Badge color="yellow" variant="light" size="sm">
+                      Not Generated
+                    </Badge>
+                  )}
+                </Group>
+
+                <Group justify="space-between">
+                  <Text size="sm">Fiduciary Duty & Ethics</Text>
+                  {selectedAppointment.fiduciary_ethics_url ? (
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconEye size={14} />}
+                      onClick={() =>
+                        handleViewDocument(
+                          selectedAppointment.fiduciary_ethics_url!,
+                          'Fiduciary Duty & Ethics'
+                        )
+                      }
+                    >
+                      View
+                    </Button>
+                  ) : (
+                    <Badge color="yellow" variant="light" size="sm">
+                      Not Generated
+                    </Badge>
+                  )}
+                </Group>
+
+                <Group justify="space-between">
+                  <Text size="sm">Conflict of Interest Disclosure</Text>
+                  {selectedAppointment.conflict_disclosure_url ? (
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconEye size={14} />}
+                      onClick={() =>
+                        handleViewDocument(
+                          selectedAppointment.conflict_disclosure_url!,
+                          'Conflict of Interest Disclosure'
+                        )
+                      }
+                    >
+                      View
+                    </Button>
+                  ) : (
+                    <Badge color="yellow" variant="light" size="sm">
+                      Not Generated
+                    </Badge>
+                  )}
+                </Group>
+
+                <Group justify="space-between">
+                  <Text size="sm">Officer Indemnification</Text>
+                  {selectedAppointment.officer_indemnification_url ? (
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconEye size={14} />}
+                      onClick={() =>
+                        handleViewDocument(
+                          selectedAppointment.officer_indemnification_url!,
+                          'Officer Indemnification'
+                        )
+                      }
+                    >
+                      View
+                    </Button>
+                  ) : (
+                    <Badge color="yellow" variant="light" size="sm">
+                      Not Generated
+                    </Badge>
+                  )}
+                </Group>
+
+                {/* Equity Documents */}
+                {selectedAppointment.equity_included && (
+                  <>
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Stock Certificate</Text>
+                        <Badge color="green" variant="light" size="xs">
+                          Equity
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.certificate_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.certificate_url!,
+                              'Stock Certificate'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Stock Subscription</Text>
+                        <Badge color="green" variant="light" size="xs">
+                          Equity
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.stock_subscription_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.stock_subscription_url!,
+                              'Stock Subscription'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Equity Incentive Plan</Text>
+                        <Badge color="green" variant="light" size="xs">
+                          Equity
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.equity_plan_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.equity_plan_url!,
+                              'Equity Incentive Plan'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <Text size="sm">Option/RSU Award</Text>
+                        <Badge color="green" variant="light" size="xs">
+                          Equity
+                        </Badge>
+                      </Group>
+                      {selectedAppointment.option_rsu_award_url ? (
+                        <Button
+                          size="xs"
+                          variant="light"
+                          leftSection={<IconEye size={14} />}
+                          onClick={() =>
+                            handleViewDocument(
+                              selectedAppointment.option_rsu_award_url!,
+                              'Option/RSU Award'
+                            )
+                          }
+                        >
+                          View
+                        </Button>
+                      ) : (
+                        <Badge color="yellow" variant="light" size="sm">
+                          Not Generated
+                        </Badge>
+                      )}
+                    </Group>
+                  </>
+                )}
+
+                {/* Deferred Compensation */}
                 <Group justify="space-between">
                   <Text size="sm">Deferred Compensation</Text>
                   {selectedAppointment.deferred_compensation_url ? (
@@ -1283,36 +1565,6 @@ const AppointmentList: React.FC = () => {
                     </Badge>
                   )}
                 </Group>
-
-                {selectedAppointment.formation_mode && (
-                  <Group justify="space-between">
-                    <Group gap="xs">
-                      <Text size="sm">Pre-Incorporation Consent</Text>
-                      <Badge color="blue" variant="light" size="xs">
-                        Formation Document
-                      </Badge>
-                    </Group>
-                    {selectedAppointment.pre_incorporation_consent_url ? (
-                      <Button
-                        size="xs"
-                        variant="light"
-                        leftSection={<IconEye size={14} />}
-                        onClick={() =>
-                          handleViewDocument(
-                            selectedAppointment.pre_incorporation_consent_url!,
-                            'Pre-Incorporation Consent'
-                          )
-                        }
-                      >
-                        View
-                      </Button>
-                    ) : (
-                      <Badge color="yellow" variant="light" size="sm">
-                        Not Generated
-                      </Badge>
-                    )}
-                  </Group>
-                )}
               </Stack>
             </div>
 
