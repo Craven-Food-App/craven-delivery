@@ -672,39 +672,39 @@ const AppointmentList: React.FC = () => {
   };
 
   const getDocumentStatus = (appointment: ExecutiveAppointment) => {
-    const docs: Record<string, string | undefined> = {
-      // Core Employment Documents
-      'Appointment Letter': appointment.appointment_letter_url,
-      'Employment Agreement': appointment.employment_agreement_url,
-      'Confidentiality & IP': appointment.confidentiality_ip_url,
-      
-      // Board & Governance
-      'Board Resolution': appointment.board_resolution_url,
-      'Bylaws Acknowledgment': appointment.bylaws_acknowledgment_url,
-      'Fiduciary Duty & Ethics': appointment.fiduciary_ethics_url,
-      'Conflict of Interest Disclosure': appointment.conflict_disclosure_url,
-      'Officer Indemnification': appointment.officer_indemnification_url,
-      
-      // Compensation
-      'Deferred Compensation': appointment.deferred_compensation_url,
-    };
+    // Core required documents (always counted)
+    const coreDocs = [
+      appointment.appointment_letter_url,
+      appointment.employment_agreement_url,
+      appointment.confidentiality_ip_url,
+      appointment.board_resolution_url,
+      appointment.bylaws_acknowledgment_url,
+      appointment.fiduciary_ethics_url,
+      appointment.conflict_disclosure_url,
+      appointment.officer_indemnification_url,
+      appointment.deferred_compensation_url,
+    ];
     
     // Formation documents (only if formation_mode is true)
-    if (appointment.formation_mode) {
-      docs['Pre-Incorporation Consent'] = appointment.pre_incorporation_consent_url;
-      docs['Certificate of Incorporation'] = appointment.certificate_of_incorporation_url;
-      docs['Bylaws'] = appointment.bylaws_url;
-    }
+    const formationDocs = appointment.formation_mode ? [
+      appointment.pre_incorporation_consent_url,
+      appointment.certificate_of_incorporation_url,
+      appointment.bylaws_url,
+    ] : [];
     
     // Equity documents (only if equity_included is true)
-    if (appointment.equity_included) {
-      docs['Stock Certificate'] = appointment.certificate_url;
-      docs['Stock Subscription'] = appointment.stock_subscription_url;
-      docs['Equity Incentive Plan'] = appointment.equity_plan_url;
-      docs['Option/RSU Award'] = appointment.option_rsu_award_url;
-    }
+    const equityDocs = appointment.equity_included ? [
+      appointment.certificate_url,
+      appointment.stock_subscription_url,
+      appointment.equity_plan_url,
+      appointment.option_rsu_award_url,
+    ] : [];
     
-    return docs;
+    const allDocs = [...coreDocs, ...formationDocs, ...equityDocs];
+    const generatedCount = allDocs.filter(url => url && url.trim() !== '').length;
+    const totalCount = allDocs.length;
+    
+    return { generatedCount, totalCount };
   };
 
   return (
@@ -1008,12 +1008,8 @@ const AppointmentList: React.FC = () => {
               </Table.Thead>
               <Table.Tbody>
                 {appointments.map((appointment) => {
-                  const docs = getDocumentStatus(appointment);
-                  const hasAnyDoc = Object.values(docs).some((url) => url);
-                  const docCount = Object.values(docs).filter((url) => url).length;
-                  
-                  // Total document count: 7 normal + 1 formation (if formation_mode is true)
-                  const totalDocCount = appointment.formation_mode ? 8 : 7;
+                  const { generatedCount, totalCount } = getDocumentStatus(appointment);
+                  const hasAnyDoc = generatedCount > 0;
 
                   return (
                     <Table.Tr key={appointment.id}>
@@ -1035,7 +1031,7 @@ const AppointmentList: React.FC = () => {
                       <Table.Td>
                         {hasAnyDoc ? (
                           <Badge color="green" variant="light">
-                            {docCount} / {totalDocCount} Generated
+                            {generatedCount} / {totalCount} Generated
                           </Badge>
                         ) : (
                           <Badge color="yellow" variant="light">
