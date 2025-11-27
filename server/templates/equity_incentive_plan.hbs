@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Equity Incentive Plan - {{company.legalName}}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 16pt;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-size: 13pt;
+      margin-top: 20px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    .signature-section {
+      margin-top: 60px;
+      border-top: 1px solid #ccc;
+      padding-top: 30px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #ccc;
+      width: 300px;
+      margin: 30px 0 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>{{company.legalName}}</h1>
+  <h1>2025 Equity Incentive Plan</h1>
+
+  <h2>1. Purpose</h2>
+  <p>The purpose of this 2025 Equity Incentive Plan (the "Plan") is to promote the success and enhance the value of {{company.legalName}} (the "Company") by linking the personal interests of employees, directors, and consultants to those of Company shareholders and by providing such individuals with an incentive for outstanding performance.</p>
+
+  <h2>2. Definitions</h2>
+  <p><strong>Award:</strong> Any Option, Stock Appreciation Right, Restricted Stock, Restricted Stock Unit, or other stock-based or stock-denominated award granted under the Plan.</p>
+  <p><strong>Board:</strong> The Board of Directors of the Company.</p>
+  <p><strong>Committee:</strong> The Compensation Committee or such other committee designated by the Board to administer the Plan.</p>
+  <p><strong>Common Stock:</strong> The common stock of the Company, par value ${{company.parValue}} per share.</p>
+  <p><strong>Fair Market Value:</strong> The value of one share of Common Stock, determined in good faith by the Board.</p>
+  <p><strong>Option:</strong> A right to purchase shares of Common Stock granted under the Plan.</p>
+  <p><strong>Participant:</strong> Any employee, director, or consultant who receives an Award under the Plan.</p>
+
+  <h2>3. Shares Available</h2>
+  <p>Subject to adjustment as provided in Section 11, the maximum number of shares of Common Stock that may be issued under the Plan is <strong>{{equityPoolShares}}</strong> shares.</p>
+  <p>Shares issued under the Plan may be authorized but unissued shares or treasury shares.</p>
+
+  <h2>4. Eligibility</h2>
+  <p>Awards may be granted to employees (including officers), directors, and consultants of the Company or its subsidiaries, as determined by the Committee in its sole discretion.</p>
+
+  <h2>5. Administration</h2>
+  <p>The Plan shall be administered by the Committee, which shall have full authority to:</p>
+  <ul>
+    <li>Select Participants and determine the type and amount of Awards</li>
+    <li>Determine the terms and conditions of Awards</li>
+    <li>Interpret and administer the Plan and any Award Agreement</li>
+    <li>Establish, amend, and rescind rules and regulations for the Plan's administration</li>
+    <li>Delegate administrative responsibilities as permitted by law</li>
+  </ul>
+
+  <h2>6. Stock Options</h2>
+  <p><strong>6.1 Grant.</strong> The Committee may grant Options to Participants on such terms and conditions as the Committee determines, consistent with the Plan.</p>
+  <p><strong>6.2 Exercise Price.</strong> The exercise price per share for Options shall be determined by the Committee but shall not be less than 100% of the Fair Market Value of Common Stock on the date of grant.</p>
+  <p><strong>6.3 Vesting.</strong> Options shall vest and become exercisable in such manner and on such date or dates as determined by the Committee.</p>
+  <p><strong>6.4 Term.</strong> The term of each Option shall be fixed by the Committee but shall not exceed ten (10) years from the date of grant.</p>
+
+  <h2>7. Restricted Stock and Restricted Stock Units</h2>
+  <p>The Committee may grant Restricted Stock or Restricted Stock Units subject to such restrictions, terms, and conditions as the Committee determines, including vesting schedules, performance conditions, and forfeiture provisions.</p>
+
+  <h2>8. Termination of Service</h2>
+  <p>Unless otherwise provided in an Award Agreement:</p>
+  <ul>
+    <li><strong>Death or Disability:</strong> All unvested Awards shall vest immediately; vested Options shall remain exercisable for 12 months.</li>
+    <li><strong>Termination for Cause:</strong> All Awards (vested and unvested) shall be forfeited immediately.</li>
+    <li><strong>Other Termination:</strong> Unvested Awards shall be forfeited; vested Options shall remain exercisable for 90 days.</li>
+  </ul>
+
+  <h2>9. Change in Control</h2>
+  <p>In the event of a Change in Control (as defined in the Award Agreement), the Committee may, in its discretion, provide for acceleration of vesting, cash-out of Awards, or assumption or substitution of Awards by the acquiring entity.</p>
+
+  <h2>10. Tax Withholding</h2>
+  <p>The Company may require Participants to remit to the Company an amount sufficient to satisfy applicable tax withholding requirements, or may withhold shares subject to an Award to satisfy such obligations.</p>
+
+  <h2>11. Adjustments</h2>
+  <p>In the event of any stock dividend, stock split, recapitalization, merger, consolidation, or other change in the Company's capitalization, the Committee shall make equitable adjustments to the number and kind of shares available under the Plan and subject to outstanding Awards.</p>
+
+  <h2>12. Amendment and Termination</h2>
+  <p>The Board may amend, suspend, or terminate the Plan at any time, subject to shareholder approval if required by law or regulation. No amendment or termination shall adversely affect any outstanding Award without the Participant's consent.</p>
+
+  <h2>13. Effective Date and Term</h2>
+  <p>The Plan is effective as of {{planEffectiveDate}} and shall remain in effect until terminated by the Board, but in no event shall Awards be granted after the tenth anniversary of the effective date.</p>
+
+  <h2>14. Governing Law</h2>
+  <p>The Plan shall be governed by the laws of the State of {{company.state}}, without regard to conflicts of law principles.</p>
+
+  <div class="signature-section">
+    <p>ADOPTED by the Board of Directors on {{planAdoptionDate}}.</p>
+    
+    <div class="signature-line"></div>
+    <p>Secretary of {{company.legalName}}</p>
+  </div>
+</body>
+</html>

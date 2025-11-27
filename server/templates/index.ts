@@ -114,6 +114,48 @@ export const templates: TemplateMeta[] = [
     title: "Corporate Bylaws (Complete)", 
     placeholders: ["company_name","state_of_incorporation","state_abbreviation","adoption_date","registered_office_address","principal_office_address","principal_office_city","principal_office_state","authorized_shares","par_value","shareholders","fiscal_year","ceo_name","cfo_name","cxo_name","cto_name","secretary_name","secretary_title","additional_director_name","signers"], 
     compile: Handlebars.compile(TPL("bylaws_complete.hbs")) 
+  },
+  { 
+    id: "pre_incorporation_consent", 
+    title: "Pre-Incorporation Consent", 
+    placeholders: ["company_name","incorporator_name","board_members","state"], 
+    compile: Handlebars.compile(TPL("pre_incorporation_consent.hbs")) 
+  },
+  { 
+    id: "certificate_of_incorporation", 
+    title: "Certificate of Incorporation", 
+    placeholders: ["company_name","state","registered_office","registered_agent","incorporator_name","board_members","authorized_shares","par_value"], 
+    compile: Handlebars.compile(TPL("certificate_of_incorporation.hbs")) 
+  },
+  { 
+    id: "bylaws_acknowledgment", 
+    title: "Bylaws Acknowledgment & Consent", 
+    placeholders: ["company_name","officer_name","title","current_date"], 
+    compile: Handlebars.compile(TPL("bylaws_acknowledgment.hbs")) 
+  },
+  { 
+    id: "fiduciary_duty_ethics", 
+    title: "Fiduciary Duty & Ethics Acknowledgment", 
+    placeholders: ["company_name","officer_name","title","current_date"], 
+    compile: Handlebars.compile(TPL("fiduciary_duty_ethics.hbs")) 
+  },
+  { 
+    id: "conflict_of_interest_disclosure", 
+    title: "Conflict of Interest Disclosure", 
+    placeholders: ["company_name","officer_name","title","current_date"], 
+    compile: Handlebars.compile(TPL("conflict_of_interest_disclosure.hbs")) 
+  },
+  { 
+    id: "officer_indemnification", 
+    title: "Officer Indemnification Agreement", 
+    placeholders: ["company_name","officer_name","title","current_date","state"], 
+    compile: Handlebars.compile(TPL("officer_indemnification.hbs")) 
+  },
+  { 
+    id: "equity_incentive_plan", 
+    title: "2025 Equity Incentive Plan", 
+    placeholders: ["company_name","equity_pool_shares","par_value","plan_effective_date","plan_adoption_date","state"], 
+    compile: Handlebars.compile(TPL("equity_incentive_plan.hbs")) 
   }
 ];
 

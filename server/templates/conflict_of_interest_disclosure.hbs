@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conflict of Interest Disclosure - {{officer.fullName}}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 16pt;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-size: 13pt;
+      margin-top: 20px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    .disclosure-section {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin: 20px 0;
+      background: #f9f9f9;
+    }
+    .signature-section {
+      margin-top: 60px;
+      border-top: 1px solid #ccc;
+      padding-top: 30px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #ccc;
+      width: 300px;
+      margin: 30px 0 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Conflict of Interest Disclosure Statement</h1>
+
+  <p><strong>Date:</strong> {{currentDate}}</p>
+  <p><strong>Officer/Director:</strong> {{officer.fullName}}</p>
+  <p><strong>Title:</strong> {{title}}</p>
+  <p><strong>Company:</strong> {{company.legalName}}</p>
+
+  <h2>Purpose</h2>
+  <p>This Conflict of Interest Disclosure Statement is required under Article XVI of the Bylaws of {{company.legalName}} (the "Corporation"). All directors, officers, and executives must disclose any actual, potential, or perceived conflicts of interest.</p>
+
+  <h2>Definition of Conflict of Interest</h2>
+  <p>A conflict of interest exists when an individual's personal, financial, or professional interests could interfere with the interests of the Corporation or impair their independent judgment.</p>
+
+  <div class="disclosure-section">
+    <h2>Disclosure Questions</h2>
+    
+    <p><strong>1. Financial Interests:</strong> Do you or any immediate family member have a direct or indirect financial interest in any entity that does business with the Corporation or competes with the Corporation?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+
+    <p><strong>2. Outside Business Activities:</strong> Do you currently serve as an officer, director, employee, consultant, or advisor to any other business entity?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+
+    <p><strong>3. Competing Interests:</strong> Are you involved in any business or activity that competes or may compete with the Corporation's business?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+
+    <p><strong>4. Personal Relationships:</strong> Do you have any personal or family relationships with employees, vendors, customers, or competitors of the Corporation that could create an actual or perceived conflict of interest?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+
+    <p><strong>5. Gifts or Benefits:</strong> Have you received any gifts, favors, entertainment, or other benefits from any person or entity that does business with the Corporation or seeks to do business with the Corporation?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+
+    <p><strong>6. Other Conflicts:</strong> Are there any other circumstances, relationships, or arrangements that could create an actual, potential, or perceived conflict of interest?</p>
+    <p>☐ YES &nbsp;&nbsp; ☐ NO</p>
+    <p>If YES, please describe: _______________________________________________</p>
+  </div>
+
+  <h2>Certification</h2>
+  <p>I certify that the information provided above is true, complete, and accurate to the best of my knowledge. I understand that:</p>
+
+  <ul>
+    <li>I have a continuing obligation to update this disclosure if circumstances change</li>
+    <li>I must immediately disclose any new or emerging conflicts of interest</li>
+    <li>I must recuse myself from discussions and votes involving matters in which I have a conflict</li>
+    <li>Failure to disclose conflicts may result in disciplinary action, including removal for cause</li>
+    <li>The Corporation may require additional documentation or investigation of disclosed conflicts</li>
+  </ul>
+
+  <h2>Annual Review</h2>
+  <p>I acknowledge that I am required to complete and submit an updated Conflict of Interest Disclosure Statement annually and whenever my circumstances change in a manner that may create a conflict.</p>
+
+  <div class="signature-section">
+    <p>IN WITNESS WHEREOF, I have executed this Conflict of Interest Disclosure Statement as of the date first written above.</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>{{officer.fullName}}</strong><br />{{title}}</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>Date</strong></p>
+  </div>
+</body>
+</html>
