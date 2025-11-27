@@ -84,6 +84,7 @@ const ExecutiveSigningPortal = () => {
   const [error, setError] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [documentHtmlCache, setDocumentHtmlCache] = useState<Record<string, string>>({});
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const initialsCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -174,6 +175,22 @@ const ExecutiveSigningPortal = () => {
 
         setSignatureFields(fieldsMap);
         setAllFields(allFieldStates);
+
+        // Fetch HTML content for all documents
+        const htmlCache: Record<string, string> = {};
+        for (const doc of allDocs) {
+          if (doc.fileUrl) {
+            try {
+              const response = await fetch(doc.fileUrl);
+              const html = await response.text();
+              htmlCache[doc.id] = html;
+            } catch (err) {
+              console.error(`Failed to fetch HTML for document ${doc.id}:`, err);
+            }
+          }
+        }
+        setDocumentHtmlCache(htmlCache);
+
         setLoading(false);
       } catch (err: any) {
         setError('Failed to load signing session. Please contact support.');
@@ -789,10 +806,11 @@ const ExecutiveSigningPortal = () => {
               </div>
               <div className="bg-white rounded-lg shadow-lg p-12 min-h-[1000px] relative">
                 <iframe
-                  src={currentDocument.fileUrl}
+                  srcDoc={documentHtmlCache[currentDocument.id] || ''}
                   className="w-full"
                   style={{ minHeight: '1000px', border: 'none' }}
                   title="Document Preview"
+                  sandbox="allow-same-origin"
                 />
                 
                 {/* Render signature fields overlay */}
