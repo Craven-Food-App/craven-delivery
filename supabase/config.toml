@@ -162,3 +162,15 @@ verify_jwt = true
 
 [functions.send-iboe]
 verify_jwt = true
+
+[functions.governance-finalize-resolution]
+verify_jwt = false
+
+[functions.governance-execute-resolution]
+verify_jwt = false
+
+[functions.governance-sync-appointment-documents]
+verify_jwt = false
+
+[functions.governance-complete-appointment]
+verify_jwt = false
