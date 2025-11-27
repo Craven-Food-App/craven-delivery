@@ -26,34 +26,54 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // First, get one document to find the executive_id
+    // First, get one document to find the executive_id or appointment_id
     const { data: sampleDoc, error: sampleError } = await supabase
       .from("executive_documents")
-      .select("executive_id, officer_name, role")
+      .select("executive_id, officer_name, role, appointment_id")
       .eq("signature_token", token)
       .maybeSingle();
 
     if (sampleError) throw sampleError;
 
-    if (!sampleDoc || !sampleDoc.executive_id) {
+    if (!sampleDoc) {
       return new Response(
         JSON.stringify({ ok: false, error: "Invalid or expired signature token" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get executive user info
-    const { data: execUser, error: execError } = await supabase
-      .from("exec_users")
-      .select("id, user_id, title, role")
-      .eq("id", sampleDoc.executive_id)
-      .maybeSingle();
-
-    if (execError) throw execError;
-
-    // Get auth user info if available
+    // Get executive user info - try by executive_id first, then fall back to appointment
+    let execUser = null;
     let userEmail = null;
     let userName = sampleDoc.officer_name || null;
+    
+    if (sampleDoc.executive_id) {
+      const { data: eu } = await supabase
+        .from("exec_users")
+        .select("id, user_id, title, role")
+        .eq("id", sampleDoc.executive_id)
+        .maybeSingle();
+      execUser = eu;
+    } else if (sampleDoc.appointment_id) {
+      // Fall back to finding exec user by appointment
+      const { data: appointment } = await supabase
+        .from("executive_appointments")
+        .select("officer_name, role")
+        .eq("id", sampleDoc.appointment_id)
+        .maybeSingle();
+      
+      if (appointment) {
+        userName = appointment.officer_name;
+        const { data: eu } = await supabase
+          .from("exec_users")
+          .select("id, user_id, title, role")
+          .or(`full_name.eq.${appointment.officer_name},title.ilike.%${appointment.role}%`)
+          .maybeSingle();
+        execUser = eu;
+      }
+    }
+
+    // Get auth user info if available
     if (execUser?.user_id) {
       const { data: authUser } = await supabase.auth.admin.getUserById(execUser.user_id);
       if (authUser?.user) {
@@ -62,16 +82,36 @@ serve(async (req) => {
       }
     }
 
-    // Fetch all documents for this executive
-    const { data: documents, error: docsError } = await supabase
-      .from("executive_documents")
-      .select("id, officer_name, role, type, status, signature_status, file_url, signed_file_url, packet_id, signing_stage, signing_order, required_signers, signer_roles, signature_token, signature_token_expires_at, created_at, depends_on_document_id, template_id")
-      .eq("executive_id", sampleDoc.executive_id)
-      .order("signing_stage", { ascending: true, nullsFirst: false })
-      .order("signing_order", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true });
+    // Fetch all documents - use executive_id if available, otherwise appointment_id
+    let documents;
+    if (sampleDoc.executive_id) {
+      const { data, error: docsError } = await supabase
+        .from("executive_documents")
+        .select("id, officer_name, role, type, status, signature_status, file_url, signed_file_url, packet_id, signing_stage, signing_order, required_signers, signer_roles, signature_token, signature_token_expires_at, created_at, depends_on_document_id, template_id")
+        .eq("executive_id", sampleDoc.executive_id)
+        .order("signing_stage", { ascending: true, nullsFirst: false })
+        .order("signing_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
+      if (docsError) throw docsError;
+      documents = data;
+    } else {
+      const { data, error: docsError } = await supabase
+        .from("executive_documents")
+        .select("id, officer_name, role, type, status, signature_status, file_url, signed_file_url, packet_id, signing_stage, signing_order, required_signers, signer_roles, signature_token, signature_token_expires_at, created_at, depends_on_document_id, template_id")
+        .eq("appointment_id", sampleDoc.appointment_id)
+        .order("signing_stage", { ascending: true, nullsFirst: false })
+        .order("signing_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
+      if (docsError) throw docsError;
+      documents = data;
+    }
 
-    if (docsError) throw docsError;
+    if (!documents || documents.length === 0) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "No documents found for this signing link" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Check token expiration on any document
     const hasExpiredToken = documents?.some(doc => {
