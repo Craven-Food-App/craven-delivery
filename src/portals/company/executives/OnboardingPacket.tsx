@@ -11,8 +11,6 @@ import {
   Progress,
   Alert,
   Loader,
-  Table,
-  Modal,
   Paper,
   SimpleGrid,
 } from '@mantine/core';
@@ -30,8 +28,6 @@ const OnboardingPacket: React.FC = () => {
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<OnboardingDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [signingModalOpen, setSigningModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<OnboardingDocument | null>(null);
   const [signingDeadline, setSigningDeadline] = useState<string | null>(null);
 
   useEffect(() => {
@@ -156,13 +152,97 @@ const OnboardingPacket: React.FC = () => {
   const totalCount = documents.length;
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const handleSignDocument = (document: OnboardingDocument) => {
-    setSelectedDocument(document);
-    setSigningModalOpen(true);
+  const handleSignDocument = async (document: OnboardingDocument) => {
+    // Navigate directly to signing portal with token
+    try {
+      if (document.signature_token) {
+        navigate(`/executive/sign?token=${document.signature_token}`);
+      } else {
+        // Generate token if missing
+        const signatureToken = crypto.randomUUID();
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 30);
+
+        const { error: updateError } = await supabase
+          .from('executive_documents')
+          .update({
+            signature_token: signatureToken,
+            signature_token_expires_at: expirationDate.toISOString(),
+          })
+          .eq('id', document.id);
+
+        if (updateError) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to generate signing link',
+            color: 'red',
+          });
+          return;
+        }
+
+        navigate(`/executive/sign?token=${signatureToken}`);
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to access signing portal',
+        color: 'red',
+      });
+    }
   };
 
-  const handleGoToSigning = () => {
-    navigate('/executive/sign');
+  const handleGoToSigning = async () => {
+    try {
+      // Get a signature token from one of the documents
+      // All documents for an executive share the same token
+      const docWithToken = documents.find(doc => doc.signature_token);
+      
+      if (docWithToken?.signature_token) {
+        // Use existing token
+        navigate(`/executive/sign?token=${docWithToken.signature_token}`);
+      } else {
+        // Generate a new token for the appointment
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !appointmentId) {
+          notifications.show({
+            title: 'Error',
+            message: 'Unable to access signing portal',
+            color: 'red',
+          });
+          return;
+        }
+
+        // Generate token and update documents
+        const signatureToken = crypto.randomUUID();
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 30); // 30 days expiration
+
+        const { error: updateError } = await supabase
+          .from('executive_documents')
+          .update({
+            signature_token: signatureToken,
+            signature_token_expires_at: expirationDate.toISOString(),
+          })
+          .eq('appointment_id', appointmentId);
+
+        if (updateError) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to generate signing link',
+            color: 'red',
+          });
+          return;
+        }
+
+        navigate(`/executive/sign?token=${signatureToken}`);
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to access signing portal',
+        color: 'red',
+      });
+    }
   };
 
   if (loading) {
@@ -322,29 +402,6 @@ const OnboardingPacket: React.FC = () => {
             Go to Signing Portal
           </Button>
         </Group>
-
-        <Modal
-          opened={signingModalOpen}
-          onClose={() => {
-            setSigningModalOpen(false);
-            setSelectedDocument(null);
-          }}
-          title={`Sign ${selectedDocument ? getDocumentTypeName(selectedDocument.type) : 'Document'}`}
-          size="lg"
-        >
-          <Stack gap="md">
-            <Text>You will be redirected to the signing portal to complete this document.</Text>
-            <Button
-              fullWidth
-              onClick={() => {
-                setSigningModalOpen(false);
-                navigate('/executive/sign');
-              }}
-            >
-              Continue to Signing Portal
-            </Button>
-          </Stack>
-        </Modal>
       </Stack>
     </Container>
   );
