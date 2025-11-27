@@ -476,9 +476,9 @@ export default function ExecutiveSigningPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4">
+    <div className="h-screen bg-background flex overflow-hidden">
+      {/* Sidebar - Fixed, no scroll */}
+      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4 h-screen overflow-hidden">
         <div>
           <h2 className="font-bold text-lg mb-2">Your Signatures</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -501,7 +501,7 @@ export default function ExecutiveSigningPortal() {
           </div>
         </div>
 
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 flex-1 min-h-0 overflow-y-auto">
           <h3 className="font-semibold mb-3">Placed Signatures</h3>
           {currentDocSignatures.length === 0 ? (
             <p className="text-sm text-muted-foreground">No signatures placed yet</p>
@@ -522,9 +522,9 @@ export default function ExecutiveSigningPortal() {
       </div>
 
       {/* Main Document Viewer */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b bg-card p-4">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Header - Fixed */}
+        <div className="border-b bg-card p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <FileText className="w-6 h-6 text-primary" />
