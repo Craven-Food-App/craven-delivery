@@ -85,6 +85,7 @@ const ExecutiveSigningPortal = () => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [documentHtmlCache, setDocumentHtmlCache] = useState<Record<string, string>>({});
+  const [ceoSignatureDataUrl, setCeoSignatureDataUrl] = useState<string>('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const initialsCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -143,6 +144,17 @@ const ExecutiveSigningPortal = () => {
           });
         });
 
+        // Fetch CEO's saved signature for auto-signing
+        const { data: ceoSigData } = await supabase
+          .from('ceo_system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'ceo_signature')
+          .maybeSingle();
+
+        const ceoSignature = (ceoSigData?.setting_value as any)?.signature_png_base64 || '';
+        setCeoSignatureDataUrl(ceoSignature);
+        console.log('✅ CEO signature fetched:', ceoSignature ? 'Yes' : 'No');
+
         // Fetch signature fields for each document
         const fieldsMap: Record<string, SignatureField[]> = {};
         const allFieldStates: FieldState[] = [];
@@ -168,9 +180,9 @@ const ExecutiveSigningPortal = () => {
                   signerRole.includes('secretary') ||
                   signerRole.includes('torrance stroman');
                 
-                // Auto-complete Torrance's fields
+                // Auto-complete Torrance's fields with actual signature image
                 const isCompleted = isTorranceField;
-                const autoSignValue = isTorranceField ? 'Torrance Stroman' : undefined;
+                const autoSignValue = isTorranceField ? ceoSignature : undefined;
                 
                 allFieldStates.push({
                   id: `${doc.id}_${f.id}`,
@@ -241,8 +253,9 @@ const ExecutiveSigningPortal = () => {
     }
   }, [userInfo, currentStep]);
 
-  // Count only executive's fields (exclude auto-signed Torrance fields)
-  const executiveFields = allFields.filter(f => f.required && !f.value?.includes('Torrance'));
+  // Count only executive's fields (exclude auto-signed CEO fields)
+  const isCeoAutoSignedField = (field: FieldState) => field.value?.startsWith('data:image/');
+  const executiveFields = allFields.filter(f => f.required && !isCeoAutoSignedField(f));
   const completedExecutiveFields = executiveFields.filter(f => f.completed).length;
   const totalExecutiveFields = executiveFields.length;
   
@@ -375,7 +388,7 @@ const ExecutiveSigningPortal = () => {
     const docFields = allFields.filter(f => 
       f.documentId === currentDoc?.id && 
       !f.completed && 
-      !f.value?.includes('Torrance')
+      !isCeoAutoSignedField(f)
     );
     
     if (docFields.length > 0) {
@@ -389,7 +402,7 @@ const ExecutiveSigningPortal = () => {
         const nextDocFields = allFields.filter(f => 
           f.documentId === nextDoc.id && 
           !f.completed && 
-          !f.value?.includes('Torrance')
+          !isCeoAutoSignedField(f)
         );
         if (nextDocFields.length > 0) {
           setCurrentFieldIndex(allFields.findIndex(f => f.id === nextDocFields[0].id));
@@ -865,9 +878,17 @@ const ExecutiveSigningPortal = () => {
                       {isCompleted && fieldState?.value && (
                         <div className="text-sm text-gray-900">
                           {field.field_type === 'signature' && (
-                            <div style={{ fontFamily: selectedFont, fontStyle: 'italic', fontSize: '16px' }}>
-                              {fieldState.value}
-                            </div>
+                            fieldState.value?.startsWith('data:image/') ? (
+                              <img 
+                                src={fieldState.value} 
+                                alt="CEO Signature" 
+                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                              />
+                            ) : (
+                              <div style={{ fontFamily: selectedFont, fontStyle: 'italic', fontSize: '16px' }}>
+                                {fieldState.value}
+                              </div>
+                            )
                           )}
                           {field.field_type === 'initial' && (
                             <div style={{ fontFamily: selectedFont, fontStyle: 'italic', fontSize: '14px' }}>
@@ -894,7 +915,7 @@ const ExecutiveSigningPortal = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              {currentField && !currentField.completed && !currentField.value?.includes('Torrance') ? (
+              {currentField && !currentField.completed && !isCeoAutoSignedField(currentField) ? (
                 <div>
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
