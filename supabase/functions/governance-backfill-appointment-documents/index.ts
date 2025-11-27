@@ -119,13 +119,15 @@ serve(async (req) => {
 
     const results: ResultItem[] = [];
 
-    // NORMAL DOCUMENT GENERATION FLOW
+    // FORTUNE 500 DOCUMENT GENERATION FLOW (14 Documents)
     for (const appointment of appointments) {
       const docTypes: string[] = [];
       
       // Determine which documents to generate based on status
       // If force_regenerate is true, ignore existing documents and regenerate all
       // IMPORTANT: When force_regenerate is true, we ALWAYS regenerate, regardless of existing URLs
+      
+      // Check existing documents (only if not force_regenerate)
       const hasAppointmentLetter = !force_regenerate && appointment.appointment_letter_url && String(appointment.appointment_letter_url).trim() !== '';
       const hasBoardResolution = !force_regenerate && appointment.board_resolution_url && String(appointment.board_resolution_url).trim() !== '';
       const hasCertificate = !force_regenerate && appointment.certificate_url && String(appointment.certificate_url).trim() !== '';
@@ -137,6 +139,16 @@ serve(async (req) => {
         (appointment as any).pre_incorporation_consent_url && 
         String((appointment as any).pre_incorporation_consent_url).trim() !== '';
       
+      // NEW: Fortune 500 additional documents
+      const hasCertificateOfIncorporation = !force_regenerate && (appointment as any).certificate_of_incorporation_url && String((appointment as any).certificate_of_incorporation_url).trim() !== '';
+      const hasBylaws = !force_regenerate && (appointment as any).bylaws_url && String((appointment as any).bylaws_url).trim() !== '';
+      const hasBylawsAcknowledgment = !force_regenerate && (appointment as any).bylaws_acknowledgment_url && String((appointment as any).bylaws_acknowledgment_url).trim() !== '';
+      const hasFiduciaryEthics = !force_regenerate && (appointment as any).fiduciary_ethics_url && String((appointment as any).fiduciary_ethics_url).trim() !== '';
+      const hasConflictDisclosure = !force_regenerate && (appointment as any).conflict_disclosure_url && String((appointment as any).conflict_disclosure_url).trim() !== '';
+      const hasOfficerIndemnification = !force_regenerate && (appointment as any).officer_indemnification_url && String((appointment as any).officer_indemnification_url).trim() !== '';
+      const hasEquityPlan = !force_regenerate && (appointment as any).equity_plan_url && String((appointment as any).equity_plan_url).trim() !== '';
+      const hasOptionRSUAward = !force_regenerate && (appointment as any).option_rsu_award_url && String((appointment as any).option_rsu_award_url).trim() !== '';
+      
       console.log(`Processing appointment ${appointment.id}: force_regenerate=${force_regenerate}, status=${appointment.status}`);
       console.log(`Existing documents check (ignored if force_regenerate):`, {
         hasAppointmentLetter,
@@ -147,36 +159,56 @@ serve(async (req) => {
         hasStockSubscription,
         hasDeferredCompensation,
         hasPreIncorporationConsent,
+        // Fortune 500 additional documents
+        hasCertificateOfIncorporation,
+        hasBylaws,
+        hasBylawsAcknowledgment,
+        hasFiduciaryEthics,
+        hasConflictDisclosure,
+        hasOfficerIndemnification,
+        hasEquityPlan,
+        hasOptionRSUAward,
       });
       
       // If force_regenerate is true, ALWAYS generate ALL documents regardless of status
       if (force_regenerate) {
-        console.log(`[${appointment.id}] FORCE REGENERATE MODE: Adding ALL documents to queue`);
-        // Always generate these 5 standard documents
+        console.log(`[${appointment.id}] FORCE REGENERATE MODE: Adding ALL 14 FORTUNE 500 documents to queue`);
+        
+        // Core Employment Documents
         docTypes.push('appointment_letter');
-        docTypes.push('board_resolution');
-        docTypes.push('certificate');
         docTypes.push('employment_agreement');
         docTypes.push('confidentiality_ip');
         
-        // Generate stock subscription if equity is included (or always for force regenerate to be safe)
+        // Board & Formation Documents
+        docTypes.push('board_resolution');
+        if ((appointment as any).formation_mode) {
+          docTypes.push('pre_incorporation_consent');
+          docTypes.push('certificate_of_incorporation');
+        }
+        docTypes.push('bylaws');
+        
+        // Governance Documents (ALWAYS REQUIRED)
+        docTypes.push('bylaws_acknowledgment');
+        docTypes.push('fiduciary_ethics_ack');
+        docTypes.push('conflict_disclosure');
+        docTypes.push('officer_indemnification');
+        
+        // Equity Documents (conditional)
         if (appointment.equity_included) {
+          docTypes.push('certificate'); // Stock certificate
           docTypes.push('stock_subscription');
+          docTypes.push('equity_incentive_plan');
+          docTypes.push('option_rsu_award');
         }
         
-        // Generate deferred compensation if equity included or compensation mentions deferred
+        // Deferred Compensation (conditional)
         const needsDeferredComp = appointment.equity_included || 
           (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred'));
         if (needsDeferredComp) {
           docTypes.push('deferred_compensation');
         }
         
-        // Generate pre-incorporation consent if formation mode is enabled
-        if ((appointment as any).formation_mode) {
-          docTypes.push('pre_incorporation_consent');
-        }
-        
-        console.log(`[${appointment.id}] FORCE REGENERATE: Queued ${docTypes.length} documents:`, docTypes);
+        console.log(`[${appointment.id}] FORCE REGENERATE: Queued ${docTypes.length} Fortune 500 documents:`, docTypes);
         console.log(`[${appointment.id}] Appointment details:`, {
           equity_included: appointment.equity_included,
           formation_mode: (appointment as any).formation_mode,
@@ -186,111 +218,82 @@ serve(async (req) => {
         // Normal flow: generate based on status
         switch (appointment.status) {
         case 'DRAFT':
-          // Generate ALL documents for DRAFT status (as per user requirements)
-          // This ensures all 7 (or 8 with formation mode) documents are created immediately
-          // Generate only missing documents (force_regenerate already handled above)
-          if (!hasAppointmentLetter) {
-            docTypes.push('appointment_letter');
+          // FORTUNE 500: Generate ALL 14 documents for DRAFT status
+          // Core Employment Documents
+          if (!hasAppointmentLetter) docTypes.push('appointment_letter');
+          if (!hasEmploymentAgreement) docTypes.push('employment_agreement');
+          if (!hasConfidentialityIP) docTypes.push('confidentiality_ip');
+          
+          // Board & Formation Documents
+          if (!hasBoardResolution) docTypes.push('board_resolution');
+          if ((appointment as any).formation_mode) {
+            if (!hasPreIncorporationConsent) docTypes.push('pre_incorporation_consent');
+            if (!hasCertificateOfIncorporation) docTypes.push('certificate_of_incorporation');
           }
-          if (!hasBoardResolution) {
-            docTypes.push('board_resolution');
+          if (!hasBylaws) docTypes.push('bylaws');
+          
+          // Governance Documents (ALWAYS REQUIRED for Fortune 500)
+          if (!hasBylawsAcknowledgment) docTypes.push('bylaws_acknowledgment');
+          if (!hasFiduciaryEthics) docTypes.push('fiduciary_ethics_ack');
+          if (!hasConflictDisclosure) docTypes.push('conflict_disclosure');
+          if (!hasOfficerIndemnification) docTypes.push('officer_indemnification');
+          
+          // Equity Documents (conditional)
+          if (appointment.equity_included) {
+            if (!hasCertificate) docTypes.push('certificate');
+            if (!hasStockSubscription) docTypes.push('stock_subscription');
+            if (!hasEquityPlan) docTypes.push('equity_incentive_plan');
+            if (!hasOptionRSUAward) docTypes.push('option_rsu_award');
           }
-          if (!hasCertificate) {
-            docTypes.push('certificate');
-          }
-          if (!hasEmploymentAgreement) {
-            docTypes.push('employment_agreement');
-          }
-          if (!hasConfidentialityIP) {
-            docTypes.push('confidentiality_ip');
-          }
-          if (appointment.equity_included && !hasStockSubscription) {
-            docTypes.push('stock_subscription');
-          }
+          
+          // Deferred Compensation (conditional)
           const needsDeferredComp = appointment.equity_included || 
             (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred'));
           if (needsDeferredComp && !hasDeferredCompensation) {
             docTypes.push('deferred_compensation');
           }
-          if ((appointment as any).formation_mode && !hasPreIncorporationConsent) {
-            docTypes.push('pre_incorporation_consent');
-          }
           break;
         
         case 'SENT_TO_BOARD':
-          // Appointment letter + board resolution
-          if (!hasAppointmentLetter) {
-            docTypes.push('appointment_letter');
-          }
-          if (!hasBoardResolution && appointment.board_resolution_id) {
-            docTypes.push('board_resolution');
-          }
+          // Appointment letter + board resolution + governance docs
+          if (!hasAppointmentLetter) docTypes.push('appointment_letter');
+          if (!hasBoardResolution && appointment.board_resolution_id) docTypes.push('board_resolution');
+          if (!hasBylaws) docTypes.push('bylaws');
+          if (!hasBylawsAcknowledgment) docTypes.push('bylaws_acknowledgment');
           break;
         
         case 'APPROVED':
-          // All documents for approved appointments - complete legal package
-          // Core documents
-          if (!hasAppointmentLetter) {
-            docTypes.push('appointment_letter');
+          // FORTUNE 500: All 14 documents for approved appointments - complete legal package
+          // Core Employment Documents
+          if (!hasAppointmentLetter) docTypes.push('appointment_letter');
+          if (!hasEmploymentAgreement) docTypes.push('employment_agreement');
+          if (!hasConfidentialityIP) docTypes.push('confidentiality_ip');
+          
+          // Board & Formation Documents
+          if (!hasBoardResolution && appointment.board_resolution_id) docTypes.push('board_resolution');
+          if ((appointment as any).formation_mode) {
+            if (!hasPreIncorporationConsent) docTypes.push('pre_incorporation_consent');
+            if (!hasCertificateOfIncorporation) docTypes.push('certificate_of_incorporation');
           }
-          if (!hasBoardResolution && appointment.board_resolution_id) {
-            docTypes.push('board_resolution');
-          }
-          if (!hasCertificate) {
-            docTypes.push('certificate');
-          }
-          if (!hasEmploymentAgreement) {
-            docTypes.push('employment_agreement');
+          if (!hasBylaws) docTypes.push('bylaws');
+          
+          // Governance Documents (ALWAYS REQUIRED)
+          if (!hasBylawsAcknowledgment) docTypes.push('bylaws_acknowledgment');
+          if (!hasFiduciaryEthics) docTypes.push('fiduciary_ethics_ack');
+          if (!hasConflictDisclosure) docTypes.push('conflict_disclosure');
+          if (!hasOfficerIndemnification) docTypes.push('officer_indemnification');
+          
+          // Equity Documents (conditional)
+          if (appointment.equity_included) {
+            if (!hasCertificate) docTypes.push('certificate');
+            if (!hasStockSubscription) docTypes.push('stock_subscription');
+            if (!hasEquityPlan) docTypes.push('equity_incentive_plan');
+            if (!hasOptionRSUAward) docTypes.push('option_rsu_award');
           }
           
-          // Additional legal documents for complete appointment package
-          if (!hasConfidentialityIP) {
-            docTypes.push('confidentiality_ip');
-          }
-          if (!hasStockSubscription) {
-            docTypes.push('stock_subscription');
-          }
-          // Deferred compensation only if equity is included or compensation is deferred
+          // Deferred Compensation (conditional)
           if (!hasDeferredCompensation && (appointment.equity_included || (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred')))) {
             docTypes.push('deferred_compensation');
-          }
-          
-          // Pre-Incorporation Consent - check formation_mode
-          if (!hasPreIncorporationConsent && (appointment as any).formation_mode) {
-            docTypes.push('pre_incorporation_consent');
-          }
-          
-          // If force_regenerate and APPROVED, ensure ALL documents are regenerated
-          if (force_regenerate && docTypes.length === 0) {
-            // Force regenerate all documents for APPROVED appointments
-            docTypes.push('appointment_letter');
-            if (appointment.board_resolution_id) {
-              docTypes.push('board_resolution');
-            }
-            docTypes.push('certificate');
-            docTypes.push('employment_agreement');
-            docTypes.push('confidentiality_ip');
-            docTypes.push('stock_subscription');
-            if (appointment.equity_included || (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred'))) {
-              docTypes.push('deferred_compensation');
-            }
-            if ((appointment as any).formation_mode) {
-              docTypes.push('pre_incorporation_consent');
-            }
-            console.log(`Force regenerating all documents for APPROVED appointment ${appointment.id}`);
-          }
-          
-          // If no documents were queued (and not force regenerating), log a warning
-          if (docTypes.length === 0 && !force_regenerate) {
-            console.warn(`Appointment ${appointment.id} is APPROVED but all documents appear to exist. Document URLs:`, {
-              appointment_letter_url: appointment.appointment_letter_url,
-              certificate_url: appointment.certificate_url,
-              employment_agreement_url: appointment.employment_agreement_url,
-              confidentiality_ip_url: (appointment as any).confidentiality_ip_url,
-              stock_subscription_url: (appointment as any).stock_subscription_url,
-              deferred_compensation_url: (appointment as any).deferred_compensation_url,
-              pre_incorporation_consent_url: (appointment as any).pre_incorporation_consent_url,
-            });
           }
           break;
         
@@ -298,63 +301,76 @@ serve(async (req) => {
         case 'READY_FOR_SECRETARY_REVIEW':
         case 'SECRETARY_APPROVED':
         case 'ACTIVATING':
-          // For these statuses, ensure all documents exist (they should have been generated earlier)
-          // Generate any missing documents
-          if (!hasAppointmentLetter || force_regenerate) {
-            docTypes.push('appointment_letter');
+          // FORTUNE 500: For these statuses, ensure all 14 documents exist
+          // Core Employment Documents
+          if (!hasAppointmentLetter || force_regenerate) docTypes.push('appointment_letter');
+          if (!hasEmploymentAgreement || force_regenerate) docTypes.push('employment_agreement');
+          if (!hasConfidentialityIP || force_regenerate) docTypes.push('confidentiality_ip');
+          
+          // Board & Formation Documents
+          if (!hasBoardResolution || force_regenerate) docTypes.push('board_resolution');
+          if ((appointment as any).formation_mode) {
+            if (!hasPreIncorporationConsent || force_regenerate) docTypes.push('pre_incorporation_consent');
+            if (!hasCertificateOfIncorporation || force_regenerate) docTypes.push('certificate_of_incorporation');
           }
-          if (!hasBoardResolution || force_regenerate) {
-            docTypes.push('board_resolution');
+          if (!hasBylaws || force_regenerate) docTypes.push('bylaws');
+          
+          // Governance Documents (ALWAYS REQUIRED)
+          if (!hasBylawsAcknowledgment || force_regenerate) docTypes.push('bylaws_acknowledgment');
+          if (!hasFiduciaryEthics || force_regenerate) docTypes.push('fiduciary_ethics_ack');
+          if (!hasConflictDisclosure || force_regenerate) docTypes.push('conflict_disclosure');
+          if (!hasOfficerIndemnification || force_regenerate) docTypes.push('officer_indemnification');
+          
+          // Equity Documents (conditional)
+          if (appointment.equity_included) {
+            if (!hasCertificate || force_regenerate) docTypes.push('certificate');
+            if (!hasStockSubscription || force_regenerate) docTypes.push('stock_subscription');
+            if (!hasEquityPlan || force_regenerate) docTypes.push('equity_incentive_plan');
+            if (!hasOptionRSUAward || force_regenerate) docTypes.push('option_rsu_award');
           }
-          if (!hasCertificate || force_regenerate) {
-            docTypes.push('certificate');
-          }
-          if (!hasEmploymentAgreement || force_regenerate) {
-            docTypes.push('employment_agreement');
-          }
-          if (!hasConfidentialityIP || force_regenerate) {
-            docTypes.push('confidentiality_ip');
-          }
-          if (appointment.equity_included && (!hasStockSubscription || force_regenerate)) {
-            docTypes.push('stock_subscription');
-          }
+          
+          // Deferred Compensation (conditional)
           const needsDeferredCompOther = appointment.equity_included || 
             (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred'));
           if (needsDeferredCompOther && (!hasDeferredCompensation || force_regenerate)) {
             docTypes.push('deferred_compensation');
           }
-          if ((appointment as any).formation_mode && (!hasPreIncorporationConsent || force_regenerate)) {
-            docTypes.push('pre_incorporation_consent');
-          }
           break;
         
         default:
-          // For other statuses, generate all standard documents if missing
-          if (!hasAppointmentLetter || force_regenerate) {
-            docTypes.push('appointment_letter');
+          // FORTUNE 500: For other statuses, generate all standard documents if missing
+          // Core Employment Documents
+          if (!hasAppointmentLetter || force_regenerate) docTypes.push('appointment_letter');
+          if (!hasEmploymentAgreement || force_regenerate) docTypes.push('employment_agreement');
+          if (!hasConfidentialityIP || force_regenerate) docTypes.push('confidentiality_ip');
+          
+          // Board & Formation Documents
+          if (!hasBoardResolution || force_regenerate) docTypes.push('board_resolution');
+          if ((appointment as any).formation_mode) {
+            if (!hasPreIncorporationConsent || force_regenerate) docTypes.push('pre_incorporation_consent');
+            if (!hasCertificateOfIncorporation || force_regenerate) docTypes.push('certificate_of_incorporation');
           }
-          if (!hasBoardResolution || force_regenerate) {
-            docTypes.push('board_resolution');
+          if (!hasBylaws || force_regenerate) docTypes.push('bylaws');
+          
+          // Governance Documents (ALWAYS REQUIRED)
+          if (!hasBylawsAcknowledgment || force_regenerate) docTypes.push('bylaws_acknowledgment');
+          if (!hasFiduciaryEthics || force_regenerate) docTypes.push('fiduciary_ethics_ack');
+          if (!hasConflictDisclosure || force_regenerate) docTypes.push('conflict_disclosure');
+          if (!hasOfficerIndemnification || force_regenerate) docTypes.push('officer_indemnification');
+          
+          // Equity Documents (conditional)
+          if (appointment.equity_included) {
+            if (!hasCertificate || force_regenerate) docTypes.push('certificate');
+            if (!hasStockSubscription || force_regenerate) docTypes.push('stock_subscription');
+            if (!hasEquityPlan || force_regenerate) docTypes.push('equity_incentive_plan');
+            if (!hasOptionRSUAward || force_regenerate) docTypes.push('option_rsu_award');
           }
-          if (!hasCertificate || force_regenerate) {
-            docTypes.push('certificate');
-          }
-          if (!hasEmploymentAgreement || force_regenerate) {
-            docTypes.push('employment_agreement');
-          }
-          if (!hasConfidentialityIP || force_regenerate) {
-            docTypes.push('confidentiality_ip');
-          }
-          if (appointment.equity_included && (!hasStockSubscription || force_regenerate)) {
-            docTypes.push('stock_subscription');
-          }
+          
+          // Deferred Compensation (conditional)
           const needsDeferredCompDefault = appointment.equity_included || 
             (appointment.compensation_structure && String(appointment.compensation_structure).toLowerCase().includes('deferred'));
           if (needsDeferredCompDefault && (!hasDeferredCompensation || force_regenerate)) {
             docTypes.push('deferred_compensation');
-          }
-          if ((appointment as any).formation_mode && (!hasPreIncorporationConsent || force_regenerate)) {
-            docTypes.push('pre_incorporation_consent');
           }
         }
       }
