@@ -149,7 +149,7 @@ const AppointmentList: React.FC = () => {
 
     const config = statusConfig[status] || { color: 'gray', label: status, icon: null };
     return (
-      <Badge color={config.color} leftSection={config.icon}>
+      <Badge color={config.color} leftSection={config.icon} style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
         {config.label}
       </Badge>
     );
@@ -1280,11 +1280,11 @@ const AppointmentList: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         {hasAnyDoc ? (
-                          <Badge color="green" variant="light">
+                          <Badge color="green" variant="light" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                             {generatedCount} / {totalCount} Generated
                           </Badge>
                         ) : (
-                          <Badge color="yellow" variant="light">
+                          <Badge color="yellow" variant="light" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                             No Documents
                           </Badge>
                         )}
@@ -1414,7 +1414,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1437,7 +1437,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1460,7 +1460,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1484,7 +1484,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1495,7 +1495,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Pre-Incorporation Consent</Text>
-                        <Badge color="blue" variant="light" size="xs">
+                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Formation
                         </Badge>
                       </Group>
@@ -1514,7 +1514,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1523,7 +1523,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Certificate of Incorporation</Text>
-                        <Badge color="blue" variant="light" size="xs">
+                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Formation
                         </Badge>
                       </Group>
@@ -1542,7 +1542,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1551,7 +1551,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Bylaws</Text>
-                        <Badge color="blue" variant="light" size="xs">
+                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Formation
                         </Badge>
                       </Group>
@@ -1570,7 +1570,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1596,7 +1596,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1619,7 +1619,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1642,7 +1642,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1665,7 +1665,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
@@ -1677,7 +1677,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Stock Certificate</Text>
-                        <Badge color="green" variant="light" size="xs">
+                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Equity
                         </Badge>
                       </Group>
@@ -1696,7 +1696,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1705,7 +1705,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Stock Subscription</Text>
-                        <Badge color="green" variant="light" size="xs">
+                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Equity
                         </Badge>
                       </Group>
@@ -1724,7 +1724,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1733,7 +1733,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Equity Incentive Plan</Text>
-                        <Badge color="green" variant="light" size="xs">
+                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Equity
                         </Badge>
                       </Group>
@@ -1752,7 +1752,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1761,7 +1761,7 @@ const AppointmentList: React.FC = () => {
                     <Group justify="space-between">
                       <Group gap="xs">
                         <Text size="sm">Option/RSU Award</Text>
-                        <Badge color="green" variant="light" size="xs">
+                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Equity
                         </Badge>
                       </Group>
@@ -1780,7 +1780,7 @@ const AppointmentList: React.FC = () => {
                           View
                         </Button>
                       ) : (
-                        <Badge color="yellow" variant="light" size="sm">
+                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                           Not Generated
                         </Badge>
                       )}
@@ -1806,7 +1806,7 @@ const AppointmentList: React.FC = () => {
                       View
                     </Button>
                   ) : (
-                    <Badge color="yellow" variant="light" size="sm">
+                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
                       Not Generated
                     </Badge>
                   )}
