@@ -7118,9 +7118,13 @@ export type Database = {
           board_meeting_date: string | null
           board_resolution_id: string | null
           board_resolution_url: string | null
+          bylaws_acknowledgment_url: string | null
+          bylaws_url: string | null
+          certificate_of_incorporation_url: string | null
           certificate_url: string | null
           compensation_structure: string | null
           confidentiality_ip_url: string | null
+          conflict_disclosure_url: string | null
           created_at: string
           created_by: string | null
           deferred_compensation_url: string | null
@@ -7129,9 +7133,13 @@ export type Database = {
           employment_agreement_url: string | null
           equity_details: string | null
           equity_included: boolean | null
+          equity_plan_url: string | null
+          fiduciary_ethics_url: string | null
           formation_mode: boolean | null
           id: string
           notes: string | null
+          officer_indemnification_url: string | null
+          option_rsu_award_url: string | null
           pre_incorporation_consent_url: string | null
           proposed_officer_email: string | null
           proposed_officer_name: string
@@ -7153,9 +7161,13 @@ export type Database = {
           board_meeting_date?: string | null
           board_resolution_id?: string | null
           board_resolution_url?: string | null
+          bylaws_acknowledgment_url?: string | null
+          bylaws_url?: string | null
+          certificate_of_incorporation_url?: string | null
           certificate_url?: string | null
           compensation_structure?: string | null
           confidentiality_ip_url?: string | null
+          conflict_disclosure_url?: string | null
           created_at?: string
           created_by?: string | null
           deferred_compensation_url?: string | null
@@ -7164,9 +7176,13 @@ export type Database = {
           employment_agreement_url?: string | null
           equity_details?: string | null
           equity_included?: boolean | null
+          equity_plan_url?: string | null
+          fiduciary_ethics_url?: string | null
           formation_mode?: boolean | null
           id?: string
           notes?: string | null
+          officer_indemnification_url?: string | null
+          option_rsu_award_url?: string | null
           pre_incorporation_consent_url?: string | null
           proposed_officer_email?: string | null
           proposed_officer_name: string
@@ -7188,9 +7204,13 @@ export type Database = {
           board_meeting_date?: string | null
           board_resolution_id?: string | null
           board_resolution_url?: string | null
+          bylaws_acknowledgment_url?: string | null
+          bylaws_url?: string | null
+          certificate_of_incorporation_url?: string | null
           certificate_url?: string | null
           compensation_structure?: string | null
           confidentiality_ip_url?: string | null
+          conflict_disclosure_url?: string | null
           created_at?: string
           created_by?: string | null
           deferred_compensation_url?: string | null
@@ -7199,9 +7219,13 @@ export type Database = {
           employment_agreement_url?: string | null
           equity_details?: string | null
           equity_included?: boolean | null
+          equity_plan_url?: string | null
+          fiduciary_ethics_url?: string | null
           formation_mode?: boolean | null
           id?: string
           notes?: string | null
+          officer_indemnification_url?: string | null
+          option_rsu_award_url?: string | null
           pre_incorporation_consent_url?: string | null
           proposed_officer_email?: string | null
           proposed_officer_name?: string

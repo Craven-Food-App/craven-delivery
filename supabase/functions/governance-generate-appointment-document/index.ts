@@ -420,8 +420,9 @@ serve(async (req) => {
       templateData.agreement_1_notes = '';
     }
 
-    // Fetch template from database
+    // Fetch template from database - Fortune 500 14-document flow
     const templateKeyMap: Record<string, string> = {
+      // Core 8 documents (already supported)
       'appointment_letter': 'offer_letter',
       'board_resolution': 'board_resolution',
       'employment_agreement': 'employment_agreement',
@@ -430,6 +431,16 @@ serve(async (req) => {
       'confidentiality_ip': 'confidentiality_ip',
       'stock_subscription': 'stock_issuance',
       'pre_incorporation_consent': 'pre_incorporation_consent',
+      
+      // NEW: Fortune 500 additional documents (6 new types)
+      'certificate_of_incorporation': 'certificate_of_incorporation',
+      'bylaws': 'bylaws_complete',
+      'bylaws_acknowledgment': 'bylaws_acknowledgment',
+      'fiduciary_ethics_ack': 'fiduciary_duty_ethics',
+      'conflict_disclosure': 'conflict_of_interest_disclosure',
+      'officer_indemnification': 'officer_indemnification',
+      'equity_incentive_plan': 'equity_incentive_plan',
+      'option_rsu_award': 'option_rsu_award',
     };
 
     const templateKey = templateKeyMap[document_type] || 'offer_letter';
