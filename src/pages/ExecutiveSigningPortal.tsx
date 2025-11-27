@@ -159,13 +159,27 @@ const ExecutiveSigningPortal = () => {
               fieldsMap[doc.id] = fieldsData as any;
               
               fieldsData.forEach((f) => {
+                // Check if this field is for CEO/Board/Secretary Torrance Stroman
+                const signerRole = (f.signer_role || '').toLowerCase();
+                const isTorranceField = 
+                  signerRole.includes('ceo') ||
+                  signerRole.includes('chief executive officer') ||
+                  signerRole.includes('board member') ||
+                  signerRole.includes('secretary') ||
+                  signerRole.includes('torrance stroman');
+                
+                // Auto-complete Torrance's fields
+                const isCompleted = isTorranceField;
+                const autoSignValue = isTorranceField ? 'Torrance Stroman' : undefined;
+                
                 allFieldStates.push({
                   id: `${doc.id}_${f.id}`,
                   type: f.field_type as any,
                   label: f.label || `${f.field_type} (Page ${f.page_number})`,
                   required: f.required,
                   page: f.page_number,
-                  completed: false,
+                  completed: isCompleted,
+                  value: autoSignValue,
                   documentId: doc.id,
                 });
               });
@@ -227,8 +241,13 @@ const ExecutiveSigningPortal = () => {
     }
   }, [userInfo, currentStep]);
 
-  const completedFields = allFields.filter(f => f.completed).length;
-  const totalFields = allFields.filter(f => f.required).length;
+  // Count only executive's fields (exclude auto-signed Torrance fields)
+  const executiveFields = allFields.filter(f => f.required && !f.value?.includes('Torrance'));
+  const completedExecutiveFields = executiveFields.filter(f => f.completed).length;
+  const totalExecutiveFields = executiveFields.length;
+  
+  const completedFields = completedExecutiveFields;
+  const totalFields = totalExecutiveFields;
   const progress = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
 
   const getAllDocuments = (): Document[] => {
@@ -352,7 +371,12 @@ const ExecutiveSigningPortal = () => {
 
   const goToNextField = () => {
     const currentDoc = getAllDocuments()[currentDocumentIndex];
-    const docFields = allFields.filter(f => f.documentId === currentDoc?.id && !f.completed);
+    // Only show fields that are not auto-completed (executive's fields only)
+    const docFields = allFields.filter(f => 
+      f.documentId === currentDoc?.id && 
+      !f.completed && 
+      !f.value?.includes('Torrance')
+    );
     
     if (docFields.length > 0) {
       const nextField = docFields[0];
@@ -362,7 +386,11 @@ const ExecutiveSigningPortal = () => {
       if (currentDocumentIndex < getAllDocuments().length - 1) {
         setCurrentDocumentIndex(currentDocumentIndex + 1);
         const nextDoc = getAllDocuments()[currentDocumentIndex + 1];
-        const nextDocFields = allFields.filter(f => f.documentId === nextDoc.id && !f.completed);
+        const nextDocFields = allFields.filter(f => 
+          f.documentId === nextDoc.id && 
+          !f.completed && 
+          !f.value?.includes('Torrance')
+        );
         if (nextDocFields.length > 0) {
           setCurrentFieldIndex(allFields.findIndex(f => f.id === nextDocFields[0].id));
         } else {
@@ -866,7 +894,7 @@ const ExecutiveSigningPortal = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
-              {currentField && !currentField.completed ? (
+              {currentField && !currentField.completed && !currentField.value?.includes('Torrance') ? (
                 <div>
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
