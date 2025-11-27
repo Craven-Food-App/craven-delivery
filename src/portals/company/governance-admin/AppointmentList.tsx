@@ -44,6 +44,7 @@ import {
   IconShield,
   IconInfoCircle,
   IconEdit,
+  IconCoins,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
@@ -795,137 +796,386 @@ const AppointmentList: React.FC = () => {
           <Collapse in={instructionsOpened}>
             <Stack gap="lg" mt="md">
               <Alert icon={<IconInfoCircle size={16} />} title="Overview" color="blue" variant="light">
-                Follow these steps to properly appoint executives and corporate officers with full documentation and board approval.
+                <Text size="sm" mb="xs">
+                  This Fortune 500-grade executive appointment workflow ensures proper governance, legal compliance, and comprehensive documentation for all corporate officer appointments. The system automatically generates all required legal documents, manages board approval processes, and maintains complete audit trails.
+                </Text>
+                <Text size="sm" fw={500}>
+                  Total Documents Generated: 9 core documents + 3 formation documents (if Formation Mode) + 4 equity documents (if equity included)
+                </Text>
               </Alert>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
                   Step 1: Create New Appointment
                 </Title>
+                <Text size="sm" c="dimmed" mb="xs">
+                  Begin by creating a new appointment record with all required officer details and governance parameters.
+                </Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="blue" size={20} radius="xl">
                     <IconFileText size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>Click the <Badge variant="light" size="sm">+ New Appointment</Badge> button above</List.Item>
-                  <List.Item>Fill out required fields: Officer Name, Email, Title, Effective Date, Appointment Type</List.Item>
-                  <List.Item>Enable <Badge variant="light" size="sm">Formation Mode</Badge> only if Articles of Incorporation are not yet filed</List.Item>
-                  <List.Item>Add optional details: Compensation, Equity, Department, Board Meeting Date</List.Item>
-                  <List.Item>Submit to create the appointment draft</List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Click the <Badge variant="light" size="sm">+ New Appointment</Badge> button</Text> located in the top-right corner of this page
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Required Fields:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Officer Full Name (legal name as it will appear on documents)</List.Item>
+                      <List.Item>Corporate Email Address (will receive all appointment documents)</List.Item>
+                      <List.Item>Executive Title (CEO, CFO, COO, CTO, CXO, or other C-suite position)</List.Item>
+                      <List.Item>Effective Date (the date the appointment becomes official)</List.Item>
+                      <List.Item>Appointment Type (Initial, Re-appointment, Promotion, or Interim)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Formation Mode:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Enable ONLY if your company's Articles of Incorporation have not yet been filed with the Secretary of State</List.Item>
+                      <List.Item>Generates 3 additional pre-incorporation documents: Pre-Incorporation Consent, Certificate of Incorporation (draft), and Company Bylaws</List.Item>
+                      <List.Item>Leave disabled if your company is already incorporated</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Optional Details:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Annual Compensation (base salary, bonuses, benefits structure)</List.Item>
+                      <List.Item>Equity Grant (percentage, share count, vesting schedule, strike price)</List.Item>
+                      <List.Item>Department/Division assignment</List.Item>
+                      <List.Item>Board Meeting Date (if different from effective date)</List.Item>
+                      <List.Item>Term Length (if not indefinite)</List.Item>
+                      <List.Item>Authority Granted (specific powers and responsibilities)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Review all information for accuracy, then click <Badge size="sm">Submit</Badge> to create the appointment</Text>
+                  </List.Item>
                 </List>
               </div>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
-                  Step 2: Document Generation
+                  Step 2: Automatic Document Generation
                 </Title>
-                <Text size="sm" c="dimmed" mb="xs">The system automatically generates:</Text>
+                <Text size="sm" c="dimmed" mb="xs">
+                  The system immediately begins generating all required legal documents using the information you provided. This process typically completes within 10-30 seconds.
+                </Text>
+                
+                <Text size="sm" fw={500} mt="md" mb="xs">Core Documents (9 always generated):</Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="green" size={20} radius="xl">
                     <IconCheck size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>Appointment Letter, Board Resolution, Officer Acceptance</List.Item>
-                  <List.Item>Employment Agreement, Confidentiality & IP Assignment</List.Item>
-                  <List.Item>Stock Subscription Agreement (if equity included)</List.Item>
-                  <List.Item>Pre-Incorporation Consent (if Formation Mode enabled)</List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Appointment Letter</Text> - Official offer letter detailing position, compensation, and start date
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Board Resolution</Text> - Formal board action appointing the officer with authority granted
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Employment Agreement</Text> - Comprehensive employment contract with terms, duties, and termination clauses
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Confidentiality & IP Assignment</Text> - Protects company trade secrets and assigns work product to company
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Bylaws Acknowledgment</Text> - Officer acknowledges receipt and understanding of company bylaws
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Fiduciary Duty & Ethics Acknowledgment</Text> - Confirms understanding of fiduciary obligations to company
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Conflict of Interest Disclosure</Text> - Annual disclosure of potential conflicts requiring board review
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Officer Indemnification Agreement</Text> - Company's commitment to indemnify officer for actions within scope
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Deferred Compensation Agreement</Text> - Salary deferral terms if applicable (or acknowledgment of immediate pay)
+                  </List.Item>
                 </List>
-                <Alert icon={<IconClock size={14} />} title="Note" color="yellow" variant="light" mt="xs">
-                  Document generation may take a few moments. Refresh to see updated status.
+
+                <Text size="sm" fw={500} mt="md" mb="xs">Formation Documents (3 additional if Formation Mode enabled):</Text>
+                <List spacing="xs" size="sm" icon={
+                  <ThemeIcon color="blue" size={20} radius="xl">
+                    <IconFileText size={12} />
+                  </ThemeIcon>
+                }>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Pre-Incorporation Consent</Text> - Founding team agreement to form the corporation
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Certificate of Incorporation (Draft)</Text> - Articles to be filed with Secretary of State
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Company Bylaws</Text> - Internal governance rules and procedures
+                  </List.Item>
+                </List>
+
+                <Text size="sm" fw={500} mt="md" mb="xs">Equity Documents (4 additional if equity included):</Text>
+                <List spacing="xs" size="sm" icon={
+                  <ThemeIcon color="purple" size={20} radius="xl">
+                    <IconCoins size={12} />
+                  </ThemeIcon>
+                }>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Stock Certificate</Text> - Ownership certificate showing share issuance
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Stock Subscription Agreement</Text> - Officer's purchase or grant of company shares
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Equity Incentive Plan</Text> - Company's overall equity compensation plan document
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Option/RSU Award Agreement</Text> - Specific terms of stock options or restricted stock units
+                  </List.Item>
+                </List>
+
+                <Alert icon={<IconClock size={14} />} title="Document Generation Timeline" color="yellow" variant="light" mt="md">
+                  <Text size="xs">
+                    Documents typically generate within 10-30 seconds. If the <Badge size="xs" color="green">Documents</Badge> column shows "No Documents" after 1 minute, click the <Badge size="xs" color="orange">refresh icon</Badge> next to the appointment to regenerate. If documents still don't appear, check that all required company settings are configured (company name, state of incorporation, registered agent, etc.).
+                  </Text>
                 </Alert>
               </div>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
-                  Step 3: Review Documents
+                  Step 3: Review & Verify Documents
                 </Title>
+                <Text size="sm" c="dimmed" mb="xs">
+                  Carefully review all generated documents to ensure accuracy before proceeding to board approval.
+                </Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="orange" size={20} radius="xl">
                     <IconChecklist size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>Check the <Badge variant="light" size="sm">Documents</Badge> column in the table</List.Item>
-                  <List.Item>Click the <Badge variant="light" size="sm" color="blue">eye icon</Badge> to view each document</List.Item>
-                  <List.Item>Verify all documents are present (7 standard, or 8 with Formation Mode)</List.Item>
-                  <List.Item>Use the <Badge variant="light" size="sm" color="orange">refresh icon</Badge> to regenerate if needed</List.Item>
+                  <List.Item>
+                    <Text size="sm">Check the <Badge variant="light" size="sm">Documents</Badge> column - you should see a green badge showing "X / Y Generated" where:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>9 documents if no equity and not formation mode</List.Item>
+                      <List.Item>12 documents if formation mode (9 + 3)</List.Item>
+                      <List.Item>13 documents if equity included (9 + 4)</List.Item>
+                      <List.Item>16 documents if both formation mode and equity (9 + 3 + 4)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Click the <Badge variant="light" size="sm" color="blue">eye icon</Badge> to open the appointment details modal</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">In the modal, review each document by clicking the <Badge size="xs" color="blue">View</Badge> button next to each document name</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Verify each document contains:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Correct officer name, title, and contact information</List.Item>
+                      <List.Item>Accurate compensation and equity terms</List.Item>
+                      <List.Item>Proper effective dates and board meeting dates</List.Item>
+                      <List.Item>Current company information (legal name, state, registered agent)</List.Item>
+                      <List.Item>No unfilled placeholders (if you see [[ ]] brackets, regenerate documents)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">If any document is incorrect or missing, click the <Badge variant="light" size="sm" color="orange">refresh icon</Badge> (circular arrow) in the Actions column to regenerate all documents</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">To edit appointment details before regeneration, click the <Badge variant="light" size="sm" color="green">edit icon</Badge> (pencil) in the Actions column</Text>
+                  </List.Item>
                 </List>
               </div>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
-                  Step 4: Board Approval
+                  Step 4: Board Approval Process
                 </Title>
+                <Text size="sm" c="dimmed" mb="xs">
+                  All executive appointments require formal board approval through a documented voting process.
+                </Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="purple" size={20} radius="xl">
                     <IconUsers size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>Navigate to <Badge variant="light" size="sm">Resolutions</Badge> tab to find the created resolution</List.Item>
-                  <List.Item>Board members vote via the <Badge variant="light" size="sm">Voting Dashboard</Badge> tab</List.Item>
-                  <List.Item>Status changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge> after approval</List.Item>
+                  <List.Item>
+                    <Text size="sm">Navigate to the <Badge variant="light" size="sm">Resolutions</Badge> tab at the top of this page</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Find the board resolution automatically created for this appointment (it will show the officer's name and appointment date)</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Board members can review the resolution details and vote in one of two ways:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item><Text fw={500}>Via Voting Dashboard:</Text> Click the <Badge size="xs">Voting Dashboard</Badge> tab to see all pending resolutions requiring votes</List.Item>
+                      <List.Item><Text fw={500}>Via Resolution List:</Text> Click directly on a resolution in the Resolutions tab to view details and cast a vote</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Each board member must vote: <Badge size="xs" color="green">For</Badge>, <Badge size="xs" color="red">Against</Badge>, or <Badge size="xs" color="gray">Abstain</Badge></Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Once a majority of board members vote "For", the resolution status automatically changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge></Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">The appointment status updates to <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge> and proceeds to Step 5</Text>
+                  </List.Item>
                 </List>
+                <Alert icon={<IconAlertCircle size={14} />} title="Board Quorum Requirements" color="blue" variant="light" mt="xs">
+                  <Text size="xs">
+                    Ensure your board has established quorum requirements (typically majority of directors) in your bylaws. The system tracks all votes but does not enforce quorum - the Corporate Secretary must verify quorum was met before final approval.
+                  </Text>
+                </Alert>
               </div>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
-                  Step 5: Secretary Review
+                  Step 5: Corporate Secretary Review & Approval
                 </Title>
+                <Text size="sm" c="dimmed" mb="xs">
+                  The Corporate Secretary performs final compliance review and certifies the appointment is legally valid.
+                </Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="teal" size={20} radius="xl">
                     <IconShield size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>Go to <Badge variant="light" size="sm">Officer Validation</Badge> tab</List.Item>
-                  <List.Item>Review appointment with status <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge></List.Item>
-                  <List.Item>Approve to finalize - status becomes <Badge color="green" size="sm">SECRETARY_APPROVED</Badge></List.Item>
+                  <List.Item>
+                    <Text size="sm">Navigate to the <Badge variant="light" size="sm">Officer Validation</Badge> tab at the top of this page</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Find appointments with status <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge></Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>The Secretary must verify:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Board quorum was met for the resolution vote</List.Item>
+                      <List.Item>All required documents are present and properly executed</List.Item>
+                      <List.Item>Appointment complies with company bylaws and applicable law</List.Item>
+                      <List.Item>No conflicts of interest or governance issues exist</List.Item>
+                      <List.Item>Officer is eligible to serve (not disqualified by law or prior agreements)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">If everything is in order, click <Badge size="sm" color="green">Approve</Badge> to certify the appointment</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Status changes to <Badge color="green" size="sm">SECRETARY_APPROVED</Badge> and the appointment proceeds to final activation</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">If issues are found, click <Badge size="sm" color="red">Reject</Badge> and provide detailed notes for correction</Text>
+                  </List.Item>
                 </List>
               </div>
 
               <div>
                 <Title order={4} size="h5" mb="sm">
-                  Step 6: Activation
+                  Step 6: System Activation & Officer Onboarding
                 </Title>
+                <Text size="sm" c="dimmed" mb="xs">
+                  After Secretary approval, the system automatically provisions access and sends all documents to the new officer.
+                </Text>
                 <List spacing="xs" size="sm" icon={
                   <ThemeIcon color="green" size={20} radius="xl">
                     <IconMail size={12} />
                   </ThemeIcon>
                 }>
-                  <List.Item>System automatically creates user account and assigns roles</List.Item>
-                  <List.Item>Email notification sent with appointment documents</List.Item>
-                  <List.Item>Status changes to <Badge color="green" size="sm">ACTIVE</Badge> when complete</List.Item>
-                  <List.Item>Appointee can access executive portal and sign documents</List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Automatic System Actions (no manual steps required):</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Creates authentication account in auth system (email/password login)</List.Item>
+                      <List.Item>Assigns appropriate role-based permissions (CEO, CFO, CTO, COO, CXO)</List.Item>
+                      <List.Item>Provisions access to relevant executive portals (CEO Portal, CFO Portal, etc.)</List.Item>
+                      <List.Item>Creates entry in Officers Ledger (accessible via <Badge size="xs">Officers</Badge> tab)</List.Item>
+                      <List.Item>Updates cap table if equity was granted (accessible via <Badge size="xs">Cap Table</Badge> tab)</List.Item>
+                      <List.Item>Records complete audit trail in Governance Logs (accessible via <Badge size="xs">Logs</Badge> tab)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Email Notification to Officer:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Sent to the email address provided in Step 1</List.Item>
+                      <List.Item>Contains login credentials (temporary password to be changed on first login)</List.Item>
+                      <List.Item>Includes direct links to view all appointment documents</List.Item>
+                      <List.Item>Provides instructions for accessing executive portal</List.Item>
+                      <List.Item>Lists next steps for onboarding (document signing, system access, etc.)</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">Appointment status updates to <Badge color="green" size="sm">ACTIVE</Badge> - the officer is now officially appointed</Text>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm">The officer can log in to their executive portal and begin:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Reviewing and electronically signing required documents</List.Item>
+                      <List.Item>Accessing department dashboards and management tools</List.Item>
+                      <List.Item>Viewing equity grants and vesting schedules (if applicable)</List.Item>
+                      <List.Item>Managing their team and reviewing company financials (based on role)</List.Item>
+                    </List>
+                  </List.Item>
                 </List>
               </div>
 
               <Divider />
 
               <div>
-                <Title order={4} size="h5" mb="sm">
-                  Status Flow
+                <Title order={4} size="h5" mb="sm" c="red">
+                  ⚠️ Troubleshooting Common Issues
                 </Title>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color="gray" size="sm">DRAFT</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="blue" size="sm">SENT_TO_BOARD</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="cyan" size="sm">BOARD_ADOPTED</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="orange" size="sm">AWAITING_SIGNATURES</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="lime" size="sm">SECRETARY_APPROVED</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="indigo" size="sm">ACTIVATING</Badge>
-                  <Text size="xs" c="dimmed">→</Text>
-                  <Badge color="green" size="sm">ACTIVE</Badge>
-                </Group>
+                <List spacing="md" size="sm">
+                  <List.Item>
+                    <Text size="sm" fw={500}>Documents showing "No Documents" or incorrect count:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Click the <Badge size="xs" color="orange">refresh icon</Badge> in Actions column to regenerate</List.Item>
+                      <List.Item>Check that Formation Mode and Equity settings match your intent</List.Item>
+                      <List.Item>Verify company settings are complete (company name, state, registered agent) in Settings</List.Item>
+                      <List.Item>Wait 30 seconds after creation before checking - generation takes time</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Documents contain unfilled placeholders like [[PLACEHOLDER]]:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>This means the document template is missing required data</List.Item>
+                      <List.Item>Click the <Badge size="xs" color="green">edit icon</Badge> to add missing information</List.Item>
+                      <List.Item>Then click <Badge size="xs" color="orange">refresh icon</Badge> to regenerate with complete data</List.Item>
+                      <List.Item>Common missing fields: compensation details, equity terms, authority granted</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Board resolution vote not appearing or not counting:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Ensure board members are added in the <Badge size="xs">Board Setup</Badge> tab</List.Item>
+                      <List.Item>Verify board members have proper authentication accounts</List.Item>
+                      <List.Item>Check that the resolution is in "Pending" status (not already adopted or rejected)</List.Item>
+                      <List.Item>Refresh the Voting Dashboard to see latest vote counts</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Officer not receiving activation email:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Verify the email address is correct in the appointment details</List.Item>
+                      <List.Item>Check spam/junk folders for the notification email</List.Item>
+                      <List.Item>Use the <Badge size="xs" color="violet">Send Email to [Name]</Badge> button to resend</List.Item>
+                      <List.Item>Ensure the appointment has completed all steps and shows ACTIVE status</List.Item>
+                    </List>
+                  </List.Item>
+                  <List.Item>
+                    <Text size="sm" fw={500}>Appointment stuck in a status and won't progress:</Text>
+                    <List withPadding size="xs" mt={4}>
+                      <List.Item>Check the required action for current status (board vote, secretary approval, etc.)</List.Item>
+                      <List.Item>Use status-specific action buttons (Update Status, Send Email) in the button bar above</List.Item>
+                      <List.Item>Review Governance Logs to see what actions have been completed</List.Item>
+                      <List.Item>Contact system administrator if workflow appears blocked</List.Item>
+                    </List>
+                  </List.Item>
+                </List>
               </div>
 
-              <Alert icon={<IconAlertCircle size={14} />} title="Troubleshooting" color="yellow" variant="light">
-                <Text size="xs" mb="xs"><strong>Documents not generating?</strong> Click the refresh icon on the appointment row to retry.</Text>
-                <Text size="xs" mb="xs"><strong>Stuck in DRAFT?</strong> Use the "Fix Nathan Curry Appointments" button (or similar) to trigger workflow manually.</Text>
-                <Text size="xs"><strong>User account issues?</strong> Ensure email is valid and unique. Account is created automatically during activation.</Text>
+              <Alert icon={<IconInfoCircle size={16} />} title="Need Help?" color="grape" variant="light">
+                <Text size="sm">
+                  For additional support, refer to the <Badge size="sm">Governance Logs</Badge> tab to view complete audit trails, or consult your corporate counsel for guidance on governance procedures and legal compliance requirements.
+                </Text>
               </Alert>
             </Stack>
           </Collapse>
