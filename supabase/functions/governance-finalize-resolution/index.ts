@@ -51,6 +51,68 @@ serve(async (req) => {
     }
 
     if (resolution.status !== 'PENDING_VOTE') {
+      // If resolution is ADOPTED or EXECUTED, ensure corporate officer record exists
+      if ((resolution.status === 'ADOPTED' || resolution.status === 'EXECUTED') && resolution.type === 'EXECUTIVE_APPOINTMENT') {
+        console.log('Checking for corporate officer record for executed/adopted resolution...');
+        
+        const { data: execAppointment } = await supabaseAdmin
+          .from('executive_appointments')
+          .select('*')
+          .eq('board_resolution_id', resolution_id)
+          .maybeSingle();
+        
+        if (execAppointment) {
+          // Check if corporate officer already exists
+          const { data: existingOfficer } = await supabaseAdmin
+            .from('corporate_officers')
+            .select('id')
+            .eq('email', execAppointment.proposed_officer_email)
+            .maybeSingle();
+          
+          if (!existingOfficer) {
+            console.log('Creating missing corporate officer record...');
+            const officerData = {
+              full_name: execAppointment.proposed_officer_name,
+              title: execAppointment.proposed_title,
+              email: execAppointment.proposed_officer_email,
+              effective_date: execAppointment.effective_date || new Date().toISOString().split('T')[0],
+              status: 'ACTIVE',
+              appointed_by: resolution_id,
+              metadata: {
+                appointment_id: execAppointment.id,
+                appointment_type: execAppointment.appointment_type || 'NEW',
+                authority_granted: execAppointment.authority_granted,
+                compensation_structure: execAppointment.compensation_structure,
+                equity_included: execAppointment.equity_included || false,
+                equity_details: execAppointment.equity_details
+              }
+            };
+
+            const { error: officerError } = await supabaseAdmin
+              .from('corporate_officers')
+              .insert(officerData);
+
+            if (officerError) {
+              console.error('Error creating corporate officer:', officerError);
+              return new Response(
+                JSON.stringify({ error: 'Failed to create corporate officer', details: officerError }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            } else {
+              console.log('Corporate officer created successfully for', execAppointment.proposed_officer_name);
+              return new Response(
+                JSON.stringify({ 
+                  success: true, 
+                  message: `Corporate officer record created for ${execAppointment.proposed_officer_name}`,
+                  resolution 
+                }),
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+        }
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -163,12 +225,41 @@ serve(async (req) => {
         // Find the executive appointment linked to this resolution
         const { data: execAppointments, error: execApptError } = await supabaseAdmin
           .from('executive_appointments')
-          .select('id, status')
+          .select('*')
           .eq('board_resolution_id', resolution_id)
           .maybeSingle();
 
         if (execAppointments) {
           console.log(`Updating executive appointment ${execAppointments.id} status after resolution adoption`);
+          
+          // Create corporate_officers record first
+          console.log('Creating corporate officer record...');
+          const officerData = {
+            full_name: execAppointments.appointee_name,
+            title: execAppointments.title,
+            email: execAppointments.appointee_email,
+            effective_date: execAppointments.effective_date || new Date().toISOString().split('T')[0],
+            status: 'ACTIVE',
+            appointed_by: resolution_id,
+            metadata: {
+              appointment_id: execAppointments.id,
+              appointment_type: execAppointments.appointment_type || 'NEW',
+              authority_granted: execAppointments.authority_granted,
+              compensation_structure: execAppointments.compensation_structure,
+              equity_included: execAppointments.equity_included || false,
+              equity_details: execAppointments.equity_details
+            }
+          };
+
+          const { error: officerError } = await supabaseAdmin
+            .from('corporate_officers')
+            .upsert(officerData, { onConflict: 'email' });
+
+          if (officerError) {
+            console.error('Error creating corporate officer:', officerError);
+          } else {
+            console.log('Corporate officer created successfully for', execAppointments.appointee_name);
+          }
           
           // Step 1: Sync documents from appointment URLs to executive_documents FIRST
           console.log('Syncing documents to executive_documents before status update...');
