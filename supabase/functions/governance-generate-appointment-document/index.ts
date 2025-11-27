@@ -422,25 +422,31 @@ serve(async (req) => {
 
     // Fetch template from database - Fortune 500 14-document flow
     const templateKeyMap: Record<string, string> = {
-      // Core 8 documents (already supported)
+      // Core employment documents
       'appointment_letter': 'offer_letter',
-      'board_resolution': 'board_resolution',
       'employment_agreement': 'employment_agreement',
-      'certificate': 'stock_certificate',
-      'deferred_compensation': 'deferred_comp_addendum',
       'confidentiality_ip': 'confidentiality_ip',
-      'stock_subscription': 'stock_issuance',
-      'pre_incorporation_consent': 'pre_incorporation_consent',
       
-      // NEW: Fortune 500 additional documents (6 new types)
+      // Board & formation documents
+      'board_resolution': 'board_resolution',
+      'pre_incorporation_consent': 'initial_director_consent',
       'certificate_of_incorporation': 'certificate_of_incorporation',
-      'bylaws': 'bylaws_complete',
+      'bylaws': 'craven_bylaws',
+      
+      // Governance documents
       'bylaws_acknowledgment': 'bylaws_acknowledgment',
-      'fiduciary_ethics_ack': 'fiduciary_duty_ethics',
-      'conflict_disclosure': 'conflict_of_interest_disclosure',
+      'fiduciary_ethics_ack': 'fiduciary_ethics_ack',
+      'conflict_disclosure': 'conflict_disclosure',
       'officer_indemnification': 'officer_indemnification',
+      
+      // Equity documents
+      'certificate': 'stock_certificate',
+      'stock_subscription': 'stock_issuance',
       'equity_incentive_plan': 'equity_incentive_plan',
-      'option_rsu_award': 'option_rsu_award',
+      'option_rsu_award': 'equity_award_agreement',
+      
+      // Compensation
+      'deferred_compensation': 'deferred_comp_addendum',
     };
 
     const templateKey = templateKeyMap[document_type] || 'offer_letter';
