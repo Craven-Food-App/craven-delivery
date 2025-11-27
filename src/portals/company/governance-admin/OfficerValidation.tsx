@@ -17,7 +17,7 @@ import {
 } from '@mantine/core';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
-import { IconCheck, IconFileText, IconUserCheck } from '@tabler/icons-react';
+import { IconCheck, IconFileText, IconUserCheck, IconMail } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 
 interface ValidationAppointment {
@@ -107,6 +107,45 @@ const OfficerValidation: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendEmail = async (appointmentId: string) => {
+    try {
+      notifications.show({
+        id: 'sending-email',
+        title: 'Sending Email',
+        message: 'Sending document invitation email...',
+        loading: true,
+        autoClose: false,
+      });
+      
+      const { data, error } = await supabase.functions.invoke('send-appointment-documents-email', {
+        body: { appointmentId },
+      });
+
+      if (error) throw error;
+
+      notifications.update({
+        id: 'sending-email',
+        title: 'Success',
+        message: 'Document invitation email sent successfully!',
+        color: 'green',
+        loading: false,
+        autoClose: 3000,
+      });
+      
+      await fetchPendingValidations();
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      notifications.update({
+        id: 'sending-email',
+        title: 'Error',
+        message: error.message || 'Failed to send email',
+        color: 'red',
+        loading: false,
+        autoClose: 5000,
+      });
     }
   };
 
@@ -287,13 +326,23 @@ const OfficerValidation: React.FC = () => {
                         {dayjs(appointment.effective_date).format('MMM D, YYYY')}
                       </td>
                       <td>
-                        <Button
-                          size="xs"
-                          leftSection={<IconUserCheck size={16} />}
-                          onClick={() => openValidationModal(appointment)}
-                        >
-                          Validate & Approve
-                        </Button>
+                        <Group gap="xs">
+                          <Button
+                            size="xs"
+                            variant="light"
+                            leftSection={<IconMail size={16} />}
+                            onClick={() => handleSendEmail(appointment.id)}
+                          >
+                            Send Email
+                          </Button>
+                          <Button
+                            size="xs"
+                            leftSection={<IconUserCheck size={16} />}
+                            onClick={() => openValidationModal(appointment)}
+                          >
+                            Validate & Approve
+                          </Button>
+                        </Group>
                       </td>
                     </tr>
                   );

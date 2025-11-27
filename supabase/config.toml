@@ -177,3 +177,6 @@ verify_jwt = false
 
 [functions.governance-update-appointment-status]
 verify_jwt = false
+
+[functions.send-appointment-documents-email]
+verify_jwt = false

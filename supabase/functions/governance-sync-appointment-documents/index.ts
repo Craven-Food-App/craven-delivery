@@ -115,28 +115,39 @@ serve(async (req) => {
       // Check if document already exists
       const { data: existingDoc } = await supabaseAdmin
         .from('executive_documents')
-        .select('id')
+        .select('id, signature_token')
         .eq('appointment_id', appointment_id_to_use)
         .eq('type', type)
         .maybeSingle();
 
       if (existingDoc) {
-        // Update existing document
+        // Update existing document and generate token if missing
+        const needsToken = !existingDoc.signature_token;
+        const updateData: any = {
+          file_url: docUrl,
+          updated_at: new Date().toISOString(),
+        };
+        
+        if (needsToken) {
+          updateData.signature_token = crypto.randomUUID();
+          updateData.signature_token_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        }
+        
         const { error: updateError } = await supabaseAdmin
           .from('executive_documents')
-          .update({
-            file_url: docUrl,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', existingDoc.id);
 
         if (updateError) {
           errors.push({ type, error: updateError.message });
         } else {
-          syncedDocs.push({ type, action: 'updated' });
+          syncedDocs.push({ type, action: 'updated', token_generated: needsToken });
         }
       } else {
-        // Create new document
+        // Create new document with signature token
+        const signatureToken = crypto.randomUUID();
+        const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+        
         const { error: insertError } = await supabaseAdmin
           .from('executive_documents')
           .insert({
@@ -148,12 +159,14 @@ serve(async (req) => {
             appointment_id: appointment_id_to_use,
             signature_status: 'pending',
             status: 'generated',
+            signature_token: signatureToken,
+            signature_token_expires_at: tokenExpiresAt.toISOString(),
           });
 
         if (insertError) {
           errors.push({ type, error: insertError.message });
         } else {
-          syncedDocs.push({ type, action: 'created' });
+          syncedDocs.push({ type, action: 'created', signature_token: signatureToken });
         }
       }
     }
@@ -222,4 +235,3 @@ serve(async (req) => {
     );
   }
 });
-
