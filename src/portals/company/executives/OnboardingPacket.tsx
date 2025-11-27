@@ -22,22 +22,14 @@ import { useNavigate } from 'react-router-dom';
 
 type OnboardingDocument = Database['public']['Tables']['executive_documents']['Row'];
 
-interface Onboarding {
-  id: string;
-  appointment_id: string;
-  status: string;
-  documents_required: any[];
-  documents_completed: any[];
-  signing_deadline: string | null;
-}
-
 const OnboardingPacket: React.FC = () => {
   const navigate = useNavigate();
-  const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<OnboardingDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingModalOpen, setSigningModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<OnboardingDocument | null>(null);
+  const [signingDeadline, setSigningDeadline] = useState<string | null>(null);
 
   useEffect(() => {
     loadOnboarding();
@@ -48,27 +40,43 @@ const OnboardingPacket: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's active onboarding
-      const { data: onboardingData, error: onboardingError } = await supabase
-        .from('executive_onboarding')
+      // Find user's executive record
+      const { data: execUser } = await supabase
+        .from('exec_users')
         .select('*')
         .eq('user_id', user.id)
-        .in('status', ['pending', 'documents_sent', 'signing_in_progress', 'partially_signed'])
-        .order('created_at', { ascending: false })
-        .limit(1)
         .maybeSingle();
 
-      if (onboardingError) throw onboardingError;
+      if (!execUser) return;
 
-      if (onboardingData) {
-        // @ts-ignore - Database query type compatibility
-        setOnboarding(onboardingData);
+      // Find their appointment in executive_appointments
+      const { data: appointments, error: appointmentError } = await supabase
+        .from('executive_appointments')
+        .select('*')
+        .in('status', ['authorized_to_offer', 'offer_accepted', 'documents_generated', 'documents_sent', 'signing_in_progress', 'partially_signed'])
+        .order('created_at', { ascending: false });
 
-        // Load executive documents for signing (only those with signature requirements)
+      if (appointmentError) throw appointmentError;
+
+      // Find appointment matching this executive's role/title
+      const myAppointment = appointments?.find(apt => 
+        apt.proposed_title?.toLowerCase() === execUser.role?.toLowerCase() ||
+        apt.proposed_title?.toLowerCase().includes(execUser.role?.toLowerCase())
+      );
+
+      if (myAppointment) {
+        setAppointmentId(myAppointment.id);
+        
+        // Calculate signing deadline (30 days from document generation or now)
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 30);
+        setSigningDeadline(deadline.toISOString());
+
+        // Load executive documents for signing
         const { data: docs, error: docsError } = await supabase
           .from('executive_documents')
           .select('*')
-          .eq('appointment_id', onboardingData.appointment_id)
+          .eq('appointment_id', myAppointment.id)
           .neq('status', 'generated_for_board_only')
           .order('signing_stage', { ascending: true })
           .order('signing_order', { ascending: true });
@@ -157,7 +165,7 @@ const OnboardingPacket: React.FC = () => {
     );
   }
 
-  if (!onboarding) {
+  if (!appointmentId) {
     return (
       <Container size="xl" py="xl">
         <Alert icon={<IconAlertCircle size={16} />} title="No Active Onboarding" color="blue">
@@ -191,16 +199,16 @@ const OnboardingPacket: React.FC = () => {
                   {completedCount} of {totalCount} documents signed
                 </Text>
               </div>
-              <Badge color={getStatusColor(onboarding.status)} size="lg">
-                {onboarding.status.replace('_', ' ').toUpperCase()}
+              <Badge color={completedCount === totalCount && totalCount > 0 ? 'green' : 'yellow'} size="lg">
+                {completedCount === totalCount && totalCount > 0 ? 'COMPLETE' : 'IN PROGRESS'}
               </Badge>
             </Group>
 
             <Progress value={progressPercentage} size="lg" color="green" />
 
-            {onboarding.signing_deadline && (
+            {signingDeadline && completedCount < totalCount && (
               <Alert icon={<IconClock size={16} />} color="yellow" title="Signing Deadline">
-                Please complete all signatures by {new Date(onboarding.signing_deadline).toLocaleDateString()}
+                Please complete all signatures by {new Date(signingDeadline).toLocaleDateString()}
               </Alert>
             )}
           </Stack>
