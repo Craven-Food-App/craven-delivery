@@ -176,36 +176,62 @@ serve(async (req) => {
       }
     }
 
-    // Map appointment data to template placeholders
+    // Map appointment data to template placeholders - supporting multiple formats
     const templateData: Record<string, any> = {
-      // Name variations
+      // Name variations (all formats)
       full_name: appointment.proposed_officer_name,
       executive_name: appointment.proposed_officer_name,
       officer_name: appointment.proposed_officer_name,
       name: appointment.proposed_officer_name,
       proposed_officer_name: appointment.proposed_officer_name,
       EXECUTIVE_NAME: appointment.proposed_officer_name,
-      'OPTION / RSU': equityDetails.share_count ? 'OPTION' : 'RSU',
-      SHARE_AMOUNT: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
-      PRICE: equityDetails.exercise_price ? String(equityDetails.exercise_price).replace(/[^0-9.]/g, '') : '0.01',
-      DATE: appointment.effective_date ? formatDate(appointment.effective_date) : formatDate(new Date().toISOString().split('T')[0]),
+      OFFICER_NAME: appointment.proposed_officer_name,
+      FULL_NAME: appointment.proposed_officer_name,
+      NAME: appointment.proposed_officer_name,
       
-      // Contact information
+      // Equity award specific fields (uppercase for [[]] format)
+      'OPTION / RSU': equityDetails.share_count ? 'OPTION' : 'RSU',
+      AWARD_TYPE: equityDetails.share_count ? 'OPTION' : 'RSU',
+      awardType: equityDetails.share_count ? 'OPTION' : 'RSU',
+      SHARE_AMOUNT: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
+      sharesGranted: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
+      PRICE: equityDetails.exercise_price ? String(equityDetails.exercise_price).replace(/[^0-9.]/g, '') : '0.01',
+      strikePrice: equityDetails.exercise_price ? String(equityDetails.exercise_price).replace(/[^0-9.]/g, '') : '0.01',
+      vestingSchedule: equityDetails.vesting_schedule || '25% after 12 months, then monthly over 36 months',
+      cliffPeriod: '12 months',
+      
+      // Date variations (all formats)
+      DATE: appointment.effective_date ? formatDate(appointment.effective_date) : formatDate(new Date().toISOString().split('T')[0]),
+      grantDate: appointment.effective_date ? formatDate(appointment.effective_date) : formatDate(new Date().toISOString().split('T')[0]),
+      
+      // Contact information (all formats)
       proposed_officer_email: appointment.proposed_officer_email || '',
       email: appointment.proposed_officer_email || '',
+      EMAIL: appointment.proposed_officer_email || '',
+      'officer.email': appointment.proposed_officer_email || '',
       proposed_officer_phone: (appointment as any).proposed_officer_phone || '',
       phone: (appointment as any).proposed_officer_phone || '',
+      PHONE: (appointment as any).proposed_officer_phone || '',
       
-      // Title variations
+      // Title variations (all formats)
       role: appointment.proposed_title,
       position: appointment.proposed_title,
       title: appointment.proposed_title,
       position_title: appointment.proposed_title,
       executive_title: appointment.proposed_title,
       proposed_title: appointment.proposed_title,
+      TITLE: appointment.proposed_title,
+      ROLE: appointment.proposed_title,
+      POSITION: appointment.proposed_title,
+      'officer.title': appointment.proposed_title,
       
-      // Company and dates
+      // Company and dates (all formats)
       company_name: companyName,
+      COMPANY_NAME: companyName,
+      'company.legalName': companyName,
+      ceoName: 'Torrance Stroman',
+      CEO_NAME: 'Torrance Stroman',
+      'officer.fullName': appointment.proposed_officer_name,
       effective_date: appointment.effective_date,
       date: appointment.effective_date,
       appointment_date: appointment.effective_date,
@@ -603,13 +629,16 @@ serve(async (req) => {
         replacementValue = '0';
       }
       
+      // Escape special regex characters in the key (including dots, slashes, etc.)
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
       // Replace multiple placeholder formats - use global replace to catch all instances
       const patterns = [
-        new RegExp(`\\{\\{${key}\\}\\}`, 'gi'),
-        new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi'),
-        new RegExp(`\\$\\{${key}\\}`, 'gi'),
-        new RegExp(`\\[${key}\\]`, 'gi'),
-        new RegExp(`\\[\\[${key}\\]\\]`, 'gi'), // Double-bracket format [[KEY]]
+        new RegExp(`\\{\\{${escapedKey}\\}\\}`, 'gi'),
+        new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'gi'),
+        new RegExp(`\\$\\{${escapedKey}\\}`, 'gi'),
+        new RegExp(`\\[${escapedKey}\\]`, 'gi'),
+        new RegExp(`\\[\\[${escapedKey}\\]\\]`, 'gi'), // Double-bracket format [[KEY]]
       ];
       patterns.forEach(pattern => {
         html = html.replace(pattern, replacementValue);
