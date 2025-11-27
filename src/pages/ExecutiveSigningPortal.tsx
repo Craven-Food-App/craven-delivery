@@ -226,13 +226,15 @@ export default function ExecutiveSigningPortal() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
-
+    
     // Handle repositioning existing signature
     if (repositioningId) {
       handleSignatureDrop(e);
+      setIsDragging(false);
       return;
     }
+
+    setIsDragging(false);
 
     // Handle placing new signature
     if (!draggedItemType) return;
@@ -284,7 +286,9 @@ export default function ExecutiveSigningPortal() {
       e.preventDefault();
       return;
     }
+    setIsDragging(true);
     setRepositioningId(signatureId);
+    setDraggedItemType(null); // Clear any sidebar drag type
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -316,6 +320,7 @@ export default function ExecutiveSigningPortal() {
 
   const handleSignatureDragEnd = () => {
     setRepositioningId(null);
+    setIsDragging(false);
   };
 
   // Document navigation
@@ -526,7 +531,7 @@ export default function ExecutiveSigningPortal() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
       {/* Sidebar - Fixed width, scrollable content */}
       <div className="w-80 flex-shrink-0 border-r bg-card p-4 flex flex-col gap-4 overflow-hidden">
         <div>
