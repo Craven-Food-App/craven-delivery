@@ -1,10 +1,67 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { renderHtml, templates } from '../../../server/templates/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Template metadata without server dependencies
+const templates = [
+  {
+    id: 'certificate_of_incorporation',
+    title: 'Certificate of Incorporation',
+    category: 'governance',
+    placeholders: ['company_name', 'state', 'registered_office', 'incorporator_name', 'authorized_shares', 'par_value']
+  },
+  {
+    id: 'bylaws_complete',
+    title: 'Corporate Bylaws (Complete)',
+    category: 'governance',
+    placeholders: ['company_name', 'state_of_incorporation', 'principal_office_address', 'principal_office_city', 'principal_office_state', 'fiscal_year']
+  },
+  {
+    id: 'pre_incorporation_consent',
+    title: 'Pre-Incorporation Written Consent',
+    category: 'governance',
+    placeholders: ['company_name', 'state', 'incorporator_name', 'registered_agent', 'registered_office', 'board_members', 'ceo_name', 'cfo_name', 'secretary_name']
+  },
+  {
+    id: 'bylaws_acknowledgment',
+    title: 'Bylaws Acknowledgment & Consent',
+    category: 'executive',
+    placeholders: ['officer_name', 'title', 'company_name', 'current_date']
+  },
+  {
+    id: 'fiduciary_duty_ethics',
+    title: 'Fiduciary Duty & Ethics Acknowledgment',
+    category: 'executive',
+    placeholders: ['officer_name', 'title', 'company_name', 'current_date']
+  },
+  {
+    id: 'conflict_of_interest_disclosure',
+    title: 'Conflict of Interest Disclosure',
+    category: 'executive',
+    placeholders: ['officer_name', 'title', 'company_name', 'current_date']
+  },
+  {
+    id: 'officer_indemnification',
+    title: 'Officer Indemnification Agreement',
+    category: 'executive',
+    placeholders: ['company_name', 'officer_name', 'title', 'state', 'current_date']
+  },
+  {
+    id: 'equity_incentive_plan',
+    title: '2025 Equity Incentive Plan',
+    category: 'equity',
+    placeholders: ['company_name', 'state', 'equity_pool_shares', 'plan_effective_date', 'board_members']
+  },
+  {
+    id: 'option_rsu_award',
+    title: 'Option/RSU Award Agreement',
+    category: 'equity',
+    placeholders: ['company_name', 'officer_name', 'title', 'award_type', 'shares_granted', 'strike_price', 'grant_date', 'vesting_schedule', 'equity_plan_name']
+  }
+];
 
 // Sample data for template rendering
 const sampleData: Record<string, any> = {
@@ -101,7 +158,7 @@ Deno.serve(async (req) => {
         // Find template metadata
         const template = templates.find((t) => t.id === templateId);
         if (!template) {
-          console.error(`Template ${templateId} not found in server templates`);
+          console.error(`Template ${templateId} not found in templates array`);
           results.errors++;
           continue;
         }
@@ -109,31 +166,22 @@ Deno.serve(async (req) => {
         // Check if template already exists
         const { data: existing } = await supabaseClient
           .from('document_templates')
-          .select('id, html_content')
+          .select('id')
           .eq('template_key', templateId)
           .maybeSingle();
 
-        // Render the actual HTML from the .hbs template
-        const htmlContent = renderHtml(templateId, sampleData);
-
-        // Determine category based on template type
-        let category = 'executive';
-        if (templateId.includes('equity') || templateId.includes('option') || templateId.includes('rsu')) {
-          category = 'equity';
-        } else if (templateId.includes('bylaws') || templateId.includes('certificate') || templateId.includes('incorporation')) {
-          category = 'governance';
-        }
+        // Placeholder HTML content - templates will be rendered on-demand
+        const htmlContent = `<div class="template-placeholder"><h1>${template.title}</h1><p>Template will be rendered with actual data when generated.</p></div>`;
 
         if (existing) {
-          // Update with properly rendered HTML
+          // Update template metadata
           const { error: updateError } = await supabaseClient
             .from('document_templates')
             .update({
               name: template.title,
-              html_content: htmlContent,
               placeholders: template.placeholders,
               is_active: true,
-              category: category,
+              category: template.category,
               description: `Fortune 500 executive appointment document - ${template.title}`,
             })
             .eq('id', existing.id);
@@ -146,11 +194,11 @@ Deno.serve(async (req) => {
             results.updated++;
           }
         } else {
-          // Insert new template with properly rendered HTML
+          // Insert new template metadata
           const { error: insertError } = await supabaseClient.from('document_templates').insert({
             template_key: templateId,
             name: template.title,
-            category: category,
+            category: template.category,
             html_content: htmlContent,
             placeholders: template.placeholders,
             is_active: true,
