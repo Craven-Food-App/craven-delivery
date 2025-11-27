@@ -861,18 +861,18 @@ const MyDocuments: React.FC = () => {
 
   const pendingDocs = documents.filter(d => d.signature_status === 'pending');
   const signedDocs = documents.filter(d => d.signature_status === 'signed');
-  const totalDocs = documents.length;
-  const progressPercent = totalDocs > 0 ? Math.round((signedDocs.length / totalDocs) * 100) : 0;
+  const TOTAL_REQUIRED_DOCUMENTS = 14; // Per Fortune 500 Executive Appointment Workflow
+  const progressPercent = TOTAL_REQUIRED_DOCUMENTS > 0 ? Math.round((signedDocs.length / TOTAL_REQUIRED_DOCUMENTS) * 100) : 0;
 
   return (
     <Stack gap="md">
       {/* Progress Card */}
-      {totalDocs > 0 && (
+      {documents.length > 0 && (
         <Card padding="lg" radius="md" withBorder>
           <Stack gap="sm">
             <Group justify="space-between">
               <Text fw={600} size="lg">Document Signing Progress</Text>
-              <Text size="sm" c="dimmed">{signedDocs.length} of {totalDocs} signed</Text>
+              <Text size="sm" c="dimmed">{signedDocs.length} of {TOTAL_REQUIRED_DOCUMENTS} signed</Text>
             </Group>
             <Progress value={progressPercent} size="lg" radius="xl" />
             <Text size="xs" c="dimmed">
