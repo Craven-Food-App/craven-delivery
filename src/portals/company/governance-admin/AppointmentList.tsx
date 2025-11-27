@@ -1016,7 +1016,7 @@ const AppointmentList: React.FC = () => {
                     <Text size="sm">Each board member must vote: <Badge size="xs" color="green">For</Badge>, <Badge size="xs" color="red">Against</Badge>, or <Badge size="xs" color="gray">Abstain</Badge></Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Once a majority of board members vote "For", the resolution status automatically changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge></Text>
+                    <Text size="sm">Once at least 1 board member votes "For", the resolution status automatically changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge></Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm">The appointment status updates to <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge> and proceeds to Step 5</Text>
@@ -1024,7 +1024,7 @@ const AppointmentList: React.FC = () => {
                 </List>
                 <Alert icon={<IconAlertCircle size={14} />} title="Board Quorum Requirements" color="blue" variant="light" mt="xs">
                   <Text size="xs">
-                    Ensure your board has established quorum requirements (typically majority of directors) in your bylaws. The system tracks all votes but does not enforce quorum - the Corporate Secretary must verify quorum was met before final approval.
+                    The board quorum is set to 1 vote. Any resolution with at least 1 "For" vote will be automatically adopted. The Corporate Secretary should still verify proper governance procedures were followed before final approval.
                   </Text>
                 </Alert>
               </div>

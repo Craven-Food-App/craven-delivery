@@ -95,7 +95,7 @@ serve(async (req) => {
     };
 
     const totalVotes = voteCounts.YES + voteCounts.NO + voteCounts.ABSTAIN;
-    const majorityThreshold = Math.floor(totalBoardMembers / 2) + 1;
+    const majorityThreshold = 1; // Quorum requirement: only 1 vote needed
     const votingMajority = Math.floor(totalVotes / 2) + 1;
 
     let newStatus = resolution.status;
