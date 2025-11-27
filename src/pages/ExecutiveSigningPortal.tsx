@@ -478,7 +478,7 @@ export default function ExecutiveSigningPortal() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4 overflow-y-auto">
+      <div className="w-80 border-r bg-card p-4 flex flex-col gap-4">
         <div>
           <h2 className="font-bold text-lg mb-2">Your Signatures</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -518,22 +518,6 @@ export default function ExecutiveSigningPortal() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="border-t pt-4 mt-auto">
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
-            <p className="text-sm text-blue-800">
-              <Lock className="w-4 h-4 inline mr-1" />
-              Lock all signatures before submitting
-            </p>
-          </div>
-          <Button
-            onClick={handleFinishSigning}
-            className="w-full"
-            disabled={placedSignatures.some(s => !s.isLocked)}
-          >
-            Finish & Submit All Documents
-          </Button>
         </div>
       </div>
 
@@ -626,6 +610,23 @@ export default function ExecutiveSigningPortal() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Submit Section */}
+          <div className="mt-6 max-w-4xl mx-auto">
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <Lock className="w-4 h-4 inline mr-1" />
+                Lock all signatures before submitting
+              </p>
+            </div>
+            <Button
+              onClick={handleFinishSigning}
+              className="w-full"
+              disabled={placedSignatures.some(s => !s.isLocked)}
+            >
+              Finish & Submit All Documents
+            </Button>
           </div>
         </div>
       </div>
