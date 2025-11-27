@@ -293,15 +293,12 @@ serve(async (req) => {
             .eq('appointment_id', execAppointments.id);
           
           const allSigned = documents && documents.length > 0 && documents.every(d => d.signature_status === 'signed');
-          const someSigned = documents && documents.some(d => d.signature_status === 'signed');
           
-          let newAppointmentStatus = 'BOARD_ADOPTED';
-          if (allSigned) {
-            newAppointmentStatus = 'READY_FOR_SECRETARY_REVIEW';
-          } else if (someSigned) {
-            newAppointmentStatus = 'AWAITING_SIGNATURES';
-          } else {
-            newAppointmentStatus = 'BOARD_ADOPTED';
+          // Once board adopts resolution, appointment is ready for secretary review
+          // regardless of signature status (secretary validates before/during signing)
+          let newAppointmentStatus = 'READY_FOR_SECRETARY_REVIEW';
+          if (allSigned && documents.length > 0) {
+            newAppointmentStatus = 'READY_FOR_SECRETARY_REVIEW'; // Still needs validation even if signed
           }
           
           await supabaseAdmin
