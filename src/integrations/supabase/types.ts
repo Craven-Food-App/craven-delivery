@@ -214,6 +214,66 @@ export type Database = {
           },
         ]
       }
+      appointment_audit_log: {
+        Row: {
+          action_type: string
+          actor_user_id: string | null
+          appointment_id: string
+          created_at: string | null
+          department: string | null
+          document_hash: string | null
+          document_id: string | null
+          id: string
+          ip_address: string | null
+          metadata_json: Json | null
+          timestamp: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_user_id?: string | null
+          appointment_id: string
+          created_at?: string | null
+          department?: string | null
+          document_hash?: string | null
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata_json?: Json | null
+          timestamp?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string | null
+          appointment_id?: string
+          created_at?: string | null
+          department?: string | null
+          document_hash?: string | null
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata_json?: Json | null
+          timestamp?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_audit_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "appointment_audit_log_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "executive_appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_documents: {
         Row: {
           appointment_id: string
@@ -247,6 +307,85 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "board_documents"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_workflow_gates: {
+        Row: {
+          appointment_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          department_owner: string
+          document_hashes: string[] | null
+          gate_name: string
+          gate_number: number
+          id: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          required_documents: string[] | null
+          stage_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          department_owner: string
+          document_hashes?: string[] | null
+          gate_name: string
+          gate_number: number
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          required_documents?: string[] | null
+          stage_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          department_owner?: string
+          document_hashes?: string[] | null
+          gate_name?: string
+          gate_number?: number
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          required_documents?: string[] | null
+          stage_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_workflow_gates_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "executive_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_workflow_gates_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "appointment_workflow_gates_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
