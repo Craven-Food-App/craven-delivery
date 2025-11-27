@@ -184,6 +184,11 @@ serve(async (req) => {
       officer_name: appointment.proposed_officer_name,
       name: appointment.proposed_officer_name,
       proposed_officer_name: appointment.proposed_officer_name,
+      EXECUTIVE_NAME: appointment.proposed_officer_name,
+      'OPTION / RSU': equityDetails.share_count ? 'OPTION' : 'RSU',
+      SHARE_AMOUNT: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
+      PRICE: equityDetails.exercise_price ? String(equityDetails.exercise_price).replace(/[^0-9.]/g, '') : '0.01',
+      DATE: appointment.effective_date ? formatDate(appointment.effective_date) : formatDate(new Date().toISOString().split('T')[0]),
       
       // Contact information
       proposed_officer_email: appointment.proposed_officer_email || '',
@@ -604,6 +609,7 @@ serve(async (req) => {
         new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi'),
         new RegExp(`\\$\\{${key}\\}`, 'gi'),
         new RegExp(`\\[${key}\\]`, 'gi'),
+        new RegExp(`\\[\\[${key}\\]\\]`, 'gi'), // Double-bracket format [[KEY]]
       ];
       patterns.forEach(pattern => {
         html = html.replace(pattern, replacementValue);
@@ -611,14 +617,17 @@ serve(async (req) => {
     });
     
     // Second pass: Find and replace any remaining placeholders with empty string or sensible defaults
-    const remainingPlaceholders = html.match(/\{\{[^}]+\}\}/g);
+    const remainingPlaceholders = [
+      ...(html.match(/\{\{[^}]+\}\}/g) || []),
+      ...(html.match(/\[\[[^\]]+\]\]/g) || [])
+    ];
     if (remainingPlaceholders && remainingPlaceholders.length > 0) {
       const uniquePlaceholders = [...new Set(remainingPlaceholders)];
       console.warn('Unreplaced placeholders found:', uniquePlaceholders);
       
       // Replace remaining placeholders with defaults based on their name
       uniquePlaceholders.forEach((placeholder: string) => {
-        const key = placeholder.replace(/\{\{|\}\}/g, '').trim();
+        const key = placeholder.replace(/\{\{|\}\}|\[\[|\]\]/g, '').trim();
         let defaultValue = '';
         
         // Smart defaults based on placeholder name
@@ -653,7 +662,7 @@ serve(async (req) => {
         }
         
         // Replace all instances of this placeholder
-        html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'gi'), defaultValue);
+        html = html.replace(new RegExp(placeholder.replace(/[{}\[\]]/g, '\\$&'), 'gi'), defaultValue);
       });
     }
 
