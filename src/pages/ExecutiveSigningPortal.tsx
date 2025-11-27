@@ -84,13 +84,32 @@ export default function ExecutiveSigningPortal() {
         );
 
         if (docsError) throw docsError;
-        if (!docsData?.documents?.length) {
+        
+        // Extract all documents from documentFlow stages
+        const allDocuments: ExecutiveDocument[] = [];
+        if (docsData?.documentFlow) {
+          for (const stage of docsData.documentFlow) {
+            if (stage.documents) {
+              for (const doc of stage.documents) {
+                allDocuments.push({
+                  id: doc.id,
+                  title: doc.name,
+                  document_type: doc.name,
+                  file_url: doc.fileUrl,
+                  created_at: new Date().toISOString()
+                });
+              }
+            }
+          }
+        }
+
+        if (allDocuments.length === 0) {
           message.error('No documents found');
           return;
         }
 
-        setDocuments(docsData.documents);
-        setUserInfo(docsData.userInfo);
+        setDocuments(allDocuments);
+        setUserInfo(docsData.user);
 
         // Fetch CEO signature
         const { data: ceoSigData } = await supabase
