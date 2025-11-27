@@ -78,22 +78,128 @@ BEGIN
   END IF;
 END $$;
 
--- Step 3: Find Torrance Stroman's employee_id
+-- Step 3: Update equity_ledger and employee_equity for Torrance Stroman
 DO $$
 DECLARE
   torrance_employee_id UUID;
+  torrance_user_id UUID;
+  torrance_email TEXT := 'tstroman.ceo@cravenusa.com';
+  torrance_full_name TEXT := 'Torrance Stroman';
   torrance_equity_id UUID := '684f7d11-6551-45b8-a468-f5699fdc4025';
+  existing_ledger_id UUID;
 BEGIN
+  -- Find Torrance's user_id from auth.users
+  SELECT id INTO torrance_user_id
+  FROM auth.users
+  WHERE email = torrance_email
+     OR email ILIKE '%torrance%stroman%'
+  LIMIT 1;
+
   -- Find Torrance's employee record
-  SELECT id INTO torrance_employee_id
+  SELECT id, user_id INTO torrance_employee_id, torrance_user_id
   FROM public.employees
   WHERE (LOWER(first_name) = 'torrance' AND LOWER(last_name) = 'stroman')
      OR email ILIKE '%torrance%stroman%'
-     OR email = 'tstroman.ceo@cravenusa.com'
+     OR email = torrance_email
+     OR user_id = torrance_user_id
   LIMIT 1;
 
+  -- Ensure user_profiles has correct data
+  IF torrance_user_id IS NOT NULL THEN
+    INSERT INTO public.user_profiles (user_id, email, full_name, role)
+    VALUES (torrance_user_id, torrance_email, torrance_full_name, 'admin')
+    ON CONFLICT (user_id) DO UPDATE SET
+      email = torrance_email,
+      full_name = torrance_full_name,
+      updated_at = NOW();
+    
+    RAISE NOTICE 'Updated user_profiles for Torrance Stroman';
+  END IF;
+
+  IF torrance_user_id IS NOT NULL THEN
+    -- Check if equity_ledger entry exists
+    SELECT id INTO existing_ledger_id
+    FROM public.equity_ledger
+    WHERE recipient_user_id = torrance_user_id
+      AND transaction_type = 'grant'
+    LIMIT 1;
+
+    IF existing_ledger_id IS NOT NULL THEN
+      -- Update existing equity_ledger entry
+      UPDATE public.equity_ledger
+      SET
+        shares_amount = 18000000,
+        share_class = 'Common',
+        updated_at = NOW()
+      WHERE id = existing_ledger_id;
+      
+      RAISE NOTICE 'Updated existing equity_ledger for Torrance Stroman: 18,000,000 shares';
+    ELSE
+      -- Insert new equity_ledger entry
+      INSERT INTO public.equity_ledger (
+        recipient_user_id,
+        transaction_type,
+        shares_amount,
+        share_class,
+        transaction_date,
+        effective_date
+      )
+      VALUES (
+        torrance_user_id,
+        'grant',
+        18000000,
+        'Common',
+        CURRENT_DATE,
+        CURRENT_DATE
+      );
+      
+      RAISE NOTICE 'Created new equity_ledger entry for Torrance Stroman: 18,000,000 shares';
+    END IF;
+    
+    -- Update vesting_schedules
+    UPDATE public.vesting_schedules
+    SET
+      vesting_type = 'immediate',
+      vested_shares = 18000000,
+      unvested_shares = 0,
+      total_shares = 18000000,
+      vesting_period_months = 0,
+      updated_at = NOW()
+    WHERE recipient_user_id = torrance_user_id;
+
+    -- If no vesting schedule exists, create one
+    IF NOT EXISTS (
+      SELECT 1 FROM public.vesting_schedules WHERE recipient_user_id = torrance_user_id
+    ) THEN
+      INSERT INTO public.vesting_schedules (
+        recipient_user_id,
+        vesting_type,
+        total_shares,
+        vested_shares,
+        unvested_shares,
+        vesting_period_months,
+        start_date,
+        vesting_schedule
+      )
+      VALUES (
+        torrance_user_id,
+        'immediate',
+        18000000,
+        18000000,
+        0,
+        0,
+        CURRENT_DATE,
+        '[]'::jsonb
+      );
+    END IF;
+    
+    RAISE NOTICE 'Updated vesting_schedules for Torrance Stroman';
+  ELSE
+    RAISE WARNING 'Could not find Torrance Stroman user_id - cannot update equity_ledger';
+  END IF;
+
   IF torrance_employee_id IS NOT NULL THEN
-    -- Update Torrance's equity record
+    -- Update Torrance's employee_equity record
     INSERT INTO public.employee_equity (
       id,
       employee_id,
@@ -123,20 +229,74 @@ BEGIN
       shares_total = 18000000,
       shares_percentage = 18.00,
       strike_price = 0.00,
-      vesting_schedule = '{"type": "immediate"}',
+      vesting_schedule = '{"type": "immediate"}'::jsonb,
       equity_type = 'Common Stock',
       share_class = 'Common',
       consideration_type = 'Founder IP + Services',
       grant_date = CURRENT_DATE,
       updated_at = NOW();
     
-    RAISE NOTICE 'Updated Torrance Stroman equity: 18,000,000 shares (18%%), $0.00 strike price, No vesting';
+    RAISE NOTICE 'Updated Torrance Stroman employee_equity: 18,000,000 shares (18%%), $0.00 strike price, No vesting';
   ELSE
     RAISE WARNING 'Could not find Torrance Stroman employee record';
   END IF;
 END $$;
 
 -- Step 4: Verify the updates
+-- Verify equity_ledger and user_profiles data
+DO $$
+DECLARE
+  torrance_user_id UUID;
+  torrance_email TEXT := 'tstroman.ceo@cravenusa.com';
+  ledger_check RECORD;
+  profile_check RECORD;
+BEGIN
+  -- Find Torrance's user_id
+  SELECT id INTO torrance_user_id
+  FROM auth.users
+  WHERE email = torrance_email
+  LIMIT 1;
+
+  IF torrance_user_id IS NOT NULL THEN
+    -- Check equity_ledger
+    SELECT * INTO ledger_check
+    FROM public.equity_ledger
+    WHERE recipient_user_id = torrance_user_id
+      AND transaction_type = 'grant'
+    LIMIT 1;
+
+    -- Check user_profiles
+    SELECT * INTO profile_check
+    FROM public.user_profiles
+    WHERE user_id = torrance_user_id
+    LIMIT 1;
+
+    RAISE NOTICE '=== VERIFICATION RESULTS ===';
+    RAISE NOTICE 'Torrance user_id: %', torrance_user_id;
+    
+    IF ledger_check IS NOT NULL THEN
+      RAISE NOTICE 'equity_ledger: Found - shares_amount: %, share_class: %, recipient_user_id: %', 
+        ledger_check.shares_amount, 
+        ledger_check.share_class, 
+        ledger_check.recipient_user_id;
+    ELSE
+      RAISE WARNING 'equity_ledger: NOT FOUND for user_id %', torrance_user_id;
+    END IF;
+
+    IF profile_check IS NOT NULL THEN
+      RAISE NOTICE 'user_profiles: Found - email: %, full_name: %, user_id: %', 
+        profile_check.email, 
+        profile_check.full_name, 
+        profile_check.user_id;
+    ELSE
+      RAISE WARNING 'user_profiles: NOT FOUND for user_id %', torrance_user_id;
+    END IF;
+  ELSE
+    RAISE WARNING 'Torrance user_id NOT FOUND in auth.users with email: %', torrance_email;
+  END IF;
+END $$;
+
+-- Display equity data
 SELECT 
   COALESCE(e.first_name || ' ' || e.last_name, eq.shareholder_name) AS name,
   eq.shares_total,
