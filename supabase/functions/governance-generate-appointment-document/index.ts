@@ -617,6 +617,7 @@ serve(async (req) => {
     });
     
     // First pass: Replace all known placeholders
+    console.log('Starting placeholder replacement with', Object.keys(templateData).length, 'keys');
     Object.keys(templateData).forEach((key) => {
       const value = templateData[key];
       // Replace placeholders even if value is null/undefined/0 - replace with empty string or appropriate default
@@ -629,19 +630,24 @@ serve(async (req) => {
         replacementValue = '0';
       }
       
-      // Escape special regex characters in the key (including dots, slashes, etc.)
-      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      // Replace multiple placeholder formats - use global replace to catch all instances
-      const patterns = [
-        new RegExp(`\\{\\{${escapedKey}\\}\\}`, 'gi'),
-        new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, 'gi'),
-        new RegExp(`\\$\\{${escapedKey}\\}`, 'gi'),
-        new RegExp(`\\[${escapedKey}\\]`, 'gi'),
-        new RegExp(`\\[\\[${escapedKey}\\]\\]`, 'gi'), // Double-bracket format [[KEY]]
+      // Use simple string replacement for all placeholder formats
+      // This handles special characters better than regex
+      const placeholderFormats = [
+        `{{${key}}}`,
+        `{{ ${key} }}`,
+        `\${${key}}`,
+        `[${key}]`,
+        `[[${key}]]`,
       ];
-      patterns.forEach(pattern => {
-        html = html.replace(pattern, replacementValue);
+      
+      let replaced = false;
+      placeholderFormats.forEach(placeholder => {
+        if (html.includes(placeholder)) {
+          replaced = true;
+          console.log(`Replacing ${placeholder} with: ${replacementValue}`);
+        }
+        // Global replacement using split/join for all occurrences
+        html = html.split(placeholder).join(replacementValue);
       });
     });
     
@@ -690,8 +696,8 @@ serve(async (req) => {
           defaultValue = '0';
         }
         
-        // Replace all instances of this placeholder
-        html = html.replace(new RegExp(placeholder.replace(/[{}\[\]]/g, '\\$&'), 'gi'), defaultValue);
+        // Replace all instances of this placeholder using simple string replacement
+        html = html.split(placeholder).join(defaultValue);
       });
     }
 
