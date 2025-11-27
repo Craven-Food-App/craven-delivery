@@ -179,6 +179,21 @@ const ResolutionVotingDashboard: React.FC = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ADOPTED':
+        return 'Adopted';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'PENDING_VOTE':
+        return 'Pending Vote';
+      case 'DRAFT':
+        return 'Draft';
+      default:
+        return status;
+    }
+  };
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -228,7 +243,9 @@ const ResolutionVotingDashboard: React.FC = () => {
                     <Badge variant="light">{resolution.type}</Badge>
                   </Table.Td>
                   <Table.Td>
-                    <Badge color={getStatusColor(resolution.status)}>{resolution.status}</Badge>
+                    <Text fw={500} c={getStatusColor(resolution.status)}>
+                      {getStatusLabel(resolution.status)}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     {resolution.votes && (
