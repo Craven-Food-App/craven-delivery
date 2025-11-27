@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fiduciary Duty & Ethics Acknowledgment - {{officer.fullName}}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 16pt;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-size: 13pt;
+      margin-top: 20px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    .signature-section {
+      margin-top: 60px;
+      border-top: 1px solid #ccc;
+      padding-top: 30px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #ccc;
+      width: 300px;
+      margin: 30px 0 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fiduciary Duty & Ethics Acknowledgment</h1>
+
+  <p><strong>Date:</strong> {{currentDate}}</p>
+  <p><strong>Officer:</strong> {{officer.fullName}}</p>
+  <p><strong>Title:</strong> {{title}}</p>
+  <p><strong>Company:</strong> {{company.legalName}}</p>
+
+  <h2>Fiduciary Duties</h2>
+  <p>I, <strong>{{officer.fullName}}</strong>, acknowledge that as an officer and/or director of {{company.legalName}} (the "Corporation"), I owe the following fiduciary duties to the Corporation and its shareholders:</p>
+
+  <h3>1. Duty of Care</h3>
+  <p>I shall perform my duties in good faith, in a manner I reasonably believe to be in the best interests of the Corporation, and with the care an ordinarily prudent person in a like position would use under similar circumstances.</p>
+
+  <h3>2. Duty of Loyalty</h3>
+  <p>I shall act in the best interests of the Corporation and its shareholders, avoiding conflicts of interest and self-dealing, and placing the interests of the Corporation above my personal interests.</p>
+
+  <h3>3. Duty of Obedience</h3>
+  <p>I shall comply with all applicable laws, regulations, the Certificate of Incorporation, the Bylaws, and corporate policies.</p>
+
+  <h3>4. Duty of Confidentiality</h3>
+  <p>I shall maintain the confidentiality of all non-public corporate information and shall not use such information for personal gain or disclose it without authorization.</p>
+
+  <h2>Ethics Commitment</h2>
+  <p>I commit to upholding the highest standards of ethical conduct, including:</p>
+
+  <ul>
+    <li>Acting with honesty, integrity, and transparency in all corporate matters</li>
+    <li>Avoiding actual, potential, or perceived conflicts of interest</li>
+    <li>Refraining from self-dealing or using corporate assets for personal benefit</li>
+    <li>Treating all stakeholders with respect, dignity, and professionalism</li>
+    <li>Promptly disclosing any material information that may affect the Corporation</li>
+    <li>Cooperating fully with internal audits, investigations, and compliance reviews</li>
+    <li>Supporting a culture of accountability, ethical behavior, and corporate responsibility</li>
+  </ul>
+
+  <h2>Acknowledgment of Consequences</h2>
+  <p>I understand that breach of fiduciary duty or ethical standards may result in:</p>
+  <ul>
+    <li>Personal liability for damages to the Corporation or its shareholders</li>
+    <li>Removal from office for cause</li>
+    <li>Forfeiture of compensation, equity, or other benefits</li>
+    <li>Legal action, including civil or criminal proceedings</li>
+    <li>Reputational damage and loss of professional standing</li>
+  </ul>
+
+  <h2>Ongoing Obligation</h2>
+  <p>I acknowledge that these fiduciary duties and ethical obligations are ongoing and continue throughout my service as an officer and/or director of the Corporation, and in certain respects (such as confidentiality and non-compete), may extend beyond the termination of my service.</p>
+
+  <div class="signature-section">
+    <p>IN WITNESS WHEREOF, I have executed this Fiduciary Duty & Ethics Acknowledgment as of the date first written above.</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>{{officer.fullName}}</strong><br />{{title}}</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>Date</strong></p>
+  </div>
+</body>
+</html>

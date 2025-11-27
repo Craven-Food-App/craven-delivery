@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bylaws Acknowledgment & Consent - {{officer.fullName}}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 16pt;
+      margin-bottom: 30px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    .signature-section {
+      margin-top: 60px;
+      border-top: 1px solid #ccc;
+      padding-top: 30px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #ccc;
+      width: 300px;
+      margin: 30px 0 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bylaws Acknowledgment & Consent</h1>
+
+  <p><strong>Date:</strong> {{currentDate}}</p>
+  <p><strong>Officer:</strong> {{officer.fullName}}</p>
+  <p><strong>Title:</strong> {{title}}</p>
+  <p><strong>Company:</strong> {{company.legalName}}</p>
+
+  <h2>Acknowledgment</h2>
+  <p>I, <strong>{{officer.fullName}}</strong>, hereby acknowledge that I have received, read, and fully understand the Bylaws of {{company.legalName}} (the "Corporation"), as adopted on {{company.bylawsAdoptionDate}}.</p>
+
+  <p>I understand that these Bylaws govern the internal affairs and corporate governance of the Corporation, including the rights and obligations of shareholders, directors, and officers.</p>
+
+  <h2>Consent to Be Bound</h2>
+  <p>I hereby consent to be bound by all provisions of the Bylaws in my capacity as <strong>{{title}}</strong> of the Corporation, including but not limited to:</p>
+
+  <ul>
+    <li>Executive attendance and accountability requirements (Article VI)</li>
+    <li>Professional conduct and respect standards (Article XIII)</li>
+    <li>Fraternization prohibitions (Articles XIV & XV)</li>
+    <li>Conflict of interest obligations (Article XVI)</li>
+    <li>Non-compete and non-solicitation provisions (Article XVII)</li>
+    <li>Intellectual property and work-for-hire ownership (Article XVIII)</li>
+    <li>Data security and confidentiality (Article XX)</li>
+    <li>Anti-nepotism policy (Article XXI)</li>
+    <li>All other provisions applicable to officers and directors</li>
+  </ul>
+
+  <h2>Commitment</h2>
+  <p>I commit to upholding the highest standards of corporate governance, fiduciary duty, and professional conduct in accordance with the Bylaws and applicable law.</p>
+
+  <p>I understand that violations of the Bylaws may result in disciplinary action, compensation adjustments, or removal for cause as provided therein.</p>
+
+  <div class="signature-section">
+    <p>IN WITNESS WHEREOF, I have executed this Bylaws Acknowledgment & Consent as of the date first written above.</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>{{officer.fullName}}</strong><br />{{title}}</p>
+    
+    <div class="signature-line"></div>
+    <p><strong>Date</strong></p>
+  </div>
+</body>
+</html>

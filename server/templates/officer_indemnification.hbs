@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Officer Indemnification Agreement - {{officer.fullName}}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", serif;
+      font-size: 12pt;
+      line-height: 1.6;
+      color: #111;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 16pt;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-size: 13pt;
+      margin-top: 20px;
+    }
+    p {
+      margin: 12px 0;
+    }
+    .signature-section {
+      margin-top: 60px;
+      border-top: 1px solid #ccc;
+      padding-top: 30px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #ccc;
+      width: 300px;
+      margin: 30px 0 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Officer Indemnification Agreement</h1>
+
+  <p><strong>Date:</strong> {{currentDate}}</p>
+  <p><strong>Company:</strong> {{company.legalName}} (the "Corporation")</p>
+  <p><strong>Officer:</strong> {{officer.fullName}} (the "Indemnitee")</p>
+  <p><strong>Title:</strong> {{title}}</p>
+
+  <h2>Recitals</h2>
+  <p>WHEREAS, the Corporation desires to attract and retain qualified persons to serve as officers and directors;</p>
+  <p>WHEREAS, the Indemnitee is willing to serve or continue to serve the Corporation in an executive capacity;</p>
+  <p>WHEREAS, both the Corporation and the Indemnitee recognize the increased risk of litigation and other claims directed toward officers and directors of corporations;</p>
+  <p>WHEREAS, Article VII of the Corporation's Bylaws provides for indemnification of officers and directors to the fullest extent permitted by law;</p>
+  <p>NOW, THEREFORE, in consideration of the Indemnitee's service as an officer and/or director, the Corporation and the Indemnitee agree as follows:</p>
+
+  <h2>1. Indemnification</h2>
+  <p>The Corporation shall indemnify the Indemnitee to the fullest extent permitted by the Delaware General Corporation Law (the "DGCL"), as amended from time to time, against any and all Expenses, judgments, fines, penalties, and amounts paid in settlement (collectively, "Indemnifiable Amounts") actually and reasonably incurred by the Indemnitee in connection with any threatened, pending, or completed Proceeding (as defined below).</p>
+
+  <h2>2. Definition of Proceeding</h2>
+  <p>"Proceeding" means any action, suit, arbitration, alternate dispute resolution mechanism, investigation, administrative hearing, or any other proceeding, whether civil, criminal, administrative, or investigative, in which the Indemnitee is or is threatened to be made a party or witness by reason of the fact that the Indemnitee is or was an officer, director, employee, or agent of the Corporation.</p>
+
+  <h2>3. Advancement of Expenses</h2>
+  <p>The Corporation shall advance all reasonable Expenses incurred by the Indemnitee in connection with any Proceeding within twenty (20) days after receipt by the Corporation of a written request for such advancement, accompanied by:</p>
+  <ul>
+    <li>A written statement affirming the Indemnitee's good faith belief that the standard of conduct necessary for indemnification has been met; and</li>
+    <li>An undertaking by or on behalf of the Indemnitee to repay such amounts if it shall ultimately be determined that the Indemnitee is not entitled to be indemnified.</li>
+  </ul>
+
+  <h2>4. Scope of Indemnification</h2>
+  <p>The indemnification provided by this Agreement shall apply to acts or omissions that occurred prior to, on, or after the date of this Agreement, and shall continue after the Indemnitee has ceased to serve as an officer or director, and shall inure to the benefit of the Indemnitee's heirs, executors, and administrators.</p>
+
+  <h2>5. Exclusions</h2>
+  <p>Notwithstanding the foregoing, the Corporation shall not be obligated to indemnify the Indemnitee:</p>
+  <ul>
+    <li>For any Proceeding initiated by the Indemnitee against the Corporation or any director or officer of the Corporation, unless authorized by the Board of Directors;</li>
+    <li>For conduct determined by a final adjudication to have been undertaken with deliberate intent to cause injury to the Corporation or with reckless disregard for the Corporation's best interests;</li>
+    <li>For liabilities arising under Section 16(b) of the Securities Exchange Act of 1934 or similar provisions;</li>
+    <li>To the extent indemnification is expressly prohibited by applicable law.</li>
+  </ul>
+
+  <h2>6. Insurance</h2>
+  <p>The Corporation may purchase and maintain insurance on behalf of the Indemnitee against any liability asserted against or incurred by the Indemnitee by reason of the Indemnitee's position as an officer or director, whether or not the Corporation would have the power to indemnify the Indemnitee against such liability under this Agreement or applicable law.</p>
+
+  <h2>7. Non-Exclusivity</h2>
+  <p>The rights to indemnification and advancement of Expenses provided by this Agreement shall not be deemed exclusive of any other rights to which the Indemnitee may be entitled under the Certificate of Incorporation, Bylaws, any agreement, vote of shareholders or disinterested directors, applicable law, or otherwise.</p>
+
+  <h2>8. Severability</h2>
+  <p>If any provision of this Agreement is held to be invalid, illegal, or unenforceable, the validity, legality, and enforceability of the remaining provisions shall not be affected or impaired.</p>
+
+  <h2>9. Governing Law</h2>
+  <p>This Agreement shall be governed by and construed in accordance with the laws of the State of {{company.state}}, without regard to conflicts of laws principles.</p>
+
+  <div class="signature-section">
+    <p>IN WITNESS WHEREOF, the parties have executed this Officer Indemnification Agreement as of the date first written above.</p>
+    
+    <p><strong>{{company.legalName}}</strong></p>
+    <div class="signature-line"></div>
+    <p>By: ______________________________<br />Name: [Authorized Officer]<br />Title: [Title]</p>
+    
+    <p><strong>INDEMNITEE:</strong></p>
+    <div class="signature-line"></div>
+    <p><strong>{{officer.fullName}}</strong><br />{{title}}</p>
+  </div>
+</body>
+</html>
