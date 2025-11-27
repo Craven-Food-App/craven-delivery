@@ -156,6 +156,12 @@ export const templates: TemplateMeta[] = [
     title: "2025 Equity Incentive Plan", 
     placeholders: ["company_name","equity_pool_shares","par_value","plan_effective_date","plan_adoption_date","state"], 
     compile: Handlebars.compile(TPL("equity_incentive_plan.hbs")) 
+  },
+  { 
+    id: "option_rsu_award", 
+    title: "Option/RSU Award Agreement", 
+    placeholders: ["company_name","officer_name","title","award_type","shares_granted","strike_price","grant_date","vesting_schedule","equity_plan_name","state"], 
+    compile: Handlebars.compile(TPL("option_rsu_award.hbs")) 
   }
 ];
 

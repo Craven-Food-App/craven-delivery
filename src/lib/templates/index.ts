@@ -12,7 +12,15 @@ export type GovernanceTemplateId =
   | "stock_issuance_resolution"
   | "cap_table_exhibit"
   | "banking_resolution"
-  | "registered_agent_resolution";
+  | "registered_agent_resolution"
+  | "certificate_of_incorporation"
+  | "bylaws_complete"
+  | "bylaws_acknowledgment"
+  | "fiduciary_duty_ethics"
+  | "conflict_of_interest_disclosure"
+  | "officer_indemnification"
+  | "equity_incentive_plan"
+  | "option_rsu_award";
 
 export type TemplateCategory =
   | "governance"
@@ -129,6 +137,78 @@ export const governanceTemplates: TemplateMeta[] = [
     category: ["governance", "compliance"],
     path: "governance/registered_agent_resolution.html",
     triggers: { onRegisteredAgentSetup: true },
+  },
+  {
+    id: "certificate_of_incorporation",
+    title: "Certificate of Incorporation",
+    description:
+      "Delaware Certificate of Incorporation establishing the corporation.",
+    category: ["governance", "compliance"],
+    path: "governance/certificate_of_incorporation.html",
+    triggers: { preIncorporation: true },
+  },
+  {
+    id: "bylaws_complete",
+    title: "Corporate Bylaws (Complete)",
+    description:
+      "Full comprehensive corporate bylaws document governing internal affairs.",
+    category: ["governance", "compliance"],
+    path: "governance/bylaws_complete.html",
+    triggers: { onDirectorCreate: true },
+  },
+  {
+    id: "bylaws_acknowledgment",
+    title: "Bylaws Acknowledgment & Consent",
+    description:
+      "Executive acknowledgment of corporate bylaws and consent to be bound.",
+    category: ["executive", "governance"],
+    path: "governance/bylaws_acknowledgment.html",
+    triggers: { onOfficerAppointment: true },
+  },
+  {
+    id: "fiduciary_duty_ethics",
+    title: "Fiduciary Duty & Ethics Acknowledgment",
+    description:
+      "Ethics and fiduciary duty acknowledgment for officers and directors.",
+    category: ["executive", "compliance"],
+    path: "governance/fiduciary_duty_ethics.html",
+    triggers: { onOfficerAppointment: true, onCEOAppointment: true },
+  },
+  {
+    id: "conflict_of_interest_disclosure",
+    title: "Conflict of Interest Disclosure",
+    description:
+      "Initial conflict of interest disclosure form for executives.",
+    category: ["executive", "compliance"],
+    path: "governance/conflict_of_interest_disclosure.html",
+    triggers: { onOfficerAppointment: true, onCEOAppointment: true },
+  },
+  {
+    id: "officer_indemnification",
+    title: "Officer Indemnification Agreement",
+    description:
+      "D&O liability indemnification agreement protecting officers.",
+    category: ["executive", "compliance"],
+    path: "governance/officer_indemnification.html",
+    triggers: { onOfficerAppointment: true, onCEOAppointment: true },
+  },
+  {
+    id: "equity_incentive_plan",
+    title: "2025 Equity Incentive Plan",
+    description:
+      "Company equity incentive plan governing stock option and RSU grants.",
+    category: ["equity", "governance"],
+    path: "governance/equity_incentive_plan.html",
+    triggers: { onEquitySetup: true },
+  },
+  {
+    id: "option_rsu_award",
+    title: "Option/RSU Award Agreement",
+    description:
+      "Individual equity award agreement for options or RSUs.",
+    category: ["equity", "executive"],
+    path: "governance/option_rsu_award.html",
+    triggers: { onEquitySetup: true, onOfficerAppointment: true },
   },
 ];
 
