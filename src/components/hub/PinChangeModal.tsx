@@ -71,8 +71,22 @@ const PinChangeModal: React.FC<PinChangeModalProps> = ({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update PIN');
+        let errorMessage = 'Failed to update PIN';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } else {
+            const textError = await response.text();
+            console.error('Non-JSON error response:', textError);
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          }
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          errorMessage = `Server error (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Update user metadata to clear temporary PIN flag
