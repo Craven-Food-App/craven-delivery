@@ -105,6 +105,7 @@
     "antd": "^5.27.6",
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.2",
+    "caniuse-lite": "^1.0.30001757",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

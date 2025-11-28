@@ -30,6 +30,7 @@ import {
   IconCurrencyDollar,
   IconCalendar,
   IconUser,
+  IconRefresh,
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { getExpenseStatusColor, getPriorityColor } from '@/utils/finance';
@@ -58,82 +59,151 @@ export const ExpenseApprovalDashboard: React.FC = () => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('pending');
-
-  useEffect(() => {
-    fetchExpenses();
-  }, [activeTab]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingAmount, setPendingAmount] = useState(0);
 
   const fetchExpenses = async () => {
     setLoading(true);
     try {
+      // Remove problematic user_profiles relationship to avoid query failures
       let query = supabase
         .from('expense_requests')
         .select(`
           *,
           expense_category:expense_categories(name, code),
-          department:departments(name),
-          requester:user_profiles!expense_requests_requester_id_fkey(first_name, last_name)
+          department:departments(name)
         `)
         .order('created_at', { ascending: false });
 
-      if (activeTab === 'pending') {
-        query = query.in('status', ['submitted', 'pending_approval']);
-      } else if (activeTab === 'approved') {
-        query = query.eq('status', 'approved');
-      } else if (activeTab === 'rejected') {
-        query = query.eq('status', 'rejected');
-      } else {
-        query = query.eq('status', activeTab);
+      // Filter by status based on active tab
+      // IMPORTANT: This must match all possible tab values
+      switch (activeTab) {
+        case 'pending':
+          // Show all expenses that need approval, including drafts and submitted expenses
+          query = query.in('status', ['draft', 'submitted', 'pending_approval']);
+          break;
+        case 'approved':
+          query = query.eq('status', 'approved');
+          break;
+        case 'rejected':
+          query = query.eq('status', 'rejected');
+          break;
+        case 'paid':
+          query = query.eq('status', 'paid');
+          break;
+        case 'cancelled':
+          query = query.eq('status', 'cancelled');
+          break;
+        case 'draft':
+          query = query.eq('status', 'draft');
+          break;
+        case 'all':
+          // Show all expenses regardless of status - no filter
+          break;
+        default:
+          // If tab value matches a status directly, filter by it
+          // This handles any status values we might have missed
+          console.warn(`Unknown tab value: ${activeTab}, filtering by status`);
+          query = query.eq('status', activeTab);
+          break;
       }
 
       const { data, error } = await query;
 
       if (error) {
-        // Suppress relationship and policy errors - these are schema issues, not user errors
-        if (
-          error.code === '42P01' || 
-          error.message?.includes('does not exist') ||
-          error.message?.includes('Could not find a relationship') ||
-          error.message?.includes('infinite recursion detected in policy') ||
-          error.message?.includes('schema cache')
-        ) {
-          console.warn('Supabase schema/relationship error (suppressed):', error.message);
+        // Only suppress truly harmless schema errors (table doesn't exist)
+        if (error.code === '42P01') {
+          console.warn('Expense requests table does not exist yet:', error.message);
+          setExpenses([]);
           return;
         }
-        // Only show critical errors, not schema issues
+        
+        // Log and show actual errors
         console.error('Error fetching expenses:', error);
+        notifications.show({
+          title: 'Error',
+          message: `Failed to load expenses: ${error.message}`,
+          color: 'red',
+        });
+        setExpenses([]);
         return;
       }
 
+      console.log(`Fetched ${data?.length || 0} expense requests for tab: ${activeTab}`);
+      if (data && data.length > 0) {
+        console.log('Sample expense:', data[0]);
+      }
+
+      // Also query pending expenses separately to get accurate count for badge
+      const { data: pendingExpenses } = await supabase
+        .from('expense_requests')
+        .select('amount')
+        .in('status', ['draft', 'submitted', 'pending_approval']);
+      
+      const actualPendingCount = pendingExpenses?.length || 0;
+      const actualPendingAmount = pendingExpenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+      setPendingCount(actualPendingCount);
+      setPendingAmount(actualPendingAmount);
+      
+      console.log(`Pending count from DB: ${actualPendingCount}, Amount: $${actualPendingAmount}`);
+
+      // Also query all expenses to debug (remove after testing)
+      const { data: allExpenses } = await supabase
+        .from('expense_requests')
+        .select('id, request_number, status, requester_id, amount')
+        .limit(10);
+      console.log(`Total expense requests in DB: ${allExpenses?.length || 0}`, allExpenses);
+
+      // Fetch requester emails from auth.users if available
+      // Note: We can't join auth.users directly, so we'll try to get user profiles
+      const requesterIds = [...new Set((data || []).map(exp => exp.requester_id).filter(Boolean))];
+      let requesterMap = new Map<string, string>();
+      
+      if (requesterIds.length > 0) {
+        try {
+          // Try to get user profiles for requester names
+          const { data: profiles } = await supabase
+            .from('user_profiles')
+            .select('user_id, full_name, email')
+            .in('user_id', requesterIds);
+          
+          if (profiles) {
+            profiles.forEach(profile => {
+              requesterMap.set(
+                profile.user_id,
+                profile.full_name || profile.email || 'Unknown User'
+              );
+            });
+          }
+        } catch (err) {
+          console.warn('Could not fetch user profiles for requesters:', err);
+        }
+      }
+
+      // Format expenses with requester names
       const formatted = (data || []).map(exp => ({
         ...exp,
-        requester_name: 'Unknown', // No user_profiles relation available
+        requester_name: requesterMap.get(exp.requester_id) || exp.requester_id?.substring(0, 8) || 'Unknown',
       }));
 
       setExpenses(formatted as any);
     } catch (error: any) {
-      // Suppress relationship and policy errors
-      if (
-        error.message?.includes('Could not find a relationship') ||
-        error.message?.includes('infinite recursion detected in policy') ||
-        error.message?.includes('schema cache')
-      ) {
-        console.warn('Supabase schema error (suppressed):', error.message);
-        return;
-      }
-      console.error('Error fetching expenses:', error);
-      // Only show critical errors via notifications
-      if (error.code !== '42P01' && !error.message?.includes('does not exist')) {
-        notifications.show({
-          title: 'Error',
-          message: error.message || 'Failed to load expenses',
-          color: 'red',
-        });
-      }
+      console.error('Unexpected error fetching expenses:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to load expenses',
+        color: 'red',
+      });
+      setExpenses([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleApprove = async () => {
     if (!selectedExpense) return;
@@ -246,11 +316,9 @@ export const ExpenseApprovalDashboard: React.FC = () => {
     }
   };
 
-  const pendingCount = expenses.filter(e => ['submitted', 'pending_approval'].includes(e.status)).length;
-  const pendingAmount = expenses
-    .filter(e => ['submitted', 'pending_approval'].includes(e.status))
-    .reduce((sum, e) => sum + e.amount, 0);
-
+  // Pending count/amount are now fetched separately and stored in state
+  // This ensures the badge shows accurate counts regardless of which tab is active
+  
   return (
     <Stack gap="lg">
       <Card p="lg" radius="md" withBorder>
@@ -258,14 +326,30 @@ export const ExpenseApprovalDashboard: React.FC = () => {
           <div>
             <Text fw={700} size="xl">Expense Approval Dashboard</Text>
             <Text c="dimmed" size="sm">Review and approve expense requests</Text>
+            <Text size="xs" c="dimmed" mt={4}>
+              Check browser console for debug logs
+            </Text>
           </div>
-          <Paper p="md" withBorder>
+          <Group>
+            <Tooltip label="Refresh">
+              <ActionIcon
+                variant="light"
+                onClick={() => {
+                  console.log('Manual refresh triggered');
+                  fetchExpenses();
+                }}
+              >
+                <IconRefresh size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Paper p="md" withBorder>
             <Stack gap={4}>
               <Text size="xs" c="dimmed">Pending Approval</Text>
               <Text fw={700} size="xl" c="orange">{pendingCount}</Text>
               <Text size="xs" c="dimmed">${pendingAmount.toLocaleString()}</Text>
             </Stack>
           </Paper>
+        </Group>
         </Group>
 
         <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'pending')}>

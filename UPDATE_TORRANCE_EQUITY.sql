@@ -87,6 +87,7 @@ DECLARE
   torrance_full_name TEXT := 'Torrance Stroman';
   torrance_equity_id UUID := '684f7d11-6551-45b8-a468-f5699fdc4025';
   existing_ledger_id UUID;
+  torrance_exec_id UUID;
 BEGIN
   -- Find Torrance's user_id from auth.users
   SELECT id INTO torrance_user_id
@@ -194,6 +195,47 @@ BEGIN
     END IF;
     
     RAISE NOTICE 'Updated vesting_schedules for Torrance Stroman';
+    
+    -- Update share_certificates
+    UPDATE public.share_certificates
+    SET
+      shares_amount = 18000000,
+      share_class = 'Common',
+      updated_at = NOW()
+    WHERE recipient_user_id = torrance_user_id
+      AND status = 'issued';
+    
+    RAISE NOTICE 'Updated share_certificates for Torrance Stroman: 18,000,000 shares';
+    
+    -- Update equity_grants if table exists and has records for Torrance
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'equity_grants') THEN
+      -- Update by employee_id if exists
+      IF torrance_employee_id IS NOT NULL THEN
+        UPDATE public.equity_grants
+        SET
+          shares_total = 18000000,
+          shares_percentage = 18.00
+        WHERE employee_id = torrance_employee_id;
+        
+        RAISE NOTICE 'Updated equity_grants (by employee_id) for Torrance Stroman: 18,000,000 shares';
+      END IF;
+      
+      -- Also try to update by executive_id (if Torrance has an exec_users record)
+      SELECT id INTO torrance_exec_id
+      FROM public.exec_users
+      WHERE user_id = torrance_user_id
+      LIMIT 1;
+      
+      IF torrance_exec_id IS NOT NULL THEN
+        UPDATE public.equity_grants
+        SET
+          shares_total = 18000000,
+          shares_percentage = 18.00
+        WHERE executive_id = torrance_exec_id;
+        
+        RAISE NOTICE 'Updated equity_grants (by executive_id) for Torrance Stroman: 18,000,000 shares';
+      END IF;
+    END IF;
   ELSE
     RAISE WARNING 'Could not find Torrance Stroman user_id - cannot update equity_ledger';
   END IF;
@@ -241,6 +283,7 @@ BEGIN
     RAISE WARNING 'Could not find Torrance Stroman employee record';
   END IF;
 END $$;
+
 
 -- Step 4: Verify the updates
 -- Verify equity_ledger and user_profiles data
@@ -312,7 +355,23 @@ WHERE eq.id = '684f7d11-6551-45b8-a468-f5699fdc4025'
    OR (e.first_name ILIKE '%torrance%' AND e.last_name ILIKE '%stroman%')
 ORDER BY eq.shares_percentage DESC;
 
--- Step 5: Verify cap table totals
+-- Step 5: Verify share_certificates
+SELECT 
+  sc.certificate_number,
+  COALESCE(up.full_name, e.first_name || ' ' || e.last_name, 'Unknown') AS recipient_name,
+  sc.shares_amount,
+  sc.share_class,
+  sc.issue_date,
+  sc.status
+FROM public.share_certificates sc
+LEFT JOIN public.user_profiles up ON sc.recipient_user_id = up.user_id
+LEFT JOIN public.employees e ON sc.recipient_user_id = e.user_id
+WHERE sc.recipient_user_id IN (
+  SELECT id FROM auth.users WHERE email = 'tstroman.ceo@cravenusa.com'
+)
+ORDER BY sc.issue_date DESC;
+
+-- Step 6: Verify cap table totals
 SELECT 
   total_authorized,
   total_issued,

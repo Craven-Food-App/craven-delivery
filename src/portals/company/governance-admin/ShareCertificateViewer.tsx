@@ -15,9 +15,10 @@ import {
   Alert,
   Anchor,
 } from '@mantine/core';
-import { IconCertificate, IconDownload, IconEye, IconAlertCircle } from '@tabler/icons-react';
+import { IconCertificate, IconDownload, IconEye, IconAlertCircle, IconEdit } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
+import { NumberInput, Select } from '@mantine/core';
 
 interface Certificate {
   id: string;
@@ -37,7 +38,12 @@ const ShareCertificateViewer: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
+  const [editShares, setEditShares] = useState<number>(0);
+  const [editShareClass, setEditShareClass] = useState<string>('Common');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadCertificates();
@@ -55,16 +61,42 @@ const ShareCertificateViewer: React.FC = () => {
       // Enrich with user info
       const enrichedCertificates = await Promise.all(
         (data || []).map(async (cert) => {
+          let recipientName = 'Unknown';
+          let recipientEmail = '';
+
+          // Try user_profiles first
           const { data: profile } = await supabase
             .from('user_profiles')
             .select('full_name, email')
             .eq('user_id', cert.recipient_user_id)
             .maybeSingle();
 
+          if (profile) {
+            recipientName = profile.full_name || '';
+            recipientEmail = profile.email || '';
+          }
+
+          // If still no email/name, try employees table
+          if (!recipientEmail || !recipientName) {
+            const { data: employee } = await supabase
+              .from('employees')
+              .select('email, first_name, last_name')
+              .eq('user_id', cert.recipient_user_id)
+              .maybeSingle();
+
+            if (employee) {
+              recipientEmail = recipientEmail || employee.email || '';
+              recipientName = recipientName || 
+                (employee.first_name && employee.last_name 
+                  ? `${employee.first_name} ${employee.last_name}`
+                  : employee.first_name || employee.last_name || 'Unknown');
+            }
+          }
+
           return {
             ...cert,
-            recipient_name: profile?.full_name || 'Unknown',
-            recipient_email: profile?.email || '',
+            recipient_name: recipientName,
+            recipient_email: recipientEmail,
           };
         })
       );
@@ -87,6 +119,49 @@ const ShareCertificateViewer: React.FC = () => {
       cert.recipient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cert.recipient_email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleEdit = (cert: Certificate) => {
+    setEditingCertificate(cert);
+    setEditShares(cert.shares_amount);
+    setEditShareClass(cert.share_class);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCertificate) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('share_certificates')
+        .update({
+          shares_amount: editShares,
+          share_class: editShareClass,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingCertificate.id);
+
+      if (error) throw error;
+
+      notifications.show({
+        title: 'Success',
+        message: 'Certificate updated successfully',
+        color: 'green',
+      });
+
+      setEditModalOpen(false);
+      setEditingCertificate(null);
+      loadCertificates(); // Reload to refresh the list
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to update certificate',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -170,6 +245,15 @@ const ShareCertificateViewer: React.FC = () => {
                   </Table.Td>
                   <Table.Td>
                     <Group gap="xs">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="blue"
+                        leftSection={<IconEdit size={14} />}
+                        onClick={() => handleEdit(cert)}
+                      >
+                        Edit
+                      </Button>
                       {cert.document_url && (
                         <>
                           <Button
@@ -239,6 +323,63 @@ const ShareCertificateViewer: React.FC = () => {
                   </Button>
                 </Anchor>
               )}
+            </Stack>
+          )}
+        </Modal>
+
+        <Modal
+          opened={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditingCertificate(null);
+          }}
+          title={`Edit Certificate ${editingCertificate?.certificate_number}`}
+          size="md"
+        >
+          {editingCertificate && (
+            <Stack gap="md">
+              <Group>
+                <Text fw={500}>Recipient:</Text>
+                <Text>{editingCertificate.recipient_name}</Text>
+              </Group>
+
+              <NumberInput
+                label="Shares Amount"
+                value={editShares}
+                onChange={(value) => setEditShares(typeof value === 'number' ? value : 0)}
+                min={0}
+                step={1000}
+                parser={(value) => value?.replace(/\$\s?|(,*)/g, '') || ''}
+                formatter={(value) =>
+                  !Number.isNaN(parseFloat(value || ''))
+                    ? `${value}`.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
+                    : ''
+                }
+                required
+              />
+
+              <Select
+                label="Share Class"
+                value={editShareClass}
+                onChange={(value) => setEditShareClass(value || 'Common')}
+                data={['Common', 'Preferred', 'Class A', 'Class B', 'Class C']}
+                required
+              />
+
+              <Group justify="flex-end" mt="md">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditModalOpen(false);
+                    setEditingCertificate(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit} loading={saving}>
+                  Save Changes
+                </Button>
+              </Group>
             </Stack>
           )}
         </Modal>

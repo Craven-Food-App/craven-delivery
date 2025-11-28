@@ -164,22 +164,46 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Get employee ID if exists
-      const { data: employee } = await supabase
-        .from('employees')
-        .select('id, department_id')
-        .eq('user_id', user.id)
-        .single();
+      // Get employee ID if exists (optional - user may not be an employee)
+      let employee: { id: string; department_id: string } | null = null;
+      try {
+        const { data, error: employeeError } = await supabase
+          .from('employees')
+          .select('id, department_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (employeeError) {
+          // Suppress 406 (Not Acceptable) and PGRST116 (not found) errors
+          // These are expected when user is not an employee or RLS denies access
+          if (employeeError.code !== 'PGRST116' && 
+              !employeeError.message?.includes('Not Acceptable') &&
+              !employeeError.message?.includes('406')) {
+            console.warn('Error fetching employee:', employeeError);
+          }
+        } else {
+          employee = data;
+        }
+      } catch (err) {
+        // Silently handle - user may not be an employee
+      }
 
       // Upload receipts
       const receiptUrls = await uploadReceipts();
 
-      // Get user profile for name
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('email')
-        .eq('id', user.id)
-        .single();
+      // Get user profile for name (optional - use email as fallback)
+      // Note: We use user.email directly, so profile lookup is not critical
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('email')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        // Profile email would override user.email if available, but we already have user.email
+      } catch (err) {
+        // Silently handle - we already have user.email as fallback
+      }
 
       const requesterName = user.email || 'Unknown';
 
@@ -195,6 +219,7 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
       const { data, error } = await supabase
         .from('expense_requests')
         .insert({
+          requester_id: user.id, // Required field for RLS policy
           requester_employee_id: employee?.id,
           department_id: formData.department_id || employee?.department_id,
           expense_category_id: formData.expense_category_id,
@@ -213,11 +238,20 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating expense request:', error);
+        throw error;
+      }
+
+      console.log('Expense request created successfully:', { 
+        id: data?.id, 
+        request_number: data?.request_number,
+        status: data?.status 
+      });
 
       // Log approval action
       if (status === 'submitted') {
-        await supabase.from('expense_approval_log').insert({
+        const { error: logError } = await supabase.from('expense_approval_log').insert({
           expense_request_id: data.id,
           action: 'submitted',
           actor_id: user.id,
@@ -225,6 +259,13 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
           previous_status: 'draft',
           new_status: 'submitted',
         });
+        
+        if (logError) {
+          console.error('Error logging expense submission:', logError);
+          // Don't throw - logging is not critical
+        } else {
+          console.log('Expense submission logged successfully');
+        }
       }
 
       notifications.show({
