@@ -119,16 +119,17 @@ serve(async (req: Request) => {
       metadata_json: {
         activation_details: activationDetails,
         activated_at: new Date().toISOString(),
-        executive_name: appointment.user_profiles?.full_name,
+        executive_name: Array.isArray(appointment.user_profiles) ? appointment.user_profiles[0]?.full_name : appointment.user_profiles?.full_name,
         executive_role: appointment.role_titles.join(', '),
       },
     });
 
+    const profile = Array.isArray(appointment.user_profiles) ? appointment.user_profiles[0] : appointment.user_profiles;
     return new Response(
       JSON.stringify({ 
         ok: true, 
         message: 'Executive activated successfully',
-        executiveName: appointment.user_profiles?.full_name,
+        executiveName: profile?.full_name,
         executiveRole: appointment.role_titles.join(', '),
         activationDetails,
       }),

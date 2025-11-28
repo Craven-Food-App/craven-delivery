@@ -331,7 +331,7 @@ serve(async (req) => {
               } else if (field.field_type === 'text') {
                 fieldContent = `<span style="font-size: 12px;">${signerName}</span>`;
               } else if (field.field_type === 'initials') {
-                const initials = signerName.split(' ').map(n => n.charAt(0).toUpperCase()).join('');
+                const initials = signerName.split(' ').map((n: string) => n.charAt(0).toUpperCase()).join('');
                 fieldContent = `<span style="font-size: 12px; font-weight: bold;">${initials}</span>`;
               }
               
@@ -398,8 +398,7 @@ serve(async (req) => {
             if (appointeePattern.test(htmlContent) && signerRole === 'officer') {
               htmlContent = htmlContent.replace(
                 /<div[^>]*class=["']signature-line["'][^>]*><\/div>/,
-                signatureWithNameHtml,
-                1 // Only replace first occurrence
+                signatureWithNameHtml
               );
               signaturePlaced = true;
               console.log('Signature placed in appointee section (fallback)');
@@ -573,7 +572,7 @@ serve(async (req) => {
         const signerDisplayName = typed_name || document.officer_name || 'Executive';
         const initials = signerDisplayName
           .split(/\s+/)
-          .map((part) => part.trim().charAt(0).toUpperCase())
+          .map((part: string) => part.trim().charAt(0).toUpperCase())
           .join('')
           .slice(0, 3) || 'ES';
 
@@ -1012,17 +1011,17 @@ serve(async (req) => {
       // Check if this is a board_documents document (new governance system)
       if (updatedDoc.related_appointment_id) {
         try {
-          const { data: allDocuments } = await supabaseAdmin
+          const { data: allDocuments } = await supabaseClient
             .from('board_documents')
             .select('id, signing_status')
             .eq('related_appointment_id', updatedDoc.related_appointment_id);
           
-          const allSigned = allDocuments?.every(doc => doc.signing_status === 'completed') || false;
+          const allSigned = allDocuments?.every((doc: any) => doc.signing_status === 'completed') || false;
           
           if (allSigned && updatedDoc.related_appointment_id) {
             // Trigger appointment completion (Step 12)
             try {
-              await supabaseAdmin.functions.invoke('governance-complete-appointment', {
+              await supabaseClient.functions.invoke('governance-complete-appointment', {
                 body: {
                   appointment_id: updatedDoc.related_appointment_id,
                 },

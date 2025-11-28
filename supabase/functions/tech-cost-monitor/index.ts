@@ -175,7 +175,7 @@ function buildAlertEmail(alert: any): string {
     critical: "#ef4444",
     warning: "#f59e0b",
     info: "#3b82f6",
-  }[alert.severity] || "#6b7280";
+  }[alert.severity as 'critical' | 'warning' | 'info'] || "#6b7280";
 
   const categoryName = alert.category?.name || "Unknown Category";
   const vendorName = alert.vendor ? `${alert.vendor.name} - ${alert.vendor.service_name}` : null;
@@ -258,7 +258,7 @@ function buildSlackMessage(alert: any): any {
     critical: "🔴",
     warning: "🟡",
     info: "🔵",
-  }[alert.severity] || "⚪";
+  }[alert.severity as 'critical' | 'warning' | 'info'] || "⚪";
 
   const blocks = [
     {
