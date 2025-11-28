@@ -155,15 +155,20 @@ export const ExpenseApprovalDashboard: React.FC = () => {
       if (error) throw error;
 
       // Log approval
-      await supabase.from('expense_approval_log').insert({
+      const { error: logError } = await supabase.from('expense_approval_log').insert({
         expense_request_id: selectedExpense.id,
         action: 'approved',
         actor_id: user.id,
         actor_name: user.email || 'Unknown',
         previous_status: selectedExpense.status,
         new_status: 'approved',
-        comments: reviewNotes,
+        comments: reviewNotes || null,
       });
+      
+      if (logError) {
+        console.error('Error logging approval:', logError);
+        // Continue even if logging fails
+      }
 
       notifications.show({
         title: 'Approved',
@@ -216,7 +221,7 @@ export const ExpenseApprovalDashboard: React.FC = () => {
       if (error) throw error;
 
       // Log rejection
-      await supabase.from('expense_approval_log').insert({
+      const { error: logError } = await supabase.from('expense_approval_log').insert({
         expense_request_id: selectedExpense.id,
         action: 'rejected',
         actor_id: user.id,
@@ -225,6 +230,11 @@ export const ExpenseApprovalDashboard: React.FC = () => {
         new_status: 'rejected',
         comments: reviewNotes,
       });
+      
+      if (logError) {
+        console.error('Error logging rejection:', logError);
+        // Continue even if logging fails
+      }
 
       notifications.show({
         title: 'Rejected',

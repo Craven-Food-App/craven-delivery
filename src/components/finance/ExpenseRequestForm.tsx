@@ -191,7 +191,7 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
 
       const status = needsApproval ? 'submitted' : 'draft';
 
-      // Create expense request
+      // Create expense request (requester_id is set automatically by trigger)
       const { data, error } = await supabase
         .from('expense_requests')
         .insert({
@@ -199,32 +199,45 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
           department_id: formData.department_id || employee?.department_id,
           expense_category_id: formData.expense_category_id,
           amount: amount,
+          currency: 'USD',
           description: formData.description,
           business_purpose: formData.business_purpose,
           justification: formData.justification,
           expense_date: formData.expense_date.toISOString().split('T')[0],
+          requested_date: new Date().toISOString().split('T')[0],
           due_date: formData.due_date?.toISOString().split('T')[0],
           status: status,
           priority: formData.priority,
           payment_method: formData.payment_method,
           vendor_name: formData.vendor_name,
           receipt_urls: receiptUrls,
+          supporting_documents: [],
+          metadata: {},
         } as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating expense request:', error);
+        throw new Error(`Failed to create expense request: ${error.message}`);
+      }
 
       // Log approval action
       if (status === 'submitted') {
-        await supabase.from('expense_approval_log').insert({
+        const { error: logError } = await supabase.from('expense_approval_log').insert({
           expense_request_id: data.id,
           action: 'submitted',
           actor_id: user.id,
           actor_name: requesterName,
           previous_status: 'draft',
           new_status: 'submitted',
+          comments: null,
         });
+        
+        if (logError) {
+          console.error('Error logging approval action:', logError);
+          // Don't fail the whole request if logging fails
+        }
       }
 
       notifications.show({
