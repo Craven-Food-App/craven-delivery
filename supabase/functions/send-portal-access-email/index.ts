@@ -31,8 +31,9 @@ serve(async (req) => {
     const { email, name, portals, tempPassword, employeeId }: PortalAccessRequest = await req.json();
 
     // Create auth invite if user doesn't exist
-    const { data: existing } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1, filter: { email } as any });
-    if (!existing || (existing.users || []).length === 0) {
+    const { data: existing } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const userExists = existing?.users?.some(u => u.email === email);
+    if (!userExists) {
       await supabase.auth.admin.inviteUserByEmail(email, { data: { full_name: name } });
     }
 

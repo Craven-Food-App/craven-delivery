@@ -349,12 +349,7 @@ const ShareCertificateViewer: React.FC = () => {
                 onChange={(value) => setEditShares(typeof value === 'number' ? value : 0)}
                 min={0}
                 step={1000}
-                parser={(value) => value?.replace(/\$\s?|(,*)/g, '') || ''}
-                formatter={(value) =>
-                  !Number.isNaN(parseFloat(value || ''))
-                    ? `${value}`.replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ',')
-                    : ''
-                }
+                thousandSeparator=","
                 required
               />
 

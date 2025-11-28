@@ -156,7 +156,7 @@ serve(async (req) => {
     }
 
     // Step 3: Create/Update exec_users record for CTO
-    const { error: execError } = await supabaseAdmin
+    const { error: execError1 } = await supabaseAdmin
       .from('exec_users')
       .upsert({
         user_id: actualUserId,
@@ -220,7 +220,7 @@ serve(async (req) => {
     }
 
     // Step 5b: Create exec_users record for CTO portal access
-    const { error: execError } = await supabaseAdmin
+    const { error: execError2 } = await supabaseAdmin
       .from('exec_users')
       .upsert({
         user_id: actualUserId,
