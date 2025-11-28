@@ -6040,6 +6040,7 @@ export type Database = {
       employee_equity: {
         Row: {
           authorized_by: string | null
+          consideration_type: string | null
           created_at: string | null
           employee_id: string | null
           equity_type: string
@@ -6047,6 +6048,7 @@ export type Database = {
           id: string
           is_majority_shareholder: boolean | null
           notes: string | null
+          share_class: string | null
           shareholder_name: string | null
           shareholder_type: string | null
           shares_percentage: number
@@ -6058,6 +6060,7 @@ export type Database = {
         }
         Insert: {
           authorized_by?: string | null
+          consideration_type?: string | null
           created_at?: string | null
           employee_id?: string | null
           equity_type?: string
@@ -6065,6 +6068,7 @@ export type Database = {
           id?: string
           is_majority_shareholder?: boolean | null
           notes?: string | null
+          share_class?: string | null
           shareholder_name?: string | null
           shareholder_type?: string | null
           shares_percentage: number
@@ -6076,6 +6080,7 @@ export type Database = {
         }
         Update: {
           authorized_by?: string | null
+          consideration_type?: string | null
           created_at?: string | null
           employee_id?: string | null
           equity_type?: string
@@ -6083,6 +6088,7 @@ export type Database = {
           id?: string
           is_majority_shareholder?: boolean | null
           notes?: string | null
+          share_class?: string | null
           shareholder_name?: string | null
           shareholder_type?: string | null
           shares_percentage?: number
