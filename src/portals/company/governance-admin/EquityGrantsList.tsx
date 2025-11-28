@@ -71,7 +71,6 @@ const EquityGrantsList: React.FC = () => {
           let recipientName = '';
           
           try {
-            // Try user_profiles first
             const { data: profile } = await supabase
               .from('user_profiles')
               .select('email, full_name')
@@ -82,39 +81,6 @@ const EquityGrantsList: React.FC = () => {
               recipientEmail = profile.email || '';
               recipientName = profile.full_name || '';
             }
-            
-            // If still no email/name, try to get from employees table
-            if (!recipientEmail || !recipientName) {
-              const { data: employee } = await supabase
-                .from('employees')
-                .select('email, first_name, last_name')
-                .eq('user_id', entry.recipient_user_id)
-                .maybeSingle();
-              
-              if (employee) {
-                recipientEmail = recipientEmail || employee.email || '';
-                recipientName = recipientName || 
-                  (employee.first_name && employee.last_name 
-                    ? `${employee.first_name} ${employee.last_name}`
-                    : employee.first_name || employee.last_name || '');
-              }
-            }
-            
-            // If still no email, try exec_users table
-            if (!recipientEmail || !recipientName) {
-              const { data: execUser } = await supabase
-                .from('exec_users')
-                .select('title, department')
-                .eq('user_id', entry.recipient_user_id)
-                .maybeSingle();
-              
-              // exec_users doesn't have email/name, but we can at least log it for debugging
-              if (execUser) {
-                console.log('Found exec_user for recipient:', execUser);
-              }
-            }
-            
-            console.log(`Equity grant lookup - user_id: ${entry.recipient_user_id}, email: ${recipientEmail || 'NOT FOUND'}, name: ${recipientName || 'NOT FOUND'}`);
           } catch (err) {
             console.warn('Error fetching user profile:', err);
           }

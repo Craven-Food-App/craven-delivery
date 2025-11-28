@@ -88,7 +88,7 @@ async function generateVAPIDHeaders(
   const privateKeyBuffer = base64UrlDecode(privateKey);
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
-    privateKeyBuffer as ArrayBuffer,
+    privateKeyBuffer,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
