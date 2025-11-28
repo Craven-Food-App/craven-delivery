@@ -316,6 +316,54 @@ export const ExpenseApprovalDashboard: React.FC = () => {
     }
   };
 
+  const handleMarkAsPaid = async () => {
+    if (!selectedExpense) return;
+
+    setActionLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('expense_requests')
+        .update({
+          status: 'paid',
+        })
+        .eq('id', selectedExpense.id);
+
+      if (error) throw error;
+
+      // Log payment
+      await supabase.from('expense_approval_log').insert({
+        expense_request_id: selectedExpense.id,
+        action: 'marked_paid',
+        actor_id: user.id,
+        actor_name: user.email || 'Unknown',
+        previous_status: selectedExpense.status,
+        new_status: 'paid',
+        comments: reviewNotes || 'Marked as paid',
+      });
+
+      notifications.show({
+        title: 'Marked as Paid',
+        message: `Expense ${selectedExpense.request_number} has been marked as paid`,
+        color: 'green',
+      });
+
+      setModalOpen(false);
+      setReviewNotes('');
+      fetchExpenses();
+    } catch (error: any) {
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to mark expense as paid',
+        color: 'red',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Pending count/amount are now fetched separately and stored in state
   // This ensures the badge shows accurate counts regardless of which tab is active
   
@@ -521,7 +569,7 @@ export const ExpenseApprovalDashboard: React.FC = () => {
               </div>
             )}
 
-            {['submitted', 'pending_approval'].includes(selectedExpense.status) && (
+            {['draft', 'submitted', 'pending_approval'].includes(selectedExpense.status) && (
               <>
                 <Textarea
                   label="Review Notes"
@@ -548,6 +596,28 @@ export const ExpenseApprovalDashboard: React.FC = () => {
                     loading={actionLoading}
                   >
                     Approve
+                  </Button>
+                </Group>
+              </>
+            )}
+
+            {selectedExpense.status === 'approved' && (
+              <>
+                <Textarea
+                  label="Payment Notes (Optional)"
+                  placeholder="Add payment details or notes..."
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  rows={3}
+                />
+                <Group justify="flex-end">
+                  <Button
+                    color="blue"
+                    leftSection={<IconCurrencyDollar size={16} />}
+                    onClick={handleMarkAsPaid}
+                    loading={actionLoading}
+                  >
+                    Mark as Paid
                   </Button>
                 </Group>
               </>
