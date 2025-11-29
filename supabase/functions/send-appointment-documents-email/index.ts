@@ -187,7 +187,7 @@ serve(async (req: Request) => {
       // Build email content
       const documentTitle = `${documents.length} Document${documents.length > 1 ? 's' : ''} Ready for Signature`;
       const documentLinks = documentList.map(doc => 
-        `<li style="margin: 6px 0;"><a href="${doc.url}" style="color: #ff7a45; text-decoration: none;">${doc.title}</a></li>`
+        `<li style="margin: 6px 0; color: #4a4a4a;">${doc.title}</li>`
       ).join('');
       
       // Build login credentials section if user was just created
@@ -228,14 +228,17 @@ serve(async (req: Request) => {
     <div style="background: #ffffff; padding: 30px; border-radius: 0 0 8px 8px;">
       <h2 style="color: #1a1a1a; font-size: 24px;">Hello ${appointeeName},</h2>
       <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-        Your executive appointment documents are ready for review and signature.
+        Your executive appointment documents are ready for review and signature. Please use the button below to access the secure signing portal where you can review and sign all documents.
       </p>
       ${loginCredentialsHtml}
       <div style="background-color: #f9f9f9; padding: 16px; border-radius: 6px; margin: 20px 0;">
-        <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">Included Documents</h3>
+        <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">Documents Awaiting Your Signature</h3>
         <ul style="margin: 0; padding-left: 18px; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
           ${documentLinks}
         </ul>
+        <p style="margin: 10px 0 0 0; color: #666; font-size: 13px; font-style: italic;">
+          All documents are accessible through the signing portal below.
+        </p>
       </div>
       <div style="text-align: center; margin: 40px 0 30px 0;">
         <a href="${portalUrl}" 
