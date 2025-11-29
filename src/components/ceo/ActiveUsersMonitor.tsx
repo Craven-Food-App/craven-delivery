@@ -46,11 +46,20 @@ const ActiveUsersMonitor: React.FC = () => {
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     // Initial fetch
     fetchActiveUsers();
     fetchActivityLog();
+    
+    // AUTO-REFRESH: Refresh component every 60 seconds
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing Active Users Monitor...');
+      fetchActiveUsers();
+      fetchActivityLog();
+      setLastUpdated(new Date());
+    }, 60000); // 60 seconds
     
     // REAL-TIME SUBSCRIPTIONS - Zero delay updates
     // Subscribe to user_sessions changes (INSERT, UPDATE, DELETE)
@@ -65,7 +74,9 @@ const ActiveUsersMonitor: React.FC = () => {
         },
         async (payload) => {
           // Zero-delay update - refresh immediately when any change occurs
+          console.log('📡 Real-time update: user_sessions changed');
           await fetchActiveUsers();
+          setLastUpdated(new Date());
         }
       )
       .subscribe((status) => {
@@ -86,9 +97,11 @@ const ActiveUsersMonitor: React.FC = () => {
         },
         async (payload) => {
           // Zero-delay update - refresh immediately when any activity occurs
+          console.log('📡 Real-time update: user_activity_log changed');
           await fetchActivityLog();
           // Also refresh active users in case session changed
           await fetchActiveUsers();
+          setLastUpdated(new Date());
         }
       )
       .subscribe((status) => {
@@ -97,8 +110,9 @@ const ActiveUsersMonitor: React.FC = () => {
         }
       });
 
-    // Cleanup subscriptions on unmount
+    // Cleanup subscriptions and interval on unmount
     return () => {
+      clearInterval(refreshInterval);
       sessionsChannel.unsubscribe();
       activityChannel.unsubscribe();
     };
@@ -106,10 +120,16 @@ const ActiveUsersMonitor: React.FC = () => {
 
   const fetchActiveUsers = async () => {
     try {
+      // Show ONLY users who are CURRENTLY active RIGHT NOW (within last 2 minutes)
+      // 30 minutes is for auto-logout timeout, NOT for determining if someone is "active"
+      // Active means they're actively working RIGHT NOW, not 30 minutes ago
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      
       const { data, error } = await supabase
         .from('user_sessions')
         .select('id, user_id, portal_type, current_location, last_activity_at, is_active')
         .eq('is_active', true)
+        .gte('last_activity_at', twoMinutesAgo)
         .order('last_activity_at', { ascending: false });
 
       if (error) {
@@ -177,6 +197,7 @@ const ActiveUsersMonitor: React.FC = () => {
       });
 
       setActiveUsers(users);
+      setLastUpdated(new Date());
     } catch (error: any) {
       console.error('Error fetching active users:', error);
       // Don't show error notification if table doesn't exist yet
@@ -313,8 +334,21 @@ const ActiveUsersMonitor: React.FC = () => {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Title order={3}>Active Users & Activity Monitor</Title>
-        <ActionIcon variant="light" onClick={() => { fetchActiveUsers(); fetchActivityLog(); }}>
+        <div>
+          <Title order={3}>Active Users & Activity Monitor</Title>
+          <Text size="xs" c="dimmed" mt={4}>
+            Last updated: {lastUpdated.toLocaleTimeString()} • Auto-refreshes every 60 seconds • Shows users active within last 2 minutes
+          </Text>
+        </div>
+        <ActionIcon 
+          variant="light" 
+          onClick={() => { 
+            fetchActiveUsers(); 
+            fetchActivityLog(); 
+            setLastUpdated(new Date());
+          }}
+          title="Refresh now"
+        >
           <IconRefresh size={18} />
         </ActionIcon>
       </Group>
@@ -375,9 +409,11 @@ const ActiveUsersMonitor: React.FC = () => {
                         </Badge>
                       </Table.Td>
                       <Table.Td>
-                        <Text size="sm" c="dimmed" style={{ maxWidth: 200 }} truncate>
-                          {user.current_location || 'Unknown'}
-                        </Text>
+                        <Tooltip label={`Currently at: ${user.current_location || 'Unknown location'}`}>
+                          <Text size="sm" c="dimmed" style={{ maxWidth: 200 }} truncate>
+                            {user.current_location || 'Unknown'}
+                          </Text>
+                        </Tooltip>
                       </Table.Td>
                       <Table.Td>
                         <Text size="xs" c="dimmed">

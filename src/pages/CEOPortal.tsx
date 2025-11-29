@@ -41,6 +41,7 @@ import ExecutiveCommunicationsCenter from '@/components/executive/ExecutiveCommu
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import CEOSignatureManager from '@/components/ceo/CEOSignatureManager';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
 import ActiveUsersMonitor from '@/components/ceo/ActiveUsersMonitor';
@@ -69,6 +70,9 @@ const CEOPortal: React.FC = () => {
   
   // Track user activity
   useActivityTracking('ceo');
+  
+  // Auto-logout after 30 minutes of inactivity
+  useAutoLogout('ceo');
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => {
     const totalEmployees = metrics?.totalEmployees ?? 0;

@@ -47,6 +47,7 @@ import {
 } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
@@ -97,6 +98,9 @@ function CTOPortalContent() {
   
   // Track user activity
   useActivityTracking('cto');
+  
+  // Auto-logout after 30 minutes of inactivity
+  useAutoLogout('cto');
 
   // TORRANCE STROMAN: IMMEDIATE FULL ACCESS CHECK - BEFORE ANYTHING ELSE
   const email = user?.email?.toLowerCase() || '';

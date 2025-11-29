@@ -4,6 +4,7 @@ import { Layout, Typography, Row, Col, Statistic, Tabs, Table, Badge, Card, Butt
 import { DashboardOutlined, CarOutlined, ShopOutlined, FileProtectOutlined, AlertOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, MailOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
@@ -19,6 +20,9 @@ export default function COOPortal() {
   
   // Track user activity
   useActivityTracking('coo');
+  
+  // Auto-logout after 30 minutes of inactivity
+  useAutoLogout('coo');
   
   const [metrics, setMetrics] = useState({
     activeOrders: 0,

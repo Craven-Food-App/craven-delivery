@@ -40,6 +40,7 @@ import AuditLogs from '@/components/admin/AuditLogs';
 import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
 import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -47,6 +48,9 @@ const Admin: React.FC = () => {
   
   // Track user activity
   useActivityTracking('admin');
+  
+  // Auto-logout after 30 minutes of inactivity
+  useAutoLogout('admin');
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);

@@ -87,7 +87,34 @@ export const useActivityTracking = (portalType: string) => {
             }
           }
         } else {
-          // Update existing session
+          // Get previous location BEFORE updating to new location
+          // This ensures we log where they WERE before moving to where they ARE now
+          const { data: currentSession } = await supabase
+            .from('user_sessions')
+            .select('current_location')
+            .eq('id', sessionIdRef.current)
+            .single();
+
+          const previousLocation = currentSession?.current_location || '';
+
+          // If location changed, log the previous location to history IMMEDIATELY
+          if (previousLocation && previousLocation !== currentLocation) {
+            // Log previous location to activity history - this is the audit trail
+            const { error: logError } = await supabase.from('user_activity_log').insert({
+              user_id: user.id,
+              activity_type: 'section_change',
+              portal_type: portalType,
+              location: previousLocation, // Log where they WERE
+              user_agent: userAgent,
+              metadata: { moved_to: currentLocation }, // Track where they moved to
+            });
+            
+            if (logError && logError.code !== 'PGRST116') {
+              console.error('Error logging previous location to history:', logError);
+            }
+          }
+
+          // NOW update session to new location
           const { error: updateError } = await supabase
             .from('user_sessions')
             .update({
@@ -98,19 +125,6 @@ export const useActivityTracking = (portalType: string) => {
 
           if (updateError && updateError.code !== 'PGRST116') {
             console.error('Error updating session:', updateError);
-          }
-
-          // Log section change (ignore errors if table doesn't exist)
-          const { error: logError } = await supabase.from('user_activity_log').insert({
-            user_id: user.id,
-            activity_type: 'section_change',
-            portal_type: portalType,
-            location: currentLocation,
-            user_agent: userAgent,
-          });
-          
-          if (logError && logError.code !== 'PGRST116') {
-            console.error('Error logging activity:', logError);
           }
         }
       } catch (error: any) {
@@ -124,13 +138,16 @@ export const useActivityTracking = (portalType: string) => {
     // Initial track
     trackActivity();
 
-    // Update activity every 30 seconds
+    // Update activity every 30 seconds to keep session active
     const interval = setInterval(async () => {
       if (mounted && sessionIdRef.current) {
         try {
           const { error } = await supabase
             .from('user_sessions')
-            .update({ last_activity_at: new Date().toISOString() })
+            .update({ 
+              last_activity_at: new Date().toISOString(),
+              is_active: true // Ensure session stays active
+            })
             .eq('id', sessionIdRef.current);
           
           if (error && error.code !== 'PGRST116') {

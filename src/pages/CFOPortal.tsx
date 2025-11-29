@@ -69,6 +69,7 @@ import {
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -674,6 +675,9 @@ function CFOPortalContent() {
   
   // Track user activity
   useActivityTracking('cfo');
+  
+  // Auto-logout after 30 minutes of inactivity
+  useAutoLogout('cfo');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
