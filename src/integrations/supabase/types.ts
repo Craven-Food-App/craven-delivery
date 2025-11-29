@@ -16335,6 +16335,7 @@ export type Database = {
         Args: { target_user_id: string; vehicle_info?: Json }
         Returns: undefined
       }
+      mark_inactive_sessions: { Args: never; Returns: undefined }
       populate_geometry_columns:
         | { Args: { use_typmod?: boolean }; Returns: string }
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
