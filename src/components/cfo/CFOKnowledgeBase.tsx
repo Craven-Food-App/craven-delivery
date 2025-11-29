@@ -19,6 +19,7 @@ import {
   Alert,
   Timeline,
   Grid,
+  Button,
 } from '@mantine/core';
 import {
   IconBook,
@@ -47,6 +48,8 @@ import {
   IconTrendingDown,
   IconFile,
   IconSettings,
+  IconArrowRight,
+  IconExternalLink,
 } from '@tabler/icons-react';
 
 interface TabGuide {
@@ -61,6 +64,9 @@ interface TabGuide {
   steps: {
     title: string;
     description: string;
+    nextTab?: string; // Name of the next tab to navigate to
+    nextTabId?: string; // ID of the next tab in the portal
+    clickLocation?: string; // Where to click (e.g., "Left sidebar", "Top menu")
     substeps?: string[];
   }[];
   keyFeatures: {
@@ -80,7 +86,11 @@ interface TabGuide {
   relatedTabs: string[];
 }
 
-export const CFOKnowledgeBase: React.FC = () => {
+interface CFOKnowledgeBaseProps {
+  onNavigateToTab?: (tabId: string) => void; // Callback to navigate to a tab in the parent portal
+}
+
+export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateToTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState<string | null>('dashboard');
   const [activeSection, setActiveSection] = useState<string>('overview');
@@ -102,8 +112,23 @@ export const CFOKnowledgeBase: React.FC = () => {
       ],
       steps: [
         {
+          title: 'Navigate to CFO Dashboard',
+          description: 'Click on "CFO Command Center" in the left navigation sidebar',
+          nextTab: 'FP&A & Forecasting',
+          nextTabId: 'fpa',
+          clickLocation: 'Left sidebar navigation',
+          substeps: [
+            'Look for "CFO Command Center" in the left sidebar menu',
+            'Click on it to open the dashboard',
+            'You should see KPI cards at the top of the screen',
+          ],
+        },
+        {
           title: 'Review Key Performance Indicators (KPIs)',
           description: 'Start at the top of the dashboard with the KPI cards',
+          nextTab: 'Advanced Treasury',
+          nextTabId: 'treasury',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Check Total Cash Position - ensure adequate liquidity',
             'Review Cash Runway - plan if dropping below 6 months',
@@ -118,6 +143,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Analyze AI Predictive Insights',
           description: 'Review forward-looking predictions and recommendations',
+          nextTab: 'Cash Flow Forecast',
+          nextTabId: 'forecast',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Read each insight card - focus on high confidence predictions',
             'Note the impact level (High/Medium/Low)',
@@ -129,6 +157,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Investigate Anomaly Alerts',
           description: 'Address unusual patterns immediately',
+          nextTab: 'Approve Spend',
+          nextTabId: 'approvals',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click on each anomaly alert to see details',
             'Review the metric affected and severity',
@@ -140,6 +171,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Review Financial Trends',
           description: 'Examine the 12-Month Performance chart',
+          nextTab: 'Track Budget vs Actuals',
+          nextTabId: 'bva',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Identify upward/downward trends in revenue',
             'Compare expenses to revenue growth',
@@ -150,6 +184,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Check Financial Health Score',
           description: 'Monitor the overall financial health ring indicator',
+          nextTab: 'Risk Management',
+          nextTabId: 'risk',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Note the current score (0-100)',
             'Compare to previous period',
@@ -160,6 +197,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Review Cash Flow Forecast',
           description: 'Plan for upcoming liquidity needs',
+          nextTab: 'Advanced Treasury',
+          nextTabId: 'treasury',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Examine 6-month forecast projection',
             'Identify periods of cash shortage',
@@ -230,10 +270,24 @@ export const CFOKnowledgeBase: React.FC = () => {
       ],
       steps: [
         {
+          title: 'Navigate to FP&A & Forecasting Tab',
+          description: 'Click on "FP&A & Forecasting" in the left navigation sidebar',
+          nextTab: 'Track Budget vs Actuals',
+          nextTabId: 'bva',
+          clickLocation: 'Left sidebar navigation',
+          substeps: [
+            'Look for "FP&A & Forecasting" in the left sidebar menu',
+            'Click on it to open the FP&A dashboard',
+            'You should see scenario forecasts at the top',
+          ],
+        },
+        {
           title: 'Review Multi-Scenario Forecasts',
           description: 'Analyze Base, Optimistic, and Pessimistic scenarios',
+          nextTab: 'Scenario Planning',
+          nextTabId: 'scenario',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
-            'Open FP&A & Forecasting tab',
             'Review Base Case scenario (most likely outcome)',
             'Check Optimistic scenario (upside potential)',
             'Review Pessimistic scenario (downside risk)',
@@ -244,6 +298,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Update Business Drivers',
           description: 'Modify key drivers that impact financial performance',
+          nextTab: 'Cash Flow Forecast',
+          nextTabId: 'forecast',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Driver-Based Planning" sub-tab',
             'Update customer count projections',
@@ -257,6 +314,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Analyze Budget vs Actuals',
           description: 'Compare planned budget to actual performance',
+          nextTab: 'Board Reporting',
+          nextTabId: 'board',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Switch to "Budget vs Actuals" sub-tab',
             'Review each line item (Revenue, COGS, OpEx)',
@@ -269,6 +329,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Create Custom Scenarios',
           description: 'Model specific what-if scenarios',
+          nextTab: 'Risk Management',
+          nextTabId: 'risk',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Create Scenario" button',
             'Name the scenario (e.g., "New Product Launch")',
@@ -282,6 +345,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Generate Forecast Reports',
           description: 'Export forecasts for presentations',
+          nextTab: 'Board Reporting',
+          nextTabId: 'board',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review 12-Month Forecast Comparison chart',
             'Click "Export" button',
@@ -386,10 +452,24 @@ export const CFOKnowledgeBase: React.FC = () => {
       ],
       steps: [
         {
+          title: 'Navigate to Advanced Treasury Tab',
+          description: 'Click on "Advanced Treasury" in the left navigation sidebar',
+          nextTab: 'Cash Flow Forecast',
+          nextTabId: 'forecast',
+          clickLocation: 'Left sidebar navigation',
+          substeps: [
+            'Look for "Advanced Treasury" in the left sidebar menu',
+            'Click on it to open the Treasury dashboard',
+            'You should see cash positions at the top',
+          ],
+        },
+        {
           title: 'Monitor Cash Positions',
           description: 'Track balances across all bank accounts',
+          nextTab: 'Accounts Payable',
+          nextTabId: 'ap',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
-            'Open Advanced Treasury tab',
             'Click "Cash Positions" sub-tab',
             'Review total cash across all accounts',
             'Check each account balance',
@@ -401,6 +481,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Manage Investment Portfolio',
           description: 'Track and rebalance investments',
+          nextTab: 'Capital Structure',
+          nextTabId: 'capital',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Investments" sub-tab',
             'Review total investment value',
@@ -414,6 +497,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Track Debt Instruments',
           description: 'Monitor debt obligations and covenants',
+          nextTab: 'Risk Management',
+          nextTabId: 'risk',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Debt Management" sub-tab',
             'Review total debt outstanding',
@@ -427,6 +513,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Analyze FX Exposure',
           description: 'Assess foreign currency risk',
+          nextTab: 'Risk Management',
+          nextTabId: 'risk',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "FX Exposure" sub-tab',
             'Review exposure by currency',
@@ -439,6 +528,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Add/Update Accounts',
           description: 'Maintain accurate account information',
+          nextTab: 'CFO Dashboard',
+          nextTabId: 'overview',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "+" button to add new account',
             'Enter bank name and account details',
@@ -558,10 +650,24 @@ export const CFOKnowledgeBase: React.FC = () => {
       ],
       steps: [
         {
+          title: 'Navigate to Accounts Receivable Tab',
+          description: 'Click on "Collect Receivables" in the left navigation sidebar',
+          nextTab: 'Accounts Payable',
+          nextTabId: 'ap',
+          clickLocation: 'Left sidebar navigation',
+          substeps: [
+            'Look for "Collect Receivables" in the left sidebar menu',
+            'Click on it to open the AR dashboard',
+            'You should see the AR Aging Report at the top',
+          ],
+        },
+        {
           title: 'Review AR Aging Report',
           description: 'Monitor overdue customer balances',
+          nextTab: 'Cash Flow Forecast',
+          nextTabId: 'forecast',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
-            'Open Accounts Receivable tab',
             'Review aging buckets (Current, 30, 60, 90+ days)',
             'Identify customers in 90+ days bucket',
             'Calculate DSO (Days Sales Outstanding)',
@@ -572,6 +678,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Follow Up on Overdue Accounts',
           description: 'Contact customers with outstanding balances',
+          nextTab: 'Risk Management',
+          nextTabId: 'risk',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Filter to show only overdue invoices',
             'Start with largest dollar amounts',
@@ -585,6 +694,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Process Customer Payments',
           description: 'Apply received payments to invoices',
+          nextTab: 'Advanced Treasury',
+          nextTabId: 'treasury',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Record Payment" button',
             'Select customer',
@@ -597,6 +709,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Assess Credit Risk',
           description: 'Evaluate customer creditworthiness',
+          nextTab: 'Financial Controls',
+          nextTabId: 'controls',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review payment history for each customer',
             'Calculate average days to pay',
@@ -609,6 +724,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Generate AR Reports',
           description: 'Create reports for analysis',
+          nextTab: 'Board Reporting',
+          nextTabId: 'board',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Export" button',
             'Select report type (Aging, Customer Summary)',
@@ -681,10 +799,24 @@ export const CFOKnowledgeBase: React.FC = () => {
       ],
       steps: [
         {
+          title: 'Navigate to Accounts Payable Tab',
+          description: 'Click on "Run Payables" in the left navigation sidebar',
+          nextTab: 'Approve Spend',
+          nextTabId: 'approvals',
+          clickLocation: 'Left sidebar navigation',
+          substeps: [
+            'Look for "Run Payables" in the left sidebar menu',
+            'Click on it to open the AP dashboard',
+            'You should see the list of pending invoices',
+          ],
+        },
+        {
           title: 'Review Pending Invoices',
           description: 'Process new vendor invoices',
+          nextTab: 'Accounts Receivable',
+          nextTabId: 'ar',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
-            'Open Accounts Payable tab',
             'Review list of pending invoices',
             'Verify invoice details (amount, due date, terms)',
             'Match invoices to POs if applicable',
@@ -696,6 +828,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Approve Invoices for Payment',
           description: 'Move approved invoices to payment queue',
+          nextTab: 'Advanced Treasury',
+          nextTabId: 'treasury',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Filter to show "Pending Approval" invoices',
             'Review each invoice for completeness',
@@ -708,6 +843,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Schedule Payments',
           description: 'Optimize payment timing',
+          nextTab: 'Cash Flow Forecast',
+          nextTabId: 'forecast',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review upcoming due dates',
             'Identify early payment discounts (2/10 Net 30)',
@@ -720,6 +858,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Process Payment Batch',
           description: 'Execute scheduled payments',
+          nextTab: 'Advanced Treasury',
+          nextTabId: 'treasury',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Process Payments" button',
             'Review payment batch summary',
@@ -733,6 +874,9 @@ export const CFOKnowledgeBase: React.FC = () => {
         {
           title: 'Monitor AP Aging',
           description: 'Track outstanding payables',
+          nextTab: 'CFO Dashboard',
+          nextTabId: 'overview',
+          clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "AP Aging" sub-tab',
             'Review aging buckets',
@@ -2179,16 +2323,45 @@ export const CFOKnowledgeBase: React.FC = () => {
                       <Title order={4} mb="md">
                         Step-by-Step Instructions
                       </Title>
+                      <Alert icon={<IconInfoCircle />} color="blue" variant="light" mb="md">
+                        <Text size="sm" fw={500} mb={4}>
+                          Navigation Guide:
+                        </Text>
+                        <Text size="sm">
+                          Each step below tells you exactly which tab to click next. Follow the steps in order, 
+                          and use the "Go to Next Tab" buttons to navigate directly to the next section in the CFO Portal.
+                        </Text>
+                      </Alert>
                       <Timeline active={-1} bulletSize={24} lineWidth={2}>
                         {selectedTabData.steps.map((step, idx) => (
                           <Timeline.Item
                             key={idx}
                             bullet={<IconCheck size={12} />}
-                            title={step.title}
+                            title={
+                              <Group gap="sm" wrap="nowrap" align="flex-start">
+                                <Box style={{ flex: 1 }}>
+                                  <Text fw={600} size="sm">
+                                    Step {idx + 1}: {step.title}
+                                  </Text>
+                                </Box>
+                                {step.nextTab && (
+                                  <Badge color="blue" variant="light" size="sm">
+                                    Next: {step.nextTab}
+                                  </Badge>
+                                )}
+                              </Group>
+                            }
                           >
                             <Text size="sm" c="dimmed" mt={4}>
                               {step.description}
                             </Text>
+                            {step.clickLocation && (
+                              <Alert color="cyan" variant="light" mt="xs" p="xs">
+                                <Text size="xs" fw={500}>
+                                  📍 Click Location: {step.clickLocation}
+                                </Text>
+                              </Alert>
+                            )}
                             {step.substeps && (
                               <List mt="sm" size="sm" withPadding>
                                 {step.substeps.map((substep, subIdx) => (
@@ -2196,9 +2369,76 @@ export const CFOKnowledgeBase: React.FC = () => {
                                 ))}
                               </List>
                             )}
+                            {step.nextTab && step.nextTabId && (
+                              <Group mt="sm">
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  color="blue"
+                                  rightSection={<IconArrowRight size={14} />}
+                                  onClick={() => {
+                                    if (onNavigateToTab) {
+                                      onNavigateToTab(step.nextTabId!);
+                                    } else {
+                                      // Fallback: show instructions
+                                      const nextTabGuide = tabGuides.find(t => t.id === step.nextTabId);
+                                      if (nextTabGuide) {
+                                        setSelectedTab(nextTabGuide.id);
+                                        setActiveSection('overview');
+                                      }
+                                    }
+                                  }}
+                                >
+                                  Go to: {step.nextTab}
+                                </Button>
+                                <Text size="xs" c="dimmed">
+                                  After completing this step, navigate to the <strong>{step.nextTab}</strong> tab in the left sidebar
+                                </Text>
+                              </Group>
+                            )}
                           </Timeline.Item>
                         ))}
                       </Timeline>
+                      
+                      {/* Workflow Navigation Map */}
+                      <Card mt="lg" withBorder p="md" bg="gray.0">
+                        <Title order={5} mb="sm">
+                          Complete Workflow Navigation Map
+                        </Title>
+                        <Text size="sm" c="dimmed" mb="md">
+                          Follow this sequence to complete the entire workflow. Each step shows where to navigate next:
+                        </Text>
+                        <Timeline active={-1} bulletSize={20} lineWidth={2}>
+                          {selectedTabData.steps.map((step, idx) => (
+                            <Timeline.Item
+                              key={idx}
+                              bullet={<Text size="xs" fw={700}>{idx + 1}</Text>}
+                              title={
+                                <Group gap="xs" wrap="nowrap">
+                                  <Text size="sm" fw={500} style={{ flex: 1 }}>
+                                    {step.title}
+                                  </Text>
+                                  {step.nextTab && (
+                                    <>
+                                      <IconArrowRight size={14} />
+                                      <Badge size="sm" color="blue" variant="filled">
+                                        {step.nextTab}
+                                      </Badge>
+                                    </>
+                                  )}
+                                </Group>
+                              }
+                            >
+                              {step.nextTab && (
+                                <Text size="xs" c="dimmed" mt={4}>
+                                  After completing this step, navigate to: <strong>{step.nextTab}</strong>
+                                  {step.clickLocation && ` (${step.clickLocation})`}
+                                </Text>
+                              )}
+                            </Timeline.Item>
+                          ))}
+                        </Timeline>
+                      </Card>
                     </Card>
                   </Tabs.Panel>
 

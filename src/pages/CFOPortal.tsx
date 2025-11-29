@@ -875,7 +875,7 @@ function CFOPortalContent() {
       case 'wordprocessor':
         return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
       case 'manual':
-        return <CFOKnowledgeBase />;
+        return <CFOKnowledgeBase onNavigateToTab={setActiveSection} />;
       default:
         return <EnhancedCFODashboard />;
     }
