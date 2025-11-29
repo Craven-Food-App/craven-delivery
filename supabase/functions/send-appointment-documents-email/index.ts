@@ -133,13 +133,21 @@ serve(async (req: Request) => {
           // Map executive_documents to the format expected by the email function
           const documentTypeNames: Record<string, string> = {
             'pre_incorporation_consent': 'Pre-Incorporation Consent',
+            'certificate_of_incorporation': 'Certificate of Incorporation',
+            'bylaws': 'Bylaws of Crave\'N Inc.',
+            'bylaws_acknowledgment': 'Bylaws Acknowledgment & Consent',
+            'board_resolution': 'Board Resolution (Appointment)',
             'appointment_letter': 'Appointment Letter',
-            'board_resolution': 'Board Resolution',
-            'certificate': 'Stock Certificate',
             'employment_agreement': 'Employment Agreement',
-            'confidentiality_ip': 'Confidentiality & IP Assignment',
+            'confidentiality_ip': 'Confidentiality & IP Assignment Agreement',
+            'fiduciary_duty_ethics': 'Fiduciary Duty & Ethics Acknowledgment',
+            'conflict_of_interest': 'Conflict of Interest Disclosure',
+            'officer_indemnification': 'Officer Indemnification Agreement',
             'stock_subscription': 'Stock Subscription Agreement',
+            'equity_incentive_plan': 'Equity Incentive Plan',
+            'option_rsu_award': 'Option/RSU Award Agreement',
             'deferred_compensation': 'Deferred Compensation Agreement',
+            'certificate': 'Stock Certificate',
           };
 
           documents = execDocs.map(doc => ({
