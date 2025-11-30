@@ -71,8 +71,7 @@ export const ExpenseApprovalDashboard: React.FC = () => {
         .select(`
           *,
           expense_category:expense_categories(name, code),
-          department:departments(name),
-          requester:user_profiles!expense_requests_requester_id_fkey(first_name, last_name)
+          department:departments(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -82,54 +81,33 @@ export const ExpenseApprovalDashboard: React.FC = () => {
         query = query.eq('status', 'approved');
       } else if (activeTab === 'rejected') {
         query = query.eq('status', 'rejected');
-      } else {
-        query = query.eq('status', activeTab);
+      } else if (activeTab === 'paid') {
+        query = query.eq('status', 'paid');
       }
 
       const { data, error } = await query;
 
       if (error) {
-        // Suppress relationship and policy errors - these are schema issues, not user errors
-        if (
-          error.code === '42P01' || 
-          error.message?.includes('does not exist') ||
-          error.message?.includes('Could not find a relationship') ||
-          error.message?.includes('infinite recursion detected in policy') ||
-          error.message?.includes('schema cache')
-        ) {
-          console.warn('Supabase schema/relationship error (suppressed):', error.message);
-          return;
-        }
-        // Only show critical errors, not schema issues
         console.error('Error fetching expenses:', error);
-        return;
-      }
-
-      const formatted = (data || []).map(exp => ({
-        ...exp,
-        requester_name: 'Unknown', // No user_profiles relation available
-      }));
-
-      setExpenses(formatted as any);
-    } catch (error: any) {
-      // Suppress relationship and policy errors
-      if (
-        error.message?.includes('Could not find a relationship') ||
-        error.message?.includes('infinite recursion detected in policy') ||
-        error.message?.includes('schema cache')
-      ) {
-        console.warn('Supabase schema error (suppressed):', error.message);
-        return;
-      }
-      console.error('Error fetching expenses:', error);
-      // Only show critical errors via notifications
-      if (error.code !== '42P01' && !error.message?.includes('does not exist')) {
         notifications.show({
           title: 'Error',
           message: error.message || 'Failed to load expenses',
           color: 'red',
         });
+        setExpenses([]);
+        setLoading(false);
+        return;
       }
+
+      setExpenses(data || []);
+    } catch (error: any) {
+      console.error('Error fetching expenses:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to load expenses',
+        color: 'red',
+      });
+      setExpenses([]);
     } finally {
       setLoading(false);
     }
