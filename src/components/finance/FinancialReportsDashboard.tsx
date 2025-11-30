@@ -49,6 +49,8 @@ export const FinancialReportsDashboard: React.FC = () => {
   const [periodStart, setPeriodStart] = useState<Date>(dayjs().subtract(30, 'days').toDate());
   const [periodEnd, setPeriodEnd] = useState<Date>(new Date());
   const [summaryData, setSummaryData] = useState<any>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<FinancialReport | null>(null);
 
   useEffect(() => {
     fetchReports();
@@ -400,7 +402,13 @@ export const FinancialReportsDashboard: React.FC = () => {
                   <Table.Td>
                     <Group gap="xs">
                       <Tooltip label="View Report">
-                        <ActionIcon variant="light">
+                        <ActionIcon 
+                          variant="light"
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setViewModalOpen(true);
+                          }}
+                        >
                           <IconEye size={16} />
                         </ActionIcon>
                       </Tooltip>
@@ -476,6 +484,56 @@ export const FinancialReportsDashboard: React.FC = () => {
             </Button>
           </Group>
         </Stack>
+      </Modal>
+
+      <Modal
+        opened={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedReport(null);
+        }}
+        title={selectedReport?.report_name || "Report Details"}
+        size="xl"
+      >
+        {selectedReport && (
+          <Stack gap="md">
+            <Group>
+              <Badge>{getReportTypeLabel(selectedReport.report_type)}</Badge>
+              <Badge color={selectedReport.status === 'final' ? 'green' : 'gray'}>
+                {selectedReport.status}
+              </Badge>
+            </Group>
+            
+            <Paper p="md" withBorder>
+              <Text fw={600} mb="xs">Report Period</Text>
+              <Text size="sm">
+                {dayjs(selectedReport.report_period_start).format('MMMM D, YYYY')} - {dayjs(selectedReport.report_period_end).format('MMMM D, YYYY')}
+              </Text>
+            </Paper>
+
+            <Paper p="md" withBorder>
+              <Text fw={600} mb="xs">Summary</Text>
+              <Text size="sm">{selectedReport.summary}</Text>
+            </Paper>
+
+            <Paper p="md" withBorder>
+              <Text fw={600} mb="xs">Generated</Text>
+              <Text size="sm">{dayjs(selectedReport.generated_at).format('MMMM D, YYYY [at] h:mm A')}</Text>
+            </Paper>
+
+            {selectedReport.pdf_url && (
+              <Button
+                leftSection={<IconDownload size={16} />}
+                component="a"
+                href={selectedReport.pdf_url}
+                target="_blank"
+                fullWidth
+              >
+                Download PDF Report
+              </Button>
+            )}
+          </Stack>
+        )}
       </Modal>
     </Stack>
   );
