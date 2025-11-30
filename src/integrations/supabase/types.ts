@@ -7921,6 +7921,7 @@ export type Database = {
           id: string
           justification: string | null
           metadata: Json | null
+          paid_at: string | null
           payment_method: string | null
           priority: string | null
           project_code: string | null
@@ -7954,6 +7955,7 @@ export type Database = {
           id?: string
           justification?: string | null
           metadata?: Json | null
+          paid_at?: string | null
           payment_method?: string | null
           priority?: string | null
           project_code?: string | null
@@ -7987,6 +7989,7 @@ export type Database = {
           id?: string
           justification?: string | null
           metadata?: Json | null
+          paid_at?: string | null
           payment_method?: string | null
           priority?: string | null
           project_code?: string | null
