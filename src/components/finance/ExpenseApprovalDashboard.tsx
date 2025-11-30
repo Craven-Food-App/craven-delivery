@@ -478,6 +478,49 @@ export const ExpenseApprovalDashboard: React.FC = () => {
                 </Group>
               </>
             )}
+
+            {selectedExpense.status === 'approved' && (
+              <Group justify="flex-end">
+                <Button
+                  color="blue"
+                  leftSection={<IconCheck size={16} />}
+                  onClick={async () => {
+                    setActionLoading(true);
+                    try {
+                      const { error } = await supabase
+                        .from('expense_requests')
+                        .update({ 
+                          status: 'paid',
+                          paid_at: new Date().toISOString()
+                        })
+                        .eq('id', selectedExpense.id);
+
+                      if (error) throw error;
+
+                      notifications.show({
+                        title: 'Success',
+                        message: 'Expense marked as paid',
+                        color: 'green',
+                      });
+
+                      setModalOpen(false);
+                      fetchExpenses();
+                    } catch (error: any) {
+                      notifications.show({
+                        title: 'Error',
+                        message: error.message || 'Failed to mark as paid',
+                        color: 'red',
+                      });
+                    } finally {
+                      setActionLoading(false);
+                    }
+                  }}
+                  loading={actionLoading}
+                >
+                  Mark as Paid
+                </Button>
+              </Group>
+            )}
           </Stack>
         )}
       </Modal>

@@ -183,13 +183,8 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
 
       const requesterName = user.email || 'Unknown';
 
-      // Determine status based on approval requirements
-      const selectedCategory = categories.find(c => c.id === formData.expense_category_id);
-      const requiresApproval = selectedCategory?.requires_approval ?? true;
-      const amount = parseFloat(formData.amount);
-      const needsApproval = requiresApproval && amount >= (selectedCategory?.approval_threshold || 0);
-
-      const status = needsApproval ? 'submitted' : 'draft';
+      // All expense requests go to "submitted" status to appear in Pending tab
+      const status = 'submitted';
 
       // Create expense request (requester_id is set automatically by trigger)
       const { data, error } = await supabase
@@ -242,10 +237,26 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
 
       notifications.show({
         title: 'Success',
-        message: `Expense request ${status === 'submitted' ? 'submitted for approval' : 'saved as draft'}`,
+        message: 'Expense request submitted successfully',
         color: 'green',
         icon: <IconCheck size={16} />,
       });
+
+      // Reset form after successful submission
+      setFormData({
+        expense_category_id: '',
+        amount: '',
+        description: '',
+        business_purpose: '',
+        justification: '',
+        expense_date: new Date(),
+        due_date: null,
+        payment_method: 'reimbursement',
+        vendor_name: '',
+        priority: 'normal',
+        department_id: '',
+      });
+      setReceiptFiles([]);
 
       if (onSuccess) onSuccess();
     } catch (error: any) {
@@ -264,6 +275,7 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
   const amount = parseFloat(formData.amount) || 0;
   const requiresApproval = selectedCategory?.requires_approval ?? true;
   const needsApproval = requiresApproval && amount >= (selectedCategory?.approval_threshold || 0);
+  const showApprovalWarning = needsApproval && selectedCategory?.approval_threshold;
 
   return (
     <Card p="xl" radius="md" withBorder>
@@ -451,7 +463,7 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
             </Grid.Col>
           </Grid>
 
-          {needsApproval && (
+          {showApprovalWarning && (
             <Alert icon={<IconAlertCircle size={16} />} color="orange" title="Approval Required">
               This expense requires approval as it exceeds the threshold of ${selectedCategory?.approval_threshold}.
             </Alert>
@@ -468,7 +480,7 @@ export const ExpenseRequestForm: React.FC<ExpenseRequestFormProps> = ({
               loading={loading || uploadingReceipts}
               disabled={!formData.expense_category_id || !formData.amount || !formData.description}
             >
-              {needsApproval ? 'Submit for Approval' : 'Save as Draft'}
+              Submit Expense Request
             </Button>
           </Group>
         </Stack>
