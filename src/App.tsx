@@ -69,6 +69,7 @@ import CEOPortal from "./pages/CEOPortal";
 import COOPortal from "./pages/COOPortal";
 import CTOPortal from "./pages/CTOPortal";
 import CXOPortal from "./pages/CXOPortal";
+import EnterpriseFinancePortal from "./pages/EnterpriseFinancePortal";
 import MarketingPortal from "./pages/MarketingPortal";
 import HRPortal from "./pages/HRPortal";
 import MainHub from "./pages/MainHub";
@@ -326,6 +327,7 @@ const App = () => {
                   <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
                   <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
                   <Route path="/cxo" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
+                  <Route path="/finance/*" element={<BusinessAuthGuard><EnterpriseFinancePortal /></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
                   <Route path="/company/*" element={<CompanyPortalLayout />}>
                     <Route index element={<CompanyDashboard />} />
