@@ -8793,6 +8793,44 @@ export type Database = {
           },
         ]
       }
+      finance_transaction_limits: {
+        Row: {
+          created_at: string | null
+          dual_approval_threshold: number | null
+          id: string
+          max_amount: number | null
+          requires_dual_approval: boolean | null
+          role_id: string
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          dual_approval_threshold?: number | null
+          id?: string
+          max_amount?: number | null
+          requires_dual_approval?: boolean | null
+          role_id: string
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string | null
+          dual_approval_threshold?: number | null
+          id?: string
+          max_amount?: number | null
+          requires_dual_approval?: boolean | null
+          role_id?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transaction_limits_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_user_roles: {
         Row: {
           approval_notes: string | null
@@ -15787,6 +15825,61 @@ export type Database = {
           },
         ]
       }
+      user_finance_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          is_active: boolean | null
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_finance_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_finance_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_finance_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_notification_preferences: {
         Row: {
           created_at: string
@@ -17027,14 +17120,19 @@ export type Database = {
       }
       gettransactionid: { Args: never; Returns: unknown }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
-      has_finance_permission: {
-        Args: {
-          p_entity_id?: string
-          p_permission_code: string
-          p_user_id: string
-        }
-        Returns: boolean
-      }
+      has_finance_permission:
+        | {
+            Args: {
+              p_entity_id?: string
+              p_permission_code: string
+              p_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: { p_permission_code: string; p_user_id: string }
+            Returns: boolean
+          }
       has_permission: {
         Args: { p_permission: string; p_user_id: string }
         Returns: boolean
