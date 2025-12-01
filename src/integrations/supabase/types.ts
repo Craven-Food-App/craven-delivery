@@ -14,6 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_review_items: {
+        Row: {
+          access_review_id: string | null
+          action_taken: string | null
+          created_at: string | null
+          entity_id: string | null
+          id: string
+          review_notes: string | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          role_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_review_id?: string | null
+          action_taken?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          id?: string
+          review_notes?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_review_id?: string | null
+          action_taken?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          id?: string
+          review_notes?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          role_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_review_items_access_review_id_fkey"
+            columns: ["access_review_id"]
+            isOneToOne: false
+            referencedRelation: "access_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_review_items_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_review_items_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "access_review_items_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_review_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      access_reviews: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          findings: Json | null
+          id: string
+          remediation_actions: Json | null
+          review_period_end: string
+          review_period_start: string
+          review_type: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          findings?: Json | null
+          id?: string
+          remediation_actions?: Json | null
+          review_period_end: string
+          review_period_start: string
+          review_type?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          findings?: Json | null
+          id?: string
+          remediation_actions?: Json | null
+          review_period_end?: string
+          review_period_start?: string
+          review_type?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       accounts_receivable: {
         Row: {
           amount: number
@@ -434,6 +559,148 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      approval_queue: {
+        Row: {
+          amount: number | null
+          approval_history: Json | null
+          approval_level: number | null
+          created_at: string | null
+          currency: string | null
+          current_approver_role: string | null
+          current_approver_user_id: string | null
+          due_date: string | null
+          entity_id: string | null
+          id: string
+          metadata: Json | null
+          requested_at: string | null
+          requested_by: string | null
+          status: string | null
+          total_approval_levels: number | null
+          transaction_id: string
+          transaction_type: string
+          updated_at: string | null
+          workflow_definition_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          approval_history?: Json | null
+          approval_level?: number | null
+          created_at?: string | null
+          currency?: string | null
+          current_approver_role?: string | null
+          current_approver_user_id?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: string | null
+          total_approval_levels?: number | null
+          transaction_id: string
+          transaction_type: string
+          updated_at?: string | null
+          workflow_definition_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          approval_history?: Json | null
+          approval_level?: number | null
+          created_at?: string | null
+          currency?: string | null
+          current_approver_role?: string | null
+          current_approver_user_id?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          id?: string
+          metadata?: Json | null
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: string | null
+          total_approval_levels?: number | null
+          transaction_id?: string
+          transaction_type?: string
+          updated_at?: string | null
+          workflow_definition_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_queue_current_approver_user_id_fkey"
+            columns: ["current_approver_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "approval_queue_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_queue_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "approval_queue_workflow_definition_id_fkey"
+            columns: ["workflow_definition_id"]
+            isOneToOne: false
+            referencedRelation: "approval_workflow_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      approval_workflow_definitions: {
+        Row: {
+          amount_thresholds: Json
+          created_at: string | null
+          entity_id: string | null
+          escalation_rules: Json | null
+          id: string
+          is_active: boolean | null
+          requires_dual_approval: boolean | null
+          transaction_type: string
+          workflow_code: string
+          workflow_name: string
+        }
+        Insert: {
+          amount_thresholds: Json
+          created_at?: string | null
+          entity_id?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          requires_dual_approval?: boolean | null
+          transaction_type: string
+          workflow_code: string
+          workflow_name: string
+        }
+        Update: {
+          amount_thresholds?: Json
+          created_at?: string | null
+          entity_id?: string | null
+          escalation_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          requires_dual_approval?: boolean | null
+          transaction_type?: string
+          workflow_code?: string
+          workflow_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_workflow_definitions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8086,6 +8353,129 @@ export type Database = {
           },
         ]
       }
+      finance_audit_log: {
+        Row: {
+          action_type: string
+          compliance_tag: string | null
+          entity_id: string | null
+          id: number
+          ip_address: unknown
+          new_values: Json | null
+          old_values: Json | null
+          request_id: string | null
+          resource_id: string | null
+          resource_type: string
+          session_id: string | null
+          severity: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          compliance_tag?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type: string
+          session_id?: string | null
+          severity?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          compliance_tag?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          session_id?: string | null
+          severity?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_audit_log_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      finance_audit_log_2025_01: {
+        Row: {
+          action_type: string
+          compliance_tag: string | null
+          entity_id: string | null
+          id: number
+          ip_address: unknown
+          new_values: Json | null
+          old_values: Json | null
+          request_id: string | null
+          resource_id: string | null
+          resource_type: string
+          session_id: string | null
+          severity: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          compliance_tag?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type: string
+          session_id?: string | null
+          severity?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          compliance_tag?: string | null
+          entity_id?: string | null
+          id?: number
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          request_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          session_id?: string | null
+          severity?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       finance_employees: {
         Row: {
           access_level: number | null
@@ -8169,6 +8559,101 @@ export type Database = {
           },
         ]
       }
+      finance_entities: {
+        Row: {
+          base_currency: string | null
+          consolidation_method: string | null
+          country_code: string | null
+          created_at: string | null
+          entity_code: string
+          entity_name: string
+          entity_type: string
+          fiscal_year_end: string | null
+          id: string
+          is_active: boolean | null
+          legal_structure: string | null
+          parent_entity_id: string | null
+          reporting_standard: string | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_currency?: string | null
+          consolidation_method?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          entity_code: string
+          entity_name: string
+          entity_type: string
+          fiscal_year_end?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_structure?: string | null
+          parent_entity_id?: string | null
+          reporting_standard?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_currency?: string | null
+          consolidation_method?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          entity_code?: string
+          entity_name?: string
+          entity_type?: string
+          fiscal_year_end?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_structure?: string | null
+          parent_entity_id?: string | null
+          reporting_standard?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entities_parent_entity_id_fkey"
+            columns: ["parent_entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_permissions: {
+        Row: {
+          action_type: string
+          audit_level: string | null
+          description: string | null
+          id: string
+          permission_code: string
+          permission_name: string
+          requires_dual_approval: boolean | null
+          resource_type: string
+        }
+        Insert: {
+          action_type: string
+          audit_level?: string | null
+          description?: string | null
+          id?: string
+          permission_code: string
+          permission_name: string
+          requires_dual_approval?: boolean | null
+          resource_type: string
+        }
+        Update: {
+          action_type?: string
+          audit_level?: string | null
+          description?: string | null
+          id?: string
+          permission_code?: string
+          permission_name?: string
+          requires_dual_approval?: boolean | null
+          resource_type?: string
+        }
+        Relationships: []
+      }
       finance_positions: {
         Row: {
           created_at: string | null
@@ -8228,23 +8713,165 @@ export type Database = {
           },
         ]
       }
+      finance_role_permissions: {
+        Row: {
+          conditions: Json | null
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          conditions?: Json | null
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          conditions?: Json | null
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "finance_permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_roles: {
         Row: {
-          created_at: string
-          role: string
+          access_level: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          parent_role_id: string | null
+          role_category: string
+          role_code: string
+          role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_level: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_role_id?: string | null
+          role_category: string
+          role_code: string
+          role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_level?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_role_id?: string | null
+          role_category?: string
+          role_code?: string
+          role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_roles_parent_role_id_fkey"
+            columns: ["parent_role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_user_roles: {
+        Row: {
+          approval_notes: string | null
+          approval_status: string | null
+          assigned_by: string | null
+          created_at: string | null
+          department_codes: string[] | null
+          effective_date: string
+          entity_id: string | null
+          expiration_date: string | null
+          gl_account_ranges: string[] | null
+          id: string
+          region_codes: string[] | null
+          role_id: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
-          role: string
+          approval_notes?: string | null
+          approval_status?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          department_codes?: string[] | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          gl_account_ranges?: string[] | null
+          id?: string
+          region_codes?: string[] | null
+          role_id: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
-          role?: string
+          approval_notes?: string | null
+          approval_status?: string | null
+          assigned_by?: string | null
+          created_at?: string | null
+          department_codes?: string[] | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          gl_account_ranges?: string[] | null
+          id?: string
+          region_codes?: string[] | null
+          role_id?: string
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_user_roles_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       financial_controls: {
         Row: {
@@ -8418,6 +9045,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      gl_account_assignments: {
+        Row: {
+          access_level: string
+          account_name: string | null
+          account_number: string
+          assigned_user_id: string | null
+          assignment_type: string
+          created_at: string | null
+          effective_date: string
+          entity_id: string | null
+          expiration_date: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_level: string
+          account_name?: string | null
+          account_number: string
+          assigned_user_id?: string | null
+          assignment_type: string
+          created_at?: string | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_level?: string
+          account_name?: string | null
+          account_number?: string
+          assigned_user_id?: string | null
+          assignment_type?: string
+          created_at?: string | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_account_assignments_assigned_user_id_fkey"
+            columns: ["assigned_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "gl_account_assignments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -13678,6 +14362,39 @@ export type Database = {
           },
         ]
       }
+      sod_rules: {
+        Row: {
+          conflicting_permissions: string[]
+          description: string | null
+          enforcement_level: string | null
+          id: string
+          is_active: boolean | null
+          rule_code: string
+          rule_name: string
+          violation_severity: string | null
+        }
+        Insert: {
+          conflicting_permissions: string[]
+          description?: string | null
+          enforcement_level?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_code: string
+          rule_name: string
+          violation_severity?: string | null
+        }
+        Update: {
+          conflicting_permissions?: string[]
+          description?: string | null
+          enforcement_level?: string | null
+          id?: string
+          is_active?: boolean | null
+          rule_code?: string
+          rule_name?: string
+          violation_severity?: string | null
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -14865,6 +15582,60 @@ export type Database = {
           },
         ]
       }
+      transaction_limits: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          effective_date: string
+          entity_id: string | null
+          expiration_date: string | null
+          id: string
+          max_amount: number | null
+          period_type: string | null
+          role_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_amount?: number | null
+          period_type?: string | null
+          role_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          effective_date?: string
+          entity_id?: string | null
+          expiration_date?: string | null
+          id?: string
+          max_amount?: number | null
+          period_type?: string | null
+          role_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_limits_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "finance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_limits_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "finance_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trusts: {
         Row: {
           company_id: string | null
@@ -15882,6 +16653,10 @@ export type Database = {
           zone_name: string
         }[]
       }
+      check_sod_violation: {
+        Args: { p_permission_codes: string[]; p_user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       clock_in:
         | {
@@ -16252,6 +17027,14 @@ export type Database = {
       }
       gettransactionid: { Args: never; Returns: unknown }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
+      has_finance_permission: {
+        Args: {
+          p_entity_id?: string
+          p_permission_code: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       has_permission: {
         Args: { p_permission: string; p_user_id: string }
         Returns: boolean
