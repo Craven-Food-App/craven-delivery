@@ -538,11 +538,6 @@ export const FinancialReportsDashboard: React.FC = () => {
           const workingCapital = currentAssets - currentLiabilities;
           
           // Period over Period Changes
-<<<<<<< HEAD
-          const revenueChange = prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
-          const prevOcf = prevPaidReceivables - ((prevInvoiceData || []).filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0)) - prevTotalExpenses;
-          const ocfChange = prevOcf !== 0 ? ((netOperatingCashFlow - prevOcf) / Math.abs(prevOcf)) * 100 : 0;
-=======
           const revenueChange2 = prevTotalRevenue > 0 ? ((totalRevenue2 - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
           
           // Calculate previous period's paid receivables
@@ -557,7 +552,6 @@ export const FinancialReportsDashboard: React.FC = () => {
           const ocfChange = prevTotalReceivable - prevTotalPayable !== 0 
             ? ((netOperatingCashFlow - prevOperatingCashFlow) / Math.abs(prevOperatingCashFlow)) * 100 
             : 0;
->>>>>>> bad3ad63 (Add Fortune 500 corporate finance portals and department hub)
 
           // Aging Analysis
           const today = new Date();
