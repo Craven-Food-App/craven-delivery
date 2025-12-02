@@ -1,4 +1,6 @@
-# Crave'n CFO Master Acknowledgment
+# CRAVE'N, INC.
+
+## MASTER CHIEF FINANCIAL OFFICER ACKNOWLEDGMENT & CERTIFICATION AGREEMENT
 
 **Document Key:** cfo_acknowledgment_master_v1
 
@@ -6,51 +8,88 @@
 
 ---
 
-## 1. Purpose Of This Acknowledgment
+## 1. Purpose and Legal Effect of This Acknowledgment
 
-This document certifies that the Chief Financial Officer of Crave'n has received, reviewed, and fully understands all policies, governance documents, expectations, and operating frameworks that define the CFO role within the organization.
+This Master Chief Financial Officer Acknowledgment & Certification Agreement ("Acknowledgment") serves as a legally binding confirmation that the undersigned Chief Financial Officer ("CFO") of Crave'n, Inc. ("Company") has received, reviewed, understands, and formally accepts all governance instruments, operational controls, fiduciary standards, executive directives, and compliance frameworks governing the CFO office.
 
-Signing this document confirms the CFO's agreement to operate within the standards, responsibilities, compliance requirements, and reporting structures mandated by the CEO.
-
----
-
-## 2. Documents Covered Under This Acknowledgment
-
-The CFO acknowledges receipt and understanding of the following:
-
-- CFO Charter & Role Definition
-- CFO Governance Framework
-- CFO Responsibilities Checklist
-- CFO Executive Handbook
-- CFO Operating Manual
-- CFO Decision Rights Matrix (RACI)
-- CFO Reporting Cadence
-- CFO Compliance & Regulatory Schedule
-- CFO System Access Governance & Data Ownership Map
-- All supplemental CEO directives and amendments
+Execution of this Acknowledgment constitutes the CFO's express and continuing agreement to operate strictly within the authority delegated by the Chief Executive Officer ("CEO"), Board of Directors, and applicable law.
 
 ---
 
-## 3. CFO Obligations
+## 2. Documents Incorporated by Reference
 
-- Operate within all listed policies and frameworks
-- Meet all reporting deadlines
-- Maintain ethical and professional conduct at all times
-- Follow escalation procedures without delay
-- Maintain confidentiality of company information
-- Adhere to all compliance and regulatory duties
-- Honor decision-making boundaries defined by the CEO
-- Notify the CEO of any conflicts of interest
+The CFO expressly acknowledges receipt, review, and full understanding of the following governing instruments, each of which is incorporated herein by reference as if fully set forth:
+
+- Chief Financial Officer Charter & Role Definition
+- Chief Financial Officer Governance Framework
+- Chief Financial Officer Responsibilities Checklist (All Operational Editions)
+- Chief Financial Officer Executive Handbook
+- Chief Financial Officer Operating & Controls Manual
+- Chief Financial Officer Decision Rights & RACI Authority Matrix
+- Chief Financial Officer Reporting Cadence & Executive Oversight Protocol
+- Chief Financial Officer Compliance, Risk & Regulatory Calendar
+- Chief Financial Officer System Access Governance, Cyber Controls & Data Ownership Map
+- All CEO Executive Orders, Board Resolutions, Amendments, and Supplemental Directives
 
 ---
 
-## 4. Acceptance & Certification
+## 3. Fiduciary, Ethical, and Operational Obligations
 
-By signing below, I confirm that I have read and understand all CFO governance documents listed above and agree to abide by them fully and without exception.
+The CFO affirms and agrees to fully comply with all fiduciary, ethical, legal, and operational obligations including, but not limited to, the following:
 
-**CFO Name:** ________________________________
+- Strict adherence to all governance documents, policies, and executive controls.
+- Timely preparation and submission of all financial, regulatory, and executive reports.
+- Maintenance of the highest standards of integrity, accuracy, independence, and objectivity.
+- Immediate escalation of any financial risk, material variance, or regulatory exposure.
+- Absolute confidentiality regarding financial, strategic, personnel, and proprietary data.
+- Full compliance with federal, state, and local financial, tax, and securities regulations.
+- Strict observance of all delegated authority limitations and decision-making boundaries.
+- Immediate disclosure of any actual or potential conflict of interest.
+- Unconditional cooperation with audits, investigations, and Board-directed inquiries.
 
-**Signature:** ________________________________
+---
+
+## 4. Enforcement, Discipline, and Default
+
+The CFO acknowledges that any violation of the governing instruments referenced herein may result in disciplinary action including, without limitation:
+
+- Formal written reprimand
+- Restriction or suspension of system access
+- Compensation adjustment or forfeiture
+- Equity vesting suspension or cancellation
+- Termination for cause
+- Referral for civil or criminal enforcement where applicable
+
+No waiver of enforcement shall be implied by prior leniency or delay in enforcement.
+
+---
+
+## 5. Binding Certification & Continuing Affirmation
+
+By executing this Acknowledgment, the CFO certifies under penalty of corporate discipline and applicable law that all representations herein are true, complete, and binding. This Acknowledgment shall remain in full force for the duration of the CFO's service with the Company and shall survive termination to the extent required by law.
+
+---
+
+## 6. Execution
+
+**Chief Financial Officer – Printed Name:**
+
+_______________________________________________
+
+**Signature:**
+
+_______________________________________________
+
+**Date of Execution:**
+
+____ / ____ / ______
+
+**Accepted and Acknowledged By:**
+
+Chief Executive Officer, Crave'n, Inc.
+
+**CEO Signature:**
+
+_______________________________________________
 
 **Date:** ____ / ____ / ______
-
