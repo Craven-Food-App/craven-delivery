@@ -156,7 +156,7 @@ serve(async (req) => {
     }
 
     // Step 3: Create/Update exec_users record for CTO
-    const { error: execError } = await supabaseAdmin
+    const { error: execError1 } = await supabaseAdmin
       .from('exec_users')
       .upsert({
         user_id: actualUserId,
@@ -169,8 +169,8 @@ serve(async (req) => {
         onConflict: 'user_id',
       });
 
-    if (execError) {
-      console.error('Error creating exec_users record:', execError);
+    if (execError1) {
+      console.error('Error creating exec_users record:', execError1);
     } else {
       console.log('exec_users record created/updated');
     }
@@ -220,7 +220,7 @@ serve(async (req) => {
     }
 
     // Step 5b: Create exec_users record for CTO portal access
-    const { error: execError } = await supabaseAdmin
+    const { error: execError2 } = await supabaseAdmin
       .from('exec_users')
       .upsert({
         user_id: actualUserId,
@@ -235,8 +235,8 @@ serve(async (req) => {
         onConflict: 'user_id',
       });
 
-    if (execError) {
-      console.error('Error creating exec_users record:', execError);
+    if (execError2) {
+      console.error('Error creating exec_users record:', execError2);
     } else {
       console.log('CTO exec_users record created for portal access');
     }

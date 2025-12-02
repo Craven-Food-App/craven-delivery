@@ -148,7 +148,6 @@ export const RoleManagement: React.FC = () => {
       setModalOpen(false);
       setEditingRole(null);
       fetchData();
-      refreshRoles();
     } catch (error: any) {
       console.error('Error assigning role:', error);
       alert(error.message || 'Failed to assign role');

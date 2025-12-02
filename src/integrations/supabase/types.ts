@@ -16686,6 +16686,10 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      approve_approval_item: {
+        Args: { p_actor_id?: string; p_comment?: string; p_queue_id: string }
+        Returns: undefined
+      }
       auto_create_cost_alerts: { Args: never; Returns: number }
       backfill_executive_documents_from_appointments: {
         Args: never
@@ -17269,6 +17273,14 @@ export type Database = {
         Returns: boolean
       }
       refresh_effective_permissions: { Args: never; Returns: undefined }
+      reject_approval_item: {
+        Args: { p_actor_id?: string; p_comment?: string; p_queue_id: string }
+        Returns: undefined
+      }
+      rpc_has_finance_permission: {
+        Args: { p_entity_id?: string; p_permission_code: string }
+        Returns: boolean
+      }
       soundex: { Args: { "": string }; Returns: string }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
@@ -17850,6 +17862,17 @@ export type Database = {
       st_wrapx: {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
+      }
+      start_approval: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_entity_id: string
+          p_requested_by?: string
+          p_transaction_id: string
+          p_transaction_type: string
+        }
+        Returns: string
       }
       sync_user_roles_for_employee: {
         Args: {

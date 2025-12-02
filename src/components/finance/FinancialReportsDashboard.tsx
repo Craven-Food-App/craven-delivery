@@ -32,6 +32,7 @@ import {
   IconTrendingDown,
   IconArrowRight,
   IconArrowLeft,
+  IconChartLine,
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, AreaChart, ReferenceLine } from 'recharts';
@@ -147,8 +148,8 @@ export const FinancialReportsDashboard: React.FC = () => {
       let reportSummary = '';
 
       switch (reportType) {
-        case 'expense_analysis':
-          const { data: expenseData, error: expenseError } = await supabase
+        case 'expense_analysis': {
+          const { data: expenseAnalysisData, error: expenseError } = await supabase
             .from('expense_requests')
             .select(`
               *,
@@ -168,23 +169,24 @@ export const FinancialReportsDashboard: React.FC = () => {
             console.warn('Supabase schema error (suppressed):', expenseError.message);
           }
 
-          const totalExpenses = expenseData?.reduce((sum, e) => sum + e.amount, 0) || 0;
-          const byCategory = expenseData?.reduce((acc: any, e: any) => {
+          const analysisExpenses = expenseAnalysisData?.reduce((sum, e) => sum + e.amount, 0) || 0;
+          const byCategory = expenseAnalysisData?.reduce((acc: any, e: any) => {
             const cat = e.expense_category?.name || 'Other';
             acc[cat] = (acc[cat] || 0) + e.amount;
             return acc;
           }, {});
 
           reportData = {
-            total_expenses: totalExpenses,
-            expense_count: expenseData?.length || 0,
+            total_expenses: analysisExpenses,
+            expense_count: expenseAnalysisData?.length || 0,
             by_category: byCategory,
-            expenses: expenseData,
+            expenses: expenseAnalysisData,
           };
-          reportSummary = `Total expenses: $${totalExpenses.toLocaleString()} across ${expenseData?.length || 0} requests`;
+          reportSummary = `Total expenses: $${analysisExpenses.toLocaleString()} across ${expenseAnalysisData?.length || 0} requests`;
           break;
+        }
 
-        case 'budget_variance':
+        case 'budget_variance': {
           const { data: budgetData } = await supabase
             .from('budgets')
             .select(`
@@ -208,8 +210,9 @@ export const FinancialReportsDashboard: React.FC = () => {
           };
           reportSummary = `Analyzed ${budgetData?.length || 0} active budgets`;
           break;
+        }
 
-        case 'income_statement':
+        case 'income_statement': {
           // Calculate previous period for comparison
           const incomePeriodDays = dayjs(periodEnd).diff(dayjs(periodStart), 'days');
           const incomePrevPeriodStart = dayjs(periodStart).subtract(incomePeriodDays + 1, 'days').toDate();
@@ -405,8 +408,9 @@ export const FinancialReportsDashboard: React.FC = () => {
 
           reportSummary = `Revenue: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Net Income: $${netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Margin: ${netProfitMargin.toFixed(1)}%`;
           break;
+        }
 
-        case 'cash_flow':
+        case 'cash_flow': {
           // Calculate previous period for comparison
           const periodDays = dayjs(periodEnd).diff(dayjs(periodStart), 'days');
           const previousPeriodStart = dayjs(periodStart).subtract(periodDays + 1, 'days').toDate();
@@ -536,7 +540,8 @@ export const FinancialReportsDashboard: React.FC = () => {
           
           // Period over Period Changes
           const revenueChange = prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
-          const ocfChange = prevTotalReceivable - prevTotalPayable !== 0 ? ((netOperatingCashFlow - (prevPaidReceivables - prevInvoiceData.filter(i => i.status === 'paid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0) - prevTotalExpenses)) / Math.abs(prevPaidReceivables - prevInvoiceData.filter(i => i.status === 'paid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0) - prevTotalExpenses)) * 100) : 0;
+          const prevOcf = prevPaidReceivables - ((prevInvoiceData || []).filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0)) - prevTotalExpenses;
+          const ocfChange = prevOcf !== 0 ? ((netOperatingCashFlow - prevOcf) / Math.abs(prevOcf)) * 100 : 0;
 
           // Aging Analysis
           const today = new Date();
@@ -760,6 +765,7 @@ export const FinancialReportsDashboard: React.FC = () => {
           const netFlow = netChangeInCash;
           reportSummary = `Net cash flow: $${netFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Operating: $${netOperatingCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | FCF: $${freeCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           break;
+        }
 
         default:
           reportData = {};
@@ -2183,7 +2189,7 @@ export const FinancialReportsDashboard: React.FC = () => {
                           </Table.Tr>
                         ) : (
                           Object.entries(vendors)
-                            .sort((a, b) => b[1].total - a[1].total)
+                            .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                             .map(([vendor, data]: [string, any]) => (
                               <Table.Tr key={vendor}>
                                 <Table.Td>{vendor}</Table.Td>
@@ -2230,7 +2236,7 @@ export const FinancialReportsDashboard: React.FC = () => {
                           </Table.Tr>
                         ) : (
                           Object.entries(customers)
-                            .sort((a, b) => b[1].total - a[1].total)
+                            .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                             .map(([customer, data]: [string, any]) => (
                               <Table.Tr key={customer}>
                                 <Table.Td>{customer}</Table.Td>

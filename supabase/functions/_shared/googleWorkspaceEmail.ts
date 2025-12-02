@@ -66,7 +66,7 @@ function base64EncodeString(input: string): string {
 }
 
 function base64UrlEncodeBytes(bytes: Uint8Array): string {
-  return encodeBase64Url(bytes.buffer);
+  return encodeBase64Url(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
 }
 
 function normalizePrivateKey(pem: string): string {
@@ -201,7 +201,7 @@ async function importPrivateKey(): Promise<CryptoKey> {
 
   const promise = crypto.subtle.importKey(
     "pkcs8",
-    keyData.buffer,
+    keyData.buffer.slice(keyData.byteOffset, keyData.byteOffset + keyData.byteLength) as ArrayBuffer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],

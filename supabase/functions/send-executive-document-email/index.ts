@@ -228,7 +228,7 @@ serve(async (req: Request) => {
             }
 
             if (pdfBytes && pdfBytes.length > 0) {
-              const base64 = base64Encode(pdfBytes.buffer);
+              const base64 = base64Encode(pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer);
               attachments.push({
                 filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
                 content: base64,

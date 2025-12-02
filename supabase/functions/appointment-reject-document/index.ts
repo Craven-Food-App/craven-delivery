@@ -100,12 +100,16 @@ serve(async (req: Request) => {
       .eq('id', appointmentId)
       .single();
 
+    const userProfile = Array.isArray(appointment?.user_profiles) 
+      ? appointment.user_profiles[0] 
+      : appointment?.user_profiles;
+    
     return new Response(
       JSON.stringify({ 
         ok: true, 
         message: 'Document rejected and workflow halted',
-        appointeeName: appointment?.user_profiles?.full_name,
-        appointeeEmail: appointment?.user_profiles?.email,
+        appointeeName: userProfile?.full_name,
+        appointeeEmail: userProfile?.email,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );

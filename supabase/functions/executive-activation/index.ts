@@ -111,6 +111,10 @@ serve(async (req: Request) => {
     }
 
     // 5. Log activation in audit log
+    const userProfile = Array.isArray(appointment.user_profiles) 
+      ? appointment.user_profiles[0] 
+      : appointment.user_profiles;
+    
     await supabase.from('appointment_audit_log').insert({
       appointment_id: appointmentId,
       action_type: 'executive_activated',
@@ -119,7 +123,7 @@ serve(async (req: Request) => {
       metadata_json: {
         activation_details: activationDetails,
         activated_at: new Date().toISOString(),
-        executive_name: appointment.user_profiles?.full_name,
+        executive_name: userProfile?.full_name,
         executive_role: appointment.role_titles.join(', '),
       },
     });
@@ -128,7 +132,7 @@ serve(async (req: Request) => {
       JSON.stringify({ 
         ok: true, 
         message: 'Executive activated successfully',
-        executiveName: appointment.user_profiles?.full_name,
+        executiveName: userProfile?.full_name,
         executiveRole: appointment.role_titles.join(', '),
         activationDetails,
       }),
