@@ -80,6 +80,11 @@ const MainHub: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentDuration, setCurrentDuration] = useState('00:00:00');
   
+  // Departments state
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [showDepartments, setShowDepartments] = useState(true);
+  
   // SSN verification modal state
   const [showSSNModal, setShowSSNModal] = useState(false);
   const [ssnInput, setSsnInput] = useState('');
@@ -915,6 +920,105 @@ const MainHub: React.FC = () => {
     }
   }, [user, statusLoaded]);
 
+  // Fetch departments
+  const fetchDepartments = async () => {
+    if (!user) return;
+    setDepartmentsLoading(true);
+    try {
+      let deptData: any[] = [];
+      
+      // Try to fetch with head employee relationship first
+      const { data, error } = await supabase
+        .from('departments')
+        .select(`
+          *,
+          head_employee:employees!departments_head_employee_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .order('name', { ascending: true });
+
+      if (error) {
+        // If foreign key relationship doesn't work, try simpler query
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('departments')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (simpleError) throw simpleError;
+        deptData = simpleData || [];
+      } else {
+        deptData = data || [];
+      }
+
+      // Get employee counts and head employee info for each department
+      const departmentsWithCounts = await Promise.all(
+        deptData.map(async (dept) => {
+          // Get employee count
+          const { count } = await supabase
+            .from('employees')
+            .select('*', { count: 'exact', head: true })
+            .eq('department_id', dept.id)
+            .eq('employment_status', 'active');
+
+          // Get head employee if exists (if not already fetched via join)
+          let headEmployee = dept.head_employee || null;
+          if (!headEmployee && dept.head_employee_id) {
+            const { data: head } = await supabase
+              .from('employees')
+              .select('id, first_name, last_name, email')
+              .eq('id', dept.head_employee_id)
+              .single();
+            headEmployee = head;
+          }
+
+          // Get unique positions/roles in this department
+          const { data: employees } = await supabase
+            .from('employees')
+            .select('position')
+            .eq('department_id', dept.id)
+            .eq('employment_status', 'active');
+
+          // Count occurrences of each position
+          const roleCounts: Record<string, number> = {};
+          employees?.forEach((emp) => {
+            if (emp.position) {
+              roleCounts[emp.position] = (roleCounts[emp.position] || 0) + 1;
+            }
+          });
+
+          // Convert to array of roles with counts
+          const roles = Object.entries(roleCounts)
+            .map(([position, count]) => ({ position, count }))
+            .sort((a, b) => b.count - a.count); // Sort by count descending
+
+          return {
+            ...dept,
+            employee_count: count || 0,
+            head_employee: headEmployee,
+            roles: roles,
+          };
+        })
+      );
+
+      setDepartments(departmentsWithCounts);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      message.error('Failed to load departments');
+    } finally {
+      setDepartmentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && employeeInfo) {
+      fetchDepartments();
+    }
+  }, [user, employeeInfo]);
+
   // Company-side portals only
   const portals: Portal[] = [
     {
@@ -1452,6 +1556,165 @@ const MainHub: React.FC = () => {
                     )}
                   </Card>
                 </div>
+              )}
+            </Card>
+          )}
+
+          {/* Departments Section */}
+          {user && employeeInfo && (
+            <Card
+              style={{
+                marginBottom: 48,
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+              bodyStyle={{ padding: 32 }}
+            >
+              <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <TeamOutlined style={{ marginRight: 12, color: '#ff7a45', fontSize: 24 }} />
+                  Company Departments
+                </Title>
+                <Button
+                  type="text"
+                  icon={showDepartments ? <span>−</span> : <span>+</span>}
+                  onClick={() => setShowDepartments(!showDepartments)}
+                  style={{ fontSize: 18, fontWeight: 600 }}
+                >
+                  {showDepartments ? 'Collapse' : 'Expand'}
+                </Button>
+              </div>
+
+              {showDepartments && (
+                <Spin spinning={departmentsLoading}>
+                  {departments.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                      No departments found.
+                    </div>
+                  ) : (
+                    <Row gutter={[16, 16]}>
+                      {departments.map((dept) => (
+                        <Col xs={24} sm={12} lg={8} xl={6} key={dept.id}>
+                          <Card
+                            hoverable
+                            style={{
+                              height: '100%',
+                              borderRadius: 8,
+                              border: '1px solid #e5e7eb',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                              transition: 'all 0.2s',
+                              cursor: 'pointer',
+                            }}
+                            bodyStyle={{ padding: 20 }}
+                            onClick={() => {
+                              const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
+                              navigate(`/hub/department/${deptName}`);
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.borderColor = '#ff7a45';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.borderColor = '#e5e7eb';
+                            }}
+                          >
+                            <div style={{ marginBottom: 16 }}>
+                              <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#111827' }}>
+                                {dept.name}
+                              </Title>
+                              {dept.description && (
+                                <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+                                  {dept.description}
+                                </Text>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text type="secondary" style={{ fontSize: 12 }}>Employees</Text>
+                                <Tag color="blue" style={{ margin: 0 }}>
+                                  {dept.employee_count || 0}
+                                </Tag>
+                              </div>
+
+                              {dept.budget && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>Budget</Text>
+                                  <Text strong style={{ fontSize: 13, color: '#52c41a' }}>
+                                    ${Number(dept.budget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </Text>
+                                </div>
+                              )}
+
+                              {dept.head_employee && (
+                                <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
+                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+                                    Department Head
+                                  </Text>
+                                  <Text style={{ fontSize: 12, fontWeight: 500 }}>
+                                    {dept.head_employee.first_name} {dept.head_employee.last_name}
+                                  </Text>
+                                </div>
+                              )}
+
+                              {/* Roles Section */}
+                              {dept.roles && dept.roles.length > 0 && (
+                                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8, fontWeight: 600 }}>
+                                    Roles ({dept.roles.length})
+                                  </Text>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {dept.roles.slice(0, 5).map((role: any, idx: number) => (
+                                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 12, color: '#374151' }} ellipsis={{ tooltip: role.position }}>
+                                          {role.position}
+                                        </Text>
+                                        <Tag color="default" style={{ margin: 0, fontSize: 11 }}>
+                                          {role.count}
+                                        </Tag>
+                                      </div>
+                                    ))}
+                                    {dept.roles.length > 5 && (
+                                      <Text type="secondary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+                                        +{dept.roles.length - 5} more
+                                      </Text>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* View Portals Button */}
+                              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
+                                <Button
+                                  type="primary"
+                                  block
+                                  style={{
+                                    background: '#ff7a45',
+                                    borderColor: '#ff7a45',
+                                    height: 36,
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
+                                    navigate(`/hub/department/${deptName}`);
+                                  }}
+                                >
+                                  View Department Portals →
+                                </Button>
+                              </div>
+                            </div>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  )}
+                </Spin>
               )}
             </Card>
           )}

@@ -1,8 +1,4 @@
-import { pipeline, env } from '@huggingface/transformers';
-
-// Configure transformers.js to always download models
-env.allowLocalModels = false;
-env.useBrowserCache = false;
+// Background removal service - uses dynamic imports to avoid build-time issues
 
 const MAX_IMAGE_DIMENSION = 1024;
 
@@ -34,6 +30,12 @@ function resizeImageIfNeeded(canvas: HTMLCanvasElement, ctx: CanvasRenderingCont
 export const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> => {
   try {
     console.log('Starting background removal process...');
+    // Dynamic import to avoid build-time resolution issues
+    const { pipeline, env } = await import('@huggingface/transformers');
+    // Configure transformers.js to always download models
+    env.allowLocalModels = false;
+    env.useBrowserCache = false;
+    
     const segmenter = await pipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', {
       device: 'webgpu',
     });

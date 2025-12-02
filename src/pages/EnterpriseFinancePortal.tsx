@@ -7,49 +7,37 @@ import { BudgetManagement } from '@/components/finance/BudgetManagement';
 import { InvoiceManagement } from '@/components/finance/InvoiceManagement';
 import { AuditComplianceDashboard } from '@/components/finance/AuditComplianceDashboard';
 import { GeneralLedgerView } from '@/components/finance/GeneralLedgerView';
+import { CorporateGeneralLedger } from '@/components/finance/CorporateGeneralLedger';
 import { BankingTreasuryView } from '@/components/finance/BankingTreasuryView';
 import { PayrollView } from '@/components/finance/PayrollView';
 import { TaxManagementView } from '@/components/finance/TaxManagementView';
 import { AccountsReceivableView } from '@/components/finance/AccountsReceivableView';
+import { CorporateAccountsPayable } from '@/components/finance/CorporateAccountsPayable';
+import { CorporateAccountsReceivable } from '@/components/finance/CorporateAccountsReceivable';
+import { SimpleTest } from '@/components/finance/SimpleTest';
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
 
 const EnterpriseFinancePortal: React.FC = () => {
-  const { loading, getPrimaryRole } = useFinanceRBAC();
-
-  if (loading) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading Finance Portal...</p>
-      </div>
-    );
-  }
-
-  const primaryRole = getPrimaryRole();
-  if (!primaryRole) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Access Denied</h2>
-        <p>You do not have access to the Finance Portal. Please contact your administrator.</p>
-      </div>
-    );
-  }
-
+  console.log('✅ EnterpriseFinancePortal component is rendering!');
+  
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       <Routes>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<FinanceDashboard />} />
         <Route path="approvals" element={<ApprovalQueue />} />
         <Route path="reports" element={<FinancialReportsDashboard />} />
-        <Route path="general-ledger" element={<GeneralLedgerView />} />
-        <Route path="accounts-payable" element={<InvoiceManagement />} />
-        <Route path="accounts-receivable" element={<AccountsReceivableView />} />
+        <Route path="general-ledger" element={<CorporateGeneralLedger />} />
+        <Route path="accounts-payable" element={<CorporateAccountsPayable />} />
+        <Route path="accounts-receivable" element={<CorporateAccountsReceivable />} />
         <Route path="banking-treasury" element={<BankingTreasuryView />} />
         <Route path="payroll" element={<PayrollView />} />
         <Route path="budget-forecast" element={<BudgetManagement />} />
         <Route path="fixed-assets" element={<GeneralLedgerView mode="fixed-assets" />} />
         <Route path="tax-management" element={<TaxManagementView />} />
         <Route path="audit" element={<AuditComplianceDashboard />} />
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
+        <Route path="test" element={<SimpleTest />} />
+        <Route path="*" element={<div style={{ padding: '2rem' }}><h1>Route Not Found in Finance Portal</h1><p>Available routes: general-ledger, accounts-payable, accounts-receivable, etc.</p></div>} />
       </Routes>
     </div>
   );

@@ -30,19 +30,13 @@ const Index = () => {
       const isPWA =
         window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
 
-      console.log("PWA Detection:", { isPWA, userAgent: navigator.userAgent });
-
       if (!isPWA) {
-        console.log("Not running as PWA - skipping redirect");
         return; // Don't redirect if browsing normally
       }
-
-      console.log("Running as PWA - checking driver status...");
 
       // Check localStorage for cached driver status (faster)
       const cachedDriverStatus = localStorage.getItem("user_is_driver");
       if (cachedDriverStatus === "true") {
-        console.log("Cached driver status found - redirecting immediately");
         navigate("/mobile", { replace: true });
         return;
       }
@@ -53,10 +47,7 @@ const Index = () => {
           error: userError,
         } = await supabase.auth.getUser();
 
-        console.log("Auth check:", { user: !!user, error: userError });
-
         if (!user) {
-          console.log("No user logged in");
           return;
         }
 
@@ -67,21 +58,12 @@ const Index = () => {
           .eq("user_id", user.id)
           .single();
 
-        console.log("Application check:", {
-          hasApplication: !!application,
-          onboardingComplete: !!application?.onboarding_completed_at,
-          error: appError,
-        });
-
         if (application?.onboarding_completed_at) {
           // User is an approved driver with completed onboarding
           // Cache the driver status for faster future loads
           localStorage.setItem("user_is_driver", "true");
-
-          console.log("✅ PWA: Redirecting driver to mobile dashboard");
           navigate("/mobile", { replace: true });
         } else {
-          console.log("User is not a driver or onboarding incomplete");
           // Clear cached status if it exists
           localStorage.removeItem("user_is_driver");
         }

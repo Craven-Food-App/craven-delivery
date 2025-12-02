@@ -73,6 +73,7 @@ import EnterpriseFinancePortal from "./pages/EnterpriseFinancePortal";
 import MarketingPortal from "./pages/MarketingPortal";
 import HRPortal from "./pages/HRPortal";
 import MainHub from "./pages/MainHub";
+import DepartmentHub from "./pages/DepartmentHub";
 import BusinessAuth from "./pages/BusinessAuth";
 import BusinessAuthWrapper from "./components/BusinessAuthWrapper";
 import BusinessAuthGuard from "./components/BusinessAuthGuard";
@@ -138,6 +139,7 @@ const App = () => {
         pathname === '/hub' ||
         pathname === '/main-hub' ||
         pathname.startsWith('/hub/') ||
+        pathname.startsWith('/finance/') ||
         (pathname === '/auth' && search.includes('hq=true')) ||
         hostname === 'hq.cravenusa.com' ||
         (hostname === 'localhost' && 
@@ -150,6 +152,7 @@ const App = () => {
            pathname.includes('/coo') ||
            pathname.includes('/cto') ||
            pathname.includes('/cxo') ||
+           pathname.includes('/finance') ||
            pathname.includes('/board'))) ||
         (hostname === '127.0.0.1' && 
           (search.includes('hq=true') || 
@@ -161,6 +164,7 @@ const App = () => {
            pathname.includes('/coo') ||
            pathname.includes('/cto') ||
            pathname.includes('/cxo') ||
+           pathname.includes('/finance') ||
            pathname.includes('/board'))) ||
         search.includes('hq=true')
       );
@@ -296,6 +300,7 @@ const App = () => {
   }
 
   // If on HQ/business subdomain, show only business routes
+  console.log('🔍 isHQSubdomain:', isHQSubdomain, 'current path:', window.location.pathname);
   if (isHQSubdomain) {
     return (
       <ErrorBoundary>
@@ -312,6 +317,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
+                  <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/admin" element={<Admin />} />
                     <Route path="/marketing-portal" element={<MarketingPortal />} />
@@ -606,6 +612,7 @@ const App = () => {
           <Route path="/restaurant/most-loved" element={<MostLovedProgram />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
+          <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hr-portal" element={<BusinessAuthGuard><HRPortal /></BusinessAuthGuard>} />
           <Route path="/board" element={<BusinessAuthGuard><BoardPortal /></BusinessAuthGuard>} />

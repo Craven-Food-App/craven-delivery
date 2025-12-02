@@ -37,6 +37,12 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: 8080,
+      strictPort: false,
+      open: false,
+      cors: true,
+      hmr: {
+        overlay: true,
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:3001',
@@ -45,23 +51,34 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-  plugins: [
-    react(),
-    stripLovableAttributes(),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  optimizeDeps: {
-    include: [
-      '@mui/material',
-      '@mui/icons-material',
-      '@mui/x-data-grid',
-      '@mui/x-date-pickers',
+    plugins: [
+      react(),
+      stripLovableAttributes(),
     ],
-    exclude: [],
-  },
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+    },
+    optimizeDeps: {
+      entries: ['index.html'],
+      include: [
+        '@mui/material',
+        '@mui/icons-material',
+        '@mui/x-data-grid',
+        '@mui/x-date-pickers',
+      ],
+      exclude: [
+        '@huggingface/transformers',
+        'onnxruntime-common',
+        'onnxruntime-web',
+      ],
+    },
+    build: {
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
+      sourcemap: mode === 'development',
+    },
   };
 });

@@ -192,16 +192,12 @@
           var pathAndHash = window.location.pathname + window.location.hash;
           var isMobileRoute = pathAndHash.includes('/mobile');
           
-          console.log('PWA Detection:', { isStandalone, isMobileRoute });
-          
           if (isStandalone) {
             document.body.classList.add('pwa-standalone');
-            console.log('Added pwa-standalone class');
           }
           
           if (isStandalone && isMobileRoute) {
             document.body.classList.add('mobile-page');
-            console.log('Added mobile-page class');
           }
         }
         addPWAClasses();

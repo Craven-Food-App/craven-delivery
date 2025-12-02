@@ -61,9 +61,11 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
   }
 
   if (!isAuthenticated) {
+    console.log('❌ BusinessAuthGuard: Not authenticated, blocking render');
     return null;
   }
 
+  console.log('✅ BusinessAuthGuard: Authenticated, rendering children');
   return <>{children}</>;
 };
 

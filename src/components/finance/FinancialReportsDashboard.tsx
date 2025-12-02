@@ -32,7 +32,6 @@ import {
   IconTrendingDown,
   IconArrowRight,
   IconArrowLeft,
-  IconChartLine,
 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Area, AreaChart, ReferenceLine } from 'recharts';
@@ -452,7 +451,7 @@ export const FinancialReportsDashboard: React.FC = () => {
 
           const invoiceData = invoiceDataRes.data || [];
           const arData = arDataRes.data || [];
-          const expenseData = expenseDataRes.data || [];
+          const expenseData2 = expenseDataRes.data || [];
           const ordersData = ordersDataRes.data || [];
           
           const prevInvoiceData = prevInvoiceDataRes.data || [];
@@ -465,8 +464,8 @@ export const FinancialReportsDashboard: React.FC = () => {
           const totalReceivable = arData.reduce((sum, ar) => sum + (Number(ar.total_amount) || 0), 0);
           const paidReceivables = arData.reduce((sum, ar) => sum + (Number(ar.paid_amount) || 0), 0);
           const outstandingReceivables = arData.reduce((sum, ar) => sum + (Number(ar.outstanding_amount) || 0), 0);
-          const totalExpenses = expenseData.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const totalRevenue = ordersData.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+          const totalExpenses2 = expenseData2.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const totalRevenue2 = ordersData.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
 
           // Previous period totals
           const prevTotalPayable = prevInvoiceData.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
@@ -479,13 +478,13 @@ export const FinancialReportsDashboard: React.FC = () => {
           // Operating Activities - Current Period
           const cashFromCustomers = paidReceivables;
           const cashPaidToSuppliers = invoiceData.filter(i => i.status === 'paid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
-          const cashPaidForExpenses = totalExpenses;
-          const salariesAndWages = expenseData.filter((e: any) => e.expense_category_id && (e.expense_category?.name?.toLowerCase().includes('salary') || e.expense_category?.name?.toLowerCase().includes('payroll') || e.expense_category?.name?.toLowerCase().includes('wage'))).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const interestPaid = expenseData.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('interest')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const taxesPaid = expenseData.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('tax')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const cashPaidForExpenses = totalExpenses2;
+          const salariesAndWages = expenseData2.filter((e: any) => e.expense_category_id && (e.expense_category?.name?.toLowerCase().includes('salary') || e.expense_category?.name?.toLowerCase().includes('payroll') || e.expense_category?.name?.toLowerCase().includes('wage'))).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const interestPaid = expenseData2.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('interest')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const taxesPaid = expenseData2.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('tax')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           
           // Investing Activities (assume capital expenditures from expense categories)
-          const capitalExpenditures = expenseData.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('equipment') || e.expense_category?.name?.toLowerCase().includes('capital') || e.expense_category?.name?.toLowerCase().includes('asset')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const capitalExpenditures = expenseData2.filter((e: any) => e.expense_category?.name?.toLowerCase().includes('equipment') || e.expense_category?.name?.toLowerCase().includes('capital') || e.expense_category?.name?.toLowerCase().includes('asset')).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           
           // Financing Activities
           const debtRepayments = 0; // Would come from loan payments if tracked
@@ -504,7 +503,7 @@ export const FinancialReportsDashboard: React.FC = () => {
           const avgInventory = 0; // Would need inventory data
           
           // Days Sales Outstanding (DSO)
-          const avgDailySales = totalRevenue / daysInPeriod;
+          const avgDailySales = totalRevenue2 / daysInPeriod;
           const dso = avgDailySales > 0 ? avgReceivables / avgDailySales : 0;
           
           // Days Payable Outstanding (DPO)
@@ -518,7 +517,7 @@ export const FinancialReportsDashboard: React.FC = () => {
           const cashConversionCycle = dso + dio - dpo;
           
           // Operating Cash Flow Margin
-          const operatingCashFlowMargin = totalRevenue > 0 ? (netOperatingCashFlow / totalRevenue) * 100 : 0;
+          const operatingCashFlowMargin = totalRevenue2 > 0 ? (netOperatingCashFlow / totalRevenue2) * 100 : 0;
           
           // Free Cash Flow (Operating CF - CapEx)
           const freeCashFlow = netOperatingCashFlow - capitalExpenditures;
@@ -539,9 +538,26 @@ export const FinancialReportsDashboard: React.FC = () => {
           const workingCapital = currentAssets - currentLiabilities;
           
           // Period over Period Changes
+<<<<<<< HEAD
           const revenueChange = prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
           const prevOcf = prevPaidReceivables - ((prevInvoiceData || []).filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0)) - prevTotalExpenses;
           const ocfChange = prevOcf !== 0 ? ((netOperatingCashFlow - prevOcf) / Math.abs(prevOcf)) * 100 : 0;
+=======
+          const revenueChange2 = prevTotalRevenue > 0 ? ((totalRevenue2 - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
+          
+          // Calculate previous period's paid receivables
+          const prevPaidReceivablesAmount = prevInvoiceData
+            .filter(i => i.status === 'paid')
+            .reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+          
+          // Calculate previous period's operating cash flow
+          const prevOperatingCashFlow = prevPaidReceivablesAmount - prevTotalExpenses;
+          
+          // Calculate OCF change
+          const ocfChange = prevTotalReceivable - prevTotalPayable !== 0 
+            ? ((netOperatingCashFlow - prevOperatingCashFlow) / Math.abs(prevOperatingCashFlow)) * 100 
+            : 0;
+>>>>>>> bad3ad63 (Add Fortune 500 corporate finance portals and department hub)
 
           // Aging Analysis
           const today = new Date();
@@ -608,7 +624,7 @@ export const FinancialReportsDashboard: React.FC = () => {
             }
           });
 
-          expenseData?.forEach((exp: any) => {
+          expenseData2?.forEach((exp: any) => {
             const date = dayjs(exp.expense_date).format('YYYY-MM-DD');
             if (!dailyFlow[date]) dailyFlow[date] = { inflow: 0, outflow: 0, net: 0 };
             dailyFlow[date].outflow += exp.amount || 0;
@@ -629,14 +645,14 @@ export const FinancialReportsDashboard: React.FC = () => {
             .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
 
           // Generate Executive Summary Insights
-          const executiveHighlights = [];
+          const executiveHighlights2 = [];
           if (netOperatingCashFlow > 0) {
-            executiveHighlights.push(`Strong operating cash flow of $${Math.abs(netOperatingCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} demonstrates healthy cash generation`);
+            executiveHighlights2.push(`Strong operating cash flow of $${Math.abs(netOperatingCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} demonstrates healthy cash generation`);
           } else {
-            executiveHighlights.push(`Operating cash flow requires attention at $${Math.abs(netOperatingCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+            executiveHighlights2.push(`Operating cash flow requires attention at $${Math.abs(netOperatingCashFlow).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
           }
-          if (revenueChange > 0) {
-            executiveHighlights.push(`Revenue increased ${revenueChange.toFixed(1)}% compared to previous period`);
+          if (revenueChange2 > 0) {
+            executiveHighlights2.push(`Revenue increased ${revenueChange2.toFixed(1)}% compared to previous period`);
           }
           if (freeCashFlow > 0) {
             executiveHighlights.push(`Positive free cash flow of $${freeCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} available for strategic investments`);
@@ -657,12 +673,12 @@ export const FinancialReportsDashboard: React.FC = () => {
             
             // Executive Summary
             executive_summary: {
-              highlights: executiveHighlights,
+              highlights: executiveHighlights2,
               net_cash_flow: netChangeInCash,
               operating_cash_flow: netOperatingCashFlow,
               free_cash_flow: freeCashFlow,
-              revenue: totalRevenue,
-              revenue_change_pct: revenueChange,
+              revenue: totalRevenue2,
+              revenue_change_pct: revenueChange2,
             },
             
             // GAAP Cash Flow Statement
@@ -705,7 +721,7 @@ export const FinancialReportsDashboard: React.FC = () => {
             
             // Period Comparisons
             period_comparison: {
-              revenue: { current: totalRevenue, previous: prevTotalRevenue, change: revenueChange },
+              revenue: { current: totalRevenue2, previous: prevTotalRevenue, change: revenueChange2 },
               operating_cash_flow: { 
                 current: netOperatingCashFlow, 
                 previous: (prevPaidReceivables - prevInvoiceData.filter(i => i.status === 'paid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0) - prevTotalExpenses),
@@ -718,7 +734,7 @@ export const FinancialReportsDashboard: React.FC = () => {
             // Detailed Data
             payables: invoiceData,
             receivables: arData,
-            expenses: expenseData,
+            expenses: expenseData2,
             orders: ordersData,
             
             // Totals
@@ -727,8 +743,8 @@ export const FinancialReportsDashboard: React.FC = () => {
               total_receivable: totalReceivable,
               paid_receivables: paidReceivables,
               outstanding_receivables: outstandingReceivables,
-              total_expenses: totalExpenses,
-              total_revenue: totalRevenue,
+              total_expenses: totalExpenses2,
+              total_revenue: totalRevenue2,
               net_cash_flow: netChangeInCash,
             },
             
@@ -992,7 +1008,7 @@ export const FinancialReportsDashboard: React.FC = () => {
             <Grid.Col span={8}>
               <Stack gap="md">
                 <Group gap="sm">
-                  <IconChartLine size={24} color="#2563eb" />
+                  <IconTrendingUp size={24} color="#2563eb" />
                   <Text fw={600} size="lg" mb="xs">Key Highlights</Text>
                 </Group>
                 {data.executive_summary?.highlights?.length > 0 ? (

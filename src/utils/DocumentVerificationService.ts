@@ -1,5 +1,3 @@
-import { pipeline } from '@huggingface/transformers';
-
 // Document verification service for driver applications
 export class DocumentVerificationService {
   private static ocrPipeline: any = null;
@@ -8,12 +6,15 @@ export class DocumentVerificationService {
   private static async getOCRPipeline() {
     if (this.ocrPipeline) return this.ocrPipeline;
     try {
+      // Dynamic import to avoid build-time resolution issues
+      const { pipeline } = await import('@huggingface/transformers');
       // Try WebGPU first for significant speedups on supported devices
       this.ocrPipeline = await pipeline('image-to-text', 'Xenova/trocr-base-printed', {
         device: 'webgpu'
       });
     } catch (err) {
       console.warn('WebGPU unavailable, falling back to WASM', err);
+      const { pipeline } = await import('@huggingface/transformers');
       this.ocrPipeline = await pipeline('image-to-text', 'Xenova/trocr-base-printed', {
         device: 'wasm'
       });
