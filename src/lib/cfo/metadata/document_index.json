@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "documents": [
+    {
+      "key": "cfo_charter_craven_v2_f500tech",
+      "title": "CFO Charter",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_governance_framework_v1",
+      "title": "CFO Governance Framework",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_decision_matrix_raci_v1",
+      "title": "CFO Decision Rights Matrix",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_responsibilities_operating_manual_v1",
+      "title": "CFO Responsibilities Operating Manual",
+      "category": "Operations",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_handbook_craven_f500tech_v1",
+      "title": "CFO Executive Handbook",
+      "category": "Handbook",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_reporting_cadence_v1",
+      "title": "CFO Reporting Cadence",
+      "category": "Cadence",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_compliance_schedule_v1",
+      "title": "CFO Compliance & Regulatory Schedule",
+      "category": "Compliance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_system_access_governance_v1",
+      "title": "CFO System Access & Data Ownership Map",
+      "category": "Systems",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cfo_acknowledgment_master_v1",
+      "title": "CFO Master Acknowledgment",
+      "category": "Signatures",
+      "format": ["html", "markdown", "pdf_text"]
+    }
+  ]
+}
+

@@ -13,12 +13,14 @@ import {
   ChevronRight,
   Mail,
   FileText,
+  Scale,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
+import { CXOOnboardingGovernance } from '@/components/cxo/CXOOnboardingGovernance';
 
 
 // --- ICONS MAPPING ---
@@ -32,7 +34,8 @@ type IconKey =
   | 'Briefcase'
   | 'Settings'
   | 'Mail'
-  | 'FileText';
+  | 'FileText'
+  | 'Scale';
 
 
 const IconMap = {
@@ -45,6 +48,7 @@ const IconMap = {
   Settings,
   Mail,
   FileText,
+  Scale,
 };
 
 
@@ -53,6 +57,7 @@ const IconMap = {
 
 interface NavItem {
   id:
+    | 'onboarding'
     | 'dashboard'
     | 'analytics'
     | 'journeys'
@@ -99,6 +104,7 @@ interface Initiative {
 
 
 const NAV_ITEMS: NavItem[] = [
+  { id: 'onboarding', name: 'CXO Onboarding & Governance', icon: 'Scale' },
   { id: 'dashboard', name: 'Dashboard', icon: 'Activity' },
   { id: 'analytics', name: 'Analytics Deep Dive', icon: 'BarChart3' },
   { id: 'journeys', name: 'Journey Mapping', icon: 'TrendingUp' },
@@ -356,7 +362,7 @@ const CommunicationsView: React.FC = () => (
 
 // Main App Component
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavItem['id']>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavItem['id']>('onboarding');
   const navigate = useNavigate();
 
   const navItems: ExecutiveNavItem[] = useMemo(
@@ -385,6 +391,8 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'onboarding':
+        return <CXOOnboardingGovernance />;
       case 'dashboard':
         return <DashboardView />;
       case 'analytics':

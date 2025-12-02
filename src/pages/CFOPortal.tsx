@@ -114,6 +114,7 @@ import { EnhancedCapitalStructure } from '@/components/cfo/EnhancedCapitalStruct
 import { EnhancedScenarioPlanning } from '@/components/cfo/EnhancedScenarioPlanning';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
+import { CFOOnboardingGovernance } from '@/components/cfo/CFOOnboardingGovernance';
 
 // Reusable InfoIcon component with Popover
 function InfoIcon({ content, title }: { content: string; title?: string }) {
@@ -667,7 +668,7 @@ function CFOPortalContent() {
   const [payouts, setPayouts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [activeSection, setActiveSection] = useState<string>('onboarding');
   const [isMobile, setIsMobile] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
@@ -743,6 +744,7 @@ function CFOPortalContent() {
   }, [fetchData]);
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => [
+    { id: 'onboarding', label: 'CFO Onboarding & Governance', icon: Scale },
     { id: 'overview', label: 'CFO Command Center', icon: BarChart3 },
     { id: 'finance', label: 'Finance Department', icon: DollarSign },
     { id: 'fpa', label: 'FP&A & Forecasting', icon: Rocket },
@@ -794,6 +796,8 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'onboarding':
+        return <CFOOnboardingGovernance />;
       case 'overview':
         return <EnhancedCFODashboard />;
       case 'finance':

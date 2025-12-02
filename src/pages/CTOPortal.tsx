@@ -70,6 +70,7 @@ import { TechCostManagement } from '@/components/cto/TechCostManagement';
 import { CTOPortalInstructionManual } from '@/components/cto/CTOPortalInstructionManual';
 import { IncidentsDashboard } from '@/components/cto/IncidentsDashboard';
 import { AssetManagement } from '@/components/cto/AssetManagement';
+import { CTOOnboardingGovernance } from '@/components/cto/CTOOnboardingGovernance';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -86,12 +87,13 @@ import {
   BarChart3,
   Settings,
   Database,
+  Scale,
 } from 'lucide-react';
 
 function CTOPortalContent() {
   const { loading: authLoading, user, execUser, isAuthorized, signOut } = useExecAuth('cto');
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [activeSection, setActiveSection] = useState<string>('onboarding');
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const toast = useToast();
@@ -125,6 +127,7 @@ function CTOPortalContent() {
   const finalIsAuthorized = isAuthorized || isTorrance;
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => [
+    { id: 'onboarding', label: 'CTO Onboarding & Governance', icon: Scale },
     { id: 'overview', label: 'CTO Command Center', icon: BarChart3 },
     { id: 'infra', label: 'Advanced Infrastructure', icon: Cloud },
     { id: 'devops', label: 'DevOps & CI/CD', icon: Rocket },
@@ -157,6 +160,8 @@ function CTOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'onboarding':
+        return <CTOOnboardingGovernance />;
       case 'overview':
         return <EnhancedCTODashboard />;
       case 'infra':
