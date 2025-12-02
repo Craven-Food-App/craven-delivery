@@ -39,7 +39,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setDocumentInfo(doc);
 
       // Load HTML content
-      const htmlResponse = await fetch(`/src/lib/${role}/documents/html/${documentKey}.html`);
+      const htmlResponse = await fetch(`/lib/${role}/documents/html/${documentKey}.html`);
       if (htmlResponse.ok) {
         const html = await htmlResponse.text();
         setHtmlContent(html);
@@ -74,11 +74,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
   const handleDownloadPDF = () => {
     // In a real implementation, this would generate or fetch a PDF
-    window.open(`/src/lib/${role}/documents/pdf_text/${documentKey}.txt`, '_blank');
+    window.open(`/lib/${role}/documents/pdf_text/${documentKey}.txt`, '_blank');
   };
 
   const handleDownloadMarkdown = () => {
-    window.open(`/src/lib/${role}/documents/markdown/${documentKey}.md`, '_blank');
+    window.open(`/lib/${role}/documents/markdown/${documentKey}.md`, '_blank');
   };
 
   const handleAcknowledge = () => {

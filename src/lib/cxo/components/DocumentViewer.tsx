@@ -39,7 +39,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       setDocumentInfo(doc);
 
       // Load HTML content
-      const htmlResponse = await fetch(`/src/lib/${role}/documents/html/${documentKey}.html`);
+      const htmlResponse = await fetch(`/lib/${role}/documents/html/${documentKey}.html`);
       if (htmlResponse.ok) {
         const html = await htmlResponse.text();
         setHtmlContent(html);

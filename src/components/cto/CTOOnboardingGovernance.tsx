@@ -49,14 +49,24 @@ export const CTOOnboardingGovernance: React.FC = () => {
           .select('document_key, signed_at')
           .eq('user_id', user.id);
 
-        if (!error && acknowledgments) {
+        if (error) {
+          // Table might not exist yet - ignore 404 errors
+          if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+            // Table doesn't exist, continue without acknowledgments
+            console.log('cto_acknowledgments table not found, continuing without acknowledgments');
+          } else {
+            throw error;
+          }
+        } else if (acknowledgments) {
           ackMap = new Map(
             acknowledgments.map((a: any) => [a.document_key, a.signed_at])
           );
         }
-      } catch (err) {
-        // Table might not exist yet - ignore error
-        console.log('cto_acknowledgments table not found, continuing without acknowledgments');
+      } catch (err: any) {
+        // Table might not exist yet - ignore error silently
+        if (err?.code !== 'PGRST116' && !err?.message?.includes('relation') && !err?.message?.includes('does not exist')) {
+          console.error('Error fetching acknowledgments:', err);
+        }
       }
 
       const docsWithStatus = indexData.documents.map((doc: any) => ({
