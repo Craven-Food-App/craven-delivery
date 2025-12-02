@@ -56,11 +56,18 @@ const DepartmentHub: React.FC = () => {
   const [department, setDepartment] = useState<DepartmentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
     checkUser();
     fetchDepartment();
   }, [departmentName]);
+
+  useEffect(() => {
+    if (department && user) {
+      checkDepartmentAccess();
+    }
+  }, [department, user]);
 
   const checkUser = async () => {
     try {
@@ -73,6 +80,87 @@ const DepartmentHub: React.FC = () => {
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth?hq=true&redirect=/hub';
+    }
+  };
+
+  const checkDepartmentAccess = async () => {
+    if (!department || !user) return;
+    
+    const deptName = department.name.toLowerCase();
+    
+    // Only restrict access for Technology department
+    if (!deptName.includes('technology') && !deptName.includes('tech')) {
+      setHasAccess(true);
+      return;
+    }
+
+    await checkTechnologyAccess(user);
+  };
+
+  const checkTechnologyAccess = async (user: any) => {
+    try {
+      const userEmail = user.email?.toLowerCase() || '';
+      
+      // Check if user is CTO (Nathan Curry)
+      if (userEmail === 'natecurry.cto@cravenusa.com') {
+        setHasAccess(true);
+        return;
+      }
+
+      // Check if user is in finance department
+      // First try by user_id
+      let { data: employees, error } = await supabase
+        .from('employees')
+        .select('id, department_id, departments!inner(name)')
+        .eq('employment_status', 'active')
+        .eq('user_id', user.id);
+
+      // If no match by user_id, try by email
+      if ((!employees || employees.length === 0) && userEmail) {
+        const { data: empByEmail } = await supabase
+          .from('employees')
+          .select('id, department_id, departments!inner(name)')
+          .eq('employment_status', 'active')
+          .or(`email.ilike.${userEmail},work_email.ilike.${userEmail}`);
+        
+        if (empByEmail) {
+          employees = empByEmail;
+        }
+      }
+
+      if (!error && employees && employees.length > 0) {
+        // Check if any employee record is in finance department
+        for (const emp of employees) {
+          const deptName = (emp.departments as any)?.name?.toLowerCase() || '';
+          if (deptName.includes('finance')) {
+            setHasAccess(true);
+            return;
+          }
+        }
+      }
+
+      // Check exec_users table for CTO role
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('role, department')
+        .eq('user_id', user.id)
+        .eq('role', 'cto')
+        .single();
+
+      if (execUser) {
+        setHasAccess(true);
+        return;
+      }
+
+      // No access
+      setHasAccess(false);
+      message.error('You do not have access to the Technology department portal. Access is restricted to CTO and Finance department employees.');
+      setTimeout(() => {
+        navigate('/hub');
+      }, 2000);
+    } catch (error) {
+      console.error('Error checking technology access:', error);
+      setHasAccess(false);
     }
   };
 
@@ -402,7 +490,7 @@ const DepartmentHub: React.FC = () => {
 
   const subPortals = department ? getDepartmentPortals(department.name) : [];
 
-  if (loading) {
+  if (loading || hasAccess === null) {
     return (
       <div
         style={{
@@ -418,7 +506,7 @@ const DepartmentHub: React.FC = () => {
     );
   }
 
-  if (!department) {
+  if (!department || hasAccess === false) {
     return null;
   }
 
