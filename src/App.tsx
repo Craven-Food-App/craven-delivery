@@ -66,6 +66,7 @@ import { DriverReferralPage } from "./components/onboarding/DriverReferralPage";
 import BoardPortal from "./pages/BoardPortal";
 import CFOPortal from "./pages/CFOPortal";
 import CEOPortal from "./pages/CEOPortal";
+import ExecutiveAccountability from "./pages/ExecutiveAccountability";
 import COOPortal from "./pages/COOPortal";
 import CTOPortal from "./pages/CTOPortal";
 import CXOPortal from "./pages/CXOPortal";
@@ -621,6 +622,7 @@ const App = () => {
           <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
           <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
           <Route path="/cxo" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
+          <Route path="/executive/discipline" element={<BusinessAuthGuard><ExecutiveAccountability /></BusinessAuthGuard>} />
           <Route path="/company/*" element={<CompanyPortalLayout />}>
             <Route index element={<CompanyDashboard />} />
             <Route path="governance-admin" element={<GovernanceAdminDashboard />} />

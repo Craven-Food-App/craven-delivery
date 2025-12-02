@@ -33,7 +33,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     setLoading(true);
     try {
       // Load document index to get metadata
-      const indexResponse = await fetch(`/src/lib/${role}/metadata/document_index.json`);
+      const indexResponse = await fetch(`/lib/${role}/metadata/document_index.json`);
       const indexData = await indexResponse.json();
       const doc = indexData.documents.find((d: any) => d.key === documentKey);
       setDocumentInfo(doc);

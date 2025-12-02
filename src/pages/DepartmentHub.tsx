@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { hasFullAccess } from "@/utils/torranceAccess";
 import { Card, Row, Col, Button, Typography, Space, Spin, Avatar, Layout, Tag, message } from "antd";
 import {
   ArrowLeftOutlined,
@@ -100,6 +101,16 @@ const DepartmentHub: React.FC = () => {
   const checkTechnologyAccess = async (user: any) => {
     try {
       const userEmail = user.email?.toLowerCase() || '';
+      
+      // TORRANCE STROMAN: UNIVERSAL ACCESS - CHECK FIRST - NO RESTRICTIONS
+      if (hasFullAccess(user.email) || 
+          userEmail === 'tstroman.ceo@cravenusa.com' || 
+          userEmail.includes('torrance') || 
+          userEmail.includes('tstroman')) {
+        console.log('✅ TORRANCE ACCESS GRANTED - UNIVERSAL ACCESS:', user.email);
+        setHasAccess(true);
+        return;
+      }
       
       // Check if user is CTO (Nathan Curry)
       if (userEmail === 'natecurry.cto@cravenusa.com') {

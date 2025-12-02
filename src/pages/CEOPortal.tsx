@@ -102,6 +102,7 @@ const CEOPortal: React.FC = () => {
       { id: 'communications', label: 'Direct Communications', icon: IconMail as any },
       { id: 'word', label: 'Draft Briefings', icon: IconFileText as any },
       { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
+      { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
     ];
   }, [metrics?.totalEmployees, metrics?.pendingApprovals]);
 
@@ -158,6 +159,9 @@ const CEOPortal: React.FC = () => {
         return <ExecutiveWordProcessor storageKey="ceo" />;
       case 'active-users':
         return <ActiveUsersMonitor />;
+      case 'accountability':
+        navigate('/executive/discipline');
+        return <QuickActions onNavigate={setActiveTab} />;
       default:
         return <QuickActions onNavigate={setActiveTab} />;
     }

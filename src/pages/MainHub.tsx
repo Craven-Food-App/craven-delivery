@@ -24,6 +24,7 @@ import cravenLogo from "@/assets/craven-logo.png";
 import { usePermission } from '@/hooks/usePermission';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import PinChangeModal from '@/components/hub/PinChangeModal';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -84,6 +85,23 @@ const MainHub: React.FC = () => {
   const [departments, setDepartments] = useState<any[]>([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [showDepartments, setShowDepartments] = useState(true);
+  
+  // Access control state
+  const [userAccess, setUserAccess] = useState<{
+    canViewEmployeeCount: boolean;
+    canViewBudget: boolean;
+    isDepartmentHead: boolean;
+    isExecutive: boolean;
+    isCEO: boolean;
+    isCFO: boolean;
+  }>({
+    canViewEmployeeCount: false,
+    canViewBudget: false,
+    isDepartmentHead: false,
+    isExecutive: false,
+    isCEO: false,
+    isCFO: false,
+  });
   
   // SSN verification modal state
   const [showSSNModal, setShowSSNModal] = useState(false);
@@ -909,10 +927,10 @@ const MainHub: React.FC = () => {
       console.log('Status loaded, fetching clock status from database for sync...', user.id);
       fetchClockStatus();
       fetchTimeEntries();
-      // Poll for updates every 30 seconds (only to sync, never to reset)
+      // Poll for updates every 60 seconds (only to sync, never to reset) - reduced frequency
       const interval = setInterval(() => {
         fetchClockStatus();
-      }, 30000);
+      }, 60000);
       return () => clearInterval(interval);
     } else if (user && !statusLoaded) {
       // If status not loaded yet, just fetch entries (don't fetch status until localStorage loads)
@@ -932,7 +950,7 @@ const MainHub: React.FC = () => {
         .from('departments')
         .select(`
           *,
-          head_employee:employees!departments_head_employee_id_fkey(
+          head_employee:employees!fk_department_head(
             id,
             first_name,
             last_name,
@@ -1012,6 +1030,74 @@ const MainHub: React.FC = () => {
       setDepartmentsLoading(false);
     }
   };
+
+  // Check user access permissions
+  useEffect(() => {
+    const checkUserAccess = async () => {
+      if (!user) return;
+
+      const userEmail = user.email?.toLowerCase() || '';
+      
+      // TORRANCE STROMAN: UNIVERSAL ACCESS - SEES EVERYTHING
+      const isTorrance = hasFullAccess(user.email) || 
+                        userEmail === 'tstroman.ceo@cravenusa.com' || 
+                        userEmail.includes('torrance') || 
+                        userEmail.includes('tstroman');
+
+      if (isTorrance) {
+        setUserAccess({
+          canViewEmployeeCount: true,
+          canViewBudget: true,
+          isDepartmentHead: true,
+          isExecutive: true,
+          isCEO: true,
+          isCFO: true,
+        });
+        return;
+      }
+
+      // Check if user is an executive
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('role, title, department')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const isExecutive = !!execUser;
+      const isCEO = execUser?.role === 'ceo';
+      const isCFO = execUser?.role === 'cfo';
+
+      // Check if user is a department head
+      let isDepartmentHead = false;
+      if (employeeInfo?.id) {
+        const { data: deptHead } = await supabase
+          .from('departments')
+          .select('id')
+          .eq('head_employee_id', employeeInfo.id)
+          .maybeSingle();
+        isDepartmentHead = !!deptHead;
+      }
+
+      // Employee Count: Department heads and Executives
+      const canViewEmployeeCount = isDepartmentHead || isExecutive;
+
+      // Budget: CEO and CFO only
+      const canViewBudget = isCEO || isCFO;
+
+      setUserAccess({
+        canViewEmployeeCount,
+        canViewBudget,
+        isDepartmentHead,
+        isExecutive,
+        isCEO,
+        isCFO,
+      });
+    };
+
+    if (user) {
+      checkUserAccess();
+    }
+  }, [user, employeeInfo]);
 
   useEffect(() => {
     if (user && employeeInfo) {
@@ -1634,14 +1720,18 @@ const MainHub: React.FC = () => {
                             </div>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text type="secondary" style={{ fontSize: 12 }}>Employees</Text>
-                                <Tag color="blue" style={{ margin: 0 }}>
-                                  {dept.employee_count || 0}
-                                </Tag>
-                              </div>
+                              {/* Employee Count - Only visible to Department Heads and Executives */}
+                              {userAccess.canViewEmployeeCount && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>Employees</Text>
+                                  <Tag color="blue" style={{ margin: 0 }}>
+                                    {dept.employee_count || 0}
+                                  </Tag>
+                                </div>
+                              )}
 
-                              {dept.budget && (
+                              {/* Budget - Only visible to CEO and CFO */}
+                              {userAccess.canViewBudget && dept.budget && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <Text type="secondary" style={{ fontSize: 12 }}>Budget</Text>
                                   <Text strong style={{ fontSize: 13, color: '#52c41a' }}>

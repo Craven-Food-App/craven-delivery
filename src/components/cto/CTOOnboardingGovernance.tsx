@@ -41,14 +41,23 @@ export const CTOOnboardingGovernance: React.FC = () => {
         return;
       }
 
-      const { data: acknowledgments } = await supabase
-        .from('cto_acknowledgments')
-        .select('document_key, signed_at')
-        .eq('user_id', user.id);
+      // Try to fetch acknowledgments, but handle if table doesn't exist
+      let ackMap = new Map();
+      try {
+        const { data: acknowledgments, error } = await supabase
+          .from('cto_acknowledgments')
+          .select('document_key, signed_at')
+          .eq('user_id', user.id);
 
-      const ackMap = new Map(
-        (acknowledgments || []).map((a: any) => [a.document_key, a.signed_at])
-      );
+        if (!error && acknowledgments) {
+          ackMap = new Map(
+            acknowledgments.map((a: any) => [a.document_key, a.signed_at])
+          );
+        }
+      } catch (err) {
+        // Table might not exist yet - ignore error
+        console.log('cto_acknowledgments table not found, continuing without acknowledgments');
+      }
 
       const docsWithStatus = indexData.documents.map((doc: any) => ({
         key: doc.key,

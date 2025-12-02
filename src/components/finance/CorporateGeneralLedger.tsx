@@ -37,6 +37,10 @@ import {
   EyeOutlined,
   EditOutlined,
   ExportOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs, { Dayjs } from 'dayjs';
@@ -92,14 +96,96 @@ export const CorporateGeneralLedger: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<GLTransaction | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 50, total: 0 });
+  
+  // Journal Entry Management
+  const [entryModalVisible, setEntryModalVisible] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [entryForm] = Form.useForm();
+  const [entryLines, setEntryLines] = useState<Array<{ account_id: string; account_code: string; account_name: string; description: string; debit: number; credit: number }>>([]);
+  const [chartOfAccounts, setChartOfAccounts] = useState<Array<{ id: string; account_code: string; account_name: string; account_type: string }>>([]);
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     fetchGLData();
+    checkAccess();
+    fetchChartOfAccounts();
   }, [selectedPeriod, statusFilter, accountFilter]);
 
   useEffect(() => {
     applyFilters();
   }, [transactions, searchText, statusFilter, accountFilter]);
+
+  const checkAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const userEmail = user.email?.toLowerCase() || '';
+      const isTorrance = userEmail === 'tstroman.ceo@cravenusa.com' || 
+                        userEmail.includes('torrance') || 
+                        userEmail.includes('tstroman');
+      
+      if (isTorrance) {
+        setCanManage(true);
+        return;
+      }
+      
+      // Check if CFO
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'cfo')
+        .maybeSingle();
+      
+      if (execUser) {
+        setCanManage(true);
+        return;
+      }
+      
+      // Check if Finance employee with permissions
+      // First get employee_id from employees table
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (employee) {
+        const { data: financeEmp } = await supabase
+          .from('finance_employees')
+          .select('can_view_all_financials')
+          .eq('employee_id', employee.id)
+          .maybeSingle();
+        
+        if (financeEmp?.can_view_all_financials) {
+          setCanManage(true);
+          return;
+        }
+      }
+      
+      setCanManage(false);
+    } catch (error) {
+      console.error('Error checking access:', error);
+      setCanManage(false);
+    }
+  };
+
+  const fetchChartOfAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chart_of_accounts')
+        .select('id, account_code, account_name, account_type')
+        .eq('is_active', true)
+        .order('account_code');
+      
+      if (error) throw error;
+      setChartOfAccounts(data || []);
+    } catch (error) {
+      console.error('Error fetching chart of accounts:', error);
+      // Don't show error if table doesn't exist yet
+    }
+  };
 
   const fetchGLData = async () => {
     setLoading(true);
@@ -438,6 +524,22 @@ export const CorporateGeneralLedger: React.FC = () => {
           </Col>
           <Col>
             <Space>
+              {canManage && (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditingEntry(null);
+                    setEntryLines([{ account_id: '', account_code: '', account_name: '', description: '', debit: 0, credit: 0 }]);
+                    entryForm.resetFields();
+                    entryForm.setFieldsValue({ entry_date: dayjs() });
+                    setEntryModalVisible(true);
+                  }}
+                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Create Journal Entry
+                </Button>
+              )}
               <Button
                 icon={<ReloadOutlined />}
                 onClick={fetchGLData}
@@ -675,6 +777,284 @@ export const CorporateGeneralLedger: React.FC = () => {
           </Descriptions>
         )}
       </Modal>
+
+      {/* Journal Entry Create/Edit Modal */}
+      {canManage && (
+        <Modal
+          title={
+            <Space>
+              <FileTextOutlined />
+              <Text strong>{editingEntry ? 'Edit Journal Entry' : 'Create Journal Entry'}</Text>
+            </Space>
+          }
+          open={entryModalVisible}
+          onCancel={() => {
+            setEntryModalVisible(false);
+            setEditingEntry(null);
+            setEntryLines([]);
+            entryForm.resetFields();
+          }}
+          width={1000}
+          footer={null}
+        >
+          <Form
+            form={entryForm}
+            layout="vertical"
+            onFinish={async (values) => {
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                  message.error('You must be logged in to create journal entries');
+                  return;
+                }
+
+                // Validate entry lines balance
+                const totalDebits = entryLines.reduce((sum, line) => sum + (line.debit || 0), 0);
+                const totalCredits = entryLines.reduce((sum, line) => sum + (line.credit || 0), 0);
+
+                if (totalDebits !== totalCredits) {
+                  message.error(`Entry is not balanced. Debits: $${totalDebits.toFixed(2)}, Credits: $${totalCredits.toFixed(2)}`);
+                  return;
+                }
+
+                if (entryLines.length < 2) {
+                  message.error('Journal entry must have at least 2 lines');
+                  return;
+                }
+
+                if (editingEntry) {
+                  // Update existing entry
+                  if (editingEntry.status === 'posted') {
+                    message.error('Posted entries cannot be edited');
+                    return;
+                  }
+
+                  const { error: updateError } = await supabase
+                    .from('journal_entries')
+                    .update({
+                      entry_date: values.entry_date.format('YYYY-MM-DD'),
+                      description: values.description,
+                      reference_number: values.reference_number,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', editingEntry.id);
+
+                  if (updateError) throw updateError;
+
+                  // Delete old lines
+                  await supabase
+                    .from('journal_entry_lines')
+                    .delete()
+                    .eq('journal_entry_id', editingEntry.id);
+
+                  // Insert new lines
+                  const linesToInsert = entryLines.map((line, index) => ({
+                    journal_entry_id: editingEntry.id,
+                    account_id: line.account_id,
+                    line_number: index + 1,
+                    description: line.description,
+                    debit_amount: line.debit || 0,
+                    credit_amount: line.credit || 0,
+                  }));
+
+                  const { error: linesError } = await supabase
+                    .from('journal_entry_lines')
+                    .insert(linesToInsert);
+
+                  if (linesError) throw linesError;
+
+                  message.success('Journal entry updated successfully');
+                } else {
+                  // Create new entry
+                  const { data: newEntry, error: insertError } = await supabase
+                    .from('journal_entries')
+                    .insert({
+                      entry_date: values.entry_date.format('YYYY-MM-DD'),
+                      description: values.description,
+                      reference_number: values.reference_number,
+                      created_by: user.id,
+                    })
+                    .select()
+                    .single();
+
+                  if (insertError) throw insertError;
+
+                  // Insert lines
+                  const linesToInsert = entryLines.map((line, index) => ({
+                    journal_entry_id: newEntry.id,
+                    account_id: line.account_id,
+                    line_number: index + 1,
+                    description: line.description,
+                    debit_amount: line.debit || 0,
+                    credit_amount: line.credit || 0,
+                  }));
+
+                  const { error: linesError } = await supabase
+                    .from('journal_entry_lines')
+                    .insert(linesToInsert);
+
+                  if (linesError) throw linesError;
+
+                  message.success('Journal entry created successfully');
+                }
+
+                setEntryModalVisible(false);
+                setEditingEntry(null);
+                setEntryLines([]);
+                entryForm.resetFields();
+                fetchGLData();
+              } catch (error: any) {
+                console.error('Error saving journal entry:', error);
+                message.error(error.message || 'Failed to save journal entry');
+              }
+            }}
+          >
+            <Form.Item
+              name="entry_date"
+              label="Entry Date"
+              rules={[{ required: true, message: 'Please select entry date' }]}
+              initialValue={dayjs()}
+            >
+              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+            </Form.Item>
+
+            <Form.Item
+              name="description"
+              label="Description"
+              rules={[{ required: true, message: 'Please enter description' }]}
+            >
+              <Input placeholder="Journal entry description" />
+            </Form.Item>
+
+            <Form.Item
+              name="reference_number"
+              label="Reference Number"
+            >
+              <Input placeholder="Optional reference number" />
+            </Form.Item>
+
+            <Divider>Entry Lines</Divider>
+
+            <div style={{ marginBottom: 16 }}>
+              {entryLines.map((line, index) => (
+                <Card key={index} style={{ marginBottom: 12 }} size="small">
+                  <Row gutter={16} align="middle">
+                    <Col span={6}>
+                      <Select
+                        placeholder="Account"
+                        style={{ width: '100%' }}
+                        showSearch
+                        value={line.account_id}
+                        onChange={(value) => {
+                          const account = chartOfAccounts.find(a => a.id === value);
+                          const newLines = [...entryLines];
+                          newLines[index] = {
+                            ...newLines[index],
+                            account_id: value,
+                            account_code: account?.account_code || '',
+                            account_name: account?.account_name || '',
+                          };
+                          setEntryLines(newLines);
+                        }}
+                        filterOption={(input, option) =>
+                          (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={chartOfAccounts.map(acc => ({
+                          value: acc.id,
+                          label: `${acc.account_code} - ${acc.account_name}`,
+                        }))}
+                      />
+                    </Col>
+                    <Col span={8}>
+                      <Input
+                        placeholder="Description"
+                        value={line.description}
+                        onChange={(e) => {
+                          const newLines = [...entryLines];
+                          newLines[index].description = e.target.value;
+                          setEntryLines(newLines);
+                        }}
+                      />
+                    </Col>
+                    <Col span={4}>
+                      <InputNumber
+                        placeholder="Debit"
+                        style={{ width: '100%' }}
+                        min={0}
+                        precision={2}
+                        value={line.debit}
+                        onChange={(value) => {
+                          const newLines = [...entryLines];
+                          newLines[index].debit = value || 0;
+                          newLines[index].credit = 0;
+                          setEntryLines(newLines);
+                        }}
+                      />
+                    </Col>
+                    <Col span={4}>
+                      <InputNumber
+                        placeholder="Credit"
+                        style={{ width: '100%' }}
+                        min={0}
+                        precision={2}
+                        value={line.credit}
+                        onChange={(value) => {
+                          const newLines = [...entryLines];
+                          newLines[index].credit = value || 0;
+                          newLines[index].debit = 0;
+                          setEntryLines(newLines);
+                        }}
+                      />
+                    </Col>
+                    <Col span={2}>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          const newLines = entryLines.filter((_, i) => i !== index);
+                          setEntryLines(newLines);
+                        }}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+              ))}
+            </div>
+
+            <Space style={{ marginBottom: 16 }}>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEntryLines([...entryLines, { account_id: '', account_code: '', account_name: '', description: '', debit: 0, credit: 0 }]);
+                }}
+              >
+                Add Line
+              </Button>
+              <Text type="secondary">
+                Total Debits: ${entryLines.reduce((sum, line) => sum + (line.debit || 0), 0).toFixed(2)} | 
+                Total Credits: ${entryLines.reduce((sum, line) => sum + (line.credit || 0), 0).toFixed(2)}
+              </Text>
+            </Space>
+
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit" icon={<CheckOutlined />}>
+                  {editingEntry ? 'Update Entry' : 'Create Entry'}
+                </Button>
+                <Button onClick={() => {
+                  setEntryModalVisible(false);
+                  setEditingEntry(null);
+                  setEntryLines([]);
+                  entryForm.resetFields();
+                }}>
+                  Cancel
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 };
