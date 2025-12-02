@@ -48,12 +48,16 @@ export async function checkFinancePermission(
       )
       .single();
 
-    const conditions = rolePermData?.conditions || {};
-    const maxAmount = conditions.max_amount ? parseFloat(conditions.max_amount) : undefined;
+    const conditions = (rolePermData?.conditions || {}) as Record<string, unknown>;
+    const maxAmount = typeof conditions.max_amount === 'string' 
+      ? parseFloat(conditions.max_amount) 
+      : typeof conditions.max_amount === 'number' 
+        ? conditions.max_amount 
+        : undefined;
 
     return {
       hasPermission: data || false,
-      requiresApproval: conditions.requires_approval === true || !!conditions.max_amount,
+      requiresApproval: conditions.requires_approval === true || !!maxAmount,
       maxAmount,
       conditions,
     };
@@ -236,9 +240,14 @@ export async function checkTransactionLimit(
     }
 
     const limit = limits[0];
+    const limitMaxAmount = typeof limit.max_amount === 'string' 
+      ? parseFloat(limit.max_amount) 
+      : typeof limit.max_amount === 'number' 
+        ? limit.max_amount 
+        : undefined;
     return {
-      withinLimit: amount <= (limit.max_amount || Infinity),
-      limit: limit.max_amount ? parseFloat(limit.max_amount) : undefined,
+      withinLimit: amount <= (limitMaxAmount || Infinity),
+      limit: limitMaxAmount,
       period: limit.period_type,
     };
   } catch (error) {

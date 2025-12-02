@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { EnterpriseFinancePortalLayout } from '@/components/finance/EnterpriseFinancePortalLayout';
 import { FinanceDashboard } from '@/components/finance/FinanceDashboard';
 import { ApprovalQueue } from '@/components/finance/ApprovalQueue';
 import { FinancialReportsDashboard } from '@/components/finance/FinancialReportsDashboard';
@@ -36,7 +35,7 @@ const EnterpriseFinancePortal: React.FC = () => {
   }
 
   return (
-    <EnterpriseFinancePortalLayout>
+    <div style={{ padding: '1rem' }}>
       <Routes>
         <Route path="dashboard" element={<FinanceDashboard />} />
         <Route path="approvals" element={<ApprovalQueue />} />
@@ -52,9 +51,8 @@ const EnterpriseFinancePortal: React.FC = () => {
         <Route path="audit" element={<AuditComplianceDashboard />} />
         <Route path="/" element={<Navigate to="dashboard" replace />} />
       </Routes>
-    </EnterpriseFinancePortalLayout>
+    </div>
   );
 };
 
 export default EnterpriseFinancePortal;
-

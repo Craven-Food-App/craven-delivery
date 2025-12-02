@@ -5,12 +5,11 @@ import dayjs from 'dayjs';
 
 type BankAccount = {
   id: string;
-  bank_name: string | null;
-  account_number: string | null;
-  account_type: string | null;
+  name: string;
+  institution: string | null;
   currency: string | null;
   current_balance: number | null;
-  last_reconciled_at: string | null;
+  updated_at: string | null;
 };
 
 export const BankingTreasuryView: React.FC = () => {
@@ -26,8 +25,8 @@ export const BankingTreasuryView: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('bank_accounts')
-        .select('id, bank_name, account_number, account_type, currency, current_balance, last_reconciled_at')
-        .order('bank_name', { ascending: true });
+        .select('id, name, institution, currency, current_balance, updated_at')
+        .order('name', { ascending: true });
 
       if (error) {
         console.warn('Bank accounts table not available for treasury view:', error.message);
@@ -88,9 +87,9 @@ export const BankingTreasuryView: React.FC = () => {
             <Table.Tbody>
               {accounts.map((a) => (
                 <Table.Tr key={a.id}>
-                  <Table.Td>{a.bank_name || 'N/A'}</Table.Td>
-                  <Table.Td>{a.account_number || 'N/A'}</Table.Td>
-                  <Table.Td>{a.account_type || 'N/A'}</Table.Td>
+                  <Table.Td>{a.name || 'N/A'}</Table.Td>
+                  <Table.Td>{a.institution || 'N/A'}</Table.Td>
+                  <Table.Td>{'Checking'}</Table.Td>
                   <Table.Td>{a.currency || 'USD'}</Table.Td>
                   <Table.Td>
                     {new Intl.NumberFormat('en-US', {
@@ -99,8 +98,8 @@ export const BankingTreasuryView: React.FC = () => {
                     }).format(Number(a.current_balance || 0))}
                   </Table.Td>
                   <Table.Td>
-                    {a.last_reconciled_at
-                      ? dayjs(a.last_reconciled_at).format('YYYY-MM-DD')
+                    {a.updated_at
+                      ? dayjs(a.updated_at).format('YYYY-MM-DD')
                       : 'Not reconciled'}
                   </Table.Td>
                 </Table.Tr>
