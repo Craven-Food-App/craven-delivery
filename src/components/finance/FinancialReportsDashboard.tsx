@@ -218,8 +218,8 @@ export const FinancialReportsDashboard: React.FC = () => {
           const incomePrevPeriodEnd = dayjs(periodStart).subtract(1, 'days').toDate();
 
           // Fetch comprehensive income statement data
-          const [incomeOrdersRes, incomeExpensesRes, incomeArRes, incomePayrollRes] = await Promise.all([
-            // Revenue from orders/accounts receivable
+          const [incomeArRes, incomeExpensesRes, incomePayrollRes] = await Promise.all([
+            // Revenue from accounts receivable
             supabase
               .from('accounts_receivable')
               .select('*')
@@ -233,13 +233,6 @@ export const FinancialReportsDashboard: React.FC = () => {
               .gte('expense_date', periodStart.toISOString().split('T')[0])
               .lte('expense_date', periodEnd.toISOString().split('T')[0])
               .eq('status', 'approved'),
-            
-            // Accounts receivable for revenue recognition
-            supabase
-              .from('accounts_receivable')
-              .select('*')
-              .gte('invoice_date', periodStart.toISOString().split('T')[0])
-              .lte('invoice_date', periodEnd.toISOString().split('T')[0]),
             
             // Payroll expenses
             supabase
@@ -406,6 +399,61 @@ export const FinancialReportsDashboard: React.FC = () => {
           };
 
           reportSummary = `Revenue: $${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Net Income: $${netIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Margin: ${netProfitMargin.toFixed(1)}%`;
+          break;
+        }
+
+        case 'balance_sheet': {
+          // Minimal balance sheet derived from recent invoices and expenses.
+          // This is intentionally simple and can be enhanced with dedicated tables.
+          const totalInvoices =
+            summaryData?.invoices?.reduce(
+              (sum: number, inv: any) => sum + (Number(inv.total_amount) || 0),
+              0,
+            ) || 0;
+
+          const unpaidInvoices =
+            summaryData?.invoices?.reduce(
+              (sum: number, inv: any) =>
+                inv.status !== 'paid' ? sum + (Number(inv.total_amount) || 0) : sum,
+              0,
+            ) || 0;
+
+          const recentExpenses =
+            summaryData?.expenses?.reduce(
+              (sum: number, e: any) => sum + (Number(e.amount) || 0),
+              0,
+            ) || 0;
+
+          const cashAndEquivalents = Math.max(totalInvoices - recentExpenses, 0);
+          const accountsReceivable = unpaidInvoices;
+          const accountsPayable = recentExpenses;
+
+          const totalAssets = cashAndEquivalents + accountsReceivable;
+          const totalLiabilities = accountsPayable;
+          const retainedEarnings = totalAssets - totalLiabilities;
+
+          reportData = {
+            as_of: periodEnd.toISOString().split('T')[0],
+            assets: {
+              cash_and_equivalents: cashAndEquivalents,
+              accounts_receivable: accountsReceivable,
+            },
+            liabilities: {
+              accounts_payable: accountsPayable,
+            },
+            equity: {
+              retained_earnings: retainedEarnings,
+            },
+            totals: {
+              total_assets: totalAssets,
+              total_liabilities: totalLiabilities,
+              total_equity: retainedEarnings,
+            },
+          };
+
+          reportSummary = `Balance sheet as of ${dayjs(periodEnd).format(
+            'MMM D, YYYY',
+          )}: Assets $${totalAssets.toLocaleString()} | Liabilities $${totalLiabilities.toLocaleString()} | Equity $${retainedEarnings.toLocaleString()}.`;
           break;
         }
 
@@ -649,10 +697,10 @@ export const FinancialReportsDashboard: React.FC = () => {
             executiveHighlights2.push(`Revenue increased ${revenueChange2.toFixed(1)}% compared to previous period`);
           }
           if (freeCashFlow > 0) {
-            executiveHighlights.push(`Positive free cash flow of $${freeCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} available for strategic investments`);
+            executiveHighlights2.push(`Positive free cash flow of $${freeCashFlow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} available for strategic investments`);
           }
           if (dso > 45) {
-            executiveHighlights.push(`Days Sales Outstanding of ${dso.toFixed(1)} days indicates opportunity for collections improvement`);
+            executiveHighlights2.push(`Days Sales Outstanding of ${dso.toFixed(1)} days indicates opportunity for collections improvement`);
           }
 
           reportData = {
