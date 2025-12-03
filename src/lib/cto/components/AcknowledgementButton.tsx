@@ -1,8 +1,5 @@
-import React, { useState } from 'react';
-import { Button, Modal, TextInput, Stack, Text, Group, Alert } from '@mantine/core';
-import { IconCheck, IconShieldCheck } from '@tabler/icons-react';
-import { supabase } from '@/integrations/supabase/client';
-import { notifications } from '@mantine/notifications';
+// Re-export the shared AcknowledgementButton for CTO
+export { AcknowledgementButton } from '@/lib/shared/components/AcknowledgementButton';
 
 interface AcknowledgementButtonProps {
   documentKey: string;

@@ -2023,6 +2023,53 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_acknowledgments: {
+        Row: {
+          agreed_checkbox: boolean
+          created_at: string | null
+          document_key: string
+          id: string
+          ip_address: string | null
+          signed_at: string
+          typed_full_name: string
+          user_agent: string | null
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name: string
+          user_agent?: string | null
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key?: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name?: string
+          user_agent?: string | null
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_acknowledgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cfo_documents: {
         Row: {
           content: string | null
@@ -2969,6 +3016,53 @@ export type Database = {
             foreignKeyName: "craver_locations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_acknowledgments: {
+        Row: {
+          agreed_checkbox: boolean
+          created_at: string | null
+          document_key: string
+          id: string
+          ip_address: string | null
+          signed_at: string
+          typed_full_name: string
+          user_agent: string | null
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name: string
+          user_agent?: string | null
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key?: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name?: string
+          user_agent?: string | null
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_acknowledgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
           },
@@ -4197,6 +4291,53 @@ export type Database = {
           },
         ]
       }
+      cxo_acknowledgments: {
+        Row: {
+          agreed_checkbox: boolean
+          created_at: string | null
+          document_key: string
+          id: string
+          ip_address: string | null
+          signed_at: string
+          typed_full_name: string
+          user_agent: string | null
+          user_id: string
+          version: string | null
+        }
+        Insert: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name: string
+          user_agent?: string | null
+          user_id: string
+          version?: string | null
+        }
+        Update: {
+          agreed_checkbox?: boolean
+          created_at?: string | null
+          document_key?: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          typed_full_name?: string
+          user_agent?: string | null
+          user_id?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_acknowledgments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       daily_payout_batches: {
         Row: {
           created_at: string | null
@@ -4496,6 +4637,788 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      devops_builds: {
+        Row: {
+          artifact_storage_url: string | null
+          artifacts: Json | null
+          branch: string
+          build_number: string
+          commit_author: string | null
+          commit_hash: string
+          commit_message: string | null
+          commit_url: string | null
+          completed_at: string | null
+          created_at: string | null
+          duration: number | null
+          id: string
+          logs_summary: string | null
+          logs_url: string | null
+          metadata: Json | null
+          pipeline_id: string | null
+          quality_gate_details: Json | null
+          quality_gate_status: string | null
+          queued_at: string | null
+          stage: string | null
+          started_at: string | null
+          status: string
+          test_coverage: number | null
+          tests_failed: number | null
+          tests_passed: number | null
+          tests_skipped: number | null
+          tests_total: number | null
+          trigger_reason: string | null
+          triggered_by: string | null
+          triggered_by_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          artifact_storage_url?: string | null
+          artifacts?: Json | null
+          branch: string
+          build_number: string
+          commit_author?: string | null
+          commit_hash: string
+          commit_message?: string | null
+          commit_url?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          logs_summary?: string | null
+          logs_url?: string | null
+          metadata?: Json | null
+          pipeline_id?: string | null
+          quality_gate_details?: Json | null
+          quality_gate_status?: string | null
+          queued_at?: string | null
+          stage?: string | null
+          started_at?: string | null
+          status?: string
+          test_coverage?: number | null
+          tests_failed?: number | null
+          tests_passed?: number | null
+          tests_skipped?: number | null
+          tests_total?: number | null
+          trigger_reason?: string | null
+          triggered_by?: string | null
+          triggered_by_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          artifact_storage_url?: string | null
+          artifacts?: Json | null
+          branch?: string
+          build_number?: string
+          commit_author?: string | null
+          commit_hash?: string
+          commit_message?: string | null
+          commit_url?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          logs_summary?: string | null
+          logs_url?: string | null
+          metadata?: Json | null
+          pipeline_id?: string | null
+          quality_gate_details?: Json | null
+          quality_gate_status?: string | null
+          queued_at?: string | null
+          stage?: string | null
+          started_at?: string | null
+          status?: string
+          test_coverage?: number | null
+          tests_failed?: number | null
+          tests_passed?: number | null
+          tests_skipped?: number | null
+          tests_total?: number | null
+          trigger_reason?: string | null
+          triggered_by?: string | null
+          triggered_by_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_builds_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_builds_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      devops_environments: {
+        Row: {
+          access_restricted: boolean | null
+          allowed_teams: string[] | null
+          allowed_users: string[] | null
+          cluster_name: string | null
+          config_vars: Json | null
+          created_at: string | null
+          created_by: string
+          current_build_id: string | null
+          current_release_id: string | null
+          deployed_at: string | null
+          description: string | null
+          display_name: string
+          environment_name: string
+          environment_type: string
+          health_status: string | null
+          id: string
+          infrastructure_provider: string | null
+          last_health_check: string | null
+          logs_url: string | null
+          metadata: Json | null
+          metrics_url: string | null
+          monitoring_url: string | null
+          namespace: string | null
+          region: string | null
+          secrets_managed_by: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_restricted?: boolean | null
+          allowed_teams?: string[] | null
+          allowed_users?: string[] | null
+          cluster_name?: string | null
+          config_vars?: Json | null
+          created_at?: string | null
+          created_by: string
+          current_build_id?: string | null
+          current_release_id?: string | null
+          deployed_at?: string | null
+          description?: string | null
+          display_name: string
+          environment_name: string
+          environment_type: string
+          health_status?: string | null
+          id?: string
+          infrastructure_provider?: string | null
+          last_health_check?: string | null
+          logs_url?: string | null
+          metadata?: Json | null
+          metrics_url?: string | null
+          monitoring_url?: string | null
+          namespace?: string | null
+          region?: string | null
+          secrets_managed_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_restricted?: boolean | null
+          allowed_teams?: string[] | null
+          allowed_users?: string[] | null
+          cluster_name?: string | null
+          config_vars?: Json | null
+          created_at?: string | null
+          created_by?: string
+          current_build_id?: string | null
+          current_release_id?: string | null
+          deployed_at?: string | null
+          description?: string | null
+          display_name?: string
+          environment_name?: string
+          environment_type?: string
+          health_status?: string | null
+          id?: string
+          infrastructure_provider?: string | null
+          last_health_check?: string | null
+          logs_url?: string | null
+          metadata?: Json | null
+          metrics_url?: string | null
+          monitoring_url?: string | null
+          namespace?: string | null
+          region?: string | null
+          secrets_managed_by?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_environments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "devops_environments_current_build_id_fkey"
+            columns: ["current_build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_environments_current_release_id_fkey"
+            columns: ["current_release_id"]
+            isOneToOne: false
+            referencedRelation: "devops_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devops_notifications: {
+        Row: {
+          build_id: string | null
+          channels: string[] | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          pipeline_id: string | null
+          release_id: string | null
+          sent_at: string | null
+          sent_to: Json | null
+          severity: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          build_id?: string | null
+          channels?: string[] | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          pipeline_id?: string | null
+          release_id?: string | null
+          sent_at?: string | null
+          sent_to?: Json | null
+          severity?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          build_id?: string | null
+          channels?: string[] | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          pipeline_id?: string | null
+          release_id?: string | null
+          sent_at?: string | null
+          sent_to?: Json | null
+          severity?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_notifications_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_notifications_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_notifications_release_id_fkey"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "devops_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devops_performance_metrics: {
+        Row: {
+          baseline_value: number | null
+          build_id: string | null
+          created_at: string | null
+          endpoint: string | null
+          environment_id: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_unit: string
+          metric_value: number
+          pipeline_id: string | null
+          recorded_at: string | null
+          service_name: string | null
+          stage: string | null
+          threshold_exceeded: boolean | null
+          threshold_value: number | null
+        }
+        Insert: {
+          baseline_value?: number | null
+          build_id?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          environment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_unit: string
+          metric_value: number
+          pipeline_id?: string | null
+          recorded_at?: string | null
+          service_name?: string | null
+          stage?: string | null
+          threshold_exceeded?: boolean | null
+          threshold_value?: number | null
+        }
+        Update: {
+          baseline_value?: number | null
+          build_id?: string | null
+          created_at?: string | null
+          endpoint?: string | null
+          environment_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_unit?: string
+          metric_value?: number
+          pipeline_id?: string | null
+          recorded_at?: string | null
+          service_name?: string | null
+          stage?: string | null
+          threshold_exceeded?: boolean | null
+          threshold_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_performance_metrics_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_performance_metrics_environment_id_fkey"
+            columns: ["environment_id"]
+            isOneToOne: false
+            referencedRelation: "devops_environments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_performance_metrics_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devops_pipelines: {
+        Row: {
+          avg_duration: number | null
+          branch: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          failed_runs: number | null
+          id: string
+          last_run_at: string | null
+          last_run_duration: number | null
+          last_run_status: string | null
+          metadata: Json | null
+          notification_config: Json | null
+          pipeline_key: string
+          pipeline_name: string
+          pipeline_yaml: string | null
+          repository_url: string
+          stages: Json | null
+          status: string
+          steps: Json | null
+          successful_runs: number | null
+          tags: string[] | null
+          total_runs: number | null
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          avg_duration?: number | null
+          branch?: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          failed_runs?: number | null
+          id?: string
+          last_run_at?: string | null
+          last_run_duration?: number | null
+          last_run_status?: string | null
+          metadata?: Json | null
+          notification_config?: Json | null
+          pipeline_key: string
+          pipeline_name: string
+          pipeline_yaml?: string | null
+          repository_url: string
+          stages?: Json | null
+          status?: string
+          steps?: Json | null
+          successful_runs?: number | null
+          tags?: string[] | null
+          total_runs?: number | null
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          avg_duration?: number | null
+          branch?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          failed_runs?: number | null
+          id?: string
+          last_run_at?: string | null
+          last_run_duration?: number | null
+          last_run_status?: string | null
+          metadata?: Json | null
+          notification_config?: Json | null
+          pipeline_key?: string
+          pipeline_name?: string
+          pipeline_yaml?: string | null
+          repository_url?: string
+          stages?: Json | null
+          status?: string
+          steps?: Json | null
+          successful_runs?: number | null
+          tags?: string[] | null
+          total_runs?: number | null
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_pipelines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      devops_releases: {
+        Row: {
+          approval_required: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          build_id: string | null
+          changelog: Json | null
+          created_at: string | null
+          created_by: string
+          deployed_at: string | null
+          deployment_strategy: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          pipeline_id: string | null
+          release_name: string | null
+          release_notes: string | null
+          release_number: string
+          release_type: string
+          rollback_initiated_by: string | null
+          rollback_reason: string | null
+          rolled_back_at: string | null
+          scheduled_at: string | null
+          status: string
+          tags: string[] | null
+          target_environment: string
+          updated_at: string | null
+        }
+        Insert: {
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          build_id?: string | null
+          changelog?: Json | null
+          created_at?: string | null
+          created_by: string
+          deployed_at?: string | null
+          deployment_strategy?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pipeline_id?: string | null
+          release_name?: string | null
+          release_notes?: string | null
+          release_number: string
+          release_type: string
+          rollback_initiated_by?: string | null
+          rollback_reason?: string | null
+          rolled_back_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tags?: string[] | null
+          target_environment: string
+          updated_at?: string | null
+        }
+        Update: {
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          build_id?: string | null
+          changelog?: Json | null
+          created_at?: string | null
+          created_by?: string
+          deployed_at?: string | null
+          deployment_strategy?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pipeline_id?: string | null
+          release_name?: string | null
+          release_notes?: string | null
+          release_number?: string
+          release_type?: string
+          rollback_initiated_by?: string | null
+          rollback_reason?: string | null
+          rolled_back_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          tags?: string[] | null
+          target_environment?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_releases_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "devops_releases_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_releases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "devops_releases_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_releases_rollback_initiated_by_fkey"
+            columns: ["rollback_initiated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      devops_security_scans: {
+        Row: {
+          action_required: boolean | null
+          blocking: boolean | null
+          build_id: string | null
+          completed_at: string | null
+          compliance_details: Json | null
+          compliance_status: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          pipeline_id: string | null
+          scan_config: Json | null
+          scan_number: string
+          scan_results: Json | null
+          scan_type: string
+          scanner_tool: string
+          started_at: string | null
+          status: string
+          total_vulnerabilities: number | null
+          vulnerabilities_critical: number | null
+          vulnerabilities_high: number | null
+          vulnerabilities_info: number | null
+          vulnerabilities_low: number | null
+          vulnerabilities_medium: number | null
+        }
+        Insert: {
+          action_required?: boolean | null
+          blocking?: boolean | null
+          build_id?: string | null
+          completed_at?: string | null
+          compliance_details?: Json | null
+          compliance_status?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pipeline_id?: string | null
+          scan_config?: Json | null
+          scan_number: string
+          scan_results?: Json | null
+          scan_type: string
+          scanner_tool: string
+          started_at?: string | null
+          status?: string
+          total_vulnerabilities?: number | null
+          vulnerabilities_critical?: number | null
+          vulnerabilities_high?: number | null
+          vulnerabilities_info?: number | null
+          vulnerabilities_low?: number | null
+          vulnerabilities_medium?: number | null
+        }
+        Update: {
+          action_required?: boolean | null
+          blocking?: boolean | null
+          build_id?: string | null
+          completed_at?: string | null
+          compliance_details?: Json | null
+          compliance_status?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pipeline_id?: string | null
+          scan_config?: Json | null
+          scan_number?: string
+          scan_results?: Json | null
+          scan_type?: string
+          scanner_tool?: string
+          started_at?: string | null
+          status?: string
+          total_vulnerabilities?: number | null
+          vulnerabilities_critical?: number | null
+          vulnerabilities_high?: number | null
+          vulnerabilities_info?: number | null
+          vulnerabilities_low?: number | null
+          vulnerabilities_medium?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_security_scans_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_security_scans_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devops_test_runs: {
+        Row: {
+          avg_response_time: number | null
+          build_id: string | null
+          completed_at: string | null
+          coverage_percentage: number | null
+          coverage_report_url: string | null
+          created_at: string | null
+          duration: number | null
+          failed_tests: number | null
+          failures: Json | null
+          id: string
+          metadata: Json | null
+          p95_response_time: number | null
+          p99_response_time: number | null
+          passed_tests: number | null
+          pipeline_id: string | null
+          skipped_tests: number | null
+          started_at: string | null
+          status: string
+          test_results: Json | null
+          test_run_number: string
+          test_suite_name: string
+          test_type: string
+          total_tests: number | null
+        }
+        Insert: {
+          avg_response_time?: number | null
+          build_id?: string | null
+          completed_at?: string | null
+          coverage_percentage?: number | null
+          coverage_report_url?: string | null
+          created_at?: string | null
+          duration?: number | null
+          failed_tests?: number | null
+          failures?: Json | null
+          id?: string
+          metadata?: Json | null
+          p95_response_time?: number | null
+          p99_response_time?: number | null
+          passed_tests?: number | null
+          pipeline_id?: string | null
+          skipped_tests?: number | null
+          started_at?: string | null
+          status?: string
+          test_results?: Json | null
+          test_run_number: string
+          test_suite_name: string
+          test_type: string
+          total_tests?: number | null
+        }
+        Update: {
+          avg_response_time?: number | null
+          build_id?: string | null
+          completed_at?: string | null
+          coverage_percentage?: number | null
+          coverage_report_url?: string | null
+          created_at?: string | null
+          duration?: number | null
+          failed_tests?: number | null
+          failures?: Json | null
+          id?: string
+          metadata?: Json | null
+          p95_response_time?: number | null
+          p99_response_time?: number | null
+          passed_tests?: number | null
+          pipeline_id?: string | null
+          skipped_tests?: number | null
+          started_at?: string | null
+          status?: string
+          test_results?: Json | null
+          test_run_number?: string
+          test_suite_name?: string
+          test_type?: string
+          total_tests?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devops_test_runs_build_id_fkey"
+            columns: ["build_id"]
+            isOneToOne: false
+            referencedRelation: "devops_builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devops_test_runs_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "devops_pipelines"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -6130,6 +7053,185 @@ export type Database = {
           },
         ]
       }
+      eas_documents: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          document_key: string
+          document_type: string
+          id: string
+          template_content: string
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          document_key: string
+          document_type: string
+          id?: string
+          template_content: string
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          document_key?: string
+          document_type?: string
+          id?: string
+          template_content?: string
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eas_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eas_instances: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string | null
+          document_type: string
+          executive_id: string
+          filled_content: string
+          id: string
+          issued_at: string | null
+          issuer_id: string
+          metadata: Json | null
+          pdf_url: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          document_type: string
+          executive_id: string
+          filled_content: string
+          id?: string
+          issued_at?: string | null
+          issuer_id: string
+          metadata?: Json | null
+          pdf_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          document_type?: string
+          executive_id?: string
+          filled_content?: string
+          id?: string
+          issued_at?: string | null
+          issuer_id?: string
+          metadata?: Json | null
+          pdf_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eas_instances_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eas_instances_issuer_id_fkey"
+            columns: ["issuer_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      eas_workflow: {
+        Row: {
+          bnnc_instance_id: string | null
+          created_at: string | null
+          current_step: string
+          ecap_instance_id: string | null
+          epm_instance_id: string | null
+          etfcn_instance_id: string | null
+          executive_id: string
+          id: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bnnc_instance_id?: string | null
+          created_at?: string | null
+          current_step: string
+          ecap_instance_id?: string | null
+          epm_instance_id?: string | null
+          etfcn_instance_id?: string | null
+          executive_id: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bnnc_instance_id?: string | null
+          created_at?: string | null
+          current_step?: string
+          ecap_instance_id?: string | null
+          epm_instance_id?: string | null
+          etfcn_instance_id?: string | null
+          executive_id?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eas_workflow_bnnc_instance_id_fkey"
+            columns: ["bnnc_instance_id"]
+            isOneToOne: false
+            referencedRelation: "eas_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eas_workflow_ecap_instance_id_fkey"
+            columns: ["ecap_instance_id"]
+            isOneToOne: false
+            referencedRelation: "eas_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eas_workflow_epm_instance_id_fkey"
+            columns: ["epm_instance_id"]
+            isOneToOne: false
+            referencedRelation: "eas_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eas_workflow_etfcn_instance_id_fkey"
+            columns: ["etfcn_instance_id"]
+            isOneToOne: false
+            referencedRelation: "eas_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eas_workflow_executive_id_fkey"
+            columns: ["executive_id"]
+            isOneToOne: true
+            referencedRelation: "exec_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           created_at: string | null
@@ -6237,6 +7339,88 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      employee_deductions: {
+        Row: {
+          amount: number | null
+          annual_limit: number | null
+          calculation_method: string | null
+          created_at: string | null
+          deduction_code: string
+          deduction_name: string
+          deduction_template_id: string | null
+          deduction_type: string
+          effective_date: string
+          employee_id: string
+          expiration_date: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          percentage: number | null
+          updated_at: string | null
+          ytd_amount: number | null
+        }
+        Insert: {
+          amount?: number | null
+          annual_limit?: number | null
+          calculation_method?: string | null
+          created_at?: string | null
+          deduction_code: string
+          deduction_name: string
+          deduction_template_id?: string | null
+          deduction_type: string
+          effective_date?: string
+          employee_id: string
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          percentage?: number | null
+          updated_at?: string | null
+          ytd_amount?: number | null
+        }
+        Update: {
+          amount?: number | null
+          annual_limit?: number | null
+          calculation_method?: string | null
+          created_at?: string | null
+          deduction_code?: string
+          deduction_name?: string
+          deduction_template_id?: string | null
+          deduction_type?: string
+          effective_date?: string
+          employee_id?: string
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          percentage?: number | null
+          updated_at?: string | null
+          ytd_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_deductions_deduction_template_id_fkey"
+            columns: ["deduction_template_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_deduction_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_deductions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_deductions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
           },
         ]
       }
@@ -6473,6 +7657,102 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_tax_settings: {
+        Row: {
+          additional_federal_withholding: number | null
+          additional_local_withholding: number | null
+          additional_state_withholding: number | null
+          created_at: string | null
+          effective_date: string
+          employee_id: string
+          expiration_date: string | null
+          federal_allowances: number | null
+          federal_exempt: boolean | null
+          filing_status: string | null
+          id: string
+          local_allowances: number | null
+          local_exempt: boolean | null
+          local_filing_status: string | null
+          local_jurisdiction: string | null
+          medicare_exempt: boolean | null
+          metadata: Json | null
+          social_security_exempt: boolean | null
+          state_allowances: number | null
+          state_code: string | null
+          state_exempt: boolean | null
+          state_filing_status: string | null
+          tax_settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_federal_withholding?: number | null
+          additional_local_withholding?: number | null
+          additional_state_withholding?: number | null
+          created_at?: string | null
+          effective_date?: string
+          employee_id: string
+          expiration_date?: string | null
+          federal_allowances?: number | null
+          federal_exempt?: boolean | null
+          filing_status?: string | null
+          id?: string
+          local_allowances?: number | null
+          local_exempt?: boolean | null
+          local_filing_status?: string | null
+          local_jurisdiction?: string | null
+          medicare_exempt?: boolean | null
+          metadata?: Json | null
+          social_security_exempt?: boolean | null
+          state_allowances?: number | null
+          state_code?: string | null
+          state_exempt?: boolean | null
+          state_filing_status?: string | null
+          tax_settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_federal_withholding?: number | null
+          additional_local_withholding?: number | null
+          additional_state_withholding?: number | null
+          created_at?: string | null
+          effective_date?: string
+          employee_id?: string
+          expiration_date?: string | null
+          federal_allowances?: number | null
+          federal_exempt?: boolean | null
+          filing_status?: string | null
+          id?: string
+          local_allowances?: number | null
+          local_exempt?: boolean | null
+          local_filing_status?: string | null
+          local_jurisdiction?: string | null
+          medicare_exempt?: boolean | null
+          metadata?: Json | null
+          social_security_exempt?: boolean | null
+          state_allowances?: number | null
+          state_code?: string | null
+          state_exempt?: boolean | null
+          state_filing_status?: string | null
+          tax_settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_tax_settings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_tax_settings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
           },
         ]
       }
@@ -11644,6 +12924,107 @@ export type Database = {
         }
         Relationships: []
       }
+      pay_stubs: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          delivered_method: string | null
+          employee_id: string
+          generated_at: string | null
+          generated_by: string | null
+          gross_pay: number
+          id: string
+          metadata: Json | null
+          net_pay: number
+          pay_date: string
+          pay_period_end: string
+          pay_period_start: string
+          payroll_entry_id: string
+          stub_html: string | null
+          stub_number: string
+          stub_pdf_url: string | null
+          total_deductions: number
+          ytd_gross_pay: number | null
+          ytd_net_pay: number | null
+          ytd_total_deductions: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivered_method?: string | null
+          employee_id: string
+          generated_at?: string | null
+          generated_by?: string | null
+          gross_pay: number
+          id?: string
+          metadata?: Json | null
+          net_pay: number
+          pay_date: string
+          pay_period_end: string
+          pay_period_start: string
+          payroll_entry_id: string
+          stub_html?: string | null
+          stub_number: string
+          stub_pdf_url?: string | null
+          total_deductions: number
+          ytd_gross_pay?: number | null
+          ytd_net_pay?: number | null
+          ytd_total_deductions?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivered_method?: string | null
+          employee_id?: string
+          generated_at?: string | null
+          generated_by?: string | null
+          gross_pay?: number
+          id?: string
+          metadata?: Json | null
+          net_pay?: number
+          pay_date?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          payroll_entry_id?: string
+          stub_html?: string | null
+          stub_number?: string
+          stub_pdf_url?: string | null
+          total_deductions?: number
+          ytd_gross_pay?: number | null
+          ytd_net_pay?: number | null
+          ytd_total_deductions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_stubs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_stubs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "pay_stubs_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "pay_stubs_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           brand: string | null
@@ -11774,6 +13155,496 @@ export type Database = {
             referencedColumns: ["employee_id"]
           },
         ]
+      }
+      payroll_deduction_templates: {
+        Row: {
+          amount: number | null
+          annual_limit: number | null
+          calculation_method: string | null
+          category: string | null
+          created_at: string | null
+          deduction_code: string
+          deduction_name: string
+          deduction_type: string
+          description: string | null
+          eligibility_rules: Json | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          percentage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          annual_limit?: number | null
+          calculation_method?: string | null
+          category?: string | null
+          created_at?: string | null
+          deduction_code: string
+          deduction_name: string
+          deduction_type: string
+          description?: string | null
+          eligibility_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          percentage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          annual_limit?: number | null
+          calculation_method?: string | null
+          category?: string | null
+          created_at?: string | null
+          deduction_code?: string
+          deduction_name?: string
+          deduction_type?: string
+          description?: string | null
+          eligibility_rules?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          percentage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      payroll_entries: {
+        Row: {
+          additional_medicare_tax: number | null
+          base_salary: number | null
+          bonus: number | null
+          commission: number | null
+          created_at: string | null
+          earnings_details: Json | null
+          employee_id: string
+          employer_benefits: number | null
+          employer_contributions: number | null
+          employer_medicare: number | null
+          employer_social_security: number | null
+          employer_unemployment: number | null
+          employer_workers_comp: number | null
+          federal_income_tax: number | null
+          gross_pay: number
+          holiday_pay: number | null
+          hours_worked: number | null
+          id: string
+          local_income_tax: number | null
+          medicare_tax: number | null
+          metadata: Json | null
+          net_pay: number | null
+          notes: string | null
+          other_earnings: number | null
+          other_taxes: number | null
+          overtime_hours: number | null
+          overtime_rate: number | null
+          pay_date: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          payroll_run_id: string
+          post_tax_deductions: number | null
+          post_tax_details: Json | null
+          pre_tax_deductions: number | null
+          pre_tax_details: Json | null
+          regular_hours: number | null
+          regular_rate: number | null
+          sick_pay: number | null
+          social_security_tax: number | null
+          state_disability_tax: number | null
+          state_income_tax: number | null
+          status: string | null
+          tax_details: Json | null
+          taxable_income: number | null
+          tips: number | null
+          total_deductions: number | null
+          total_employer_cost: number | null
+          total_taxes: number | null
+          unemployment_tax: number | null
+          updated_at: string | null
+          vacation_pay: number | null
+          ytd_deductions: number | null
+          ytd_gross_pay: number | null
+          ytd_net_pay: number | null
+          ytd_taxes: number | null
+        }
+        Insert: {
+          additional_medicare_tax?: number | null
+          base_salary?: number | null
+          bonus?: number | null
+          commission?: number | null
+          created_at?: string | null
+          earnings_details?: Json | null
+          employee_id: string
+          employer_benefits?: number | null
+          employer_contributions?: number | null
+          employer_medicare?: number | null
+          employer_social_security?: number | null
+          employer_unemployment?: number | null
+          employer_workers_comp?: number | null
+          federal_income_tax?: number | null
+          gross_pay?: number
+          holiday_pay?: number | null
+          hours_worked?: number | null
+          id?: string
+          local_income_tax?: number | null
+          medicare_tax?: number | null
+          metadata?: Json | null
+          net_pay?: number | null
+          notes?: string | null
+          other_earnings?: number | null
+          other_taxes?: number | null
+          overtime_hours?: number | null
+          overtime_rate?: number | null
+          pay_date: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          payroll_run_id: string
+          post_tax_deductions?: number | null
+          post_tax_details?: Json | null
+          pre_tax_deductions?: number | null
+          pre_tax_details?: Json | null
+          regular_hours?: number | null
+          regular_rate?: number | null
+          sick_pay?: number | null
+          social_security_tax?: number | null
+          state_disability_tax?: number | null
+          state_income_tax?: number | null
+          status?: string | null
+          tax_details?: Json | null
+          taxable_income?: number | null
+          tips?: number | null
+          total_deductions?: number | null
+          total_employer_cost?: number | null
+          total_taxes?: number | null
+          unemployment_tax?: number | null
+          updated_at?: string | null
+          vacation_pay?: number | null
+          ytd_deductions?: number | null
+          ytd_gross_pay?: number | null
+          ytd_net_pay?: number | null
+          ytd_taxes?: number | null
+        }
+        Update: {
+          additional_medicare_tax?: number | null
+          base_salary?: number | null
+          bonus?: number | null
+          commission?: number | null
+          created_at?: string | null
+          earnings_details?: Json | null
+          employee_id?: string
+          employer_benefits?: number | null
+          employer_contributions?: number | null
+          employer_medicare?: number | null
+          employer_social_security?: number | null
+          employer_unemployment?: number | null
+          employer_workers_comp?: number | null
+          federal_income_tax?: number | null
+          gross_pay?: number
+          holiday_pay?: number | null
+          hours_worked?: number | null
+          id?: string
+          local_income_tax?: number | null
+          medicare_tax?: number | null
+          metadata?: Json | null
+          net_pay?: number | null
+          notes?: string | null
+          other_earnings?: number | null
+          other_taxes?: number | null
+          overtime_hours?: number | null
+          overtime_rate?: number | null
+          pay_date?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          payroll_run_id?: string
+          post_tax_deductions?: number | null
+          post_tax_details?: Json | null
+          pre_tax_deductions?: number | null
+          pre_tax_details?: Json | null
+          regular_hours?: number | null
+          regular_rate?: number | null
+          sick_pay?: number | null
+          social_security_tax?: number | null
+          state_disability_tax?: number | null
+          state_income_tax?: number | null
+          status?: string | null
+          tax_details?: Json | null
+          taxable_income?: number | null
+          tips?: number | null
+          total_deductions?: number | null
+          total_employer_cost?: number | null
+          total_taxes?: number | null
+          unemployment_tax?: number | null
+          updated_at?: string | null
+          vacation_pay?: number | null
+          ytd_deductions?: number | null
+          ytd_gross_pay?: number | null
+          ytd_net_pay?: number | null
+          ytd_taxes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "payroll_entries_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_reports: {
+        Row: {
+          created_at: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          metadata: Json | null
+          report_data: Json | null
+          report_date: string
+          report_name: string
+          report_number: string
+          report_pdf_url: string | null
+          report_period_end: string | null
+          report_period_start: string | null
+          report_type: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          report_data?: Json | null
+          report_date: string
+          report_name: string
+          report_number: string
+          report_pdf_url?: string | null
+          report_period_end?: string | null
+          report_period_start?: string | null
+          report_type: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          report_data?: Json | null
+          report_date?: string
+          report_name?: string
+          report_number?: string
+          report_pdf_url?: string | null
+          report_period_end?: string | null
+          report_period_start?: string | null
+          report_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payroll_runs: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          pay_date: string
+          pay_frequency: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_method: string | null
+          processed_at: string | null
+          processed_by: string | null
+          requires_approval: boolean | null
+          run_number: string
+          run_type: string
+          status: string
+          total_deductions: number | null
+          total_employees: number | null
+          total_employer_contributions: number | null
+          total_employer_taxes: number | null
+          total_gross_pay: number | null
+          total_net_pay: number | null
+          total_taxes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pay_date: string
+          pay_frequency: string
+          pay_period_end: string
+          pay_period_start: string
+          payment_method?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requires_approval?: boolean | null
+          run_number: string
+          run_type?: string
+          status?: string
+          total_deductions?: number | null
+          total_employees?: number | null
+          total_employer_contributions?: number | null
+          total_employer_taxes?: number | null
+          total_gross_pay?: number | null
+          total_net_pay?: number | null
+          total_taxes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          pay_date?: string
+          pay_frequency?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_method?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requires_approval?: boolean | null
+          run_number?: string
+          run_type?: string
+          status?: string
+          total_deductions?: number | null
+          total_employees?: number | null
+          total_employer_contributions?: number | null
+          total_employer_taxes?: number | null
+          total_gross_pay?: number | null
+          total_net_pay?: number | null
+          total_taxes?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_runs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payroll_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payroll_runs_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payroll_tax_configs: {
+        Row: {
+          additional_rate: number | null
+          additional_threshold: number | null
+          brackets: Json | null
+          created_at: string | null
+          description: string | null
+          effective_date: string
+          exemptions: number | null
+          expiration_date: string | null
+          id: string
+          is_active: boolean | null
+          jurisdiction: string | null
+          metadata: Json | null
+          tax_rate: number | null
+          tax_type: string
+          updated_at: string | null
+          wage_base: number | null
+        }
+        Insert: {
+          additional_rate?: number | null
+          additional_threshold?: number | null
+          brackets?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date: string
+          exemptions?: number | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string | null
+          metadata?: Json | null
+          tax_rate?: number | null
+          tax_type: string
+          updated_at?: string | null
+          wage_base?: number | null
+        }
+        Update: {
+          additional_rate?: number | null
+          additional_threshold?: number | null
+          brackets?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date?: string
+          exemptions?: number | null
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string | null
+          metadata?: Json | null
+          tax_rate?: number | null
+          tax_type?: string
+          updated_at?: string | null
+          wage_base?: number | null
+        }
+        Relationships: []
       }
       performance_diagnostics: {
         Row: {

@@ -248,7 +248,7 @@ export const DevOpsDashboard: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPipelines(data || []);
+      setPipelines((data || []) as Pipeline[]);
     } catch (error: any) {
       console.error('Error fetching pipelines:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -264,7 +264,7 @@ export const DevOpsDashboard: React.FC = () => {
         .limit(100);
 
       if (error) throw error;
-      setBuilds(data || []);
+      setBuilds((data || []) as Build[]);
     } catch (error: any) {
       console.error('Error fetching builds:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -280,7 +280,7 @@ export const DevOpsDashboard: React.FC = () => {
         .limit(100);
 
       if (error) throw error;
-      setTestRuns(data || []);
+      setTestRuns((data || []) as TestRun[]);
     } catch (error: any) {
       console.error('Error fetching test runs:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -296,7 +296,7 @@ export const DevOpsDashboard: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setReleases(data || []);
+      setReleases((data || []) as Release[]);
     } catch (error: any) {
       console.error('Error fetching releases:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -311,7 +311,7 @@ export const DevOpsDashboard: React.FC = () => {
         .order('environment_type', { ascending: true });
 
       if (error) throw error;
-      setEnvironments(data || []);
+      setEnvironments((data || []) as Environment[]);
     } catch (error: any) {
       console.error('Error fetching environments:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -327,7 +327,7 @@ export const DevOpsDashboard: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setSecurityScans(data || []);
+      setSecurityScans((data || []) as SecurityScan[]);
     } catch (error: any) {
       console.error('Error fetching security scans:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -385,7 +385,7 @@ export const DevOpsDashboard: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('devops_builds')
         .insert({
           pipeline_id: values.pipeline_id,
@@ -395,6 +395,7 @@ export const DevOpsDashboard: React.FC = () => {
           status: 'queued',
           triggered_by: user.id,
           triggered_by_type: 'user',
+          build_number: `BUILD-${Date.now()}`,
         });
 
       if (error) throw error;
@@ -498,7 +499,7 @@ export const DevOpsDashboard: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('devops_builds')
         .insert({
           pipeline_id: build.pipeline_id,
@@ -509,6 +510,7 @@ export const DevOpsDashboard: React.FC = () => {
           triggered_by: user.id,
           triggered_by_type: 'user',
           trigger_reason: 'Retry of failed build',
+          build_number: `BUILD-${Date.now()}`,
         });
 
       if (error) throw error;
@@ -521,7 +523,7 @@ export const DevOpsDashboard: React.FC = () => {
 
   // Calculate metrics
   const deploymentFrequency = builds.filter(b => {
-    const buildDate = new Date(b.created_at);
+    const buildDate = new Date((b as any).created_at || b.queued_at);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     return buildDate >= sevenDaysAgo && b.status === 'success';
@@ -566,7 +568,7 @@ export const DevOpsDashboard: React.FC = () => {
     weekEnd.setDate(weekEnd.getDate() + 7);
 
     const weekBuilds = builds.filter(b => {
-      const buildDate = new Date(b.created_at);
+      const buildDate = new Date((b as any).created_at || b.queued_at);
       return buildDate >= weekStart && buildDate < weekEnd;
     });
 
@@ -865,7 +867,7 @@ export const DevOpsDashboard: React.FC = () => {
                                   description: pipeline.description || '',
                                   repository_url: pipeline.repository_url,
                                   branch: pipeline.branch,
-                                  trigger_type: pipeline.trigger_type,
+                              trigger_type: pipeline.trigger_type as any,
                                 });
                                 setPipelineModalOpened(true);
                               }}
@@ -1111,7 +1113,7 @@ export const DevOpsDashboard: React.FC = () => {
                               variant="light"
                               onClick={() => handleCancelBuild(build.id)}
                             >
-                              <IconStop size={16} />
+                              <IconX size={16} />
                             </ActionIcon>
                           )}
                           {build.status === 'failed' && (
