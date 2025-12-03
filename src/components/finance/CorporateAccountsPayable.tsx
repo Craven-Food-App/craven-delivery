@@ -21,6 +21,10 @@ import {
   Modal,
   Progress,
   Alert,
+  Form,
+  InputNumber,
+  Popconfirm,
+  Divider,
 } from 'antd';
 import {
   SearchOutlined,
@@ -36,10 +40,17 @@ import {
   ExportOutlined,
   WarningOutlined,
   CalendarOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  CreditCardOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs, { Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -92,9 +103,24 @@ export const CorporateAccountsPayable: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
   const [pagination, setPagination] = useState({ current: 1, pageSize: 50, total: 0 });
+  
+  // Operational modals
+  const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [invoiceForm] = Form.useForm();
+  const [paymentForm] = Form.useForm();
+  const [approvalForm] = Form.useForm();
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
+    fetchDepartments();
+    fetchExpenseCategories();
+    checkAccess();
   }, [activeTab]);
 
   useEffect(() => {
@@ -160,6 +186,82 @@ export const CorporateAccountsPayable: React.FC = () => {
     }
   };
 
+  const checkAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCanManage(false);
+        return;
+      }
+
+      const userEmail = user.email?.toLowerCase();
+      
+      // TORRANCE STROMAN: UNIVERSAL ACCESS - CHECK FIRST
+      if (hasFullAccess(userEmail)) {
+        setCanManage(true);
+        return;
+      }
+
+      // Check if user is CFO or has finance permissions
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'cfo')
+        .maybeSingle();
+
+      if (execUser) {
+        setCanManage(true);
+        return;
+      }
+
+      // Check finance employees with can_view_all_financials
+      const { data: financeEmployee } = await supabase
+        .from('finance_employees')
+        .select('can_view_all_financials')
+        .eq('employee_id', user.id)
+        .maybeSingle();
+
+      if (financeEmployee?.can_view_all_financials) {
+        setCanManage(true);
+        return;
+      }
+
+      setCanManage(false);
+    } catch (error) {
+      console.error('Error checking access:', error);
+      setCanManage(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('id, name')
+        .order('name');
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setDepartments(data || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const fetchExpenseCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('id, name')
+        .order('name');
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setExpenseCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching expense categories:', error);
+    }
+  };
+
   const calculateMetrics = (data: Invoice[]) => {
     const unpaid = data.filter(inv => inv.payment_status !== 'paid' && inv.status !== 'cancelled');
     const overdue = unpaid.filter(inv => inv.days_overdue > 0);
@@ -215,6 +317,151 @@ export const CorporateAccountsPayable: React.FC = () => {
 
     setFilteredInvoices(filtered);
     setPagination(prev => ({ ...prev, total: filtered.length }));
+  };
+
+  const handleCreateOrUpdateInvoice = async (values: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        message.error('You must be logged in to create invoices');
+        return;
+      }
+
+      const invoiceData = {
+        vendor_name: values.vendor_name,
+        vendor_email: values.vendor_email,
+        invoice_date: values.invoice_date.format('YYYY-MM-DD'),
+        due_date: values.due_date.format('YYYY-MM-DD'),
+        amount: values.amount,
+        tax_amount: values.tax_amount || 0,
+        payment_terms: values.payment_terms || 'Net 30',
+        department_id: values.department_id,
+        expense_category_id: values.expense_category_id,
+        status: 'pending',
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingInvoice) {
+        // Update existing invoice
+        const { error } = await supabase
+          .from('invoices')
+          .update(invoiceData)
+          .eq('id', editingInvoice.id);
+
+        if (error) throw error;
+        message.success('Invoice updated successfully');
+      } else {
+        // Generate invoice number
+        const year = new Date().getFullYear();
+        const { count } = await supabase
+          .from('invoices')
+          .select('*', { count: 'exact', head: true })
+          .like('invoice_number', `INV-${year}-%`);
+
+        const invoiceNumber = `INV-${year}-${String((count || 0) + 1).padStart(6, '0')}`;
+
+        const { error } = await supabase
+          .from('invoices')
+          .insert({
+            ...invoiceData,
+            invoice_number: invoiceNumber,
+          });
+
+        if (error) throw error;
+        message.success('Invoice created successfully');
+      }
+
+      setInvoiceModalVisible(false);
+      setEditingInvoice(null);
+      invoiceForm.resetFields();
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error saving invoice:', error);
+      message.error(error?.message || 'Failed to save invoice');
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ status: 'cancelled' })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+      message.success('Invoice cancelled successfully');
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      message.error(error?.message || 'Failed to delete invoice');
+    }
+  };
+
+  const handleProcessPayment = async (values: any) => {
+    if (!selectedInvoice) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        message.error('You must be logged in to process payments');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('invoices')
+        .update({
+          status: 'paid',
+          payment_date: values.payment_date.format('YYYY-MM-DD'),
+          payment_method: values.payment_method,
+          payment_reference: values.payment_reference,
+          paid_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedInvoice.id);
+
+      if (error) throw error;
+      message.success('Payment processed successfully');
+      setPaymentModalVisible(false);
+      paymentForm.resetFields();
+      setSelectedInvoice(null);
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error processing payment:', error);
+      message.error(error?.message || 'Failed to process payment');
+    }
+  };
+
+  const handleApproveInvoice = async (values: any) => {
+    if (!selectedInvoice) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        message.error('You must be logged in to approve invoices');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('invoices')
+        .update({
+          status: 'approved',
+          approved_by: user.id,
+          approved_at: new Date().toISOString(),
+          notes: values.notes || selectedInvoice.payment_terms,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedInvoice.id);
+
+      if (error) throw error;
+      message.success('Invoice approved successfully');
+      setApprovalModalVisible(false);
+      approvalForm.resetFields();
+      setSelectedInvoice(null);
+      fetchInvoices();
+    } catch (error: any) {
+      console.error('Error approving invoice:', error);
+      message.error(error?.message || 'Failed to approve invoice');
+    }
   };
 
   const handleExport = () => {
@@ -387,6 +634,100 @@ export const CorporateAccountsPayable: React.FC = () => {
               }}
             />
           </Tooltip>
+          {record.status !== 'paid' && record.status !== 'cancelled' && (
+            <>
+              <Tooltip title={canManage ? "Edit Invoice" : "Edit Invoice (Requires Finance Access)"}>
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  size="small"
+                  disabled={!canManage}
+                  onClick={() => {
+                    if (!canManage) {
+                      message.warning('You need Finance Department access to edit invoices');
+                      return;
+                    }
+                    setEditingInvoice(record);
+                    invoiceForm.setFieldsValue({
+                      vendor_name: record.vendor_name,
+                      vendor_email: record.vendor_email,
+                      invoice_date: dayjs(record.invoice_date),
+                      due_date: dayjs(record.due_date),
+                      amount: record.amount,
+                      tax_amount: record.tax_amount,
+                      payment_terms: record.payment_terms,
+                    });
+                    setInvoiceModalVisible(true);
+                  }}
+                />
+              </Tooltip>
+              {record.status === 'approved' && (
+                <Tooltip title={canManage ? "Process Payment" : "Process Payment (Requires Finance Access)"}>
+                  <Button
+                    type="text"
+                    icon={<CreditCardOutlined />}
+                    size="small"
+                    disabled={!canManage}
+                    onClick={() => {
+                      if (!canManage) {
+                        message.warning('You need Finance Department access to process payments');
+                        return;
+                      }
+                      setSelectedInvoice(record);
+                      paymentForm.setFieldsValue({
+                        amount: record.total_amount,
+                        payment_date: dayjs(),
+                      });
+                      setPaymentModalVisible(true);
+                    }}
+                  />
+                </Tooltip>
+              )}
+              {record.status === 'pending' && (
+                <Tooltip title={canManage ? "Approve Invoice" : "Approve Invoice (Requires Finance Access)"}>
+                  <Button
+                    type="text"
+                    icon={<CheckOutlined />}
+                    size="small"
+                    disabled={!canManage}
+                    onClick={() => {
+                      if (!canManage) {
+                        message.warning('You need Finance Department access to approve invoices');
+                        return;
+                      }
+                      setSelectedInvoice(record);
+                      setApprovalModalVisible(true);
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </>
+          )}
+          {record.status !== 'paid' && (
+            <Popconfirm
+              title="Delete Invoice"
+              description="Are you sure you want to delete this invoice?"
+              onConfirm={() => {
+                if (!canManage) {
+                  message.warning('You need Finance Department access to delete invoices');
+                  return;
+                }
+                handleDeleteInvoice(record.id);
+              }}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Tooltip title={canManage ? "Delete Invoice" : "Delete Invoice (Requires Finance Access)"}>
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  disabled={!canManage}
+                />
+              </Tooltip>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -417,6 +758,30 @@ export const CorporateAccountsPayable: React.FC = () => {
           <Col>
             <Space>
               <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  if (!canManage) {
+                    message.warning('You need Finance Department access to create invoices');
+                    return;
+                  }
+                  setEditingInvoice(null);
+                  invoiceForm.resetFields();
+                  invoiceForm.setFieldsValue({
+                    invoice_date: dayjs(),
+                    due_date: dayjs().add(30, 'days'),
+                    payment_terms: 'Net 30',
+                    amount: 0,
+                    tax_amount: 0,
+                  });
+                  setInvoiceModalVisible(true);
+                }}
+                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                disabled={!canManage}
+              >
+                New Invoice
+              </Button>
+              <Button
                 icon={<ReloadOutlined />}
                 onClick={fetchInvoices}
                 style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}
@@ -435,6 +800,17 @@ export const CorporateAccountsPayable: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* Access Notice */}
+      {!canManage && (
+        <Alert
+          message="View-Only Mode"
+          description="You are viewing Accounts Payable in read-only mode. To create invoices, process payments, or edit records, you need Finance Department access (CFO or Finance Employee with permissions)."
+          type="info"
+          closable
+          style={{ marginBottom: 24 }}
+        />
+      )}
 
       {/* Critical Alerts */}
       {metrics.overdueCount > 0 && (
@@ -679,6 +1055,236 @@ export const CorporateAccountsPayable: React.FC = () => {
               {selectedInvoice.payment_terms}
             </Descriptions.Item>
           </Descriptions>
+        )}
+      </Modal>
+
+      {/* Create/Edit Invoice Modal */}
+      <Modal
+        title={editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
+        open={invoiceModalVisible}
+        onCancel={() => {
+          setInvoiceModalVisible(false);
+          setEditingInvoice(null);
+          invoiceForm.resetFields();
+        }}
+        onOk={() => invoiceForm.submit()}
+        width={800}
+      >
+        <Form
+          form={invoiceForm}
+          layout="vertical"
+          onFinish={handleCreateOrUpdateInvoice}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="vendor_name"
+                label="Vendor Name"
+                rules={[{ required: true, message: 'Please enter vendor name' }]}
+              >
+                <Input placeholder="Vendor name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="vendor_email"
+                label="Vendor Email"
+                rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+              >
+                <Input placeholder="vendor@example.com" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="invoice_date"
+                label="Invoice Date"
+                rules={[{ required: true, message: 'Please select invoice date' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="due_date"
+                label="Due Date"
+                rules={[{ required: true, message: 'Please select due date' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="amount"
+                label="Amount"
+                rules={[{ required: true, message: 'Please enter amount' }]}
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="tax_amount"
+                label="Tax Amount"
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="department_id"
+                label="Department"
+              >
+                <Select placeholder="Select department" allowClear>
+                  {departments.map(dept => (
+                    <Option key={dept.id} value={dept.id}>{dept.name}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="expense_category_id"
+                label="Expense Category"
+              >
+                <Select placeholder="Select category" allowClear>
+                  {expenseCategories.map(cat => (
+                    <Option key={cat.id} value={cat.id}>{cat.name}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="payment_terms"
+            label="Payment Terms"
+          >
+            <Select placeholder="Select payment terms">
+              <Option value="Net 15">Net 15</Option>
+              <Option value="Net 30">Net 30</Option>
+              <Option value="Net 45">Net 45</Option>
+              <Option value="Net 60">Net 60</Option>
+              <Option value="Due on Receipt">Due on Receipt</Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Payment Processing Modal */}
+      <Modal
+        title="Process Payment"
+        open={paymentModalVisible}
+        onCancel={() => {
+          setPaymentModalVisible(false);
+          paymentForm.resetFields();
+          setSelectedInvoice(null);
+        }}
+        onOk={() => paymentForm.submit()}
+        width={600}
+      >
+        {selectedInvoice && (
+          <Form
+            form={paymentForm}
+            layout="vertical"
+            onFinish={handleProcessPayment}
+          >
+            <Alert
+              message={`Processing payment for ${selectedInvoice.invoice_number}`}
+              description={`Total amount: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.total_amount)}`}
+              type="info"
+              style={{ marginBottom: 16 }}
+            />
+            <Form.Item
+              name="amount"
+              label="Payment Amount"
+              rules={[{ required: true, message: 'Please enter payment amount' }]}
+            >
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                precision={2}
+                formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              />
+            </Form.Item>
+            <Form.Item
+              name="payment_date"
+              label="Payment Date"
+              rules={[{ required: true, message: 'Please select payment date' }]}
+            >
+              <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+            </Form.Item>
+            <Form.Item
+              name="payment_method"
+              label="Payment Method"
+              rules={[{ required: true, message: 'Please select payment method' }]}
+            >
+              <Select placeholder="Select payment method">
+                <Option value="ACH">ACH Transfer</Option>
+                <Option value="Wire">Wire Transfer</Option>
+                <Option value="Check">Check</Option>
+                <Option value="Credit Card">Credit Card</Option>
+                <Option value="Other">Other</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="payment_reference"
+              label="Payment Reference"
+            >
+              <Input placeholder="Check number, transaction ID, etc." />
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
+
+      {/* Approval Modal */}
+      <Modal
+        title="Approve Invoice"
+        open={approvalModalVisible}
+        onCancel={() => {
+          setApprovalModalVisible(false);
+          approvalForm.resetFields();
+          setSelectedInvoice(null);
+        }}
+        onOk={() => approvalForm.submit()}
+        width={600}
+      >
+        {selectedInvoice && (
+          <Form
+            form={approvalForm}
+            layout="vertical"
+            onFinish={handleApproveInvoice}
+          >
+            <Alert
+              message={`Approving invoice ${selectedInvoice.invoice_number}`}
+              description={`Vendor: ${selectedInvoice.vendor_name} | Amount: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.total_amount)}`}
+              type="warning"
+              style={{ marginBottom: 16 }}
+            />
+            <Form.Item
+              name="notes"
+              label="Approval Notes (Optional)"
+            >
+              <Input.TextArea rows={4} placeholder="Add any notes about this approval..." />
+            </Form.Item>
+          </Form>
         )}
       </Modal>
 

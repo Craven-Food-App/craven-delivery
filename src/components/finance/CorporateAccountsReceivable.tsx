@@ -20,6 +20,10 @@ import {
   Modal,
   Alert,
   Progress,
+  Form,
+  InputNumber,
+  Popconfirm,
+  Divider,
 } from 'antd';
 import {
   SearchOutlined,
@@ -33,10 +37,16 @@ import {
   ExportOutlined,
   WarningOutlined,
   LineChartOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CreditCardOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs, { Dayjs } from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -86,9 +96,18 @@ export const CorporateAccountsReceivable: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('outstanding');
   const [pagination, setPagination] = useState({ current: 1, pageSize: 50, total: 0 });
+  
+  // Operational modals
+  const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<ARInvoice | null>(null);
+  const [invoiceForm] = Form.useForm();
+  const [paymentForm] = Form.useForm();
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     fetchReceivables();
+    checkAccess();
   }, [activeTab]);
 
   useEffect(() => {
@@ -147,6 +166,54 @@ export const CorporateAccountsReceivable: React.FC = () => {
     }
   };
 
+  const checkAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCanManage(false);
+        return;
+      }
+
+      const userEmail = user.email?.toLowerCase();
+      
+      // TORRANCE STROMAN: UNIVERSAL ACCESS - CHECK FIRST
+      if (hasFullAccess(userEmail)) {
+        setCanManage(true);
+        return;
+      }
+
+      // Check if user is CFO or has finance permissions
+      const { data: execUser } = await supabase
+        .from('exec_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'cfo')
+        .maybeSingle();
+
+      if (execUser) {
+        setCanManage(true);
+        return;
+      }
+
+      // Check finance employees with can_view_all_financials
+      const { data: financeEmployee } = await supabase
+        .from('finance_employees')
+        .select('can_view_all_financials')
+        .eq('employee_id', user.id)
+        .maybeSingle();
+
+      if (financeEmployee?.can_view_all_financials) {
+        setCanManage(true);
+        return;
+      }
+
+      setCanManage(false);
+    } catch (error) {
+      console.error('Error checking access:', error);
+      setCanManage(false);
+    }
+  };
+
   const calculateMetrics = (data: ARInvoice[]) => {
     const outstanding = data.filter(inv => inv.outstanding_amount > 0 && inv.status !== 'paid');
     const overdue = outstanding.filter(inv => inv.days_overdue > 0);
@@ -200,6 +267,138 @@ export const CorporateAccountsReceivable: React.FC = () => {
 
     setFilteredInvoices(filtered);
     setPagination(prev => ({ ...prev, total: filtered.length }));
+  };
+
+  const handleCreateOrUpdateInvoice = async (values: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        message.error('You must be logged in to create invoices');
+        return;
+      }
+
+      const invoiceData = {
+        customer_name: values.customer_name,
+        customer_email: values.customer_email,
+        invoice_date: values.invoice_date.format('YYYY-MM-DD'),
+        due_date: values.due_date.format('YYYY-MM-DD'),
+        amount: values.amount,
+        tax_amount: values.tax_amount || 0,
+        payment_terms: values.payment_terms || 'Net 30',
+        status: 'pending',
+        paid_amount: 0,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingInvoice) {
+        // Update existing invoice
+        const { error } = await supabase
+          .from('accounts_receivable')
+          .update(invoiceData)
+          .eq('id', editingInvoice.id);
+
+        if (error) throw error;
+        message.success('Invoice updated successfully');
+      } else {
+        // Generate invoice number
+        const year = new Date().getFullYear();
+        const { count } = await supabase
+          .from('accounts_receivable')
+          .select('*', { count: 'exact', head: true })
+          .like('invoice_number', `AR-${year}-%`);
+
+        const invoiceNumber = `AR-${year}-${String((count || 0) + 1).padStart(6, '0')}`;
+
+        const { error } = await supabase
+          .from('accounts_receivable')
+          .insert({
+            ...invoiceData,
+            invoice_number: invoiceNumber,
+          });
+
+        if (error) throw error;
+        message.success('Invoice created successfully');
+      }
+
+      setInvoiceModalVisible(false);
+      setEditingInvoice(null);
+      invoiceForm.resetFields();
+      fetchReceivables();
+    } catch (error: any) {
+      console.error('Error saving invoice:', error);
+      message.error(error?.message || 'Failed to save invoice');
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('accounts_receivable')
+        .update({ status: 'written_off' })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+      message.success('Invoice written off successfully');
+      fetchReceivables();
+    } catch (error: any) {
+      console.error('Error deleting invoice:', error);
+      message.error(error?.message || 'Failed to write off invoice');
+    }
+  };
+
+  const handleRecordPayment = async (values: any) => {
+    if (!selectedInvoice) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        message.error('You must be logged in to record payments');
+        return;
+      }
+
+      const paymentAmount = values.payment_amount;
+      const newPaidAmount = selectedInvoice.paid_amount + paymentAmount;
+      const newOutstandingAmount = selectedInvoice.total_amount - newPaidAmount;
+      const newStatus = newOutstandingAmount <= 0 ? 'paid' : newPaidAmount > 0 ? 'partial' : 'pending';
+
+      // Get existing payments array
+      const { data: invoiceData } = await supabase
+        .from('accounts_receivable')
+        .select('payments')
+        .eq('id', selectedInvoice.id)
+        .single();
+
+      const existingPayments = invoiceData?.payments || [];
+      const newPayment = {
+        date: values.payment_date.format('YYYY-MM-DD'),
+        amount: paymentAmount,
+        method: values.payment_method,
+        reference: values.payment_reference || '',
+        recorded_by: user.id,
+        recorded_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('accounts_receivable')
+        .update({
+          paid_amount: newPaidAmount,
+          outstanding_amount: newOutstandingAmount,
+          status: newStatus,
+          payments: [...existingPayments, newPayment],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedInvoice.id);
+
+      if (error) throw error;
+      message.success('Payment recorded successfully');
+      setPaymentModalVisible(false);
+      paymentForm.resetFields();
+      setSelectedInvoice(null);
+      fetchReceivables();
+    } catch (error: any) {
+      console.error('Error recording payment:', error);
+      message.error(error?.message || 'Failed to record payment');
+    }
   };
 
   const handleExport = () => {
@@ -361,6 +560,78 @@ export const CorporateAccountsReceivable: React.FC = () => {
               }}
             />
           </Tooltip>
+          {record.outstanding_amount > 0 && (
+            <>
+              <Tooltip title={canManage ? "Edit Invoice" : "Edit Invoice (Requires Finance Access)"}>
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  size="small"
+                  disabled={!canManage}
+                  onClick={() => {
+                    if (!canManage) {
+                      message.warning('You need Finance Department access to edit invoices');
+                      return;
+                    }
+                    setEditingInvoice(record);
+                    invoiceForm.setFieldsValue({
+                      customer_name: record.customer_name,
+                      customer_email: record.customer_email,
+                      invoice_date: dayjs(record.invoice_date),
+                      due_date: dayjs(record.due_date),
+                      amount: record.total_amount,
+                      tax_amount: 0,
+                      payment_terms: record.payment_terms,
+                    });
+                    setInvoiceModalVisible(true);
+                  }}
+                />
+              </Tooltip>
+              <Tooltip title={canManage ? "Record Payment" : "Record Payment (Requires Finance Access)"}>
+                <Button
+                  type="text"
+                  icon={<CreditCardOutlined />}
+                  size="small"
+                  disabled={!canManage}
+                  onClick={() => {
+                    if (!canManage) {
+                      message.warning('You need Finance Department access to record payments');
+                      return;
+                    }
+                    setSelectedInvoice(record);
+                    paymentForm.setFieldsValue({
+                      payment_amount: record.outstanding_amount,
+                      payment_date: dayjs(),
+                    });
+                    setPaymentModalVisible(true);
+                  }}
+                />
+              </Tooltip>
+              <Popconfirm
+                title="Write Off Invoice"
+                description="Are you sure you want to write off this invoice?"
+                onConfirm={() => {
+                  if (!canManage) {
+                    message.warning('You need Finance Department access to write off invoices');
+                    return;
+                  }
+                  handleDeleteInvoice(record.id);
+                }}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Tooltip title={canManage ? "Write Off" : "Write Off (Requires Finance Access)"}>
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    disabled={!canManage}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
@@ -391,6 +662,30 @@ export const CorporateAccountsReceivable: React.FC = () => {
           <Col>
             <Space>
               <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  if (!canManage) {
+                    message.warning('You need Finance Department access to create invoices');
+                    return;
+                  }
+                  setEditingInvoice(null);
+                  invoiceForm.resetFields();
+                  invoiceForm.setFieldsValue({
+                    invoice_date: dayjs(),
+                    due_date: dayjs().add(30, 'days'),
+                    payment_terms: 'Net 30',
+                    amount: 0,
+                    tax_amount: 0,
+                  });
+                  setInvoiceModalVisible(true);
+                }}
+                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                disabled={!canManage}
+              >
+                New Invoice
+              </Button>
+              <Button
                 icon={<ReloadOutlined />}
                 onClick={fetchReceivables}
                 style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}
@@ -409,6 +704,17 @@ export const CorporateAccountsReceivable: React.FC = () => {
           </Col>
         </Row>
       </Card>
+
+      {/* Access Notice */}
+      {!canManage && (
+        <Alert
+          message="View-Only Mode"
+          description="You are viewing Accounts Receivable in read-only mode. To create invoices, record payments, or edit records, you need Finance Department access (CFO or Finance Employee with permissions)."
+          type="info"
+          closable
+          style={{ marginBottom: 24 }}
+        />
+      )}
 
       {/* Critical Alerts */}
       {metrics.overdueCount > 0 && (
@@ -638,6 +944,197 @@ export const CorporateAccountsReceivable: React.FC = () => {
               {selectedInvoice.payment_terms}
             </Descriptions.Item>
           </Descriptions>
+        )}
+      </Modal>
+
+      {/* Create/Edit Invoice Modal */}
+      <Modal
+        title={editingInvoice ? 'Edit Invoice' : 'Create New Invoice'}
+        open={invoiceModalVisible}
+        onCancel={() => {
+          setInvoiceModalVisible(false);
+          setEditingInvoice(null);
+          invoiceForm.resetFields();
+        }}
+        onOk={() => invoiceForm.submit()}
+        width={800}
+      >
+        <Form
+          form={invoiceForm}
+          layout="vertical"
+          onFinish={handleCreateOrUpdateInvoice}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="customer_name"
+                label="Customer Name"
+                rules={[{ required: true, message: 'Please enter customer name' }]}
+              >
+                <Input placeholder="Customer name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="customer_email"
+                label="Customer Email"
+                rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+              >
+                <Input placeholder="customer@example.com" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="invoice_date"
+                label="Invoice Date"
+                rules={[{ required: true, message: 'Please select invoice date' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="due_date"
+                label="Due Date"
+                rules={[{ required: true, message: 'Please select due date' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="amount"
+                label="Amount"
+                rules={[{ required: true, message: 'Please enter amount' }]}
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="tax_amount"
+                label="Tax Amount"
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="payment_terms"
+            label="Payment Terms"
+          >
+            <Select placeholder="Select payment terms">
+              <Option value="Net 15">Net 15</Option>
+              <Option value="Net 30">Net 30</Option>
+              <Option value="Net 45">Net 45</Option>
+              <Option value="Net 60">Net 60</Option>
+              <Option value="Due on Receipt">Due on Receipt</Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Record Payment Modal */}
+      <Modal
+        title="Record Payment"
+        open={paymentModalVisible}
+        onCancel={() => {
+          setPaymentModalVisible(false);
+          paymentForm.resetFields();
+          setSelectedInvoice(null);
+        }}
+        onOk={() => paymentForm.submit()}
+        width={600}
+      >
+        {selectedInvoice && (
+          <Form
+            form={paymentForm}
+            layout="vertical"
+            onFinish={handleRecordPayment}
+          >
+            <Alert
+              message={`Recording payment for ${selectedInvoice.invoice_number}`}
+              description={
+                <div>
+                  <div>Total: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.total_amount)}</div>
+                  <div>Paid: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.paid_amount)}</div>
+                  <div>Outstanding: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.outstanding_amount)}</div>
+                </div>
+              }
+              type="info"
+              style={{ marginBottom: 16 }}
+            />
+            <Form.Item
+              name="payment_amount"
+              label="Payment Amount"
+              rules={[
+                { required: true, message: 'Please enter payment amount' },
+                {
+                  validator: (_, value) => {
+                    if (value > selectedInvoice.outstanding_amount) {
+                      return Promise.reject('Payment amount cannot exceed outstanding amount');
+                    }
+                    if (value <= 0) {
+                      return Promise.reject('Payment amount must be greater than 0');
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                max={selectedInvoice.outstanding_amount}
+                precision={2}
+                formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              />
+            </Form.Item>
+            <Form.Item
+              name="payment_date"
+              label="Payment Date"
+              rules={[{ required: true, message: 'Please select payment date' }]}
+            >
+              <DatePicker style={{ width: '100%' }} format="MM/DD/YYYY" />
+            </Form.Item>
+            <Form.Item
+              name="payment_method"
+              label="Payment Method"
+              rules={[{ required: true, message: 'Please select payment method' }]}
+            >
+              <Select placeholder="Select payment method">
+                <Option value="Cash">Cash</Option>
+                <Option value="Check">Check</Option>
+                <Option value="Credit Card">Credit Card</Option>
+                <Option value="ACH">ACH Transfer</Option>
+                <Option value="Wire">Wire Transfer</Option>
+                <Option value="Other">Other</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="payment_reference"
+              label="Payment Reference"
+            >
+              <Input placeholder="Check number, transaction ID, etc." />
+            </Form.Item>
+          </Form>
         )}
       </Modal>
     </div>
