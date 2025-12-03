@@ -114,9 +114,10 @@ export const ECAPTemplate: React.FC = () => {
   const generatePreview = () => {
     const filled = replacePlaceholders(template, {
       ...formData,
+      plan_duration: String(formData.plan_duration),
       deficiency_list: formData.deficiency_list.filter(d => d.trim()),
       action_items: formData.action_items.filter(a => a.trim()),
-    });
+    } as any);
     setPreview(filled);
   };
 
@@ -155,8 +156,8 @@ export const ECAPTemplate: React.FC = () => {
         return;
       }
 
-      const { data: instance, error: instanceError } = await supabase
-        .from('eas_instances')
+      const { data: instance, error: instanceError } = await (supabase
+        .from('eas_instances') as any)
         .insert({
           document_type: 'ecap',
           executive_id: execData.id,

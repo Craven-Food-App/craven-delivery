@@ -332,7 +332,7 @@ export const BankingTreasuryView: React.FC = () => {
         .order('name', { ascending: true });
 
       if (error && error.code !== 'PGRST116') throw error;
-      setBankAccounts(data || []);
+      setBankAccounts((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching bank accounts:', error);
       if (error.code !== 'PGRST116') throw error;
@@ -341,7 +341,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   const fetchTransactions = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('banking_transactions')
         .select('*')
         .order('transaction_date', { ascending: false })
@@ -359,7 +359,7 @@ export const BankingTreasuryView: React.FC = () => {
         }
         throw error;
       }
-      setTransactions(data || []);
+      setTransactions((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching transactions:', error);
       // If it's a table not found error, just set empty array
@@ -376,7 +376,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   const fetchWireTransfers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('wire_transfers')
         .select('*')
         .order('requested_date', { ascending: false })
@@ -394,7 +394,7 @@ export const BankingTreasuryView: React.FC = () => {
         }
         throw error;
       }
-      setWireTransfers(data || []);
+      setWireTransfers((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching wire transfers:', error);
       // If it's a table not found error, just set empty array
@@ -411,7 +411,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   const fetchACHTransfers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('ach_transfers')
         .select('*')
         .order('effective_date', { ascending: false })
@@ -429,7 +429,7 @@ export const BankingTreasuryView: React.FC = () => {
         }
         throw error;
       }
-      setACHTransfers(data || []);
+      setACHTransfers((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching ACH transfers:', error);
       // If it's a table not found error, just set empty array
@@ -446,7 +446,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   const fetchReconciliations = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('banking_reconciliations')
         .select('*')
         .order('reconciliation_date', { ascending: false })
@@ -464,7 +464,7 @@ export const BankingTreasuryView: React.FC = () => {
         }
         throw error;
       }
-      setReconciliations(data || []);
+      setReconciliations((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching reconciliations:', error);
       // If it's a table not found error, just set empty array
@@ -481,7 +481,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   const fetchCashForecasts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('cash_forecasts')
         .select('*')
         .order('forecast_date', { ascending: false })
@@ -499,7 +499,7 @@ export const BankingTreasuryView: React.FC = () => {
         }
         throw error;
       }
-      setCashForecasts(data || []);
+      setCashForecasts((data || []) as any);
     } catch (error: any) {
       console.error('Error fetching cash forecasts:', error);
       // If it's a table not found error, just set empty array
@@ -579,7 +579,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('banking_transactions')
         .insert({
           bank_account_id: values.bank_account_id,
@@ -615,7 +615,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('wire_transfers')
         .insert({
           bank_account_id: values.bank_account_id,
@@ -655,7 +655,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('ach_transfers')
         .insert({
           bank_account_id: values.bank_account_id,
@@ -694,7 +694,7 @@ export const BankingTreasuryView: React.FC = () => {
 
       const difference = values.statement_ending_balance - values.ledger_ending_balance;
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('banking_reconciliations')
         .insert({
           bank_account_id: values.bank_account_id,
@@ -728,7 +728,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('cash_forecasts')
         .insert({
           forecast_date: dayjs(values.forecast_date).format('YYYY-MM-DD'),
@@ -762,7 +762,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('wire_transfers')
         .update({
           status: 'approved',
@@ -788,7 +788,7 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('wire_transfers')
         .update({
           status: 'completed',
@@ -1046,8 +1046,8 @@ export const BankingTreasuryView: React.FC = () => {
                                       routing_number: account.routing_number || '',
                                       swift_code: '',
                                       iban: '',
-                                      daily_limit: account.daily_limit?.toString() || '',
-                                      transaction_limit: account.transaction_limit?.toString() || '',
+                                      daily_limit: (account as any).daily_limit?.toString() || '',
+                                      transaction_limit: (account as any).transaction_limit?.toString() || '',
                                       status: account.status || 'active',
                                     });
                                     setAccountModalOpened(true);
@@ -1075,8 +1075,8 @@ export const BankingTreasuryView: React.FC = () => {
                       variant="subtle"
                       leftSection={<IconPlus size={14} />}
                       onClick={() => {
-                        transactionForm.reset();
-                        transactionForm.setFieldsValue({
+                    transactionForm.reset();
+                        transactionForm.setValues({
                           transaction_date: new Date(),
                           currency: 'USD',
                         });
@@ -1269,8 +1269,8 @@ export const BankingTreasuryView: React.FC = () => {
                                   routing_number: account.routing_number || '',
                                   swift_code: '',
                                   iban: '',
-                                  daily_limit: account.daily_limit?.toString() || '',
-                                  transaction_limit: account.transaction_limit?.toString() || '',
+                                  daily_limit: (account as any).daily_limit?.toString() || '',
+                                  transaction_limit: (account as any).transaction_limit?.toString() || '',
                                   status: account.status || 'active',
                                 });
                                 setAccountModalOpened(true);
@@ -1298,7 +1298,7 @@ export const BankingTreasuryView: React.FC = () => {
                   leftSection={<IconPlus size={16} />}
                   onClick={() => {
                     transactionForm.reset();
-                    transactionForm.setFieldsValue({
+                    transactionForm.setValues({
                       transaction_date: new Date(),
                       currency: 'USD',
                     });
@@ -1388,7 +1388,7 @@ export const BankingTreasuryView: React.FC = () => {
                   leftSection={<IconPlus size={16} />}
                   onClick={() => {
                     wireForm.reset();
-                    wireForm.setFieldsValue({
+                    wireForm.setValues({
                       requested_date: new Date(),
                       currency: 'USD',
                       direction: 'outgoing',
@@ -1499,7 +1499,7 @@ export const BankingTreasuryView: React.FC = () => {
                   leftSection={<IconPlus size={16} />}
                   onClick={() => {
                     achForm.reset();
-                    achForm.setFieldsValue({
+                    achForm.setValues({
                       effective_date: new Date(),
                       receiver_account_type: 'checking',
                       company_name: 'Crave\'n, Inc.',
@@ -1581,7 +1581,7 @@ export const BankingTreasuryView: React.FC = () => {
                   leftSection={<IconPlus size={16} />}
                   onClick={() => {
                     reconciliationForm.reset();
-                    reconciliationForm.setFieldsValue({
+                    reconciliationForm.setValues({
                       reconciliation_date: new Date(),
                       statement_start_date: dayjs().startOf('month').toDate(),
                       statement_end_date: new Date(),
@@ -1665,7 +1665,7 @@ export const BankingTreasuryView: React.FC = () => {
                   leftSection={<IconPlus size={16} />}
                   onClick={() => {
                     forecastForm.reset();
-                    forecastForm.setFieldsValue({
+                    forecastForm.setValues({
                       forecast_date: new Date(),
                       forecast_start_date: new Date(),
                       forecast_end_date: dayjs().add(1, 'month').toDate(),
@@ -1857,14 +1857,14 @@ export const BankingTreasuryView: React.FC = () => {
                 label="Daily Limit"
                 placeholder="0.00"
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...accountForm.getInputProps('daily_limit')}
               />
               <NumberInput
                 label="Transaction Limit"
                 placeholder="0.00"
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...accountForm.getInputProps('transaction_limit')}
               />
             </Group>
@@ -1934,7 +1934,7 @@ export const BankingTreasuryView: React.FC = () => {
                 label="Amount"
                 required
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...transactionForm.getInputProps('amount')}
               />
               <DatePickerInput
@@ -2019,7 +2019,7 @@ export const BankingTreasuryView: React.FC = () => {
                 label="Amount"
                 required
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...wireForm.getInputProps('amount')}
               />
               <Select
@@ -2127,7 +2127,7 @@ export const BankingTreasuryView: React.FC = () => {
                 label="Amount"
                 required
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...achForm.getInputProps('amount')}
               />
               <DatePickerInput
@@ -2211,13 +2211,13 @@ export const BankingTreasuryView: React.FC = () => {
               <NumberInput
                 label="Statement Ending Balance"
                 required
-                precision={2}
+                decimalScale={2}
                 {...reconciliationForm.getInputProps('statement_ending_balance')}
               />
               <NumberInput
                 label="Ledger Ending Balance"
                 required
-                precision={2}
+                decimalScale={2}
                 {...reconciliationForm.getInputProps('ledger_ending_balance')}
               />
             </Group>
@@ -2291,7 +2291,7 @@ export const BankingTreasuryView: React.FC = () => {
             <NumberInput
               label="Opening Cash Balance"
               required
-              precision={2}
+              decimalScale={2}
               {...forecastForm.getInputProps('opening_cash_balance')}
             />
             <Group grow>
@@ -2299,14 +2299,14 @@ export const BankingTreasuryView: React.FC = () => {
                 label="Projected Inflows"
                 required
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...forecastForm.getInputProps('projected_inflows')}
               />
               <NumberInput
                 label="Projected Outflows"
                 required
                 min={0}
-                precision={2}
+                decimalScale={2}
                 {...forecastForm.getInputProps('projected_outflows')}
               />
             </Group>

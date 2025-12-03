@@ -994,7 +994,7 @@ export const DevOpsDashboard: React.FC = () => {
                                 description: pipeline.description || '',
                                 repository_url: pipeline.repository_url,
                                 branch: pipeline.branch,
-                                trigger_type: pipeline.trigger_type,
+                                trigger_type: pipeline.trigger_type as any,
                               });
                               setPipelineModalOpened(true);
                             }}

@@ -150,8 +150,8 @@ export const ETFCNTemplate: React.FC = () => {
         return;
       }
 
-      const { data: instance, error: instanceError } = await supabase
-        .from('eas_instances')
+      const { data: instance, error: instanceError } = await (supabase
+        .from('eas_instances') as any)
         .insert({
           document_type: 'etfcn',
           executive_id: execData.id,
