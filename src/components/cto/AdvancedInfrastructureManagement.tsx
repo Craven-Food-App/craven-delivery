@@ -239,7 +239,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchIncidents = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_incidents')
         .select('*')
         .order('created_at', { ascending: false })
@@ -257,7 +257,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchCapacityPlans = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_capacity_plans')
         .select('*')
         .order('action_priority', { ascending: false });
@@ -274,7 +274,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchCostOptimizations = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_cost_optimizations')
         .select('*')
         .eq('status', 'pending')
@@ -293,7 +293,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchSLAs = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_slas')
         .select('*')
         .eq('is_active', true)
@@ -311,7 +311,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchProvisioningRequests = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_provisioning_requests')
         .select('*')
         .order('requested_at', { ascending: false })
@@ -329,7 +329,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const fetchChanges = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('infrastructure_changes')
         .select('*')
         .order('planned_start', { ascending: false })
@@ -353,7 +353,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('infrastructure_incidents')
         .insert({
           ...values,
@@ -372,7 +372,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
 
   const handleCreateCapacityPlan = async (values: any) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('infrastructure_capacity_plans')
         .insert(values);
 
@@ -415,7 +415,7 @@ export const AdvancedInfrastructureManagement: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('infrastructure_provisioning_requests')
         .insert({
           request_type: values.request_type,
