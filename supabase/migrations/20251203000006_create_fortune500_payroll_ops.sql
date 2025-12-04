@@ -119,10 +119,12 @@ CREATE TABLE IF NOT EXISTS public.payroll_entries (
   post_tax_details JSONB DEFAULT '{}'::jsonb, -- {union_dues: 50, garnishment: 200, etc.}
   
   -- Total Deductions
-  total_deductions NUMERIC(15, 2) GENERATED ALWAYS AS (pre_tax_deductions + total_taxes + post_tax_deductions) STORED,
+  -- NOTE: Calculated at application/trigger level to avoid referencing another generated column
+  total_deductions NUMERIC(15, 2) DEFAULT 0,
   
   -- Net Pay
-  net_pay NUMERIC(15, 2) GENERATED ALWAYS AS (gross_pay - total_deductions) STORED,
+  -- NOTE: Calculated at application/trigger level
+  net_pay NUMERIC(15, 2) DEFAULT 0,
   
   -- Employer Costs
   employer_social_security NUMERIC(15, 2) DEFAULT 0,
@@ -168,7 +170,7 @@ CREATE TABLE IF NOT EXISTS public.payroll_entries (
 -- Tax Configurations (Federal, State, Local tax rates and brackets)
 CREATE TABLE IF NOT EXISTS public.payroll_tax_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tax_type TEXT NOT NULL CHECK (tax_type IN ('federal_income', 'state_income', 'local_income', 'social_security', 'medicare', 'unemployment', 'disability', 'other')),
+  tax_type TEXT NOT NULL CHECK (tax_type IN ('federal_income', 'state_income', 'local_income', 'social_security', 'medicare', 'additional_medicare', 'unemployment', 'disability', 'other')),
   jurisdiction TEXT, -- 'US', 'CA', 'NY', 'NYC', etc.
   effective_date DATE NOT NULL,
   expiration_date DATE,

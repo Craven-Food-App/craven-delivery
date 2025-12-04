@@ -3,11 +3,9 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { FileText, ChevronLeft, ChevronRight, CheckCircle2, Lock } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { message } from 'antd';
-import SignaturePad from 'react-signature-canvas';
-import { SignatureTag } from '@/components/executive/SignatureTag';
-import { PlacedSignatureItem } from '@/components/executive/PlacedSignatureItem';
+import { ElectronicSignatureAcknowledgment } from '@/components/executive/ElectronicSignatureAcknowledgment';
 
 interface ExecutiveDocument {
   id: string;
@@ -17,16 +15,16 @@ interface ExecutiveDocument {
   created_at: string;
 }
 
-interface PlacedSignature {
-  id: string;
-  type: 'signature' | 'initial';
-  pageNumber: number;
-  xPercent: number;
-  yPercent: number;
-  dataUrl: string;
-  isLocked: boolean;
-  placedAt: string;
+interface DocumentSignature {
   documentId: string;
+  signatureName: string;
+  signedAt: string;
+  auditData: {
+    timestamp: string;
+    ipAddress: string;
+    userAgent: string;
+    documentVersion: string;
+  };
 }
 
 export default function ExecutiveSigningPortal() {
@@ -40,33 +38,12 @@ export default function ExecutiveSigningPortal() {
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
   const [documentHtmlCache, setDocumentHtmlCache] = useState<Record<string, string>>({});
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [ceoSignatureDataUrl, setCeoSignatureDataUrl] = useState<string>('');
   
-  // Signature adoption
-  const [showAdoptModal, setShowAdoptModal] = useState(false);
-  const [adoptedSignature, setAdoptedSignature] = useState<string>('');
-  const [adoptedInitials, setAdoptedInitials] = useState<string>('');
-  const [selectedFont, setSelectedFont] = useState<string>('Brush Script MT');
-  const [typedName, setTypedName] = useState<string>('');
-  const [typedInitials, setTypedInitials] = useState<string>('');
-  const [adoptionMethod, setAdoptionMethod] = useState<'type' | 'draw'>('type');
+  // Signature modal
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [documentSignatures, setDocumentSignatures] = useState<Record<string, DocumentSignature>>({});
   
-  // Drag and drop
-  const [placedSignatures, setPlacedSignatures] = useState<PlacedSignature[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [draggedItemType, setDraggedItemType] = useState<'signature' | 'initial' | null>(null);
-  
-  const signaturePadRef = useRef<SignaturePad>(null);
-  const initialsPadRef = useRef<SignaturePad>(null);
   const documentViewerRef = useRef<HTMLDivElement>(null);
-
-  const fonts = [
-    'Brush Script MT',
-    'Lucida Handwriting',
-    'Freestyle Script',
-    'Segoe Script',
-    'Vladimir Script'
-  ];
 
   // Initialize session
   useEffect(() => {
@@ -111,16 +88,6 @@ export default function ExecutiveSigningPortal() {
         setDocuments(allDocuments);
         setUserInfo(docsData.user);
 
-        // Fetch CEO signature
-        const { data: ceoSigData } = await supabase
-          .from('ceo_system_settings')
-          .select('setting_value')
-          .eq('setting_key', 'ceo_signature')
-          .maybeSingle();
-
-        const ceoSig = (ceoSigData?.setting_value as any)?.signature_png_base64 || '';
-        setCeoSignatureDataUrl(ceoSig);
-
         // Fetch HTML for all documents
         const htmlCache: Record<string, string> = {};
         for (const doc of allDocuments) {
@@ -144,190 +111,42 @@ export default function ExecutiveSigningPortal() {
     initSession();
   }, [token]);
 
-  // Signature adoption handlers
-  const handleAdoptSignature = () => {
-    if (adoptionMethod === 'type') {
-      if (!typedName.trim()) {
-        message.error('Please enter your name');
-        return;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = 100;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 400, 100);
-        ctx.fillStyle = 'black';
-        ctx.font = `40px ${selectedFont}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(typedName, 200, 50);
-      }
-      setAdoptedSignature(canvas.toDataURL());
-    } else {
-      if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
-        message.error('Please draw your signature');
-        return;
-      }
-      setAdoptedSignature(signaturePadRef.current.toDataURL());
-    }
-    message.success('Signature adopted successfully');
+  // Signature modal handlers
+  const handleOpenSignatureModal = () => {
+    setShowSignatureModal(true);
   };
 
-  const handleAdoptInitials = () => {
-    if (adoptionMethod === 'type') {
-      if (!typedInitials.trim()) {
-        message.error('Please enter your initials');
-        return;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = 200;
-      canvas.height = 100;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, 200, 100);
-        ctx.fillStyle = 'black';
-        ctx.font = `40px ${selectedFont}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(typedInitials, 100, 50);
-      }
-      setAdoptedInitials(canvas.toDataURL());
-    } else {
-      if (!initialsPadRef.current || initialsPadRef.current.isEmpty()) {
-        message.error('Please draw your initials');
-        return;
-      }
-      setAdoptedInitials(initialsPadRef.current.toDataURL());
-    }
-    message.success('Initials adopted successfully');
+  const handleCloseSignatureModal = () => {
+    setShowSignatureModal(false);
   };
 
-  const handleDoneAdopting = () => {
-    if (!adoptedSignature || !adoptedInitials) {
-      message.error('Please adopt both signature and initials');
-      return;
-    }
-    setShowAdoptModal(false);
-  };
+  const handleSignDocument = (signatureName: string, auditData: {
+    timestamp: string;
+    ipAddress: string;
+    userAgent: string;
+    documentVersion: string;
+  }) => {
+    if (!currentDocument) return;
 
-  // Drag and drop handlers
-  const handleDragStart = (type: 'signature' | 'initial') => {
-    setIsDragging(true);
-    setDraggedItemType(type);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    
-    // Handle repositioning existing signature
-    if (repositioningId) {
-      handleSignatureDrop(e);
-      setIsDragging(false);
-      return;
-    }
-
-    setIsDragging(false);
-
-    // Handle placing new signature
-    if (!draggedItemType) return;
-    if (!documentViewerRef.current) return;
-
-    const rect = documentViewerRef.current.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
-
-    const dataUrl = draggedItemType === 'signature' ? adoptedSignature : adoptedInitials;
-    
-    const newSignature: PlacedSignature = {
-      id: crypto.randomUUID(),
-      type: draggedItemType,
-      pageNumber: currentDocIndex + 1,
-      xPercent: Math.max(0, Math.min(95, xPercent)),
-      yPercent: Math.max(0, Math.min(95, yPercent)),
-      dataUrl,
-      isLocked: false,
-      placedAt: new Date().toISOString(),
-      documentId: currentDocument?.id || '',
+    const signature: DocumentSignature = {
+      documentId: currentDocument.id,
+      signatureName,
+      signedAt: new Date().toISOString(),
+      auditData,
     };
 
-    setPlacedSignatures([...placedSignatures, newSignature]);
-    setDraggedItemType(null);
-    message.success(`${draggedItemType === 'signature' ? 'Signature' : 'Initial'} placed - drag to reposition or lock in place`);
-  };
+    setDocumentSignatures(prev => ({
+      ...prev,
+      [currentDocument.id]: signature,
+    }));
 
-  const handleLockSignature = (signatureId: string) => {
-    setPlacedSignatures(prev =>
-      prev.map(sig =>
-        sig.id === signatureId ? { ...sig, isLocked: true } : sig
-      )
-    );
-    message.success('Signature locked in place permanently');
-  };
-
-  const handleDeleteSignature = (signatureId: string) => {
-    setPlacedSignatures(prev => prev.filter(sig => sig.id !== signatureId));
-    message.info('Signature removed');
-  };
-
-  // Repositioning signatures
-  const [repositioningId, setRepositioningId] = useState<string | null>(null);
-
-  const handleSignatureDragStart = (e: React.DragEvent, signatureId: string) => {
-    const signature = placedSignatures.find(s => s.id === signatureId);
-    if (!signature || signature.isLocked) {
-      e.preventDefault();
-      return;
-    }
-    setIsDragging(true);
-    setRepositioningId(signatureId);
-    setDraggedItemType(null); // Clear any sidebar drag type
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleSignatureDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!repositioningId) return;
-    if (!documentViewerRef.current) return;
-
-    const rect = documentViewerRef.current.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
-
-    setPlacedSignatures(prev =>
-      prev.map(sig =>
-        sig.id === repositioningId
-          ? {
-              ...sig,
-              xPercent: Math.max(0, Math.min(95, xPercent)),
-              yPercent: Math.max(0, Math.min(95, yPercent)),
-            }
-          : sig
-      )
-    );
-
-    setRepositioningId(null);
-  };
-
-  const handleSignatureDragEnd = () => {
-    setRepositioningId(null);
-    setIsDragging(false);
+    setShowSignatureModal(false);
+    message.success('Document signed successfully');
   };
 
   // Document navigation
   const currentDocument = documents[currentDocIndex];
-  const currentDocSignatures = placedSignatures.filter(
-    sig => sig.documentId === currentDocument?.id
-  );
+  const currentDocumentSigned = currentDocument ? documentSignatures[currentDocument.id] : null;
 
   const goToNextDocument = () => {
     if (currentDocIndex < documents.length - 1) {
@@ -341,31 +160,33 @@ export default function ExecutiveSigningPortal() {
     }
   };
 
-  // Submit signatures
+  // Submit all signatures
   const handleFinishSigning = async () => {
-    const unlockedSignatures = placedSignatures.filter(s => !s.isLocked);
-    if (unlockedSignatures.length > 0) {
-      message.error(`Please lock all ${unlockedSignatures.length} placed signature(s) before finishing`);
+    // Check if all documents are signed
+    const unsignedDocuments = documents.filter(doc => !documentSignatures[doc.id]);
+    if (unsignedDocuments.length > 0) {
+      message.error(`Please sign all ${unsignedDocuments.length} remaining document(s) before finishing`);
       return;
     }
 
-    if (placedSignatures.length === 0) {
-      message.error('Please place at least one signature');
+    if (Object.keys(documentSignatures).length === 0) {
+      message.error('Please sign at least one document');
       return;
     }
 
     try {
+      // Get IP address (will be captured server-side, but include in payload)
       const { error } = await supabase.functions.invoke('submit-executive-signatures', {
         body: {
           token,
-          placedSignatures,
-          typedName: userInfo?.officer_name || typedName,
+          documentSignatures: Object.values(documentSignatures),
+          typedName: userInfo?.officer_name || Object.values(documentSignatures)[0]?.signatureName || '',
         }
       });
 
       if (error) throw error;
 
-      message.success('Documents signed successfully!');
+      message.success('All documents signed successfully!');
       setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {
       console.error('Submit error:', err);
@@ -381,198 +202,59 @@ export default function ExecutiveSigningPortal() {
     );
   }
 
-  if (!adoptedSignature || !adoptedInitials || showAdoptModal) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <Card className="max-w-4xl mx-auto p-8">
-          <h1 className="text-2xl font-bold mb-6">Adopt Your Signature & Initials</h1>
-          
-          <div className="mb-6">
-            <div className="flex gap-4 mb-4">
-              <Button
-                variant={adoptionMethod === 'type' ? 'default' : 'outline'}
-                onClick={() => setAdoptionMethod('type')}
-              >
-                Type
-              </Button>
-              <Button
-                variant={adoptionMethod === 'draw' ? 'default' : 'outline'}
-                onClick={() => setAdoptionMethod('draw')}
-              >
-                Draw
-              </Button>
-            </div>
-
-            {adoptionMethod === 'type' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Choose Font</label>
-                <select
-                  value={selectedFont}
-                  onChange={(e) => setSelectedFont(e.target.value)}
-                  className="w-full border rounded p-2"
-                >
-                  {fonts.map(font => (
-                    <option key={font} value={font} style={{ fontFamily: font }}>
-                      {font}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-2">Full Signature</h3>
-                {adoptionMethod === 'type' ? (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={typedName}
-                      onChange={(e) => setTypedName(e.target.value)}
-                      className="w-full border rounded p-2 mb-2"
-                    />
-                    <div 
-                      className="border rounded p-4 bg-white h-24 flex items-center justify-center"
-                      style={{ fontFamily: selectedFont, fontSize: '32px' }}
-                    >
-                      {typedName || 'Your signature'}
-                    </div>
-                  </>
-                ) : (
-                  <div className="border rounded bg-white">
-                    <SignaturePad
-                      ref={signaturePadRef}
-                      canvasProps={{ className: 'w-full h-32' }}
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2 mt-2">
-                  <Button onClick={handleAdoptSignature} className="flex-1">
-                    Adopt Signature
-                  </Button>
-                  {adoptionMethod === 'draw' && (
-                    <Button
-                      variant="outline"
-                      onClick={() => signaturePadRef.current?.clear()}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-                {adoptedSignature && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-sm text-green-700">Signature adopted</span>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Initials</h3>
-                {adoptionMethod === 'type' ? (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="Enter initials (e.g., JS)"
-                      value={typedInitials}
-                      onChange={(e) => setTypedInitials(e.target.value)}
-                      className="w-full border rounded p-2 mb-2"
-                      maxLength={4}
-                    />
-                    <div 
-                      className="border rounded p-4 bg-white h-24 flex items-center justify-center"
-                      style={{ fontFamily: selectedFont, fontSize: '32px' }}
-                    >
-                      {typedInitials || 'Initials'}
-                    </div>
-                  </>
-                ) : (
-                  <div className="border rounded bg-white">
-                    <SignaturePad
-                      ref={initialsPadRef}
-                      canvasProps={{ className: 'w-full h-32' }}
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2 mt-2">
-                  <Button onClick={handleAdoptInitials} className="flex-1">
-                    Adopt Initials
-                  </Button>
-                  {adoptionMethod === 'draw' && (
-                    <Button
-                      variant="outline"
-                      onClick={() => initialsPadRef.current?.clear()}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-                {adoptedInitials && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-sm text-green-700">Initials adopted</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleDoneAdopting}
-            disabled={!adoptedSignature || !adoptedInitials}
-            className="w-full"
-          >
-            Continue to Document Signing
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background">
-      {/* Sidebar - Fixed width, scrollable content */}
+      {/* Sidebar - Document list and status */}
       <div className="w-80 flex-shrink-0 border-r bg-card p-4 flex flex-col gap-4 overflow-hidden">
         <div>
-          <h2 className="font-bold text-lg mb-2">Your Signatures</h2>
+          <h2 className="font-bold text-lg mb-2">Documents</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Drag these to the document to place them
+            {documents.length} document(s) to sign
           </p>
           
-          <div className="space-y-4 mb-6">
-            <SignatureTag
-              type="signature"
-              dataUrl={adoptedSignature}
-              label="Your Signature"
-              onDragStart={handleDragStart}
-            />
-            <SignatureTag
-              type="initial"
-              dataUrl={adoptedInitials}
-              label="Your Initials"
-              onDragStart={handleDragStart}
-            />
+          <div className="space-y-2 mb-6">
+            {documents.map((doc, index) => {
+              const isSigned = documentSignatures[doc.id];
+              const isCurrent = index === currentDocIndex;
+              return (
+                <div
+                  key={doc.id}
+                  onClick={() => setCurrentDocIndex(index)}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    isCurrent ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{doc.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Document {index + 1}
+                      </p>
+                    </div>
+                    {isSigned && (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="border-t pt-4 flex-1 min-h-0 overflow-y-auto">
-          <h3 className="font-semibold mb-3">Placed Signatures</h3>
-          {currentDocSignatures.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No signatures placed yet</p>
-          ) : (
-            <div className="space-y-2">
-              {currentDocSignatures.map(sig => (
-                <PlacedSignatureItem
-                  key={sig.id}
-                  signature={sig}
-                  onLock={handleLockSignature}
-                  onDelete={handleDeleteSignature}
-                  onReposition={(id) => {}}
-                />
-              ))}
-            </div>
-          )}
+        <div className="border-t pt-4">
+          <div className="text-sm">
+            <p className="text-muted-foreground mb-2">
+              Signed: {Object.keys(documentSignatures).length} / {documents.length}
+            </p>
+            {Object.keys(documentSignatures).length === documents.length && documents.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded p-2">
+                <p className="text-sm text-green-700 font-medium">
+                  All documents signed
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -611,15 +293,11 @@ export default function ExecutiveSigningPortal() {
           </div>
         </div>
 
-        {/* Document Drop Zone */}
+        {/* Document Viewer */}
         <div className="flex-1 overflow-auto p-6">
           <div
             ref={documentViewerRef}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            className={`relative bg-white shadow-lg mx-auto max-w-4xl min-h-[800px] border-2 ${
-              isDragging ? 'border-primary border-dashed' : 'border-border'
-            }`}
+            className="relative bg-white shadow-lg mx-auto max-w-4xl min-h-[800px] border-2 border-border"
           >
             {/* Document HTML */}
             <div 
@@ -629,66 +307,86 @@ export default function ExecutiveSigningPortal() {
               className="p-8"
             />
 
-            {/* Placed Signatures Overlay */}
-            {currentDocSignatures.map(sig => (
-              <div
-                key={sig.id}
-                draggable={!sig.isLocked}
-                onDragStart={(e) => handleSignatureDragStart(e, sig.id)}
-                onDragEnd={handleSignatureDragEnd}
-                style={{
-                  position: 'absolute',
-                  left: `${sig.xPercent}%`,
-                  top: `${sig.yPercent}%`,
-                  cursor: sig.isLocked ? 'default' : 'move',
-                  zIndex: 10,
-                }}
-                className={`${sig.isLocked ? 'border-2 border-green-500' : 'border-2 border-orange-500 border-dashed'}`}
-              >
-                <img
-                  src={sig.dataUrl}
-                  alt={sig.type}
-                  className="max-w-[200px] bg-white p-1"
-                  draggable={false}
-                />
-                {sig.isLocked && (
-                  <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
-                    <Lock className="w-3 h-3 text-white" />
+            {/* Signature Status Overlay */}
+            {currentDocumentSigned && (
+              <div className="absolute bottom-4 right-4 bg-green-50 border-2 border-green-500 rounded-lg p-3 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-700">Signed</p>
+                    <p className="text-xs text-green-600">
+                      {currentDocumentSigned.signatureName}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      {new Date(currentDocumentSigned.signedAt).toLocaleString()}
+                    </p>
                   </div>
-                )}
-              </div>
-            ))}
-
-            {/* Drag overlay */}
-            {isDragging && (
-              <div className="absolute inset-0 bg-primary/5 flex items-center justify-center pointer-events-none">
-                <div className="text-center">
-                  <p className="text-lg font-semibold text-primary">
-                    Drop to place {draggedItemType}
-                  </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Submit Section */}
+          {/* Action Section */}
           <div className="mt-6 max-w-4xl mx-auto">
-            <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
-              <p className="text-sm text-blue-800">
-                <Lock className="w-4 h-4 inline mr-1" />
-                Lock all signatures before submitting
-              </p>
+            {currentDocumentSigned ? (
+              <div className="bg-green-50 border border-green-200 rounded p-4 mb-4">
+                <p className="text-sm text-green-800">
+                  <CheckCircle2 className="w-4 h-4 inline mr-1" />
+                  This document has been signed. You can review it or proceed to the next document.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  Please review the document above, then click the button below to sign and acknowledge.
+                </p>
+              </div>
+            )}
+            
+            <div className="flex gap-3">
+              {!currentDocumentSigned && (
+                <Button
+                  onClick={handleOpenSignatureModal}
+                  className="flex-1"
+                >
+                  Sign & Acknowledge Document
+                </Button>
+              )}
+              
+              {currentDocIndex < documents.length - 1 && (
+                <Button
+                  variant="outline"
+                  onClick={goToNextDocument}
+                  className="flex-1"
+                >
+                  Next Document
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+              
+              {Object.keys(documentSignatures).length === documents.length && documents.length > 0 && (
+                <Button
+                  onClick={handleFinishSigning}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Finish & Submit All Documents
+                </Button>
+              )}
             </div>
-            <Button
-              onClick={handleFinishSigning}
-              className="w-full"
-              disabled={placedSignatures.some(s => !s.isLocked)}
-            >
-              Finish & Submit All Documents
-            </Button>
           </div>
         </div>
       </div>
+
+      {/* Electronic Signature Modal */}
+      {currentDocument && (
+        <ElectronicSignatureAcknowledgment
+          isOpen={showSignatureModal}
+          onClose={handleCloseSignatureModal}
+          onSign={handleSignDocument}
+          documentTitle={currentDocument.title}
+          documentVersion={currentDocument.document_type || "1.0"}
+        />
+      )}
     </div>
   );
 }
