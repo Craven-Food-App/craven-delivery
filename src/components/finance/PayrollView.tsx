@@ -340,7 +340,7 @@ export const PayrollView: React.FC = () => {
         if (error) throw error;
         message.success('Payroll run updated successfully');
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('payroll_runs')
           .insert(runData);
 

@@ -325,6 +325,7 @@ const CEOPortal: React.FC = () => {
         feeders: 0,
         merchants: 0,
         pendingApprovals: 0,
+        pendingCodeChanges: 0,
         criticalAlerts: 0,
       });
     }

@@ -50,13 +50,13 @@ const ExecutiveAccountability: React.FC = () => {
   }, [loading, hasAccess, navigate]);
 
   const navItems: ExecutiveNavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: Scale },
-    { id: 'workflow', label: 'Workflow', icon: FileText },
-    { id: 'epm', label: 'EPM', icon: AlertTriangle },
-    { id: 'ecap', label: 'ECAP', icon: XCircle },
-    { id: 'bnnc', label: 'BNNC', icon: Shield },
-    { id: 'etfcn', label: 'Termination', icon: XCircle },
-    { id: 'policy', label: 'Policy', icon: FileText },
+    { id: 'dashboard', label: 'Dashboard', icon: Scale as any },
+    { id: 'workflow', label: 'Workflow', icon: FileText as any },
+    { id: 'epm', label: 'EPM', icon: AlertTriangle as any },
+    { id: 'ecap', label: 'ECAP', icon: XCircle as any },
+    { id: 'bnnc', label: 'BNNC', icon: Shield as any },
+    { id: 'etfcn', label: 'Termination', icon: XCircle as any },
+    { id: 'policy', label: 'Policy', icon: FileText as any },
   ];
 
   const handleBackToHub = () => {
