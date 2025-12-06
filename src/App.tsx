@@ -338,7 +338,7 @@ const App = () => {
                   <Route path="/cfo" element={<BusinessAuthGuard><CFOPortal /></BusinessAuthGuard>} />
                   <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
                   <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
-                  <Route path="/cxo" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
+                  <Route path="/cxo/*" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
                   <Route path="/finance/*" element={<BusinessAuthGuard><EnterpriseFinancePortal /></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
                   <Route path="/company/*" element={<CompanyPortalLayout />}>
@@ -627,7 +627,7 @@ const App = () => {
           <Route path="/ceo" element={<BusinessAuthGuard><CEOPortal /></BusinessAuthGuard>} />
           <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
           <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
-          <Route path="/cxo" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
+          <Route path="/cxo/*" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
           <Route path="/executive/discipline" element={<BusinessAuthGuard><ExecutiveAccountability /></BusinessAuthGuard>} />
           <Route path="/company/*" element={<CompanyPortalLayout />}>
             <Route index element={<CompanyDashboard />} />
