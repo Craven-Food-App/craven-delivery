@@ -30,16 +30,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import dayjs from "dayjs";
 
-// pdfjs-dist setup - use lazy loading to reduce bundle size
-let pdfjsLib: typeof import('pdfjs-dist') | null = null;
-
-const loadPdfjs = async () => {
-  if (!pdfjsLib) {
-    pdfjsLib = await import('pdfjs-dist');
-    const pdfWorker = await import('pdfjs-dist/build/pdf.worker?url');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker.default;
-  }
-  return pdfjsLib;
+// PDF functionality disabled - pdfjs-dist removed to reduce build size
+const loadPdfjs = async (): Promise<null> => {
+  console.warn('PDF functionality is currently disabled');
+  return null;
 };
 
 const { Text } = Typography;
@@ -268,12 +262,17 @@ const ExecutiveDocumentSignatureTagger: React.FC<ExecutiveDocumentSignatureTagge
     if (!docDetails?.file_url) return;
     setPageLoading(true);
     try {
+      const pdfjs = await loadPdfjs();
+      if (!pdfjs) {
+        message.warning('PDF rendering is currently disabled. Please contact support.');
+        setPageLoading(false);
+        return;
+      }
       const response = await fetch(docDetails.file_url);
       if (!response.ok) {
         throw new Error("Failed to download PDF");
       }
       const buffer = await response.arrayBuffer();
-      const pdfjs = await loadPdfjs();
       const pdf = await pdfjs.getDocument({ data: buffer }).promise;
       const pageRenderings: RenderedPage[] = [];
 
@@ -369,13 +368,18 @@ const ExecutiveDocumentSignatureTagger: React.FC<ExecutiveDocumentSignatureTagge
 
     setAutoDetecting(true);
     try {
+      const pdfjs = await loadPdfjs();
+      if (!pdfjs) {
+        message.warning('Auto-detection is currently disabled');
+        setAutoDetecting(false);
+        return;
+      }
       // Fetch PDF
       const pdfResponse = await fetch(docDetails.file_url);
       if (!pdfResponse.ok) {
         throw new Error('Failed to fetch PDF');
       }
       const pdfBlob = await pdfResponse.blob();
-      const pdfjs = await loadPdfjs();
       const pdfDoc = await pdfjs.getDocument({ data: await pdfBlob.arrayBuffer() }).promise;
       
       const detectedFields: SignatureFieldLayout[] = [];
