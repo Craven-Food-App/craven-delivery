@@ -30,12 +30,17 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import dayjs from "dayjs";
 
-// pdfjs-dist setup -----------------------------------------------------------
-// Using dynamic import to avoid bundler misconfiguration during SSR builds.
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
+// pdfjs-dist setup - use lazy loading to reduce bundle size
+let pdfjsLib: typeof import('pdfjs-dist') | null = null;
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+const loadPdfjs = async () => {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist');
+    const pdfWorker = await import('pdfjs-dist/build/pdf.worker?url');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker.default;
+  }
+  return pdfjsLib;
+};
 
 const { Text } = Typography;
 
@@ -268,7 +273,8 @@ const ExecutiveDocumentSignatureTagger: React.FC<ExecutiveDocumentSignatureTagge
         throw new Error("Failed to download PDF");
       }
       const buffer = await response.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      const pdfjs = await loadPdfjs();
+      const pdf = await pdfjs.getDocument({ data: buffer }).promise;
       const pageRenderings: RenderedPage[] = [];
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -369,7 +375,8 @@ const ExecutiveDocumentSignatureTagger: React.FC<ExecutiveDocumentSignatureTagge
         throw new Error('Failed to fetch PDF');
       }
       const pdfBlob = await pdfResponse.blob();
-      const pdfDoc = await pdfjsLib.getDocument({ data: await pdfBlob.arrayBuffer() }).promise;
+      const pdfjs = await loadPdfjs();
+      const pdfDoc = await pdfjs.getDocument({ data: await pdfBlob.arrayBuffer() }).promise;
       
       const detectedFields: SignatureFieldLayout[] = [];
       
