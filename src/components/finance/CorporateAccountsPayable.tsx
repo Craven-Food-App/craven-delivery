@@ -1127,7 +1127,7 @@ export const CorporateAccountsPayable: React.FC = () => {
                   min={0}
                   precision={2}
                   formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as 0}
                 />
               </Form.Item>
             </Col>
@@ -1141,7 +1141,7 @@ export const CorporateAccountsPayable: React.FC = () => {
                   min={0}
                   precision={2}
                   formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as 0}
                 />
               </Form.Item>
             </Col>
@@ -1221,7 +1221,7 @@ export const CorporateAccountsPayable: React.FC = () => {
                 min={0}
                 precision={2}
                 formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as 0}
               />
             </Form.Item>
             <Form.Item

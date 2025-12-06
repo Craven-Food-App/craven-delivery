@@ -440,7 +440,7 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
     try {
       // Store file content in Supabase
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('code_change_requests')
         .insert({
           repository: selectedRepository,
@@ -450,6 +450,8 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
           developer_id: user?.id,
           status: 'pending',
           commit_message: `Sync ${selectedFile} to Supabase`,
+          branch_name: 'main',
+          request_number: `CR-${Date.now()}`,
         });
 
       if (error) throw error;

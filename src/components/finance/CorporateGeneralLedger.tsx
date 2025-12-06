@@ -173,14 +173,14 @@ export const CorporateGeneralLedger: React.FC = () => {
 
   const fetchChartOfAccounts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('chart_of_accounts')
         .select('id, account_code, account_name, account_type')
         .eq('is_active', true)
         .order('account_code');
       
       if (error) throw error;
-      setChartOfAccounts(data || []);
+      setChartOfAccounts((data || []) as any);
     } catch (error) {
       console.error('Error fetching chart of accounts:', error);
       // Don't show error if table doesn't exist yet
@@ -649,7 +649,7 @@ export const CorporateGeneralLedger: React.FC = () => {
               onChange={setAccountFilter}
               showSearch
               filterOption={(input, option) =>
-                (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
               }
             >
               <Option value="all">All Accounts</Option>
@@ -829,7 +829,7 @@ export const CorporateGeneralLedger: React.FC = () => {
                     return;
                   }
 
-                  const { error: updateError } = await supabase
+                  const { error: updateError } = await (supabase as any)
                     .from('journal_entries')
                     .update({
                       entry_date: values.entry_date.format('YYYY-MM-DD'),
@@ -842,7 +842,7 @@ export const CorporateGeneralLedger: React.FC = () => {
                   if (updateError) throw updateError;
 
                   // Delete old lines
-                  await supabase
+                  await (supabase as any)
                     .from('journal_entry_lines')
                     .delete()
                     .eq('journal_entry_id', editingEntry.id);
@@ -857,7 +857,7 @@ export const CorporateGeneralLedger: React.FC = () => {
                     credit_amount: line.credit || 0,
                   }));
 
-                  const { error: linesError } = await supabase
+                  const { error: linesError } = await (supabase as any)
                     .from('journal_entry_lines')
                     .insert(linesToInsert);
 
@@ -866,7 +866,7 @@ export const CorporateGeneralLedger: React.FC = () => {
                   message.success('Journal entry updated successfully');
                 } else {
                   // Create new entry
-                  const { data: newEntry, error: insertError } = await supabase
+                  const { data: newEntry, error: insertError } = await (supabase as any)
                     .from('journal_entries')
                     .insert({
                       entry_date: values.entry_date.format('YYYY-MM-DD'),
@@ -889,7 +889,7 @@ export const CorporateGeneralLedger: React.FC = () => {
                     credit_amount: line.credit || 0,
                   }));
 
-                  const { error: linesError } = await supabase
+                  const { error: linesError } = await (supabase as any)
                     .from('journal_entry_lines')
                     .insert(linesToInsert);
 

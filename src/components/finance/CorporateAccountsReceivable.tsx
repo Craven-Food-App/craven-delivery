@@ -368,7 +368,7 @@ export const CorporateAccountsReceivable: React.FC = () => {
         .eq('id', selectedInvoice.id)
         .single();
 
-      const existingPayments = invoiceData?.payments || [];
+      const existingPayments = Array.isArray(invoiceData?.payments) ? invoiceData.payments : [];
       const newPayment = {
         date: values.payment_date.format('YYYY-MM-DD'),
         amount: paymentAmount,
@@ -1016,7 +1016,7 @@ export const CorporateAccountsReceivable: React.FC = () => {
                   min={0}
                   precision={2}
                   formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as 0}
                 />
               </Form.Item>
             </Col>
@@ -1030,7 +1030,7 @@ export const CorporateAccountsReceivable: React.FC = () => {
                   min={0}
                   precision={2}
                   formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                  parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as 0}
                 />
               </Form.Item>
             </Col>
@@ -1104,7 +1104,7 @@ export const CorporateAccountsReceivable: React.FC = () => {
                 max={selectedInvoice.outstanding_amount}
                 precision={2}
                 formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+                parser={value => value!.replace(/\$\s?|(,*)/g, '') as unknown as number}
               />
             </Form.Item>
             <Form.Item

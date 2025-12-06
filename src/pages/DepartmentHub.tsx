@@ -24,7 +24,7 @@ import {
   AuditOutlined,
   CloudOutlined,
   BugOutlined,
-  ServerOutlined,
+  HddOutlined,
   DatabaseOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";

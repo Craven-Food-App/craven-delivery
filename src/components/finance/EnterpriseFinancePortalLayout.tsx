@@ -229,183 +229,179 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
 
   return (
     <AppShell
-      navbarOffsetBreakpoint="sm"
-      asideOffsetBreakpoint="sm"
-      navbar={
-        <AppShell.Navbar
-          p="md"
-          hidden={!opened}
-          style={{ height: '100vh', position: 'fixed' }}
-        >
-          <AppShell.Section>
-            <Group mb="xl">
-              <IconBuildingBank size={32} color={theme.colors.blue[6]} />
-              <div>
-                <Text fw={700} size="lg">Finance Portal</Text>
-                <Badge size="sm" color="blue" variant="light">
-                  {primaryRole.role_name}
-                </Badge>
-              </div>
-            </Group>
-
-            {/* Entity Selection */}
-            {entities.length > 1 && (
-              <Menu shadow="md" width={250}>
-                <Menu.Target>
-                  <Button
-                    variant="subtle"
-                    fullWidth
-                    leftSection={<IconBuilding size={16} />}
-                    rightSection={<IconChevronRight size={16} />}
-                    justify="space-between"
-                    mb="md"
-                  >
-                    <Text truncate style={{ maxWidth: 150 }}>
-                      {entities.find(e => e.id === selectedEntity)?.entity_name || 'Select Entity'}
-                    </Text>
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {entities.map(entity => (
-                    <Menu.Item
-                      key={entity.id}
-                      onClick={() => setSelectedEntity(entity.id)}
-                      rightSection={selectedEntity === entity.id ? '✓' : null}
-                    >
-                      {entity.entity_name}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
+      navbar={{ width: 280, breakpoint: 'sm', collapsed: { mobile: !opened } }}
+      header={{ height: 60 }}
+    >
+      <AppShell.Header p="md" style={{ borderBottom: `1px solid ${theme.colors.gray[2]}` }}>
+        <Group justify="space-between" h="100%">
+          <Group>
+            <Burger
+              opened={opened}
+              onClick={() => setOpened(o => !o)}
+              size="sm"
+              hiddenFrom="sm"
+            />
+            <Text fw={600} size="lg">
+              Finance Department Portal
+            </Text>
+            {primaryRole && (
+              <Badge variant="light" color="blue">
+                {primaryRole.role_name}
+              </Badge>
             )}
+          </Group>
+          <Group>
+            {isCFO && (
+              <Badge color="green" variant="light">
+                Full Admin Access
+              </Badge>
+            )}
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={() => navigate('/finance/approvals')}
+            >
+              <IconChecklist size={16} style={{ marginRight: 8 }} />
+              Approvals
+            </Button>
+          </Group>
+        </Group>
+      </AppShell.Header>
 
-            <Divider mb="md" />
-          </AppShell.Section>
+      <AppShell.Navbar p="md">
+        <AppShell.Section>
+          <Group mb="xl">
+            <IconBuildingBank size={32} color={theme.colors.blue[6]} />
+            <div>
+              <Text fw={700} size="lg">Finance Portal</Text>
+              <Badge size="sm" color="blue" variant="light">
+                {primaryRole.role_name}
+              </Badge>
+            </div>
+          </Group>
 
-          <AppShell.Section grow component={ScrollArea}>
-            <Stack gap="xs">
-              {navItems.map(item => {
-                const isActive = currentPath === item.id;
-                return (
-                  <Tooltip
-                    key={item.id}
-                    label={item.label}
-                    position="right"
-                    disabled={opened}
-                  >
-                    <UnstyledButton
-                      onClick={() => handleNavigation(item.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        backgroundColor: isActive ? theme.colors.blue[0] : 'transparent',
-                        color: isActive ? theme.colors.blue[7] : theme.colors.gray[7],
-                        fontWeight: isActive ? 600 : 400,
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = theme.colors.gray[0];
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                      }}
-                    >
-                      {item.icon}
-                      <Text ml="sm" size="sm" style={{ flex: 1 }}>
-                        {item.label}
-                      </Text>
-                    </UnstyledButton>
-                  </Tooltip>
-                );
-              })}
-            </Stack>
-          </AppShell.Section>
-
-          <AppShell.Section>
-            <Divider mb="md" />
-            <Menu shadow="md" width={200}>
+          {/* Entity Selection */}
+          {entities.length > 1 && (
+            <Menu shadow="md" width={250}>
               <Menu.Target>
-                <UnstyledButton
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
-                  }}
+                <Button
+                  variant="subtle"
+                  fullWidth
+                  leftSection={<IconBuilding size={16} />}
+                  rightSection={<IconChevronRight size={16} />}
+                  justify="space-between"
+                  mb="md"
                 >
-                  <Avatar size="sm" radius="xl" color="blue">
-                    <IconUserCircle size={20} />
-                  </Avatar>
-                  <Text ml="sm" size="sm" style={{ flex: 1 }}>
-                    User Profile
+                  <Text truncate style={{ maxWidth: 150 }}>
+                    {entities.find(e => e.id === selectedEntity)?.entity_name || 'Select Entity'}
                   </Text>
-                  <IconChevronRight size={16} />
-                </UnstyledButton>
+                </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconSettings size={16} />}>
-                  Settings
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconLogout size={16} />}
-                  color="red"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </Menu.Item>
+                {entities.map(entity => (
+                  <Menu.Item
+                    key={entity.id}
+                    onClick={() => setSelectedEntity(entity.id)}
+                    rightSection={selectedEntity === entity.id ? '✓' : null}
+                  >
+                    {entity.entity_name}
+                  </Menu.Item>
+                ))}
               </Menu.Dropdown>
             </Menu>
-          </AppShell.Section>
-        </AppShell.Navbar>
-      }
-      header={
-        <AppShell.Header p="md" style={{ borderBottom: `1px solid ${theme.colors.gray[2]}` }}>
-          <Group justify="space-between" h="100%">
-            <Group>
-              <Burger
-                opened={opened}
-                onClick={() => setOpened(o => !o)}
-                size="sm"
-                hiddenFrom="sm"
-              />
-              <Text fw={600} size="lg">
-                Finance Department Portal
-              </Text>
-              {primaryRole && (
-                <Badge variant="light" color="blue">
-                  {primaryRole.role_name}
-                </Badge>
-              )}
-            </Group>
-            <Group>
-              {isCFO && (
-                <Badge color="green" variant="light">
-                  Full Admin Access
-                </Badge>
-              )}
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={() => navigate('/finance/approvals')}
+          )}
+
+          <Divider mb="md" />
+        </AppShell.Section>
+
+        <AppShell.Section grow component={ScrollArea}>
+          <Stack gap="xs">
+            {navItems.map(item => {
+              const isActive = currentPath === item.id;
+              return (
+                <Tooltip
+                  key={item.id}
+                  label={item.label}
+                  position="right"
+                  disabled={opened}
+                >
+                  <UnstyledButton
+                    onClick={() => handleNavigation(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: isActive ? theme.colors.blue[0] : 'transparent',
+                      color: isActive ? theme.colors.blue[7] : theme.colors.gray[7],
+                      fontWeight: isActive ? 600 : 400,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = theme.colors.gray[0];
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    {item.icon}
+                    <Text ml="sm" size="sm" style={{ flex: 1 }}>
+                      {item.label}
+                    </Text>
+                  </UnstyledButton>
+                </Tooltip>
+              );
+            })}
+          </Stack>
+        </AppShell.Section>
+
+        <AppShell.Section>
+          <Divider mb="md" />
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <UnstyledButton
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                }}
               >
-                <IconChecklist size={16} style={{ marginRight: 8 }} />
-                Approvals
-              </Button>
-            </Group>
-          </Group>
-        </AppShell.Header>
-      }
-    >
-      {children}
+                <Avatar size="sm" radius="xl" color="blue">
+                  <IconUserCircle size={20} />
+                </Avatar>
+                <Text ml="sm" size="sm" style={{ flex: 1 }}>
+                  User Profile
+                </Text>
+                <IconChevronRight size={16} />
+              </UnstyledButton>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconSettings size={16} />}>
+                Settings
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                leftSection={<IconLogout size={16} />}
+                color="red"
+                onClick={handleLogout}
+              >
+                Logout
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </AppShell.Section>
+      </AppShell.Navbar>
+
+      <AppShell.Main>
+        {children}
+      </AppShell.Main>
     </AppShell>
   );
 };
