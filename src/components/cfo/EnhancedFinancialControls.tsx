@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Progress, Tabs, Table, Alert, List } from '@mantine/core';
-import { IconShield, IconCheck, IconX, IconAlertTriangle, IconFileCheck, IconLock, IconDownload } from '@tabler/icons-react';
+import { IconShield, IconCheck, IconX, IconAlertTriangle, IconFileCheck, IconLock, IconDownload, IconPlus } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Control {
@@ -18,6 +18,7 @@ export const EnhancedFinancialControls: React.FC = () => {
 
   useEffect(() => {
     fetchControls();
+    initializeDefaultControls();
   }, []);
 
   const fetchControls = async () => {
@@ -33,6 +34,107 @@ export const EnhancedFinancialControls: React.FC = () => {
       console.error('Error fetching financial controls:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeDefaultControls = async () => {
+    try {
+      // Check if any controls exist
+      const { data: existingControls } = await supabase
+        .from('financial_controls')
+        .select('id')
+        .limit(1);
+
+      // If no controls exist, create standard financial controls
+      if (!existingControls || existingControls.length === 0) {
+        const defaultControls = [
+          {
+            control_name: 'Bank Reconciliation',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Accounts Payable Approval',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Accounts Receivable Review',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Payroll Authorization',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Expense Report Approval',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Financial Statement Review',
+            category: 'Management Review',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Budget vs Actual Analysis',
+            category: 'Management Review',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'User Access Review',
+            category: 'IT General',
+            status: 'testing',
+            owner: 'CTO',
+          },
+          {
+            control_name: 'System Backup Verification',
+            category: 'IT General',
+            status: 'testing',
+            owner: 'CTO',
+          },
+          {
+            control_name: 'Data Security Controls',
+            category: 'IT General',
+            status: 'testing',
+            owner: 'CTO',
+          },
+          {
+            control_name: 'Vendor Payment Authorization',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+          {
+            control_name: 'Revenue Recognition',
+            category: 'Financial Reporting',
+            status: 'testing',
+            owner: 'CFO',
+          },
+        ];
+
+        const { error } = await supabase
+          .from('financial_controls')
+          .insert(defaultControls);
+
+        if (error) {
+          console.error('Error creating default controls:', error);
+        } else {
+          // Refresh the controls list
+          fetchControls();
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing default controls:', error);
     }
   };
 
@@ -112,12 +214,35 @@ export const EnhancedFinancialControls: React.FC = () => {
         </Tabs.List>
 
         <Tabs.Panel value="dashboard" pt="md">
-          <Card withBorder p="md">
-            {loading ? (
-              <Text>Loading controls...</Text>
-            ) : controls.length === 0 ? (
-              <Alert color="blue"><Text>No financial controls configured. Add controls to begin monitoring.</Text></Alert>
-            ) : (
+          <Stack gap="md">
+            <Group justify="space-between">
+              <Title order={4}>Financial Controls</Title>
+              <Button 
+                leftSection={<IconPlus size={16} />}
+                onClick={initializeDefaultControls}
+                variant="light"
+                loading={loading}
+              >
+                Initialize Standard Controls
+              </Button>
+            </Group>
+            
+            <Card withBorder p="md">
+              {loading ? (
+                <Text>Loading controls...</Text>
+              ) : controls.length === 0 ? (
+                <Alert color="blue">
+                  <Text>No financial controls configured. Add controls to begin monitoring.</Text>
+                  <Button 
+                    mt="md" 
+                    leftSection={<IconPlus size={16} />}
+                    onClick={initializeDefaultControls}
+                    variant="light"
+                  >
+                    Initialize Standard Financial Controls
+                  </Button>
+                </Alert>
+              ) : (
               <Table>
                 <Table.Thead>
                   <Table.Tr>
@@ -144,8 +269,9 @@ export const EnhancedFinancialControls: React.FC = () => {
                   ))}
                 </Table.Tbody>
               </Table>
-            )}
-          </Card>
+              )}
+            </Card>
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="sox" pt="md">

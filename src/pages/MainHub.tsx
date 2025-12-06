@@ -945,32 +945,17 @@ const MainHub: React.FC = () => {
     try {
       let deptData: any[] = [];
       
-      // Try to fetch with head employee relationship first
-      const { data, error } = await supabase
+      // Try simpler query first (foreign key relationships can be problematic with RLS)
+      const { data: simpleData, error: simpleError } = await supabase
         .from('departments')
-        .select(`
-          *,
-          head_employee:employees!fk_department_head(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .order('name', { ascending: true });
-
-      if (error) {
-        // If foreign key relationship doesn't work, try simpler query
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('departments')
-          .select('*')
-          .order('name', { ascending: true });
-        
-        if (simpleError) throw simpleError;
-        deptData = simpleData || [];
-      } else {
-        deptData = data || [];
+      
+      if (simpleError) {
+        console.error('Error fetching departments:', simpleError);
+        throw simpleError;
       }
+      deptData = simpleData || [];
 
       // Get employee counts and head employee info for each department
       const departmentsWithCounts = await Promise.all(

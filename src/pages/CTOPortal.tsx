@@ -185,7 +185,7 @@ function CTOPortalContent() {
       case 'help-desk':
         return <ITHelpDeskDashboard />;
       case 'code-editor':
-        return <CodeEditorPortal />;
+        return null; // Handled separately below
       case 'developer-onboarding':
         return <DeveloperOnboarding />;
       case 'incidents':
@@ -232,6 +232,16 @@ function CTOPortalContent() {
           <Button onClick={() => navigate('/hub')}>Back to Hub</Button>
         </Stack>
       </Center>
+    );
+  }
+
+  // Always render code editor in standalone corporate mode
+  if (activeSection === 'code-editor') {
+    return (
+      <CodeEditorPortal 
+        standalone={true}
+        onBack={() => setActiveSection('overview')}
+      />
     );
   }
 

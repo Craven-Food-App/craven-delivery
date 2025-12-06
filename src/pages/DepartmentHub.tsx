@@ -307,6 +307,14 @@ const DepartmentHub: React.FC = () => {
     } else if (normalizedName.includes('technology') || normalizedName.includes('tech')) {
       return [
         {
+          id: 'developer-portal',
+          name: 'Developer Portal',
+          description: 'Code editor with GitHub and Supabase sync',
+          icon: CodeOutlined,
+          path: '/technology/developer-portal',
+          color: '#eb2f96',
+        },
+        {
           id: 'infrastructure',
           name: 'Infrastructure',
           description: 'Cloud infrastructure and servers',
@@ -344,7 +352,7 @@ const DepartmentHub: React.FC = () => {
           description: 'Repository code editor',
           icon: CodeOutlined,
           path: '/cto?section=code-editor',
-          color: '#eb2f96',
+          color: '#fa8c16',
         },
         {
           id: 'incidents',

@@ -26,11 +26,13 @@ import {
   IconFileText,
   IconMail,
   IconPencil,
+  IconCode,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { PersonnelManager } from '@/components/ceo/PersonnelManager';
 import { FinancialApprovals } from '@/components/ceo/FinancialApprovals';
+import { CodeChangeQueue } from '@/components/ceo/CodeChangeQueue';
 import { EmergencyControls } from '@/components/ceo/EmergencyControls';
 import { StrategicPlanning } from '@/components/ceo/StrategicPlanning';
 import { StrategicMindMap } from '@/components/ceo/StrategicMindMap';
@@ -58,6 +60,7 @@ interface CEOMetrics {
   feeders: number;
   merchants: number;
   pendingApprovals: number;
+  pendingCodeChanges: number;
   criticalAlerts: number;
 }
 
@@ -77,6 +80,7 @@ const CEOPortal: React.FC = () => {
   const navItems = useMemo<ExecutiveNavItem[]>(() => {
     const totalEmployees = metrics?.totalEmployees ?? 0;
     const pendingApprovals = metrics?.pendingApprovals ?? 0;
+    const pendingCodeChanges = metrics?.pendingCodeChanges ?? 0;
 
     return [
       { id: 'overview', label: 'Command Center', icon: IconChartBar as any },
@@ -93,6 +97,14 @@ const CEOPortal: React.FC = () => {
             : 'Approve Spend',
         icon: IconCurrencyDollar as any,
       },
+      {
+        id: 'code-changes',
+        label:
+          pendingCodeChanges > 0
+            ? `Code Changes (${pendingCodeChanges})`
+            : 'Code Changes',
+        icon: IconCode as any,
+      },
       { id: 'equity', label: 'Review Equity', icon: IconTrophy as any },
       { id: 'strategic', label: 'Drive Strategy', icon: IconRocket as any },
       { id: 'mindmap', label: 'Map Decisions', icon: IconBulb as any },
@@ -104,7 +116,7 @@ const CEOPortal: React.FC = () => {
       { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
       { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
     ];
-  }, [metrics?.totalEmployees, metrics?.pendingApprovals]);
+  }, [metrics?.totalEmployees, metrics?.pendingApprovals, metrics?.pendingCodeChanges]);
 
   const handleNavigateToCFO = () => {
     const host = window.location.hostname;
@@ -141,6 +153,8 @@ const CEOPortal: React.FC = () => {
         return <PersonnelManager />;
       case 'financial':
         return <FinancialApprovals />;
+      case 'code-changes':
+        return <CodeChangeQueue />;
       case 'equity':
         return <EquityDashboard />;
       case 'strategic':
@@ -235,6 +249,22 @@ const CEOPortal: React.FC = () => {
             }
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'code_change_requests',
+          },
+          () => {
+            // Only update state, never navigate or reload
+            try {
+              fetchCEOMetrics();
+            } catch (error) {
+              console.error('Error in real-time subscription callback:', error);
+            }
+          }
+        )
         .subscribe();
 
       return () => {
@@ -247,10 +277,11 @@ const CEOPortal: React.FC = () => {
   const fetchCEOMetrics = async () => {
     try {
       // Fetch real metrics from database
-      const [employeesRes, approvalsRes, ordersRes] = await Promise.all([
+      const [employeesRes, approvalsRes, ordersRes, codeChangesRes] = await Promise.all([
         supabase.from('employees').select('id, employment_status, salary'),
         supabase.from('ceo_financial_approvals').select('id, status, amount'),
-        supabase.from('orders').select('id, total_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        supabase.from('orders').select('id, total_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('code_change_requests').select('id, status', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
 
       const employees = employeesRes.data || [];
@@ -263,6 +294,8 @@ const CEOPortal: React.FC = () => {
       const orders = ordersRes.data || [];
       const monthlyRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
+      const pendingCodeChanges = codeChangesRes.count || 0;
+
       setMetrics({
         totalRevenue: monthlyRevenue,
         revenueGrowth: 15.2, // Calculate from historical data
@@ -274,6 +307,7 @@ const CEOPortal: React.FC = () => {
         feeders: 0, // From feeders table when available
         merchants: 0, // From merchants table when available
         pendingApprovals: pendingApprovals.length,
+        pendingCodeChanges: pendingCodeChanges,
         criticalAlerts: 0,
       });
       setLastUpdated(new Date());
@@ -401,78 +435,78 @@ const CEOPortal: React.FC = () => {
           </Group>
           <Grid gutter="md">
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="green.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Monthly Revenue</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {formatCurrency(metrics?.totalRevenue ?? 0)}
                   </Text>
-                  <Text c="green.1" size="xs" mt="xs">
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
                     Revenue Growth: {metrics?.revenueGrowth ?? 0}%
                   </Text>
                 </Stack>
               </Paper>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="blue.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Cash Flow</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {formatCurrency(metrics?.cashFlow ?? 0)}
                   </Text>
-                  <Text c="blue.1" size="xs" mt="xs">
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
                     Burn Rate {(metrics?.burnRate ?? 0).toLocaleString()}
                   </Text>
                 </Stack>
               </Paper>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="violet.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Runway</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {metrics?.runway ?? 0} mo
                   </Text>
-                  <Text c="violet.1" size="xs" mt="xs">
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
                     Admin Staff: {metrics?.admins ?? 0}
                   </Text>
                 </Stack>
               </Paper>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="indigo.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Headcount</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {metrics?.totalEmployees ?? 0}
                   </Text>
-                  <Text c="indigo.1" size="xs" mt="xs">
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
                     Admins: {metrics?.admins ?? 0} • Feeders: {metrics?.feeders ?? 0}
                   </Text>
                 </Stack>
               </Paper>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="yellow.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Pending Approvals</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {metrics?.pendingApprovals ?? 0}
                   </Text>
-                  <Text c="yellow.1" size="xs" mt="xs">
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">
                     Requires your attention
                   </Text>
                 </Stack>
               </Paper>
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Paper bg="teal.6" p="md" h="100%" style={{ borderRadius: '8px' }}>
+              <Paper bg="#ff6e00" p="md" h="100%" style={{ borderRadius: '8px' }}>
                 <Stack gap="xs">
                   <Text c="white" fw={600} size="sm">Merchants</Text>
                   <Text c="white" size="xl" fw={700} style={{ fontSize: '24px' }}>
                     {metrics?.merchants ?? 0}
                   </Text>
-                  <Text c="teal.1" size="xs" mt="xs">Active partners</Text>
+                  <Text c="rgba(255, 255, 255, 0.9)" size="xs" mt="xs">Active partners</Text>
                 </Stack>
               </Paper>
             </Grid.Col>

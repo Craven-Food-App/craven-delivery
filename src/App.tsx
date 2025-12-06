@@ -75,6 +75,7 @@ import MarketingPortal from "./pages/MarketingPortal";
 import HRPortal from "./pages/HRPortal";
 import MainHub from "./pages/MainHub";
 import DepartmentHub from "./pages/DepartmentHub";
+import DeveloperPortal from "./pages/DeveloperPortal";
 import BusinessAuth from "./pages/BusinessAuth";
 import BusinessAuthWrapper from "./components/BusinessAuthWrapper";
 import BusinessAuthGuard from "./components/BusinessAuthGuard";
@@ -141,6 +142,7 @@ const App = () => {
         pathname === '/main-hub' ||
         pathname.startsWith('/hub/') ||
         pathname.startsWith('/finance/') ||
+        pathname.startsWith('/technology/') ||
         (pathname === '/auth' && search.includes('hq=true')) ||
         hostname === 'hq.cravenusa.com' ||
         (hostname === 'localhost' && 
@@ -154,7 +156,8 @@ const App = () => {
            pathname.includes('/cto') ||
            pathname.includes('/cxo') ||
            pathname.includes('/finance') ||
-           pathname.includes('/board'))) ||
+           pathname.includes('/board') ||
+           pathname.includes('/technology'))) ||
         (hostname === '127.0.0.1' && 
           (search.includes('hq=true') || 
            pathname.includes('/admin') ||
@@ -166,7 +169,8 @@ const App = () => {
            pathname.includes('/cto') ||
            pathname.includes('/cxo') ||
            pathname.includes('/finance') ||
-           pathname.includes('/board'))) ||
+           pathname.includes('/board') ||
+           pathname.includes('/technology'))) ||
         search.includes('hq=true')
       );
     };
@@ -319,6 +323,7 @@ const App = () => {
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
+                  <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/admin" element={<Admin />} />
                     <Route path="/marketing-portal" element={<MarketingPortal />} />
@@ -614,6 +619,7 @@ const App = () => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
+          <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hr-portal" element={<BusinessAuthGuard><HRPortal /></BusinessAuthGuard>} />
           <Route path="/board" element={<BusinessAuthGuard><BoardPortal /></BusinessAuthGuard>} />
