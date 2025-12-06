@@ -229,15 +229,7 @@ export const EnhancedTaxPlanning: React.FC = () => {
         }
       }
 
-      let totalHealthInsurance = 0;
-      if (payrollData) {
-        payrollData.forEach((entry: any) => {
-          const preTax = entry.pre_tax_details || {};
-          if (preTax.health_insurance) {
-            totalHealthInsurance += parseFloat(preTax.health_insurance) || 0;
-          }
-        });
-      }
+
 
       // Small Business Health Care Tax Credit: Up to 50% of premiums (35% for non-profits)
       // Only for businesses with <25 FTE employees and average wages <$50k
