@@ -72,17 +72,74 @@ serve(async (req: Request) => {
     // Use new format if available, otherwise fall back to legacy
     if (body.documentSignatures && body.documentSignatures.length > 0) {
       // New format: typed signatures with audit trail
+      // First, find one document with the token to get executive/appointment info
+      const { data: sampleDoc, error: sampleError } = await supabase
+        .from('executive_documents')
+        .select('executive_id, appointment_id, officer_name, role')
+        .eq('signature_token', body.token)
+        .maybeSingle();
+
+      if (sampleError || !sampleDoc) {
+        return new Response(JSON.stringify({ ok: false, error: 'Invalid or expired token' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+
+      // Get officer info from appointment if available
+      let officerName = sampleDoc.officer_name || body.typedName || '';
+      let officerEmail = null;
+      
+      if (sampleDoc.appointment_id) {
+        const { data: appointment } = await supabase
+          .from('executive_appointments')
+          .select('officer_name, officer_email')
+          .eq('id', sampleDoc.appointment_id)
+          .maybeSingle();
+        
+        if (appointment) {
+          officerName = appointment.officer_name || officerName;
+          officerEmail = appointment.officer_email;
+        }
+      }
+
+      // Process each document signature
       for (const docSig of body.documentSignatures) {
-        // Verify token and get document info for each document
-        const { data: tokenData, error: tokenError } = await supabase
+        // Verify document exists and is linked to the same executive/appointment
+        const { data: docData, error: docError } = await supabase
           .from('executive_documents')
-          .select('*, executive_appointments!inner(officer_name, officer_email)')
+          .select('id, executive_id, appointment_id, signature_status')
           .eq('id', docSig.documentId)
-          .eq('signature_token', body.token)
           .maybeSingle();
 
-        if (tokenError || !tokenData) {
-          console.error(`Document ${docSig.documentId} not found or invalid token`);
+        if (docError || !docData) {
+          console.error(`Document ${docSig.documentId} not found:`, docError);
+          continue;
+        }
+
+        // Verify document belongs to same executive/appointment
+        // Check executive_id match if both have it
+        if (sampleDoc.executive_id && docData.executive_id) {
+          if (docData.executive_id !== sampleDoc.executive_id) {
+            console.error(`Document ${docSig.documentId} does not belong to the same executive`);
+            continue;
+          }
+        }
+        // Check appointment_id match if both have it
+        if (sampleDoc.appointment_id && docData.appointment_id) {
+          if (docData.appointment_id !== sampleDoc.appointment_id) {
+            console.error(`Document ${docSig.documentId} does not belong to the same appointment`);
+            continue;
+          }
+        }
+        // If sample has executive_id but doc doesn't, or vice versa, skip
+        if ((sampleDoc.executive_id && !docData.executive_id) || (!sampleDoc.executive_id && docData.executive_id)) {
+          console.error(`Document ${docSig.documentId} has mismatched executive_id`);
+          continue;
+        }
+        // If sample has appointment_id but doc doesn't, or vice versa, skip
+        if ((sampleDoc.appointment_id && !docData.appointment_id) || (!sampleDoc.appointment_id && docData.appointment_id)) {
+          console.error(`Document ${docSig.documentId} has mismatched appointment_id`);
           continue;
         }
 
@@ -100,8 +157,8 @@ serve(async (req: Request) => {
           signature_name: docSig.signatureName,
           signed_at: docSig.signedAt,
           audit_trail: auditData,
-          officer_name: tokenData.executive_appointments?.officer_name,
-          officer_email: tokenData.executive_appointments?.officer_email,
+          officer_name: officerName,
+          officer_email: officerEmail,
           signature_method: 'typed_electronic',
           e_sign_compliant: true,
         };
@@ -114,16 +171,17 @@ serve(async (req: Request) => {
 
         if (uploadError) {
           console.error('Storage upload error:', uploadError);
-          throw uploadError;
+          // Continue with other documents even if one fails
+          continue;
         }
 
         // Update document signature status
-        await supabase
+        const { error: updateError } = await supabase
           .from('executive_documents')
           .update({
             signature_status: 'signed',
             signed_at: docSig.signedAt,
-            signed_by_user: tokenData.executive_appointments?.officer_email,
+            signed_by_user: officerEmail || officerName,
             signature_metadata: {
               method: 'typed_electronic',
               signature_name: docSig.signatureName,
@@ -131,6 +189,11 @@ serve(async (req: Request) => {
             },
           })
           .eq('id', docSig.documentId);
+
+        if (updateError) {
+          console.error(`Error updating document ${docSig.documentId}:`, updateError);
+          // Continue with other documents
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -145,7 +208,7 @@ serve(async (req: Request) => {
       // Legacy format: drag-and-drop signatures
       const { data: tokenData, error: tokenError } = await supabase
         .from('executive_documents')
-        .select('*, executive_appointments!inner(officer_name, officer_email)')
+        .select('executive_id, appointment_id, officer_name, role')
         .eq('signature_token', body.token)
         .eq('signature_status', 'pending')
         .maybeSingle();
@@ -155,6 +218,23 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404,
         });
+      }
+
+      // Get officer info from appointment if available
+      let officerName = tokenData.officer_name || body.typedName || '';
+      let officerEmail = null;
+      
+      if (tokenData.appointment_id) {
+        const { data: appointment } = await supabase
+          .from('executive_appointments')
+          .select('officer_name, officer_email')
+          .eq('id', tokenData.appointment_id)
+          .maybeSingle();
+        
+        if (appointment) {
+          officerName = appointment.officer_name || officerName;
+          officerEmail = appointment.officer_email;
+        }
       }
 
       // Group signatures by document
@@ -174,8 +254,8 @@ serve(async (req: Request) => {
           documentId,
           typed_name: body.typedName,
           placedSignatures: signatures,
-          officer_name: tokenData.executive_appointments?.officer_name,
-          officer_email: tokenData.executive_appointments?.officer_email,
+          officer_name: officerName,
+          officer_email: officerEmail,
           signed_at: new Date().toISOString(),
         };
 

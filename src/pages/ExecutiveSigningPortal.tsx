@@ -175,22 +175,33 @@ export default function ExecutiveSigningPortal() {
     }
 
     try {
+      setLoading(true);
       // Get IP address (will be captured server-side, but include in payload)
-      const { error } = await supabase.functions.invoke('submit-executive-signatures', {
+      const { data, error } = await supabase.functions.invoke('submit-executive-signatures', {
         body: {
           token,
           documentSignatures: Object.values(documentSignatures),
-          typedName: userInfo?.officer_name || Object.values(documentSignatures)[0]?.signatureName || '',
+          typedName: userInfo?.officer_name || userInfo?.name || Object.values(documentSignatures)[0]?.signatureName || '',
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to submit signatures');
+      }
+
+      if (data && !data.ok) {
+        throw new Error(data.error || 'Failed to submit signatures');
+      }
 
       message.success('All documents signed successfully!');
       setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {
       console.error('Submit error:', err);
-      message.error(err.message || 'Failed to submit signatures');
+      const errorMessage = err.message || err.error || 'Failed to submit signatures. Please try again.';
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -368,8 +379,9 @@ export default function ExecutiveSigningPortal() {
                 <Button
                   onClick={handleFinishSigning}
                   className="flex-1 bg-green-600 hover:bg-green-700"
+                  disabled={loading}
                 >
-                  Finish & Submit All Documents
+                  {loading ? 'Submitting...' : 'Finish & Submit All Documents'}
                 </Button>
               )}
             </div>
