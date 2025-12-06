@@ -6,6 +6,8 @@ import { FinancialReportsDashboard } from '@/components/finance/FinancialReports
 import { BudgetManagement } from '@/components/finance/BudgetManagement';
 import { InvoiceManagement } from '@/components/finance/InvoiceManagement';
 import { AuditComplianceDashboard } from '@/components/finance/AuditComplianceDashboard';
+import { FinanceAuditPortal } from '@/components/finance/FinanceAuditPortal';
+import { FinanceAuditComponent } from '@/components/finance/audit/FinanceAuditComponent';
 import { GeneralLedgerView } from '@/components/finance/GeneralLedgerView';
 import { CorporateGeneralLedger } from '@/components/finance/CorporateGeneralLedger';
 import { BankingTreasuryView } from '@/components/finance/BankingTreasuryView';
@@ -35,7 +37,7 @@ const EnterpriseFinancePortal: React.FC = () => {
         <Route path="budget-forecast" element={<BudgetManagement />} />
         <Route path="fixed-assets" element={<GeneralLedgerView mode="fixed-assets" />} />
         <Route path="tax-management" element={<TaxManagementView />} />
-        <Route path="audit" element={<AuditComplianceDashboard />} />
+        <Route path="audit" element={<FinanceAuditComponent />} />
         <Route path="test" element={<SimpleTest />} />
         <Route path="*" element={<div style={{ padding: '2rem' }}><h1>Route Not Found in Finance Portal</h1><p>Available routes: general-ledger, accounts-payable, accounts-receivable, etc.</p></div>} />
       </Routes>

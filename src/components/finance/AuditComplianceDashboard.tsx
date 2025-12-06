@@ -56,15 +56,28 @@ export const AuditComplianceDashboard: React.FC = () => {
           .order('review_period_start', { ascending: false })
           .limit(20),
         supabase
-          .from('finance_audit_log_2025_01')
-          .select('id, timestamp, user_id, action_type, resource_type, resource_id, severity, compliance_tag')
-          .order('timestamp', { ascending: false })
+          .from('audit_logs')
+          .select('id, entered_date, entered_by, transaction_type, transaction_id, severity')
+          .order('entered_date', { ascending: false })
           .limit(50),
       ]);
 
       if (!sodRes.error && sodRes.data) setSodRules(sodRes.data as SodRule[]);
       if (!reviewRes.error && reviewRes.data) setReviews(reviewRes.data as AccessReview[]);
-      if (!auditRes.error && auditRes.data) setAuditRows(auditRes.data as AuditRow[]);
+      if (!auditRes.error && auditRes.data) {
+        // Map audit_logs fields to AuditRow interface
+        const mappedAuditRows: AuditRow[] = (auditRes.data as any[]).map((item, idx) => ({
+          id: idx,
+          timestamp: item.entered_date || item.created_at || new Date().toISOString(),
+          user_id: item.entered_by,
+          action_type: item.transaction_type || 'unknown',
+          resource_type: item.transaction_type || 'unknown',
+          resource_id: item.transaction_id,
+          severity: item.severity || 'low',
+          compliance_tag: null, // audit_logs doesn't have compliance_tag
+        }));
+        setAuditRows(mappedAuditRows);
+      }
     } catch (err) {
       console.error('Error loading audit & compliance data:', err);
     } finally {

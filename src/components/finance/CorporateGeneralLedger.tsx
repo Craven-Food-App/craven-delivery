@@ -706,75 +706,368 @@ export const CorporateGeneralLedger: React.FC = () => {
         />
       </Card>
 
-      {/* Transaction Detail Modal */}
+      {/* Transaction Detail Modal - Fortune 500 Format */}
       <Modal
-        title={
-          <Space>
-            <FileTextOutlined />
-            <Text strong>Transaction Details</Text>
-          </Space>
-        }
+        title=""
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setSelectedTransaction(null);
+        }}
         footer={null}
-        width={800}
+        width="90%"
+        styles={{
+          body: { padding: 0 },
+          content: { maxHeight: '90vh' },
+        }}
       >
         {selectedTransaction && (
-          <Descriptions bordered column={2} size="small">
-            <Descriptions.Item label="Journal Entry Number" span={2}>
-              <Text strong style={{ fontFamily: 'monospace' }}>
-                {selectedTransaction.journal_entry_number}
+          <div style={{ 
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            padding: '60px 80px',
+            background: '#ffffff',
+            color: '#1a1a1a',
+            lineHeight: 1.6,
+          }}>
+            {/* Header */}
+            <div style={{ 
+              borderBottom: '3px solid #1a1a1a',
+              paddingBottom: '20px',
+              marginBottom: '40px',
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <Text style={{ fontSize: '32px', fontWeight: 700, letterSpacing: '2px', marginBottom: '10px', display: 'block' }}>
+                  CRAVE'N, INC.
+                </Text>
+                <Text style={{ fontSize: '18px', color: '#666', letterSpacing: '1px', display: 'block' }}>
+                  GENERAL LEDGER TRANSACTION REPORT
+                </Text>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: '#666',
+                marginTop: '20px',
+              }}>
+                <div>
+                  <Text strong>Transaction Date:</Text>{' '}
+                  {dayjs(selectedTransaction.transaction_date).format('MMMM D, YYYY')}
+                </div>
+                <div>
+                  <Text strong>Generated:</Text>{' '}
+                  {dayjs().format('MMMM D, YYYY [at] h:mm A')}
+                </div>
+                <div>
+                  <Text strong>Status:</Text>{' '}
+                  <Tag color={selectedTransaction.status === 'posted' ? 'green' : selectedTransaction.status === 'pending' ? 'yellow' : 'gray'}>
+                    {selectedTransaction.status.toUpperCase()}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                TRANSACTION SUMMARY
+              </Title>
+              <div style={{ 
+                background: '#f8f9fa',
+                padding: '25px',
+                borderRadius: '4px',
+                marginBottom: '20px',
+              }}>
+                <Text style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                  This report provides a detailed analysis of General Ledger transaction{' '}
+                  <Text strong style={{ fontFamily: 'monospace' }}>
+                    {selectedTransaction.journal_entry_number}
+                  </Text>. The transaction was recorded in account{' '}
+                  <Text strong style={{ fontFamily: 'monospace' }}>
+                    {selectedTransaction.account_code}
+                  </Text> ({selectedTransaction.account_name}) with a{' '}
+                  {selectedTransaction.debit > 0 ? (
+                    <>
+                      debit amount of{' '}
+                      <Text strong style={{ color: '#1890ff' }}>
+                        ${selectedTransaction.debit.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      credit amount of{' '}
+                      <Text strong style={{ color: '#52c41a' }}>
+                        ${selectedTransaction.credit.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </Text>
+                    </>
+                  )}. This transaction is part of the{' '}
+                  <Text strong>{selectedTransaction.period}</Text> accounting period.
+                </Text>
+              </div>
+            </div>
+
+            {/* Transaction Details Table */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                TRANSACTION DETAILS
+              </Title>
+              <Table
+                bordered
+                pagination={false}
+                style={{
+                  fontSize: '14px',
+                }}
+                dataSource={[
+                  {
+                    key: '1',
+                    field: 'Journal Entry Number',
+                    value: selectedTransaction.journal_entry_number,
+                    style: { fontFamily: 'monospace', fontWeight: 700 },
+                  },
+                  {
+                    key: '2',
+                    field: 'Transaction Date',
+                    value: dayjs(selectedTransaction.transaction_date).format('MMMM D, YYYY'),
+                  },
+                  {
+                    key: '3',
+                    field: 'Reference Number',
+                    value: selectedTransaction.reference_number || 'N/A',
+                  },
+                  {
+                    key: '4',
+                    field: 'Account Code',
+                    value: `${selectedTransaction.account_code} - ${selectedTransaction.account_name}`,
+                    style: { fontFamily: 'monospace' },
+                  },
+                  {
+                    key: '5',
+                    field: 'Description',
+                    value: selectedTransaction.description,
+                  },
+                  {
+                    key: '6',
+                    field: 'Debit Amount',
+                    value: selectedTransaction.debit > 0
+                      ? `$${selectedTransaction.debit.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      : '—',
+                    style: { 
+                      color: selectedTransaction.debit > 0 ? '#1890ff' : '#666',
+                      fontWeight: selectedTransaction.debit > 0 ? 700 : 400,
+                      fontFamily: 'monospace',
+                    },
+                  },
+                  {
+                    key: '7',
+                    field: 'Credit Amount',
+                    value: selectedTransaction.credit > 0
+                      ? `$${selectedTransaction.credit.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      : '—',
+                    style: { 
+                      color: selectedTransaction.credit > 0 ? '#52c41a' : '#666',
+                      fontWeight: selectedTransaction.credit > 0 ? 700 : 400,
+                      fontFamily: 'monospace',
+                    },
+                  },
+                  {
+                    key: '8',
+                    field: 'Net Balance',
+                    value: `$${selectedTransaction.balance.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`,
+                    style: { 
+                      fontWeight: 700,
+                      fontSize: '16px',
+                      fontFamily: 'monospace',
+                      color: selectedTransaction.balance > 0 ? '#1890ff' : selectedTransaction.balance < 0 ? '#ff4d4f' : '#595959',
+                    },
+                  },
+                  {
+                    key: '9',
+                    field: 'Status',
+                    value: selectedTransaction.status.toUpperCase(),
+                  },
+                  {
+                    key: '10',
+                    field: 'Entity Code',
+                    value: selectedTransaction.entity_code,
+                  },
+                  {
+                    key: '11',
+                    field: 'Accounting Period',
+                    value: selectedTransaction.period,
+                  },
+                  {
+                    key: '12',
+                    field: 'Posted By',
+                    value: selectedTransaction.posted_by,
+                  },
+                  {
+                    key: '13',
+                    field: 'Posted At',
+                    value: dayjs(selectedTransaction.posted_at).format('MMMM D, YYYY [at] h:mm A'),
+                  },
+                ]}
+                columns={[
+                  {
+                    title: 'Field',
+                    dataIndex: 'field',
+                    key: 'field',
+                    width: '30%',
+                    render: (text: string) => (
+                      <Text strong style={{ fontSize: '14px' }}>{text}</Text>
+                    ),
+                  },
+                  {
+                    title: 'Value',
+                    dataIndex: 'value',
+                    key: 'value',
+                    render: (value: string, record: any) => (
+                      <Text style={record.style || {}}>{value}</Text>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Accounting Impact */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                ACCOUNTING IMPACT
+              </Title>
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Card style={{ 
+                    background: selectedTransaction.debit > 0 ? '#e6f7ff' : '#f0f0f0',
+                    border: `2px solid ${selectedTransaction.debit > 0 ? '#1890ff' : '#d9d9d9'}`,
+                  }}>
+                    <Statistic
+                      title="Debit Impact"
+                      value={selectedTransaction.debit}
+                      prefix={<DollarOutlined />}
+                      precision={2}
+                      valueStyle={{ 
+                        color: selectedTransaction.debit > 0 ? '#1890ff' : '#999',
+                        fontSize: 24,
+                        fontWeight: 700,
+                      }}
+                      formatter={(value) => 
+                        selectedTransaction.debit > 0
+                          ? `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : 'No Debit'
+                      }
+                    />
+                  </Card>
+                </Col>
+                <Col span={12}>
+                  <Card style={{ 
+                    background: selectedTransaction.credit > 0 ? '#f6ffed' : '#f0f0f0',
+                    border: `2px solid ${selectedTransaction.credit > 0 ? '#52c41a' : '#d9d9d9'}`,
+                  }}>
+                    <Statistic
+                      title="Credit Impact"
+                      value={selectedTransaction.credit}
+                      prefix={<DollarOutlined />}
+                      precision={2}
+                      valueStyle={{ 
+                        color: selectedTransaction.credit > 0 ? '#52c41a' : '#999',
+                        fontSize: 24,
+                        fontWeight: 700,
+                      }}
+                      formatter={(value) => 
+                        selectedTransaction.credit > 0
+                          ? `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : 'No Credit'
+                      }
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Footer */}
+            <div style={{ 
+              marginTop: '60px',
+              paddingTop: '30px',
+              borderTop: '2px solid #e0e0e0',
+              fontSize: '11px',
+              color: '#666',
+              textAlign: 'center',
+            }}>
+              <Text style={{ marginBottom: '10px', display: 'block' }}>
+                <Text strong>CRAVE'N, INC.</Text> | General Ledger Transaction Report | 
+                Generated {dayjs().format('MMMM D, YYYY [at] h:mm A')}
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Transaction Date">
-              {dayjs(selectedTransaction.transaction_date).format('MM/DD/YYYY')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Reference Number">
-              {selectedTransaction.reference_number}
-            </Descriptions.Item>
-            <Descriptions.Item label="Account Code" span={2}>
-              <Text code>{selectedTransaction.account_code}</Text> - {selectedTransaction.account_name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Description" span={2}>
-              {selectedTransaction.description}
-            </Descriptions.Item>
-            <Descriptions.Item label="Debit Amount">
-              <Text strong style={{ color: '#1890ff', fontSize: 16 }}>
-                {selectedTransaction.debit > 0
-                  ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedTransaction.debit)
-                  : '—'}
+              <Text style={{ fontStyle: 'italic', lineHeight: 1.6, display: 'block' }}>
+                This report is prepared for internal use and accounting purposes. 
+                All transaction data is based on the General Ledger system and reflects actual accounting entries. 
+                This report supports financial analysis, audit compliance, and accounting reconciliation activities.
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Credit Amount">
-              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
-                {selectedTransaction.credit > 0
-                  ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedTransaction.credit)
-                  : '—'}
+              <Text style={{ marginTop: '15px', fontSize: '10px', display: 'block' }}>
+                Transaction ID: {selectedTransaction.id} | Status: {selectedTransaction.status.toUpperCase()} | 
+                Journal Entry: {selectedTransaction.journal_entry_number}
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Net Balance">
-              <Text strong style={{ fontSize: 18, fontFamily: 'monospace' }}>
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedTransaction.balance)}
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag color={selectedTransaction.status === 'posted' ? 'success' : 'warning'}>
-                {selectedTransaction.status.toUpperCase()}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Entity Code">
-              <Badge color="blue" text={selectedTransaction.entity_code} />
-            </Descriptions.Item>
-            <Descriptions.Item label="Period">
-              {selectedTransaction.period}
-            </Descriptions.Item>
-            <Descriptions.Item label="Posted By">
-              {selectedTransaction.posted_by}
-            </Descriptions.Item>
-            <Descriptions.Item label="Posted At">
-              {dayjs(selectedTransaction.posted_at).format('MM/DD/YYYY HH:mm:ss')}
-            </Descriptions.Item>
-          </Descriptions>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ 
+              paddingTop: '30px',
+              borderTop: '1px solid #e0e0e0',
+              background: '#f8f9fa',
+              margin: '40px -80px -60px -80px',
+              padding: '20px 80px',
+              textAlign: 'right',
+            }}>
+              <Space>
+                <Button onClick={() => {
+                  setDetailModalVisible(false);
+                  setSelectedTransaction(null);
+                }}>
+                  Close
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<ExportOutlined />}
+                  onClick={() => {
+                    message.info('PDF export functionality coming soon');
+                  }}
+                >
+                  Download PDF
+                </Button>
+              </Space>
+            </div>
+          </div>
         )}
       </Modal>
 

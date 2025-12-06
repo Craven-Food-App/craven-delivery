@@ -979,82 +979,429 @@ export const CorporateAccountsPayable: React.FC = () => {
         />
       </Card>
 
-      {/* Invoice Detail Modal */}
+      {/* Invoice Detail Modal - Fortune 500 Format */}
       <Modal
-        title={
-          <Space>
-            <FileTextOutlined />
-            <Text strong>Invoice Details</Text>
-          </Space>
-        }
+        title=""
         open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
+        onCancel={() => {
+          setDetailModalVisible(false);
+          setSelectedInvoice(null);
+        }}
         footer={null}
-        width={800}
+        width="90%"
+        styles={{
+          body: { padding: 0 },
+          content: { maxHeight: '90vh' },
+        }}
       >
         {selectedInvoice && (
-          <Descriptions bordered column={2} size="small">
-            <Descriptions.Item label="Invoice Number" span={2}>
-              <Text strong style={{ fontFamily: 'monospace', fontSize: 16 }}>
-                {selectedInvoice.invoice_number}
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Vendor Name">
-              {selectedInvoice.vendor_name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Vendor Email">
-              {selectedInvoice.vendor_email || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Invoice Date">
-              {dayjs(selectedInvoice.invoice_date).format('MM/DD/YYYY')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Due Date">
-              <Text style={{ color: selectedInvoice.days_overdue > 0 ? '#ff4d4f' : '#595959' }}>
-                {dayjs(selectedInvoice.due_date).format('MM/DD/YYYY')}
-                {selectedInvoice.days_overdue > 0 && (
-                  <Tag color="error" style={{ marginLeft: 8 }}>
-                    {selectedInvoice.days_overdue} days overdue
+          <div style={{ 
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            padding: '60px 80px',
+            background: '#ffffff',
+            color: '#1a1a1a',
+            lineHeight: 1.6,
+          }}>
+            {/* Header */}
+            <div style={{ 
+              borderBottom: '3px solid #1a1a1a',
+              paddingBottom: '20px',
+              marginBottom: '40px',
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <Text style={{ fontSize: '32px', fontWeight: 700, letterSpacing: '2px', marginBottom: '10px', display: 'block' }}>
+                  CRAVE'N, INC.
+                </Text>
+                <Text style={{ fontSize: '18px', color: '#666', letterSpacing: '1px', display: 'block' }}>
+                  ACCOUNTS PAYABLE INVOICE REPORT
+                </Text>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: '#666',
+                marginTop: '20px',
+              }}>
+                <div>
+                  <Text strong>Invoice Date:</Text>{' '}
+                  {dayjs(selectedInvoice.invoice_date).format('MMMM D, YYYY')}
+                </div>
+                <div>
+                  <Text strong>Generated:</Text>{' '}
+                  {dayjs().format('MMMM D, YYYY [at] h:mm A')}
+                </div>
+                <div>
+                  <Text strong>Status:</Text>{' '}
+                  <Tag color={
+                    selectedInvoice.payment_status === 'paid' ? 'green' :
+                    selectedInvoice.days_overdue > 0 ? 'red' :
+                    selectedInvoice.status === 'approved' ? 'blue' : 'yellow'
+                  }>
+                    {selectedInvoice.payment_status === 'paid' ? 'PAID' :
+                     selectedInvoice.days_overdue > 0 ? 'OVERDUE' :
+                     selectedInvoice.status === 'approved' ? 'APPROVED' : 'PENDING'}
                   </Tag>
-                )}
+                </div>
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                INVOICE SUMMARY
+              </Title>
+              <div style={{ 
+                background: '#f8f9fa',
+                padding: '25px',
+                borderRadius: '4px',
+                marginBottom: '20px',
+              }}>
+                <Text style={{ fontSize: '14px', lineHeight: 1.8 }}>
+                  This invoice report provides a comprehensive analysis of vendor invoice{' '}
+                  <Text strong style={{ fontFamily: 'monospace' }}>
+                    {selectedInvoice.invoice_number}
+                  </Text> from vendor{' '}
+                  <Text strong>{selectedInvoice.vendor_name}</Text>. 
+                  The invoice total of{' '}
+                  <Text strong style={{ color: '#1890ff' }}>
+                    ${selectedInvoice.total_amount.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text> is{' '}
+                  {selectedInvoice.payment_status === 'paid' ? (
+                    <Text strong style={{ color: '#52c41a' }}>paid</Text>
+                  ) : selectedInvoice.days_overdue > 0 ? (
+                    <Text strong style={{ color: '#ff4d4f' }}>
+                      {selectedInvoice.days_overdue} days overdue
+                    </Text>
+                  ) : (
+                    <Text strong style={{ color: '#faad14' }}>pending payment</Text>
+                  )}. 
+                  {selectedInvoice.days_overdue > 0 && (
+                    <> This invoice requires immediate attention to maintain vendor relationships and avoid late fees.</>
+                  )}
+                </Text>
+              </div>
+            </div>
+
+            {/* Invoice Details Table */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                INVOICE DETAILS
+              </Title>
+              <Table
+                bordered
+                pagination={false}
+                style={{
+                  fontSize: '14px',
+                }}
+                dataSource={[
+                  {
+                    key: '1',
+                    field: 'Invoice Number',
+                    value: selectedInvoice.invoice_number,
+                    style: { fontFamily: 'monospace', fontWeight: 700, fontSize: '16px' },
+                  },
+                  {
+                    key: '2',
+                    field: 'Vendor Name',
+                    value: selectedInvoice.vendor_name,
+                    style: { fontWeight: 600 },
+                  },
+                  {
+                    key: '3',
+                    field: 'Vendor Email',
+                    value: selectedInvoice.vendor_email || 'N/A',
+                  },
+                  {
+                    key: '4',
+                    field: 'Invoice Date',
+                    value: dayjs(selectedInvoice.invoice_date).format('MMMM D, YYYY'),
+                  },
+                  {
+                    key: '5',
+                    field: 'Due Date',
+                    value: dayjs(selectedInvoice.due_date).format('MMMM D, YYYY'),
+                    style: { 
+                      color: selectedInvoice.days_overdue > 0 ? '#ff4d4f' : '#595959',
+                      fontWeight: selectedInvoice.days_overdue > 0 ? 700 : 400,
+                    },
+                  },
+                  {
+                    key: '6',
+                    field: 'Days Overdue',
+                    value: selectedInvoice.days_overdue > 0 
+                      ? `${selectedInvoice.days_overdue} ${selectedInvoice.days_overdue === 1 ? 'day' : 'days'}`
+                      : 'Not overdue',
+                    style: { 
+                      color: selectedInvoice.days_overdue > 0 ? '#ff4d4f' : '#52c41a',
+                      fontWeight: 600,
+                    },
+                  },
+                  {
+                    key: '7',
+                    field: 'Subtotal Amount',
+                    value: `$${selectedInvoice.amount.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`,
+                    style: { fontFamily: 'monospace', fontWeight: 600 },
+                  },
+                  {
+                    key: '8',
+                    field: 'Tax Amount',
+                    value: selectedInvoice.tax_amount > 0
+                      ? `$${selectedInvoice.tax_amount.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      : 'No tax',
+                    style: { fontFamily: 'monospace' },
+                  },
+                  {
+                    key: '9',
+                    field: 'Total Amount',
+                    value: `$${selectedInvoice.total_amount.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`,
+                    style: { 
+                      fontWeight: 700,
+                      fontSize: '18px',
+                      fontFamily: 'monospace',
+                      color: '#1890ff',
+                    },
+                  },
+                  {
+                    key: '10',
+                    field: 'Payment Status',
+                    value: selectedInvoice.payment_status.toUpperCase(),
+                  },
+                  {
+                    key: '11',
+                    field: 'Invoice Status',
+                    value: selectedInvoice.status.toUpperCase(),
+                  },
+                  {
+                    key: '12',
+                    field: 'Department',
+                    value: selectedInvoice.department,
+                  },
+                  {
+                    key: '13',
+                    field: 'Expense Category',
+                    value: selectedInvoice.expense_category,
+                  },
+                  {
+                    key: '14',
+                    field: 'Payment Terms',
+                    value: selectedInvoice.payment_terms,
+                  },
+                ]}
+                columns={[
+                  {
+                    title: 'Field',
+                    dataIndex: 'field',
+                    key: 'field',
+                    width: '30%',
+                    render: (text: string) => (
+                      <Text strong style={{ fontSize: '14px' }}>{text}</Text>
+                    ),
+                  },
+                  {
+                    title: 'Value',
+                    dataIndex: 'value',
+                    key: 'value',
+                    render: (value: string, record: any) => (
+                      <Text style={record.style || {}}>{value}</Text>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            {/* Financial Impact */}
+            <div style={{ marginBottom: '50px' }}>
+              <Title level={2} style={{ 
+                fontSize: '24px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '2px solid #e0e0e0',
+                paddingBottom: '10px',
+              }}>
+                FINANCIAL IMPACT
+              </Title>
+              <Row gutter={[16, 16]}>
+                <Col span={8}>
+                  <Card style={{ 
+                    background: '#e6f7ff',
+                    border: '2px solid #1890ff',
+                  }}>
+                    <Statistic
+                      title="Subtotal"
+                      value={selectedInvoice.amount}
+                      prefix={<DollarOutlined />}
+                      precision={2}
+                      valueStyle={{ 
+                        color: '#1890ff',
+                        fontSize: 24,
+                        fontWeight: 700,
+                      }}
+                      formatter={(value) => 
+                        `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
+                    />
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card style={{ 
+                    background: selectedInvoice.tax_amount > 0 ? '#fff7e6' : '#f0f0f0',
+                    border: `2px solid ${selectedInvoice.tax_amount > 0 ? '#faad14' : '#d9d9d9'}`,
+                  }}>
+                    <Statistic
+                      title="Tax Amount"
+                      value={selectedInvoice.tax_amount}
+                      prefix={<DollarOutlined />}
+                      precision={2}
+                      valueStyle={{ 
+                        color: selectedInvoice.tax_amount > 0 ? '#faad14' : '#999',
+                        fontSize: 24,
+                        fontWeight: 700,
+                      }}
+                      formatter={(value) => 
+                        selectedInvoice.tax_amount > 0
+                          ? `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                          : 'No Tax'
+                      }
+                    />
+                  </Card>
+                </Col>
+                <Col span={8}>
+                  <Card style={{ 
+                    background: selectedInvoice.payment_status === 'paid' ? '#f6ffed' : 
+                               selectedInvoice.days_overdue > 0 ? '#fff1f0' : '#fffbe6',
+                    border: `2px solid ${
+                      selectedInvoice.payment_status === 'paid' ? '#52c41a' : 
+                      selectedInvoice.days_overdue > 0 ? '#ff4d4f' : '#faad14'
+                    }`,
+                  }}>
+                    <Statistic
+                      title="Total Amount"
+                      value={selectedInvoice.total_amount}
+                      prefix={<DollarOutlined />}
+                      precision={2}
+                      valueStyle={{ 
+                        color: selectedInvoice.payment_status === 'paid' ? '#52c41a' : 
+                               selectedInvoice.days_overdue > 0 ? '#ff4d4f' : '#faad14',
+                        fontSize: 28,
+                        fontWeight: 700,
+                      }}
+                      formatter={(value) => 
+                        `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      }
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            </div>
+
+            {/* Payment Timeline */}
+            {selectedInvoice.days_overdue > 0 && (
+              <div style={{ marginBottom: '50px' }}>
+                <Title level={2} style={{ 
+                  fontSize: '24px',
+                  fontWeight: 700,
+                  marginBottom: '20px',
+                  borderBottom: '2px solid #e0e0e0',
+                  paddingBottom: '10px',
+                }}>
+                  PAYMENT TIMELINE
+                </Title>
+                <Alert
+                  message="Overdue Invoice"
+                  description={
+                    <div>
+                      <Text strong>This invoice is {selectedInvoice.days_overdue} {selectedInvoice.days_overdue === 1 ? 'day' : 'days'} overdue.</Text>
+                      <br />
+                      <Text>Due date: {dayjs(selectedInvoice.due_date).format('MMMM D, YYYY')}</Text>
+                      <br />
+                      <Text>Immediate payment processing is recommended to maintain vendor relationships and avoid late fees.</Text>
+                    </div>
+                  }
+                  type="error"
+                  icon={<ExclamationCircleOutlined />}
+                  showIcon
+                  style={{ fontSize: '14px' }}
+                />
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ 
+              marginTop: '60px',
+              paddingTop: '30px',
+              borderTop: '2px solid #e0e0e0',
+              fontSize: '11px',
+              color: '#666',
+              textAlign: 'center',
+            }}>
+              <Text style={{ marginBottom: '10px', display: 'block' }}>
+                <Text strong>CRAVE'N, INC.</Text> | Accounts Payable Invoice Report | 
+                Generated {dayjs().format('MMMM D, YYYY [at] h:mm A')}
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Amount">
-              <Text strong style={{ fontSize: 16 }}>
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.amount)}
+              <Text style={{ fontStyle: 'italic', lineHeight: 1.6, display: 'block' }}>
+                This report is prepared for internal use and accounts payable management purposes. 
+                All invoice data is based on vendor submissions and reflects actual accounts payable obligations. 
+                This report supports payment processing, vendor relationship management, and financial planning activities.
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Tax Amount">
-              {selectedInvoice.tax_amount > 0
-                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.tax_amount)
-                : '—'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Total Amount" span={2}>
-              <Text strong style={{ fontSize: 20, color: '#1890ff' }}>
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(selectedInvoice.total_amount)}
+              <Text style={{ marginTop: '15px', fontSize: '10px', display: 'block' }}>
+                Invoice ID: {selectedInvoice.id} | Status: {selectedInvoice.payment_status.toUpperCase()} | 
+                Invoice Number: {selectedInvoice.invoice_number}
               </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Payment Status">
-              {selectedInvoice.payment_status === 'paid' ? (
-                <Tag color="success" icon={<CheckCircleOutlined />}>Paid</Tag>
-              ) : selectedInvoice.days_overdue > 0 ? (
-                <Tag color="error" icon={<ExclamationCircleOutlined />}>Overdue</Tag>
-              ) : (
-                <Tag color="warning" icon={<ClockCircleOutlined />}>Pending</Tag>
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag>{selectedInvoice.status.toUpperCase()}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Department">
-              {selectedInvoice.department}
-            </Descriptions.Item>
-            <Descriptions.Item label="Category">
-              {selectedInvoice.expense_category}
-            </Descriptions.Item>
-            <Descriptions.Item label="Payment Terms">
-              {selectedInvoice.payment_terms}
-            </Descriptions.Item>
-          </Descriptions>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ 
+              paddingTop: '30px',
+              borderTop: '1px solid #e0e0e0',
+              background: '#f8f9fa',
+              margin: '40px -80px -60px -80px',
+              padding: '20px 80px',
+              textAlign: 'right',
+            }}>
+              <Space>
+                <Button onClick={() => {
+                  setDetailModalVisible(false);
+                  setSelectedInvoice(null);
+                }}>
+                  Close
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<ExportOutlined />}
+                  onClick={() => {
+                    message.info('PDF export functionality coming soon');
+                  }}
+                >
+                  Download PDF
+                </Button>
+              </Space>
+            </div>
+          </div>
         )}
       </Modal>
 

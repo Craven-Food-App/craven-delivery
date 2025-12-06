@@ -900,6 +900,364 @@ export const FinancialReportsDashboard: React.FC = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
+  // Fortune 500 Document Format for Expense Reports
+  const renderFortune500ExpenseReport = (report: FinancialReport, data: any) => {
+    const totalExpenses = data.total_expenses || 0;
+    const expenseCount = data.expense_count || 0;
+    const avgExpense = expenseCount > 0 ? totalExpenses / expenseCount : 0;
+    const byCategory = data.by_category || {};
+    const expenses = data.expenses || [];
+    
+    return (
+      <div style={{ 
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        padding: '60px 80px',
+        background: '#ffffff',
+        color: '#1a1a1a',
+        lineHeight: 1.6,
+      }}>
+        {/* Header */}
+        <div style={{ 
+          borderBottom: '3px solid #1a1a1a',
+          paddingBottom: '20px',
+          marginBottom: '40px',
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <Text size="32px" fw={700} style={{ letterSpacing: '2px', marginBottom: '10px' }}>
+              CRAVE'N, INC.
+            </Text>
+            <Text size="18px" c="dimmed" style={{ letterSpacing: '1px' }}>
+              EXPENSE ANALYSIS & FINANCIAL REPORT
+            </Text>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between',
+            fontSize: '12px',
+            color: '#666',
+            marginTop: '20px',
+          }}>
+            <div>
+              <Text fw={600}>Report Period:</Text>{' '}
+              {dayjs(report.report_period_start).format('MMMM D, YYYY')} -{' '}
+              {dayjs(report.report_period_end).format('MMMM D, YYYY')}
+            </div>
+            <div>
+              <Text fw={600}>Generated:</Text>{' '}
+              {dayjs(report.generated_at).format('MMMM D, YYYY [at] h:mm A')}
+            </div>
+            <div>
+              <Text fw={600}>Status:</Text>{' '}
+              <Badge 
+                size="sm"
+                color={
+                  report.status === 'final' ? 'green' :
+                  report.status === 'draft' ? 'yellow' : 'gray'
+                }
+              >
+                {report.status.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Executive Summary */}
+        <div style={{ marginBottom: '50px' }}>
+          <Title order={2} style={{ 
+            fontSize: '24px',
+            fontWeight: 700,
+            marginBottom: '20px',
+            borderBottom: '2px solid #e0e0e0',
+            paddingBottom: '10px',
+          }}>
+            EXECUTIVE SUMMARY
+          </Title>
+          <div style={{ 
+            background: '#f8f9fa',
+            padding: '25px',
+            borderRadius: '4px',
+            marginBottom: '20px',
+          }}>
+            <Text size="14px" style={{ lineHeight: 1.8 }}>
+              This expense analysis report provides a comprehensive overview of all expenses incurred during the 
+              reporting period. Total expenses of{' '}
+              <Text component="span" fw={700}>
+                ${totalExpenses.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text> were recorded across{' '}
+              <Text component="span" fw={700}>{expenseCount}</Text> expense requests, 
+              with an average expense amount of{' '}
+              <Text component="span" fw={700}>
+                ${avgExpense.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>. This analysis supports financial planning, budget management, and cost optimization initiatives.
+            </Text>
+          </div>
+        </div>
+
+        {/* Expense Overview */}
+        <div style={{ marginBottom: '50px' }}>
+          <Title order={2} style={{ 
+            fontSize: '24px',
+            fontWeight: 700,
+            marginBottom: '20px',
+            borderBottom: '2px solid #e0e0e0',
+            paddingBottom: '10px',
+          }}>
+            EXPENSE OVERVIEW
+          </Title>
+          <Table
+            striped
+            highlightOnHover={false}
+            style={{
+              border: '1px solid #e0e0e0',
+              fontSize: '14px',
+            }}
+          >
+            <Table.Thead>
+              <Table.Tr style={{ background: '#1a1a1a', color: '#fff' }}>
+                <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Metric</Table.Th>
+                <Table.Th style={{ color: '#fff', fontWeight: 600, textAlign: 'right', padding: '12px' }}>Value</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <Table.Tr>
+                <Table.Td style={{ padding: '12px', fontWeight: 500 }}>Total Expenses</Table.Td>
+                <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontSize: '16px' }}>
+                  ${totalExpenses.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td style={{ padding: '12px', fontWeight: 500 }}>Number of Expense Requests</Table.Td>
+                <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace' }}>
+                  {expenseCount}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td style={{ padding: '12px', fontWeight: 500 }}>Average Expense Amount</Table.Td>
+                <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace' }}>
+                  ${avgExpense.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Table.Td>
+              </Table.Tr>
+              <Table.Tr>
+                <Table.Td style={{ padding: '12px', fontWeight: 500 }}>Reporting Period (Days)</Table.Td>
+                <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace' }}>
+                  {dayjs(report.report_period_end).diff(dayjs(report.report_period_start), 'days') + 1} days
+                </Table.Td>
+              </Table.Tr>
+            </Table.Tbody>
+          </Table>
+        </div>
+
+        {/* Expenses by Category */}
+        {Object.keys(byCategory).length > 0 && (
+          <div style={{ marginBottom: '50px' }}>
+            <Title order={2} style={{ 
+              fontSize: '24px',
+              fontWeight: 700,
+              marginBottom: '20px',
+              borderBottom: '2px solid #e0e0e0',
+              paddingBottom: '10px',
+            }}>
+              EXPENSES BY CATEGORY
+            </Title>
+            <Table
+              striped
+              highlightOnHover={false}
+              style={{
+                border: '1px solid #e0e0e0',
+                fontSize: '14px',
+              }}
+            >
+              <Table.Thead>
+                <Table.Tr style={{ background: '#1a1a1a', color: '#fff' }}>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Category</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, textAlign: 'right', padding: '12px' }}>Amount</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, textAlign: 'right', padding: '12px' }}>Percentage</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {Object.entries(byCategory)
+                  .sort(([, a]: any, [, b]: any) => b - a)
+                  .map(([category, amount]: [string, any]) => {
+                    const percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+                    return (
+                      <Table.Tr key={category}>
+                        <Table.Td style={{ padding: '12px', fontWeight: 500 }}>{category}</Table.Td>
+                        <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                          ${amount.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </Table.Td>
+                        <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace' }}>
+                          {percentage.toFixed(2)}%
+                        </Table.Td>
+                      </Table.Tr>
+                    );
+                  })}
+                <Table.Tr style={{ background: '#fff3cd', fontWeight: 700, borderTop: '2px solid #1a1a1a' }}>
+                  <Table.Td style={{ padding: '12px', fontWeight: 700 }} colSpan={2}>
+                    Total
+                  </Table.Td>
+                  <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, fontSize: '16px' }}>
+                    ${totalExpenses.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Table.Td>
+                </Table.Tr>
+              </Table.Tbody>
+            </Table>
+          </div>
+        )}
+
+        {/* Detailed Expense Listing */}
+        {expenses.length > 0 && (
+          <div style={{ marginBottom: '50px' }}>
+            <Title order={2} style={{ 
+              fontSize: '24px',
+              fontWeight: 700,
+              marginBottom: '20px',
+              borderBottom: '2px solid #e0e0e0',
+              paddingBottom: '10px',
+            }}>
+              DETAILED EXPENSE LISTING
+            </Title>
+            <Table
+              striped
+              highlightOnHover={false}
+              style={{
+                border: '1px solid #e0e0e0',
+                fontSize: '13px',
+              }}
+            >
+              <Table.Thead>
+                <Table.Tr style={{ background: '#1a1a1a', color: '#fff' }}>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Request #</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Date</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Category</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Description</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, padding: '12px' }}>Status</Table.Th>
+                  <Table.Th style={{ color: '#fff', fontWeight: 600, textAlign: 'right', padding: '12px' }}>Amount</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {expenses
+                  .sort((a: any, b: any) => new Date(b.expense_date || b.created_at).getTime() - new Date(a.expense_date || a.created_at).getTime())
+                  .slice(0, 100) // Limit to first 100 for performance
+                  .map((expense: any) => (
+                    <Table.Tr key={expense.id}>
+                      <Table.Td style={{ padding: '12px' }}>{expense.request_number || expense.id.substring(0, 8)}</Table.Td>
+                      <Table.Td style={{ padding: '12px' }}>
+                        {dayjs(expense.expense_date || expense.created_at).format('MMM D, YYYY')}
+                      </Table.Td>
+                      <Table.Td style={{ padding: '12px' }}>
+                        {expense.expense_category?.name || expense.category || 'Uncategorized'}
+                      </Table.Td>
+                      <Table.Td style={{ padding: '12px', maxWidth: '300px' }}>
+                        <Text size="sm" truncate>
+                          {expense.description || expense.business_purpose || 'N/A'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td style={{ padding: '12px' }}>
+                        <Badge
+                          size="sm"
+                          color={
+                            expense.status === 'approved' ? 'green' :
+                            expense.status === 'paid' ? 'blue' :
+                            expense.status === 'rejected' ? 'red' : 'yellow'
+                          }
+                        >
+                          {expense.status?.toUpperCase() || 'PENDING'}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td style={{ padding: '12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 600 }}>
+                        ${(expense.amount || 0).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+              </Table.Tbody>
+            </Table>
+            {expenses.length > 100 && (
+              <Text size="sm" c="dimmed" mt="md" style={{ fontStyle: 'italic' }}>
+                Showing first 100 of {expenses.length} expenses. Use filters to view specific ranges.
+              </Text>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ 
+          marginTop: '60px',
+          paddingTop: '30px',
+          borderTop: '2px solid #e0e0e0',
+          fontSize: '11px',
+          color: '#666',
+          textAlign: 'center',
+        }}>
+          <Text style={{ marginBottom: '10px' }}>
+            <Text component="span" fw={700}>CRAVE'N, INC.</Text> | Expense Analysis Report | 
+            Generated {dayjs(report.generated_at).format('MMMM D, YYYY [at] h:mm A')}
+          </Text>
+          <Text style={{ fontStyle: 'italic', lineHeight: 1.6 }}>
+            This report is prepared for internal use and financial analysis purposes. 
+            All expense data is based on approved expense requests and reflects actual company expenditures. 
+            This report supports budget management, cost control, and financial planning activities.
+          </Text>
+          <Text style={{ marginTop: '15px', fontSize: '10px' }}>
+            Report ID: {report.id} | Status: {report.status.toUpperCase()} | 
+            Total Expenses: ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </Text>
+        </div>
+
+        {/* Action Buttons */}
+        <Group justify="flex-end" mt="xl" style={{ 
+          paddingTop: '30px',
+          borderTop: '1px solid #e0e0e0',
+          background: '#f8f9fa',
+          margin: '40px -80px -60px -80px',
+          padding: '20px 80px',
+        }}>
+          <Button
+            variant="light"
+            onClick={() => {
+              setViewModalOpen(false);
+              setSelectedReport(null);
+            }}
+          >
+            Close
+          </Button>
+          <Button
+            leftSection={<IconDownload size={16} />}
+            onClick={() => {
+              notifications.show({
+                title: 'Download',
+                message: 'Download functionality coming soon',
+                color: 'blue',
+              });
+            }}
+          >
+            Download PDF
+          </Button>
+        </Group>
+      </div>
+    );
+  };
+
   // Universal comprehensive report renderer - Fortune 500 level for ALL reports
   // ALWAYS shows impressive Fortune 500-level presentation - NO exceptions
   const renderComprehensiveReport = (report: FinancialReport) => {
@@ -2517,45 +2875,60 @@ export const FinancialReportsDashboard: React.FC = () => {
           setViewModalOpen(false);
           setSelectedReport(null);
         }}
-        title={selectedReport?.report_name || "Report Details"}
+        title=""
         size="90%"
         centered
+        styles={{
+          body: { padding: 0 },
+          content: { maxHeight: '90vh' },
+        }}
       >
-        {selectedReport && (
-          <ScrollArea h="calc(90vh - 120px)">
-            <Stack gap="lg">
-              {/* Header */}
-              <Group justify="space-between">
-                <Group>
-                  <Badge size="lg">{getReportTypeLabel(selectedReport.report_type)}</Badge>
-                  <Badge size="lg" color={selectedReport.status === 'final' ? 'green' : 'gray'}>
-                    {selectedReport.status.toUpperCase()}
-                  </Badge>
+        {selectedReport && (() => {
+          const reportType = (selectedReport.report_type || '').toLowerCase();
+          const data = selectedReport.report_data || {};
+          
+          // Use Fortune 500 document format for expense_analysis reports
+          if (reportType === 'expense_analysis') {
+            return renderFortune500ExpenseReport(selectedReport, data);
+          }
+          
+          // For other reports, use the existing comprehensive view
+          return (
+            <ScrollArea h="calc(90vh - 120px)">
+              <Stack gap="lg" p="lg">
+                {/* Header */}
+                <Group justify="space-between">
+                  <Group>
+                    <Badge size="lg">{getReportTypeLabel(selectedReport.report_type)}</Badge>
+                    <Badge size="lg" color={selectedReport.status === 'final' ? 'green' : 'gray'}>
+                      {selectedReport.status.toUpperCase()}
+                    </Badge>
+                  </Group>
+                  <Group>
+                    <Text size="sm" c="dimmed">
+                      Generated: {dayjs(selectedReport.generated_at).format('MMM D, YYYY [at] h:mm A')}
+                    </Text>
+                    {selectedReport.pdf_url && (
+                      <Button
+                        leftSection={<IconDownload size={16} />}
+                        variant="light"
+                        size="xs"
+                        component="a"
+                        href={selectedReport.pdf_url}
+                        target="_blank"
+                      >
+                        Download PDF
+                      </Button>
+                    )}
+                  </Group>
                 </Group>
-                <Group>
-                  <Text size="sm" c="dimmed">
-                    Generated: {dayjs(selectedReport.generated_at).format('MMM D, YYYY [at] h:mm A')}
-                  </Text>
-                  {selectedReport.pdf_url && (
-                    <Button
-                      leftSection={<IconDownload size={16} />}
-                      variant="light"
-                      size="xs"
-                      component="a"
-                      href={selectedReport.pdf_url}
-                      target="_blank"
-                    >
-                      Download PDF
-                    </Button>
-                  )}
-                </Group>
-              </Group>
 
-              {/* Comprehensive Detailed Report View - Fortune 500 Level for ALL reports */}
-              {renderComprehensiveReport(selectedReport)}
-            </Stack>
-          </ScrollArea>
-        )}
+                {/* Comprehensive Detailed Report View - Fortune 500 Level for ALL reports */}
+                {renderComprehensiveReport(selectedReport)}
+              </Stack>
+            </ScrollArea>
+          );
+        })()}
       </Modal>
     </Stack>
   );

@@ -155,6 +155,7 @@ export const BankingTreasuryView: React.FC = () => {
 
   // Modal states
   const [accountModalOpened, setAccountModalOpened] = useState(false);
+  const [accountViewModalOpened, setAccountViewModalOpened] = useState(false);
   const [transactionModalOpened, setTransactionModalOpened] = useState(false);
   const [wireModalOpened, setWireModalOpened] = useState(false);
   const [achModalOpened, setACHModalOpened] = useState(false);
@@ -523,41 +524,85 @@ export const BankingTreasuryView: React.FC = () => {
         return;
       }
 
-      const accountData = {
+      // Build account data - start with only base columns that definitely exist
+      // Base table has: id, name, institution, currency, current_balance, updated_at
+      // All other fields are added by migration 20251203000005
+      const baseAccountData: any = {
         name: values.name,
-        institution: values.institution,
-        currency: values.currency,
+        institution: values.institution || null,
+        currency: values.currency || 'USD',
+        current_balance: 0,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Try with extended fields first (if migration is applied)
+      const extendedAccountData = {
+        ...baseAccountData,
         account_type: values.account_type,
-        account_classification: values.account_classification,
-        account_number_masked: values.account_number_masked,
-        routing_number: values.routing_number,
+        account_number_masked: values.account_number_masked || null,
+        routing_number: values.routing_number || null,
         swift_code: values.swift_code || null,
         iban: values.iban || null,
         daily_limit: values.daily_limit ? parseFloat(values.daily_limit) : null,
         transaction_limit: values.transaction_limit ? parseFloat(values.transaction_limit) : null,
-        status: values.status,
-        current_balance: 0,
+        status: values.status || 'active',
         available_balance: 0,
         pending_balance: 0,
         ledger_balance: 0,
-        updated_at: new Date().toISOString(),
       };
 
       if (editingAccount) {
-        const { error } = await supabase
+        // Try update with extended fields first
+        let { error } = await supabase
           .from('bank_accounts')
-          .update(accountData)
+          .update(extendedAccountData)
           .eq('id', editingAccount.id);
 
-        if (error) throw error;
-        message.success('Bank account updated successfully');
+        // If schema error (column not found), retry with only base fields
+        if (error && (
+          error.message?.includes('Could not find') ||
+          error.message?.includes('column') ||
+          error.code === '42703' ||
+          error.hint?.includes('column')
+        )) {
+          console.warn('Extended fields not available, using base fields only');
+          const { error: retryError } = await supabase
+            .from('bank_accounts')
+            .update(baseAccountData)
+            .eq('id', editingAccount.id);
+          
+          if (retryError) throw retryError;
+          message.warning('Bank account updated with basic fields only. Please apply migration 20251203000005 for full functionality.');
+        } else if (error) {
+          throw error;
+        } else {
+          message.success('Bank account updated successfully');
+        }
       } else {
-        const { error } = await supabase
+        // Try insert with extended fields first
+        let { error } = await supabase
           .from('bank_accounts')
-          .insert(accountData);
+          .insert(extendedAccountData);
 
-        if (error) throw error;
-        message.success('Bank account created successfully');
+        // If schema error (column not found), retry with only base fields
+        if (error && (
+          error.message?.includes('Could not find') ||
+          error.message?.includes('column') ||
+          error.code === '42703' ||
+          error.hint?.includes('column')
+        )) {
+          console.warn('Extended fields not available, using base fields only');
+          const { error: retryError } = await supabase
+            .from('bank_accounts')
+            .insert(baseAccountData);
+          
+          if (retryError) throw retryError;
+          message.warning('Bank account created with basic fields only. Please apply migration 20251203000005 for full functionality.');
+        } else if (error) {
+          throw error;
+        } else {
+          message.success('Bank account created successfully');
+        }
       }
 
       setAccountModalOpened(false);
@@ -1024,17 +1069,22 @@ export const BankingTreasuryView: React.FC = () => {
                             <Group gap="xs">
                               <ActionIcon
                                 variant="light"
-                                onClick={() => {
+                                color="blue"
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setSelectedAccount(account);
-                                  setAccountModalOpened(true);
+                                  setAccountViewModalOpened(true);
                                 }}
+                                title="View Account Details"
                               >
                                 <IconEye size={16} />
                               </ActionIcon>
                               {canManage && (
                                 <ActionIcon
                                   variant="light"
-                                  onClick={() => {
+                                  color="orange"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setEditingAccount(account);
                                     accountForm.setValues({
                                       name: account.name,
@@ -1052,6 +1102,7 @@ export const BankingTreasuryView: React.FC = () => {
                                     });
                                     setAccountModalOpened(true);
                                   }}
+                                  title="Edit Account"
                                 >
                                   <IconEdit size={16} />
                                 </ActionIcon>
@@ -1254,9 +1305,24 @@ export const BankingTreasuryView: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('View button clicked for account:', account);
+                              setSelectedAccount(account);
+                              setAccountViewModalOpened(true);
+                              console.log('Modal should open, accountViewModalOpened:', true);
+                            }}
+                            title="View Account Details"
+                          >
+                            <IconEye size={16} />
+                          </ActionIcon>
                           {canManage && (
                             <ActionIcon
                               variant="light"
+                              color="orange"
                               onClick={() => {
                                 setEditingAccount(account);
                                 accountForm.setValues({
@@ -1275,6 +1341,7 @@ export const BankingTreasuryView: React.FC = () => {
                                 });
                                 setAccountModalOpened(true);
                               }}
+                              title="Edit Account"
                             >
                               <IconEdit size={16} />
                             </ActionIcon>
@@ -1791,7 +1858,7 @@ export const BankingTreasuryView: React.FC = () => {
               />
               <Select
                 label="Classification"
-                required
+                description="Note: This field requires migration 20251203000005 to be applied"
                 data={[
                   { value: 'operating', label: 'Operating' },
                   { value: 'reserve', label: 'Reserve' },
@@ -1883,6 +1950,195 @@ export const BankingTreasuryView: React.FC = () => {
             </Group>
           </Stack>
         </form>
+      </Modal>
+
+      {/* Bank Account View Modal - Read Only */}
+      <Modal
+        opened={accountViewModalOpened}
+        onClose={() => {
+          setAccountViewModalOpened(false);
+          setSelectedAccount(null);
+        }}
+        title="Bank Account Details"
+        size="lg"
+      >
+        {selectedAccount && (
+          <Stack gap="md">
+            <Divider label="Account Information" labelPosition="left" />
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Account Name</Text>
+                <Text fw={600}>{selectedAccount.name}</Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Institution</Text>
+                <Text>{selectedAccount.institution || 'N/A'}</Text>
+              </div>
+            </Group>
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Account Type</Text>
+                <Badge variant="light">{selectedAccount.account_type || 'checking'}</Badge>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Classification</Text>
+                <Badge variant="light" color="blue">{selectedAccount.account_classification || 'operating'}</Badge>
+              </div>
+            </Group>
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Account Number (Masked)</Text>
+                <Text ff="monospace" size="sm">{selectedAccount.account_number_masked || 'N/A'}</Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Routing Number</Text>
+                <Text ff="monospace" size="sm">{selectedAccount.routing_number || 'N/A'}</Text>
+              </div>
+            </Group>
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>SWIFT Code</Text>
+                <Text ff="monospace" size="sm">{(selectedAccount as any).swift_code || 'N/A'}</Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>IBAN</Text>
+                <Text ff="monospace" size="sm">{(selectedAccount as any).iban || 'N/A'}</Text>
+              </div>
+            </Group>
+
+            <Divider label="Balance Information" labelPosition="left" />
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Current Balance</Text>
+                <Text fw={700} size="lg">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format(selectedAccount.current_balance || 0)}
+                </Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Available Balance</Text>
+                <Text fw={700} size="lg" c="blue">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format(selectedAccount.available_balance || 0)}
+                </Text>
+              </div>
+            </Group>
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Pending Balance</Text>
+                <Text>
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format(selectedAccount.pending_balance || 0)}
+                </Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Ledger Balance</Text>
+                <Text>
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format(selectedAccount.ledger_balance || 0)}
+                </Text>
+              </div>
+            </Group>
+
+            <Divider label="Account Settings" labelPosition="left" />
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Currency</Text>
+                <Badge variant="light" leftSection={<IconWorld size={12} />}>
+                  {selectedAccount.currency || 'USD'}
+                </Badge>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Status</Text>
+                <Badge
+                  color={
+                    selectedAccount.status === 'active'
+                      ? 'green'
+                      : selectedAccount.status === 'frozen'
+                      ? 'red'
+                      : selectedAccount.status === 'closed'
+                      ? 'gray'
+                      : 'yellow'
+                  }
+                  variant="light"
+                >
+                  {selectedAccount.status?.toUpperCase() || 'ACTIVE'}
+                </Badge>
+              </div>
+            </Group>
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Daily Limit</Text>
+                <Text>
+                  {(selectedAccount as any).daily_limit
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format((selectedAccount as any).daily_limit)
+                    : 'No limit'}
+                </Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Transaction Limit</Text>
+                <Text>
+                  {(selectedAccount as any).transaction_limit
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format((selectedAccount as any).transaction_limit)
+                    : 'No limit'}
+                </Text>
+              </div>
+            </Group>
+
+            <Divider label="Reconciliation" labelPosition="left" />
+            <Group grow>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Last Reconciled</Text>
+                <Text>
+                  {selectedAccount.last_reconciled_at
+                    ? dayjs(selectedAccount.last_reconciled_at).format('MMMM D, YYYY [at] h:mm A')
+                    : 'Never'}
+                </Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb={4}>Last Reconciled Balance</Text>
+                <Text>
+                  {selectedAccount.last_reconciled_balance !== null
+                    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'USD' }).format(selectedAccount.last_reconciled_balance)
+                    : 'N/A'}
+                </Text>
+              </div>
+            </Group>
+
+            <Group justify="flex-end" mt="md">
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  setAccountViewModalOpened(false);
+                  setSelectedAccount(null);
+                }}
+              >
+                Close
+              </Button>
+              {canManage && (
+                <Button
+                  onClick={() => {
+                    setAccountViewModalOpened(false);
+                    setEditingAccount(selectedAccount);
+                    accountForm.setValues({
+                      name: selectedAccount.name,
+                      institution: selectedAccount.institution || '',
+                      currency: selectedAccount.currency || 'USD',
+                      account_type: selectedAccount.account_type || 'checking',
+                      account_classification: selectedAccount.account_classification || 'operating',
+                      account_number_masked: selectedAccount.account_number_masked || '',
+                      routing_number: selectedAccount.routing_number || '',
+                      swift_code: (selectedAccount as any).swift_code || '',
+                      iban: (selectedAccount as any).iban || '',
+                      daily_limit: (selectedAccount as any).daily_limit?.toString() || '',
+                      transaction_limit: (selectedAccount as any).transaction_limit?.toString() || '',
+                      status: selectedAccount.status || 'active',
+                    });
+                    setAccountModalOpened(true);
+                  }}
+                >
+                  Edit Account
+                </Button>
+              )}
+            </Group>
+          </Stack>
+        )}
       </Modal>
 
       {/* Transaction Modal */}
