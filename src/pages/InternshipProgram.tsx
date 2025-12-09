@@ -56,12 +56,12 @@ const InternshipProgram = () => {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-b from-[#1f1f26] via-[#0a0a0d] to-black text-foreground">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
         {/* Back to Careers */}
         <div className="container mx-auto px-4 pt-6">
           <Link 
             to="/careers" 
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm text-gray-600 hover:text-primary transition-colors"
           >
             ← Back to Careers
           </Link>
@@ -69,32 +69,32 @@ const InternshipProgram = () => {
 
         {/* Header */}
         <header className="container mx-auto px-4 py-8 md:py-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-4">
             <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
             <span className="text-xs uppercase tracking-widest text-primary font-medium">
               Marketing & Growth Internship
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900">
             Crave'n Inc.{' '}
             <span className="text-primary">Internship + Executive Pathway</span>
           </h1>
 
-          <p className="text-muted-foreground max-w-2xl text-base md:text-lg leading-relaxed mb-6">
+          <p className="text-gray-600 max-w-2xl text-base md:text-lg leading-relaxed mb-6">
             A performance-driven Marketing & Growth Internship with a direct pathway into permanent C-Suite roles at Crave'n Inc. — designed for ambitious creatives, strategists, and future leaders.
           </p>
 
           <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-background/30 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600">
               <MapPin className="h-3.5 w-3.5" />
               Remote + Toledo, OH
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-background/30 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600">
               <Briefcase className="h-3.5 w-3.5" />
               Marketing & Growth Operations
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/50 bg-background/30 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600">
               <GraduationCap className="h-3.5 w-3.5" />
               Internship (Executive Track)
             </div>
@@ -103,31 +103,31 @@ const InternshipProgram = () => {
 
         {/* Main Content Card */}
         <main className="container mx-auto px-4 pb-12">
-          <div className="rounded-2xl bg-gradient-to-br from-primary/5 via-card/90 to-card border border-white/5 backdrop-blur-xl shadow-2xl p-6 md:p-8">
+          <div className="rounded-2xl bg-white border border-gray-100 shadow-xl p-6 md:p-8">
             <div className="grid lg:grid-cols-[2fr_1.5fr] gap-8">
               {/* Left Column */}
               <div className="space-y-8">
                 {/* About */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold">
                     About the Internship
                   </h2>
-                  <p className="text-foreground leading-relaxed mb-3">
+                  <p className="text-gray-700 leading-relaxed mb-3">
                     Crave'n Inc. is seeking highly motivated <strong className="text-primary">Marketing & Growth Interns</strong> to join our rapidly scaling startup. This program is built for individuals who want real-world experience in digital marketing, brand development, content creation, and growth operations — while working directly with company leadership.
                   </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-gray-500 text-sm leading-relaxed">
                     This is a performance-driven internship with a unique opportunity for top talent to transition into permanent executive roles.
                   </p>
                 </section>
 
                 {/* Responsibilities */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold">
                     Key Responsibilities
                   </h2>
                   <ul className="space-y-2">
                     {responsibilities.map((item, index) => (
-                      <li key={index} className="flex items-start gap-3 text-sm leading-relaxed">
+                      <li key={index} className="flex items-start gap-3 text-sm leading-relaxed text-gray-700">
                         <span className="text-primary mt-0.5">•</span>
                         <span>{item}</span>
                       </li>
@@ -137,12 +137,12 @@ const InternshipProgram = () => {
 
                 {/* Learning */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold">
                     What You Will Learn
                   </h2>
                   <ul className="space-y-2">
                     {learningOutcomes.map((item, index) => (
-                      <li key={index} className="flex items-start gap-3 text-sm leading-relaxed">
+                      <li key={index} className="flex items-start gap-3 text-sm leading-relaxed text-gray-700">
                         <span className="text-primary mt-0.5">•</span>
                         <span>{item}</span>
                       </li>
@@ -155,24 +155,24 @@ const InternshipProgram = () => {
               <div className="space-y-8">
                 {/* Candidate Profile */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold">
                     Candidate Profile
                   </h2>
-                  <div className="rounded-xl bg-gradient-to-br from-primary/10 to-background/80 border border-white/5 p-5">
-                    <h3 className="font-medium mb-3">Required Skills</h3>
+                  <div className="rounded-xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 p-5">
+                    <h3 className="font-medium mb-3 text-gray-900">Required Skills</h3>
                     <ul className="space-y-1.5 mb-5">
                       {requiredSkills.map((skill, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
                           <span className="text-primary mt-0.5">•</span>
                           <span>{skill}</span>
                         </li>
                       ))}
                     </ul>
 
-                    <h3 className="font-medium mb-3">Preferred Skills</h3>
+                    <h3 className="font-medium mb-3 text-gray-900">Preferred Skills</h3>
                     <ul className="space-y-1.5">
                       {preferredSkills.map((skill, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
                           <span className="text-primary mt-0.5">•</span>
                           <span>{skill}</span>
                         </li>
@@ -183,19 +183,19 @@ const InternshipProgram = () => {
 
                 {/* Executive Pathway */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium flex items-center gap-2">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary" />
                     Executive Advancement Pathway
                   </h2>
-                  <p className="text-sm leading-relaxed mb-3">
+                  <p className="text-sm leading-relaxed mb-3 text-gray-700">
                     At the conclusion of the internship, the <strong className="text-primary">two highest-rated interns</strong> will be promoted into permanent C-Suite roles at Crave'n Inc.
                   </p>
                   <ul className="space-y-2">
-                    <li className="flex items-start gap-2 text-sm">
+                    <li className="flex items-start gap-2 text-sm text-gray-700">
                       <span className="text-primary mt-0.5">•</span>
                       <span><strong className="text-primary">Chief Marketing Officer (CMO)</strong> – leads brand strategy, creative direction, and marketing operations.</span>
                     </li>
-                    <li className="flex items-start gap-2 text-sm">
+                    <li className="flex items-start gap-2 text-sm text-gray-700">
                       <span className="text-primary mt-0.5">•</span>
                       <span><strong className="text-primary">Chief Growth Officer (CGO)</strong> – leads growth strategy, analytics, user acquisition, and performance marketing.</span>
                     </li>
@@ -204,34 +204,34 @@ const InternshipProgram = () => {
 
                 {/* Compensation */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium flex items-center gap-2">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold flex items-center gap-2">
                     <Award className="h-4 w-4 text-primary" />
                     Compensation & Equity (For Selected Executives)
                   </h2>
-                  <div className="rounded-xl bg-gradient-to-br from-primary/10 to-background/80 border border-white/5 p-5 space-y-4">
+                  <div className="rounded-xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 p-5 space-y-4">
                     <div>
-                      <h3 className="font-medium mb-2">Equity Ownership</h3>
-                      <p className="text-sm leading-relaxed">
+                      <h3 className="font-medium mb-2 text-gray-900">Equity Ownership</h3>
+                      <p className="text-sm leading-relaxed text-gray-700">
                         Each selected executive will receive <strong className="text-primary">0.25% – 1.0% equity</strong> in Crave'n Inc., determined by performance, contribution, and long-term commitment.
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="font-medium mb-2">Deferred Executive Salary</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed mb-2">
+                      <h3 className="font-medium mb-2 text-gray-900">Deferred Executive Salary</h3>
+                      <p className="text-gray-500 text-sm leading-relaxed mb-2">
                         Executive salaries activate when Crave'n reaches its first major revenue or funding milestone (for example, a defined monthly revenue target or seed funding round).
                       </p>
                       <ul className="space-y-1">
-                        <li className="flex items-start gap-2 text-sm">
+                        <li className="flex items-start gap-2 text-sm text-gray-700">
                           <span className="text-primary mt-0.5">•</span>
                           <span><strong className="text-primary">CMO:</strong> $85,000 – $95,000 per year (deferred).</span>
                         </li>
-                        <li className="flex items-start gap-2 text-sm">
+                        <li className="flex items-start gap-2 text-sm text-gray-700">
                           <span className="text-primary mt-0.5">•</span>
                           <span><strong className="text-primary">CGO:</strong> $75,000 – $90,000 per year (deferred).</span>
                         </li>
                       </ul>
-                      <p className="text-muted-foreground text-xs mt-2">
+                      <p className="text-gray-500 text-xs mt-2">
                         Until activation, compensation is primarily equity-based, consistent with early-stage startup executive structures.
                       </p>
                     </div>
@@ -240,17 +240,17 @@ const InternshipProgram = () => {
 
                 {/* Ideal Candidate */}
                 <section>
-                  <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4 font-medium">
+                  <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 font-semibold">
                     Ideal Candidate
                   </h2>
-                  <p className="text-sm leading-relaxed mb-4">
+                  <p className="text-sm leading-relaxed mb-4 text-gray-700">
                     This internship is ideal for highly motivated individuals who are passionate about marketing, branding, and growth — and who are excited by the opportunity to earn a permanent executive role inside a fast-growing startup.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {traits.map((trait, index) => (
                       <span 
                         key={index}
-                        className="px-3 py-1 rounded-full border border-border/50 bg-background/30 text-xs text-muted-foreground"
+                        className="px-3 py-1 rounded-full border border-gray-200 bg-gray-50 text-xs text-gray-600"
                       >
                         {trait}
                       </span>
@@ -261,12 +261,12 @@ const InternshipProgram = () => {
             </div>
 
             {/* Apply Section */}
-            <div className="mt-8 pt-6 border-t border-dashed border-white/10 flex flex-wrap gap-4 items-center justify-between">
+            <div className="mt-8 pt-6 border-t border-dashed border-gray-200 flex flex-wrap gap-4 items-center justify-between">
               <div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">
+                <div className="text-xs uppercase tracking-widest text-gray-500 mb-1">
                   How to apply
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-gray-600">
                   Send your resume or portfolio to:{' '}
                   <a 
                     href="mailto:careers@cravendelivery.com" 
@@ -275,7 +275,7 @@ const InternshipProgram = () => {
                     careers@cravendelivery.com
                   </a>
                   <br />
-                  Subject line: <strong className="text-foreground">Marketing & Growth Internship Application — [Your Name]</strong>
+                  Subject line: <strong className="text-gray-900">Marketing & Growth Internship Application — [Your Name]</strong>
                 </div>
               </div>
               <Button 
@@ -290,7 +290,7 @@ const InternshipProgram = () => {
           </div>
 
           {/* Footer note */}
-          <div className="mt-6 text-xs text-muted-foreground">
+          <div className="mt-6 text-xs text-gray-500">
             © {new Date().getFullYear()} Crave'n Inc. All rights reserved.
           </div>
         </main>
