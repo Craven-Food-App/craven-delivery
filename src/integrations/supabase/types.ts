@@ -220,6 +220,147 @@ export type Database = {
           },
         ]
       }
+      ach_transfers: {
+        Row: {
+          ach_fee: number | null
+          ach_number: string
+          ach_type: string
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          approver_id: string | null
+          bank_account_id: string | null
+          batch_id: string | null
+          company_id: string | null
+          company_name: string
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          effective_date: string
+          id: string
+          metadata: Json | null
+          receiver_account: string
+          receiver_account_type: string | null
+          receiver_name: string
+          receiver_routing: string
+          requires_approval: boolean | null
+          return_code: string | null
+          return_date: string | null
+          return_reason: string | null
+          settlement_date: string | null
+          standard_entry_class: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          submitted_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ach_fee?: number | null
+          ach_number: string
+          ach_type: string
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          bank_account_id?: string | null
+          batch_id?: string | null
+          company_id?: string | null
+          company_name: string
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          effective_date: string
+          id?: string
+          metadata?: Json | null
+          receiver_account: string
+          receiver_account_type?: string | null
+          receiver_name: string
+          receiver_routing: string
+          requires_approval?: boolean | null
+          return_code?: string | null
+          return_date?: string | null
+          return_reason?: string | null
+          settlement_date?: string | null
+          standard_entry_class?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ach_fee?: number | null
+          ach_number?: string
+          ach_type?: string
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          bank_account_id?: string | null
+          batch_id?: string | null
+          company_id?: string | null
+          company_name?: string
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          effective_date?: string
+          id?: string
+          metadata?: Json | null
+          receiver_account?: string
+          receiver_account_type?: string | null
+          receiver_name?: string
+          receiver_routing?: string
+          requires_approval?: boolean | null
+          return_code?: string | null
+          return_date?: string | null
+          return_reason?: string | null
+          settlement_date?: string | null
+          standard_entry_class?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          submitted_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ach_transfers_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ach_transfers_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ach_transfers_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ach_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ach_transfers_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       activation_queue: {
         Row: {
           added_at: string | null
@@ -975,30 +1116,409 @@ export type Database = {
       }
       bank_accounts: {
         Row: {
+          account_classification: string | null
+          account_number_masked: string | null
+          account_type: string | null
+          available_balance: number | null
           currency: string
           current_balance: number
+          daily_limit: number | null
+          iban: string | null
           id: string
           institution: string | null
+          last_reconciled_at: string | null
+          last_reconciled_balance: number | null
+          ledger_balance: number | null
+          metadata: Json | null
           name: string
+          pending_balance: number | null
+          routing_number: string | null
+          status: string | null
+          swift_code: string | null
+          transaction_limit: number | null
           updated_at: string
         }
         Insert: {
+          account_classification?: string | null
+          account_number_masked?: string | null
+          account_type?: string | null
+          available_balance?: number | null
           currency?: string
           current_balance?: number
+          daily_limit?: number | null
+          iban?: string | null
           id?: string
           institution?: string | null
+          last_reconciled_at?: string | null
+          last_reconciled_balance?: number | null
+          ledger_balance?: number | null
+          metadata?: Json | null
           name: string
+          pending_balance?: number | null
+          routing_number?: string | null
+          status?: string | null
+          swift_code?: string | null
+          transaction_limit?: number | null
           updated_at?: string
         }
         Update: {
+          account_classification?: string | null
+          account_number_masked?: string | null
+          account_type?: string | null
+          available_balance?: number | null
           currency?: string
           current_balance?: number
+          daily_limit?: number | null
+          iban?: string | null
           id?: string
           institution?: string | null
+          last_reconciled_at?: string | null
+          last_reconciled_balance?: number | null
+          ledger_balance?: number | null
+          metadata?: Json | null
           name?: string
+          pending_balance?: number | null
+          routing_number?: string | null
+          status?: string | null
+          swift_code?: string | null
+          transaction_limit?: number | null
           updated_at?: string
         }
         Relationships: []
+      }
+      bank_statements: {
+        Row: {
+          available_balance: number | null
+          bank_account_id: string | null
+          closing_balance: number
+          created_at: string | null
+          file_format: string | null
+          id: string
+          metadata: Json | null
+          opening_balance: number
+          processed: boolean | null
+          processed_at: string | null
+          processed_by: string | null
+          reconciled: boolean | null
+          reconciliation_id: string | null
+          statement_date: string
+          statement_file_name: string | null
+          statement_file_url: string | null
+          statement_number: string
+          statement_period_end: string
+          statement_period_start: string
+          total_deposits: number | null
+          total_fees: number | null
+          total_interest: number | null
+          total_withdrawals: number | null
+          transaction_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          available_balance?: number | null
+          bank_account_id?: string | null
+          closing_balance: number
+          created_at?: string | null
+          file_format?: string | null
+          id?: string
+          metadata?: Json | null
+          opening_balance: number
+          processed?: boolean | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reconciled?: boolean | null
+          reconciliation_id?: string | null
+          statement_date: string
+          statement_file_name?: string | null
+          statement_file_url?: string | null
+          statement_number: string
+          statement_period_end: string
+          statement_period_start: string
+          total_deposits?: number | null
+          total_fees?: number | null
+          total_interest?: number | null
+          total_withdrawals?: number | null
+          transaction_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          available_balance?: number | null
+          bank_account_id?: string | null
+          closing_balance?: number
+          created_at?: string | null
+          file_format?: string | null
+          id?: string
+          metadata?: Json | null
+          opening_balance?: number
+          processed?: boolean | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reconciled?: boolean | null
+          reconciliation_id?: string | null
+          statement_date?: string
+          statement_file_name?: string | null
+          statement_file_url?: string | null
+          statement_number?: string
+          statement_period_end?: string
+          statement_period_start?: string
+          total_deposits?: number | null
+          total_fees?: number | null
+          total_interest?: number | null
+          total_withdrawals?: number | null
+          transaction_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statements_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_statements_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bank_statements_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "banking_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banking_reconciliations: {
+        Row: {
+          adjusted_balance: number | null
+          bank_account_id: string | null
+          bank_charges: number | null
+          bank_credits: number | null
+          created_at: string | null
+          created_by: string
+          difference: number | null
+          discrepancy_explanation: string | null
+          errors: number | null
+          id: string
+          ledger_ending_balance: number
+          metadata: Json | null
+          notes: string | null
+          outstanding_deposits: number | null
+          outstanding_withdrawals: number | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_date: string
+          reconciliation_number: string
+          statement_end_date: string
+          statement_ending_balance: number
+          statement_start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          adjusted_balance?: number | null
+          bank_account_id?: string | null
+          bank_charges?: number | null
+          bank_credits?: number | null
+          created_at?: string | null
+          created_by: string
+          difference?: number | null
+          discrepancy_explanation?: string | null
+          errors?: number | null
+          id?: string
+          ledger_ending_balance: number
+          metadata?: Json | null
+          notes?: string | null
+          outstanding_deposits?: number | null
+          outstanding_withdrawals?: number | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date: string
+          reconciliation_number: string
+          statement_end_date: string
+          statement_ending_balance: number
+          statement_start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          adjusted_balance?: number | null
+          bank_account_id?: string | null
+          bank_charges?: number | null
+          bank_credits?: number | null
+          created_at?: string | null
+          created_by?: string
+          difference?: number | null
+          discrepancy_explanation?: string | null
+          errors?: number | null
+          id?: string
+          ledger_ending_balance?: number
+          metadata?: Json | null
+          notes?: string | null
+          outstanding_deposits?: number | null
+          outstanding_withdrawals?: number | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date?: string
+          reconciliation_number?: string
+          statement_end_date?: string
+          statement_ending_balance?: number
+          statement_start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banking_reconciliations_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banking_reconciliations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "banking_reconciliations_reconciled_by_fkey"
+            columns: ["reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      banking_transactions: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          bank_account_id: string | null
+          check_number: string | null
+          counterparty_account: string | null
+          counterparty_bank: string | null
+          counterparty_name: string | null
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          description: string
+          exchange_rate: number | null
+          id: string
+          metadata: Json | null
+          posted_date: string | null
+          reconciled: boolean | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_id: string | null
+          reference_number: string | null
+          requires_approval: boolean | null
+          status: string
+          transaction_category: string | null
+          transaction_date: string
+          transaction_number: string
+          transaction_type: string
+          updated_at: string | null
+          value_date: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_account_id?: string | null
+          check_number?: string | null
+          counterparty_account?: string | null
+          counterparty_bank?: string | null
+          counterparty_name?: string | null
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          description: string
+          exchange_rate?: number | null
+          id?: string
+          metadata?: Json | null
+          posted_date?: string | null
+          reconciled?: boolean | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_id?: string | null
+          reference_number?: string | null
+          requires_approval?: boolean | null
+          status?: string
+          transaction_category?: string | null
+          transaction_date: string
+          transaction_number: string
+          transaction_type: string
+          updated_at?: string | null
+          value_date?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_account_id?: string | null
+          check_number?: string | null
+          counterparty_account?: string | null
+          counterparty_bank?: string | null
+          counterparty_name?: string | null
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          description?: string
+          exchange_rate?: number | null
+          id?: string
+          metadata?: Json | null
+          posted_date?: string | null
+          reconciled?: boolean | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_id?: string | null
+          reference_number?: string | null
+          requires_approval?: boolean | null
+          status?: string
+          transaction_category?: string | null
+          transaction_date?: string
+          transaction_number?: string
+          transaction_type?: string
+          updated_at?: string | null
+          value_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banking_transactions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "banking_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banking_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "banking_transactions_reconciled_by_fkey"
+            columns: ["reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       batch_orders: {
         Row: {
@@ -1685,6 +2205,155 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      cash_forecast_details: {
+        Row: {
+          actual_balance: number | null
+          actual_inflow: number | null
+          actual_outflow: number | null
+          created_at: string | null
+          forecast_id: string | null
+          id: string
+          metadata: Json | null
+          period_date: string
+          period_type: string | null
+          projected_balance: number | null
+          projected_inflow: number | null
+          projected_outflow: number | null
+          updated_at: string | null
+          variance: number | null
+        }
+        Insert: {
+          actual_balance?: number | null
+          actual_inflow?: number | null
+          actual_outflow?: number | null
+          created_at?: string | null
+          forecast_id?: string | null
+          id?: string
+          metadata?: Json | null
+          period_date: string
+          period_type?: string | null
+          projected_balance?: number | null
+          projected_inflow?: number | null
+          projected_outflow?: number | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Update: {
+          actual_balance?: number | null
+          actual_inflow?: number | null
+          actual_outflow?: number | null
+          created_at?: string | null
+          forecast_id?: string | null
+          id?: string
+          metadata?: Json | null
+          period_date?: string
+          period_type?: string | null
+          projected_balance?: number | null
+          projected_inflow?: number | null
+          projected_outflow?: number | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_forecast_details_forecast_id_fkey"
+            columns: ["forecast_id"]
+            isOneToOne: false
+            referencedRelation: "cash_forecasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_forecasts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assumptions: Json | null
+          created_at: string | null
+          created_by: string
+          forecast_date: string
+          forecast_end_date: string
+          forecast_number: string
+          forecast_start_date: string
+          forecast_type: string
+          id: string
+          inflows_by_category: Json | null
+          metadata: Json | null
+          notes: string | null
+          opening_cash_balance: number
+          outflows_by_category: Json | null
+          projected_ending_balance: number | null
+          projected_inflows: number | null
+          projected_net_flow: number | null
+          projected_outflows: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: Json | null
+          created_at?: string | null
+          created_by: string
+          forecast_date: string
+          forecast_end_date: string
+          forecast_number: string
+          forecast_start_date: string
+          forecast_type: string
+          id?: string
+          inflows_by_category?: Json | null
+          metadata?: Json | null
+          notes?: string | null
+          opening_cash_balance: number
+          outflows_by_category?: Json | null
+          projected_ending_balance?: number | null
+          projected_inflows?: number | null
+          projected_net_flow?: number | null
+          projected_outflows?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: Json | null
+          created_at?: string | null
+          created_by?: string
+          forecast_date?: string
+          forecast_end_date?: string
+          forecast_number?: string
+          forecast_start_date?: string
+          forecast_type?: string
+          id?: string
+          inflows_by_category?: Json | null
+          metadata?: Json | null
+          notes?: string | null
+          opening_cash_balance?: number
+          outflows_by_category?: Json | null
+          projected_ending_balance?: number | null
+          projected_inflows?: number | null
+          projected_net_flow?: number | null
+          projected_outflows?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_forecasts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cash_forecasts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       ceo_access_credentials: {
         Row: {
@@ -3971,6 +4640,278 @@ export type Database = {
         }
         Relationships: []
       }
+      cto_training_audit: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          module_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          module_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          module_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_training_audit_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_training_audit_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_training_audit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_training_lessons: {
+        Row: {
+          associated_route: string | null
+          content_markdown: string
+          created_at: string | null
+          estimated_minutes: number
+          id: string
+          module_id: string
+          order_index: number
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          associated_route?: string | null
+          content_markdown: string
+          created_at?: string | null
+          estimated_minutes?: number
+          id?: string
+          module_id: string
+          order_index?: number
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          associated_route?: string | null
+          content_markdown?: string
+          created_at?: string | null
+          estimated_minutes?: number
+          id?: string
+          module_id?: string
+          order_index?: number
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_training_lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_training_modules: {
+        Row: {
+          associated_route: string | null
+          created_at: string | null
+          description: string
+          estimated_minutes: number
+          id: string
+          key: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          associated_route?: string | null
+          created_at?: string | null
+          description: string
+          estimated_minutes?: number
+          id?: string
+          key: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          associated_route?: string | null
+          created_at?: string | null
+          description?: string
+          estimated_minutes?: number
+          id?: string
+          key?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      cto_training_progress: {
+        Row: {
+          completed_at: string | null
+          completed_steps: Json | null
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          lesson_id: string | null
+          module_id: string | null
+          quiz_score: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
+          quiz_score?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
+          quiz_score?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_training_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_training_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_training_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_training_quizzes: {
+        Row: {
+          correct_answer: Json | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          options: Json | null
+          order_index: number
+          question: string
+          question_type: string
+        }
+        Insert: {
+          correct_answer?: Json | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          options?: Json | null
+          order_index?: number
+          question: string
+          question_type: string
+        }
+        Update: {
+          correct_answer?: Json | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          options?: Json | null
+          order_index?: number
+          question?: string
+          question_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_training_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_training_steps: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_required: boolean | null
+          lesson_id: string
+          order_index: number
+          related_ui_key: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_required?: boolean | null
+          lesson_id: string
+          order_index?: number
+          related_ui_key?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_required?: boolean | null
+          lesson_id?: string
+          order_index?: number
+          related_ui_key?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_training_steps_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cto_training_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cto_workforce_predictions: {
         Row: {
           confidence_score: number | null
@@ -4335,6 +5276,325 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cxo_reports: {
+        Row: {
+          author_id: string | null
+          biggest_issue: string | null
+          created_at: string | null
+          fix_deployed: string | null
+          id: string
+          metrics_moved: string | null
+          recommendation_for_tomorrow: string | null
+          report_date: string
+          ticket_backlog_status: string | null
+          type: string
+        }
+        Insert: {
+          author_id?: string | null
+          biggest_issue?: string | null
+          created_at?: string | null
+          fix_deployed?: string | null
+          id?: string
+          metrics_moved?: string | null
+          recommendation_for_tomorrow?: string | null
+          report_date: string
+          ticket_backlog_status?: string | null
+          type: string
+        }
+        Update: {
+          author_id?: string | null
+          biggest_issue?: string | null
+          created_at?: string | null
+          fix_deployed?: string | null
+          id?: string
+          metrics_moved?: string | null
+          recommendation_for_tomorrow?: string | null
+          report_date?: string
+          ticket_backlog_status?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_reports_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cxo_training_audit: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          module_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          module_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          module_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_training_audit_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cxo_training_audit_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cxo_training_audit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cxo_training_lessons: {
+        Row: {
+          associated_route: string | null
+          content_markdown: string
+          created_at: string | null
+          estimated_minutes: number
+          id: string
+          module_id: string
+          order_index: number
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          associated_route?: string | null
+          content_markdown: string
+          created_at?: string | null
+          estimated_minutes?: number
+          id?: string
+          module_id: string
+          order_index?: number
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          associated_route?: string | null
+          content_markdown?: string
+          created_at?: string | null
+          estimated_minutes?: number
+          id?: string
+          module_id?: string
+          order_index?: number
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_training_lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cxo_training_modules: {
+        Row: {
+          associated_route: string | null
+          created_at: string | null
+          description: string
+          estimated_minutes: number
+          id: string
+          key: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          associated_route?: string | null
+          created_at?: string | null
+          description: string
+          estimated_minutes?: number
+          id?: string
+          key: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          associated_route?: string | null
+          created_at?: string | null
+          description?: string
+          estimated_minutes?: number
+          id?: string
+          key?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      cxo_training_progress: {
+        Row: {
+          completed_at: string | null
+          completed_steps: Json | null
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          lesson_id: string | null
+          module_id: string | null
+          quiz_score: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
+          quiz_score?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: Json | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          lesson_id?: string | null
+          module_id?: string | null
+          quiz_score?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_training_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cxo_training_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cxo_training_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cxo_training_quizzes: {
+        Row: {
+          correct_answer: Json | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          options: Json | null
+          order_index: number
+          question: string
+          question_type: string
+        }
+        Insert: {
+          correct_answer?: Json | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          options?: Json | null
+          order_index?: number
+          question: string
+          question_type: string
+        }
+        Update: {
+          correct_answer?: Json | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          options?: Json | null
+          order_index?: number
+          question?: string
+          question_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_training_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cxo_training_steps: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_required: boolean | null
+          lesson_id: string
+          order_index: number
+          related_ui_key: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_required?: boolean | null
+          lesson_id: string
+          order_index?: number
+          related_ui_key?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_required?: boolean | null
+          lesson_id?: string
+          order_index?: number
+          related_ui_key?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cxo_training_steps_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "cxo_training_lessons"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -6994,8 +8254,11 @@ export type Database = {
           docusign_envelope_id: string | null
           email: string
           full_name: string
+          home_zone: string | null
           id: string
+          online_state: string | null
           phone: string
+          rating: number | null
           ssn_last4: string | null
           status: string
           updated_at: string | null
@@ -7011,8 +8274,11 @@ export type Database = {
           docusign_envelope_id?: string | null
           email: string
           full_name: string
+          home_zone?: string | null
           id?: string
+          online_state?: string | null
           phone: string
+          rating?: number | null
           ssn_last4?: string | null
           status?: string
           updated_at?: string | null
@@ -7028,8 +8294,11 @@ export type Database = {
           docusign_envelope_id?: string | null
           email?: string
           full_name?: string
+          home_zone?: string | null
           id?: string
+          online_state?: string | null
           phone?: string
+          rating?: number | null
           ssn_last4?: string | null
           status?: string
           updated_at?: string | null
@@ -9604,6 +10873,312 @@ export type Database = {
           },
         ]
       }
+      experience_analytics: {
+        Row: {
+          avg_delivery_minutes: number | null
+          created_at: string | null
+          csat_score: number | null
+          date: string
+          id: string
+          late_delivery_rate: number | null
+          nps_score: number | null
+          repeat_complaint_rate: number | null
+          segment: string
+          total_surveys: number | null
+        }
+        Insert: {
+          avg_delivery_minutes?: number | null
+          created_at?: string | null
+          csat_score?: number | null
+          date: string
+          id?: string
+          late_delivery_rate?: number | null
+          nps_score?: number | null
+          repeat_complaint_rate?: number | null
+          segment?: string
+          total_surveys?: number | null
+        }
+        Update: {
+          avg_delivery_minutes?: number | null
+          created_at?: string | null
+          csat_score?: number | null
+          date?: string
+          id?: string
+          late_delivery_rate?: number | null
+          nps_score?: number | null
+          repeat_complaint_rate?: number | null
+          segment?: string
+          total_surveys?: number | null
+        }
+        Relationships: []
+      }
+      experience_incidents: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          linked_ticket_id: string | null
+          notes: string | null
+          owner_id: string | null
+          reported_at: string
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          linked_ticket_id?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          reported_at: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          type: string
+          updated_at?: string | null
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          linked_ticket_id?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          reported_at?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_incidents_linked_ticket_id_fkey"
+            columns: ["linked_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "experience_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experience_incidents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      experience_initiatives: {
+        Row: {
+          completed_date: string | null
+          created_at: string | null
+          id: string
+          impact_metrics: Json | null
+          owner_id: string | null
+          plan: string
+          problem_statement: string
+          root_cause: string | null
+          start_date: string
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_date?: string | null
+          created_at?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          owner_id?: string | null
+          plan: string
+          problem_statement: string
+          root_cause?: string | null
+          start_date: string
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_date?: string | null
+          created_at?: string | null
+          id?: string
+          impact_metrics?: Json | null
+          owner_id?: string | null
+          plan?: string
+          problem_statement?: string
+          root_cause?: string | null
+          start_date?: string
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_initiatives_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      experience_metrics_snapshots: {
+        Row: {
+          at_risk_restaurants_count: number | null
+          avg_delivery_minutes: number | null
+          cancellation_rate: number | null
+          captured_at: string
+          created_at: string | null
+          delayed_orders: number | null
+          driver_offline_count: number | null
+          driver_online_count: number | null
+          id: string
+          max_delivery_minutes: number | null
+          open_orders: number | null
+          problem_zones: Json | null
+          tickets_escalated_count: number | null
+          tickets_open_count: number | null
+          time_bucket: string
+        }
+        Insert: {
+          at_risk_restaurants_count?: number | null
+          avg_delivery_minutes?: number | null
+          cancellation_rate?: number | null
+          captured_at: string
+          created_at?: string | null
+          delayed_orders?: number | null
+          driver_offline_count?: number | null
+          driver_online_count?: number | null
+          id?: string
+          max_delivery_minutes?: number | null
+          open_orders?: number | null
+          problem_zones?: Json | null
+          tickets_escalated_count?: number | null
+          tickets_open_count?: number | null
+          time_bucket: string
+        }
+        Update: {
+          at_risk_restaurants_count?: number | null
+          avg_delivery_minutes?: number | null
+          cancellation_rate?: number | null
+          captured_at?: string
+          created_at?: string | null
+          delayed_orders?: number | null
+          driver_offline_count?: number | null
+          driver_online_count?: number | null
+          id?: string
+          max_delivery_minutes?: number | null
+          open_orders?: number | null
+          problem_zones?: Json | null
+          tickets_escalated_count?: number | null
+          tickets_open_count?: number | null
+          time_bucket?: string
+        }
+        Relationships: []
+      }
+      experience_tickets: {
+        Row: {
+          approved_credit_amount: number | null
+          assigned_to: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          description: string
+          driver_id: string | null
+          external_ticket_id: string | null
+          id: string
+          merchant_id: string | null
+          needs_cxo_approval: boolean | null
+          priority: string
+          resolution_notes: string | null
+          root_cause_tag: string | null
+          status: string
+          summary: string
+          type: string
+          updated_at: string | null
+          zone: string | null
+        }
+        Insert: {
+          approved_credit_amount?: number | null
+          assigned_to?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          description: string
+          driver_id?: string | null
+          external_ticket_id?: string | null
+          id?: string
+          merchant_id?: string | null
+          needs_cxo_approval?: boolean | null
+          priority?: string
+          resolution_notes?: string | null
+          root_cause_tag?: string | null
+          status?: string
+          summary: string
+          type: string
+          updated_at?: string | null
+          zone?: string | null
+        }
+        Update: {
+          approved_credit_amount?: number | null
+          assigned_to?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          description?: string
+          driver_id?: string | null
+          external_ticket_id?: string | null
+          id?: string
+          merchant_id?: string | null
+          needs_cxo_approval?: boolean | null
+          priority?: string
+          resolution_notes?: string | null
+          root_cause_tag?: string | null
+          status?: string
+          summary?: string
+          type?: string
+          updated_at?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "experience_tickets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "experience_tickets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       favorite_restaurants: {
         Row: {
           created_at: string | null
@@ -11387,6 +12962,74 @@ export type Database = {
           },
         ]
       }
+      marketing_assets: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          file_type: string
+          file_url: string
+          folder: string
+          id: string
+          mime_type: string | null
+          name: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          file_type: string
+          file_url: string
+          folder?: string
+          id?: string
+          mime_type?: string | null
+          name: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number
+          file_type?: string
+          file_url?: string
+          folder?: string
+          id?: string
+          mime_type?: string | null
+          name?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_assets_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       marketing_campaigns: {
         Row: {
           approved_at: string | null
@@ -11828,6 +13471,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      merchants: {
+        Row: {
+          address: string | null
+          avg_prep_minutes: number | null
+          created_at: string | null
+          id: string
+          is_at_risk: boolean | null
+          name: string
+          rating: number | null
+          status: string
+          zone: string | null
+        }
+        Insert: {
+          address?: string | null
+          avg_prep_minutes?: number | null
+          created_at?: string | null
+          id?: string
+          is_at_risk?: boolean | null
+          name: string
+          rating?: number | null
+          status?: string
+          zone?: string | null
+        }
+        Update: {
+          address?: string | null
+          avg_prep_minutes?: number | null
+          created_at?: string | null
+          id?: string
+          is_at_risk?: boolean | null
+          name?: string
+          rating?: number | null
+          status?: string
+          zone?: string | null
+        }
+        Relationships: []
       }
       mobile_app_analytics_events: {
         Row: {
@@ -16665,6 +18344,85 @@ export type Database = {
           },
         ]
       }
+      support_staff: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          name: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      support_staff_metrics: {
+        Row: {
+          avg_handle_minutes: number | null
+          created_at: string | null
+          csat_score: number | null
+          date: string
+          escalations_count: number | null
+          id: string
+          notes: string | null
+          staff_id: string | null
+          tickets_resolved: number | null
+        }
+        Insert: {
+          avg_handle_minutes?: number | null
+          created_at?: string | null
+          csat_score?: number | null
+          date: string
+          escalations_count?: number | null
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          tickets_resolved?: number | null
+        }
+        Update: {
+          avg_handle_minutes?: number | null
+          created_at?: string | null
+          csat_score?: number | null
+          date?: string
+          escalations_count?: number | null
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          tickets_resolved?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_staff_metrics_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "support_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null
@@ -17545,6 +19303,114 @@ export type Database = {
           },
         ]
       }
+      treasury_operations: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          executed_at: string | null
+          executed_by: string | null
+          executed_date: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          operation_date: string
+          operation_number: string
+          operation_type: string
+          requires_approval: boolean | null
+          source_account_id: string | null
+          status: string
+          target_account_id: string | null
+          updated_at: string | null
+          value_date: string | null
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_date?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          operation_date: string
+          operation_number: string
+          operation_type: string
+          requires_approval?: boolean | null
+          source_account_id?: string | null
+          status?: string
+          target_account_id?: string | null
+          updated_at?: string | null
+          value_date?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_date?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          operation_date?: string
+          operation_number?: string
+          operation_type?: string
+          requires_approval?: boolean | null
+          source_account_id?: string | null
+          status?: string
+          target_account_id?: string | null
+          updated_at?: string | null
+          value_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_operations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "treasury_operations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "treasury_operations_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "treasury_operations_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_operations_target_account_id_fkey"
+            columns: ["target_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trusts: {
         Row: {
           company_id: string | null
@@ -18182,6 +20048,174 @@ export type Database = {
           },
         ]
       }
+      wire_transfers: {
+        Row: {
+          amount: number
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approver_id: string | null
+          bank_account_id: string | null
+          beneficiary_account: string
+          beneficiary_address: string | null
+          beneficiary_bank_address: string | null
+          beneficiary_bank_name: string
+          beneficiary_bank_routing: string | null
+          beneficiary_bank_swift: string | null
+          beneficiary_name: string
+          confirmation_number: string | null
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          direction: string
+          error_message: string | null
+          exchange_rate: number | null
+          executed_at: string | null
+          executed_by: string | null
+          executed_date: string | null
+          external_reference: string | null
+          id: string
+          metadata: Json | null
+          payment_instructions: string | null
+          purpose_of_payment: string | null
+          requested_date: string
+          requires_approval: boolean | null
+          retry_count: number | null
+          sender_account: string | null
+          sender_bank_name: string | null
+          sender_bank_swift: string | null
+          sender_name: string | null
+          status: string
+          transfer_type: string
+          updated_at: string | null
+          value_date: string | null
+          wire_fee: number | null
+          wire_number: string
+        }
+        Insert: {
+          amount: number
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          bank_account_id?: string | null
+          beneficiary_account: string
+          beneficiary_address?: string | null
+          beneficiary_bank_address?: string | null
+          beneficiary_bank_name: string
+          beneficiary_bank_routing?: string | null
+          beneficiary_bank_swift?: string | null
+          beneficiary_name: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          direction: string
+          error_message?: string | null
+          exchange_rate?: number | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_date?: string | null
+          external_reference?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_instructions?: string | null
+          purpose_of_payment?: string | null
+          requested_date: string
+          requires_approval?: boolean | null
+          retry_count?: number | null
+          sender_account?: string | null
+          sender_bank_name?: string | null
+          sender_bank_swift?: string | null
+          sender_name?: string | null
+          status?: string
+          transfer_type: string
+          updated_at?: string | null
+          value_date?: string | null
+          wire_fee?: number | null
+          wire_number: string
+        }
+        Update: {
+          amount?: number
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approver_id?: string | null
+          bank_account_id?: string | null
+          beneficiary_account?: string
+          beneficiary_address?: string | null
+          beneficiary_bank_address?: string | null
+          beneficiary_bank_name?: string
+          beneficiary_bank_routing?: string | null
+          beneficiary_bank_swift?: string | null
+          beneficiary_name?: string
+          confirmation_number?: string | null
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          direction?: string
+          error_message?: string | null
+          exchange_rate?: number | null
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_date?: string | null
+          external_reference?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_instructions?: string | null
+          purpose_of_payment?: string | null
+          requested_date?: string
+          requires_approval?: boolean | null
+          retry_count?: number | null
+          sender_account?: string | null
+          sender_bank_name?: string | null
+          sender_bank_swift?: string | null
+          sender_name?: string | null
+          status?: string
+          transfer_type?: string
+          updated_at?: string | null
+          value_date?: string | null
+          wire_fee?: number | null
+          wire_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wire_transfers_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wire_transfers_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wire_transfers_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wire_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wire_transfers_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       zones: {
         Row: {
           active_drivers: number
@@ -18511,35 +20545,35 @@ export type Database = {
       addgeometrycolumn:
         | {
             Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
-              schema_name: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              column_name: string
-              new_dim: number
-              new_srid: number
-              new_type: string
-              table_name: string
-              use_typmod?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
               catalog_name: string
               column_name: string
               new_dim: number
               new_srid_in: number
               new_type: string
               schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
+              schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: string
+              new_dim: number
+              new_srid: number
+              new_type: string
               table_name: string
               use_typmod?: boolean
             }
@@ -18627,17 +20661,17 @@ export type Database = {
       }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       clock_in:
+        | { Args: { p_user_id: string }; Returns: string }
         | {
             Args: { p_user_id: string; p_work_location: string }
             Returns: string
           }
-        | { Args: { p_user_id: string }; Returns: string }
       clock_out:
+        | { Args: { p_user_id: string }; Returns: string }
         | {
             Args: { p_break_duration_minutes: number; p_user_id: string }
             Returns: string
           }
-        | { Args: { p_user_id: string }; Returns: string }
       create_budget_approval: {
         Args: { budget_uuid: string; request_description?: string }
         Returns: string
@@ -18708,6 +20742,15 @@ export type Database = {
       dropgeometrycolumn:
         | {
             Args: {
+              catalog_name: string
+              column_name: string
+              schema_name: string
+              table_name: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
               column_name: string
               schema_name: string
               table_name: string
@@ -18715,26 +20758,17 @@ export type Database = {
             Returns: string
           }
         | { Args: { column_name: string; table_name: string }; Returns: string }
+      dropgeometrytable:
         | {
             Args: {
               catalog_name: string
-              column_name: string
               schema_name: string
               table_name: string
             }
             Returns: string
           }
-      dropgeometrytable:
         | { Args: { schema_name: string; table_name: string }; Returns: string }
         | { Args: { table_name: string }; Returns: string }
-        | {
-            Args: {
-              catalog_name: string
-              schema_name: string
-              table_name: string
-            }
-            Returns: string
-          }
       enablelongtransactions: { Args: never; Returns: string }
       encrypt_driver_identity: {
         Args: {
@@ -19024,6 +21058,8 @@ export type Database = {
       is_ceo: { Args: { user_uuid: string }; Returns: boolean }
       is_ceo_email: { Args: { p_email: string }; Returns: boolean }
       is_craven_founder: { Args: never; Returns: boolean }
+      is_cto_or_admin: { Args: { user_uuid: string }; Returns: boolean }
+      is_cxo_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_diamond_driver: { Args: { p_driver_id: string }; Returns: boolean }
       is_executive: { Args: { user_uuid: string }; Returns: boolean }
       is_universal_ceo: { Args: never; Returns: boolean }
@@ -19096,8 +21132,8 @@ export type Database = {
       }
       mark_inactive_sessions: { Args: never; Returns: undefined }
       populate_geometry_columns:
-        | { Args: { use_typmod?: boolean }; Returns: string }
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
+        | { Args: { use_typmod?: boolean }; Returns: string }
       position_to_exec_role: {
         Args: { position_text: string }
         Returns: string
@@ -19201,6 +21237,14 @@ export type Database = {
       st_asewkt: { Args: { "": string }; Returns: string }
       st_asgeojson:
         | {
+            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | {
+            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | {
             Args: {
               geom_column?: string
               maxdecimaldigits?: number
@@ -19209,16 +21253,34 @@ export type Database = {
             }
             Returns: string
           }
+        | { Args: { "": string }; Returns: string }
+      st_asgml:
+        | {
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+            }
+            Returns: string
+          }
         | {
             Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
             Returns: string
           }
+        | { Args: { "": string }; Returns: string }
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; options?: number }
+            Args: {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+              version: number
+            }
             Returns: string
           }
-        | { Args: { "": string }; Returns: string }
-      st_asgml:
         | {
             Args: {
               geom: unknown
@@ -19230,39 +21292,13 @@ export type Database = {
             }
             Returns: string
           }
-        | {
-            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
-            Returns: string
-          }
-        | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-              version: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              geog: unknown
-              id?: string
-              maxdecimaldigits?: number
-              nprefix?: string
-              options?: number
-            }
-            Returns: string
-          }
-        | { Args: { "": string }; Returns: string }
       st_askml:
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
             Returns: string
           }
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; nprefix?: string }
+            Args: { geom: unknown; maxdecimaldigits?: number; nprefix?: string }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -19283,11 +21319,11 @@ export type Database = {
       }
       st_assvg:
         | {
-            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | {
-            Args: { geog: unknown; maxdecimaldigits?: number; rel?: number }
+            Args: { geom: unknown; maxdecimaldigits?: number; rel?: number }
             Returns: string
           }
         | { Args: { "": string }; Returns: string }
@@ -19295,8 +21331,7 @@ export type Database = {
       st_astwkb:
         | {
             Args: {
-              geom: unknown[]
-              ids: number[]
+              geom: unknown
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -19307,7 +21342,8 @@ export type Database = {
           }
         | {
             Args: {
-              geom: unknown
+              geom: unknown[]
+              ids: number[]
               prec?: number
               prec_m?: number
               prec_z?: number
@@ -19321,8 +21357,8 @@ export type Database = {
         Returns: string
       }
       st_azimuth:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | { Args: { geog1: unknown; geog2: unknown }; Returns: number }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
       st_boundingdiagonal: {
         Args: { fits?: boolean; geom: unknown }
         Returns: unknown
@@ -19387,11 +21423,11 @@ export type Database = {
         Returns: boolean
       }
       st_distance:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
             Args: { geog1: unknown; geog2: unknown; use_spheroid?: boolean }
             Returns: number
           }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
       st_distancesphere:
         | { Args: { geom1: unknown; geom2: unknown }; Returns: number }
         | {
@@ -19413,6 +21449,11 @@ export type Database = {
       }
       st_equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_expand:
+        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
+        | {
+            Args: { box: unknown; dx: number; dy: number; dz?: number }
+            Returns: unknown
+          }
         | {
             Args: {
               dm?: number
@@ -19423,11 +21464,6 @@ export type Database = {
             }
             Returns: unknown
           }
-        | {
-            Args: { box: unknown; dx: number; dy: number; dz?: number }
-            Returns: unknown
-          }
-        | { Args: { box: unknown; dx: number; dy: number }; Returns: unknown }
       st_force3d: { Args: { geom: unknown; zvalue?: number }; Returns: unknown }
       st_force3dm: {
         Args: { geom: unknown; mvalue?: number }
@@ -19442,16 +21478,16 @@ export type Database = {
         Returns: unknown
       }
       st_generatepoints:
+        | { Args: { area: unknown; npoints: number }; Returns: unknown }
         | {
             Args: { area: unknown; npoints: number; seed: number }
             Returns: unknown
           }
-        | { Args: { area: unknown; npoints: number }; Returns: unknown }
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
-        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
         | { Args: { geog: unknown; maxchars?: number }; Returns: string }
+        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
       st_geomcollfromtext: { Args: { "": string }; Returns: unknown }
       st_geometricmedian: {
         Args: {
@@ -19495,8 +21531,8 @@ export type Database = {
         Returns: unknown
       }
       st_intersects:
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
         | { Args: { geog1: unknown; geog2: unknown }; Returns: boolean }
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_isvaliddetail: {
         Args: { flags?: number; geom: unknown }
         Returns: Database["public"]["CompositeTypes"]["valid_detail"]
@@ -19649,8 +21685,8 @@ export type Database = {
         Returns: unknown
       }
       st_setsrid:
-        | { Args: { geom: unknown; srid: number }; Returns: unknown }
         | { Args: { geog: unknown; srid: number }; Returns: unknown }
+        | { Args: { geom: unknown; srid: number }; Returns: unknown }
       st_sharedpaths: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -19673,8 +21709,8 @@ export type Database = {
         Returns: Record<string, unknown>[]
       }
       st_srid:
-        | { Args: { geom: unknown }; Returns: number }
         | { Args: { geog: unknown }; Returns: number }
+        | { Args: { geom: unknown }; Returns: number }
       st_subdivide: {
         Args: { geom: unknown; gridsize?: number; maxvertices?: number }
         Returns: unknown[]
@@ -19703,22 +21739,22 @@ export type Database = {
       }
       st_touches: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       st_transform:
-        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
-        | {
-            Args: { from_proj: string; geom: unknown; to_srid: number }
-            Returns: unknown
-          }
         | {
             Args: { from_proj: string; geom: unknown; to_proj: string }
             Returns: unknown
           }
+        | {
+            Args: { from_proj: string; geom: unknown; to_srid: number }
+            Returns: unknown
+          }
+        | { Args: { geom: unknown; to_proj: string }; Returns: unknown }
       st_triangulatepolygon: { Args: { g1: unknown }; Returns: unknown }
       st_union:
+        | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
         | {
             Args: { geom1: unknown; geom2: unknown; gridsize: number }
             Returns: unknown
           }
-        | { Args: { geom1: unknown; geom2: unknown }; Returns: unknown }
       st_voronoilines: {
         Args: { extend_to?: unknown; g1: unknown; tolerance?: number }
         Returns: unknown
