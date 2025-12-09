@@ -2,8 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, DollarSign, Users, Code, Megaphone, BarChart, Mail } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Users, Code, Megaphone, BarChart, Mail, GraduationCap, ArrowRight } from 'lucide-react';
 import Footer from '@/components/Footer';
+import { Link } from 'react-router-dom';
 
 const Careers = () => {
   // Currently no open positions - update this when hiring
@@ -62,6 +63,47 @@ const Careers = () => {
               );
             })}
           </div>
+        </div>
+
+        {/* Internship Program Section */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-center mb-8">Internship Program</h2>
+          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 transition-all">
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                    <GraduationCap className="h-8 w-8 text-primary" />
+                  </div>
+                </div>
+                <div className="flex-grow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-primary text-primary-foreground">Executive Track</Badge>
+                    <Badge variant="outline">Remote + Toledo, OH</Badge>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Marketing & Growth Internship</h3>
+                  <p className="text-muted-foreground mb-4">
+                    A performance-driven internship with a direct pathway into permanent C-Suite roles (CMO/CGO). 
+                    Includes equity ownership (0.25% – 1.0%) and deferred executive compensation for selected candidates.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Content Creation</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Social Media</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Growth Marketing</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">Brand Strategy</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <Link to="/careers/internship">
+                    <Button size="lg" className="group">
+                      View Details
+                      <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Job Listings or No Positions Message */}
