@@ -3,6 +3,8 @@ import { MarketingAccessGuard } from '@/components/MarketingAccessGuard';
 import { PromoCodeManager } from '@/components/admin/PromoCodeManager';
 import { PromotionalBannerManager } from '@/components/admin/PromotionalBannerManager';
 import { HeroImageManager } from '@/components/admin/HeroImageManager';
+import { FeederHeroImageManager } from '@/components/admin/FeederHeroImageManager';
+import { ICADocumentManager } from '@/components/admin/ICADocumentManager';
 import { CustomerManagement } from '@/components/admin/CustomerManagement';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { ReferralProgram } from '@/components/ReferralProgram';
@@ -30,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, LayoutDashboard, Tag, Mail, Bell, Users, TrendingUp, BarChart, Gift, UserPlus, Award, 
   Megaphone, MessageSquare, Building2, Truck, DollarSign, FolderOpen, Zap, Plug, Shield, Settings, 
-  Sparkles, Filter, PieChart, Image as ImageIcon
+  Sparkles, Filter, PieChart, Image as ImageIcon, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -143,6 +145,8 @@ const MarketingPortal: React.FC = () => {
         { id: 'promo-codes', label: 'Promo Codes', icon: Tag },
         { id: 'promotional-banners', label: 'Promotional Banners', icon: ImageIcon },
         { id: 'hero-image', label: 'Hero Image', icon: ImageIcon },
+        { id: 'feeder-hero-image', label: 'Feeder Hero Image', icon: ImageIcon },
+        { id: 'ica-document', label: 'ICA Document', icon: FileText },
         { id: 'referral-program', label: 'Referral Program', icon: UserPlus },
         { id: 'loyalty-program', label: 'Loyalty Program', icon: Award },
       ]
@@ -237,6 +241,10 @@ const MarketingPortal: React.FC = () => {
         return <PromotionalBannerManager />;
       case 'hero-image':
         return <HeroImageManager />;
+      case 'feeder-hero-image':
+        return <FeederHeroImageManager />;
+      case 'ica-document':
+        return <ICADocumentManager />;
       case 'referral-program':
         return (
           <div className="space-y-6">

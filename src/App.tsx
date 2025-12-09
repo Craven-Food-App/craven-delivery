@@ -14,6 +14,7 @@ import Favorites from "./pages/Favorites";
 import OrderHistory from "./pages/OrderHistory";
 import DriverAuth from "./pages/DriverAuth";
 import FeederHub from "./pages/FeederHub";
+import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
@@ -593,6 +594,7 @@ const App = () => {
           <Route path="/crave-more" element={<CraveMore />} />
           <Route path="/driver/auth" element={<DriverAuth />} />
           <Route path="/feeder" element={<FeederHub />} />
+          <Route path="/independent-contractor-agreement" element={<IndependentContractorAgreement />} />
           
           {/* New Driver Application Wizard (Full Page Flow) */}
           <Route path="/driver-onboarding/apply" element={<DriverApplicationWizard />} />
