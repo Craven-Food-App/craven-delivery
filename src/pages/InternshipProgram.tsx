@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 const InternshipProgram = () => {
   const responsibilities = [
     "Create engaging social media content for TikTok, Instagram, Facebook, and LinkedIn.",
-    "Support Craver (driver) recruitment campaigns with videos, graphics, and copywriting.",
+    "Support Feeder (driver) recruitment campaigns with videos, graphics, and copywriting.",
     "Assist with customer and merchant marketing campaigns.",
     "Pitch creative concepts directly to the CEO & CXO during brainstorming sessions.",
     "Conduct research on trends, competitors, and local market opportunities.",
@@ -29,6 +29,7 @@ const InternshipProgram = () => {
 
   const requiredSkills = [
     "Strong written and verbal communication.",
+    "Must speak English or have a translator.",
     "Creativity in content, branding, and concepts.",
     "Familiarity with major social media platforms.",
     "Basic research and analytical interpretation skills.",
@@ -88,7 +89,7 @@ const InternshipProgram = () => {
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600">
               <MapPin className="h-3.5 w-3.5" />
-              Remote + Toledo, OH
+              United States & United Kingdom
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-sm text-gray-600">
               <Briefcase className="h-3.5 w-3.5" />
@@ -269,10 +270,10 @@ const InternshipProgram = () => {
                 <div className="text-sm text-gray-600">
                   Send your resume or portfolio to:{' '}
                   <a 
-                    href="mailto:careers@cravendelivery.com" 
+                    href="mailto:hr@cravenusa.com" 
                     className="font-semibold text-primary hover:underline"
                   >
-                    careers@cravendelivery.com
+                    hr@cravenusa.com
                   </a>
                   <br />
                   Subject line: <strong className="text-gray-900">Marketing & Growth Internship Application — [Your Name]</strong>
@@ -280,7 +281,7 @@ const InternshipProgram = () => {
               </div>
               <Button 
                 className="bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-600/90 text-white shadow-lg shadow-primary/40"
-                onClick={() => window.location.href = 'mailto:careers@cravendelivery.com?subject=Marketing%20%26%20Growth%20Internship%20Application'}
+                onClick={() => window.location.href = 'mailto:hr@cravenusa.com?subject=Marketing%20%26%20Growth%20Internship%20Application'}
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Apply Now

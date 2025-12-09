@@ -69,7 +69,7 @@ const AdminGuide = () => {
         steps: [
           {
             title: 'Review Applications',
-            description: 'Navigate to Admin > Craver Applications',
+            description: 'Navigate to Admin > Feeder Applications',
             details: 'Review submitted applications, verify documents, conduct background checks'
           },
           {

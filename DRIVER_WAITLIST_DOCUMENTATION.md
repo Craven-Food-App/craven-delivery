@@ -163,7 +163,7 @@ We already have your basic info. Just complete these final steps:
 
 ## Database Schema
 
-### New Columns Added to `craver_applications`:
+### New Columns Added to `feeder_applications`:
 
 ```sql
 -- Waitlist tracking
@@ -185,7 +185,7 @@ BEGIN
   IF NEW.status = 'waitlist' THEN
     NEW.waitlist_position := (
       SELECT COUNT(*) + 1
-      FROM craver_applications
+      FROM feeder_applications
       WHERE status = 'waitlist'
       AND city = NEW.city
       AND state = NEW.state
@@ -197,7 +197,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER set_waitlist_position
-BEFORE INSERT OR UPDATE ON craver_applications
+BEFORE INSERT OR UPDATE ON feeder_applications
 FOR EACH ROW
 WHEN (NEW.status = 'waitlist')
 EXECUTE FUNCTION calculate_waitlist_position();
@@ -362,8 +362,8 @@ EXECUTE FUNCTION calculate_waitlist_position();
 ```sql
 CREATE TABLE driver_referrals (
   id uuid PRIMARY KEY,
-  referrer_id uuid REFERENCES craver_applications,
-  referee_id uuid REFERENCES craver_applications,
+  referrer_id uuid REFERENCES feeder_applications,
+  referee_id uuid REFERENCES feeder_applications,
   referral_code text INDEXED,
   status 'pending' | 'completed' | 'activated',
   created_at timestamptz,
@@ -381,14 +381,14 @@ CREATE TABLE driver_referrals (
 ### Data Storage:
 - **Waitlist drivers**: Only last 4 of SSN stored (encrypted)
 - **Activated drivers**: Full SSN stored (Supabase Vault encryption)
-- **Documents**: Private Supabase bucket (`craver-documents`), not publicly accessible
+- **Documents**: Private Supabase bucket (`feeder-documents`), not publicly accessible
 - **Banking info**: Encrypted at rest
 
 ### RLS Policies:
 ```sql
 -- Only admins can view waitlist
 CREATE POLICY "Admins view waitlist"
-ON craver_applications FOR SELECT
+ON feeder_applications FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM user_roles
@@ -398,7 +398,7 @@ USING (
 
 -- Drivers can view their own waitlist status
 CREATE POLICY "Drivers view own status"
-ON craver_applications FOR SELECT
+ON feeder_applications FOR SELECT
 USING (auth.uid() = user_id);
 ```
 
@@ -438,7 +438,7 @@ USING (auth.uid() = user_id);
 ### Database Migration:
 ```sql
 -- Add waitlist columns
-ALTER TABLE craver_applications 
+ALTER TABLE feeder_applications 
 ADD COLUMN waitlist_joined_at timestamptz,
 ADD COLUMN waitlist_position integer,
 ADD COLUMN waitlist_priority_score integer DEFAULT 0,

@@ -65,9 +65,9 @@ BEGIN
     RETURN true;
   END IF;
   
-  -- Get approved craver application
+  -- Get approved feeder application
   SELECT * INTO app_record
-  FROM public.craver_applications 
+  FROM public.feeder_applications 
   WHERE user_id = target_user_id 
     AND status = 'approved'
     AND background_check = true
@@ -75,7 +75,7 @@ BEGIN
   LIMIT 1;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'No approved craver application found for user';
+    RAISE EXCEPTION 'No approved feeder application found for user';
   END IF;
   
   -- Create driver profile from application data

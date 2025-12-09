@@ -69,14 +69,14 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({ onBack }) => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const { error: uploadError, data } = await supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .upload(`profile-photos/${fileName}`, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .getPublicUrl(`profile-photos/${fileName}`);
 
       // Update profile

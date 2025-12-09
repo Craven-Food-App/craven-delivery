@@ -56,7 +56,7 @@ export function ReferralVideoManager() {
       const videoFileName = `referral-videos/${selectedType}/${Date.now()}.${videoExt}`;
       
       const { error: videoError } = await supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .upload(videoFileName, videoFile, {
           cacheControl: '3600',
           upsert: false
@@ -65,7 +65,7 @@ export function ReferralVideoManager() {
       if (videoError) throw videoError;
 
       const { data: videoUrlData } = supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .getPublicUrl(videoFileName);
 
       let thumbnailUrl = null;
@@ -74,7 +74,7 @@ export function ReferralVideoManager() {
         const thumbFileName = `referral-thumbnails/${selectedType}/${Date.now()}.${thumbExt}`;
         
         const { error: thumbError } = await supabase.storage
-          .from('craver-documents')
+          .from('feeder-documents')
           .upload(thumbFileName, thumbnailFile, {
             cacheControl: '3600',
             upsert: false
@@ -82,7 +82,7 @@ export function ReferralVideoManager() {
 
         if (!thumbError) {
           const { data: thumbUrlData } = supabase.storage
-            .from('craver-documents')
+            .from('feeder-documents')
             .getPublicUrl(thumbFileName);
           thumbnailUrl = thumbUrlData.publicUrl;
         }

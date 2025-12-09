@@ -1,24 +1,24 @@
--- Create storage bucket for craver application documents
-INSERT INTO storage.buckets (id, name, public) VALUES ('craver-documents', 'craver-documents', false);
+-- Create storage bucket for feeder application documents
+INSERT INTO storage.buckets (id, name, public) VALUES ('feeder-documents', 'feeder-documents', false);
 
--- Create storage policies for craver documents
-CREATE POLICY "Anyone can upload craver documents" 
+-- Create storage policies for feeder documents
+CREATE POLICY "Anyone can upload feeder documents" 
 ON storage.objects 
 FOR INSERT 
-WITH CHECK (bucket_id = 'craver-documents');
+WITH CHECK (bucket_id = 'feeder-documents');
 
-CREATE POLICY "Admins can view all craver documents" 
+CREATE POLICY "Admins can view all feeder documents" 
 ON storage.objects 
 FOR SELECT 
-USING (bucket_id = 'craver-documents');
+USING (bucket_id = 'feeder-documents');
 
-CREATE POLICY "Users can update their own craver documents" 
+CREATE POLICY "Users can update their own feeder documents" 
 ON storage.objects 
 FOR UPDATE 
-USING (bucket_id = 'craver-documents');
+USING (bucket_id = 'feeder-documents');
 
--- Add missing columns to craver_applications table
-ALTER TABLE public.craver_applications 
+-- Add missing columns to feeder_applications table
+ALTER TABLE public.feeder_applications 
 ADD COLUMN IF NOT EXISTS license_number text,
 ADD COLUMN IF NOT EXISTS license_state text,
 ADD COLUMN IF NOT EXISTS license_expiry date,

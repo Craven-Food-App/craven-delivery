@@ -189,9 +189,9 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // 4. Create craver application (waitlisted)
+      // 4. Create feeder application (waitlisted)
       const { data: appData, error: appError } = await supabase
-        .from('craver_applications')
+        .from('feeder_applications')
         .insert({
           user_id: authData.user.id,
           first_name: firstName,

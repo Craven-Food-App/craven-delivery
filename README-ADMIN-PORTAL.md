@@ -302,7 +302,7 @@ Admin Portal
     │   ├── BG Check Settings
     │   ├── Onboarding
     │   └── Payouts
-    ├── Customers (Cravers)
+    ├── Customers (Feeders)
     │   ├── Customer Accounts (New)
     │   ├── Promo Codes
     │   └── Support Chat

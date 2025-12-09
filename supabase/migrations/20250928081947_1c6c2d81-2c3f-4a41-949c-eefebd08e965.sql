@@ -1,4 +1,4 @@
--- Create function to automatically create driver profile from approved craver application
+-- Create function to automatically create driver profile from approved feeder application
 CREATE OR REPLACE FUNCTION public.create_driver_profile_from_application(target_user_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -19,9 +19,9 @@ BEGIN
     RETURN true;
   END IF;
   
-  -- Get approved craver application
+  -- Get approved feeder application
   SELECT * INTO app_record
-  FROM public.craver_applications 
+  FROM public.feeder_applications 
   WHERE user_id = target_user_id 
     AND status = 'approved'
     AND background_check = true
@@ -29,7 +29,7 @@ BEGIN
   LIMIT 1;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'No approved craver application found for user';
+    RAISE EXCEPTION 'No approved feeder application found for user';
   END IF;
   
   -- Create driver profile from application data

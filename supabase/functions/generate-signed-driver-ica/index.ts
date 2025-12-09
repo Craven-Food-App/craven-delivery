@@ -170,7 +170,7 @@ serve(async (req: Request) => {
     // Upload HTML to storage
     const fileName = `ica-signed-${body.driverId}-${Date.now()}.html`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('craver-documents')
+      .from('feeder-documents')
       .upload(fileName, htmlContent, {
         contentType: 'text/html',
         cacheControl: '3600',
@@ -184,7 +184,7 @@ serve(async (req: Request) => {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('craver-documents')
+      .from('feeder-documents')
       .getPublicUrl(fileName);
 
     // Update driver_signatures table with signed ICA URL

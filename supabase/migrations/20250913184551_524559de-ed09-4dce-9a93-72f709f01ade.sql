@@ -8,8 +8,8 @@ DO UPDATE SET
   role = EXCLUDED.role,
   updated_at = now();
 
--- Create approved craver application
-INSERT INTO public.craver_applications (
+-- Create approved feeder application
+INSERT INTO public.feeder_applications (
   user_id,
   first_name,
   last_name,

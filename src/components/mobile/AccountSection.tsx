@@ -115,9 +115,9 @@ export const AccountSection: React.FC<{
         .eq('order_status', 'delivered')
         .gte('created_at', weekStart.toISOString());
 
-      // Get craver application data
+      // Get feeder application data
       const { data: application } = await supabase
-        .from('craver_applications')
+        .from('feeder_applications')
         .select('*')
         .eq('user_id', user.id)
         .single();

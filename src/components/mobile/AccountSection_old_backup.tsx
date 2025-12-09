@@ -70,10 +70,10 @@ export const AccountSection: React.FC<{
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get craver application
+      // Get feeder application
       const {
         data: application
-      } = await supabase.from('craver_applications').select('*').eq('user_id', user.id).single();
+      } = await supabase.from('feeder_applications').select('*').eq('user_id', user.id).single();
 
       // Get driver profile and stats
       const {
@@ -403,7 +403,7 @@ export const AccountSection: React.FC<{
             </div>
           </button>
 
-          {/* Craver Red Card */}
+          {/* Feeder Card */}
           
 
           {/* App Settings */}

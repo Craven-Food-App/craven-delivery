@@ -166,7 +166,7 @@ export const DriverApplicationWizard = ({ onClose }: DriverApplicationWizardProp
           try {
             const filePath = `${userId}/${key}-${Date.now()}`;
             const { error: uploadError } = await supabase.storage
-              .from('craver-documents')
+              .from('feeder-documents')
               .upload(filePath, file);
             
             if (!uploadError) {

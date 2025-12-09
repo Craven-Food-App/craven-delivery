@@ -1,8 +1,8 @@
 -- First, let's add admin policies for managing driver applications and profiles
 
--- Add admin policy for managing craver applications
+-- Add admin policy for managing feeder applications
 CREATE POLICY "Admins can manage all applications" 
-ON public.craver_applications 
+ON public.feeder_applications 
 FOR ALL 
 TO authenticated 
 USING (
@@ -59,13 +59,13 @@ BEGIN
 
   -- Check if user has an application
   SELECT EXISTS (
-    SELECT 1 FROM public.craver_applications 
+    SELECT 1 FROM public.feeder_applications 
     WHERE user_id = target_user_id
   ) INTO application_exists;
 
   -- Update application status if it exists
   IF application_exists THEN
-    UPDATE public.craver_applications 
+    UPDATE public.feeder_applications 
     SET 
       status = 'approved',
       background_check = true,

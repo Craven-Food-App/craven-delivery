@@ -77,7 +77,7 @@ export const NotificationSettingsManager: React.FC = () => {
 
       // Upload file to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .upload(fileName, newSoundFile, {
           cacheControl: '3600',
           upsert: false
@@ -87,7 +87,7 @@ export const NotificationSettingsManager: React.FC = () => {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .getPublicUrl(fileName);
 
       // Save to database with permanent URL

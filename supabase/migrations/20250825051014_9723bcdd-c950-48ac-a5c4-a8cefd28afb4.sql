@@ -17,11 +17,11 @@ CREATE TABLE public.orders (
     payout_cents INTEGER NOT NULL,
     distance_km NUMERIC NOT NULL,
     status order_status NOT NULL DEFAULT 'pending',
-    assigned_craver_id UUID NULL
+    assigned_feeder_id UUID NULL
 );
 
--- Create craver_locations table
-CREATE TABLE public.craver_locations (
+-- Create feeder_locations table
+CREATE TABLE public.feeder_locations (
     user_id UUID NOT NULL PRIMARY KEY,
     lat NUMERIC NOT NULL,
     lng NUMERIC NOT NULL,
@@ -30,39 +30,39 @@ CREATE TABLE public.craver_locations (
 
 -- Enable RLS
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.craver_locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.feeder_locations ENABLE ROW LEVEL SECURITY;
 
--- Create helper function to check if user is approved craver
-CREATE OR REPLACE FUNCTION public.is_approved_craver(user_uuid UUID)
+-- Create helper function to check if user is approved feeder
+CREATE OR REPLACE FUNCTION public.is_approved_feeder(user_uuid UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
     RETURN EXISTS (
-        SELECT 1 FROM public.craver_applications 
+        SELECT 1 FROM public.feeder_applications 
         WHERE user_id = user_uuid AND status = 'approved'
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 -- Orders RLS policies
-CREATE POLICY "Approved cravers can view pending orders" 
+CREATE POLICY "Approved feeders can view pending orders" 
 ON public.orders 
 FOR SELECT 
 USING (
-    public.is_approved_craver(auth.uid()) AND 
-    (status = 'pending' OR assigned_craver_id = auth.uid())
+    public.is_approved_feeder(auth.uid()) AND 
+    (status = 'pending' OR assigned_feeder_id = auth.uid())
 );
 
-CREATE POLICY "Assigned cravers can update their orders" 
+CREATE POLICY "Assigned feeders can update their orders" 
 ON public.orders 
 FOR UPDATE 
 USING (
-    public.is_approved_craver(auth.uid()) AND 
-    assigned_craver_id = auth.uid()
+    public.is_approved_feeder(auth.uid()) AND 
+    assigned_feeder_id = auth.uid()
 );
 
--- Craver locations RLS policies
-CREATE POLICY "Cravers can manage their own location" 
-ON public.craver_locations 
+-- Feeder locations RLS policies
+CREATE POLICY "Feeders can manage their own location" 
+ON public.feeder_locations 
 FOR ALL 
 USING (user_id = auth.uid());
 
@@ -72,17 +72,17 @@ CREATE TRIGGER update_orders_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
--- Add update trigger for craver_locations
-CREATE TRIGGER update_craver_locations_updated_at
-    BEFORE UPDATE ON public.craver_locations
+-- Add update trigger for feeder_locations
+CREATE TRIGGER update_feeder_locations_updated_at
+    BEFORE UPDATE ON public.feeder_locations
     FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Enable realtime
 ALTER TABLE public.orders REPLICA IDENTITY FULL;
-ALTER TABLE public.craver_locations REPLICA IDENTITY FULL;
+ALTER TABLE public.feeder_locations REPLICA IDENTITY FULL;
 ALTER publication supabase_realtime ADD TABLE public.orders;
-ALTER publication supabase_realtime ADD TABLE public.craver_locations;
+ALTER publication supabase_realtime ADD TABLE public.feeder_locations;
 
 -- Insert demo orders
 INSERT INTO public.orders (pickup_name, pickup_address, pickup_lat, pickup_lng, dropoff_name, dropoff_address, dropoff_lat, dropoff_lng, payout_cents, distance_km) VALUES

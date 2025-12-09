@@ -57,7 +57,7 @@ BEFORE UPDATE ON public.customer_orders
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
--- Create delivery orders table that links customer orders to craver deliveries
+-- Create delivery orders table that links customer orders to feeder deliveries
 CREATE TABLE public.delivery_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_order_id UUID NOT NULL REFERENCES customer_orders(id),
@@ -70,7 +70,7 @@ CREATE TABLE public.delivery_orders (
   distance_km NUMERIC NOT NULL,
   payout_cents INTEGER NOT NULL,
   status order_status NOT NULL DEFAULT 'pending',
-  assigned_craver_id UUID,
+  assigned_feeder_id UUID,
   restaurant_id UUID NOT NULL REFERENCES restaurants(id),
   pickup_name TEXT NOT NULL,
   dropoff_name TEXT NOT NULL,
@@ -82,21 +82,21 @@ CREATE TABLE public.delivery_orders (
 ALTER TABLE public.delivery_orders ENABLE ROW LEVEL SECURITY;
 
 -- Policies for delivery orders (same as existing orders table)
-CREATE POLICY "Approved cravers can view pending delivery orders" 
+CREATE POLICY "Approved feeders can view pending delivery orders" 
 ON public.delivery_orders 
 FOR SELECT 
-USING (is_approved_craver(auth.uid()) AND ((status = 'pending'::order_status) OR (assigned_craver_id = auth.uid())));
+USING (is_approved_feeder(auth.uid()) AND ((status = 'pending'::order_status) OR (assigned_feeder_id = auth.uid())));
 
-CREATE POLICY "Approved cravers can assign themselves to pending delivery orders" 
+CREATE POLICY "Approved feeders can assign themselves to pending delivery orders" 
 ON public.delivery_orders 
 FOR UPDATE 
-USING (is_approved_craver(auth.uid()) AND (status = 'pending'::order_status) AND (assigned_craver_id IS NULL))
-WITH CHECK (is_approved_craver(auth.uid()) AND (assigned_craver_id = auth.uid()) AND (status = 'assigned'::order_status));
+USING (is_approved_feeder(auth.uid()) AND (status = 'pending'::order_status) AND (assigned_feeder_id IS NULL))
+WITH CHECK (is_approved_feeder(auth.uid()) AND (assigned_feeder_id = auth.uid()) AND (status = 'assigned'::order_status));
 
-CREATE POLICY "Assigned cravers can update their delivery orders" 
+CREATE POLICY "Assigned feeders can update their delivery orders" 
 ON public.delivery_orders 
 FOR UPDATE 
-USING (is_approved_craver(auth.uid()) AND (assigned_craver_id = auth.uid()));
+USING (is_approved_feeder(auth.uid()) AND (assigned_feeder_id = auth.uid()));
 
 CREATE POLICY "Restaurants can view their delivery orders" 
 ON public.delivery_orders 

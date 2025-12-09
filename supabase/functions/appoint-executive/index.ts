@@ -248,7 +248,7 @@ serve(async (req: Request) => {
     const uploads: Array<Promise<any>> = [];
 
     uploads.push(
-      supabase.storage.from("craver-documents").upload(
+      supabase.storage.from("feeder-documents").upload(
         `${basePath}/EquityOfferAgreement.md`,
         new Blob([eqOffer], { type: "text/markdown" }),
         { upsert: true, contentType: "text/markdown" }
@@ -256,7 +256,7 @@ serve(async (req: Request) => {
     );
 
     uploads.push(
-      supabase.storage.from("craver-documents").upload(
+      supabase.storage.from("feeder-documents").upload(
         `${basePath}/BoardResolution_OfficerAppointment.md`,
         new Blob([boardRes], { type: "text/markdown" }),
         { upsert: true, contentType: "text/markdown" }
@@ -265,7 +265,7 @@ serve(async (req: Request) => {
 
     if (v.salary_status === 'deferred') {
       uploads.push(
-        supabase.storage.from("craver-documents").upload(
+        supabase.storage.from("feeder-documents").upload(
           `${basePath}/DeferredCompensationAgreement.md`,
           new Blob([defComp], { type: "text/markdown" }),
           { upsert: true, contentType: "text/markdown" }

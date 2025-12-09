@@ -35,7 +35,7 @@ interface Order {
   dropoff_address: string;
   payout_cents: number;
   distance_km: number;
-  assigned_craver_id?: string;
+  assigned_feeder_id?: string;
   order_number?: string;
   pickup_code?: string;
   restaurant_id?: string;
@@ -395,9 +395,9 @@ export const RestaurantOrderManagement = ({ restaurantId }: RestaurantOrderManag
                           <Text size="sm" c="dimmed">
                             {(order.distance_km * 0.621371).toFixed(1)} mi
                           </Text>
-                          {order.assigned_craver_id && (
+                          {order.assigned_feeder_id && (
                             <Badge variant="outline">
-                              Assigned to Craver
+                              Assigned to Feeder
                             </Badge>
                           )}
                         </Group>

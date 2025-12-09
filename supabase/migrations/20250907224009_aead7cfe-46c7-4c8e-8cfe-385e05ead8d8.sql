@@ -114,7 +114,7 @@ CREATE TABLE public.driver_earnings (
 
 ALTER TABLE public.driver_earnings ENABLE ROW LEVEL SECURITY;
 
--- Craver applications table
+-- Feeder applications table
 CREATE TABLE public.craver_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -254,7 +254,7 @@ CREATE POLICY "Drivers can update assigned orders" ON public.orders
 CREATE POLICY "Drivers can view their own earnings" ON public.driver_earnings
     FOR SELECT USING (auth.uid() = driver_id);
 
--- Craver applications policies
+-- Feeder applications policies
 CREATE POLICY "Users can view their own application" ON public.craver_applications
     FOR SELECT USING (auth.uid() = user_id);
 

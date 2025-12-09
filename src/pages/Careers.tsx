@@ -79,7 +79,7 @@ const Careers = () => {
                 <div className="flex-grow">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-primary text-primary-foreground">Executive Track</Badge>
-                    <Badge variant="outline">Remote + Toledo, OH</Badge>
+                    <Badge variant="outline">United States & United Kingdom</Badge>
                   </div>
                   <h3 className="text-2xl font-bold mb-2">Marketing & Growth Internship</h3>
                   <p className="text-muted-foreground mb-4">

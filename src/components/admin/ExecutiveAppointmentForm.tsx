@@ -145,7 +145,7 @@ export const ExecutiveAppointmentForm: React.FC = () => {
     const fileName = `legal/generated/${safeName}/${docName}.pdf`;
 
     const { error: uploadError } = await supabase.storage
-      .from('craver-documents')
+      .from('feeder-documents')
       .upload(fileName, blob, { contentType: 'application/pdf', upsert: true });
 
     if (uploadError) throw uploadError;

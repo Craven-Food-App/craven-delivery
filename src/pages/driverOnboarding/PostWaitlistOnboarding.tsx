@@ -284,7 +284,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
           // Upload PDF to Supabase Storage
           const fileName = `ica_${applicationData.id}_${Date.now()}.pdf`;
           const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('craver-documents')
+            .from('feeder-documents')
             .upload(fileName, icaPDF, {
               contentType: 'application/pdf',
               upsert: false
@@ -294,7 +294,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
 
           // Get public URL for the PDF
           const { data: urlData } = supabase.storage
-            .from('craver-documents')
+            .from('feeder-documents')
             .getPublicUrl(uploadData.path);
 
           const signatureData = {
@@ -428,7 +428,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
       const fileName = `${applicationData.id}_${fieldName}_${Date.now()}.${fileExt}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .upload(fileName, file, {
           contentType: file.type,
           upsert: false
@@ -437,7 +437,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .getPublicUrl(uploadData.path);
 
       // Update application record

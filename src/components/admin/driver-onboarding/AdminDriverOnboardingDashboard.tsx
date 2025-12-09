@@ -90,9 +90,9 @@ export function AdminDriverOnboardingDashboard() {
     else setRefreshing(true);
 
     try {
-      // Fetch all craver applications with status approved or waitlist
+      // Fetch all feeder applications with status approved or waitlist
       const { data: applicationsData, error: applicationsError } = await supabase
-        .from('craver_applications')
+        .from('feeder_applications')
         .select(`
           id,
           user_id,

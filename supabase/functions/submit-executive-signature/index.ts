@@ -48,7 +48,7 @@ serve(async (req: Request) => {
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
 
     const { error: uploadError } = await supabase.storage
-      .from('craver-documents')
+      .from('feeder-documents')
       .upload(filePath, blob, { upsert: true, contentType: 'application/json' });
 
     if (uploadError) throw uploadError;

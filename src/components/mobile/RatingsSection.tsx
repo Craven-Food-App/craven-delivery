@@ -237,7 +237,7 @@ export const RatingsSection: React.FC = () => {
             <div className="text-center">
               <div className="text-4xl mb-2">{currentTierConfig.icon}</div>
               <h1 className={`text-2xl font-bold ${currentTierConfig.color}`}>
-                {currentTierConfig.name} Craver
+                {currentTierConfig.name} Feeder
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {stats.totalDeliveries} deliveries completed

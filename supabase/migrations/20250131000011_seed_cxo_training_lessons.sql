@@ -35,7 +35,7 @@ This lesson will introduce you to:
 ### Your Role
 
 As CXO, you are responsible for:
-- **Driver Experience (Cravers)**: Ensuring drivers are happy, supported, and efficient
+- **Driver Experience (Feeders)**: Ensuring drivers are happy, supported, and efficient
 - **Customer Experience**: Maintaining high satisfaction and resolving issues quickly
 - **Restaurant/Merchant Partner Experience**: Keeping merchant partners satisfied and operational
 - **Support Operations**: Overseeing support team performance and adherence to SLAs
@@ -483,7 +483,7 @@ Tickets in the CXO Portal are classified by type, status, and priority to help y
 Tickets are categorized into four types:
 
 **1. Driver Tickets**
-- Issues reported by or about drivers (Cravers)
+- Issues reported by or about drivers (Feeders)
 - Examples: Navigation problems, pickup issues, payment disputes
 - Usually handled by Driver Ops team, escalated to you for systemic issues
 

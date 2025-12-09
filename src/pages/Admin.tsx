@@ -87,7 +87,7 @@ const Admin: React.FC = () => {
     },
     {
       id: 'customers',
-      title: 'Customers (Cravers)',
+      title: 'Customers (Feeders)',
       icon: ShoppingBag,
       items: [
         { id: 'customer-management', label: 'Customer Accounts', icon: Users },

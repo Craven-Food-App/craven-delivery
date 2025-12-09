@@ -1,5 +1,5 @@
--- Add policy to allow approved cravers to assign themselves to pending orders
-CREATE POLICY "Approved cravers can assign themselves to pending orders" 
+-- Add policy to allow approved feeders to assign themselves to pending orders
+CREATE POLICY "Approved feeders can assign themselves to pending orders" 
 ON public.orders 
 FOR UPDATE 
 USING (

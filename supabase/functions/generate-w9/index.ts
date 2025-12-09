@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
     const fileName = `w9_${user.id}_${Date.now()}.txt`;
     const { data: uploadData, error: uploadError } = await supabaseClient
       .storage
-      .from('craver-documents')
+      .from('feeder-documents')
       .upload(`w9/${fileName}`, w9Content, {
         contentType: 'text/plain',
         upsert: false

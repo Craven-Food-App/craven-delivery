@@ -22,7 +22,7 @@ const DriverGuide = () => {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5" />Getting Started</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div><h4 className="font-semibold mb-2">1. Apply & Get Approved</h4><p className="text-sm text-muted-foreground">Complete application at /craver-hub with license, insurance, and vehicle info</p></div>
+            <div><h4 className="font-semibold mb-2">1. Apply & Get Approved</h4><p className="text-sm text-muted-foreground">Complete application at /feeder-hub with license, insurance, and vehicle info</p></div>
             <div><h4 className="font-semibold mb-2">2. Pass Background Check</h4><p className="text-sm text-muted-foreground">Wait for verification (typically 24-48 hours)</p></div>
             <div><h4 className="font-semibold mb-2">3. Go Online</h4><p className="text-sm text-muted-foreground">Access driver dashboard and toggle online to start receiving orders</p></div>
           </CardContent>

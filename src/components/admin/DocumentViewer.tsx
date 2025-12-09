@@ -38,7 +38,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
     setLoading(true);
     try {
       const { data, error } = await supabase.storage
-        .from('craver-documents')
+        .from('feeder-documents')
         .download(documentPath);
 
       if (error) {

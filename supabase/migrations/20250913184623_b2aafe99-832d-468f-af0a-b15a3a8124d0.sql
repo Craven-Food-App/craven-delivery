@@ -13,8 +13,8 @@ SET full_name = 'Torrance Stroman',
     updated_at = now()
 WHERE user_id = '93a342c6-9dc2-4bf6-ab1c-0dc1d17148cd';
 
--- Insert craver application if it doesn't exist
-INSERT INTO public.craver_applications (
+-- Insert feeder application if it doesn't exist
+INSERT INTO public.feeder_applications (
   user_id, first_name, last_name, email, phone, date_of_birth,
   street_address, city, state, zip_code, vehicle_type, vehicle_make,
   vehicle_model, vehicle_year, vehicle_color, license_plate,
@@ -28,11 +28,11 @@ SELECT
   'State Farm', 'POL123456', 'DL123456',
   'approved', true, true
 WHERE NOT EXISTS (
-  SELECT 1 FROM public.craver_applications WHERE user_id = '93a342c6-9dc2-4bf6-ab1c-0dc1d17148cd'
+  SELECT 1 FROM public.feeder_applications WHERE user_id = '93a342c6-9dc2-4bf6-ab1c-0dc1d17148cd'
 );
 
--- Update existing craver application
-UPDATE public.craver_applications 
+-- Update existing feeder application
+UPDATE public.feeder_applications 
 SET status = 'approved', background_check = true, vehicle_inspection = true, updated_at = now()
 WHERE user_id = '93a342c6-9dc2-4bf6-ab1c-0dc1d17148cd';
 

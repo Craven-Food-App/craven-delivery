@@ -25,7 +25,7 @@ FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Drivers can update their own profile" ON public.driver_profiles
 FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Approved cravers can view other driver profiles for assignment" ON public.driver_profiles
+CREATE POLICY "Approved feeders can view other driver profiles for assignment" ON public.driver_profiles
 FOR SELECT USING (is_approved_craver(auth.uid()));
 
 -- Create order assignments table
@@ -89,7 +89,7 @@ BEFORE UPDATE ON public.order_assignments
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
--- Insert sample driver profiles for existing approved cravers
+-- Insert sample driver profiles for existing approved feeders
 INSERT INTO public.driver_profiles (user_id, rating, total_deliveries, driver_level, status, is_available)
 SELECT 
   ca.user_id,

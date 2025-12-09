@@ -28,10 +28,10 @@ interface Order {
   payout_cents: number;
   distance_km: number;
   status: 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled';
-  assigned_craver_id?: string | null;
+  assigned_feeder_id?: string | null;
 }
 
-interface Craver {
+interface Feeder {
   id: string;
   user_id: string;
   first_name: string;
@@ -41,7 +41,7 @@ interface Craver {
 
 const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [cravers, setCravers] = useState<Craver[]>([]);
+  const [feeders, setFeeders] = useState<Feeder[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigningOrders, setAssigningOrders] = useState<Set<string>>(new Set());
   const [showTestOrderDialog, setShowTestOrderDialog] = useState(false);
@@ -75,18 +75,18 @@ const OrderManagement: React.FC = () => {
     const fetchCravers = async () => {
       try {
         const { data, error } = await supabase
-          .from('craver_applications')
+          .from('feeder_applications')
           .select('id, user_id, first_name, last_name, email')
           .eq('status', 'approved');
 
         if (error) {
-          console.error('Error fetching cravers:', error);
+          console.error('Error fetching feeders:', error);
           return;
         }
 
         setCravers(data || []);
       } catch (error) {
-        console.error('Error fetching cravers:', error);
+        console.error('Error fetching feeders:', error);
       }
     };
 
@@ -165,14 +165,14 @@ const OrderManagement: React.FC = () => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const assignOrder = async (orderId: string, craverId: string) => {
+  const assignOrder = async (orderId: string, feederId: string) => {
     setAssigningOrders(prev => new Set(prev).add(orderId));
     
     try {
       const { error } = await supabase
         .from('orders')
         .update({ 
-          assigned_craver_id: craverId,
+          assigned_feeder_id: feederId,
           status: 'assigned',
           updated_at: new Date().toISOString()
         })
@@ -188,10 +188,10 @@ const OrderManagement: React.FC = () => {
         return;
       }
 
-      const craver = cravers.find(c => c.user_id === craverId);
+      const feeder = feeders.find(c => c.user_id === feederId);
       toast({
         title: "Order Assigned! 🚗",
-        description: `Order assigned to ${craver?.first_name} ${craver?.last_name}`,
+        description: `Order assigned to ${feeder?.first_name} ${feeder?.last_name}`,
       });
     } catch (error) {
       console.error('Error assigning order:', error);
@@ -405,7 +405,7 @@ const OrderManagement: React.FC = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    This will create a test order with random pickup/dropoff locations and automatically assign it to available cravers for testing purposes.
+                    This will create a test order with random pickup/dropoff locations and automatically assign it to available feeders for testing purposes.
                   </p>
                   
                   <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
@@ -414,7 +414,7 @@ const OrderManagement: React.FC = () => {
                       <li>• Random pickup location from active restaurants</li>
                       <li>• Random dropoff location within delivery range</li>
                       <li>• Random payout between $5-25</li>
-                      <li>• Automatic assignment to available cravers</li>
+                      <li>• Automatic assignment to available feeders</li>
                       <li>• Full order lifecycle testing (accept → pickup → deliver)</li>
                     </ul>
                   </div>
@@ -504,14 +504,14 @@ const OrderManagement: React.FC = () => {
                         <div className="mt-3 pt-3 border-t">
                           <div className="flex items-center gap-3">
                             <UserCheck className="h-4 w-4 text-muted-foreground" />
-                            <Select onValueChange={(craverId) => assignOrder(order.id, craverId)}>
+                            <Select onValueChange={(feederId) => assignOrder(order.id, feederId)}>
                               <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Assign to craver..." />
+                                <SelectValue placeholder="Assign to feeder..." />
                               </SelectTrigger>
                               <SelectContent>
-                                {cravers.map((craver) => (
-                                  <SelectItem key={craver.user_id} value={craver.user_id}>
-                                    {craver.first_name} {craver.last_name}
+                                {feeders.map((feeder) => (
+                                  <SelectItem key={feeder.user_id} value={feeder.user_id}>
+                                    {feeder.first_name} {feeder.last_name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -539,10 +539,10 @@ const OrderManagement: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        {order.assigned_craver_id && (
+                        {order.assigned_feeder_id && (
                           <div className="flex items-center gap-1">
                             <User className="h-3 w-3" />
-                            Craver: {cravers.find(c => c.user_id === order.assigned_craver_id)?.first_name || order.assigned_craver_id.slice(-8)}
+                            Feeder: {feeders.find(c => c.user_id === order.assigned_feeder_id)?.first_name || order.assigned_feeder_id.slice(-8)}
                           </div>
                         )}
                       </div>

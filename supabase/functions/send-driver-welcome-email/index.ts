@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
                         </div>
                         
                         <div style="text-align: center; margin: 40px 0 30px 0;">
-                          <a href="https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com/craver-hub" 
+                          <a href="https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com/feeder-hub" 
                              style="display: inline-block; background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);">
                             Start Onboarding Now →
                           </a>

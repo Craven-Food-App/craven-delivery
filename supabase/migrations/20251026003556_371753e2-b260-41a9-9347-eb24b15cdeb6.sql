@@ -19,16 +19,16 @@ BEGIN
     RETURN true;
   END IF;
   
-  -- Get approved craver application (removed vehicle_inspection requirement)
+  -- Get approved feeder application (removed vehicle_inspection requirement)
   SELECT * INTO app_record
-  FROM public.craver_applications 
+  FROM public.feeder_applications 
   WHERE user_id = target_user_id 
     AND status = 'approved'
     AND background_check = true
   LIMIT 1;
   
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'No approved craver application found for user';
+    RAISE EXCEPTION 'No approved feeder application found for user';
   END IF;
   
   -- Create driver profile from application data

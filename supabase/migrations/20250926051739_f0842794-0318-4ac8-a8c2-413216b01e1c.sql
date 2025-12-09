@@ -1,4 +1,4 @@
--- Ensure the craver-documents bucket exists (it might already exist)
+-- Ensure the feeder-documents bucket exists (it might already exist)
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('delivery-photos', 'delivery-photos', false)
 ON CONFLICT (id) DO NOTHING;

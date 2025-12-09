@@ -25,13 +25,13 @@ Executive offer letters follow this flow:
 2. Send email with signature link
 3. Executive signs on canvas
 4. Signature is embedded into the PDF
-5. Signed PDF is stored in `employee_documents` or `craver-documents`
+5. Signed PDF is stored in `employee_documents` or `feeder-documents`
 6. Document is viewable in admin portal
 
 ### We Need:
 1. **Generate ICA PDF** - Use `generate-hr-pdf` function to create ICA PDF
 2. **Embed signature** - Add signature image to the PDF at the designated signature line
-3. **Store signed PDF** - Save to `craver-documents` or `driver-documents` bucket
+3. **Store signed PDF** - Save to `feeder-documents` or `driver-documents` bucket
 4. **Link to driver** - Store in `driver_signatures` table with file URL
 
 ---
@@ -44,7 +44,7 @@ Create `generate-signed-ica-pdf` edge function:
 2. Generates ICA HTML (from existing `ICAViewer` component)
 3. Embeds signature into HTML
 4. Converts HTML to PDF using existing PDF generation logic
-5. Uploads to `craver-documents` bucket
+5. Uploads to `feeder-documents` bucket
 6. Returns signed PDF URL
 
 ### Option 2: Client-Side PDF Generation
