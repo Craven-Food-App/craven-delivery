@@ -41,6 +41,7 @@ import ContactUs from "./pages/ContactUs";
 import PartnerWithUs from "./pages/PartnerWithUs";
 import AboutUs from "./pages/AboutUs";
 import Careers from "./pages/Careers";
+import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -679,6 +680,7 @@ const App = () => {
           <Route path="/partner" element={<PartnerWithUs />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/careers" element={<Careers />} />
+          <Route path="/careers/internship" element={<InternshipProgram />} />
           <Route path="/testing" element={<Testing />} />
           
           {/* Legal pages */}
