@@ -303,6 +303,14 @@ const DepartmentHub: React.FC = () => {
           path: '/finance/audit',
           color: '#2f54eb',
         },
+        {
+          id: 'driver-compensation',
+          name: 'Driver Compensation',
+          description: 'Driver pay structure and profitability',
+          icon: WalletOutlined,
+          path: '/driver-compensation-portal',
+          color: '#faad14',
+        },
       ];
     } else if (normalizedName.includes('technology') || normalizedName.includes('tech')) {
       return [

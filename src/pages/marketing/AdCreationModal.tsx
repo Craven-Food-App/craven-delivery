@@ -20,10 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AdCreationModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 interface AdFormData {
@@ -68,7 +71,7 @@ const CALL_TO_ACTIONS = [
   'Get Started',
 ];
 
-const AdCreationModal: React.FC<AdCreationModalProps> = ({ open, onClose }) => {
+const AdCreationModal: React.FC<AdCreationModalProps> = ({ open, onClose, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<AdFormData>({
     campaignName: '',
@@ -85,6 +88,7 @@ const AdCreationModal: React.FC<AdCreationModalProps> = ({ open, onClose }) => {
     scheduleType: 'continuous',
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,10 +131,98 @@ const AdCreationModal: React.FC<AdCreationModalProps> = ({ open, onClose }) => {
     }
   };
 
-  const handleSubmit = () => {
-    // TODO: Submit ad to database
-    console.log('Submitting ad:', formData);
-    onClose();
+  const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.campaignName || !formData.objective || !formData.budget) {
+      toast.error('Please complete all required fields');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to create a campaign');
+        return;
+      }
+
+      // Determine start and end dates based on schedule type
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = formData.scheduleType === 'continuous' 
+        ? null 
+        : null; // TODO: Add date picker for scheduled campaigns
+
+      // Prepare metadata with ad creative details
+      const metadata = {
+        imageUrl: formData.imageUrl,
+        primaryText: formData.primaryText,
+        headline: formData.headline,
+        description: formData.description,
+        callToAction: formData.callToAction,
+        ageRange: formData.ageRange,
+        locations: formData.locations,
+        scheduleType: formData.scheduleType,
+      };
+
+      // Insert campaign into database
+      const { data: campaign, error } = await supabase
+        .from('marketing_campaigns')
+        .insert({
+          campaign_name: formData.campaignName,
+          campaign_type: 'ad', // Type of campaign
+          channel: 'web', // Default channel, could be enhanced
+          objective: formData.objective,
+          start_date: startDate,
+          end_date: endDate,
+          budget: parseFloat(formData.budget) || 0,
+          spend_to_date: 0,
+          target_audience: formData.targetAudience || 'all',
+          status: 'draft', // Start as draft, can be activated later
+          created_by: user.id,
+          metadata: metadata,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating campaign:', error);
+        toast.error('Failed to create campaign: ' + error.message);
+        return;
+      }
+
+      toast.success('Campaign created successfully!');
+      
+      // Reset form
+      setFormData({
+        campaignName: '',
+        objective: '',
+        imageUrl: null,
+        primaryText: '',
+        headline: '',
+        description: '',
+        callToAction: 'Shop Now',
+        targetAudience: '',
+        ageRange: '',
+        locations: '',
+        budget: '',
+        scheduleType: 'continuous',
+      });
+      setCurrentStep(1);
+      
+      // Close modal
+      onClose();
+      
+      // Refresh campaign list if callback provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isStepComplete = (stepId: number): boolean => {
@@ -571,8 +663,9 @@ const AdCreationModal: React.FC<AdCreationModalProps> = ({ open, onClose }) => {
             <Button
               onClick={handleSubmit}
               className="bg-blue-600 hover:bg-blue-700"
+              disabled={submitting}
             >
-              Create Ad
+              {submitting ? 'Creating...' : 'Create Ad'}
             </Button>
           )}
         </div>

@@ -49,7 +49,7 @@ import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
@@ -71,6 +71,7 @@ import { CTOPortalInstructionManual } from '@/components/cto/CTOPortalInstructio
 import { IncidentsDashboard } from '@/components/cto/IncidentsDashboard';
 import { AssetManagement } from '@/components/cto/AssetManagement';
 import { CTOOnboardingGovernance } from '@/components/cto/CTOOnboardingGovernance';
+import CtoTrainingRouter from '@/components/cto/training/CtoTrainingRouter';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -93,10 +94,27 @@ import {
 function CTOPortalContent() {
   const { loading: authLoading, user, execUser, isAuthorized, signOut } = useExecAuth('cto');
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState<string>('onboarding');
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const toast = useToast();
+
+  // Sync activeSection with URL path
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/training')) {
+      setActiveSection('training');
+      // Ensure we're at the right URL
+      if (path === '/cto' || path === '/cto/') {
+        navigate('/cto/training', { replace: true });
+      }
+    } else if (path.includes('/onboarding')) {
+      setActiveSection('onboarding');
+    } else if (path === '/cto' || path === '/cto/') {
+      setActiveSection('overview');
+    }
+  }, [location.pathname, navigate]);
   
   // Track user activity
   useActivityTracking('cto');
@@ -128,6 +146,7 @@ function CTOPortalContent() {
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => [
     { id: 'onboarding', label: 'CTO Onboarding & Governance', icon: Scale },
+    { id: 'training', label: 'Training', icon: FileText },
     { id: 'overview', label: 'CTO Command Center', icon: BarChart3 },
     { id: 'infra', label: 'Advanced Infrastructure', icon: Cloud },
     { id: 'devops', label: 'DevOps & CI/CD', icon: Rocket },
@@ -162,6 +181,8 @@ function CTOPortalContent() {
     switch (activeSection) {
       case 'onboarding':
         return <CTOOnboardingGovernance />;
+      case 'training':
+        return <CtoTrainingRouter />;
       case 'overview':
         return <EnhancedCTODashboard />;
       case 'infra':
@@ -251,7 +272,16 @@ function CTOPortalContent() {
       subtitle="Technology operations command center"
       navItems={navItems}
       activeItemId={activeSection}
-      onSelect={setActiveSection}
+      onSelect={(id) => {
+        setActiveSection(id);
+        if (id === 'training') {
+          navigate('/cto/training');
+        } else if (id === 'onboarding') {
+          navigate('/cto');
+        } else {
+          navigate(`/cto`);
+        }
+      }}
       onBack={() => navigate('/hub')}
       onSignOut={handleSignOut}
       userInfo={{

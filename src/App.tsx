@@ -71,6 +71,7 @@ import COOPortal from "./pages/COOPortal";
 import CTOPortal from "./pages/CTOPortal";
 import CXOPortal from "./pages/CXOPortal";
 import EnterpriseFinancePortal from "./pages/EnterpriseFinancePortal";
+import DriverCompensationPortal from "./pages/DriverCompensationPortal";
 import MarketingPortal from "./pages/MarketingPortal";
 import HRPortal from "./pages/HRPortal";
 import MainHub from "./pages/MainHub";
@@ -337,9 +338,10 @@ const App = () => {
                   <Route path="/ceo" element={<BusinessAuthGuard><CEOPortal /></BusinessAuthGuard>} />
                   <Route path="/cfo" element={<BusinessAuthGuard><CFOPortal /></BusinessAuthGuard>} />
                   <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
-                  <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
+                  <Route path="/cto/*" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
                   <Route path="/cxo/*" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
                   <Route path="/finance/*" element={<BusinessAuthGuard><EnterpriseFinancePortal /></BusinessAuthGuard>} />
+                  <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><DriverCompensationPortal /></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
                   <Route path="/company/*" element={<CompanyPortalLayout />}>
                     <Route index element={<CompanyDashboard />} />
@@ -626,8 +628,10 @@ const App = () => {
           <Route path="/cfo" element={<BusinessAuthGuard><CFOPortal /></BusinessAuthGuard>} />
           <Route path="/ceo" element={<BusinessAuthGuard><CEOPortal /></BusinessAuthGuard>} />
           <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />
-          <Route path="/cto" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
+                  <Route path="/cto/*" element={<BusinessAuthGuard><CTOPortal /></BusinessAuthGuard>} />
           <Route path="/cxo/*" element={<BusinessAuthGuard><CXOPortal /></BusinessAuthGuard>} />
+          <Route path="/finance/*" element={<BusinessAuthGuard><EnterpriseFinancePortal /></BusinessAuthGuard>} />
+          <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><DriverCompensationPortal /></BusinessAuthGuard>} />
           <Route path="/executive/discipline" element={<BusinessAuthGuard><ExecutiveAccountability /></BusinessAuthGuard>} />
           <Route path="/company/*" element={<CompanyPortalLayout />}>
             <Route index element={<CompanyDashboard />} />

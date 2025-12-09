@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import CoBrandedCampaignModal from './CoBrandedCampaignModal';
+import { toast } from 'sonner';
 
 interface Merchant {
   id: string;
@@ -46,11 +48,23 @@ const MerchantPartnerMarketing: React.FC = () => {
   const [campaigns, setCampaigns] = useState<CoBrandedCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMerchant, setSelectedMerchant] = useState<string>('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [preselectedMerchantId, setPreselectedMerchantId] = useState<string | undefined>();
 
   useEffect(() => {
     fetchMerchants();
     fetchCampaigns();
   }, []);
+
+  const handleCreateCampaign = (merchantId?: string) => {
+    setPreselectedMerchantId(merchantId);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCampaignCreated = () => {
+    fetchCampaigns();
+    fetchMerchants(); // Refresh merchant stats
+  };
 
   const fetchMerchants = async () => {
     try {
@@ -98,8 +112,39 @@ const MerchantPartnerMarketing: React.FC = () => {
   };
 
   const fetchCampaigns = async () => {
-    // TODO: Create merchant_campaigns table
-    setCampaigns([]);
+    try {
+      // Fetch co-branded campaigns from marketing_campaigns
+      const { data: campaignsData, error } = await supabase
+        .from('marketing_campaigns')
+        .select('*')
+        .eq('campaign_type', 'co_branded')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform to CoBrandedCampaign format
+      const transformedCampaigns: CoBrandedCampaign[] = (campaignsData || []).map((campaign) => {
+        const metadata = campaign.metadata || {};
+        return {
+          id: campaign.id,
+          merchantId: metadata.merchant_id || '',
+          merchantName: metadata.merchant_name || 'Unknown',
+          campaignName: campaign.campaign_name,
+          status: campaign.status === 'active' ? 'active' :
+                 campaign.status === 'paused' ? 'paused' :
+                 campaign.status === 'completed' ? 'completed' : 'active',
+          startDate: campaign.start_date,
+          endDate: campaign.end_date || '',
+          orders: 0, // TODO: Calculate from orders
+          revenue: Number(campaign.spend_to_date || 0),
+        };
+      });
+
+      setCampaigns(transformedCampaigns);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      setCampaigns([]);
+    }
   };
 
   return (
@@ -157,7 +202,10 @@ const MerchantPartnerMarketing: React.FC = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Partner Directory</h3>
-          <Button className="bg-orange-600 hover:bg-orange-700">
+          <Button 
+            className="bg-orange-600 hover:bg-orange-700"
+            onClick={() => handleCreateCampaign()}
+          >
             Create Co-Branded Campaign
           </Button>
         </div>
@@ -181,7 +229,12 @@ const MerchantPartnerMarketing: React.FC = () => {
                     <span>{merchant.ordersCount} orders</span>
                     <span>${merchant.revenue.toFixed(0)}</span>
                   </div>
-                  <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => setSelectedMerchant(merchant.id)}>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2 w-full" 
+                    onClick={() => handleCreateCampaign(merchant.id)}
+                  >
                     Create Campaign
                   </Button>
                 </div>
@@ -224,6 +277,17 @@ const MerchantPartnerMarketing: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Co-Branded Campaign Creation Modal */}
+      <CoBrandedCampaignModal
+        open={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setPreselectedMerchantId(undefined);
+        }}
+        onSuccess={handleCampaignCreated}
+        preselectedMerchantId={preselectedMerchantId}
+      />
     </div>
   );
 };

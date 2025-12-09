@@ -37,6 +37,7 @@ import {
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 interface NavItem {
   id: string;
@@ -59,10 +60,17 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
   const { userRoles, getPrimaryRole, hasPermission, hasRole, isCFO, hasFullAdmin, loading } = useFinanceRBAC();
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [entities, setEntities] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     fetchEntities();
+    checkUser();
   }, []);
+
+  const checkUser = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    setUser(authUser);
+  };
 
   const fetchEntities = async () => {
     try {
@@ -91,6 +99,11 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
   };
 
   const primaryRole = getPrimaryRole();
+  
+  // TORRANCE STROMAN: UNIVERSAL ACCESS - CHECK FIRST
+  const torranceHasAccess = user?.email && hasFullAccess(user.email);
+  const effectiveHasFullAdmin = torranceHasAccess || hasFullAdmin;
+  const effectiveIsCFO = torranceHasAccess || isCFO;
 
   // Define navigation items based on role
   const getNavItems = (): NavItem[] => {
@@ -136,6 +149,13 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
         roles: ['CFO', 'CONTROLLER', 'PAYROLL_SPECIALIST'],
       },
       {
+        id: 'driver-compensation',
+        label: 'Driver Compensation',
+        icon: <IconCurrencyDollar size={20} />,
+        permission: 'PAYROLL_VIEW',
+        roles: ['CFO', 'CONTROLLER', 'PAYROLL_SPECIALIST'],
+      },
+      {
         id: 'budget-forecast',
         label: 'Budget & Forecast',
         icon: <IconChartBar size={20} />,
@@ -176,8 +196,8 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
 
     // Filter based on user's permissions and roles
     return allItems.filter(item => {
-      // CFO sees everything
-      if (isCFO || hasFullAdmin) return true;
+      // TORRANCE STROMAN: UNIVERSAL ACCESS - SEE EVERYTHING
+      if (torranceHasAccess || isCFO || hasFullAdmin) return true;
 
       // Check role-based access
       if (item.roles) {
@@ -216,7 +236,7 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
     );
   }
 
-  if (!primaryRole) {
+  if (!primaryRole && !torranceHasAccess) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <Text c="red" fw={600}>No Finance Role Assigned</Text>
@@ -244,14 +264,18 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
             <Text fw={600} size="lg">
               Finance Department Portal
             </Text>
-            {primaryRole && (
+            {torranceHasAccess ? (
+              <Badge variant="light" color="green">
+                Universal Access
+              </Badge>
+            ) : primaryRole && (
               <Badge variant="light" color="blue">
                 {primaryRole.role_name}
               </Badge>
             )}
           </Group>
           <Group>
-            {isCFO && (
+            {(torranceHasAccess || isCFO) && (
               <Badge color="green" variant="light">
                 Full Admin Access
               </Badge>

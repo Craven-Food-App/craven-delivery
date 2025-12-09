@@ -42,6 +42,7 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
   const [supabaseConfigured, setSupabaseConfigured] = useState<boolean>(false);
   const [githubConfigured, setGithubConfigured] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [savingToken, setSavingToken] = useState<boolean>(false);
 
   const repositories = [
     { value: 'craven-delivery', label: 'craven-delivery' },
@@ -373,30 +374,50 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
     }
   };
 
-  const handleSaveGitHubToken = async () => {
+  const handleSaveGitHubToken = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    
     if (!githubToken.trim()) {
       message.error('Please enter a GitHub token');
       return;
     }
 
+    setSavingToken(true);
     try {
       // Store token in localStorage
-      localStorage.setItem('github_token', githubToken);
+      try {
+        localStorage.setItem('github_token', githubToken);
+      } catch (storageError) {
+        console.warn('Could not save to localStorage:', storageError);
+        // Continue anyway - might be in private mode
+      }
       
       // Also try to store in user metadata
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { error } = await supabase.auth.updateUser({
-          data: { github_token: githubToken }
-        });
-        if (error) console.warn('Could not save token to user metadata:', error);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error } = await supabase.auth.updateUser({
+            data: { github_token: githubToken }
+          });
+          if (error) {
+            console.warn('Could not save token to user metadata:', error);
+            // Don't fail completely - localStorage might be enough
+          }
+        }
+      } catch (authError) {
+        console.warn('Error updating user metadata:', authError);
+        // Continue - localStorage is the primary storage
       }
       
       setGithubConfigured(true);
       setAuthStep(1);
       message.success('GitHub token saved successfully');
     } catch (error: any) {
+      console.error('Error saving GitHub token:', error);
       message.error(error.message || 'Failed to save GitHub token');
+    } finally {
+      setSavingToken(false);
     }
   };
 
@@ -786,8 +807,14 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
                   />
                 </Form.Item>
                 <Form.Item>
-                  <Button type="primary" onClick={handleSaveGitHubToken} block>
-                    Save Token
+                  <Button 
+                    type="primary" 
+                    onClick={handleSaveGitHubToken} 
+                    block
+                    loading={savingToken}
+                    disabled={savingToken || !githubToken.trim()}
+                  >
+                    {savingToken ? 'Saving...' : 'Save Token'}
                   </Button>
                 </Form.Item>
               </Form>

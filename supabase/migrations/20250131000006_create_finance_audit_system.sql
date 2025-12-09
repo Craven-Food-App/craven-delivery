@@ -672,3 +672,4 @@ COMMENT ON TABLE public.reconciliation_bank IS 'Bank account reconciliation reco
 COMMENT ON TABLE public.reconciliation_ledger IS 'Ledger reconciliation and mismatch tracking';
 COMMENT ON TABLE public.ai_anomalies IS 'AI-detected anomalies and fraud patterns';
 
+

@@ -559,6 +559,9 @@ const AllCampaignOverview: React.FC = () => {
       <AdCreationModal
         open={isAdCreationOpen}
         onClose={() => setIsAdCreationOpen(false)}
+        onSuccess={() => {
+          fetchMarketingData();
+        }}
       />
 
       <div className="p-4 sm:p-8 space-y-8">

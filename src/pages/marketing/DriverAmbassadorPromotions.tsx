@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Truck, Trophy, Users, Gift, Plus, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import BonusCampaignModal from './BonusCampaignModal';
+import { toast } from 'sonner';
 
 interface DriverPromo {
   id: string;
@@ -34,6 +36,7 @@ const DriverAmbassadorPromotions: React.FC = () => {
   const [driverPromos, setDriverPromos] = useState<DriverPromo[]>([]);
   const [bonusCampaigns, setBonusCampaigns] = useState<BonusCampaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     fetchDriverData();
@@ -74,18 +77,88 @@ const DriverAmbassadorPromotions: React.FC = () => {
   };
 
   const fetchBonusCampaigns = async () => {
-    // TODO: Create bonus_campaigns table
-    setBonusCampaigns([
-      {
-        id: '1',
-        name: 'Complete 20 Deliveries',
-        description: 'Complete 20 deliveries this month to earn a $25 bonus',
-        requirement: '20 deliveries',
-        reward: '$25 bonus',
-        participants: 45,
-        status: 'active'
+    try {
+      // Fetch bonus campaigns from driver_promotions table
+      const { data: campaignsData, error } = await supabase
+        .from('driver_promotions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        // If table doesn't exist, use empty array
+        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+          console.warn('driver_promotions table not found. Run migration 20250120000005_driver_promotions_system.sql');
+          setBonusCampaigns([]);
+          return;
+        }
+        throw error;
       }
-    ]);
+
+      // Transform to BonusCampaign format
+      const transformedCampaigns: BonusCampaign[] = (campaignsData || []).map((campaign) => {
+        // Format requirement
+        const requirementValue = campaign.requirement_value || 0;
+        let requirement = '';
+        switch (campaign.challenge_type) {
+          case 'delivery_count':
+            requirement = `${requirementValue} deliveries`;
+            break;
+          case 'time_based':
+            requirement = `${requirementValue} hours`;
+            break;
+          case 'peak_hours':
+            requirement = `${requirementValue} peak hour deliveries`;
+            break;
+          default:
+            requirement = `${requirementValue} ${campaign.challenge_type}`;
+        }
+
+        // Format reward
+        let reward = '';
+        if (campaign.reward_type === 'cash_bonus' && campaign.reward_amount_cents) {
+          reward = `$${(campaign.reward_amount_cents / 100).toFixed(2)} bonus`;
+        } else if (campaign.reward_type === 'multiplier' && campaign.reward_multiplier) {
+          reward = `${campaign.reward_multiplier}x multiplier`;
+        } else if (campaign.reward_type === 'per_delivery_bonus') {
+          reward = `$${((campaign.reward_amount_cents || 0) / 100).toFixed(2)} per delivery`;
+        } else {
+          reward = campaign.reward_type.replace('_', ' ');
+        }
+
+        // Determine status
+        const now = new Date();
+        const startDate = new Date(campaign.starts_at);
+        const endDate = new Date(campaign.ends_at);
+        let status: 'active' | 'completed' | 'paused' = 'active';
+        
+        if (!campaign.is_active) {
+          status = 'paused';
+        } else if (endDate < now) {
+          status = 'completed';
+        } else if (startDate > now) {
+          status = 'paused'; // Not started yet
+        }
+
+        return {
+          id: campaign.id,
+          name: campaign.title,
+          description: campaign.description,
+          requirement: requirement,
+          reward: reward,
+          participants: campaign.current_participants || 0,
+          status: status,
+        };
+      });
+
+      setBonusCampaigns(transformedCampaigns);
+    } catch (error) {
+      console.error('Error fetching bonus campaigns:', error);
+      setBonusCampaigns([]);
+    }
+  };
+
+  const handleCampaignCreated = () => {
+    fetchBonusCampaigns();
   };
 
   return (
@@ -174,7 +247,10 @@ const DriverAmbassadorPromotions: React.FC = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Bonus Campaigns</h3>
-          <Button className="bg-orange-600 hover:bg-orange-700">
+          <Button 
+            className="bg-orange-600 hover:bg-orange-700"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Create Campaign
           </Button>
@@ -205,7 +281,21 @@ const DriverAmbassadorPromotions: React.FC = () => {
             </div>
           ))}
         </div>
+        {bonusCampaigns.length === 0 && !loading && (
+          <div className="text-center py-8">
+            <Trophy className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600">No bonus campaigns yet</p>
+            <p className="text-sm text-gray-500 mt-2">Create campaigns to incentivize drivers</p>
+          </div>
+        )}
       </Card>
+
+      {/* Bonus Campaign Creation Modal */}
+      <BonusCampaignModal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCampaignCreated}
+      />
     </div>
   );
 };

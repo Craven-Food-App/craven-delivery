@@ -18,12 +18,18 @@ import { CorporateAccountsPayable } from '@/components/finance/CorporateAccounts
 import { CorporateAccountsReceivable } from '@/components/finance/CorporateAccountsReceivable';
 import { SimpleTest } from '@/components/finance/SimpleTest';
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
+import { EnterpriseFinancePortalLayout } from '@/components/finance/EnterpriseFinancePortalLayout';
+import { DriverCompensationDashboard } from '@/components/finance/driver-compensation/DriverCompensationDashboard';
+import { DriverCompensationConfig } from '@/components/finance/driver-compensation/DriverCompensationConfig';
+import { PeakRulesManager } from '@/components/finance/driver-compensation/PeakRulesManager';
+import { BonusesOverview } from '@/components/finance/driver-compensation/BonusesOverview';
+import { ProfitabilityDashboard } from '@/components/finance/driver-compensation/ProfitabilityDashboard';
 
 const EnterpriseFinancePortal: React.FC = () => {
   console.log('✅ EnterpriseFinancePortal component is rendering!');
   
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <EnterpriseFinancePortalLayout>
       <Routes>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<FinanceDashboard />} />
@@ -38,10 +44,15 @@ const EnterpriseFinancePortal: React.FC = () => {
         <Route path="fixed-assets" element={<GeneralLedgerView mode="fixed-assets" />} />
         <Route path="tax-management" element={<TaxManagementView />} />
         <Route path="audit" element={<FinanceAuditComponent />} />
+        <Route path="driver-compensation" element={<DriverCompensationDashboard />} />
+        <Route path="driver-compensation/config" element={<DriverCompensationConfig />} />
+        <Route path="driver-compensation/peak-rules" element={<PeakRulesManager />} />
+        <Route path="driver-compensation/bonuses" element={<BonusesOverview />} />
+        <Route path="driver-compensation/profitability" element={<ProfitabilityDashboard />} />
         <Route path="test" element={<SimpleTest />} />
         <Route path="*" element={<div style={{ padding: '2rem' }}><h1>Route Not Found in Finance Portal</h1><p>Available routes: general-ledger, accounts-payable, accounts-receivable, etc.</p></div>} />
       </Routes>
-    </div>
+    </EnterpriseFinancePortalLayout>
   );
 };
 

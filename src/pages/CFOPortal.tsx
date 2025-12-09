@@ -96,6 +96,7 @@ import {
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
+import { EnterpriseFinancePortalLayout } from '@/components/finance/EnterpriseFinancePortalLayout';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
 import { FinancePortal } from '@/components/finance/FinancePortal';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -889,20 +890,7 @@ function CFOPortalContent() {
   const shouldWrapContent = activeSection !== 'overview';
 
   return (
-    <ExecutivePortalLayout
-      title="CFO Portal"
-      subtitle="Financial operations command center"
-      navItems={navItems}
-      activeItemId={activeSection}
-      onSelect={setActiveSection}
-      onBack={() => navigate('/hub')}
-      onSignOut={handleSignOut}
-      userInfo={{
-        initials: 'CF',
-        name: 'Chief Financial Officer',
-        role: 'Finance Leadership',
-      }}
-    >
+    <EnterpriseFinancePortalLayout>
       <div className="space-y-6">
         <Alert color="green" style={{ padding: 16 }}>
           <Group justify="space-between" wrap="wrap" gap={12}>
@@ -940,7 +928,7 @@ function CFOPortalContent() {
           content
         )}
       </div>
-    </ExecutivePortalLayout>
+    </EnterpriseFinancePortalLayout>
   );
 }
 
