@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { PhoneVerificationModal } from "@/components/feeder/PhoneVerificationModal";
 import becomeDriverHero from "@/assets/20251002_2239_Animated-Logo-Driver_remix_01k6kyy1m7f108g2r5qjd0a8x8.png";
 
 const FeederHub = () => {
@@ -17,6 +18,7 @@ const FeederHub = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
 
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -73,6 +75,7 @@ const FeederHub = () => {
       return;
     }
 
+    console.log('Form submitted, phone:', phoneNumber, 'email:', emailAddress);
     setIsSubmitting(true);
 
     try {
@@ -81,29 +84,79 @@ const FeederHub = () => {
       
       // Check if user is already logged in
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('Current user check:', currentUser ? 'Logged in' : 'Not logged in');
       
       if (currentUser) {
-        // User is logged in - update their phone number
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update({ 
-            phone: formattedPhone,
-            email: emailAddress 
-          })
-          .eq('user_id', currentUser.id);
+        // User is logged in - check if they already have an application
+        const { data: existingApp } = await supabase
+          .from('feeder_applications')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
 
-        if (updateError) {
-          throw updateError;
+        if (existingApp) {
+          toast.error('You already have an application. Please check your account.');
+          setIsSubmitting(false);
+          return;
         }
 
-        toast.success('Phone number updated successfully!');
-        navigate('/driver-onboarding/apply');
+        // For logged-in users, skip verification and proceed
+        console.log('User logged in, skipping verification');
+        localStorage.setItem('feeder_signup_email', emailAddress);
+        localStorage.setItem('feeder_signup_phone', formattedPhone);
+
+        navigate('/driver-onboarding/apply', { 
+          state: { phone: formattedPhone, email: emailAddress } 
+        });
+        setIsSubmitting(false);
         return;
       }
 
-      // Create new account
+      // Check if email or phone exists in user_profiles
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id, email, phone')
+        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .maybeSingle();
+
+      // Check if phone or email exists in feeder_applications
+      const { data: existingApplication } = await supabase
+        .from('feeder_applications')
+        .select('id, email, phone')
+        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .maybeSingle();
+
+      if (existingProfile || existingApplication) {
+        const conflictType = existingProfile?.email === emailAddress || existingApplication?.email === emailAddress
+          ? 'email'
+          : 'phone';
+        toast.error(`This ${conflictType} is already registered. Please login or use a different ${conflictType}.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // All checks passed - show verification modal
+      console.log('All checks passed, showing verification modal. showVerification will be set to:', true);
+      setIsSubmitting(false);
+      setShowVerification(true);
+      console.log('Verification modal state set. Current showVerification:', showVerification);
+    } catch (error: any) {
+      console.error('Error validating:', error);
+      toast.error(error.message || 'Failed to validate. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePhoneVerified = async () => {
+    setIsSubmitting(true);
+    setShowVerification(false);
+
+    try {
+      // Format phone number (remove formatting, keep only digits)
+      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
+
+      // Try to sign up to check if email exists in auth (this will fail if email exists)
       const tempPassword = generateSecurePassword();
-      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailAddress,
         password: tempPassword,
@@ -116,36 +169,59 @@ const FeederHub = () => {
         }
       });
 
+      // Check for various error messages indicating email already exists
       if (authError) {
-        // If user already exists in auth but not in profiles
-        if (authError.message.includes('already registered')) {
+        const errorMsg = authError.message.toLowerCase();
+        const errorCode = authError.status || authError.code;
+        
+        // Check for email already exists errors
+        if (
+          errorMsg.includes('already registered') ||
+          errorMsg.includes('user already registered') ||
+          errorMsg.includes('email address is already in use') ||
+          errorMsg.includes('email already exists') ||
+          errorMsg.includes('user already exists') ||
+          errorMsg.includes('already been registered') ||
+          errorCode === 400 ||
+          errorCode === 422
+        ) {
           toast.error('An account with this email already exists. Please login.');
-          navigate('/driver/auth');
+          setIsSubmitting(false);
           return;
         }
-        throw authError;
+        // For other errors, still show error but don't proceed
+        console.error('Signup error:', authError);
+        toast.error(authError.message || 'Failed to create account. Please try again.');
+        setIsSubmitting(false);
+        return;
       }
 
-      if (!authData.user) {
-        throw new Error('Failed to create user account');
+      // If no user was created, the email likely already exists or signup failed
+      if (!authData || !authData.user) {
+        toast.error('An account with this email already exists. Please login.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Verify the user was actually created by checking the user ID
+      if (!authData.user || !authData.user.id) {
+        toast.error('Failed to create account. Please try again or login if you already have an account.');
+        setIsSubmitting(false);
+        return;
       }
 
       // Wait a moment for the trigger to create user_profile
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Update user profile with phone number
-      const { error: profileError } = await supabase
+      // Verify user profile was created or create it
+      const { data: existingProfileCheck } = await supabase
         .from('user_profiles')
-        .update({ 
-          phone: formattedPhone,
-          email: emailAddress,
-          role: 'driver'
-        })
-        .eq('user_id', authData.user.id);
+        .select('user_id')
+        .eq('user_id', authData.user.id)
+        .maybeSingle();
 
-      if (profileError) {
-        console.error('Error updating profile:', profileError);
-        // Profile might not exist yet, try to insert
+      if (!existingProfileCheck) {
+        // Profile doesn't exist, create it
         const { error: insertError } = await supabase
           .from('user_profiles')
           .insert({
@@ -157,8 +233,27 @@ const FeederHub = () => {
 
         if (insertError) {
           console.error('Error inserting profile:', insertError);
+          // Don't fail here, profile might be created by trigger
+        }
+      } else {
+        // Update existing profile
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({ 
+            phone: formattedPhone,
+            email: emailAddress,
+            role: 'driver'
+          })
+          .eq('user_id', authData.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
         }
       }
+
+      // Save to localStorage for pre-filling
+      localStorage.setItem('feeder_signup_email', emailAddress);
+      localStorage.setItem('feeder_signup_phone', formattedPhone);
 
       // Send password reset email so user can set their own password
       await supabase.auth.resetPasswordForEmail(emailAddress, {
@@ -167,14 +262,14 @@ const FeederHub = () => {
 
       toast.success('Account created! Please check your email to set your password.');
       
-      // Navigate to driver onboarding
+      // Navigate to driver onboarding with email and phone
       navigate('/driver-onboarding/apply', { 
         state: { phone: formattedPhone, email: emailAddress } 
       });
 
     } catch (error: any) {
-      console.error('Error registering:', error);
-      toast.error(error.message || 'Failed to register. Please try again.');
+      console.error('Error creating account:', error);
+      toast.error(error.message || 'Failed to create account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -182,23 +277,33 @@ const FeederHub = () => {
 
   const earnings = [
     {
-      title: "BASE PAY",
-      description: "You'll always earn Base Pay for any delivery accepted on Crave'n. Base Pay is calculated based on the estimated time, distance, and desirability of the delivery.",
-      image: "https://images.unsplash.com/photo-1619677930164-3f5b6d6b5c6a?w=400&h=300&fit=crop"
+      title: "Guaranteed Base Pay",
+      subtitle: "Every delivery counts",
+      description: "Every delivery you accept on Crave'n comes with guaranteed Base Pay. We calculate this based on the time it takes, distance traveled, and how in-demand the delivery is. No guesswork—just fair compensation for every trip.",
+      icon: "💰",
+      accent: "bg-gradient-to-br from-[#FF6B00] to-[#FF8C42]",
+      textColor: "text-white"
     },
     {
-      title: "PLUS TIPS",
-      description: "Customers using Crave'n can tip you anytime you choose to accept a delivery — and most deliveries include a tip. You'll always receive 100% of the customer tips.",
-      image: "https://images.unsplash.com/photo-1556742111-a301076d9d18?w=400&h=300&fit=crop"
+      title: "Keep 100% of Tips",
+      subtitle: "All yours, always",
+      description: "When customers tip you through Crave'n, you keep every single dollar. We never take a cut. Most deliveries include tips, and customers can add them anytime—even after you've completed the delivery.",
+      icon: "💵",
+      accent: "bg-gradient-to-br from-[#5D1049] to-[#7A1A5F]",
+      textColor: "text-white"
     },
     {
-      title: "PLUS PROMOTIONS",
-      description: "Promotions like Peak Pay, Challenges, and Delivery Streaks help you earn more.",
+      title: "Boost Your Earnings",
+      subtitle: "More ways to earn",
+      description: "Take advantage of special promotions designed to maximize your income:",
       items: [
-        "Peak Pay pays you more per delivery.",
-        "Challenges let you earn extra money for completing a certain number of deliveries in a set amount of time."
+        "Peak Pay: Earn extra during busy times",
+        "Challenges: Hit delivery goals for bonus payouts",
+        "Delivery Streaks: Consistent deliveries unlock rewards"
       ],
-      image: "https://images.unsplash.com/photo-1607013251379-e6eecfffe234?w=400&h=300&fit=crop"
+      icon: "🚀",
+      accent: "bg-gradient-to-br from-black to-[#2A2A2A]",
+      textColor: "text-white"
     }
   ];
 
@@ -285,7 +390,16 @@ const FeederHub = () => {
                   Independent Contractor Agreement
                 </button>{" "}
                 and have read the{" "}
-                <a href="#" className="text-[#FF6B00] underline font-semibold">Feeder Privacy Policy</a>.
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/feeder-privacy-policy');
+                  }}
+                  className="text-[#FF6B00] underline font-semibold hover:text-[#E65F00]"
+                >
+                  Feeder Privacy Policy
+                </button>.
               </p>
 
               {/* Continue Button */}
@@ -331,51 +445,92 @@ const FeederHub = () => {
       </section>
 
       {/* How Much Can I Earn Section */}
-      <section className="py-24 px-6 lg:px-24 max-w-7xl mx-auto">
-        <h2 
-          className="text-4xl lg:text-5xl font-black text-[#FF6B00] text-center mb-16 uppercase"
-          style={{ letterSpacing: '-1px' }}
-        >
-          HOW MUCH CAN I EARN?
-        </h2>
+      <section className="py-32 px-6 lg:px-24 bg-gradient-to-b from-white to-[#FAFAFA]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 
+              className="text-5xl lg:text-6xl font-black text-[#FF6B00] mb-4 uppercase"
+              style={{ letterSpacing: '-2px' }}
+            >
+              Your Earnings, Your Way
+            </h2>
+            <p className="text-xl text-[#666] max-w-2xl mx-auto">
+              Three powerful ways to build your income with Crave'n
+            </p>
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-10">
-          {earnings.map((earning, index) => (
-            <div key={index} className="flex flex-col">
-              <div className="w-full h-72 rounded-xl overflow-hidden mb-6 bg-gray-200">
-                <img 
-                  src={earning.image} 
-                  alt={earning.title}
-                  className="w-full h-full object-cover"
-                />
+          <div className="grid lg:grid-cols-3 gap-8 lg:gap-6">
+            {earnings.map((earning, index) => (
+              <div 
+                key={index} 
+                className={`relative ${earning.accent} rounded-2xl p-8 lg:p-10 shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-3xl`}
+                style={{ minHeight: '420px' }}
+              >
+                {/* Icon */}
+                <div className="text-6xl mb-6">{earning.icon}</div>
+                
+                {/* Content */}
+                <div className="flex-1">
+                  <div className="mb-3">
+                    <span className={`text-sm font-bold ${earning.textColor} opacity-80 uppercase tracking-wider`}>
+                      {earning.subtitle}
+                    </span>
+                  </div>
+                  <h3 
+                    className={`text-2xl lg:text-3xl font-black ${earning.textColor} mb-5 leading-tight`}
+                    style={{ letterSpacing: '-0.5px' }}
+                  >
+                    {earning.title}
+                  </h3>
+                  <p className={`${earning.textColor} leading-relaxed mb-6 opacity-95 text-base lg:text-lg`}>
+                    {earning.description}
+                  </p>
+                  {earning.items && (
+                    <ul className="space-y-3">
+                      {earning.items.map((item, idx) => (
+                        <li key={idx} className={`${earning.textColor} leading-relaxed pl-6 relative opacity-95`}>
+                          <span className="absolute left-0 text-xl font-black">✓</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Decorative element */}
+                <div className={`absolute bottom-0 right-0 w-32 h-32 ${earning.textColor} opacity-5`} style={{ 
+                  clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                  transform: 'scale(2)'
+                }}></div>
               </div>
-              <div className="flex-1">
-                <h3 
-                  className="text-lg font-black text-[#5D1049] mb-4 uppercase"
-                  style={{ letterSpacing: '0.5px' }}
-                >
-                  {earning.title}
-                </h3>
-                <p className="text-base text-[#191919] leading-relaxed mb-4">
-                  {earning.description}
-                </p>
-                {earning.items && (
-                  <ul className="space-y-3">
-                    {earning.items.map((item, idx) => (
-                      <li key={idx} className="text-base text-[#191919] leading-relaxed pl-6 relative">
-                        <span className="absolute left-0 text-[#FF6B00] font-black text-xl">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+            ))}
+          </div>
+
+          {/* Bottom CTA Section */}
+          <div className="mt-20 text-center">
+            <div className="inline-block bg-white rounded-full px-8 py-4 shadow-lg">
+              <p className="text-lg font-semibold text-[#191919]">
+                <span className="text-[#FF6B00] font-black">Ready to start earning?</span> Sign up above to get started.
+              </p>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
       <Footer />
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        open={showVerification}
+        phoneNumber={phoneNumber}
+        countryCode={countryCode}
+        email={emailAddress}
+        onVerified={handlePhoneVerified}
+        onClose={() => {
+          setShowVerification(false);
+          setIsSubmitting(false);
+        }}
+      />
     </div>
   );
 };
