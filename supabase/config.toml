@@ -180,3 +180,9 @@ verify_jwt = false
 
 [functions.send-appointment-documents-email]
 verify_jwt = false
+
+[functions.send-phone-verification]
+verify_jwt = false
+
+[functions.verify-phone-code]
+verify_jwt = false
