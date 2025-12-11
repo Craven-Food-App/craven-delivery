@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { PhoneVerificationModal } from "@/components/feeder/PhoneVerificationModal";
 import becomeDriverHero from "@/assets/20251002_2239_Animated-Logo-Driver_remix_01k6kyy1m7f108g2r5qjd0a8x8.png";
 
 const FeederHub = () => {
@@ -18,7 +17,6 @@ const FeederHub = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
-  const [showVerification, setShowVerification] = useState(false);
 
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -135,27 +133,10 @@ const FeederHub = () => {
         return;
       }
 
-      // All checks passed - show verification modal
-      console.log('All checks passed, showing verification modal. showVerification will be set to:', true);
-      setIsSubmitting(false);
-      setShowVerification(true);
-      console.log('Verification modal state set. Current showVerification:', showVerification);
-    } catch (error: any) {
-      console.error('Error validating:', error);
-      toast.error(error.message || 'Failed to validate. Please try again.');
-      setIsSubmitting(false);
-    }
-  };
-
-  const handlePhoneVerified = async () => {
-    setIsSubmitting(true);
-    setShowVerification(false);
-
-    try {
-      // Format phone number (remove formatting, keep only digits)
-      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
-
-      // Try to sign up to check if email exists in auth (this will fail if email exists)
+      // All checks passed - skip verification and proceed directly
+      console.log('All checks passed, skipping verification and proceeding directly');
+      
+      // Create account without phone verification
       const tempPassword = generateSecurePassword();
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailAddress,
@@ -260,20 +241,18 @@ const FeederHub = () => {
         redirectTo: `${window.location.origin}/driver-onboarding/apply?reset=true`,
       });
 
-      toast.success('Account created! Please check your email to set your password.');
-      
       // Navigate to driver onboarding with email and phone
       navigate('/driver-onboarding/apply', { 
         state: { phone: formattedPhone, email: emailAddress } 
       });
-
+      setIsSubmitting(false);
     } catch (error: any) {
-      console.error('Error creating account:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
-    } finally {
+      console.error('Error validating:', error);
+      toast.error(error.message || 'Failed to validate. Please try again.');
       setIsSubmitting(false);
     }
   };
+
 
   const earnings = [
     {
@@ -518,19 +497,6 @@ const FeederHub = () => {
       </section>
 
       <Footer />
-
-      {/* Phone Verification Modal */}
-      <PhoneVerificationModal
-        open={showVerification}
-        phoneNumber={phoneNumber}
-        countryCode={countryCode}
-        email={emailAddress}
-        onVerified={handlePhoneVerified}
-        onClose={() => {
-          setShowVerification(false);
-          setIsSubmitting(false);
-        }}
-      />
     </div>
   );
 };

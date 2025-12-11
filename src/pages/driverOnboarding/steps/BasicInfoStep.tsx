@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TextInput, Button, Card, Text, Stack, Checkbox, Alert, Grid, Box, Loader } from '@mantine/core';
-import { User, Mail, Phone, MapPin, Lock, ArrowLeft } from 'lucide-react';
+import { TextInput, Button, Card, Text, Stack, Checkbox, Alert, Grid, Box, Loader, Select } from '@mantine/core';
+import { User, Mail, Phone, MapPin, Lock, ArrowLeft, Eye, EyeOff, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from '@mantine/form';
 import { useToast } from '@/hooks/use-toast';
@@ -15,28 +15,69 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
   const [loading, setLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<{ city: string; state: string; zip: string } | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [noMiddleName, setNoMiddleName] = useState(false);
   const { toast } = useToast();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    };
+    checkAuth();
+  }, []);
 
   const form = useForm({
     initialValues: {
-      fullName: '',
-      email: '',
-      phone: '',
+      legalFirstName: '',
+      legalMiddleName: '',
+      legalLastName: '',
+      country: 'US',
       zip: '',
       password: '',
-      confirmPassword: '',
-      ageVerified: false,
+      email: applicationData?.email || '',
+      phone: applicationData?.phone || '',
     },
     validate: {
-      fullName: (value) => (!value ? 'Please enter your full name' : value.length < 3 ? 'Name must be at least 3 characters' : null),
-      email: (value) => (!value ? 'Please enter your email' : !/^\S+@\S+$/.test(value) ? 'Invalid email format' : null),
-      phone: (value) => (!value ? 'Please enter your phone number' : !/^[\d\s\-()+]+$/.test(value) ? 'Invalid phone format' : null),
-      zip: (value) => (!value ? 'Please confirm your ZIP code' : !/^\d{5}(-\d{4})?$/.test(value) ? 'Invalid ZIP format' : null),
-      password: (value) => (!value ? 'Please enter a password' : value.length < 8 ? 'Password must be at least 8 characters' : null),
-      confirmPassword: (value, values) => (!value ? 'Please confirm your password' : value !== values.password ? 'Passwords do not match' : null),
-      ageVerified: (value) => (!value ? 'You must confirm you are 18+ to apply' : null),
+      legalFirstName: (value) => (!value ? 'Please enter your legal first name' : null),
+      legalMiddleName: (value, values) => {
+        if (noMiddleName) return null;
+        return null; // Middle name is optional
+      },
+      legalLastName: (value) => (!value ? 'Please enter your legal last name' : null),
+      country: (value) => (!value ? 'Please select a country' : null),
+      zip: (value) => (!value ? 'Please enter your ZIP code' : !/^\d{5}(-\d{4})?$/.test(value) ? 'Invalid ZIP format' : null),
+      password: (value) => {
+        if (isLoggedIn) return null; // Password optional if already logged in
+        if (!value) return 'Please enter a password';
+        if (value.length < 10) return 'Password must be at least 10 characters';
+        if (!/[A-Z]/.test(value)) return 'Password must include an uppercase letter';
+        if (!/[a-z]/.test(value)) return 'Password must include a lowercase letter';
+        if (!/[0-9]/.test(value)) return 'Password must include a number';
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) return 'Password must include a special character';
+        return null;
+      },
     },
   });
+
+  // Update form when applicationData changes (from signup box)
+  useEffect(() => {
+    if (applicationData?.email || applicationData?.phone) {
+      form.setValues({
+        email: applicationData.email || form.values.email,
+        phone: applicationData.phone || form.values.phone,
+      });
+    }
+  }, [applicationData?.email, applicationData?.phone]);
+
+  // Handle no middle name checkbox
+  useEffect(() => {
+    if (noMiddleName) {
+      form.setFieldValue('legalMiddleName', '');
+    }
+  }, [noMiddleName]);
 
   // Detect location on mount
   useEffect(() => {
@@ -146,25 +187,55 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-            phone: values.phone,
-            user_type: 'driver'
+      // 1. Check if user is already logged in (created from FeederHub signup)
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      let userId: string;
+
+      if (currentUser) {
+        // User already exists - use existing user
+        userId = currentUser.id;
+        
+        // Update password if provided
+        if (values.password) {
+          const { error: passwordError } = await supabase.auth.updateUser({
+            password: values.password
+          });
+          if (passwordError) {
+            console.warn('Could not update password:', passwordError);
           }
         }
-      });
+      } else {
+        // Create new auth user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            data: {
+              full_name: values.fullName,
+              phone: values.phone,
+              user_type: 'driver'
+            }
+          }
+        });
 
-      if (authError) {
-        throw authError;
-      }
+        if (authError) {
+          if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+            toast({
+              title: "Error",
+              description: "An account with this email already exists. Please login.",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+          throw authError;
+        }
 
-      if (!authData.user) {
-        throw new Error('Failed to create user account');
+        if (!authData.user) {
+          throw new Error('Failed to create user account');
+        }
+
+        userId = authData.user.id;
       }
 
       // 2. Determine region based on ZIP
@@ -184,16 +255,28 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         regionName = matchingRegion?.name || regionsData[0].name || '';
       }
 
-      // 3. Parse full name
-      const nameParts = values.fullName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
+      // 3. Use separate name fields
+      const firstName = values.legalFirstName || '';
+      const middleName = noMiddleName ? '' : (values.legalMiddleName || '');
+      const lastName = values.legalLastName || '';
 
-      // 4. Create feeder application (waitlisted)
-      const { data: appData, error: appError } = await supabase
+      // 4. Check if application already exists
+      const { data: existingApp } = await supabase
         .from('feeder_applications')
-        .insert({
-          user_id: authData.user.id,
+        .select('id, waitlist_position')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      let appData;
+      if (existingApp) {
+        // Application already exists, use it
+        appData = existingApp;
+      } else {
+        // Create feeder application (waitlisted)
+        const { data: newAppData, error: appError } = await supabase
+          .from('feeder_applications')
+          .insert({
+            user_id: userId,
           first_name: firstName,
           last_name: lastName,
           email: values.email,
@@ -206,24 +289,49 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
           points: 0,
           priority_score: 0,
           waitlist_joined_at: new Date().toISOString(),
-          tos_accepted: applicationData?.termsAccepted || false,
-          privacy_accepted: applicationData?.privacyAccepted || false
-        })
-        .select()
-        .single();
+            tos_accepted: applicationData?.termsAccepted || false,
+            privacy_accepted: applicationData?.privacyAccepted || false
+          })
+          .select()
+          .single();
 
-      if (appError) {
-        console.error('Application creation error:', appError);
-        throw appError;
+        if (appError) {
+          console.error('Application creation error:', appError);
+          throw appError;
+        }
+
+        appData = newAppData;
       }
 
-      // 5. Create user profile
-      await supabase.from('user_profiles').insert({
-        user_id: authData.user.id,
-        full_name: values.fullName,
-        phone: values.phone,
-        role: 'driver'
-      });
+      // 5. Update or create user profile
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Update existing profile
+        const fullName = `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim();
+        await supabase.from('user_profiles')
+          .update({
+            full_name: fullName,
+            phone: values.phone,
+            email: values.email,
+            role: 'driver'
+          })
+          .eq('user_id', userId);
+      } else {
+        // Create new profile
+        const fullName = `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim();
+        await supabase.from('user_profiles').insert({
+          user_id: userId,
+          full_name: fullName,
+          phone: values.phone,
+          email: values.email,
+          role: 'driver'
+        });
+      }
 
       // 6. Send waitlist email
       try {
@@ -234,7 +342,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            driverName: values.fullName,
+            driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
             driverEmail: values.email,
             city: detectedLocation?.city || '',
             state: detectedLocation?.state || '',
@@ -250,6 +358,10 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
       } catch (emailError) {
         console.log('Warning: Waitlist email sending error:', emailError);
       }
+
+      // Clear localStorage after successful submission
+      localStorage.removeItem('feeder_signup_email');
+      localStorage.removeItem('feeder_signup_phone');
 
       toast({
         title: "Success",
@@ -281,157 +393,187 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
 
   return (
     <Card
-      p="lg"
+      p="xl"
       style={{
         borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        backgroundColor: 'white',
+        maxWidth: '600px',
+        margin: '0 auto'
       }}
     >
       <Stack gap="lg">
         {/* Header */}
-        <Stack align="center" gap="md">
-          <Box
-            style={{
-              padding: 12,
-              backgroundColor: 'rgba(255, 122, 0, 0.1)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <User size={48} style={{ color: '#ff7a00' }} />
-          </Box>
-          <div style={{ textAlign: 'center' }}>
-            <Text fw={700} size="xl">Tell Us About Yourself</Text>
-            <Text c="dimmed" size="sm" mt="xs">
-              We need some basic information to get started
-            </Text>
-          </div>
-          {locationLoading && (
-            <Alert color="blue" icon={<Loader size={16} />}>
-              📍 Detecting your location...
-            </Alert>
-          )}
-          {detectedLocation && (
-            <Alert color="green">
-              ✓ Location Detected: {detectedLocation.city}, {detectedLocation.state}
-            </Alert>
-          )}
-        </Stack>
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <Text fw={700} size="xl" style={{ fontSize: '24px', color: '#191919' }}>
+            Let's sign you up to Feed!
+          </Text>
+        </div>
 
         {/* Form */}
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack gap="md">
-            <TextInput
-              label="Full Name"
-              placeholder="John Smith"
-              leftSection={<User size={16} style={{ color: '#ff7a00' }} />}
-              size="lg"
-              {...form.getInputProps('fullName')}
-            />
+            {/* Legal First Name */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Legal first name
+              </Text>
+              <TextInput
+                placeholder=""
+                size="md"
+                styles={{
+                  input: {
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    color: '#191919'
+                  }
+                }}
+                {...form.getInputProps('legalFirstName')}
+              />
+            </div>
 
-            <Grid gutter="md">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="Email"
-                  type="email"
-                  placeholder="john@example.com"
-                  leftSection={<Mail size={16} style={{ color: '#ff7a00' }} />}
-                  size="lg"
-                  {...form.getInputProps('email')}
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="Phone"
-                  placeholder="(555) 123-4567"
-                  leftSection={<Phone size={16} style={{ color: '#ff7a00' }} />}
-                  size="lg"
-                  {...form.getInputProps('phone')}
-                />
-              </Grid.Col>
-            </Grid>
+            {/* Legal Middle Name */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Legal middle name
+              </Text>
+              <TextInput
+                placeholder=""
+                size="md"
+                disabled={noMiddleName}
+                styles={{
+                  input: {
+                    backgroundColor: noMiddleName ? '#E0E0E0' : '#F5F5F5',
+                    border: 'none',
+                    color: '#191919'
+                  }
+                }}
+                {...form.getInputProps('legalMiddleName')}
+              />
+              <Checkbox
+                checked={noMiddleName}
+                onChange={(e) => setNoMiddleName(e.currentTarget.checked)}
+                label={<Text size="sm" style={{ color: '#666' }}>No middle name</Text>}
+                mt="xs"
+              />
+            </div>
 
-            <TextInput
-              label="ZIP Code (Auto-detected)"
-              placeholder="ZIP code will be auto-detected"
-              leftSection={<MapPin size={16} style={{ color: '#ff7a00' }} />}
-              size="lg"
-              disabled={locationLoading}
-              {...form.getInputProps('zip')}
-            />
+            {/* Legal Last Name */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Legal last name
+              </Text>
+              <TextInput
+                placeholder=""
+                size="md"
+                styles={{
+                  input: {
+                    backgroundColor: '#F5F5F5',
+                    border: 'none',
+                    color: '#191919'
+                  }
+                }}
+                {...form.getInputProps('legalLastName')}
+              />
+            </div>
 
-            <Grid gutter="md">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
+            {/* Country and Zip Code */}
+            <div>
+              <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                Country
+              </Text>
+              <Grid gutter="sm">
+                <Grid.Col span={6}>
+                  <Select
+                    data={[
+                      { value: 'US', label: 'US US' },
+                      { value: 'CA', label: 'CA Canada' },
+                      { value: 'MX', label: 'MX Mexico' },
+                    ]}
+                    {...form.getInputProps('country')}
+                    styles={{
+                      input: {
+                        backgroundColor: '#F5F5F5',
+                        border: 'none',
+                      }
+                    }}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <div>
+                    <Text size="sm" fw={500} mb="xs" style={{ color: '#191919' }}>
+                      Zip code
+                    </Text>
+                    <TextInput
+                      placeholder=""
+                      size="md"
+                      disabled={locationLoading}
+                      rightSection={<Search size={16} style={{ color: '#666' }} />}
+                      styles={{
+                        input: {
+                          backgroundColor: '#F5F5F5',
+                          border: 'none',
+                          color: '#191919'
+                        }
+                      }}
+                      {...form.getInputProps('zip')}
+                    />
+                  </div>
+                </Grid.Col>
+              </Grid>
+            </div>
+
+            {/* Password */}
+            {!isLoggedIn && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <Text size="sm" fw={500} style={{ color: '#191919' }}>
+                    Password
+                  </Text>
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    size="xs"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ padding: '4px 8px', height: 'auto', color: '#666' }}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
                 <TextInput
-                  label="Password"
-                  type="password"
-                  placeholder="Create password"
-                  leftSection={<Lock size={16} style={{ color: '#ff7a00' }} />}
-                  size="lg"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder=""
+                  size="md"
+                  styles={{
+                    input: {
+                      backgroundColor: '#F5F5F5',
+                      border: 'none',
+                      color: '#191919'
+                    }
+                  }}
                   {...form.getInputProps('password')}
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="Confirm Password"
-                  type="password"
-                  placeholder="Confirm password"
-                  size="lg"
-                  {...form.getInputProps('confirmPassword')}
-                />
-              </Grid.Col>
-            </Grid>
+                <Text size="xs" mt="xs" style={{ color: '#666' }}>
+                  Minimum 10 characters: including upper case, lower case, a number, and a special character
+                </Text>
+              </div>
+            )}
 
-            {/* Age Verification */}
-            <Box
-              p="md"
+            {/* Continue Button */}
+            <Button
+              type="submit"
+              size="lg"
+              fullWidth
+              loading={loading}
               style={{
-                backgroundColor: '#fffbe6',
+                height: '48px',
+                backgroundColor: '#DC2626',
                 borderRadius: '8px',
-                border: '1px solid #ffd666'
+                marginTop: '16px'
               }}
             >
-              <Checkbox
-                {...form.getInputProps('ageVerified', { type: 'checkbox' })}
-                label={
-                  <Text size="sm">
-                    I confirm that I am at least 18 years of age and legally authorized to work as a delivery driver.
-                  </Text>
-                }
-              />
-            </Box>
-
-            {/* Action Buttons */}
-            <Grid gutter="md" mt="md">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <Button
-                  size="lg"
-                  fullWidth
-                  variant="outline"
-                  onClick={onBack}
-                  leftSection={<ArrowLeft size={18} />}
-                  style={{ height: '50px' }}
-                >
-                  Back
-                </Button>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <Button
-                  type="submit"
-                  size="lg"
-                  fullWidth
-                  loading={loading}
-                  style={{
-                    height: '50px',
-                  }}
-                  color="#ff7a00"
-                >
-                  Submit Application
-                </Button>
-              </Grid.Col>
-            </Grid>
+              Continue
+            </Button>
           </Stack>
         </form>
       </Stack>
