@@ -398,43 +398,43 @@ const FeederHub = () => {
       <Header />
       
       {/* Hero Section - Split Screen */}
-      <section className="grid lg:grid-cols-2 min-h-screen">
+      <section className="grid lg:grid-cols-2 min-h-[70vh]">
         {/* Left Section - White Background */}
         <div 
-          className="bg-white p-12 lg:p-20 lg:pl-24 flex flex-col justify-center relative"
-          style={{ paddingTop: '80px', paddingBottom: '80px' }}
+          className="bg-white p-6 lg:p-12 lg:pl-16 flex flex-col justify-center relative"
+          style={{ paddingTop: '60px', paddingBottom: '60px' }}
         >
           {/* Black Triangle Accent */}
           <div 
-            className="absolute bottom-0 right-0 w-48 h-48 bg-black"
+            className="absolute bottom-0 right-0 w-32 h-32 bg-black"
             style={{ clipPath: 'polygon(100% 100%, 0% 100%, 100% 0%)' }}
           ></div>
 
           <h1 
-            className="text-5xl lg:text-7xl font-black text-black mb-6 leading-none uppercase"
-            style={{ letterSpacing: '-2px' }}
+            className="text-4xl lg:text-5xl font-black text-black mb-4 leading-tight uppercase"
+            style={{ letterSpacing: '-1px' }}
           >
             EARN WITH THE BEST
           </h1>
           
-          <p className="text-xl lg:text-2xl text-[#191919] mb-12 leading-relaxed font-medium max-w-xl">
+          <p className="text-lg lg:text-xl text-[#191919] mb-8 leading-relaxed font-medium max-w-xl">
             Deliver with Crave'n and get more opportunities to earn.
           </p>
 
           {/* Signup Form Card */}
-          <div className="bg-white rounded-3xl p-8 lg:p-10 max-w-lg shadow-lg relative z-10">
+          <div className="bg-white rounded-2xl p-6 lg:p-8 max-w-lg shadow-lg relative z-10">
             <h2 
-              className="text-2xl font-extrabold text-[#5D1049] mb-8 uppercase"
+              className="text-xl lg:text-2xl font-extrabold text-[#5D1049] mb-6 uppercase"
               style={{ letterSpacing: '-0.5px' }}
             >
               SIGN UP TO BECOME A FEEDER
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Phone Input Group */}
-              <div className="grid grid-cols-[140px_1fr] gap-3">
+              <div className="grid grid-cols-[120px_1fr] gap-2">
                 <Select value={countryCode} onValueChange={setCountryCode}>
-                  <SelectTrigger className="h-12 border-2 border-[#E0E0E0] rounded-lg font-semibold text-base">
+                  <SelectTrigger className="h-11 border-2 border-[#E0E0E0] rounded-lg font-semibold text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -447,7 +447,7 @@ const FeederHub = () => {
                   placeholder="Phone Number"
                   value={phoneNumber}
                   onChange={handlePhoneChange}
-                  className="h-12 border-2 border-[#E0E0E0] rounded-lg text-base focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/10"
+                  className="h-11 border-2 border-[#E0E0E0] rounded-lg text-sm focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/10"
                   required
                 />
               </div>
@@ -458,7 +458,7 @@ const FeederHub = () => {
                 placeholder="Email Address"
                 value={emailAddress}
                 onChange={(e) => setEmailAddress(e.target.value)}
-                className="h-12 border-2 border-[#E0E0E0] rounded-lg text-base focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/10"
+                className="h-11 border-2 border-[#E0E0E0] rounded-lg text-sm focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/10"
                 required
               />
 
@@ -492,7 +492,7 @@ const FeederHub = () => {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-14 bg-[#FF6B00] hover:bg-[#E65F00] text-white rounded-full text-lg font-extrabold uppercase shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 bg-[#FF6B00] hover:bg-[#E65F00] text-white rounded-full text-base font-extrabold uppercase shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ letterSpacing: '0.5px' }}
               >
                 {isSubmitting ? 'Creating Account...' : 'Continue'}
@@ -518,7 +518,7 @@ const FeederHub = () => {
           
           {/* Black Accent */}
           <div 
-            className="absolute top-0 right-0 w-72 h-72 bg-black z-10"
+            className="absolute top-0 right-0 w-48 h-48 bg-black z-10"
             style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 0)' }}
           ></div>
 
@@ -531,51 +531,51 @@ const FeederHub = () => {
       </section>
 
       {/* How Much Can I Earn Section */}
-      <section className="py-32 px-6 lg:px-24 bg-gradient-to-b from-white to-[#FAFAFA]">
+      <section className="py-16 lg:py-20 px-6 lg:px-16 bg-gradient-to-b from-white to-[#FAFAFA]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
+          <div className="text-center mb-12">
             <h2 
-              className="text-5xl lg:text-6xl font-black text-[#FF6B00] mb-4 uppercase"
-              style={{ letterSpacing: '-2px' }}
+              className="text-3xl lg:text-4xl font-black text-[#FF6B00] mb-3 uppercase"
+              style={{ letterSpacing: '-1px' }}
             >
               Your Earnings, Your Way
             </h2>
-            <p className="text-xl text-[#666] max-w-2xl mx-auto">
+            <p className="text-lg text-[#666] max-w-2xl mx-auto">
               Three powerful ways to build your income with Crave'n
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8 lg:gap-6">
+          <div className="grid lg:grid-cols-3 gap-6">
             {earnings.map((earning, index) => (
               <div 
                 key={index} 
-                className={`relative ${earning.accent} rounded-2xl p-8 lg:p-10 shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-3xl`}
-                style={{ minHeight: '420px' }}
+                className={`relative ${earning.accent} rounded-xl p-6 lg:p-8 shadow-xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}
+                style={{ minHeight: '320px' }}
               >
                 {/* Icon */}
-                <div className="text-6xl mb-6">{earning.icon}</div>
+                <div className="text-5xl mb-4">{earning.icon}</div>
                 
                 {/* Content */}
                 <div className="flex-1">
-                  <div className="mb-3">
-                    <span className={`text-sm font-bold ${earning.textColor} opacity-80 uppercase tracking-wider`}>
+                  <div className="mb-2">
+                    <span className={`text-xs font-bold ${earning.textColor} opacity-80 uppercase tracking-wider`}>
                       {earning.subtitle}
                     </span>
                   </div>
                   <h3 
-                    className={`text-2xl lg:text-3xl font-black ${earning.textColor} mb-5 leading-tight`}
+                    className={`text-xl lg:text-2xl font-black ${earning.textColor} mb-3 leading-tight`}
                     style={{ letterSpacing: '-0.5px' }}
                   >
                     {earning.title}
                   </h3>
-                  <p className={`${earning.textColor} leading-relaxed mb-6 opacity-95 text-base lg:text-lg`}>
+                  <p className={`${earning.textColor} leading-relaxed mb-4 opacity-95 text-sm lg:text-base`}>
                     {earning.description}
                   </p>
                   {earning.items && (
-                    <ul className="space-y-3">
+                    <ul className="space-y-2">
                       {earning.items.map((item, idx) => (
-                        <li key={idx} className={`${earning.textColor} leading-relaxed pl-6 relative opacity-95`}>
-                          <span className="absolute left-0 text-xl font-black">✓</span>
+                        <li key={idx} className={`${earning.textColor} leading-relaxed pl-5 relative opacity-95 text-sm`}>
+                          <span className="absolute left-0 text-lg font-black">✓</span>
                           {item}
                         </li>
                       ))}
@@ -593,9 +593,9 @@ const FeederHub = () => {
           </div>
 
           {/* Bottom CTA Section */}
-          <div className="mt-20 text-center">
-            <div className="inline-block bg-white rounded-full px-8 py-4 shadow-lg">
-              <p className="text-lg font-semibold text-[#191919]">
+          <div className="mt-12 text-center">
+            <div className="inline-block bg-white rounded-full px-6 py-3 shadow-lg">
+              <p className="text-base font-semibold text-[#191919]">
                 <span className="text-[#FF6B00] font-black">Ready to start earning?</span> Sign up above to get started.
               </p>
             </div>
