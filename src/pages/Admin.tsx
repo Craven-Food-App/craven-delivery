@@ -28,7 +28,7 @@ import { TestDiamondExclusiveOrders } from '@/components/testing/TestDiamondExcl
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Users, Store, Car, ShoppingBag, MessageCircle, Bell, DollarSign, Tags, GraduationCap, FileCheck, Shield, ChevronRight, Package, Settings, AlertCircle, TrendingUp, LifeBuoy, FileText, TestTube, Zap, Database, Clock, Eye, Gem } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, Store, Car, ShoppingBag, MessageCircle, Bell, DollarSign, Tags, GraduationCap, FileCheck, Shield, ChevronRight, Package, Settings, AlertCircle, TrendingUp, LifeBuoy, FileText, TestTube, Zap, Database, Clock, Eye, Gem, Mail } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { cn } from '@/lib/utils';
 import RefundManagement from '@/components/admin/RefundManagement';
@@ -41,6 +41,7 @@ import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
 import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
+import { ResendWaitlistEmail } from '@/pages/admin/ResendWaitlistEmail';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -75,6 +76,7 @@ const Admin: React.FC = () => {
       items: [
         { id: 'driver-applications', label: 'Applications', icon: Users },
         { id: 'driver-waitlist', label: 'Waitlist Management', icon: Clock },
+        { id: 'resend-waitlist-email', label: 'Resend Waitlist Email', icon: Mail },
         { id: 'driver-background', label: 'Background Checks', icon: FileCheck },
         { id: 'driver-background-settings', label: 'BG Check Settings', icon: Settings },
         { id: 'driver-onboarding', label: 'Onboarding', icon: GraduationCap },
@@ -141,6 +143,8 @@ const Admin: React.FC = () => {
         return <ApplicationReview />;
       case 'driver-waitlist':
         return <DriverWaitlistDashboard />;
+      case 'resend-waitlist-email':
+        return <ResendWaitlistEmail />;
       case 'driver-background':
         return <BackgroundCheckDashboard />;
       case 'driver-background-settings':

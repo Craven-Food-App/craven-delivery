@@ -57,10 +57,13 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
   const handleLoginSuccess = () => {
     console.log('Login successful, proceeding to dashboard');
     setShowLogin(false);
+    // MobileFeederLogin already handles routing (onboarding check, etc.)
+    // This callback is only called if user should go to dashboard
     if (onStartFeeding) {
       onStartFeeding();
     } else {
-      navigate('/mobile');
+      // Refresh the page to ensure proper state
+      window.location.href = '/mobile';
     }
   };
 

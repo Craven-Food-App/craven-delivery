@@ -474,17 +474,36 @@ export const MobileDriverDashboard: React.FC = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session && session.user) {
+        // User is logged in - check onboarding and route accordingly
+        const { data: application } = await supabase
+          .from('craver_applications')
+          .select('onboarding_completed_at, status')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!application) {
+          // No application - keep welcome screen visible (they can apply)
+          return;
+        }
+
+        // If onboarding not complete, redirect to enhanced onboarding
+        if (!application.onboarding_completed_at) {
+          window.location.href = '/enhanced-onboarding';
+          return;
+        }
+
+        // Onboarding complete - hide welcome screen and check session persistence
         setShowWelcomeScreen(false);
-        // Initialize session persistence after welcome screen is dismissed
         await checkSessionPersistence();
       } else {
-        // The welcome screen will handle showing the login
-        // This shouldn't normally be reached since login is handled in welcome screen
-        setShowWelcomeScreen(false);
+        // No session - welcome screen will handle showing the login
+        // Keep welcome screen visible
       }
     } catch (error) {
       console.error('handleStartFeeding: Error checking session:', error);
-      setShowWelcomeScreen(false);
+      // On error, keep welcome screen visible
     }
   };
 
@@ -595,8 +614,8 @@ export const MobileDriverDashboard: React.FC = () => {
         // Clear any ongoing timers/intervals
         if (loadingTimer) clearTimeout(loadingTimer);
         if (failsafeTimer) clearTimeout(failsafeTimer);
-        // Redirect to auth page on logout
-        navigate('/driver/auth');
+        // Show welcome screen on logout (not redirect to wrong auth page)
+        setShowWelcomeScreen(true);
         return;
       }
     });
@@ -641,17 +660,27 @@ export const MobileDriverDashboard: React.FC = () => {
   const checkOnboardingAndSession = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // No user - show welcome screen with login
+        return;
+      }
 
-      // Check onboarding completion first
+      // Check application and onboarding status
       const { data: application } = await supabase
         .from('craver_applications')
-        .select('onboarding_completed_at')
+        .select('onboarding_completed_at, status')
         .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      // If onboarding not complete, redirect to enhanced onboarding
-      if (!application?.onboarding_completed_at) {
+      if (!application) {
+        // No application - show welcome screen with login (they can apply)
+        return;
+      }
+
+      // If application exists but onboarding not complete, redirect to enhanced onboarding
+      if (!application.onboarding_completed_at) {
         window.location.href = '/enhanced-onboarding';
         return;
       }
@@ -669,13 +698,14 @@ export const MobileDriverDashboard: React.FC = () => {
       
       if (sessionError) {
         console.error('Session refresh failed:', sessionError);
-        // If session refresh fails, user needs to login again
-        navigate('/driver/auth');
+        // If session refresh fails, show welcome screen with login
+        setShowWelcomeScreen(true);
         return;
       }
       
       if (!session?.user) {
-        navigate('/driver/auth');
+        // No session - show welcome screen with login
+        setShowWelcomeScreen(true);
         return;
       }
       

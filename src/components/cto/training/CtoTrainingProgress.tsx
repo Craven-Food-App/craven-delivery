@@ -75,3 +75,4 @@ const CtoTrainingProgress: React.FC = () => {
 export default CtoTrainingProgress;
 
 
+

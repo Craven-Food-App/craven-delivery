@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, Text, Stack, Checkbox, Alert, Divider, Box } from '@mantine/core';
-import { FileText, Shield, CheckCircle } from 'lucide-react';
+import { Button, Text, Stack, Checkbox, Box } from '@mantine/core';
+import { FileText } from 'lucide-react';
 
 interface TermsAndPrivacyStepProps {
   onNext: (data: any) => void;
@@ -24,49 +24,34 @@ export const TermsAndPrivacyStep: React.FC<TermsAndPrivacyStepProps> = ({ onNext
   };
 
   return (
-    <Card
-      p="lg"
+    <Box
       style={{
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        width: '100%',
+        minHeight: '100vh',
+        padding: '80px 24px 40px',
+        maxWidth: '600px',
+        margin: '0 auto'
       }}
     >
-      <Stack gap="lg">
+      <Stack gap="xl">
         {/* Header */}
-        <Stack align="center" gap="md">
-          <Box
-            style={{
-              padding: 12,
-              backgroundColor: 'rgba(255, 122, 0, 0.1)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <FileText size={48} style={{ color: '#ff7a00' }} />
-          </Box>
-          <div style={{ textAlign: 'center' }}>
-            <Text fw={700} size="xl">Legal Agreements</Text>
-            <Text c="dimmed" size="sm" mt="xs">
-              Please review and accept our legal agreements to continue with your application
-            </Text>
-          </div>
+        <Stack gap="md">
+          <Text fw={700} size="2xl" style={{ fontSize: '32px', color: '#191919' }}>
+            Legal Agreements
+          </Text>
+          <Text size="md" c="dimmed" style={{ lineHeight: '1.6' }}>
+            Please review and accept our legal agreements to continue with your application
+          </Text>
         </Stack>
 
-        {/* Important Notice */}
-        <Alert
-          icon={<Shield size={16} />}
-          title="Before We Start"
-          color="blue"
-        >
-          We need your consent to proceed with your application. Please read each agreement carefully.
-        </Alert>
-
         {/* Terms of Service */}
-        <Card
+        <Box
           p="md"
-          style={{ backgroundColor: 'var(--mantine-color-gray-0)' }}
+          style={{ 
+            backgroundColor: '#F9F9F9',
+            borderRadius: '8px',
+            border: '1px solid #E5E5E5'
+          }}
         >
           <Stack gap="sm">
             <Text fw={600} size="md">Terms of Service</Text>
@@ -96,12 +81,16 @@ export const TermsAndPrivacyStep: React.FC<TermsAndPrivacyStepProps> = ({ onNext
               }
             />
           </Stack>
-        </Card>
+        </Box>
 
         {/* Privacy Policy */}
-        <Card
+        <Box
           p="md"
-          style={{ backgroundColor: 'var(--mantine-color-gray-0)' }}
+          style={{ 
+            backgroundColor: '#F9F9F9',
+            borderRadius: '8px',
+            border: '1px solid #E5E5E5'
+          }}
         >
           <Stack gap="sm">
             <Text fw={600} size="md">Privacy Policy</Text>
@@ -131,32 +120,27 @@ export const TermsAndPrivacyStep: React.FC<TermsAndPrivacyStepProps> = ({ onNext
               }
             />
           </Stack>
-        </Card>
-
-        <Divider />
+        </Box>
 
         {/* Continue Button */}
-        <Button
-          size="lg"
-          fullWidth
-          disabled={!termsAccepted || !privacyAccepted}
-          onClick={handleContinue}
-          leftSection={<CheckCircle size={18} />}
-          style={{
-            height: '50px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            borderRadius: '8px',
-          }}
-          color="#ff7a00"
-        >
-          Continue to Application
-        </Button>
-
-        <Text size="xs" c="dimmed" ta="center">
-          By continuing, you agree to our legal agreements and consent to processing your information
-        </Text>
+        <Box mt="xl">
+          <Button
+            size="lg"
+            fullWidth
+            disabled={!termsAccepted || !privacyAccepted}
+            onClick={handleContinue}
+            style={{
+              height: '56px',
+              fontSize: '16px',
+              fontWeight: 600,
+              borderRadius: '8px',
+              backgroundColor: '#DC2626',
+            }}
+          >
+            Continue
+          </Button>
+        </Box>
       </Stack>
-    </Card>
+    </Box>
   );
 };

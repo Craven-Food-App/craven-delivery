@@ -9,6 +9,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import becomeDriverHero from "@/assets/20251002_2239_Animated-Logo-Driver_remix_01k6kyy1m7f108g2r5qjd0a8x8.png";
+import { PhoneVerificationModal } from "@/components/feeder/PhoneVerificationModal";
 
 const FeederHub = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const FeederHub = () => {
   const [countryCode, setCountryCode] = useState("+1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -51,6 +53,14 @@ const FeederHub = () => {
     fetchMarketingSettings();
   }, []);
 
+  // Debug: Log when verification modal state changes
+  useEffect(() => {
+    console.log('Verification modal state changed:', showVerificationModal);
+    if (showVerificationModal) {
+      console.log('Modal should be visible now. Phone:', phoneNumber, 'Email:', emailAddress, 'Country Code:', countryCode);
+    }
+  }, [showVerificationModal, phoneNumber, emailAddress, countryCode]);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPhoneNumber(formatPhoneNumber(e.target.value));
   };
@@ -65,78 +75,13 @@ const FeederHub = () => {
     return password;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!phoneNumber || !emailAddress) {
-      toast.error('Please enter both phone number and email address');
-      return;
-    }
-
-    console.log('Form submitted, phone:', phoneNumber, 'email:', emailAddress);
+  const createAccountAfterVerification = async () => {
     setIsSubmitting(true);
-
     try {
       // Format phone number (remove formatting, keep only digits)
       const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
       
-      // Check if user is already logged in
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      console.log('Current user check:', currentUser ? 'Logged in' : 'Not logged in');
-      
-      if (currentUser) {
-        // User is logged in - check if they already have an application
-        const { data: existingApp } = await supabase
-          .from('feeder_applications')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
-
-        if (existingApp) {
-          toast.error('You already have an application. Please check your account.');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // For logged-in users, skip verification and proceed
-        console.log('User logged in, skipping verification');
-        localStorage.setItem('feeder_signup_email', emailAddress);
-        localStorage.setItem('feeder_signup_phone', formattedPhone);
-
-        navigate('/driver-onboarding/apply', { 
-          state: { phone: formattedPhone, email: emailAddress } 
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check if email or phone exists in user_profiles
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('user_id, email, phone')
-        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
-        .maybeSingle();
-
-      // Check if phone or email exists in feeder_applications
-      const { data: existingApplication } = await supabase
-        .from('feeder_applications')
-        .select('id, email, phone')
-        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
-        .maybeSingle();
-
-      if (existingProfile || existingApplication) {
-        const conflictType = existingProfile?.email === emailAddress || existingApplication?.email === emailAddress
-          ? 'email'
-          : 'phone';
-        toast.error(`This ${conflictType} is already registered. Please login or use a different ${conflictType}.`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      // All checks passed - skip verification and proceed directly
-      console.log('All checks passed, skipping verification and proceeding directly');
-      
-      // Create account without phone verification
+      // Create account after phone verification
       const tempPassword = generateSecurePassword();
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailAddress,
@@ -168,12 +113,14 @@ const FeederHub = () => {
         ) {
           toast.error('An account with this email already exists. Please login.');
           setIsSubmitting(false);
+          setShowVerificationModal(false);
           return;
         }
         // For other errors, still show error but don't proceed
         console.error('Signup error:', authError);
         toast.error(authError.message || 'Failed to create account. Please try again.');
         setIsSubmitting(false);
+        setShowVerificationModal(false);
         return;
       }
 
@@ -181,6 +128,7 @@ const FeederHub = () => {
       if (!authData || !authData.user) {
         toast.error('An account with this email already exists. Please login.');
         setIsSubmitting(false);
+        setShowVerificationModal(false);
         return;
       }
 
@@ -188,6 +136,7 @@ const FeederHub = () => {
       if (!authData.user || !authData.user.id) {
         toast.error('Failed to create account. Please try again or login if you already have an account.');
         setIsSubmitting(false);
+        setShowVerificationModal(false);
         return;
       }
 
@@ -246,6 +195,85 @@ const FeederHub = () => {
         state: { phone: formattedPhone, email: emailAddress } 
       });
       setIsSubmitting(false);
+      setShowVerificationModal(false);
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      toast.error(error.message || 'Failed to create account. Please try again.');
+      setIsSubmitting(false);
+      setShowVerificationModal(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!phoneNumber || !emailAddress) {
+      toast.error('Please enter both phone number and email address');
+      return;
+    }
+
+    console.log('Form submitted, phone:', phoneNumber, 'email:', emailAddress);
+    setIsSubmitting(true);
+
+    try {
+      // Format phone number (remove formatting, keep only digits)
+      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
+      
+      // Check if user is already logged in
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('Current user check:', currentUser ? 'Logged in' : 'Not logged in');
+      
+      if (currentUser) {
+        // User is logged in - check if they already have an application
+        const { data: existingApp } = await supabase
+          .from('feeder_applications')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (existingApp) {
+          toast.error('You already have an application. Please check your account.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Even for logged-in users, require phone verification for new signups
+        console.log('User logged in, but requiring phone verification for new signup');
+        // Continue to verification modal below
+      }
+
+      // Check if email or phone exists in user_profiles
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id, email, phone')
+        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .maybeSingle();
+
+      // Check if phone or email exists in feeder_applications
+      const { data: existingApplication } = await supabase
+        .from('feeder_applications')
+        .select('id, email, phone')
+        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .maybeSingle();
+
+      if (existingProfile || existingApplication) {
+        const conflictType = existingProfile?.email === emailAddress || existingApplication?.email === emailAddress
+          ? 'email'
+          : 'phone';
+        toast.error(`This ${conflictType} is already registered. Please login or use a different ${conflictType}.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // All checks passed - show phone verification modal
+      console.log('All checks passed, showing phone verification modal');
+      console.log('Phone:', phoneNumber, 'Email:', emailAddress, 'Country Code:', countryCode);
+      setIsSubmitting(false);
+      // Force a re-render by using a small delay
+      requestAnimationFrame(() => {
+        console.log('Setting showVerificationModal to true');
+        setShowVerificationModal(true);
+      });
     } catch (error: any) {
       console.error('Error validating:', error);
       toast.error(error.message || 'Failed to validate. Please try again.');
@@ -497,6 +525,20 @@ const FeederHub = () => {
       </section>
 
       <Footer />
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        open={showVerificationModal}
+        phoneNumber={phoneNumber}
+        countryCode={countryCode}
+        email={emailAddress}
+        onVerified={createAccountAfterVerification}
+        onClose={() => {
+          console.log('Closing verification modal');
+          setShowVerificationModal(false);
+          setIsSubmitting(false);
+        }}
+      />
     </div>
   );
 };

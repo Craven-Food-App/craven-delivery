@@ -48,3 +48,4 @@ $$;
 -- Add comment
 COMMENT ON TABLE public.phone_verifications IS 'Stores temporary phone verification codes for Feeder signup process';
 
+

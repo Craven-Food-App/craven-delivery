@@ -15,6 +15,7 @@ import OrderHistory from "./pages/OrderHistory";
 import DriverAuth from "./pages/DriverAuth";
 import FeederHub from "./pages/FeederHub";
 import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
+import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
@@ -595,6 +596,7 @@ const App = () => {
           <Route path="/driver/auth" element={<DriverAuth />} />
           <Route path="/feeder" element={<FeederHub />} />
           <Route path="/independent-contractor-agreement" element={<IndependentContractorAgreement />} />
+          <Route path="/feeder-privacy-policy" element={<FeederPrivacyPolicy />} />
           
           {/* New Driver Application Wizard (Full Page Flow) */}
           <Route path="/driver-onboarding/apply" element={<DriverApplicationWizard />} />

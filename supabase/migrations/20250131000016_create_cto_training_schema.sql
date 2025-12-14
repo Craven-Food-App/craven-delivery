@@ -200,3 +200,4 @@ TO authenticated
 WITH CHECK (auth.uid() = user_id OR public.is_cto_or_admin(auth.uid()));
 
 
+

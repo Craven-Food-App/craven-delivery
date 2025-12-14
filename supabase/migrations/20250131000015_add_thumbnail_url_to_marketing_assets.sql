@@ -19,3 +19,4 @@ END $$;
 COMMENT ON COLUMN public.marketing_assets.thumbnail_url IS 'Thumbnail/preview image URL for videos';
 
 
+

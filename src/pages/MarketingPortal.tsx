@@ -5,6 +5,7 @@ import { PromotionalBannerManager } from '@/components/admin/PromotionalBannerMa
 import { HeroImageManager } from '@/components/admin/HeroImageManager';
 import { FeederHeroImageManager } from '@/components/admin/FeederHeroImageManager';
 import { ICADocumentManager } from '@/components/admin/ICADocumentManager';
+import { ApplicationBackgroundImageManager } from '@/components/admin/ApplicationBackgroundImageManager';
 import { CustomerManagement } from '@/components/admin/CustomerManagement';
 import { AnalyticsDashboard } from '@/components/admin/AnalyticsDashboard';
 import { ReferralProgram } from '@/components/ReferralProgram';
@@ -146,6 +147,7 @@ const MarketingPortal: React.FC = () => {
         { id: 'promotional-banners', label: 'Promotional Banners', icon: ImageIcon },
         { id: 'hero-image', label: 'Hero Image', icon: ImageIcon },
         { id: 'feeder-hero-image', label: 'Feeder Hero Image', icon: ImageIcon },
+        { id: 'application-background-image', label: 'Application Background', icon: ImageIcon },
         { id: 'ica-document', label: 'ICA Document', icon: FileText },
         { id: 'referral-program', label: 'Referral Program', icon: UserPlus },
         { id: 'loyalty-program', label: 'Loyalty Program', icon: Award },
@@ -243,6 +245,8 @@ const MarketingPortal: React.FC = () => {
         return <HeroImageManager />;
       case 'feeder-hero-image':
         return <FeederHeroImageManager />;
+      case 'application-background-image':
+        return <ApplicationBackgroundImageManager />;
       case 'ica-document':
         return <ICADocumentManager />;
       case 'referral-program':

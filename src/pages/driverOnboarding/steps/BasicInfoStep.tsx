@@ -262,7 +262,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
 
       // 4. Check if application already exists
       const { data: existingApp } = await supabase
-        .from('feeder_applications')
+        .from('craver_applications')
         .select('id, waitlist_position')
         .eq('user_id', userId)
         .maybeSingle();
@@ -274,7 +274,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
       } else {
         // Create feeder application (waitlisted)
         const { data: newAppData, error: appError } = await supabase
-          .from('feeder_applications')
+          .from('craver_applications')
           .insert({
             user_id: userId,
           first_name: firstName,
@@ -333,30 +333,92 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         });
       }
 
-      // 6. Send waitlist email
+      // 6. Get waitlist position (might be calculated by trigger)
+      let waitlistPosition = appData.waitlist_position;
+      if (!waitlistPosition && appData.id) {
+        try {
+          const { data: positionData, error: positionError } = await supabase.rpc('get_driver_queue_position', {
+            driver_uuid: appData.id
+          });
+          if (!positionError && positionData && positionData[0]) {
+            waitlistPosition = positionData[0].queue_position;
+          }
+        } catch (positionErr) {
+          console.warn('Could not fetch waitlist position:', positionErr);
+        }
+      }
+
+      // 7. Send waitlist email
       try {
+        const emailPayload = {
+          driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
+          driverEmail: values.email,
+          city: detectedLocation?.city || '',
+          state: detectedLocation?.state || '',
+          waitlistPosition: waitlistPosition || 0,
+          location: regionName,
+          emailType: 'waitlist' as const
+        };
+
+        console.log('Sending waitlist email with payload:', { ...emailPayload, driverEmail: values.email });
+
         const emailResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-driver-waitlist-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({
-            driverName: `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim(),
-            driverEmail: values.email,
-            city: detectedLocation?.city || '',
-            state: detectedLocation?.state || '',
-            waitlistPosition: appData.waitlist_position,
-            location: regionName,
-            emailType: 'waitlist'
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
+        const responseText = await emailResponse.text();
+        console.log('Email response status:', emailResponse.status);
+        console.log('Email response text:', responseText);
+
         if (!emailResponse.ok) {
-          console.log('Warning: Waitlist email sending failed');
+          let errorData;
+          try {
+            errorData = JSON.parse(responseText);
+          } catch (e) {
+            errorData = { error: responseText };
+          }
+          
+          console.error('Waitlist email sending failed:', {
+            status: emailResponse.status,
+            statusText: emailResponse.statusText,
+            error: errorData
+          });
+          
+          toast({
+            title: "Email Warning",
+            description: `Application submitted, but email notification failed: ${errorData.error || 'Unknown error'}. Please check your email inbox.`,
+            variant: "default",
+          });
+        } else {
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (e) {
+            result = { message: responseText };
+          }
+          console.log('Waitlist email sent successfully:', result);
+          
+          if (result.error) {
+            console.error('Email function returned error:', result.error);
+            toast({
+              title: "Email Warning",
+              description: `Application submitted, but email notification failed: ${result.error}. Please check your email inbox.`,
+              variant: "default",
+            });
+          }
         }
-      } catch (emailError) {
-        console.log('Warning: Waitlist email sending error:', emailError);
+      } catch (emailError: any) {
+        console.error('Waitlist email sending error:', emailError);
+        toast({
+          title: "Email Warning",
+          description: `Application submitted, but email notification failed: ${emailError.message || 'Network error'}. Please check your email inbox.`,
+          variant: "default",
+        });
       }
 
       // Clear localStorage after successful submission
@@ -392,23 +454,23 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
   };
 
   return (
-    <Card
-      p="xl"
+    <Box
       style={{
-        borderRadius: '12px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        backgroundColor: 'white',
+        width: '100%',
+        minHeight: '100vh',
+        padding: '80px 24px 40px',
         maxWidth: '600px',
-        margin: '0 auto'
+        margin: '0 auto',
+        backgroundColor: '#FFFFFF'
       }}
     >
-      <Stack gap="lg">
+      <Stack gap="xl">
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <Text fw={700} size="xl" style={{ fontSize: '24px', color: '#191919' }}>
+        <Stack gap="xs">
+          <Text fw={700} size="2xl" style={{ fontSize: '32px', color: '#191919' }}>
             Let's sign you up to Feed!
           </Text>
-        </div>
+        </Stack>
 
         {/* Form */}
         <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -577,6 +639,6 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
           </Stack>
         </form>
       </Stack>
-    </Card>
+    </Box>
   );
 };
