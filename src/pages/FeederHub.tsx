@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import becomeDriverHero from "@/assets/20251002_2239_Animated-Logo-Driver_remix_01k6kyy1m7f108g2r5qjd0a8x8.png";
 import { PhoneVerificationModal } from "@/components/feeder/PhoneVerificationModal";
+import { validateAndSanitizeEmail, validateAndSanitizePhone } from "@/utils/validation";
 
 const FeederHub = () => {
   const navigate = useNavigate();
@@ -92,8 +93,26 @@ const FeederHub = () => {
   const createAccountAfterVerification = async () => {
     setIsSubmitting(true);
     try {
+      // Validate and sanitize inputs again (defense in depth)
+      const emailValidation = validateAndSanitizeEmail(emailAddress);
+      if (!emailValidation.valid) {
+        toast.error('Invalid email address');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const phoneValidation = validateAndSanitizePhone(phoneNumber, countryCode);
+      if (!phoneValidation.valid) {
+        toast.error('Invalid phone number');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const sanitizedEmail = emailValidation.sanitized;
+      const sanitizedPhone = phoneValidation.sanitized;
+
       // Format phone number (remove formatting, keep only digits)
-      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
+      const formattedPhone = countryCode + sanitizedPhone.replace(/\D/g, '');
       
       // Generate a random preset password for this user
       const presetPassword = generatePresetPassword();
@@ -101,7 +120,7 @@ const FeederHub = () => {
       // Create account after phone verification with preset password
       // User will be required to change password on first login
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: emailAddress,
+        email: sanitizedEmail,
         password: presetPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/driver-onboarding/apply`,
@@ -174,7 +193,7 @@ const FeederHub = () => {
           .insert({
             user_id: authData.user.id,
             phone: formattedPhone,
-            email: emailAddress,
+            email: sanitizedEmail,
             role: 'driver'
           });
 
@@ -188,7 +207,7 @@ const FeederHub = () => {
           .from('user_profiles')
           .update({ 
             phone: formattedPhone,
-            email: emailAddress,
+            email: sanitizedEmail,
             role: 'driver'
           })
           .eq('user_id', authData.user.id);
@@ -199,7 +218,7 @@ const FeederHub = () => {
       }
 
       // Save to localStorage for pre-filling
-      localStorage.setItem('feeder_signup_email', emailAddress);
+      localStorage.setItem('feeder_signup_email', sanitizedEmail);
       localStorage.setItem('feeder_signup_phone', formattedPhone);
 
       // Mark user as needing password reset on first login
@@ -214,8 +233,8 @@ const FeederHub = () => {
       try {
         await supabase.functions.invoke('send-driver-welcome-email', {
           body: {
-            driverName: emailAddress.split('@')[0],
-            driverEmail: emailAddress,
+            driverName: sanitizedEmail.split('@')[0],
+            driverEmail: sanitizedEmail,
             presetPassword: presetPassword,
             isNewSignup: true
           }
@@ -233,7 +252,7 @@ const FeederHub = () => {
 
       // Navigate to driver onboarding with email and phone
       navigate('/driver-onboarding/apply', { 
-        state: { phone: formattedPhone, email: emailAddress } 
+        state: { phone: formattedPhone, email: sanitizedEmail } 
       });
       setIsSubmitting(false);
       setShowVerificationModal(false);
@@ -253,12 +272,29 @@ const FeederHub = () => {
       return;
     }
 
-    console.log('Form submitted, phone:', phoneNumber, 'email:', emailAddress);
+    // Validate and sanitize inputs
+    const emailValidation = validateAndSanitizeEmail(emailAddress);
+    if (!emailValidation.valid) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    const phoneValidation = validateAndSanitizePhone(phoneNumber, countryCode);
+    if (!phoneValidation.valid) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    // Use sanitized values
+    const sanitizedEmail = emailValidation.sanitized;
+    const sanitizedPhone = phoneValidation.sanitized;
+
+    console.log('Form submitted, phone:', sanitizedPhone, 'email:', sanitizedEmail);
     setIsSubmitting(true);
 
     try {
       // Format phone number (remove formatting, keep only digits)
-      const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
+      const formattedPhone = countryCode + sanitizedPhone.replace(/\D/g, '');
       
       // Check if user is already logged in
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -287,18 +323,18 @@ const FeederHub = () => {
       const { data: existingProfile } = await supabase
         .from('user_profiles')
         .select('user_id, email, phone')
-        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .or(`email.eq.${sanitizedEmail},phone.eq.${formattedPhone}`)
         .maybeSingle();
 
       // Check if phone or email exists in feeder_applications
       const { data: existingApplication } = await supabase
         .from('feeder_applications')
         .select('id, email, phone')
-        .or(`email.eq.${emailAddress},phone.eq.${formattedPhone}`)
+        .or(`email.eq.${sanitizedEmail},phone.eq.${formattedPhone}`)
         .maybeSingle();
 
       if (existingProfile || existingApplication) {
-        const conflictType = existingProfile?.email === emailAddress || existingApplication?.email === emailAddress
+        const conflictType = existingProfile?.email === sanitizedEmail || existingApplication?.email === sanitizedEmail
           ? 'email'
           : 'phone';
         toast.error(`This ${conflictType} is already registered. Please login or use a different ${conflictType}.`);
