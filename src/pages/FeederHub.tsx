@@ -65,14 +65,28 @@ const FeederHub = () => {
     setPhoneNumber(formatPhoneNumber(e.target.value));
   };
 
-  const generateSecurePassword = () => {
+  // Generate a random preset password for new drivers
+  const generatePresetPassword = () => {
     // Generate a secure random password
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
+    // Format: [RandomChars][Number][SpecialChar][RandomChars][Number]
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Exclude confusing letters
+    const lowercase = 'abcdefghijkmnpqrstuvwxyz'; // Exclude confusing letters
+    const numbers = '23456789'; // Exclude 0, 1
+    const specialChars = '!@#$%&*';
+    
+    // Generate random parts
+    const getRandomChar = (chars: string) => chars[Math.floor(Math.random() * chars.length)];
+    const getRandomString = (length: number, chars: string) => {
+      return Array.from({ length }, () => getRandomChar(chars)).join('');
+    };
+    
+    const part1 = getRandomString(4, uppercase + lowercase); // 4 random letters
+    const num1 = getRandomString(3, numbers); // 3-digit number
+    const special = getRandomChar(specialChars); // 1 special char
+    const part2 = getRandomString(3, uppercase + lowercase); // 3 random letters
+    const num2 = getRandomString(2, numbers); // 2-digit number
+    
+    return `${part1}${num1}${special}${part2}${num2}`;
   };
 
   const createAccountAfterVerification = async () => {
@@ -81,11 +95,14 @@ const FeederHub = () => {
       // Format phone number (remove formatting, keep only digits)
       const formattedPhone = countryCode + phoneNumber.replace(/\D/g, '');
       
-      // Create account after phone verification
-      const tempPassword = generateSecurePassword();
+      // Generate a random preset password for this user
+      const presetPassword = generatePresetPassword();
+      
+      // Create account after phone verification with preset password
+      // User will be required to change password on first login
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: emailAddress,
-        password: tempPassword,
+        password: presetPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/driver-onboarding/apply`,
           data: {
@@ -185,10 +202,34 @@ const FeederHub = () => {
       localStorage.setItem('feeder_signup_email', emailAddress);
       localStorage.setItem('feeder_signup_phone', formattedPhone);
 
-      // Send password reset email so user can set their own password
-      await supabase.auth.resetPasswordForEmail(emailAddress, {
-        redirectTo: `${window.location.origin}/driver-onboarding/apply?reset=true`,
-      });
+      // Mark user as needing password reset on first login
+      await supabase
+        .from('user_profiles')
+        .update({ 
+          needs_password_reset: true 
+        })
+        .eq('user_id', authData.user.id);
+
+      // Send welcome email with the generated preset password
+      try {
+        await supabase.functions.invoke('send-driver-welcome-email', {
+          body: {
+            driverName: emailAddress.split('@')[0],
+            driverEmail: emailAddress,
+            presetPassword: presetPassword,
+            isNewSignup: true
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the signup if email fails
+      }
+
+      // Show success message with instructions
+      toast.success(
+        'Account created! Please check your email for your login credentials. You will be asked to set a new password on first login.',
+        { duration: 10000 }
+      );
 
       // Navigate to driver onboarding with email and phone
       navigate('/driver-onboarding/apply', { 

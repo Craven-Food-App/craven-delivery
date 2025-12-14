@@ -219,6 +219,24 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       if (authResult.error) throw authResult.error;
 
       if (authResult.data.user) {
+        // Check if user needs to reset password on first login
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('needs_password_reset')
+          .eq('user_id', authResult.data.user.id)
+          .maybeSingle();
+
+        if (profile?.needs_password_reset) {
+          // Redirect to password reset page
+          navigate('/mobile/reset-password?firstLogin=true');
+          toast({
+            title: "Password Reset Required",
+            description: "Please set a new password to continue.",
+          });
+          setLoading(false);
+          return;
+        }
+
         await handlePostLoginRouting(authResult.data.user.id);
       }
 
@@ -377,10 +395,45 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
           <button
             type="button"
             className="w-full text-center text-sm text-gray-600 hover:text-orange-500 underline"
-            onClick={() => toast({
-              title: "Password Reset",
-              description: "Please contact support to reset your password.",
-            })}
+            onClick={async () => {
+              if (!email && loginMethod === 'email') {
+                toast({
+                  title: "Email Required",
+                  description: "Please enter your email address first.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              if (loginMethod === 'phone') {
+                toast({
+                  title: "Email Required",
+                  description: "Please switch to email login to reset your password.",
+                  variant: "destructive",
+                });
+                return;
+              }
+
+              try {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/mobile?reset=true`,
+                });
+
+                if (error) throw error;
+
+                toast({
+                  title: "Password Reset Email Sent",
+                  description: "Please check your email for instructions to reset your password.",
+                });
+              } catch (error: any) {
+                console.error('Password reset error:', error);
+                toast({
+                  title: "Error",
+                  description: error.message || "Failed to send password reset email. Please try again.",
+                  variant: "destructive",
+                });
+              }
+            }}
           >
             Forgot your password?
           </button>

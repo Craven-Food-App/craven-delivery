@@ -276,11 +276,104 @@ async function sendUpcomingActivationEmail(supabase, driver, region) {
  */
 async function sendActivationEmail(supabase, driver) {
   try {
+    // Generate a random password
+    const generatePassword = () => {
+      const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const lowercase = 'abcdefghijkmnpqrstuvwxyz';
+      const numbers = '23456789';
+      const specialChars = '!@#$%&*';
+      
+      const getRandomChar = (chars) => chars[Math.floor(Math.random() * chars.length)];
+      const getRandomString = (length, chars) => {
+        return Array.from({ length }, () => getRandomChar(chars)).join('');
+      };
+      
+      const part1 = getRandomString(4, uppercase + lowercase);
+      const num1 = getRandomString(3, numbers);
+      const special = getRandomChar(specialChars);
+      const part2 = getRandomString(3, uppercase + lowercase);
+      const num2 = getRandomString(2, numbers);
+      
+      return `${part1}${num1}${special}${part2}${num2}`;
+    };
+    
+    let presetPassword = generatePassword();
+    
+    // Check if user has an auth account and manage password
+    try {
+      const { data: authUsers, error: authListError } = await supabase.auth.admin.listUsers();
+      
+      let userExists = false;
+      let userId = null;
+      
+      if (!authListError && authUsers) {
+        const existingUser = authUsers.users.find(u => u.email === driver.email);
+        if (existingUser) {
+          userExists = true;
+          userId = existingUser.id;
+        }
+      }
+      
+      if (userExists && userId) {
+        // Update existing user's password
+        const { error: updatePasswordError } = await supabase.auth.admin.updateUserById(
+          userId,
+          { password: presetPassword }
+        );
+        
+        if (updatePasswordError) {
+          console.error('Error updating user password:', updatePasswordError);
+        } else {
+          console.log('Password updated for existing user:', driver.email);
+        }
+        
+        // Mark user as needing password reset
+        await supabase
+          .from('user_profiles')
+          .update({ needs_password_reset: true })
+          .eq('user_id', userId);
+      } else {
+        // Create new auth account
+        const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+          email: driver.email,
+          password: presetPassword,
+          email_confirm: true,
+          user_metadata: {
+            first_name: driver.first_name,
+            last_name: driver.last_name,
+            user_type: 'driver'
+          }
+        });
+        
+        if (signUpError) {
+          console.error('Error creating auth account:', signUpError);
+        } else if (newUser.user) {
+          console.log('Auth account created for:', driver.email);
+          userId = newUser.user.id;
+          
+          // Ensure user profile exists and mark for password reset
+          await supabase
+            .from('user_profiles')
+            .upsert({
+              user_id: newUser.user.id,
+              email: driver.email,
+              role: 'driver',
+              needs_password_reset: true
+            }, { onConflict: 'user_id' });
+        }
+      }
+    } catch (passwordError) {
+      console.error('Error managing user password:', passwordError);
+      // Continue anyway, we'll still send the email
+    }
+    
     const { error } = await supabase.functions.invoke('send-driver-waitlist-email', {
       body: {
         driverName: `${driver.first_name} ${driver.last_name}`,
         driverEmail: driver.email,
         messageType: 'activation',
+        emailType: 'activation',
+        presetPassword: presetPassword,
         activationLink: `${Deno.env.get('SITE_URL')}/driver/activate`
       }
     });

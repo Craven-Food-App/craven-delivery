@@ -13,6 +13,7 @@ interface ApprovalEmailRequest {
   driverName: string;
   driverEmail: string;
   applicationId: string;
+  presetPassword?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -21,11 +22,30 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { driverName, driverEmail, applicationId }: ApprovalEmailRequest = await req.json();
+    const { driverName, driverEmail, applicationId, presetPassword }: ApprovalEmailRequest = await req.json();
 
     console.log(`Sending approval email to ${driverEmail} for application ${applicationId}`);
 
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+
+    // Password section for email
+    const passwordSection = presetPassword ? `
+      <div style="background-color: #fff5ec; border: 2px solid #ff6b00; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
+        <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 20px; font-weight: bold;">🔐 Your Login Credentials</h3>
+        <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.6;">
+          Use these credentials to log in to your account:
+        </p>
+        <div style="background-color: #ffffff; border: 1px solid #ff6b00; border-radius: 6px; padding: 15px; margin: 15px 0;">
+          <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Email:</p>
+          <p style="margin: 0 0 15px 0; color: #ff6b00; font-size: 16px; font-weight: bold; word-break: break-all;">${driverEmail}</p>
+          <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Temporary Password:</p>
+          <p style="margin: 0; color: #ff6b00; font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px;">${presetPassword}</p>
+        </div>
+        <p style="margin: 15px 0 0 0; color: #d32f2f; font-size: 14px; font-weight: 600;">
+          ⚠️ Important: You will be required to change this password when you log in for the first time.
+        </p>
+      </div>
+    ` : '';
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
@@ -58,6 +78,8 @@ const handler = async (req: Request): Promise<Response> => {
                         <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
                           We're excited to inform you that your driver application has been <strong style="color: #ff6b00;">approved</strong>! You're now ready to start delivering with Crave'N.
                         </p>
+                        
+                        ${passwordSection}
                         
                         <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
                           <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">Next Steps:</h3>

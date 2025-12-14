@@ -19,6 +19,7 @@ import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
+import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";
 import AccessGuard from "./components/AccessGuard";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -292,6 +293,7 @@ const App = () => {
                     <MobileDriverDashboard />
                   </AccessGuard>
                 } />
+                <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
                 <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
                 <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
                 <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
@@ -396,6 +398,7 @@ const App = () => {
                   <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
                   <Route path="/mobile" element={<MobileDriverDashboard />} />
                   <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
+                  <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -614,6 +617,7 @@ const App = () => {
           <Route path="/account" element={<CustomerDashboard />} />
           <Route path="/mobile" element={<MobileDriverDashboard />} />
           <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
+          <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
           <Route path="/restaurant/auth" element={<RestaurantAuth />} />
           <Route path="/restaurant/register" element={<RestaurantRegister />} />
           <Route path="/merchant-portal" element={<MerchantPortal />} />

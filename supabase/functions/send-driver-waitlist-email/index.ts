@@ -15,6 +15,8 @@ interface WaitlistEmailRequest {
   waitlistPosition?: number;
   location?: string;
   emailType?: 'waitlist' | 'invitation' | 'activation';
+  messageType?: 'waitlist' | 'invitation' | 'activation' | 'upcoming_activation'; // For backward compatibility
+  presetPassword?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -101,7 +103,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Using Resend API key (first 10 chars):', resendApiKey.substring(0, 10) + '...');
 
-    const { driverName, driverEmail, city, state, waitlistPosition, location, emailType = 'waitlist' }: WaitlistEmailRequest = await req.json();
+    const { driverName, driverEmail, city, state, waitlistPosition, location, emailType, messageType, presetPassword }: WaitlistEmailRequest = await req.json();
+    
+    // Support both emailType and messageType for backward compatibility
+    const effectiveEmailType = emailType || messageType || 'waitlist';
 
     // Validate required fields
     if (!driverName || !driverEmail) {
@@ -114,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Sending ${emailType} email to ${driverEmail}`, {
+    console.log(`Sending ${effectiveEmailType} email to ${driverEmail}`, {
       driverName,
       city,
       state,
@@ -122,11 +127,94 @@ const handler = async (req: Request): Promise<Response> => {
       location
     });
 
+    // Password section for activation emails
+    const passwordSection = presetPassword ? `
+      <div style="background-color: #fff5ec; border: 2px solid #ff6b00; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
+        <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 20px; font-weight: bold;">🔐 Your Login Credentials</h3>
+        <p style="margin: 0 0 15px 0; color: #4a4a4a; font-size: 15px; line-height: 1.6;">
+          Use these credentials to log in to your account:
+        </p>
+        <div style="background-color: #ffffff; border: 1px solid #ff6b00; border-radius: 6px; padding: 15px; margin: 15px 0;">
+          <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Email:</p>
+          <p style="margin: 0 0 15px 0; color: #ff6b00; font-size: 16px; font-weight: bold; word-break: break-all;">${driverEmail}</p>
+          <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Temporary Password:</p>
+          <p style="margin: 0; color: #ff6b00; font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px;">${presetPassword}</p>
+        </div>
+        <p style="margin: 15px 0 0 0; color: #d32f2f; font-size: 14px; font-weight: 600;">
+          ⚠️ Important: You will be required to change this password when you log in for the first time.
+        </p>
+      </div>
+    ` : '';
+
     // Select email template based on type
     let emailHtml = '';
     let subject = '';
     
-    if (emailType === 'invitation') {
+    if (effectiveEmailType === 'activation') {
+      // Activation email template
+      emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 You're Activated!</h1>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 18px;">Welcome to Crave'N!</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 40px;">
+                      <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Hi ${driverName}! 👋</h2>
+                      <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                        Great news! You've been activated and are now ready to start delivering with Crave'N. 🚗✨
+                      </p>
+                      ${passwordSection}
+                      <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
+                        <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">📋 What's Next?</h3>
+                        <ol style="margin: 0; padding-left: 20px; color: #4a4a4a; font-size: 15px; line-height: 1.8;">
+                          <li>Log in to your driver account</li>
+                          <li>Complete your profile setup if needed</li>
+                          <li>Review the driver guidelines</li>
+                          <li>Go online and start accepting deliveries!</li>
+                        </ol>
+                      </div>
+                      <div style="text-align: center; margin: 40px 0 30px 0;">
+                        <a href="https://www.cravenusa.com/mobile" 
+                           style="display: inline-block; background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);">
+                          Access Driver Portal
+                        </a>
+                      </div>
+                      <p style="margin: 20px 0 0 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                        Welcome aboard! 🧡<br>
+                        <strong>The Crave'N Team</strong>
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
+                      <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Happy Delivering! 🚗💨</p>
+                      <p style="margin: 0; color: #898989; font-size: 12px;">
+                        © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+      subject = "🎉 You're Activated! Welcome to Crave'N";
+    } else if (effectiveEmailType === 'invitation') {
       emailHtml = `
         <!DOCTYPE html>
         <html>
