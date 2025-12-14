@@ -101,7 +101,92 @@ const Checkout: React.FC = () => {
     cart.reduce((sum, item) => sum + (item.price_cents * item.quantity), 0), [cart]
   );
 
-  const deliveryFee = 300; // $3.00
+  const [deliveryFee, setDeliveryFee] = useState(300); // Default $3.00
+  const [cravemoreEligible, setCravemoreEligible] = useState(false);
+  const [hasCravemore, setHasCravemore] = useState(false);
+  const [cravemoreAmountNeeded, setCravemoreAmountNeeded] = useState<number | null>(null);
+
+  // Check CraveMore membership and calculate fees
+  useEffect(() => {
+    const checkCravemoreAndCalculateFees = async () => {
+      if (!restaurant || cart.length === 0 || formData.deliveryMethod !== 'delivery') {
+        setDeliveryFee(300);
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Check membership
+        if (user) {
+          const { data: membership } = await supabase
+            .from('user_memberships')
+            .select('status, renews_at')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .single();
+
+          if (membership && (!membership.renews_at || new Date(membership.renews_at) > new Date())) {
+            setHasCravemore(true);
+            
+            // Check eligibility
+            const MIN_SUBTOTAL = 1200; // $12.00
+            if (subtotal >= MIN_SUBTOTAL) {
+              // Check merchant eligibility
+              const { data: merchant } = await supabase
+                .from('merchants')
+                .select('cravemore_eligible')
+                .eq('id', restaurant.id)
+                .single();
+
+              if (merchant?.cravemore_eligible !== false) {
+                setCravemoreEligible(true);
+                setDeliveryFee(0);
+                return;
+              }
+            } else {
+              setCravemoreAmountNeeded(MIN_SUBTOTAL - subtotal);
+            }
+          }
+        }
+
+        // Calculate fees using the function
+        if (formData.address && restaurant.latitude && restaurant.longitude) {
+          // Get coordinates for address (simplified - you may want to use geocoding)
+          const { data: fees, error } = await supabase.functions.invoke('calculate-order-fees', {
+            body: {
+              orderData: {
+                subtotal_cents: subtotal,
+                restaurant_id: restaurant.id,
+                customer_id: user?.id,
+                delivery_address: {
+                  lat: 0, // Would need geocoding
+                  lng: 0,
+                },
+                pickup_address: {
+                  lat: restaurant.latitude,
+                  lng: restaurant.longitude,
+                },
+              },
+            },
+          });
+
+          if (!error && fees?.data) {
+            setDeliveryFee(fees.data.delivery_fee_cents || 300);
+            setCravemoreEligible(fees.data.cravemore_delivery_fee_waived || false);
+          }
+        } else {
+          setDeliveryFee(300);
+        }
+      } catch (error) {
+        console.error('Error checking CraveMore:', error);
+        setDeliveryFee(300);
+      }
+    };
+
+    checkCravemoreAndCalculateFees();
+  }, [cart, subtotal, restaurant, formData.deliveryMethod, formData.address]);
+
   const subtotalAfterPromo = Math.max(0, subtotal - promoDiscount);
   const tax = Math.round((subtotalAfterPromo + deliveryFee) * 0.08); // 8% tax
   const tipAmount = formData.tipType === 'percentage' 
@@ -440,7 +525,33 @@ const Checkout: React.FC = () => {
                       <span>-${(promoDiscount / 100).toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between"><span>Delivery fee</span><span>${(deliveryFee / 100).toFixed(2)}</span></div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Delivery fee</span>
+                      <span className={cravemoreEligible ? 'text-green-600 font-semibold' : ''}>
+                        {cravemoreEligible ? '$0.00' : `$${(deliveryFee / 100).toFixed(2)}`}
+                      </span>
+                    </div>
+                    {cravemoreEligible && (
+                      <p className="text-xs text-green-600">✓ CraveMore benefit applied</p>
+                    )}
+                    {!hasCravemore && formData.deliveryMethod === 'delivery' && (
+                      <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                        <span>CraveMore could waive this fee. </span>
+                        <button 
+                          className="underline font-semibold" 
+                          onClick={() => navigate('/cravemore')}
+                        >
+                          Join now
+                        </button>
+                      </div>
+                    )}
+                    {hasCravemore && !cravemoreEligible && cravemoreAmountNeeded && (
+                      <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                        Add ${(cravemoreAmountNeeded / 100).toFixed(2)} more to unlock $0 delivery fee
+                      </div>
+                    )}
+                  </div>
                   <div className="flex justify-between"><span>Tax</span><span>${(tax / 100).toFixed(2)}</span></div>
                   <div className="flex justify-between"><span>Tip</span><span>${(tipAmount / 100).toFixed(2)}</span></div>
                 </div>

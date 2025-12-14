@@ -218,8 +218,10 @@ const FeederHub = () => {
       }
 
       // Save to localStorage for pre-filling
-      localStorage.setItem('feeder_signup_email', sanitizedEmail);
-      localStorage.setItem('feeder_signup_phone', formattedPhone);
+      // Store in localStorage (less sensitive, but still use secure storage for consistency)
+      const { secureSetItem } = await import('@/utils/storage');
+      secureSetItem('feeder_signup_email', sanitizedEmail, 24); // 24 hour expiration
+      secureSetItem('feeder_signup_phone', formattedPhone, 24);
 
       // Mark user as needing password reset on first login
       await supabase

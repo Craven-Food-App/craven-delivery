@@ -50,6 +50,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CookiePolicy from "./pages/CookiePolicy";
 import CraveMore from "./pages/CraveMore";
+import CraveMoreAccount from "./pages/CraveMoreAccount";
+import CraveMoreSuccess from "./pages/CraveMoreSuccess";
 import ExecutiveSignature from "./pages/ExecutiveSignature";
 import { ExecutiveDocumentPortal } from "./pages/ExecutiveDocumentPortal";
 import ThankYou from "./pages/ThankYou";
@@ -596,6 +598,9 @@ const App = () => {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/crave-more" element={<CraveMore />} />
+          <Route path="/cravemore" element={<CraveMore />} />
+          <Route path="/cravemore/success" element={<CraveMoreSuccess />} />
+          <Route path="/account/cravemore" element={<CraveMoreAccount />} />
           <Route path="/driver/auth" element={<DriverAuth />} />
           <Route path="/feeder" element={<FeederHub />} />
           <Route path="/independent-contractor-agreement" element={<IndependentContractorAgreement />} />

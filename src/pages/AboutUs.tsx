@@ -5,9 +5,45 @@ import { Button } from "@/components/ui/button";
 import { Heart, Target, Users, Truck, Store, Globe, Award, TrendingUp, MapPin, Clock, Star, Zap } from "lucide-react";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { FALLBACK_EXECUTIVES } from "@/data/executiveFallbacks";
+import { isCLevelPosition, getExecRoleFromPosition } from "@/utils/roleUtils";
+
+interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  department?: string;
+}
 
 const AboutUs = () => {
-  const [team, setTeam] = useState<Array<{ name: string; role: string; bio: string }>>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [statsVisible, setStatsVisible] = useState(true); // Default to visible
+  const [hasCheckedFlag, setHasCheckedFlag] = useState(false);
+
+  useEffect(() => {
+    // Check feature flag from database
+    const checkFeatureFlag = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('setting_value')
+          .eq('setting_key', 'feature_about_us_stats_visible')
+          .single();
+
+        if (!error && data?.setting_value) {
+          setStatsVisible(data.setting_value.enabled !== false); // Default to true if not explicitly false
+        }
+        // If no setting exists, keep default (true)
+      } catch (error) {
+        // If setting doesn't exist, keep default (true)
+        console.log('Feature flag not set, using default (visible)');
+      } finally {
+        setHasCheckedFlag(true);
+      }
+    };
+
+    checkFeatureFlag();
+  }, []);
 
   useEffect(() => {
     fetchExecutives();
@@ -15,65 +51,146 @@ const AboutUs = () => {
 
   const fetchExecutives = async () => {
     try {
-      const { data, error } = await supabase
-        .from("employees" as any)
-        .select("id, first_name, last_name, position, department")
-        .in("position", [
-          "CEO",
-          "CFO",
-          "COO",
-          "CTO",
-          "CMO",
-          "CRO",
-          "CPO",
-          "CDO",
-          "CHRO",
-          "CLO",
-          "CSO",
-          "CXO",
-          "Board Member",
-          "Advisor",
-        ])
-        .limit(8);
+      // Fetch from both exec_users and employees tables
+      const [execUsersRes, employeesRes] = await Promise.allSettled([
+        supabase
+          .from("exec_users")
+          .select("id, role, title, department, name, email")
+          .in("role", ["ceo", "cfo", "coo", "cto", "cxo", "cmo", "board_member", "advisor"])
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("employees" as any)
+          .select("id, first_name, last_name, position, department, email")
+          .order("position"),
+      ]);
 
-      if (error) throw error;
+      const execUsersData =
+        execUsersRes.status === "fulfilled" && !execUsersRes.value.error
+          ? execUsersRes.value.data || []
+          : [];
+      const employeesData =
+        employeesRes.status === "fulfilled" && !employeesRes.value.error
+          ? employeesRes.value.data || []
+          : [];
 
-      const formattedTeam = (data || []).map((exec: any) => ({
-        name: `${exec.first_name} ${exec.last_name}`,
-        role: exec.position,
-        bio: `Leadership team member in ${exec.department || exec.position}`,
-      }));
+      const existingEmails = new Set<string>();
+      const teamMembers: TeamMember[] = [];
 
-      // Always ensure Torrance Stroman (Founder & CEO) is at the top
-      const founder = formattedTeam.find(
-        (t) => t.name.toLowerCase().includes("torrance") || t.role.toLowerCase().includes("ceo"),
-      );
-      if (!founder) {
-        formattedTeam.unshift({
+      // Process exec_users
+      execUsersData.forEach((exec: any) => {
+        const email = exec.email?.toLowerCase();
+        if (email) existingEmails.add(email);
+
+        const roleTitle = exec.title || exec.role?.toUpperCase() || "Executive";
+        const displayRole = exec.role === "ceo" ? "CEO & Founder" : roleTitle;
+        const bio = exec.department
+          ? `Leading ${exec.department} operations and strategic initiatives.`
+          : `Executive leadership team member driving company growth and innovation.`;
+
+        teamMembers.push({
+          name: exec.name || exec.title || "Executive",
+          role: displayRole,
+          bio,
+          department: exec.department,
+        });
+      });
+
+      // Process employees with C-level positions
+      employeesData
+        .filter((emp: any) => isCLevelPosition(emp.position))
+        .forEach((emp: any) => {
+          const email = (emp.email || "").toLowerCase();
+          if (email && existingEmails.has(email)) return; // Skip if already added from exec_users
+
+          const name = `${emp.first_name} ${emp.last_name}`;
+          const position = emp.position || "";
+          const bio = emp.department
+            ? `Leading ${emp.department} operations and strategic initiatives.`
+            : `Executive leadership team member driving company growth and innovation.`;
+
+          teamMembers.push({
+            name,
+            role: position,
+            bio,
+            department: emp.department,
+          });
+        });
+
+      // Add fallback executives if not already present
+      FALLBACK_EXECUTIVES.forEach((fallback) => {
+        const emailLower = fallback.email.toLowerCase();
+        if (!existingEmails.has(emailLower)) {
+          const displayRole = fallback.role === "ceo" ? "CEO & Founder" : fallback.title;
+          const bio =
+            fallback.role === "ceo"
+              ? "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities."
+              : fallback.department
+              ? `Leading ${fallback.department} operations and strategic initiatives.`
+              : `Executive leadership team member driving company growth and innovation.`;
+
+          teamMembers.push({
+            name: fallback.name,
+            role: displayRole,
+            bio,
+            department: fallback.department,
+          });
+        }
+      });
+
+      // Sort: CEO first, then by role importance
+      const roleOrder: { [key: string]: number } = {
+        ceo: 0,
+        cfo: 1,
+        coo: 2,
+        cto: 3,
+        cxo: 4,
+        cmo: 5,
+      };
+
+      teamMembers.sort((a, b) => {
+        const aRole = a.role.toLowerCase();
+        const bRole = b.role.toLowerCase();
+        
+        const aKey = Object.keys(roleOrder).find((r) => aRole.includes(r.toLowerCase()));
+        const bKey = Object.keys(roleOrder).find((r) => bRole.includes(r.toLowerCase()));
+        
+        const aOrder = aKey ? roleOrder[aKey] : 999;
+        const bOrder = bKey ? roleOrder[bKey] : 999;
+        
+        return aOrder - bOrder;
+      });
+
+      // Ensure at least Torrance is shown
+      if (teamMembers.length === 0) {
+        teamMembers.push({
           name: "Torrance Stroman",
           role: "CEO & Founder",
           bio: "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities.",
         });
       }
 
-      setTeam(formattedTeam);
+      setTeam(teamMembers);
     } catch (error) {
       console.error("Error fetching executives:", error);
-      // Fallback to Torrance Stroman if database fetch fails
-      setTeam([
-        {
-          name: "Torrance Stroman",
-          role: "CEO & Founder",
-          bio: "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities.",
-        },
-      ]);
+      // Fallback to default executives
+      setTeam(
+        FALLBACK_EXECUTIVES.map((exec) => ({
+          name: exec.name,
+          role: exec.role === "ceo" ? "CEO & Founder" : exec.title,
+          bio:
+            exec.role === "ceo"
+              ? "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities."
+              : `Leading ${exec.department} operations and strategic initiatives.`,
+          department: exec.department,
+        }))
+      );
     }
   };
   const stats = [
     {
       icon: Users,
-      label: "Active Users",
-      value: "20K",
+      label: "Loyal Users",
+      value: "",
     },
     {
       icon: Store,
@@ -141,7 +258,7 @@ const AboutUs = () => {
     },
   ];
 
-  const futureRoles = ["Chief Technology Officer", "VP of Operations", "Head of Marketing", "Director of Partnerships"];
+  const futureRoles = ["COO", "VP of Operations", "Head of Marketing", "Director of Partnerships"];
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -153,27 +270,29 @@ const AboutUs = () => {
             opportunities for drivers in communities everywhere.
           </p>
           <Badge variant="secondary" className="bg-white/20 text-white text-lg px-4 py-2">
-            Founded in 2025 • 100+ Cities • 20K Active Users
+            Founded in 2025 • 100+ Cities • Loyal Users
           </Badge>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-12">
         {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="text-center">
-                <CardContent className="p-6">
-                  <Icon className="h-8 w-8 mx-auto mb-3 text-primary" />
-                  <h3 className="text-2xl font-bold text-primary">{stat.value}</h3>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {statsVisible && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={index} className="text-center">
+                  <CardContent className="p-6">
+                    <Icon className="h-8 w-8 mx-auto mb-3 text-primary" />
+                    {stat.value && <h3 className="text-2xl font-bold text-primary mb-2">{stat.value}</h3>}
+                    <p className={`${stat.value ? 'text-sm text-muted-foreground' : 'text-lg font-semibold text-primary'}`}>{stat.label}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* Mission & Vision */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
@@ -231,30 +350,6 @@ const AboutUs = () => {
           </div>
         </div>
 
-        {/* Company Timeline */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">Our Journey</h2>
-          <div className="max-w-4xl mx-auto">
-            {timeline.map((item, index) => (
-              <div key={index} className="flex gap-6 mb-8">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-                    {item.year.slice(-2)}
-                  </div>
-                  {index !== timeline.length - 1 && <div className="w-px h-16 bg-border mt-4"></div>}
-                </div>
-                <div className="flex-1 pb-8">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-semibold">{item.title}</h3>
-                    <Badge variant="outline">{item.year}</Badge>
-                  </div>
-                  <p className="text-muted-foreground">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Leadership Team */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-center mb-4">Leadership Team</h2>
@@ -294,35 +389,6 @@ const AboutUs = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Awards & Recognition */}
-        <Card className="mb-16">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-center">
-              <Award className="h-6 w-6 text-primary" />
-              Awards & Recognition
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div>
-                <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
-                <h4 className="font-semibold mb-2">Best Food Delivery App 2025</h4>
-                <p className="text-sm text-muted-foreground">TechCrunch Awards</p>
-              </div>
-              <div>
-                <Star className="h-12 w-12 text-yellow-500 mx-auto mb-3" />
-                <h4 className="font-semibold mb-2">Customer Choice Award</h4>
-                <p className="text-sm text-muted-foreground">App Store Recognition</p>
-              </div>
-              <div>
-                <TrendingUp className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <h4 className="font-semibold mb-2">Fastest Growing Platform</h4>
-                <p className="text-sm text-muted-foreground">Industry Report 2025</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Company Culture */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">

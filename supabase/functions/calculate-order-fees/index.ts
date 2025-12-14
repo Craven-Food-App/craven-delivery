@@ -75,6 +75,52 @@ serve(async (req) => {
       deliveryFeeCents = Math.round(deliveryFeeCents * settings.peak_hour_multiplier);
     }
 
+    // Check CraveMore membership eligibility for $0 delivery fee
+    let cravemore_delivery_fee_waived = false;
+    if (orderData.customer_id) {
+      // Check if user has active CraveMore membership
+      const { data: membership } = await supabase
+        .from('user_memberships')
+        .select('status, renews_at')
+        .eq('user_id', orderData.customer_id)
+        .eq('status', 'active')
+        .single();
+
+      if (membership && (!membership.renews_at || new Date(membership.renews_at) > new Date())) {
+        // Check eligibility: subtotal >= $12, merchant eligible, zone eligible
+        const MIN_SUBTOTAL_CENTS = 1200;
+        
+        if (orderData.subtotal_cents >= MIN_SUBTOTAL_CENTS) {
+          // Check merchant eligibility
+          const { data: merchant } = await supabase
+            .from('merchants')
+            .select('cravemore_eligible')
+            .eq('id', orderData.restaurant_id)
+            .single();
+
+          // Check zone eligibility (if zones table exists)
+          let zoneEligible = true;
+          try {
+            if (orderData.zone_id) {
+              const { data: zone } = await supabase
+                .from('zones')
+                .select('cravemore_eligible')
+                .eq('id', orderData.zone_id)
+                .single();
+              zoneEligible = zone?.cravemore_eligible !== false;
+            }
+          } catch {
+            // Zones table might not exist, default to eligible
+          }
+
+          if (merchant?.cravemore_eligible !== false && zoneEligible) {
+            cravemore_delivery_fee_waived = true;
+            deliveryFeeCents = 0;
+          }
+        }
+      }
+    }
+
     const restaurantCommissionCents = Math.round(orderData.subtotal_cents * (settings.restaurant_commission_percent / 100));
     
     const totalCents = orderData.subtotal_cents + serviceFeeCents + deliveryFeeCents;
@@ -92,6 +138,7 @@ serve(async (req) => {
         craven_earnings_cents: craveNEarningsCents,
         distance_miles: distance,
         is_peak_hour: isPeakHour,
+        cravemore_delivery_fee_waived: cravemore_delivery_fee_waived,
         fee_breakdown: {
           base_delivery_fee: settings.delivery_fee_base_cents,
           distance_fee: Math.round(distance * settings.delivery_fee_per_mile_cents),

@@ -95,6 +95,183 @@ serve(async (req) => {
         break;
       }
 
+      // CraveMore subscription events
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const planKey = session.metadata?.plan_key;
+        const userId = session.metadata?.user_id;
+        const foundingMember = session.metadata?.founding_member === 'true';
+
+        if (!planKey || !userId) {
+          console.log('Missing plan_key or user_id in checkout session metadata');
+          break;
+        }
+
+        console.log('Processing CraveMore checkout completion:', { planKey, userId, foundingMember });
+
+        if (planKey === 'lifetime') {
+          // Handle lifetime one-time payment
+          const { error: membershipError } = await supabase
+            .from('user_memberships')
+            .upsert({
+              user_id: userId,
+              plan_key: planKey,
+              status: 'active',
+              started_at: new Date().toISOString(),
+              renews_at: null, // Lifetime never renews
+              provider: 'stripe',
+              provider_customer_id: session.customer as string,
+              provider_subscription_id: null,
+              founding_member: foundingMember,
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (membershipError) {
+            console.error('Failed to create lifetime membership:', membershipError);
+          } else {
+            // Increment lifetime cap used
+            await supabase.rpc('increment_lifetime_cap', {});
+            console.log('Lifetime membership created successfully');
+          }
+        } else {
+          // Handle recurring subscription
+          const subscriptionId = session.subscription as string;
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+          const renewsAt = new Date(subscription.current_period_end * 1000).toISOString();
+
+          const { error: membershipError } = await supabase
+            .from('user_memberships')
+            .upsert({
+              user_id: userId,
+              plan_key: planKey,
+              status: 'active',
+              started_at: new Date().toISOString(),
+              renews_at: renewsAt,
+              provider: 'stripe',
+              provider_customer_id: session.customer as string,
+              provider_subscription_id: subscriptionId,
+              founding_member: false,
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (membershipError) {
+            console.error('Failed to create subscription membership:', membershipError);
+          } else {
+            console.log('Subscription membership created successfully');
+          }
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const planKey = subscription.metadata?.plan_key;
+        const userId = subscription.metadata?.user_id;
+
+        if (!userId) {
+          // Try to find user by customer ID
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('user_id')
+            .eq('stripe_customer_id', subscription.customer as string)
+            .single();
+
+          if (profile) {
+            const membership = await supabase
+              .from('user_memberships')
+              .select('*')
+              .eq('user_id', profile.user_id)
+              .single();
+
+            if (membership.data) {
+              if (event.type === 'customer.subscription.deleted' || subscription.status === 'canceled') {
+                await supabase
+                  .from('user_memberships')
+                  .update({
+                    status: 'canceled',
+                    canceled_at: new Date().toISOString(),
+                  })
+                  .eq('user_id', profile.user_id);
+              } else {
+                const renewsAt = subscription.current_period_end
+                  ? new Date(subscription.current_period_end * 1000).toISOString()
+                  : null;
+
+                await supabase
+                  .from('user_memberships')
+                  .update({
+                    status: subscription.status === 'active' ? 'active' : 'past_due',
+                    renews_at: renewsAt,
+                  })
+                  .eq('user_id', profile.user_id);
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = invoice.subscription as string;
+
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const planKey = subscription.metadata?.plan_key;
+
+          if (planKey) {
+            // Find membership and update renews_at
+            const { data: membership } = await supabase
+              .from('user_memberships')
+              .select('*')
+              .eq('provider_subscription_id', subscriptionId)
+              .single();
+
+            if (membership) {
+              const renewsAt = subscription.current_period_end
+                ? new Date(subscription.current_period_end * 1000).toISOString()
+                : null;
+
+              await supabase
+                .from('user_memberships')
+                .update({
+                  status: 'active',
+                  renews_at: renewsAt,
+                })
+                .eq('id', membership.id);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscriptionId = invoice.subscription as string;
+
+        if (subscriptionId) {
+          const { data: membership } = await supabase
+            .from('user_memberships')
+            .select('*')
+            .eq('provider_subscription_id', subscriptionId)
+            .single();
+
+          if (membership) {
+            await supabase
+              .from('user_memberships')
+              .update({
+                status: 'past_due',
+              })
+              .eq('id', membership.id);
+          }
+        }
+        break;
+      }
+
       default:
         console.log('Unhandled event type:', event.type);
     }

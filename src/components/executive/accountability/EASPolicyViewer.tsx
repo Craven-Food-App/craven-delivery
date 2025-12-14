@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { replacePlaceholders, formatDocumentDate } from '@/lib/executive/accountability/placeholders';
 import { IconDownload, IconPrinter } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
+import DOMPurify from 'dompurify';
 
 export const EASPolicyViewer: React.FC = () => {
   const { execUser } = useExecAuth();
@@ -69,7 +70,7 @@ export const EASPolicyViewer: React.FC = () => {
             </style>
           </head>
           <body>
-            ${content}
+            ${DOMPurify.sanitize(content)}
           </body>
         </html>
       `);
@@ -118,7 +119,7 @@ export const EASPolicyViewer: React.FC = () => {
 
       <Card shadow="sm" padding="lg" radius="md" withBorder>
         <Paper p="md" withBorder>
-          <div dangerouslySetInnerHTML={{ __html: content }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }} />
         </Paper>
       </Card>
     </Stack>

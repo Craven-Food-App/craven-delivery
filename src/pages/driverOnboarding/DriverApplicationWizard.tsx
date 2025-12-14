@@ -83,19 +83,23 @@ export const DriverApplicationWizard: React.FC = () => {
     fetchBackgroundImage();
   }, []);
 
-  // Load email and phone from location state or localStorage
+  // Load email and phone from location state or secure storage
   useEffect(() => {
-    const state = location.state as { phone?: string; email?: string } | null;
-    const savedEmail = localStorage.getItem('feeder_signup_email');
-    const savedPhone = localStorage.getItem('feeder_signup_phone');
+    const loadData = async () => {
+      const state = location.state as { phone?: string; email?: string } | null;
+      const { secureGetItem } = await import('@/utils/storage');
+      const savedEmail = secureGetItem('feeder_signup_email');
+      const savedPhone = secureGetItem('feeder_signup_phone');
 
-    if (state?.email || state?.phone || savedEmail || savedPhone) {
-      setApplicationData((prev: any) => ({
-        ...prev,
-        email: state?.email || savedEmail || prev.email,
-        phone: state?.phone || savedPhone || prev.phone
-      }));
-    }
+      if (state?.email || state?.phone || savedEmail || savedPhone) {
+        setApplicationData((prev: any) => ({
+          ...prev,
+          email: state?.email || savedEmail || prev.email,
+          phone: state?.phone || savedPhone || prev.phone
+        }));
+      }
+    };
+    loadData();
   }, [location.state]);
 
   const renderStepContent = () => {

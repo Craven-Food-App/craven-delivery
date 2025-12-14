@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { FileText, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { message } from 'antd';
 import { ElectronicSignatureAcknowledgment } from '@/components/executive/ElectronicSignatureAcknowledgment';
+import DOMPurify from 'dompurify';
 
 interface ExecutiveDocument {
   id: string;
@@ -313,7 +314,7 @@ export default function ExecutiveSigningPortal() {
             {/* Document HTML */}
             <div 
               dangerouslySetInnerHTML={{ 
-                __html: documentHtmlCache[currentDocument?.id] || '<p>Loading...</p>' 
+                __html: DOMPurify.sanitize(documentHtmlCache[currentDocument?.id] || '<p>Loading...</p>')
               }}
               className="p-8"
             />

@@ -26,6 +26,7 @@ import ToolsIntegrations from '@/pages/marketing/ToolsIntegrations';
 import AdminRolesPermissions from '@/pages/marketing/AdminRolesPermissions';
 import MarketingSettings from '@/pages/marketing/MarketingSettings';
 import ExperimentalFeatures from '@/pages/marketing/ExperimentalFeatures';
+import { AboutUsStatsToggle } from '@/components/admin/AboutUsStatsToggle';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -307,7 +308,12 @@ const MarketingPortal: React.FC = () => {
       case 'integrations':
         return <ToolsIntegrations />;
       case 'settings':
-        return <MarketingSettings />;
+        return (
+          <div className="space-y-6">
+            <MarketingSettings />
+            <AboutUsStatsToggle />
+          </div>
+        );
 
       // Admin
       case 'roles-permissions':

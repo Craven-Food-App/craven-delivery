@@ -42,6 +42,7 @@ import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { ResendWaitlistEmail } from '@/pages/admin/ResendWaitlistEmail';
+import CraveMoreAdminDashboard from '@/pages/admin/CraveMoreAdminDashboard';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -95,6 +96,7 @@ const Admin: React.FC = () => {
         { id: 'customer-management', label: 'Customer Accounts', icon: Users },
         { id: 'customer-promo', label: 'Promo Codes', icon: Tags },
         { id: 'customer-support', label: 'Support Chat', icon: MessageCircle },
+        { id: 'cravemore-admin', label: 'CraveMore Dashboard', icon: TrendingUp },
       ]
     },
     {
@@ -167,6 +169,8 @@ const Admin: React.FC = () => {
         return <PromoCodeManager />;
       case 'customer-support':
         return <ChatPortal />;
+      case 'cravemore-admin':
+        return <CraveMoreAdminDashboard />;
       case 'feature-toggles':
         return <FeatureToggleManager />;
       case 'refunds':

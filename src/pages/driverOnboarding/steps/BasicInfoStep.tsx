@@ -421,9 +421,15 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         });
       }
 
-      // Clear localStorage after successful submission
-      localStorage.removeItem('feeder_signup_email');
-      localStorage.removeItem('feeder_signup_phone');
+      // Clear secure storage after successful submission
+      import('@/utils/storage').then(({ secureRemoveItem }) => {
+        secureRemoveItem('feeder_signup_email');
+        secureRemoveItem('feeder_signup_phone');
+      }).catch(() => {
+        // Fallback to regular localStorage removal
+        localStorage.removeItem('feeder_signup_email');
+        localStorage.removeItem('feeder_signup_phone');
+      });
 
       toast({
         title: "Success",

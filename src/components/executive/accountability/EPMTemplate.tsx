@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { replacePlaceholders, formatDocumentDate } from '@/lib/executive/accountability/placeholders';
 import { IconDeviceFloppy, IconPrinter, IconFileText } from '@tabler/icons-react';
 import { useExecAuth } from '@/hooks/useExecAuth';
+import DOMPurify from 'dompurify';
 
 interface EPMFormData {
   executive_name: string;
@@ -336,7 +337,7 @@ export const EPMTemplate: React.FC = () => {
           <Stack gap="md">
             <Title order={3}>Preview</Title>
             <Paper p="md" withBorder>
-              <div dangerouslySetInnerHTML={{ __html: preview }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(preview) }} />
             </Paper>
           </Stack>
         </Card>

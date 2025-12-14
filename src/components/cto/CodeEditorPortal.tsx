@@ -67,8 +67,9 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
       const { data: { session } } = await supabase.auth.getSession();
       setSupabaseConfigured(!!session);
       
-      // Check GitHub token (stored in user metadata or local storage)
-      const storedToken = localStorage.getItem('github_token') || session?.user?.user_metadata?.github_token;
+      // Check GitHub token (stored in user metadata or secure local storage)
+      const { secureGetItem } = await import('@/utils/storage');
+      const storedToken = secureGetItem('github_token') || session?.user?.user_metadata?.github_token;
       setGithubConfigured(!!storedToken);
       if (storedToken) {
         setGithubToken(storedToken);
@@ -385,9 +386,11 @@ export default function CodeEditorPortal({ standalone = true, onBack }: CodeEdit
 
     setSavingToken(true);
     try {
-      // Store token in localStorage
+      // Store token in localStorage (using secure storage)
       try {
-        localStorage.setItem('github_token', githubToken);
+        // Use secure storage with 7 day expiration
+        const { secureSetItem } = await import('@/utils/storage');
+        secureSetItem('github_token', githubToken, 168); // 7 days
       } catch (storageError) {
         console.warn('Could not save to localStorage:', storageError);
         // Continue anyway - might be in private mode

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { appointExecutive, AppointExecutivePayload } from '@/utils/appointExecutive';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs from 'dayjs';
+import DOMPurify from 'dompurify';
 
 // Simple HTML builders for PDFs (kept minimal and dependency-free)
 function buildEquityOfferHtml(v: any): string {
@@ -130,7 +131,7 @@ export const ExecutiveAppointmentForm: React.FC = () => {
     tempDiv.style.top = '0';
     tempDiv.style.width = '816px';
     tempDiv.style.background = '#ffffff';
-    tempDiv.innerHTML = html;
+    tempDiv.innerHTML = DOMPurify.sanitize(html);
     document.body.appendChild(tempDiv);
 
     const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
