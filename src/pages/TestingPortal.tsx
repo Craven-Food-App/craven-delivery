@@ -1,48 +1,52 @@
 import React, { useState } from 'react';
 import AdminAccessGuard from '@/components/AdminAccessGuard';
-import LiveDashboard from '@/components/admin/LiveDashboard';
-import { NotificationSettingsManager } from '@/components/admin/NotificationSettingsManager';
-import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
-import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
-import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
+import { TestCustomer } from '@/components/testing/TestCustomer';
+import { TestDriver } from '@/components/testing/TestDriver';
+import { TestRestaurant } from '@/components/testing/TestRestaurant';
+import { LiveDriverTesting } from '@/components/testing/LiveDriverTesting';
+import { TestDataManager } from '@/components/testing/TestDataManager';
+import { TestDiamondExclusiveOrders } from '@/components/testing/TestDiamondExclusiveOrders';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin } from 'lucide-react';
+import { ArrowLeft, Users, Car, Store, Zap, Database, Gem } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 
-const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+const TestingPortal: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('customer');
   
   // Track user activity
-  useActivityTracking('admin');
+  useActivityTracking('testing');
   
   // Auto-logout after 30 minutes of inactivity
-  useAutoLogout('admin');
+  useAutoLogout('testing');
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'feature-toggles', label: 'Feature Toggles', icon: Eye },
-    { id: 'delivery-zones', label: 'Delivery Zones', icon: MapPin },
+    { id: 'customer', label: 'Customer Testing', icon: Users },
+    { id: 'driver', label: 'Driver Testing', icon: Car },
+    { id: 'restaurant', label: 'Restaurant Testing', icon: Store },
+    { id: 'live', label: 'Live Driver Testing', icon: Zap },
+    { id: 'data', label: 'Test Data Manager', icon: Database },
+    { id: 'diamond-exclusive', label: 'Diamond Exclusive Orders', icon: Gem },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <LiveDashboard />;
-      case 'analytics':
-        return <AnalyticsDashboard />;
-      case 'notifications':
-        return <NotificationSettingsManager />;
-      case 'feature-toggles':
-        return <FeatureToggleManager />;
-      case 'delivery-zones':
-        return <DeliveryZoneManager />;
+      case 'customer':
+        return <TestCustomer />;
+      case 'driver':
+        return <TestDriver />;
+      case 'restaurant':
+        return <TestRestaurant />;
+      case 'live':
+        return <LiveDriverTesting />;
+      case 'data':
+        return <TestDataManager />;
+      case 'diamond-exclusive':
+        return <TestDiamondExclusiveOrders />;
       default:
-        return <LiveDashboard />;
+        return <TestCustomer />;
     }
   };
 
@@ -54,7 +58,7 @@ const Admin: React.FC = () => {
           <div className="p-4 border-b">
             <div className="flex items-center gap-2 mb-4">
               <img src={cravenLogo} alt="Crave'n" className="h-6" />
-              <span className="font-bold">Admin Portal</span>
+              <span className="font-bold">Testing Portal</span>
             </div>
             <Button 
               variant="ghost" 
@@ -71,7 +75,7 @@ const Admin: React.FC = () => {
             <div className="space-y-4 py-4">
               <div className="pt-2 pb-2">
                 <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Core Admin Functions
+                  Test Suites
                 </h3>
               </div>
 
@@ -101,4 +105,5 @@ const Admin: React.FC = () => {
   );
 };
 
-export default Admin;
+export default TestingPortal;
+

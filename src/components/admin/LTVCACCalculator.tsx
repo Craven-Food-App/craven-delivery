@@ -93,11 +93,44 @@ export const LTVCACCalculator: React.FC = () => {
       annualChurnRate: Math.max(0, Math.min(100, inputs.annualChurnRate + churnAdjustment * 12)),
     };
 
-    const originalInputs = inputs;
-    setInputs(adjustedInputs);
-    const result = calculateLTV();
-    setInputs(originalInputs);
-    return result;
+    // Calculate LTV with adjusted inputs without mutating state
+    const {
+      avgOrdersPerMonth,
+      avgDeliveryFeeCents,
+      avgContributionMarginPerOrderCents,
+      supportCostPerSubscriberCents,
+      paymentProcessingFeePercent,
+    } = adjustedInputs;
+
+    // Monthly revenue per subscriber
+    const monthlyRevenueCents =
+      avgOrdersPerMonth * (avgDeliveryFeeCents + avgContributionMarginPerOrderCents);
+
+    // Processing fees
+    const monthlyProcessingFeesCents = monthlyRevenueCents * (paymentProcessingFeePercent / 100);
+
+    // Net monthly revenue
+    const netMonthlyRevenueCents =
+      monthlyRevenueCents - monthlyProcessingFeesCents - supportCostPerSubscriberCents;
+
+    // Calculate average customer lifetime (months)
+    const avgLifetimeMonths = adjustedInputs.monthlyChurnRate > 0 ? 1 / (adjustedInputs.monthlyChurnRate / 100) : 12;
+
+    // Monthly LTV
+    const monthlyLTVCents = netMonthlyRevenueCents * avgLifetimeMonths;
+
+    // Annual LTV (using annual churn)
+    const avgLifetimeYears = adjustedInputs.annualChurnRate > 0 ? 1 / (adjustedInputs.annualChurnRate / 100) : 1;
+    const annualLTVCents = netMonthlyRevenueCents * 12 * avgLifetimeYears;
+
+    return {
+      monthlyLTVCents,
+      annualLTVCents,
+      avgLifetimeMonths,
+      avgLifetimeYears,
+      monthlyRevenueCents,
+      netMonthlyRevenueCents,
+    };
   };
 
   const results = calculateLTV();

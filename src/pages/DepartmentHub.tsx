@@ -323,6 +323,14 @@ const DepartmentHub: React.FC = () => {
           color: '#eb2f96',
         },
         {
+          id: 'testing-portal',
+          name: 'Testing Portal',
+          description: 'QA testing and test data management',
+          icon: BugOutlined,
+          path: '/testing',
+          color: '#fa8c16',
+        },
+        {
           id: 'infrastructure',
           name: 'Infrastructure',
           description: 'Cloud infrastructure and servers',
@@ -360,7 +368,7 @@ const DepartmentHub: React.FC = () => {
           description: 'Repository code editor',
           icon: CodeOutlined,
           path: '/cto?section=code-editor',
-          color: '#fa8c16',
+          color: '#fa541c',
         },
         {
           id: 'incidents',
@@ -368,7 +376,7 @@ const DepartmentHub: React.FC = () => {
           description: 'System incidents and monitoring',
           icon: BugOutlined,
           path: '/cto?section=incidents',
-          color: '#fa541c',
+          color: '#13c2c2',
         },
         {
           id: 'assets',
@@ -376,7 +384,7 @@ const DepartmentHub: React.FC = () => {
           description: 'IT asset management',
           icon: DatabaseOutlined,
           path: '/cto?section=assets',
-          color: '#13c2c2',
+          color: '#2f54eb',
         },
       ];
     } else if (normalizedName.includes('operations') || normalizedName.includes('ops')) {
@@ -390,12 +398,28 @@ const DepartmentHub: React.FC = () => {
           color: '#1890ff',
         },
         {
+          id: 'merchant-operations',
+          name: 'Merchant Operations',
+          description: 'Restaurant onboarding, verification, and management',
+          icon: ShopOutlined,
+          path: '/merchant-operations',
+          color: '#ff7a45',
+        },
+        {
+          id: 'driver-operations',
+          name: 'Driver Operations',
+          description: 'Driver applications, onboarding, and management',
+          icon: TeamOutlined,
+          path: '/driver-operations',
+          color: '#52c41a',
+        },
+        {
           id: 'logistics',
           name: 'Logistics',
           description: 'Delivery and fleet management',
           icon: ShopOutlined,
           path: '/coo',
-          color: '#52c41a',
+          color: '#722ed1',
         },
         {
           id: 'supply-chain',
@@ -403,7 +427,7 @@ const DepartmentHub: React.FC = () => {
           description: 'Inventory and supply management',
           icon: ShopOutlined,
           path: '/coo',
-          color: '#722ed1',
+          color: '#13c2c2',
         },
       ];
     } else if (normalizedName.includes('marketing')) {
@@ -436,12 +460,20 @@ const DepartmentHub: React.FC = () => {
           color: '#1890ff',
         },
         {
+          id: 'driver-operations',
+          name: 'Driver Operations',
+          description: 'Driver applications, onboarding, and management',
+          icon: TeamOutlined,
+          path: '/driver-operations',
+          color: '#52c41a',
+        },
+        {
           id: 'recruiting',
           name: 'Recruiting',
           description: 'Hiring and talent acquisition',
           icon: UserOutlined,
           path: '/hr-portal',
-          color: '#52c41a',
+          color: '#722ed1',
         },
         {
           id: 'payroll-hr',
@@ -449,7 +481,7 @@ const DepartmentHub: React.FC = () => {
           description: 'Payroll processing and management',
           icon: WalletOutlined,
           path: '/hr-portal',
-          color: '#722ed1',
+          color: '#13c2c2',
         },
       ];
     } else if (normalizedName.includes('executive')) {
@@ -471,23 +503,31 @@ const DepartmentHub: React.FC = () => {
           color: '#722ed1',
         },
       ];
-    } else if (normalizedName.includes('customer support')) {
+    } else if (normalizedName.includes('customer support') || normalizedName.includes('customer success')) {
       return [
+        {
+          id: 'customer-success',
+          name: 'Customer Success Portal',
+          description: 'Customer accounts, promos, and engagement',
+          icon: UserOutlined,
+          path: '/customer-success',
+          color: '#1890ff',
+        },
+        {
+          id: 'support-operations',
+          name: 'Support Operations',
+          description: 'Refunds, disputes, tickets, and audit logs',
+          icon: SafetyOutlined,
+          path: '/support-operations',
+          color: '#52c41a',
+        },
         {
           id: 'support-dashboard',
           name: 'Support Dashboard',
           description: 'Customer support tickets and metrics',
           icon: DashboardOutlined,
           path: '/admin',
-          color: '#1890ff',
-        },
-        {
-          id: 'ticketing',
-          name: 'Ticketing System',
-          description: 'Customer ticket management',
-          icon: FileTextOutlined,
-          path: '/admin',
-          color: '#52c41a',
+          color: '#722ed1',
         },
       ];
     } else if (normalizedName.includes('logistics')) {

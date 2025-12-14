@@ -23,6 +23,11 @@ import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";
 import AccessGuard from "./components/AccessGuard";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import MerchantOperationsPortal from "./pages/MerchantOperationsPortal";
+import DriverOperationsPortal from "./pages/DriverOperationsPortal";
+import CustomerSuccessPortal from "./pages/CustomerSuccessPortal";
+import SupportOperationsPortal from "./pages/SupportOperationsPortal";
+import TestingPortal from "./pages/TestingPortal";
 import RestaurantRegister from "./pages/RestaurantRegister";
 import MerchantPortal from "./pages/MerchantPortal";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
@@ -334,6 +339,11 @@ const App = () => {
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/merchant-operations" element={<MerchantOperationsPortal />} />
+                  <Route path="/driver-operations" element={<DriverOperationsPortal />} />
+                  <Route path="/customer-success" element={<CustomerSuccessPortal />} />
+                  <Route path="/support-operations" element={<SupportOperationsPortal />} />
+                  <Route path="/testing" element={<TestingPortal />} />
                     <Route path="/marketing-portal" element={<MarketingPortal />} />
                     <Route path="/hr-portal" element={<BusinessAuthGuard><HRPortal /></BusinessAuthGuard>} />
                     <Route path="/board" element={<BoardPortal />} />
@@ -633,6 +643,11 @@ const App = () => {
           <Route path="/restaurant/solutions" element={<SolutionsCenter />} />
           <Route path="/restaurant/most-loved" element={<MostLovedProgram />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/merchant-operations" element={<MerchantOperationsPortal />} />
+          <Route path="/driver-operations" element={<DriverOperationsPortal />} />
+          <Route path="/customer-success" element={<CustomerSuccessPortal />} />
+          <Route path="/support-operations" element={<SupportOperationsPortal />} />
+          <Route path="/testing" element={<TestingPortal />} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
           <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />

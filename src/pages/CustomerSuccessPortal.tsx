@@ -1,48 +1,44 @@
 import React, { useState } from 'react';
 import AdminAccessGuard from '@/components/AdminAccessGuard';
-import LiveDashboard from '@/components/admin/LiveDashboard';
-import { NotificationSettingsManager } from '@/components/admin/NotificationSettingsManager';
-import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
-import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
-import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
+import CustomerManagement from '@/components/admin/CustomerManagement';
+import { PromoCodeManager } from '@/components/admin/PromoCodeManager';
+import ChatPortal from '@/components/admin/ChatPortal';
+import CraveMoreAdminDashboard from '@/pages/admin/CraveMoreAdminDashboard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin } from 'lucide-react';
+import { ArrowLeft, Users, Tags, MessageCircle, TrendingUp } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 
-const Admin: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+const CustomerSuccessPortal: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('management');
   
   // Track user activity
-  useActivityTracking('admin');
+  useActivityTracking('customer-success');
   
   // Auto-logout after 30 minutes of inactivity
-  useAutoLogout('admin');
+  useAutoLogout('customer-success');
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'feature-toggles', label: 'Feature Toggles', icon: Eye },
-    { id: 'delivery-zones', label: 'Delivery Zones', icon: MapPin },
+    { id: 'management', label: 'Customer Accounts', icon: Users },
+    { id: 'promo-codes', label: 'Promo Codes', icon: Tags },
+    { id: 'support-chat', label: 'Support Chat', icon: MessageCircle },
+    { id: 'cravemore', label: 'CraveMore Dashboard', icon: TrendingUp },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <LiveDashboard />;
-      case 'analytics':
-        return <AnalyticsDashboard />;
-      case 'notifications':
-        return <NotificationSettingsManager />;
-      case 'feature-toggles':
-        return <FeatureToggleManager />;
-      case 'delivery-zones':
-        return <DeliveryZoneManager />;
+      case 'management':
+        return <CustomerManagement />;
+      case 'promo-codes':
+        return <PromoCodeManager />;
+      case 'support-chat':
+        return <ChatPortal />;
+      case 'cravemore':
+        return <CraveMoreAdminDashboard />;
       default:
-        return <LiveDashboard />;
+        return <CustomerManagement />;
     }
   };
 
@@ -54,7 +50,7 @@ const Admin: React.FC = () => {
           <div className="p-4 border-b">
             <div className="flex items-center gap-2 mb-4">
               <img src={cravenLogo} alt="Crave'n" className="h-6" />
-              <span className="font-bold">Admin Portal</span>
+              <span className="font-bold">Customer Success</span>
             </div>
             <Button 
               variant="ghost" 
@@ -71,7 +67,7 @@ const Admin: React.FC = () => {
             <div className="space-y-4 py-4">
               <div className="pt-2 pb-2">
                 <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Core Admin Functions
+                  Operations
                 </h3>
               </div>
 
@@ -101,4 +97,5 @@ const Admin: React.FC = () => {
   );
 };
 
-export default Admin;
+export default CustomerSuccessPortal;
+

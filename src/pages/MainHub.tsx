@@ -17,6 +17,9 @@ import {
   ClockCircleOutlined,
   LoginOutlined,
   HistoryOutlined,
+  UserOutlined,
+  SafetyOutlined,
+  BugOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -1170,6 +1173,46 @@ const MainHub: React.FC = () => {
       description: "Human resources and document generation",
       icon: FileTextOutlined,
       path: "/hr-portal",
+      color: "#fa8c16",
+    },
+    {
+      id: "merchant-operations",
+      name: "Merchant Operations",
+      description: "Restaurant onboarding, verification, and management",
+      icon: ShopOutlined,
+      path: "/merchant-operations",
+      color: "#ff7a45",
+    },
+    {
+      id: "driver-operations",
+      name: "Driver Operations",
+      description: "Driver applications, onboarding, and management",
+      icon: TeamOutlined,
+      path: "/driver-operations",
+      color: "#52c41a",
+    },
+    {
+      id: "customer-success",
+      name: "Customer Success",
+      description: "Customer accounts, promos, and engagement",
+      icon: UserOutlined,
+      path: "/customer-success",
+      color: "#1890ff",
+    },
+    {
+      id: "support-operations",
+      name: "Support Operations",
+      description: "Refunds, disputes, tickets, and audit logs",
+      icon: SafetyOutlined,
+      path: "/support-operations",
+      color: "#fa541c",
+    },
+    {
+      id: "testing",
+      name: "Testing Portal",
+      description: "QA testing and test data management",
+      icon: BugOutlined,
+      path: "/testing",
       color: "#fa8c16",
     },
   ];
