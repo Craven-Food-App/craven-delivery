@@ -132,7 +132,7 @@ const DepartmentHub: React.FC = () => {
           .from('employees')
           .select('id, department_id, departments!inner(name)')
           .eq('employment_status', 'active')
-          .or(`email.ilike.${userEmail},work_email.ilike.${userEmail}`);
+          .ilike('email', userEmail);
         
         if (empByEmail) {
           employees = empByEmail;

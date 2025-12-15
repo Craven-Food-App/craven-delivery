@@ -1141,84 +1141,92 @@ export const PayrollView: React.FC = () => {
         </Row>
       </Card>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <Tabs.TabPane tab={<span><FileTextOutlined /> Payroll Runs ({payrollRuns.length})</span>} key="runs">
-          <Card
-            title={
-              <Space>
-                <FileTextOutlined />
-                <Text strong>Payroll Runs</Text>
-                <Badge count={filteredRuns.length} showZero style={{ backgroundColor: '#1890ff' }} />
-              </Space>
-            }
-          >
-            <Table
-              columns={runColumns}
-              dataSource={filteredRuns}
-              loading={loading}
-              rowKey="id"
-              scroll={{ x: 1500 }}
-              pagination={{
-                pageSize: 20,
-                showSizeChanger: true,
-                showTotal: (total) => `${total} payroll runs`,
-              }}
-              size="small"
-              bordered
-            />
-          </Card>
-        </Tabs.TabPane>
-
-        <Tabs.TabPane 
-          tab={<span><UserOutlined /> Payroll Entries ({payrollEntries.length})</span>} 
-          key="entries"
-        >
-          <Card
-            title={
-              <Space>
-                <UserOutlined />
-                <Text strong>Payroll Entries</Text>
-                {selectedRun && (
-                  <Badge count={payrollEntries.length} showZero style={{ backgroundColor: '#1890ff' }} />
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'runs',
+            label: <span><FileTextOutlined /> Payroll Runs ({payrollRuns.length})</span>,
+            children: (
+              <Card
+                title={
+                  <Space>
+                    <FileTextOutlined />
+                    <Text strong>Payroll Runs</Text>
+                    <Badge count={filteredRuns.length} showZero style={{ backgroundColor: '#1890ff' }} />
+                  </Space>
+                }
+              >
+                <Table
+                  columns={runColumns}
+                  dataSource={filteredRuns}
+                  loading={loading}
+                  rowKey="id"
+                  scroll={{ x: 1500 }}
+                  pagination={{
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showTotal: (total) => `${total} payroll runs`,
+                  }}
+                  size="small"
+                  bordered
+                />
+              </Card>
+            ),
+          },
+          {
+            key: 'entries',
+            label: <span><UserOutlined /> Payroll Entries ({payrollEntries.length})</span>,
+            children: (
+              <Card
+                title={
+                  <Space>
+                    <UserOutlined />
+                    <Text strong>Payroll Entries</Text>
+                    {selectedRun && (
+                      <Badge count={payrollEntries.length} showZero style={{ backgroundColor: '#1890ff' }} />
+                    )}
+                  </Space>
+                }
+                extra={
+                  selectedRun ? (
+                    <Space>
+                      <Text type="secondary">Run: {selectedRun.run_number}</Text>
+                      <Button onClick={() => setSelectedRun(null)}>Clear Selection</Button>
+                    </Space>
+                  ) : (
+                    <Text type="secondary">Select a payroll run to view entries</Text>
+                  )
+                }
+              >
+                {selectedRun ? (
+                  <Table
+                    columns={entryColumns}
+                    dataSource={payrollEntries}
+                    loading={loading}
+                    rowKey="id"
+                    scroll={{ x: 1200 }}
+                    pagination={{
+                      pageSize: 50,
+                      showSizeChanger: true,
+                      showTotal: (total) => `${total} entries`,
+                    }}
+                    size="small"
+                    bordered
+                  />
+                ) : (
+                  <Alert
+                    message="No Payroll Run Selected"
+                    description="Select a payroll run from the 'Payroll Runs' tab to view its entries."
+                    type="info"
+                  />
                 )}
-              </Space>
-            }
-            extra={
-              selectedRun ? (
-                <Space>
-                  <Text type="secondary">Run: {selectedRun.run_number}</Text>
-                  <Button onClick={() => setSelectedRun(null)}>Clear Selection</Button>
-                </Space>
-              ) : (
-                <Text type="secondary">Select a payroll run to view entries</Text>
-              )
-            }
-          >
-            {selectedRun ? (
-              <Table
-                columns={entryColumns}
-                dataSource={payrollEntries}
-                loading={loading}
-                rowKey="id"
-                scroll={{ x: 1200 }}
-                pagination={{
-                  pageSize: 50,
-                  showSizeChanger: true,
-                  showTotal: (total) => `${total} entries`,
-                }}
-                size="small"
-                bordered
-              />
-            ) : (
-              <Alert
-                message="No Payroll Run Selected"
-                description="Select a payroll run from the 'Payroll Runs' tab to view its entries."
-                type="info"
-              />
-            )}
-          </Card>
-        </Tabs.TabPane>
-      </Tabs>
+              </Card>
+            ),
+          },
+        ]}
+      />
 
       {/* Payroll Run Modal */}
       <Modal

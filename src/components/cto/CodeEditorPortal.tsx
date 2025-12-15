@@ -8,7 +8,6 @@ import type { CodeChangeRequest } from '@/types/tech-support';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 interface FileNode {
   title: string;

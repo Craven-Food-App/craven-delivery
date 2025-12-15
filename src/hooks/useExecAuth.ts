@@ -57,13 +57,12 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
 
   const resolveExecFromEmployee = useCallback(
     async (authUser: SupabaseAuthUser): Promise<boolean> => {
-      const selectColumns = 'id, user_id, position, department, first_name, last_name, email, work_email';
+      const selectColumns = 'id, user_id, position, department, first_name, last_name, email';
       const email = authUser.email ?? '';
 
       const queries = [
         supabase.from('employees' as any).select(selectColumns).eq('user_id', authUser.id).maybeSingle(),
         supabase.from('employees' as any).select(selectColumns).ilike('email', email).maybeSingle(),
-        supabase.from('employees' as any).select(selectColumns).ilike('work_email', email).maybeSingle(),
       ];
 
       let employeeData: EmployeeRecord | null = null;

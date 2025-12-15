@@ -105,65 +105,47 @@ const UserAccountManager: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Fetch executive users with their profiles
+      // Fetch executive users (no join since there's no FK relationship)
       const { data: execUsers, error: execError } = await supabase
         .from('exec_users')
-        .select(`
-          *,
-          user_profiles!inner (
-            user_id,
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (execError) {
         console.error('Error fetching exec users:', execError);
-        // If RLS blocks access, try a simpler query
-        const { data: simpleExecUsers, error: simpleError } = await supabase
-          .from('exec_users')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (simpleError) {
-          toast({
-            title: 'Error',
-            description: `Failed to fetch executive users: ${simpleError.message}`,
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-
-        // Use simple data if complex query fails
-        const usersWithDetails = (simpleExecUsers || []).map((execUser) => ({
-          id: execUser.user_id,
-          email: '',
-          full_name: execUser.title || 'Unknown',
-          created_at: execUser.created_at,
-          roles: [execUser.role],
-          exec_user: true,
-          portal_access: {
-            executive: true,
-            board: execUser.role === 'board_member',
-            hub: false,
-            company: false,
-          },
-        }));
-
-        setUsers(usersWithDetails);
+        toast({
+          title: 'Error',
+          description: `Failed to fetch executive users: ${execError.message}`,
+          variant: 'destructive',
+        });
         setLoading(false);
         return;
       }
 
+      if (!execUsers || execUsers.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get user IDs to fetch profiles separately
+      const userIds = execUsers.map(eu => eu.user_id);
+
+      // Fetch user profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, email, full_name')
+        .in('user_id', userIds);
+
+      // Create a map of user_id -> profile for quick lookup
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
+      );
+
       // Get additional details for each executive user
       const usersWithDetails = await Promise.all(
-        (execUsers || []).map(async (execUser) => {
-          // Get user profile data (already included in query)
-          const profile = Array.isArray(execUser.user_profiles) 
-            ? execUser.user_profiles[0] 
-            : execUser.user_profiles;
+        execUsers.map(async (execUser) => {
+          const profile = profilesMap.get(execUser.user_id);
 
           const { data: roles } = await supabase
             .from('user_roles')
@@ -181,7 +163,7 @@ const UserAccountManager: React.FC = () => {
             email: profile?.email || '',
             full_name: profile?.full_name || execUser.title || 'Unknown',
             created_at: execUser.created_at,
-            roles: [execUser.role, ...(roles?.map(r => r.role) || [])].filter(Boolean),
+            roles: [...new Set([execUser.role, ...(roles?.map(r => r.role) || [])].filter(Boolean))],
             exec_user: true,
             portal_access: {
               executive: true,
@@ -623,8 +605,8 @@ const UserAccountManager: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {user.roles.filter(r => ['ceo', 'cfo', 'coo', 'cto', 'board_member', 'advisor'].includes(r)).map((role) => (
-                            <Badge key={role} variant="outline">
+                          {user.roles.filter(r => ['ceo', 'cfo', 'coo', 'cto', 'board_member', 'advisor'].includes(r)).map((role, idx) => (
+                            <Badge key={`${user.id}-${role}-${idx}`} variant="outline">
                               {role.toUpperCase()}
                             </Badge>
                           ))}

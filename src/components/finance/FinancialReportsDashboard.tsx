@@ -475,7 +475,8 @@ export const FinancialReportsDashboard: React.FC = () => {
               .gte('expense_date', periodStart.toISOString().split('T')[0])
               .lte('expense_date', periodEnd.toISOString().split('T')[0])
               .eq('status', 'approved'),
-            supabase.from('orders').select('total_amount, created_at')
+            supabase.from('orders').select('total_cents, created_at')
+              .eq('order_status', 'completed')
               .gte('created_at', periodStart.toISOString())
               .lte('created_at', periodEnd.toISOString()),
           ]);
@@ -492,7 +493,8 @@ export const FinancialReportsDashboard: React.FC = () => {
               .gte('expense_date', previousPeriodStart.toISOString().split('T')[0])
               .lte('expense_date', previousPeriodEnd.toISOString().split('T')[0])
               .eq('status', 'approved'),
-            supabase.from('orders').select('total_amount, created_at')
+            supabase.from('orders').select('total_cents, created_at')
+              .eq('order_status', 'completed')
               .gte('created_at', previousPeriodStart.toISOString())
               .lte('created_at', previousPeriodEnd.toISOString()),
           ]);
@@ -513,7 +515,7 @@ export const FinancialReportsDashboard: React.FC = () => {
           const paidReceivables = arData.reduce((sum, ar) => sum + (Number(ar.paid_amount) || 0), 0);
           const outstandingReceivables = arData.reduce((sum, ar) => sum + (Number(ar.outstanding_amount) || 0), 0);
           const totalExpenses2 = expenseData2.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const totalRevenue2 = ordersData.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+          const totalRevenue2 = ordersData.reduce((sum, o) => sum + (Number(o.total_cents) || 0), 0);
 
           // Previous period totals
           const prevTotalPayable = prevInvoiceData.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
@@ -521,7 +523,7 @@ export const FinancialReportsDashboard: React.FC = () => {
           const prevPaidReceivables = prevArData.reduce((sum, ar) => sum + (Number(ar.paid_amount) || 0), 0);
           const prevOutstandingReceivables = prevArData.reduce((sum, ar) => sum + (Number(ar.outstanding_amount) || 0), 0);
           const prevTotalExpenses = prevExpenseData.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-          const prevTotalRevenue = prevOrdersData.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+          const prevTotalRevenue = prevOrdersData.reduce((sum, o) => sum + (Number(o.total_cents) || 0), 0);
 
           // Operating Activities - Current Period
           const cashFromCustomers = paidReceivables;

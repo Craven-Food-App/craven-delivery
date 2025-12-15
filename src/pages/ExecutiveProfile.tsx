@@ -224,7 +224,7 @@ const ExecutiveProfile: React.FC = () => {
 
         const { data: employeeData, error: employeeError } = await supabase
           .from('employees' as any)
-          .select('id, first_name, last_name, position, department, email, work_email, phone, photo_url, hire_date, created_at')
+          .select('id, first_name, last_name, position, department, email, phone, photo_url, hire_date, created_at')
           .eq('id', execId)
           .maybeSingle();
 
@@ -247,7 +247,7 @@ const ExecutiveProfile: React.FC = () => {
               role: execRole || empData.position || undefined,
               title: empData.position || undefined,
               department: empData.department || undefined,
-              email: empData.email || empData.work_email || undefined,
+              email: empData.email || undefined,
               phone: empData.phone || undefined,
               photo_url: empData.photo_url || undefined,
               hire_date: empData.hire_date || undefined,

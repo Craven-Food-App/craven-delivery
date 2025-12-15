@@ -33,6 +33,7 @@ import {
   IconWallet,
   IconTrendingUp,
   IconUserCircle,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -261,6 +262,15 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
               size="sm"
               hiddenFrom="sm"
             />
+            <Button
+              variant="subtle"
+              size="sm"
+              leftSection={<IconArrowLeft size={16} />}
+              onClick={() => navigate('/main-hub')}
+              mr="md"
+            >
+              Back to Hub
+            </Button>
             <Text fw={600} size="lg">
               Finance Department Portal
             </Text>

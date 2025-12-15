@@ -674,13 +674,10 @@ export const PromoCodeManager: React.FC = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleActive(promoCode.id, promoCode.is_active)}
-                        >
-                          <Switch checked={promoCode.is_active} />
-                        </Button>
+                        <Switch 
+                          checked={promoCode.is_active}
+                          onCheckedChange={() => handleToggleActive(promoCode.id, promoCode.is_active)}
+                        />
                         <Button
                           variant="ghost"
                           size="sm"

@@ -824,32 +824,36 @@ export const CorporateAccountsReceivable: React.FC = () => {
       {/* Invoices Table */}
       <Card
         title={
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Outstanding <Badge count={invoices.filter(inv => inv.outstanding_amount > 0 && inv.status !== 'paid').length} />
-                </span>
-              }
-              key="outstanding"
-            />
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Overdue <Badge count={invoices.filter(inv => inv.days_overdue > 0 && inv.outstanding_amount > 0).length} style={{ backgroundColor: '#ff4d4f' }} />
-                </span>
-              }
-              key="overdue"
-            />
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Paid <Badge count={invoices.filter(inv => inv.status === 'paid' || inv.outstanding_amount === 0).length} style={{ backgroundColor: '#52c41a' }} />
-                </span>
-              }
-              key="paid"
-            />
-          </Tabs>
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'outstanding',
+                label: (
+                  <span>
+                    Outstanding <Badge count={invoices.filter(inv => inv.outstanding_amount > 0 && inv.status !== 'paid').length} />
+                  </span>
+                ),
+              },
+              {
+                key: 'overdue',
+                label: (
+                  <span>
+                    Overdue <Badge count={invoices.filter(inv => inv.days_overdue > 0 && inv.outstanding_amount > 0).length} style={{ backgroundColor: '#ff4d4f' }} />
+                  </span>
+                ),
+              },
+              {
+                key: 'paid',
+                label: (
+                  <span>
+                    Paid <Badge count={invoices.filter(inv => inv.status === 'paid' || inv.outstanding_amount === 0).length} style={{ backgroundColor: '#52c41a' }} />
+                  </span>
+                ),
+              },
+            ]}
+          />
         }
         extra={
           <Text type="secondary" style={{ fontSize: 12 }}>

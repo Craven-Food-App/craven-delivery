@@ -81,44 +81,58 @@ const RoleManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch all users from auth.users (we'll get basic info)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Client-side code cannot access admin API, so fetch from user_roles and join with user_profiles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', CRAVEN_ROLES.map(r => r.value));
+
+      if (rolesError) throw rolesError;
+
+      // Get unique user IDs
+      const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
       
-      if (authError) {
-        // If admin API fails, try fetching from user_roles and join
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('user_id, role')
-          .in('role', CRAVEN_ROLES.map(r => r.value));
+      if (userIds.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch user profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('user_id, email, full_name, created_at')
+        .in('user_id', userIds);
 
-        if (rolesError) throw rolesError;
-
-        // Get unique user IDs
-        const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
-        
-        // Fetch user details for each
+      if (profilesError) {
+        console.warn('Error fetching user profiles, using fallback method:', profilesError);
+        // Fallback: try to get user info from auth (limited info available)
         const usersData: User[] = [];
         for (const userId of userIds) {
-          const { data: userData } = await supabase.auth.getUser(userId);
-          if (userData?.user) {
-            usersData.push({
-              id: userData.user.id,
-              email: userData.user.email || '',
-              full_name: userData.user.user_metadata?.full_name,
-              created_at: userData.user.created_at,
-            });
+          try {
+            const { data: userData } = await supabase.auth.getUser(userId);
+            if (userData?.user) {
+              usersData.push({
+                id: userData.user.id,
+                email: userData.user.email || '',
+                full_name: userData.user.user_metadata?.full_name,
+                created_at: userData.user.created_at,
+              });
+            }
+          } catch (err) {
+            // Skip users we can't fetch
+            console.warn(`Could not fetch user ${userId}:`, err);
           }
         }
-        
         setUsers(usersData);
         loadUserRoles(usersData.map(u => u.id));
       } else {
-        // Use admin API results
-        const usersData: User[] = (authUsers?.users || []).map(user => ({
-          id: user.id,
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name,
-          created_at: user.created_at,
+        // Use profile data
+        const usersData: User[] = (profilesData || []).map(profile => ({
+          id: profile.user_id,
+          email: profile.email || '',
+          full_name: profile.full_name,
+          created_at: profile.created_at || new Date().toISOString(),
         }));
         
         setUsers(usersData);

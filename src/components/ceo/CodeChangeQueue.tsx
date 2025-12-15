@@ -97,11 +97,11 @@ export const CodeChangeQueue: React.FC = () => {
         // Try employees table first
         const { data: employees } = await supabase
           .from('employees')
-          .select('user_id, email, work_email')
+          .select('user_id, email')
           .in('user_id', Array.from(userIds));
         
         (employees || []).forEach((emp: any) => {
-          userEmails[emp.user_id] = emp.email || emp.work_email || 'Unknown';
+          userEmails[emp.user_id] = emp.email || 'Unknown';
         });
 
         // Try user_profiles for remaining users

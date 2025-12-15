@@ -817,7 +817,7 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm" fw={500}>Click the <Badge variant="light" size="sm">+ New Appointment</Badge> button</Text> located in the top-right corner of this page
+                    <Text size="sm" fw={500} component="div">Click the <Badge variant="light" size="sm">+ New Appointment</Badge> button located in the top-right corner of this page</Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm" fw={500}>Required Fields:</Text>
@@ -849,7 +849,7 @@ const AppointmentList: React.FC = () => {
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Review all information for accuracy, then click <Badge size="sm">Submit</Badge> to create the appointment</Text>
+                    <Text size="sm" component="div">Review all information for accuracy, then click <Badge size="sm">Submit</Badge> to create the appointment</Text>
                   </List.Item>
                 </List>
               </div>
@@ -869,31 +869,31 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm" fw={500}>Appointment Letter</Text> - Official offer letter detailing position, compensation, and start date
+                    <Text size="sm" fw={500}>Appointment Letter</Text> <Text size="sm" component="span">- Official offer letter detailing position, compensation, and start date</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Board Resolution</Text> - Formal board action appointing the officer with authority granted
+                    <Text size="sm" fw={500}>Board Resolution</Text> <Text size="sm" component="span">- Formal board action appointing the officer with authority granted</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Employment Agreement</Text> - Comprehensive employment contract with terms, duties, and termination clauses
+                    <Text size="sm" fw={500}>Employment Agreement</Text> <Text size="sm" component="span">- Comprehensive employment contract with terms, duties, and termination clauses</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Confidentiality & IP Assignment</Text> - Protects company trade secrets and assigns work product to company
+                    <Text size="sm" fw={500}>Confidentiality & IP Assignment</Text> <Text size="sm" component="span">- Protects company trade secrets and assigns work product to company</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Bylaws Acknowledgment</Text> - Officer acknowledges receipt and understanding of company bylaws
+                    <Text size="sm" fw={500}>Bylaws Acknowledgment</Text> <Text size="sm" component="span">- Officer acknowledges receipt and understanding of company bylaws</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Fiduciary Duty & Ethics Acknowledgment</Text> - Confirms understanding of fiduciary obligations to company
+                    <Text size="sm" fw={500}>Fiduciary Duty & Ethics Acknowledgment</Text> <Text size="sm" component="span">- Confirms understanding of fiduciary obligations to company</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Conflict of Interest Disclosure</Text> - Annual disclosure of potential conflicts requiring board review
+                    <Text size="sm" fw={500}>Conflict of Interest Disclosure</Text> <Text size="sm" component="span">- Annual disclosure of potential conflicts requiring board review</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Officer Indemnification Agreement</Text> - Company's commitment to indemnify officer for actions within scope
+                    <Text size="sm" fw={500}>Officer Indemnification Agreement</Text> <Text size="sm" component="span">- Company's commitment to indemnify officer for actions within scope</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Deferred Compensation Agreement</Text> - Salary deferral terms if applicable (or acknowledgment of immediate pay)
+                    <Text size="sm" fw={500}>Deferred Compensation Agreement</Text> <Text size="sm" component="span">- Salary deferral terms if applicable (or acknowledgment of immediate pay)</Text>
                   </List.Item>
                 </List>
 
@@ -904,13 +904,13 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm" fw={500}>Pre-Incorporation Consent</Text> - Founding team agreement to form the corporation
+                    <Text size="sm" fw={500}>Pre-Incorporation Consent</Text> <Text size="sm" component="span">- Founding team agreement to form the corporation</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Certificate of Incorporation (Draft)</Text> - Articles to be filed with Secretary of State
+                    <Text size="sm" fw={500}>Certificate of Incorporation (Draft)</Text> <Text size="sm" component="span">- Articles to be filed with Secretary of State</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Company Bylaws</Text> - Internal governance rules and procedures
+                    <Text size="sm" fw={500}>Company Bylaws</Text> <Text size="sm" component="span">- Internal governance rules and procedures</Text>
                   </List.Item>
                 </List>
 
@@ -921,16 +921,16 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm" fw={500}>Stock Certificate</Text> - Ownership certificate showing share issuance
+                    <Text size="sm" fw={500}>Stock Certificate</Text> <Text size="sm" component="span">- Ownership certificate showing share issuance</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Stock Subscription Agreement</Text> - Officer's purchase or grant of company shares
+                    <Text size="sm" fw={500}>Stock Subscription Agreement</Text> <Text size="sm" component="span">- Officer's purchase or grant of company shares</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Equity Incentive Plan</Text> - Company's overall equity compensation plan document
+                    <Text size="sm" fw={500}>Equity Incentive Plan</Text> <Text size="sm" component="span">- Company's overall equity compensation plan document</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm" fw={500}>Option/RSU Award Agreement</Text> - Specific terms of stock options or restricted stock units
+                    <Text size="sm" fw={500}>Option/RSU Award Agreement</Text> <Text size="sm" component="span">- Specific terms of stock options or restricted stock units</Text>
                   </List.Item>
                 </List>
 
@@ -954,7 +954,7 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm">Check the <Badge variant="light" size="sm">Documents</Badge> column - you should see a green badge showing "X / Y Generated" where:</Text>
+                    <Text size="sm" component="div">Check the <Badge variant="light" size="sm">Documents</Badge> column - you should see a green badge showing "X / Y Generated" where:</Text>
                     <List withPadding size="xs" mt={4}>
                       <List.Item>9 documents if no equity and not formation mode</List.Item>
                       <List.Item>12 documents if formation mode (9 + 3)</List.Item>
@@ -963,10 +963,10 @@ const AppointmentList: React.FC = () => {
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Click the <Badge variant="light" size="sm" color="blue">eye icon</Badge> to open the appointment details modal</Text>
+                    <Text size="sm" component="div">Click the <Badge variant="light" size="sm" color="blue">eye icon</Badge> to open the appointment details modal</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">In the modal, review each document by clicking the <Badge size="xs" color="blue">View</Badge> button next to each document name</Text>
+                    <Text size="sm" component="div">In the modal, review each document by clicking the <Badge size="xs" color="blue">View</Badge> button next to each document name</Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm" fw={500}>Verify each document contains:</Text>
@@ -979,10 +979,10 @@ const AppointmentList: React.FC = () => {
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">If any document is incorrect or missing, click the <Badge variant="light" size="sm" color="orange">refresh icon</Badge> (circular arrow) in the Actions column to regenerate all documents</Text>
+                    <Text size="sm" component="div">If any document is incorrect or missing, click the <Badge variant="light" size="sm" color="orange">refresh icon</Badge> (circular arrow) in the Actions column to regenerate all documents</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">To edit appointment details before regeneration, click the <Badge variant="light" size="sm" color="green">edit icon</Badge> (pencil) in the Actions column</Text>
+                    <Text size="sm" component="div">To edit appointment details before regeneration, click the <Badge variant="light" size="sm" color="green">edit icon</Badge> (pencil) in the Actions column</Text>
                   </List.Item>
                 </List>
               </div>
@@ -1000,7 +1000,7 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm">Navigate to the <Badge variant="light" size="sm">Resolutions</Badge> tab at the top of this page</Text>
+                    <Text size="sm" component="div">Navigate to the <Badge variant="light" size="sm">Resolutions</Badge> tab at the top of this page</Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm">Find the board resolution automatically created for this appointment (it will show the officer's name and appointment date)</Text>
@@ -1008,18 +1008,18 @@ const AppointmentList: React.FC = () => {
                   <List.Item>
                     <Text size="sm">Board members can review the resolution details and vote in one of two ways:</Text>
                     <List withPadding size="xs" mt={4}>
-                      <List.Item><Text fw={500}>Via Voting Dashboard:</Text> Click the <Badge size="xs">Voting Dashboard</Badge> tab to see all pending resolutions requiring votes</List.Item>
-                      <List.Item><Text fw={500}>Via Resolution List:</Text> Click directly on a resolution in the Resolutions tab to view details and cast a vote</List.Item>
+                      <List.Item><Text fw={500} component="span">Via Voting Dashboard:</Text> <Text component="span">Click the <Badge size="xs">Voting Dashboard</Badge> tab to see all pending resolutions requiring votes</Text></List.Item>
+                      <List.Item><Text fw={500} component="span">Via Resolution List:</Text> <Text component="span">Click directly on a resolution in the Resolutions tab to view details and cast a vote</Text></List.Item>
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Each board member must vote: <Badge size="xs" color="green">For</Badge>, <Badge size="xs" color="red">Against</Badge>, or <Badge size="xs" color="gray">Abstain</Badge></Text>
+                    <Text size="sm" component="div">Each board member must vote: <Badge size="xs" color="green">For</Badge>, <Badge size="xs" color="red">Against</Badge>, or <Badge size="xs" color="gray">Abstain</Badge></Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Once at least 1 board member votes "For", the resolution status automatically changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge></Text>
+                    <Text size="sm" component="div">Once at least 1 board member votes "For", the resolution status automatically changes to <Badge color="green" size="sm">BOARD_ADOPTED</Badge></Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">The appointment status updates to <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge> and proceeds to Step 5</Text>
+                    <Text size="sm" component="div">The appointment status updates to <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge> and proceeds to Step 5</Text>
                   </List.Item>
                 </List>
                 <Alert icon={<IconAlertCircle size={14} />} title="Board Quorum Requirements" color="blue" variant="light" mt="xs">
@@ -1042,10 +1042,10 @@ const AppointmentList: React.FC = () => {
                   </ThemeIcon>
                 }>
                   <List.Item>
-                    <Text size="sm">Navigate to the <Badge variant="light" size="sm">Officer Validation</Badge> tab at the top of this page</Text>
+                    <Text size="sm" component="div">Navigate to the <Badge variant="light" size="sm">Officer Validation</Badge> tab at the top of this page</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Find appointments with status <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge></Text>
+                    <Text size="sm" component="div">Find appointments with status <Badge color="yellow" size="sm">READY_FOR_SECRETARY_REVIEW</Badge></Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm" fw={500}>The Secretary must verify:</Text>
@@ -1058,13 +1058,13 @@ const AppointmentList: React.FC = () => {
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">If everything is in order, click <Badge size="sm" color="green">Approve</Badge> to certify the appointment</Text>
+                    <Text size="sm" component="div">If everything is in order, click <Badge size="sm" color="green">Approve</Badge> to certify the appointment</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Status changes to <Badge color="green" size="sm">SECRETARY_APPROVED</Badge> and the appointment proceeds to final activation</Text>
+                    <Text size="sm" component="div">Status changes to <Badge color="green" size="sm">SECRETARY_APPROVED</Badge> and the appointment proceeds to final activation</Text>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">If issues are found, click <Badge size="sm" color="red">Reject</Badge> and provide detailed notes for correction</Text>
+                    <Text size="sm" component="div">If issues are found, click <Badge size="sm" color="red">Reject</Badge> and provide detailed notes for correction</Text>
                   </List.Item>
                 </List>
               </div>
@@ -1103,7 +1103,7 @@ const AppointmentList: React.FC = () => {
                     </List>
                   </List.Item>
                   <List.Item>
-                    <Text size="sm">Appointment status updates to <Badge color="green" size="sm">ACTIVE</Badge> - the officer is now officially appointed</Text>
+                    <Text size="sm" component="div">Appointment status updates to <Badge color="green" size="sm">ACTIVE</Badge> - the officer is now officially appointed</Text>
                   </List.Item>
                   <List.Item>
                     <Text size="sm">The officer can log in to their executive portal and begin:</Text>

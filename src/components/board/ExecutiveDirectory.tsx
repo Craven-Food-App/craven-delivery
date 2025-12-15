@@ -125,7 +125,7 @@ export const ExecutiveDirectory: React.FC<ExecutiveDirectoryProps> = ({ viewerRo
           if (position.includes('board member')) role = 'board_member';
           else if (position.includes('advisor')) role = 'advisor';
           else if (!execRole) role = position;
-          const email = (emp.email || emp.work_email || '').toLowerCase();
+          const email = (emp.email || '').toLowerCase();
           if (email) existingEmails.add(email);
           return {
             id: emp.id,
@@ -136,7 +136,7 @@ export const ExecutiveDirectory: React.FC<ExecutiveDirectoryProps> = ({ viewerRo
             last_login: null,
             created_at: emp.created_at,
             name: `${emp.first_name} ${emp.last_name}`,
-            email: emp.email || emp.work_email,
+            email: emp.email || '',
             source: 'employees',
             photo_url: emp.photo_url,
             phone: emp.phone,

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { CheckCircle, Copy, MoreVertical, User, UserPlus, UserX } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -301,7 +301,7 @@ export const CustomerManagement: React.FC = () => {
         <CardContent>
           <Table>
             <TableCaption>A list of your customers.</TableCaption>
-            <TableHead>
+            <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
@@ -309,7 +309,7 @@ export const CustomerManagement: React.FC = () => {
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>

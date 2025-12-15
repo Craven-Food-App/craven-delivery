@@ -189,8 +189,8 @@ export const TaxManagementView: React.FC = () => {
         // Revenue from orders
         supabase
           .from('orders')
-          .select('total_amount, created_at')
-          .eq('status', 'completed')
+          .select('total_cents, created_at')
+          .eq('order_status', 'completed')
           .gte('created_at', startDate)
           .lte('created_at', endDate),
         
@@ -206,8 +206,8 @@ export const TaxManagementView: React.FC = () => {
           .from('ceo_financial_approvals')
           .select('amount, status')
           .eq('status', 'approved')
-          .gte('requested_at', startDate)
-          .lte('requested_at', endDate),
+          .gte('requested_date', startDate)
+          .lte('requested_date', endDate),
         
         // Tax calendar
         supabase

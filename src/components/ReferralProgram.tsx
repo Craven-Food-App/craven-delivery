@@ -99,17 +99,22 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
       setSettings(settingsData);
 
       // Get video content for this referral type
-      const { data: videoData } = await supabase
-        .from('referral_video_content')
-        .select('*')
-        .eq('referral_type', userType)
-        .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .limit(1)
-        .single();
+      try {
+        const { data: videoData, error: videoError } = await supabase
+          .from('referral_video_content')
+          .select('*')
+          .eq('referral_type', userType)
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .maybeSingle();
 
-      if (videoData) {
-        setVideoContent(videoData);
+        if (!videoError && videoData) {
+          setVideoContent(videoData);
+        }
+      } catch (error) {
+        // Table may not exist or RLS may block access - silently ignore
+        console.debug('Referral video content not available:', error);
       }
 
       // For driver type, fetch milestone-specific stats

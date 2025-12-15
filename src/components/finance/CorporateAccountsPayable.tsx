@@ -921,32 +921,36 @@ export const CorporateAccountsPayable: React.FC = () => {
       {/* Invoices Table */}
       <Card
         title={
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Pending <Badge count={invoices.filter(inv => inv.payment_status !== 'paid' && inv.status !== 'cancelled').length} />
-                </span>
-              }
-              key="pending"
-            />
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Overdue <Badge count={invoices.filter(inv => inv.days_overdue > 0 && inv.payment_status !== 'paid').length} style={{ backgroundColor: '#ff4d4f' }} />
-                </span>
-              }
-              key="overdue"
-            />
-            <Tabs.TabPane
-              tab={
-                <span>
-                  Paid <Badge count={invoices.filter(inv => inv.payment_status === 'paid').length} style={{ backgroundColor: '#52c41a' }} />
-                </span>
-              }
-              key="paid"
-            />
-          </Tabs>
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'pending',
+                label: (
+                  <span>
+                    Pending <Badge count={invoices.filter(inv => inv.payment_status !== 'paid' && inv.status !== 'cancelled').length} />
+                  </span>
+                ),
+              },
+              {
+                key: 'overdue',
+                label: (
+                  <span>
+                    Overdue <Badge count={invoices.filter(inv => inv.days_overdue > 0 && inv.payment_status !== 'paid').length} style={{ backgroundColor: '#ff4d4f' }} />
+                  </span>
+                ),
+              },
+              {
+                key: 'paid',
+                label: (
+                  <span>
+                    Paid <Badge count={invoices.filter(inv => inv.payment_status === 'paid').length} style={{ backgroundColor: '#52c41a' }} />
+                  </span>
+                ),
+              },
+            ]}
+          />
         }
         extra={
           <Text type="secondary" style={{ fontSize: 12 }}>
