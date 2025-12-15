@@ -27,6 +27,7 @@ import {
   IconMail,
   IconPencil,
   IconCode,
+  IconSchool,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +48,7 @@ import { useAutoLogout } from '@/hooks/useAutoLogout';
 import CEOSignatureManager from '@/components/ceo/CEOSignatureManager';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
 import ActiveUsersMonitor from '@/components/ceo/ActiveUsersMonitor';
+import { InternsManagement } from '@/components/ceo/InternsManagement';
 // No Card components: full-page Ant layout
 
 interface CEOMetrics {
@@ -115,6 +117,7 @@ const CEOPortal: React.FC = () => {
       { id: 'word', label: 'Draft Briefings', icon: IconFileText as any },
       { id: 'active-users', label: 'Active Users', icon: IconUsers as any },
       { id: 'accountability', label: 'Executive Accountability', icon: IconShield as any },
+      { id: 'interns', label: 'Interns & Pathway', icon: IconSchool as any },
     ];
   }, [metrics?.totalEmployees, metrics?.pendingApprovals, metrics?.pendingCodeChanges]);
 
@@ -176,6 +179,8 @@ const CEOPortal: React.FC = () => {
       case 'accountability':
         navigate('/executive/discipline');
         return <QuickActions onNavigate={setActiveTab} />;
+      case 'interns':
+        return <InternsManagement />;
       default:
         return <QuickActions onNavigate={setActiveTab} />;
     }

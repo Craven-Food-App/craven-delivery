@@ -193,6 +193,12 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
         icon: <IconShield size={20} />,
         roles: ['CFO', 'CONTROLLER', 'INTERNAL_AUDITOR'],
       },
+      {
+        id: 'cfo-evaluation',
+        label: 'CFO Evaluation Gate',
+        icon: <IconShield size={20} />,
+        roles: ['CFO'],
+      },
     ];
 
     // Filter based on user's permissions and roles

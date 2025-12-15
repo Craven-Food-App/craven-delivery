@@ -68,6 +68,7 @@ import { TeamResourceManagement } from '@/components/cto/TeamResourceManagement'
 import { TechnologyRoadmap } from '@/components/cto/TechnologyRoadmap';
 import { TechCostManagement } from '@/components/cto/TechCostManagement';
 import { CTOPortalInstructionManual } from '@/components/cto/CTOPortalInstructionManual';
+import CtoEvaluationGatePanel from '@/components/cto/CtoEvaluationGatePanel';
 import { IncidentsDashboard } from '@/components/cto/IncidentsDashboard';
 import { AssetManagement } from '@/components/cto/AssetManagement';
 import { CTOOnboardingGovernance } from '@/components/cto/CTOOnboardingGovernance';
@@ -145,6 +146,7 @@ function CTOPortalContent() {
   const finalIsAuthorized = isAuthorized || isTorrance;
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => [
+    { id: 'evaluation', label: 'CTO Evaluation Gate', icon: Shield },
     { id: 'onboarding', label: 'CTO Onboarding & Governance', icon: Scale },
     { id: 'training', label: 'Training', icon: FileText },
     { id: 'overview', label: 'CTO Command Center', icon: BarChart3 },
@@ -197,6 +199,12 @@ function CTOPortalContent() {
         return <TechnologyRoadmap />;
       case 'costs':
         return <TechCostManagement />;
+      case 'evaluation':
+        return (
+          <Stack gap="md">
+            <CtoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cto'} />
+          </Stack>
+        );
       case 'morning-review':
         return <MorningTechnicalReview />;
       case 'sprint':

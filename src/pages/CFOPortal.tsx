@@ -116,6 +116,7 @@ import { EnhancedScenarioPlanning } from '@/components/cfo/EnhancedScenarioPlann
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { CFOOnboardingGovernance } from '@/components/cfo/CFOOnboardingGovernance';
+import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
 
 // Reusable InfoIcon component with Popover
 function InfoIcon({ content, title }: { content: string; title?: string }) {
@@ -745,6 +746,7 @@ function CFOPortalContent() {
   }, [fetchData]);
 
   const navItems = useMemo<ExecutiveNavItem[]>(() => [
+    { id: 'evaluation', label: 'CFO Evaluation Gate', icon: ShieldAlert },
     { id: 'onboarding', label: 'CFO Onboarding & Governance', icon: Scale },
     { id: 'overview', label: 'CFO Command Center', icon: BarChart3 },
     { id: 'finance', label: 'Finance Department', icon: DollarSign },
@@ -797,6 +799,12 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
+      case 'evaluation':
+        return (
+          <Stack gap="md">
+            <CfoEvaluationGatePanel mode="cfo" />
+          </Stack>
+        );
       case 'onboarding':
         return <CFOOnboardingGovernance />;
       case 'overview':

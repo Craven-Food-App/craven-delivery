@@ -13,7 +13,9 @@ import {
   IconFileText,
   IconChartBar,
   IconUsers,
+  IconShield,
 } from '@tabler/icons-react';
+import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
 
 export const FinancePortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('expenses');
@@ -40,6 +42,9 @@ export const FinancePortal: React.FC = () => {
           <Tabs.Tab value="hierarchy" leftSection={<IconUsers size={16} />}>
             Hierarchy
           </Tabs.Tab>
+          <Tabs.Tab value="cfo-eval" leftSection={<IconShield size={16} />}>
+            CFO Evaluation Gate
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="expenses" pt="md">
@@ -64,6 +69,10 @@ export const FinancePortal: React.FC = () => {
 
         <Tabs.Panel value="hierarchy" pt="md">
           <FinanceDepartmentHierarchy />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="cfo-eval" pt="md">
+          <CfoEvaluationGatePanel mode="cfo" />
         </Tabs.Panel>
       </Tabs>
     </Stack>

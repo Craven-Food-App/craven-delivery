@@ -1215,6 +1215,38 @@ const MainHub: React.FC = () => {
       path: "/testing",
       color: "#fa8c16",
     },
+    {
+      id: "intern",
+      name: "Intern Portal",
+      description: "Intern workspace for training, tasks, and performance",
+      icon: UserOutlined,
+      path: "/intern/dashboard",
+      color: "#6366f1",
+    },
+    {
+      id: "intern-manager",
+      name: "Intern Manager",
+      description: "Manage assigned interns, reviews, and approvals",
+      icon: TeamOutlined,
+      path: "/manager/dashboard",
+      color: "#0ea5e9",
+    },
+    {
+      id: "intern-sponsor",
+      name: "Executive Sponsor",
+      description: "Review conversion pipeline and finalize approvals",
+      icon: CrownOutlined,
+      path: "/executive-sponsor/pipeline",
+      color: "#a855f7",
+    },
+    {
+      id: "intern-program-admin",
+      name: "Intern Program Admin",
+      description: "Configure intern tracks, templates, and access",
+      icon: SettingOutlined,
+      path: "/admin/intern-program/dashboard",
+      color: "#f97316",
+    },
   ];
 
   // Permission flags (used to gray out tiles but keep visible)

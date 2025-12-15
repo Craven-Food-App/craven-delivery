@@ -112,6 +112,26 @@ import MyAppointment from "./portals/company/executives/MyAppointment";
 import OfficerDirectoryInternal from "./portals/company/executives/OfficerDirectoryInternal";
 import LeadershipPublicPage from "./portals/company/leadership-public/LeadershipPublicPage";
 import { TemplateManager } from "./components/board/TemplateManager";
+import InternPortalLayout from "./portals/intern/InternPortalLayout";
+import InternDashboard from "./portals/intern/dashboard/InternDashboard";
+import InternTraining from "./portals/intern/training/InternTraining";
+import InternWork from "./portals/intern/work/InternWork";
+import InternPerformance from "./portals/intern/performance/InternPerformance";
+import InternConversion from "./portals/intern/conversion/InternConversion";
+import InternExit from "./portals/intern/exit/InternExit";
+import ManagerPortalLayout from "./portals/manager/ManagerPortalLayout";
+import ManagerDashboard from "./portals/manager/dashboard/ManagerDashboard";
+import ManagerInternDetail from "./portals/manager/interns/ManagerInternDetail";
+import ManagerReviews from "./portals/manager/reviews/ManagerReviews";
+import ManagerApprovals from "./portals/manager/approvals/ManagerApprovals";
+import SponsorPortalLayout from "./portals/executive-sponsor/SponsorPortalLayout";
+import SponsorPipeline from "./portals/executive-sponsor/pipeline/SponsorPipeline";
+import SponsorInternDetail from "./portals/executive-sponsor/interns/SponsorInternDetail";
+import SponsorApprovals from "./portals/executive-sponsor/approvals/SponsorApprovals";
+import AdminInternProgramLayout from "./portals/intern-program-admin/AdminInternProgramLayout";
+import InternProgramDashboard from "./portals/intern-program-admin/dashboard/InternProgramDashboard";
+import InternRolesPermissions from "./portals/intern-program-admin/roles/InternRolesPermissions";
+import InternProgramTemplates from "./portals/intern-program-admin/templates/InternProgramTemplates";
 
 // Lazy load guide pages
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
@@ -375,6 +395,31 @@ const App = () => {
                     <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
                     <Route path="leadership-public" element={<LeadershipPublicPage />} />
                     <Route path="leadership/templates" element={<TemplateManager />} />
+                  </Route>
+                  {/* Intern program portals (HQ view) */}
+                  <Route path="/intern/*" element={<InternPortalLayout />}>
+                    <Route path="dashboard" element={<InternDashboard />} />
+                    <Route path="training" element={<InternTraining />} />
+                    <Route path="work" element={<InternWork />} />
+                    <Route path="performance" element={<InternPerformance />} />
+                    <Route path="conversion" element={<InternConversion />} />
+                    <Route path="exit" element={<InternExit />} />
+                  </Route>
+                  <Route path="/manager/*" element={<ManagerPortalLayout />}>
+                    <Route path="dashboard" element={<ManagerDashboard />} />
+                    <Route path="interns/:internId" element={<ManagerInternDetail />} />
+                    <Route path="reviews" element={<ManagerReviews />} />
+                    <Route path="approvals" element={<ManagerApprovals />} />
+                  </Route>
+                  <Route path="/executive-sponsor/*" element={<SponsorPortalLayout />}>
+                    <Route path="pipeline" element={<SponsorPipeline />} />
+                    <Route path="interns/:internId" element={<SponsorInternDetail />} />
+                    <Route path="approvals" element={<SponsorApprovals />} />
+                  </Route>
+                  <Route path="/admin/intern-program/*" element={<AdminInternProgramLayout />}>
+                    <Route path="dashboard" element={<InternProgramDashboard />} />
+                    <Route path="roles-permissions" element={<InternRolesPermissions />} />
+                    <Route path="templates" element={<InternProgramTemplates />} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -677,6 +722,30 @@ const App = () => {
             <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
             <Route path="leadership-public" element={<LeadershipPublicPage />} />
             <Route path="leadership/templates" element={<TemplateManager />} />
+          </Route>
+          <Route path="/intern/*" element={<InternPortalLayout />}>
+            <Route path="dashboard" element={<InternDashboard />} />
+            <Route path="training" element={<InternTraining />} />
+            <Route path="work" element={<InternWork />} />
+            <Route path="performance" element={<InternPerformance />} />
+            <Route path="conversion" element={<InternConversion />} />
+            <Route path="exit" element={<InternExit />} />
+          </Route>
+          <Route path="/manager/*" element={<ManagerPortalLayout />}>
+            <Route path="dashboard" element={<ManagerDashboard />} />
+            <Route path="interns/:internId" element={<ManagerInternDetail />} />
+            <Route path="reviews" element={<ManagerReviews />} />
+            <Route path="approvals" element={<ManagerApprovals />} />
+          </Route>
+          <Route path="/executive-sponsor/*" element={<SponsorPortalLayout />}>
+            <Route path="pipeline" element={<SponsorPipeline />} />
+            <Route path="interns/:internId" element={<SponsorInternDetail />} />
+            <Route path="approvals" element={<SponsorApprovals />} />
+          </Route>
+          <Route path="/admin/intern-program/*" element={<AdminInternProgramLayout />}>
+            <Route path="dashboard" element={<InternProgramDashboard />} />
+            <Route path="roles-permissions" element={<InternRolesPermissions />} />
+            <Route path="templates" element={<InternProgramTemplates />} />
           </Route>
           <Route path="/marketing-portal" element={<MarketingPortal />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />

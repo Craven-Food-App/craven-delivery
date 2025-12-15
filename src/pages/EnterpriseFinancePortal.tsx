@@ -17,6 +17,7 @@ import { AccountsReceivableView } from '@/components/finance/AccountsReceivableV
 import { CorporateAccountsPayable } from '@/components/finance/CorporateAccountsPayable';
 import { CorporateAccountsReceivable } from '@/components/finance/CorporateAccountsReceivable';
 import { SimpleTest } from '@/components/finance/SimpleTest';
+import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
 import { useFinanceRBAC } from '@/hooks/useFinanceRBAC';
 import { EnterpriseFinancePortalLayout } from '@/components/finance/EnterpriseFinancePortalLayout';
 import { DriverCompensationDashboard } from '@/components/finance/driver-compensation/DriverCompensationDashboard';
@@ -49,6 +50,7 @@ const EnterpriseFinancePortal: React.FC = () => {
         <Route path="driver-compensation/peak-rules" element={<PeakRulesManager />} />
         <Route path="driver-compensation/bonuses" element={<BonusesOverview />} />
         <Route path="driver-compensation/profitability" element={<ProfitabilityDashboard />} />
+        <Route path="cfo-evaluation" element={<CfoEvaluationGatePanel mode="cfo" />} />
         <Route path="test" element={<SimpleTest />} />
         <Route path="*" element={<div style={{ padding: '2rem' }}><h1>Route Not Found in Finance Portal</h1><p>Available routes: general-ledger, accounts-payable, accounts-receivable, etc.</p></div>} />
       </Routes>
