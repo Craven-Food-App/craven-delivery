@@ -1483,7 +1483,7 @@ const MainHub: React.FC = () => {
         >
           <div style={{ marginBottom: 16 }} />
 
-          {/* Time Clock Section - Compact Horizontal Layout */}
+          {/* Time Clock Section - Redesigned Compact Layout */}
           {user && (
             <Card
               style={{
@@ -1497,52 +1497,107 @@ const MainHub: React.FC = () => {
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                 transition: 'background 0.3s ease',
               }}
-              bodyStyle={{ padding: 12 }}
+              bodyStyle={{ padding: 16 }}
             >
-              <Row gutter={[16, 8]} align="middle">
-                {/* Time Display - Left */}
-                <Col xs={24} sm={8} md={6}>
-                  <div style={{ color: flashColor ? '#fff' : '#111827' }}>
-                    <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', lineHeight: 1.2 }}>
-                      {formatTime(currentTime).split(' ')[0]}
-                      <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>
-                        {formatTime(currentTime).split(' ')[1]}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>
-                      {formatDate(currentTime)}
+              <Row gutter={[16, 12]} align="middle">
+                {/* Left Section: Time & Date */}
+                <Col xs={24} sm={12} md={8}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <ClockCircleOutlined style={{ 
+                      fontSize: 32, 
+                      color: flashColor ? '#fff' : '#ff7a45',
+                      opacity: 0.9 
+                    }} />
+                    <div style={{ color: flashColor ? '#fff' : '#111827' }}>
+                      <div style={{ 
+                        fontSize: 28, 
+                        fontWeight: 700, 
+                        fontFamily: 'monospace', 
+                        lineHeight: 1.2,
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 6
+                      }}>
+                        {formatTime(currentTime).split(' ')[0]}
+                        <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.8 }}>
+                          {formatTime(currentTime).split(' ')[1]}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>
+                        {formatDate(currentTime)}
+                      </div>
                     </div>
                   </div>
                 </Col>
                 
-                {/* Status & Duration - Center */}
-                <Col xs={24} sm={8} md={6}>
-                  <div style={{ color: flashColor ? '#fff' : '#111827' }}>
+                {/* Center Section: Status Badge & Duration */}
+                <Col xs={24} sm={12} md={6}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
                     <div style={{
-                      display: 'inline-block',
-                      padding: '3px 10px',
-                      borderRadius: 8,
-                      background: flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      marginBottom: clockStatus.isClockedIn ? 4 : 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 14px',
+                      borderRadius: 20,
+                      background: clockStatus.isClockedIn 
+                        ? (flashColor ? 'rgba(255,255,255,0.3)' : '#52c41a')
+                        : (flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6'),
+                      border: clockStatus.isClockedIn && !flashColor ? '1px solid #52c41a' : 'none',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: clockStatus.isClockedIn 
+                        ? (flashColor ? '#fff' : '#fff')
+                        : (flashColor ? '#fff' : '#6b7280'),
+                      letterSpacing: 0.5,
                     }}>
-                      {clockStatus.isClockedIn ? 'IN' : 'OUT'}
+                      {clockStatus.isClockedIn ? (
+                        <>
+                          <div style={{ 
+                            width: 6, 
+                            height: 6, 
+                            borderRadius: '50%', 
+                            background: flashColor ? '#fff' : '#fff',
+                            animation: clockStatus.isClockedIn ? 'pulse 2s infinite' : 'none'
+                          }} />
+                          CLOCKED IN
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ 
+                            width: 6, 
+                            height: 6, 
+                            borderRadius: '50%', 
+                            background: flashColor ? '#fff' : '#9ca3af'
+                          }} />
+                          CLOCKED OUT
+                        </>
+                      )}
                     </div>
                     {clockStatus.isClockedIn && clockStatus.clockInAt && (
-                      <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4 }}>
-                        <div style={{ fontFamily: 'monospace', fontWeight: 600 }}>{currentDuration}</div>
+                      <div style={{ 
+                        fontSize: 13, 
+                        fontFamily: 'monospace', 
+                        fontWeight: 600,
+                        color: flashColor ? '#fff' : '#111827',
+                        opacity: 0.9
+                      }}>
+                        {currentDuration}
                       </div>
                     )}
                   </div>
                 </Col>
                 
-                {/* Action Buttons - Center Right */}
-                <Col xs={24} sm={8} md={6}>
-                  <Space size="small" style={{ width: '100%' }}>
+                {/* Right Section: Action Buttons */}
+                <Col xs={24} sm={24} md={10}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <Button
                       type="primary"
-                      size="small"
+                      size="middle"
                       icon={<LoginOutlined />}
                       loading={clockLoading && pendingClockAction === 'in'}
                       onClick={handleClockIn}
@@ -1550,17 +1605,18 @@ const MainHub: React.FC = () => {
                       style={{
                         background: clockStatus.isClockedIn ? '#d1d5db' : '#52c41a',
                         border: 'none',
-                        height: 28,
-                        fontSize: 11,
+                        height: 36,
+                        fontSize: 13,
                         fontWeight: 600,
                         flex: 1,
+                        boxShadow: clockStatus.isClockedIn ? 'none' : '0 2px 4px rgba(82, 196, 26, 0.3)',
                       }}
                     >
-                      IN
+                      Clock In
                     </Button>
                     <Button
                       type="primary"
-                      size="small"
+                      size="middle"
                       icon={<LogoutOutlined />}
                       loading={clockLoading && pendingClockAction === 'out'}
                       onClick={handleClockOut}
@@ -1568,75 +1624,96 @@ const MainHub: React.FC = () => {
                       style={{
                         background: !clockStatus.isClockedIn ? '#d1d5db' : '#ff4d4f',
                         border: 'none',
-                        height: 28,
-                        fontSize: 11,
+                        height: 36,
+                        fontSize: 13,
                         fontWeight: 600,
                         flex: 1,
+                        boxShadow: (!clockStatus.isClockedIn || pendingClockAction === 'in') ? 'none' : '0 2px 4px rgba(255, 77, 79, 0.3)',
                       }}
                     >
-                      OUT
+                      Clock Out
                     </Button>
-                  </Space>
-                </Col>
-                
-                {/* Stats - Right */}
-                <Col xs={24} sm={24} md={6}>
-                  <Row gutter={[8, 0]}>
-                    <Col span={12}>
-                      <div style={{ 
-                        textAlign: 'center',
-                        padding: '6px',
-                        background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
-                        borderRadius: 4,
-                        border: flashColor ? 'none' : '1px solid #e5e7eb',
-                      }}>
-                        <div style={{ fontSize: 9, opacity: 0.8, color: flashColor ? '#fff' : '#6b7280', marginBottom: 2 }}>
-                          TODAY
-                        </div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: flashColor ? '#fff' : '#111827', fontFamily: 'monospace' }}>
-                          {clockStatus.hoursToday.toFixed(1)}h
-                        </div>
-                      </div>
-                    </Col>
-                    <Col span={12}>
-                      <div style={{ 
-                        textAlign: 'center',
-                        padding: '6px',
-                        background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
-                        borderRadius: 4,
-                        border: flashColor ? 'none' : '1px solid #e5e7eb',
-                      }}>
-                        <div style={{ fontSize: 9, opacity: 0.8, color: flashColor ? '#fff' : '#6b7280', marginBottom: 2 }}>
-                          WEEK
-                        </div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: flashColor ? '#fff' : '#111827', fontFamily: 'monospace' }}>
-                          {clockStatus.weeklyHours.toFixed(1)}h
-                        </div>
-                      </div>
-                    </Col>
-                  </Row>
+                  </div>
                 </Col>
               </Row>
               
-              {/* History Toggle - Inline */}
-              <div style={{ marginTop: 12, textAlign: 'center' }}>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<HistoryOutlined />}
-                  onClick={() => {
-                    setShowClockHistory(!showClockHistory);
-                    if (!showClockHistory) fetchTimeEntries();
-                  }}
-                  style={{
-                    color: flashColor ? '#fff' : '#6b7280',
-                    fontSize: 11,
-                    height: 24,
-                  }}
-                >
-                  {showClockHistory ? 'Hide' : 'Show'} History ({timeEntries.length})
-                </Button>
-              </div>
+              {/* Bottom Section: Stats & History */}
+              <Row gutter={[12, 8]} style={{ marginTop: 12 }}>
+                <Col xs={12} sm={6}>
+                  <div style={{ 
+                    padding: '8px 12px',
+                    background: flashColor ? 'rgba(255,255,255,0.15)' : '#f9fafb',
+                    borderRadius: 6,
+                    border: flashColor ? 'none' : '1px solid #e5e7eb',
+                  }}>
+                    <div style={{ 
+                      fontSize: 10, 
+                      fontWeight: 600,
+                      color: flashColor ? '#fff' : '#6b7280', 
+                      marginBottom: 4,
+                      opacity: 0.9
+                    }}>
+                      Hours Today
+                    </div>
+                    <div style={{ 
+                      fontSize: 20, 
+                      fontWeight: 700, 
+                      color: flashColor ? '#fff' : '#111827', 
+                      fontFamily: 'monospace'
+                    }}>
+                      {clockStatus.hoursToday.toFixed(1)}h
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={12} sm={6}>
+                  <div style={{ 
+                    padding: '8px 12px',
+                    background: flashColor ? 'rgba(255,255,255,0.15)' : '#f9fafb',
+                    borderRadius: 6,
+                    border: flashColor ? 'none' : '1px solid #e5e7eb',
+                  }}>
+                    <div style={{ 
+                      fontSize: 10, 
+                      fontWeight: 600,
+                      color: flashColor ? '#fff' : '#6b7280', 
+                      marginBottom: 4,
+                      opacity: 0.9
+                    }}>
+                      Hours This Week
+                    </div>
+                    <div style={{ 
+                      fontSize: 20, 
+                      fontWeight: 700, 
+                      color: flashColor ? '#fff' : '#111827', 
+                      fontFamily: 'monospace'
+                    }}>
+                      {clockStatus.weeklyHours.toFixed(1)}h
+                    </div>
+                  </div>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Button
+                    type="default"
+                    size="small"
+                    icon={<HistoryOutlined />}
+                    onClick={() => {
+                      setShowClockHistory(!showClockHistory);
+                      if (!showClockHistory) fetchTimeEntries();
+                    }}
+                    block
+                    style={{
+                      background: flashColor ? 'rgba(255,255,255,0.2)' : '#ffffff',
+                      border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
+                      color: flashColor ? '#fff' : '#6b7280',
+                      height: 36,
+                      fontSize: 12,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {showClockHistory ? 'Hide' : 'View'} Time History ({timeEntries.length})
+                  </Button>
+                </Col>
+              </Row>
               
               {/* History Table */}
               {showClockHistory && (
