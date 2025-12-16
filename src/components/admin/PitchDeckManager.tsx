@@ -293,8 +293,14 @@ export const PitchDeckManager: React.FC = () => {
   };
 
   const uploadFile = async (file: File, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document'): Promise<string | null> => {
+    // Set uploading state immediately for instant feedback
+    setUploading(type);
+    setUploadProgress(10);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      setUploading(null);
+      setUploadProgress(0);
       toast({
         title: 'Error',
         description: 'You must be logged in to upload files',
@@ -305,6 +311,8 @@ export const PitchDeckManager: React.FC = () => {
 
     const maxSize = type === 'video' ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
     if (file.size > maxSize) {
+      setUploading(null);
+      setUploadProgress(0);
       toast({
         title: 'Error',
         description: `File size must be less than ${type === 'video' ? '50MB' : '20MB'}`,
@@ -313,42 +321,27 @@ export const PitchDeckManager: React.FC = () => {
       return null;
     }
 
-    setUploading(type);
-    setUploadProgress(0);
+    setUploadProgress(20);
     const fileName = `${type}/${Date.now()}_${file.name}`;
 
     try {
       const bucket = type === 'video' ? 'pitch-deck-videos' : 'pitch-deck-assets';
       
-      // Simulate progress for better UX (Supabase doesn't expose real progress)
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
+      setUploadProgress(30);
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(fileName, file, { upsert: true });
 
-      clearInterval(progressInterval);
-      
       if (uploadError) throw uploadError;
 
-      setUploadProgress(100);
+      setUploadProgress(90);
 
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
         .getPublicUrl(fileName);
 
-      toast({
-        title: 'Success',
-        description: 'File uploaded successfully',
-      });
+      setUploadProgress(100);
 
       return publicUrl;
     } catch (error: any) {
@@ -363,7 +356,7 @@ export const PitchDeckManager: React.FC = () => {
       setTimeout(() => {
         setUploading(null);
         setUploadProgress(0);
-      }, 500);
+      }, 300);
     }
   };
 
