@@ -48,6 +48,7 @@ import Safety from "./pages/Safety";
 import ContactUs from "./pages/ContactUs";
 import PartnerWithUs from "./pages/PartnerWithUs";
 import AboutUs from "./pages/AboutUs";
+import PitchDeck from "./pages/PitchDeck";
 import Careers from "./pages/Careers";
 import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
@@ -117,6 +118,7 @@ import InternDashboard from "./portals/intern/dashboard/InternDashboard";
 import InternTraining from "./portals/intern/training/InternTraining";
 import InternWork from "./portals/intern/work/InternWork";
 import InternPerformance from "./portals/intern/performance/InternPerformance";
+import InternAcademicCredit from "./portals/intern/academic/InternAcademicCredit";
 import InternConversion from "./portals/intern/conversion/InternConversion";
 import InternExit from "./portals/intern/exit/InternExit";
 import ManagerPortalLayout from "./portals/manager/ManagerPortalLayout";
@@ -130,8 +132,20 @@ import SponsorInternDetail from "./portals/executive-sponsor/interns/SponsorInte
 import SponsorApprovals from "./portals/executive-sponsor/approvals/SponsorApprovals";
 import AdminInternProgramLayout from "./portals/intern-program-admin/AdminInternProgramLayout";
 import InternProgramDashboard from "./portals/intern-program-admin/dashboard/InternProgramDashboard";
+import SponsorPortalLayoutV2 from "./portals/sponsor-portal/SponsorPortalLayout";
+import SponsorOverview from "./portals/sponsor-portal/overview/SponsorOverview";
+import ApprovalQueue from "./portals/sponsor-portal/approval-queue/ApprovalQueue";
+import SponsorInterns from "./portals/sponsor-portal/interns/SponsorInterns";
+import EnforcementApprovals from "./portals/sponsor-portal/enforcement/EnforcementApprovals";
+import SponsorAuditLog from "./portals/sponsor-portal/audit-log/SponsorAuditLog";
 import InternRolesPermissions from "./portals/intern-program-admin/roles/InternRolesPermissions";
 import InternProgramTemplates from "./portals/intern-program-admin/templates/InternProgramTemplates";
+import InternsTable from "./portals/intern-program-admin/interns/InternsTable";
+import TestModuleLibrary from "./portals/intern-program-admin/test-modules/TestModuleLibrary";
+import RoleTracksPlaylists from "./portals/intern-program-admin/role-tracks/RoleTracksPlaylists";
+import PromotionRulesEngine from "./portals/intern-program-admin/promotion-rules/PromotionRulesEngine";
+import ReviewsEnforcement from "./portals/intern-program-admin/reviews/ReviewsEnforcement";
+import AuditLog from "./portals/intern-program-admin/audit-log/AuditLog";
 
 // Lazy load guide pages
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
@@ -402,6 +416,7 @@ const App = () => {
                     <Route path="training" element={<InternTraining />} />
                     <Route path="work" element={<InternWork />} />
                     <Route path="performance" element={<InternPerformance />} />
+                    <Route path="academic" element={<InternAcademicCredit />} />
                     <Route path="conversion" element={<InternConversion />} />
                     <Route path="exit" element={<InternExit />} />
                   </Route>
@@ -418,8 +433,22 @@ const App = () => {
                   </Route>
                   <Route path="/admin/intern-program/*" element={<AdminInternProgramLayout />}>
                     <Route path="dashboard" element={<InternProgramDashboard />} />
+                    <Route path="interns" element={<InternsTable />} />
+                    <Route path="test-modules" element={<TestModuleLibrary />} />
+                    <Route path="role-tracks" element={<RoleTracksPlaylists />} />
+                    <Route path="promotion-rules" element={<PromotionRulesEngine />} />
+                    <Route path="reviews" element={<ReviewsEnforcement />} />
                     <Route path="roles-permissions" element={<InternRolesPermissions />} />
                     <Route path="templates" element={<InternProgramTemplates />} />
+                    <Route path="audit-log" element={<AuditLog />} />
+                  </Route>
+                  <Route path="/sponsor/*" element={<SponsorPortalLayoutV2 />}>
+                    <Route index element={<SponsorOverview />} />
+                    <Route path="overview" element={<SponsorOverview />} />
+                    <Route path="approval-queue" element={<ApprovalQueue />} />
+                    <Route path="interns" element={<SponsorInterns />} />
+                    <Route path="enforcement" element={<EnforcementApprovals />} />
+                    <Route path="audit-log" element={<SponsorAuditLog />} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -728,6 +757,7 @@ const App = () => {
             <Route path="training" element={<InternTraining />} />
             <Route path="work" element={<InternWork />} />
             <Route path="performance" element={<InternPerformance />} />
+            <Route path="academic" element={<InternAcademicCredit />} />
             <Route path="conversion" element={<InternConversion />} />
             <Route path="exit" element={<InternExit />} />
           </Route>
@@ -744,8 +774,22 @@ const App = () => {
           </Route>
           <Route path="/admin/intern-program/*" element={<AdminInternProgramLayout />}>
             <Route path="dashboard" element={<InternProgramDashboard />} />
+            <Route path="interns" element={<InternsTable />} />
+            <Route path="test-modules" element={<TestModuleLibrary />} />
+            <Route path="role-tracks" element={<RoleTracksPlaylists />} />
+            <Route path="promotion-rules" element={<PromotionRulesEngine />} />
+            <Route path="reviews" element={<ReviewsEnforcement />} />
             <Route path="roles-permissions" element={<InternRolesPermissions />} />
             <Route path="templates" element={<InternProgramTemplates />} />
+            <Route path="audit-log" element={<AuditLog />} />
+          </Route>
+          <Route path="/sponsor/*" element={<SponsorPortalLayoutV2 />}>
+            <Route index element={<SponsorOverview />} />
+            <Route path="overview" element={<SponsorOverview />} />
+            <Route path="approval-queue" element={<ApprovalQueue />} />
+            <Route path="interns" element={<SponsorInterns />} />
+            <Route path="enforcement" element={<EnforcementApprovals />} />
+            <Route path="audit-log" element={<SponsorAuditLog />} />
           </Route>
           <Route path="/marketing-portal" element={<MarketingPortal />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
@@ -780,6 +824,7 @@ const App = () => {
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/partner" element={<PartnerWithUs />} />
           <Route path="/about" element={<AboutUs />} />
+          <Route path="/pitch-deck/:id" element={<PitchDeck />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/careers/internship" element={<InternshipProgram />} />
           <Route path="/testing" element={<Testing />} />

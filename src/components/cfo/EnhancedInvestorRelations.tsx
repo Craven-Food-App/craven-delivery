@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Table, Alert, Textarea } from '@mantine/core';
-import { IconZoomMoney, IconMail, IconUsers, IconChartPie, IconDownload, IconSend } from '@tabler/icons-react';
+import { IconZoomMoney, IconMail, IconUsers, IconChartPie, IconDownload, IconSend, IconFileText } from '@tabler/icons-react';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { supabase } from '@/integrations/supabase/client';
+import { PitchDeckManager } from '@/components/admin/PitchDeckManager';
 
 interface Investor {
   id: string;
@@ -127,6 +128,7 @@ export const EnhancedInvestorRelations: React.FC = () => {
           <Tabs.Tab value="investors" leftSection={<IconUsers size={16} />}>Investor List</Tabs.Tab>
           <Tabs.Tab value="updates" leftSection={<IconMail size={16} />}>Monthly Updates</Tabs.Tab>
           <Tabs.Tab value="captable" leftSection={<IconChartPie size={16} />}>Cap Table</Tabs.Tab>
+          <Tabs.Tab value="pitch-deck" leftSection={<IconFileText size={16} />}>Pitch Deck</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="investors" pt="md">
@@ -258,6 +260,12 @@ export const EnhancedInvestorRelations: React.FC = () => {
               )}
             </Stack>
           </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="pitch-deck" pt="md">
+          <div style={{ padding: 0 }}>
+            <PitchDeckManager />
+          </div>
         </Tabs.Panel>
       </Tabs>
     </Stack>

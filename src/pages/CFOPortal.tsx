@@ -670,7 +670,7 @@ function CFOPortalContent() {
   const [payouts, setPayouts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string>('onboarding');
+  const [activeSection, setActiveSection] = useState<string>('evaluation');
   const [isMobile, setIsMobile] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
@@ -802,7 +802,7 @@ function CFOPortalContent() {
       case 'evaluation':
         return (
           <Stack gap="md">
-            <CfoEvaluationGatePanel mode="cfo" />
+            <CfoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cfo'} />
           </Stack>
         );
       case 'onboarding':

@@ -19,6 +19,7 @@ import {
   SettingOutlined,
   TrophyOutlined,
   MailOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ import ComplianceView from '@/components/hr/ComplianceView';
 import EmployeeRelationsView from '@/components/hr/EmployeeRelationsView';
 import SystemAdminView from '@/components/hr/SystemAdminView';
 import EquityManagement from '@/components/hr/EquityManagement';
+import InternCandidateManagement from '@/components/hr/InternCandidateManagement';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
@@ -385,6 +387,22 @@ const HRPortal: React.FC = () => {
               >
                 {!sidebarCollapsed && 'Personnel Management'}
               </Button>
+              <Button
+                type={activeTab === 'intern_candidates' ? 'primary' : 'text'}
+                icon={<UserAddOutlined />}
+                block
+                style={{
+                  textAlign: 'left',
+                  height: '40px',
+                  marginBottom: '4px',
+                  background: activeTab === 'intern_candidates' ? '#ff7a45' : 'transparent',
+                  color: activeTab === 'intern_candidates' ? '#fff' : '#666',
+                  border: 'none',
+                }}
+                onClick={() => setActiveTab('intern_candidates')}
+              >
+                {!sidebarCollapsed && 'Intern Candidates'}
+              </Button>
               <Divider style={{ margin: '8px 0' }} />
               <Button
                 type={activeTab === 'time_pto' ? 'primary' : 'text'}
@@ -598,6 +616,18 @@ const HRPortal: React.FC = () => {
             key="personnel"
           >
             <PersonnelManagementView />
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <UserAddOutlined />
+                Intern Candidates
+              </span>
+            }
+            key="intern_candidates"
+          >
+            <InternCandidateManagement />
           </TabPane>
 
           <TabPane

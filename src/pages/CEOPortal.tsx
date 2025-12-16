@@ -49,6 +49,8 @@ import CEOSignatureManager from '@/components/ceo/CEOSignatureManager';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
 import ActiveUsersMonitor from '@/components/ceo/ActiveUsersMonitor';
 import { InternsManagement } from '@/components/ceo/InternsManagement';
+import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
+import CtoEvaluationGatePanel from '@/components/cto/CtoEvaluationGatePanel';
 // No Card components: full-page Ant layout
 
 interface CEOMetrics {
@@ -86,6 +88,7 @@ const CEOPortal: React.FC = () => {
 
     return [
       { id: 'overview', label: 'Command Center', icon: IconChartBar as any },
+      { id: 'executive-evaluations', label: 'Executive Evaluations', icon: IconShield as any },
       {
         id: 'personnel',
         label: `Manage People (${totalEmployees})`,
@@ -152,6 +155,21 @@ const CEOPortal: React.FC = () => {
     switch (activeTab) {
       case 'overview':
         return <QuickActions onNavigate={setActiveTab} />;
+      case 'executive-evaluations':
+        return (
+          <Stack gap="md">
+            <Title order={2}>Executive Evaluation Gates</Title>
+            <Text size="sm" c="dimmed">
+              Initiate and review time-boxed, board-defensible evaluations for C-suite officers.
+            </Text>
+            <Divider my="md" />
+            <Title order={3}>CFO Evaluation Gate</Title>
+            <CfoEvaluationGatePanel mode="ceo" />
+            <Divider my="md" />
+            <Title order={3}>CTO Evaluation Gate</Title>
+            <CtoEvaluationGatePanel mode="ceo" />
+          </Stack>
+        );
       case 'personnel':
         return <PersonnelManager />;
       case 'financial':
