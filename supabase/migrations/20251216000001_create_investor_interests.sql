@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS investor_interests (
   investor_type TEXT CHECK (investor_type IN ('angel', 'vc', 'family_office', 'corporate', 'individual', 'other')),
   
   -- Investment details
-  investment_range TEXT CHECK (investment_range IN ('under_10k', '10k_50k', '50k_100k', '100k_250k', '250k_500k', '500k_1m', 'over_1m')),
+  investment_range TEXT CHECK (investment_range IN ('minimum', 'min_2x', '2x_5x', '5x_10x', 'over_10x', 'under_10k', '10k_50k', '50k_100k', '100k_250k', '250k_500k', '500k_1m', 'over_1m')),
   message TEXT,
   
   -- Status tracking

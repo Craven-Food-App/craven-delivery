@@ -35,6 +35,12 @@ interface InvestorInterest {
 }
 
 const INVESTMENT_RANGE_LABELS: Record<string, string> = {
+  'minimum': 'Minimum',
+  'min_2x': '1x - 2x Min',
+  '2x_5x': '2x - 5x Min',
+  '5x_10x': '5x - 10x Min',
+  'over_10x': 'Over 10x Min',
+  // Legacy values
   'under_10k': 'Under $10K',
   '10k_50k': '$10K - $50K',
   '50k_100k': '$50K - $100K',

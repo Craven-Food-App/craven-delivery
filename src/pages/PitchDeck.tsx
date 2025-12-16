@@ -1182,13 +1182,19 @@ const PitchDeck: React.FC = () => {
                   onChange={(e) => setInterestForm(prev => ({ ...prev, investment_range: e.target.value }))}
                 >
                   <option value="">Select range...</option>
-                  <option value="under_10k">Under $10,000</option>
-                  <option value="10k_50k">$10,000 - $50,000</option>
-                  <option value="50k_100k">$50,000 - $100,000</option>
-                  <option value="100k_250k">$100,000 - $250,000</option>
-                  <option value="250k_500k">$250,000 - $500,000</option>
-                  <option value="500k_1m">$500,000 - $1,000,000</option>
-                  <option value="over_1m">Over $1,000,000</option>
+                  {(() => {
+                    const min = opportunity?.minimum_investment || 0;
+                    const ranges = [
+                      { value: 'minimum', label: `$${min.toLocaleString()} (Minimum)` },
+                      { value: 'min_2x', label: `$${min.toLocaleString()} - $${(min * 2).toLocaleString()}` },
+                      { value: '2x_5x', label: `$${(min * 2).toLocaleString()} - $${(min * 5).toLocaleString()}` },
+                      { value: '5x_10x', label: `$${(min * 5).toLocaleString()} - $${(min * 10).toLocaleString()}` },
+                      { value: 'over_10x', label: `Over $${(min * 10).toLocaleString()}` },
+                    ];
+                    return ranges.map(r => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ));
+                  })()}
                 </select>
               </div>
             </div>
