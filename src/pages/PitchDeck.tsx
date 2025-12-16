@@ -93,6 +93,17 @@ const PitchDeck: React.FC = () => {
   const [callModalOpen, setCallModalOpen] = useState(false);
   const [shortlisted, setShortlisted] = useState(false);
   const [interested, setInterested] = useState(false);
+  const [interestModalOpen, setInterestModalOpen] = useState(false);
+  const [interestSubmitting, setInterestSubmitting] = useState(false);
+  const [interestForm, setInterestForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    company_name: '',
+    investor_type: '' as string,
+    investment_range: '' as string,
+    message: '',
+  });
   const [question, setQuestion] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [dialCode, setDialCode] = useState('+1');
@@ -234,13 +245,63 @@ const PitchDeck: React.FC = () => {
     });
   };
 
-  const handleInterest = async () => {
-    // TODO: Implement interest functionality with backend
-    setInterested(true);
-    toast({
-      title: 'Interest recorded',
-      description: 'Your interest has been recorded. The entrepreneur will be notified.',
-    });
+  const handleInterest = () => {
+    setInterestModalOpen(true);
+  };
+
+  const handleInterestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!interestForm.full_name || !interestForm.email) {
+      toast({
+        title: 'Required fields missing',
+        description: 'Please provide your name and email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setInterestSubmitting(true);
+    try {
+      const { error } = await supabase.from('investor_interests').insert({
+        opportunity_id: id,
+        full_name: interestForm.full_name,
+        email: interestForm.email,
+        phone: interestForm.phone || null,
+        company_name: interestForm.company_name || null,
+        investor_type: interestForm.investor_type || null,
+        investment_range: interestForm.investment_range || null,
+        message: interestForm.message || null,
+        status: 'new',
+        source: 'pitch_deck',
+      });
+
+      if (error) throw error;
+
+      setInterested(true);
+      setInterestModalOpen(false);
+      setInterestForm({
+        full_name: '',
+        email: '',
+        phone: '',
+        company_name: '',
+        investor_type: '',
+        investment_range: '',
+        message: '',
+      });
+      toast({
+        title: 'Interest recorded!',
+        description: 'Thank you for your interest. Our team will be in touch shortly.',
+      });
+    } catch (error: any) {
+      console.error('Error submitting interest:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to submit interest. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setInterestSubmitting(false);
+    }
   };
 
   const handleQuestionSubmit = async (e: React.FormEvent) => {
@@ -325,7 +386,7 @@ const PitchDeck: React.FC = () => {
                   {opportunity.company_name}
                 </h1>
                 <p className="text-sm flex items-end text-white drop-shadow-sm font-medium">
-                  <MapPin className="w-4 h-4 text-blue-400 mr-1" />
+                  <MapPin className="w-4 h-4 text-orange-400 mr-1" />
                   {opportunity.location}
                 </p>
               </div>
@@ -353,8 +414,8 @@ const PitchDeck: React.FC = () => {
                 onClick={() => scrollToSection(tab.id)}
                 className={`whitespace-nowrap block px-2 py-2 border-b-3 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600 font-medium'
-                    : 'border-transparent hover:border-blue-600 text-gray-700'
+                    ? 'border-orange-500 text-orange-500 font-medium'
+                    : 'border-transparent hover:border-orange-500 text-gray-700'
                 }`}
               >
                 {tab.label}
@@ -364,9 +425,10 @@ const PitchDeck: React.FC = () => {
           <div className="flex items-center justify-end gap-4">
             <Button
               onClick={handleInterest}
-              className="bg-blue-600 hover:bg-blue-500 text-white whitespace-nowrap"
+              className={`whitespace-nowrap ${interested ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600'} text-white`}
+              disabled={interested}
             >
-              I'm interested
+              {interested ? '✓ Interest Submitted' : "I'm interested"}
             </Button>
             <Button
               onClick={handleShortlist}
@@ -477,7 +539,7 @@ const PitchDeck: React.FC = () => {
                 </p>
                 <Button
                   onClick={() => setQuestionModalOpen(true)}
-                  className="mt-2 bg-blue-400 hover:bg-blue-600 text-white w-full"
+                  className="mt-2 bg-orange-500 hover:bg-orange-600 text-white w-full"
                 >
                   Ask a question
                 </Button>
@@ -558,10 +620,11 @@ const PitchDeck: React.FC = () => {
         <div className="w-full px-5 text-center mt-12">
           <Button
             onClick={handleInterest}
-            className="bg-blue-400 hover:bg-blue-600 text-white"
+            className={`${interested ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600'} text-white`}
             size="lg"
+            disabled={interested}
           >
-            I'm interested
+            {interested ? '✓ Interest Submitted' : "I'm interested"}
           </Button>
         </div>
       </div>
@@ -575,14 +638,14 @@ const PitchDeck: React.FC = () => {
           <div className="flex items-center justify-center flex-wrap gap-4">
             <Button
               variant="outline"
-              className="border-blue-100 text-blue-100 hover:bg-blue-50 hover:text-blue-400"
+              className="border-orange-200 text-orange-100 hover:bg-orange-50 hover:text-orange-500"
             >
               <ThumbsUp className="w-4 h-4 mr-2" />
               Like it
             </Button>
             <Button
               variant="outline"
-              className="border-blue-100 text-blue-100 hover:bg-blue-50 hover:text-blue-400"
+              className="border-orange-200 text-orange-100 hover:bg-orange-50 hover:text-orange-500"
             >
               <ThumbsDown className="w-4 h-4 mr-2" />
               Not interested
@@ -609,8 +672,8 @@ const PitchDeck: React.FC = () => {
                   >
                     <defs>
                       <linearGradient id="turnoverGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.8} />
+                        <stop offset="0%" stopColor="#f97316" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#ea580c" stopOpacity={0.8} />
                       </linearGradient>
                       <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
@@ -657,7 +720,7 @@ const PitchDeck: React.FC = () => {
                           maximumFractionDigits: 0,
                         }).format(value);
                         const label = name === 'turnover' ? 'Revenue' : 'Profit';
-                        const color = name === 'turnover' ? '#3b82f6' : value >= 0 ? '#10b981' : '#ef4444';
+                        const color = name === 'turnover' ? '#f97316' : value >= 0 ? '#10b981' : '#ef4444';
                         return [<span style={{ color }}>{formatted}</span>, label];
                       }}
                       labelFormatter={(label) => `Year ${label}`}
@@ -778,10 +841,11 @@ const PitchDeck: React.FC = () => {
           )}
           <Button
             onClick={handleInterest}
-            className="bg-blue-400 hover:bg-blue-600 text-white"
+            className={`${interested ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600'} text-white`}
             size="lg"
+            disabled={interested}
           >
-            I'm interested
+            {interested ? '✓ Interest Submitted' : "I'm interested"}
           </Button>
         </div>
       </div>
@@ -789,7 +853,7 @@ const PitchDeck: React.FC = () => {
       {/* Documents Section */}
       <div ref={documentsRef} className="py-16 w-full md:max-w-7xl mx-auto bg-white lg:px-5 px-3 scroll-mt-24">
         <h2 className="text-2xl font-normal mb-4 text-gray-800">Documents</h2>
-        <div className="w-full p-7 rounded-sm bg-gray-100 text-blue-600 text-sm mb-6 border border-blue-200">
+        <div className="w-full p-7 rounded-sm bg-orange-50 text-orange-700 text-sm mb-6 border border-orange-200">
           <strong>Please note:</strong> If you download any of these documents, you'll be added to
           the entrepreneur's contact list and they'll be able to message you.
         </div>
@@ -801,17 +865,17 @@ const PitchDeck: React.FC = () => {
                 href={doc.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+                className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors group"
               >
                 {doc.type === 'PDF' || doc.name.toLowerCase().includes('pdf') ? (
                   <FileText className="w-14 h-14 text-red-500 group-hover:scale-110 transition-transform" />
                 ) : (
-                  <Presentation className="w-14 h-14 text-blue-500 group-hover:scale-110 transition-transform" />
+                  <Presentation className="w-14 h-14 text-orange-500 group-hover:scale-110 transition-transform" />
                 )}
-                <span className="font-bold text-gray-700 group-hover:text-blue-600">
+                <span className="font-bold text-gray-700 group-hover:text-orange-600">
                   {doc.name}
                 </span>
-                <Download className="w-5 h-5 text-gray-400 ml-auto group-hover:text-blue-600" />
+                <Download className="w-5 h-5 text-gray-400 ml-auto group-hover:text-orange-600" />
               </a>
             ))}
           </div>
@@ -836,7 +900,7 @@ const PitchDeck: React.FC = () => {
           <div className="flex gap-4 flex-wrap">
             <Button
               onClick={() => setQuestionModalOpen(true)}
-              className="bg-blue-400 hover:bg-blue-600 text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               Ask a question
@@ -844,7 +908,7 @@ const PitchDeck: React.FC = () => {
             <Button
               onClick={() => setCallModalOpen(true)}
               variant="outline"
-              className="border-blue-100 text-blue-100 hover:bg-blue-50 hover:text-blue-400"
+              className="border-orange-200 text-orange-100 hover:bg-orange-50 hover:text-orange-500"
             >
               <Phone className="w-4 h-4 mr-2" />
               Request a call
@@ -982,7 +1046,7 @@ const PitchDeck: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-400 hover:bg-blue-600 text-white">
+              <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">
                 Send
               </Button>
             </div>
@@ -1027,8 +1091,134 @@ const PitchDeck: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-400 hover:bg-blue-600 text-white">
+              <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">
                 Submit
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Interest Modal */}
+      <Dialog open={interestModalOpen} onOpenChange={setInterestModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Express Your Interest</DialogTitle>
+            <DialogDescription>
+              Tell us about yourself and your investment interest in {opportunity?.company_name}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleInterestSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="interest-name">Full Name *</Label>
+                <Input
+                  id="interest-name"
+                  placeholder="John Smith"
+                  value={interestForm.full_name}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, full_name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="interest-email">Email *</Label>
+                <Input
+                  id="interest-email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={interestForm.email}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="interest-phone">Phone</Label>
+                <Input
+                  id="interest-phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={interestForm.phone}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="interest-company">Company/Fund Name</Label>
+                <Input
+                  id="interest-company"
+                  placeholder="Acme Ventures"
+                  value={interestForm.company_name}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, company_name: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="interest-type">Investor Type</Label>
+                <select
+                  id="interest-type"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  value={interestForm.investor_type}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, investor_type: e.target.value }))}
+                >
+                  <option value="">Select type...</option>
+                  <option value="angel">Angel Investor</option>
+                  <option value="vc">Venture Capital</option>
+                  <option value="family_office">Family Office</option>
+                  <option value="corporate">Corporate/Strategic</option>
+                  <option value="individual">Individual Investor</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="interest-range">Investment Range</Label>
+                <select
+                  id="interest-range"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  value={interestForm.investment_range}
+                  onChange={(e) => setInterestForm(prev => ({ ...prev, investment_range: e.target.value }))}
+                >
+                  <option value="">Select range...</option>
+                  <option value="under_10k">Under $10,000</option>
+                  <option value="10k_50k">$10,000 - $50,000</option>
+                  <option value="50k_100k">$50,000 - $100,000</option>
+                  <option value="100k_250k">$100,000 - $250,000</option>
+                  <option value="250k_500k">$250,000 - $500,000</option>
+                  <option value="500k_1m">$500,000 - $1,000,000</option>
+                  <option value="over_1m">Over $1,000,000</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="interest-message">Message (Optional)</Label>
+              <Textarea
+                id="interest-message"
+                placeholder="Tell us about your investment interests, questions, or any relevant experience..."
+                rows={3}
+                value={interestForm.message}
+                onChange={(e) => setInterestForm(prev => ({ ...prev, message: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInterestModalOpen(false)}
+                disabled={interestSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={interestSubmitting}
+              >
+                {interestSubmitting ? 'Submitting...' : 'Submit Interest'}
               </Button>
             </div>
           </form>
