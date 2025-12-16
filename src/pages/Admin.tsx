@@ -5,9 +5,10 @@ import { NotificationSettingsManager } from '@/components/admin/NotificationSett
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
 import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
+import InvestorAccessManager from '@/components/admin/InvestorAccessManager';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin, Users } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -27,6 +28,7 @@ const Admin: React.FC = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'feature-toggles', label: 'Feature Toggles', icon: Eye },
     { id: 'delivery-zones', label: 'Delivery Zones', icon: MapPin },
+    { id: 'investor-access', label: 'Investor Access', icon: Users },
   ];
 
   const renderContent = () => {
@@ -41,6 +43,8 @@ const Admin: React.FC = () => {
         return <FeatureToggleManager />;
       case 'delivery-zones':
         return <DeliveryZoneManager />;
+      case 'investor-access':
+        return <InvestorAccessManager />;
       default:
         return <LiveDashboard />;
     }

@@ -49,6 +49,9 @@ import ContactUs from "./pages/ContactUs";
 import PartnerWithUs from "./pages/PartnerWithUs";
 import AboutUs from "./pages/AboutUs";
 import PitchDeck from "./pages/PitchDeck";
+import InvestorsLanding from "./pages/InvestorsLanding";
+import InvestorAccess from "./pages/InvestorAccess";
+import InvestorOverview from "./pages/InvestorOverview";
 import Careers from "./pages/Careers";
 import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
@@ -827,6 +830,9 @@ const App = () => {
           <Route path="/partner" element={<PartnerWithUs />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/pitch-deck/:id" element={<PitchDeck />} />
+          <Route path="/investors" element={<InvestorsLanding />} />
+          <Route path="/investors/access" element={<InvestorAccess />} />
+          <Route path="/investors/overview" element={<InvestorOverview />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/careers/internship" element={<InternshipProgram />} />
           <Route path="/testing" element={<Testing />} />
