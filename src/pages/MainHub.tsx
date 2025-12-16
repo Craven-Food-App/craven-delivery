@@ -1474,218 +1474,189 @@ const MainHub: React.FC = () => {
         {/* Main Content */}
         <Content
           style={{
-            padding: "24px 16px",
+            padding: "16px 12px",
             maxWidth: 1600,
             margin: "0 auto",
             width: "100%",
             background: "#ffffff",
           }}
         >
-          <div style={{ marginBottom: 24 }} />
+          <div style={{ marginBottom: 16 }} />
 
-          {/* Time Clock Section - Show when user is logged in */}
+          {/* Time Clock Section - Compact Horizontal Layout */}
           {user && (
             <Card
               style={{
-                marginBottom: 24,
+                marginBottom: 16,
                 background: flashColor === 'green' 
                   ? 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)'
                   : flashColor === 'red'
                   ? 'linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%)'
                   : '#ffffff',
                 border: '1px solid #e5e7eb',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                 transition: 'background 0.3s ease',
               }}
-              bodyStyle={{ padding: 20 }}
+              bodyStyle={{ padding: 12 }}
             >
-              <Row gutter={[16, 16]} align="middle">
-                {/* Clock Display Section */}
-                <Col xs={24} lg={12}>
-                  <div style={{ textAlign: 'center', color: flashColor ? '#fff' : '#111827' }}>
-                    <ClockCircleOutlined style={{ fontSize: 40, marginBottom: 12, opacity: 0.9 }} />
-                    
-                    {/* Current Time */}
-                    <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 6, letterSpacing: 1 }}>
+              <Row gutter={[16, 8]} align="middle">
+                {/* Time Display - Left */}
+                <Col xs={24} sm={8} md={6}>
+                  <div style={{ color: flashColor ? '#fff' : '#111827' }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', lineHeight: 1.2 }}>
                       {formatTime(currentTime).split(' ')[0]}
-                      <span style={{ fontSize: 18, fontWeight: 300, marginLeft: 6, opacity: 0.9 }}>
+                      <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>
                         {formatTime(currentTime).split(' ')[1]}
                       </span>
                     </div>
-                    
-                    {/* Current Date */}
-                    <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 16 }}>
+                    <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>
                       {formatDate(currentTime)}
                     </div>
-                    
-                    {/* Status Badge */}
-                    <div style={{
-                      display: 'inline-block',
-                      padding: '6px 16px',
-                      borderRadius: 16,
-                      background: flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                      marginBottom: 16,
-                      fontWeight: 600,
-                      fontSize: 12,
-                      letterSpacing: 1,
-                      color: flashColor ? '#fff' : '#111827',
-                      border: flashColor ? 'none' : '1px solid #e5e7eb',
-                    }}>
-                      {clockStatus.isClockedIn ? (
-                        <span><LogoutOutlined style={{ marginRight: 6, fontSize: 12 }} />CLOCKED IN</span>
-                      ) : (
-                        <span><LoginOutlined style={{ marginRight: 6, fontSize: 12 }} />CLOCKED OUT</span>
-                      )}
-                    </div>
-                    
-                    {/* Active Session Duration */}
-                    {clockStatus.isClockedIn && clockStatus.clockInAt && (
-                      <div style={{
-                        padding: 12,
-                        background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
-                        borderRadius: 8,
-                        marginBottom: 16,
-                        border: flashColor ? 'none' : '1px solid #e5e7eb',
-                      }}>
-                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 4, color: flashColor ? '#fff' : '#6b7280' }}>
-                          SESSION DURATION
-                        </div>
-                        <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', color: flashColor ? '#fff' : '#111827' }}>
-                          {currentDuration}
-                        </div>
-                        <div style={{ fontSize: 11, opacity: 0.8, marginTop: 4, color: flashColor ? '#fff' : '#6b7280' }}>
-                          Since: {formatTime(clockStatus.clockInAt)}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Clock In/Out Buttons - Always Show Both */}
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <Button
-                        type="primary"
-                        size="middle"
-                        icon={<LoginOutlined />}
-                        loading={clockLoading && pendingClockAction === 'in'}
-                        onClick={handleClockIn}
-                        disabled={clockLoading || clockStatus.isClockedIn}
-                        block
-                        style={{
-                          background: clockStatus.isClockedIn ? '#d1d5db' : '#52c41a',
-                          color: '#fff',
-                          border: 'none',
-                          height: 40,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        }}
-                      >
-                        CLOCK IN
-                      </Button>
-                      
-                      <Button
-                        type="primary"
-                        size="middle"
-                        icon={<LogoutOutlined />}
-                        loading={clockLoading && pendingClockAction === 'out'}
-                        onClick={handleClockOut}
-                        disabled={clockLoading || !clockStatus.isClockedIn || pendingClockAction === 'in'}
-                        block
-                        style={{
-                          background: !clockStatus.isClockedIn ? '#d1d5db' : '#ff4d4f',
-                          color: '#fff',
-                          border: 'none',
-                          height: 40,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                          cursor: (!clockLoading && clockStatus.isClockedIn && pendingClockAction !== 'in') ? 'pointer' : 'not-allowed',
-                          opacity: (!clockLoading && clockStatus.isClockedIn && pendingClockAction !== 'in') ? 1 : 0.6,
-                        }}
-                      >
-                        CLOCK OUT
-                      </Button>
-                      
-                      <Button
-                        type="default"
-                        icon={<HistoryOutlined />}
-                        onClick={() => {
-                          setShowClockHistory(!showClockHistory);
-                          if (!showClockHistory) fetchTimeEntries();
-                        }}
-                        style={{
-                          background: flashColor ? 'rgba(255,255,255,0.2)' : '#ffffff',
-                          border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
-                          color: flashColor ? '#fff' : '#111827',
-                        }}
-                      >
-                        {showClockHistory ? 'Hide' : 'Show'} History ({timeEntries.length})
-                      </Button>
-                    </Space>
                   </div>
                 </Col>
                 
-                {/* Stats Section */}
-                <Col xs={24} lg={12}>
-                  <Row gutter={[12, 12]}>
+                {/* Status & Duration - Center */}
+                <Col xs={24} sm={8} md={6}>
+                  <div style={{ color: flashColor ? '#fff' : '#111827' }}>
+                    <div style={{
+                      display: 'inline-block',
+                      padding: '3px 10px',
+                      borderRadius: 8,
+                      background: flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      marginBottom: clockStatus.isClockedIn ? 4 : 0,
+                    }}>
+                      {clockStatus.isClockedIn ? 'IN' : 'OUT'}
+                    </div>
+                    {clockStatus.isClockedIn && clockStatus.clockInAt && (
+                      <div style={{ fontSize: 11, opacity: 0.9, marginTop: 4 }}>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 600 }}>{currentDuration}</div>
+                      </div>
+                    )}
+                  </div>
+                </Col>
+                
+                {/* Action Buttons - Center Right */}
+                <Col xs={24} sm={8} md={6}>
+                  <Space size="small" style={{ width: '100%' }}>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<LoginOutlined />}
+                      loading={clockLoading && pendingClockAction === 'in'}
+                      onClick={handleClockIn}
+                      disabled={clockLoading || clockStatus.isClockedIn}
+                      style={{
+                        background: clockStatus.isClockedIn ? '#d1d5db' : '#52c41a',
+                        border: 'none',
+                        height: 28,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        flex: 1,
+                      }}
+                    >
+                      IN
+                    </Button>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<LogoutOutlined />}
+                      loading={clockLoading && pendingClockAction === 'out'}
+                      onClick={handleClockOut}
+                      disabled={clockLoading || !clockStatus.isClockedIn || pendingClockAction === 'in'}
+                      style={{
+                        background: !clockStatus.isClockedIn ? '#d1d5db' : '#ff4d4f',
+                        border: 'none',
+                        height: 28,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        flex: 1,
+                      }}
+                    >
+                      OUT
+                    </Button>
+                  </Space>
+                </Col>
+                
+                {/* Stats - Right */}
+                <Col xs={24} sm={24} md={6}>
+                  <Row gutter={[8, 0]}>
                     <Col span={12}>
-                      <Card 
-                        size="small" 
-                        style={{ 
-                          background: flashColor ? 'rgba(255,255,255,0.2)' : '#ffffff', 
-                          border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
-                          textAlign: 'center'
-                        }}
-                        bodyStyle={{ padding: 12 }}
-                      >
-                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 6, color: flashColor ? '#fff' : '#6b7280' }}>
-                          HOURS TODAY
+                      <div style={{ 
+                        textAlign: 'center',
+                        padding: '6px',
+                        background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
+                        borderRadius: 4,
+                        border: flashColor ? 'none' : '1px solid #e5e7eb',
+                      }}>
+                        <div style={{ fontSize: 9, opacity: 0.8, color: flashColor ? '#fff' : '#6b7280', marginBottom: 2 }}>
+                          TODAY
                         </div>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
-                          {clockStatus.hoursToday.toFixed(1)}
+                        <div style={{ fontSize: 16, fontWeight: 700, color: flashColor ? '#fff' : '#111827', fontFamily: 'monospace' }}>
+                          {clockStatus.hoursToday.toFixed(1)}h
                         </div>
-                      </Card>
+                      </div>
                     </Col>
                     <Col span={12}>
-                      <Card 
-                        size="small" 
-                        style={{ 
-                          background: flashColor ? 'rgba(255,255,255,0.2)' : '#ffffff', 
-                          border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
-                          textAlign: 'center'
-                        }}
-                        bodyStyle={{ padding: 12 }}
-                      >
-                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 6, color: flashColor ? '#fff' : '#6b7280' }}>
-                          HOURS THIS WEEK
+                      <div style={{ 
+                        textAlign: 'center',
+                        padding: '6px',
+                        background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
+                        borderRadius: 4,
+                        border: flashColor ? 'none' : '1px solid #e5e7eb',
+                      }}>
+                        <div style={{ fontSize: 9, opacity: 0.8, color: flashColor ? '#fff' : '#6b7280', marginBottom: 2 }}>
+                          WEEK
                         </div>
-                        <div style={{ fontSize: 28, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
-                          {clockStatus.weeklyHours.toFixed(1)}
+                        <div style={{ fontSize: 16, fontWeight: 700, color: flashColor ? '#fff' : '#111827', fontFamily: 'monospace' }}>
+                          {clockStatus.weeklyHours.toFixed(1)}h
                         </div>
-                      </Card>
+                      </div>
                     </Col>
                   </Row>
                 </Col>
               </Row>
               
+              {/* History Toggle - Inline */}
+              <div style={{ marginTop: 12, textAlign: 'center' }}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<HistoryOutlined />}
+                  onClick={() => {
+                    setShowClockHistory(!showClockHistory);
+                    if (!showClockHistory) fetchTimeEntries();
+                  }}
+                  style={{
+                    color: flashColor ? '#fff' : '#6b7280',
+                    fontSize: 11,
+                    height: 24,
+                  }}
+                >
+                  {showClockHistory ? 'Hide' : 'Show'} History ({timeEntries.length})
+                </Button>
+              </div>
+              
               {/* History Table */}
               {showClockHistory && (
-                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
                   <Card
                     style={{
                       background: 'rgba(255,255,255,0.95)',
                       border: 'none',
                     }}
-                    bodyStyle={{ padding: 16 }}
+                    bodyStyle={{ padding: 12 }}
                   >
-                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 16 }}>
-                        <HistoryOutlined style={{ marginRight: 6, color: '#ff7a45', fontSize: 16 }} />
+                    <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
+                        <HistoryOutlined style={{ marginRight: 4, color: '#ff7a45', fontSize: 14 }} />
                         Recent Time Entries
                       </Title>
                     </div>
                     
                     {timeEntries.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 24, color: '#999', fontSize: 13 }}>
+                      <div style={{ textAlign: 'center', padding: 16, color: '#999', fontSize: 12 }}>
                         No time entries recorded yet.
                       </div>
                     ) : (
@@ -1693,7 +1664,7 @@ const MainHub: React.FC = () => {
                         dataSource={timeEntries}
                         rowKey="id"
                         size="small"
-                        pagination={{ pageSize: 10 }}
+                        pagination={{ pageSize: 8, size: 'small' }}
                         columns={[
                           {
                             title: 'Name',
@@ -1748,16 +1719,16 @@ const MainHub: React.FC = () => {
           {user && employeeInfo && (
             <Card
               style={{
-                marginBottom: 24,
+                marginBottom: 16,
                 background: '#ffffff',
                 border: '1px solid #e5e7eb',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
               }}
-              bodyStyle={{ padding: 20 }}
+              bodyStyle={{ padding: 16 }}
             >
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 16 }}>
-                  <TeamOutlined style={{ marginRight: 8, color: '#ff7a45', fontSize: 18 }} />
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
+                  <TeamOutlined style={{ marginRight: 6, color: '#ff7a45', fontSize: 16 }} />
                   Company Departments
                 </Title>
                 <Button
@@ -1765,7 +1736,7 @@ const MainHub: React.FC = () => {
                   size="small"
                   icon={showDepartments ? <span>−</span> : <span>+</span>}
                   onClick={() => setShowDepartments(!showDepartments)}
-                  style={{ fontSize: 14, fontWeight: 600 }}
+                  style={{ fontSize: 12, fontWeight: 600, padding: '0 8px', height: 24 }}
                 >
                   {showDepartments ? 'Collapse' : 'Expand'}
                 </Button>
@@ -1774,24 +1745,24 @@ const MainHub: React.FC = () => {
               {showDepartments && (
                 <Spin spinning={departmentsLoading}>
                   {departments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 24, color: '#999', fontSize: 13 }}>
+                    <div style={{ textAlign: 'center', padding: 16, color: '#999', fontSize: 12 }}>
                       No departments found.
                     </div>
                   ) : (
-                    <Row gutter={[12, 12]}>
+                    <Row gutter={[8, 8]}>
                       {departments.map((dept) => (
-                        <Col xs={24} sm={12} lg={8} xl={6} key={dept.id}>
+                        <Col xs={12} sm={8} md={6} lg={4} xl={3} key={dept.id}>
                           <Card
                             hoverable
                             style={{
                               height: '100%',
-                              borderRadius: 6,
+                              borderRadius: 4,
                               border: '1px solid #e5e7eb',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
                               transition: 'all 0.2s',
                               cursor: 'pointer',
                             }}
-                            bodyStyle={{ padding: 16 }}
+                            bodyStyle={{ padding: 12 }}
                             onClick={() => {
                               const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
                               navigate(`/hub/department/${deptName}`);
@@ -1908,22 +1879,22 @@ const MainHub: React.FC = () => {
             </Card>
           )}
 
-          {/* Portal Grid - Corporate Style */}
-          <Row gutter={[16, 16]}>
+          {/* Portal Grid - Compact Grid */}
+          <Row gutter={[10, 10]}>
             {portals.map((portal) => {
               const allowed = isPortalAllowed(portal.id);
               const Icon = portal.icon;
               return (
-                <Col xs={24} sm={12} lg={8} xl={6} key={portal.id}>
+                <Col xs={12} sm={8} md={6} lg={4} xl={3} key={portal.id}>
                   <Card
                     hoverable
                     style={{
                       height: "100%",
-                      borderRadius: 6,
+                      borderRadius: 4,
                       cursor: allowed ? "pointer" : "not-allowed",
                       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                       border: "1px solid #e5e7eb",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
                       background: "#ffffff",
                       opacity: allowed ? 1 : 0.5,
                     }}
@@ -1934,16 +1905,16 @@ const MainHub: React.FC = () => {
                         message.warning('Access denied for this portal');
                       }
                     }}
-                    bodyStyle={{ padding: 16 }}
+                    bodyStyle={{ padding: 12 }}
                     onMouseEnter={(e) => {
                       if (allowed) {
-                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+                        e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.1)";
                         e.currentTarget.style.transform = "translateY(-1px)";
                         e.currentTarget.style.borderColor = portal.color;
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.08)";
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.06)";
                       e.currentTarget.style.transform = "translateY(0)";
                       e.currentTarget.style.borderColor = "#e5e7eb";
                     }}
@@ -1951,56 +1922,43 @@ const MainHub: React.FC = () => {
                     <div style={{ textAlign: "center" }}>
                       <div
                         style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 6,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 4,
                           background: `linear-gradient(135deg, ${portal.color}15 0%, ${portal.color}08 100%)`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          margin: "0 auto 12px",
+                          margin: "0 auto 6px",
                           border: `1px solid ${portal.color}20`,
                         }}
                       >
-                        <Icon style={{ fontSize: 24, color: portal.color }} />
+                        <Icon style={{ fontSize: 18, color: portal.color }} />
                       </div>
-                      <Title
-                        level={5}
+                      <div
                         style={{
-                          marginBottom: 8,
                           color: "#111827",
-                          fontSize: 16,
+                          fontSize: 12,
                           fontWeight: 600,
+                          marginBottom: 4,
+                          lineHeight: 1.2,
                         }}
                       >
                         {portal.name}
-                      </Title>
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: 12,
-                          color: "#6b7280",
-                          lineHeight: 1.4,
-                          display: "block",
-                          marginBottom: 12,
-                          minHeight: 32,
-                        }}
-                      >
-                        {portal.description}
-                      </Text>
-                      <div>
-                        <Tooltip title={allowed ? '' : 'No access'}>
-                          <Button
-                            type="primary"
-                            size="small"
-                            style={{
-                              background: portal.color,
-                              borderColor: portal.color,
-                              width: "100%",
-                              height: 32,
-                              fontWeight: 500,
-                              fontSize: 12,
-                              borderRadius: 4,
+                      </div>
+                      <Tooltip title={portal.description}>
+                        <Button
+                          type="primary"
+                          size="small"
+                          style={{
+                            background: portal.color,
+                            borderColor: portal.color,
+                            width: "100%",
+                            height: 24,
+                            fontWeight: 500,
+                            fontSize: 10,
+                            borderRadius: 4,
+                            padding: '0 8px',
                               boxShadow: `0 2px 4px ${portal.color}30`,
                             }}
                             onMouseEnter={(e) => {
