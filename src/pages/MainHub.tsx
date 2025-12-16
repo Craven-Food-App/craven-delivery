@@ -1778,97 +1778,49 @@ const MainHub: React.FC = () => {
                               e.currentTarget.style.borderColor = '#e5e7eb';
                             }}
                           >
-                            <div style={{ marginBottom: 16 }}>
-                              <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#111827' }}>
+                            <div style={{ marginBottom: 8 }}>
+                              <div style={{ color: '#111827', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
                                 {dept.name}
-                              </Title>
-                              {dept.description && (
-                                <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
-                                  {dept.description}
-                                </Text>
-                              )}
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {/* Employee Count - Only visible to Department Heads and Executives */}
+                              </div>
                               {userAccess.canViewEmployeeCount && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>Employees</Text>
-                                  <Tag color="blue" style={{ margin: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ fontSize: 10, color: '#6b7280' }}>Employees</span>
+                                  <Tag color="blue" style={{ margin: 0, fontSize: 10, padding: '0 6px', height: 18 }}>
                                     {dept.employee_count || 0}
                                   </Tag>
                                 </div>
                               )}
-
-                              {/* Budget - Only visible to CEO and CFO */}
                               {userAccess.canViewBudget && dept.budget && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>Budget</Text>
-                                  <Text strong style={{ fontSize: 13, color: '#52c41a' }}>
-                                    ${Number(dept.budget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </Text>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <span style={{ fontSize: 10, color: '#6b7280' }}>Budget</span>
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#52c41a' }}>
+                                    ${(Number(dept.budget) / 1000).toFixed(0)}k
+                                  </span>
                                 </div>
                               )}
-
-                              {dept.head_employee && (
-                                <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
-                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
-                                    Department Head
-                                  </Text>
-                                  <Text style={{ fontSize: 12, fontWeight: 500 }}>
-                                    {dept.head_employee.first_name} {dept.head_employee.last_name}
-                                  </Text>
-                                </div>
-                              )}
-
-                              {/* Roles Section */}
-                              {dept.roles && dept.roles.length > 0 && (
-                                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
-                                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8, fontWeight: 600 }}>
-                                    Roles ({dept.roles.length})
-                                  </Text>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    {dept.roles.slice(0, 5).map((role: any, idx: number) => (
-                                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 12, color: '#374151' }} ellipsis={{ tooltip: role.position }}>
-                                          {role.position}
-                                        </Text>
-                                        <Tag color="default" style={{ margin: 0, fontSize: 11 }}>
-                                          {role.count}
-                                        </Tag>
-                                      </div>
-                                    ))}
-                                    {dept.roles.length > 5 && (
-                                      <Text type="secondary" style={{ fontSize: 11, fontStyle: 'italic' }}>
-                                        +{dept.roles.length - 5} more
-                                      </Text>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* View Portals Button */}
-                              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e7eb' }}>
-                                <Button
-                                  type="primary"
-                                  block
-                                  style={{
-                                    background: '#ff7a45',
-                                    borderColor: '#ff7a45',
-                                    height: 36,
-                                    fontSize: 13,
-                                    fontWeight: 500,
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
-                                    navigate(`/hub/department/${deptName}`);
-                                  }}
-                                >
-                                  View Department Portals →
-                                </Button>
-                              </div>
                             </div>
+
+                            {/* View Portals Button */}
+                            <Button
+                              type="primary"
+                              size="small"
+                              block
+                              style={{
+                                background: '#ff7a45',
+                                borderColor: '#ff7a45',
+                                height: 24,
+                                fontSize: 10,
+                                fontWeight: 500,
+                                marginTop: 8,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
+                                navigate(`/hub/department/${deptName}`);
+                              }}
+                            >
+                              View →
+                            </Button>
                           </Card>
                         </Col>
                       ))}
@@ -1959,9 +1911,9 @@ const MainHub: React.FC = () => {
                             fontSize: 10,
                             borderRadius: 4,
                             padding: '0 8px',
-                              boxShadow: `0 2px 4px ${portal.color}30`,
-                            }}
-                            onMouseEnter={(e) => {
+                            boxShadow: `0 2px 4px ${portal.color}30`,
+                          }}
+                          onMouseEnter={(e) => {
                               e.currentTarget.style.background = portal.color;
                               e.currentTarget.style.borderColor = portal.color;
                               if (allowed) {
