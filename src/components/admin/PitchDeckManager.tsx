@@ -292,27 +292,54 @@ export const PitchDeckManager: React.FC = () => {
     }
   };
 
+  // Compress image before upload
+  const compressImage = (file: File, maxWidth: number = 1920, quality: number = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      // Skip compression for small files or non-images
+      if (file.size < 500 * 1024 || !file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        let { width, height } = img;
+        
+        // Scale down if larger than maxWidth
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            } else {
+              resolve(file); // Keep original if compression didn't help
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const uploadFile = async (file: File, type: 'logo' | 'banner' | 'gallery' | 'video' | 'document'): Promise<string | null> => {
-    // Set uploading state immediately for instant feedback
-    setUploading(type);
-    setUploadProgress(10);
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setUploading(null);
-      setUploadProgress(0);
-      toast({
-        title: 'Error',
-        description: 'You must be logged in to upload files',
-        variant: 'destructive',
-      });
-      return null;
-    }
-
+    // Validate file size first (no async needed)
     const maxSize = type === 'video' ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploading(null);
-      setUploadProgress(0);
       toast({
         title: 'Error',
         description: `File size must be less than ${type === 'video' ? '50MB' : '20MB'}`,
@@ -321,17 +348,26 @@ export const PitchDeckManager: React.FC = () => {
       return null;
     }
 
-    setUploadProgress(20);
+    // Set uploading state immediately for instant feedback
+    setUploading(type);
+    setUploadProgress(10);
+
+    // Compress images before upload (skip for video/document)
+    let fileToUpload = file;
+    if (type === 'logo' || type === 'banner' || type === 'gallery') {
+      setUploadProgress(15);
+      fileToUpload = await compressImage(file);
+    }
+
+    setUploadProgress(25);
+
     const fileName = `${type}/${Date.now()}_${file.name}`;
+    const bucket = type === 'video' ? 'pitch-deck-videos' : 'pitch-deck-assets';
 
     try {
-      const bucket = type === 'video' ? 'pitch-deck-videos' : 'pitch-deck-assets';
-      
-      setUploadProgress(30);
-
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, fileToUpload, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -356,7 +392,7 @@ export const PitchDeckManager: React.FC = () => {
       setTimeout(() => {
         setUploading(null);
         setUploadProgress(0);
-      }, 300);
+      }, 200);
     }
   };
 
