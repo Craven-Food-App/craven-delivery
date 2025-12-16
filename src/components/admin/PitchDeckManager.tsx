@@ -72,6 +72,7 @@ export const PitchDeckManager: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [saving, setSaving] = useState(false);
   const [editingDocName, setEditingDocName] = useState<string | null>(null);
   const [tempDocName, setTempDocName] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +167,11 @@ export const PitchDeckManager: React.FC = () => {
   };
 
   const handleSave = async (closeAfterSave = true) => {
+    // Set saving state immediately for instant feedback
+    if (closeAfterSave) {
+      setSaving(true);
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -254,6 +260,10 @@ export const PitchDeckManager: React.FC = () => {
           description: error.message || 'Failed to save investment opportunity',
           variant: 'destructive',
         });
+      }
+    } finally {
+      if (closeAfterSave) {
+        setSaving(false);
       }
     }
   };
@@ -615,8 +625,13 @@ export const PitchDeckManager: React.FC = () => {
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={uploading !== null}>
-                {isCreating ? 'Create' : 'Save Changes'}
+              <Button onClick={handleSave} disabled={uploading !== null || saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : isCreating ? 'Create' : 'Save Changes'}
               </Button>
             </div>
           </div>
@@ -1247,8 +1262,13 @@ export const PitchDeckManager: React.FC = () => {
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={uploading !== null}>
-                {isCreating ? 'Create' : 'Save Changes'}
+              <Button onClick={handleSave} disabled={uploading !== null || saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : isCreating ? 'Create' : 'Save Changes'}
               </Button>
             </div>
           </div>
