@@ -51,9 +51,10 @@ interface NavItem {
 
 interface EnterpriseFinancePortalLayoutProps {
   children: React.ReactNode;
+  onNavigate?: (sectionId: string) => void;
 }
 
-export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayoutProps> = ({ children }) => {
+export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayoutProps> = ({ children, onNavigate }) => {
   const [opened, setOpened] = useState(false);
   const theme = useMantineTheme();
   const navigate = useNavigate();
@@ -199,6 +200,12 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
         icon: <IconShield size={20} />,
         roles: ['CFO'],
       },
+      {
+        id: 'investor-relations',
+        label: 'Investor Relations',
+        icon: <IconCurrencyDollar size={20} />,
+        roles: ['CFO', 'CONTROLLER'],
+      },
     ];
 
     // Filter based on user's permissions and roles
@@ -226,7 +233,13 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
   const currentPath = location.pathname.split('/').pop() || 'dashboard';
 
   const handleNavigation = (itemId: string) => {
-    navigate(`/finance/${itemId}`);
+    // If onNavigate callback is provided (CFO Portal), use it
+    if (onNavigate) {
+      onNavigate(itemId);
+    } else {
+      // Legacy finance portal navigation
+      navigate(`/finance/${itemId}`);
+    }
     setOpened(false);
   };
 
@@ -278,7 +291,7 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
               Back to Hub
             </Button>
             <Text fw={600} size="lg">
-              Finance Department Portal
+              CFO Portal
             </Text>
             {torranceHasAccess ? (
               <Badge variant="light" color="green">
@@ -299,7 +312,7 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
             <Button
               variant="subtle"
               size="xs"
-              onClick={() => navigate('/finance/approvals')}
+              onClick={() => navigate('/cfo')}
             >
               <IconChecklist size={16} style={{ marginRight: 8 }} />
               Approvals
@@ -313,7 +326,7 @@ export const EnterpriseFinancePortalLayout: React.FC<EnterpriseFinancePortalLayo
           <Group mb="xl">
             <IconBuildingBank size={32} color={theme.colors.blue[6]} />
             <div>
-              <Text fw={700} size="lg">Finance Portal</Text>
+              <Text fw={700} size="lg">CFO Portal</Text>
               <Badge size="sm" color="blue" variant="light">
                 {primaryRole.role_name}
               </Badge>

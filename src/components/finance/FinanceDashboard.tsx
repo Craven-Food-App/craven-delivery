@@ -180,7 +180,7 @@ export const FinanceDashboard: React.FC = () => {
         >
           <Group justify="space-between" mt="xs">
             <Text size="sm">You have items requiring your approval</Text>
-            <Button size="xs" variant="light" onClick={() => (window.location.href = '/finance/approvals')}>
+            <Button size="xs" variant="light" onClick={() => (window.location.href = '/cfo')}>
               Review Now
             </Button>
           </Group>

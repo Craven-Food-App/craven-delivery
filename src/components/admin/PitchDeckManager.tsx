@@ -5,14 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -22,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Eye, X, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, X, Upload, Loader2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface InvestmentOpportunity {
@@ -278,10 +272,11 @@ export const PitchDeckManager: React.FC = () => {
       return null;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    const maxSize = type === 'video' ? 50 * 1024 * 1024 : 20 * 1024 * 1024;
+    if (file.size > maxSize) {
       toast({
         title: 'Error',
-        description: 'File size must be less than 10MB',
+        description: `File size must be less than ${type === 'video' ? '50MB' : '20MB'}`,
         variant: 'destructive',
       });
       return null;
@@ -471,7 +466,7 @@ export const PitchDeckManager: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/pitch-deck/${opp.id}`)}
+                        onClick={() => window.open(`/pitch-deck/${opp.id}`, '_blank')}
                         title="View"
                       >
                         <Eye className="h-4 w-4" />
@@ -501,21 +496,39 @@ export const PitchDeckManager: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {isCreating ? 'Create Investment Opportunity' : 'Edit Investment Opportunity'}
-            </DialogTitle>
-            <DialogDescription>
-              {isCreating
-                ? 'Create a new pitch deck for investors'
-                : 'Update the investment opportunity details'}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Full Page Editor */}
+      {isEditDialogOpen && (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => setIsEditDialogOpen(false)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  {isCreating ? 'Create Investment Opportunity' : 'Edit Investment Opportunity'}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {isCreating
+                    ? 'Create a new pitch deck for investors'
+                    : 'Update the investment opportunity details'}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={uploading !== null}>
+                {isCreating ? 'Create' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
 
-          <div className="space-y-6 mt-4">
+          {/* Content */}
+          <div className="space-y-6">
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -994,18 +1007,19 @@ export const PitchDeckManager: React.FC = () => {
               />
               <Label htmlFor="is_active" className="cursor-pointer">Active (visible to investors)</Label>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={uploading !== null}>
-              {isCreating ? 'Create' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* Bottom Save Button */}
+            <div className="flex justify-end gap-2 pt-6 border-t">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={uploading !== null}>
+                {isCreating ? 'Create' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

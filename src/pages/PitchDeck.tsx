@@ -2,6 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import {
   MapPin,
   Share2,
   MessageCircle,
@@ -582,32 +593,127 @@ const PitchDeck: React.FC = () => {
 
       {/* Financials Section */}
       {opportunity.financials && opportunity.financials.length > 0 && (
-        <div className="w-full py-16 bg-blue-50 px-3">
-          <div className="md:max-w-7xl mx-auto mb-4">
-            <h2 className="text-2xl font-normal">Financials</h2>
+        <div className="w-full py-16 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-3">
+          <div className="md:max-w-7xl mx-auto mb-8">
+            <h2 className="text-3xl font-semibold text-white tracking-tight">Financial Projections</h2>
+            <p className="text-slate-400 mt-2">Revenue and profit trajectory</p>
           </div>
           <div className="md:max-w-7xl mx-auto">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 font-semibold">Year</th>
-                    <th className="text-right py-2 font-semibold">Turnover</th>
-                    <th className="text-right py-2 font-semibold">Profit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {opportunity.financials.map((financial, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="py-2">{financial.year}</td>
-                      <td className="text-right py-2">
-                        ${financial.turnover.toLocaleString()}
-                      </td>
-                      <td className="text-right py-2">${financial.profit.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="bg-slate-800/50 backdrop-blur-sm p-8 rounded-2xl border border-slate-700/50 shadow-2xl">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={opportunity.financials}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    barGap={8}
+                  >
+                    <defs>
+                      <linearGradient id="turnoverGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.8} />
+                      </linearGradient>
+                      <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.8} />
+                      </linearGradient>
+                      <linearGradient id="profitNegativeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
+                        <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis
+                      dataKey="year"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 14, fontWeight: 500 }}
+                      dy={10}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
+                      tickFormatter={(value) => {
+                        if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+                        if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+                        return `$${value}`;
+                      }}
+                      dx={-10}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #475569',
+                        borderRadius: '12px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        padding: '16px',
+                      }}
+                      labelStyle={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '8px', fontSize: '16px' }}
+                      formatter={(value: number, name: string) => {
+                        const formatted = new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency: 'USD',
+                          maximumFractionDigits: 0,
+                        }).format(value);
+                        const label = name === 'turnover' ? 'Revenue' : 'Profit';
+                        const color = name === 'turnover' ? '#3b82f6' : value >= 0 ? '#10b981' : '#ef4444';
+                        return [<span style={{ color }}>{formatted}</span>, label];
+                      }}
+                      labelFormatter={(label) => `Year ${label}`}
+                    />
+                    <Legend
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      formatter={(value) => (
+                        <span className="text-slate-300 text-sm font-medium">
+                          {value === 'turnover' ? 'Revenue' : 'Profit/Loss'}
+                        </span>
+                      )}
+                    />
+                    <Bar
+                      dataKey="turnover"
+                      fill="url(#turnoverGradient)"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={60}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={60}
+                    >
+                      {opportunity.financials.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.profit >= 0 ? 'url(#profitGradient)' : 'url(#profitNegativeGradient)'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Summary cards below chart */}
+              <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-slate-700/50">
+                {opportunity.financials.map((fin, idx) => (
+                  <div key={idx} className="text-center">
+                    <div className="text-slate-400 text-sm mb-1">{fin.year}</div>
+                    <div className="text-white font-semibold">
+                      ${fin.turnover >= 1000000 
+                        ? `${(fin.turnover / 1000000).toFixed(1)}M` 
+                        : fin.turnover >= 1000 
+                          ? `${(fin.turnover / 1000).toFixed(0)}K`
+                          : fin.turnover.toLocaleString()}
+                    </div>
+                    <div className={`text-sm font-medium ${fin.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {fin.profit >= 0 ? '+' : ''}
+                      ${Math.abs(fin.profit) >= 1000000 
+                        ? `${(fin.profit / 1000000).toFixed(1)}M` 
+                        : Math.abs(fin.profit) >= 1000 
+                          ? `${(fin.profit / 1000).toFixed(0)}K`
+                          : fin.profit.toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

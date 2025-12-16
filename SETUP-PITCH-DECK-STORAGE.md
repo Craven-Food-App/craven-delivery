@@ -12,7 +12,7 @@ If you encountered a permission error when running the migration, you need to cr
 1. Click **"New bucket"**
 2. **Bucket name**: `pitch-deck-assets`
 3. **Public bucket**: ✅ Enable (checked)
-4. **File size limit**: `10 MB`
+4. **File size limit**: `20 MB`
 5. **Allowed MIME types**: 
    - `image/jpeg`
    - `image/png`

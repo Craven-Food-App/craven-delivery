@@ -236,7 +236,7 @@ const DepartmentHub: React.FC = () => {
           name: 'General Ledger',
           description: 'Chart of accounts and journal entries',
           icon: FileTextOutlined,
-          path: '/finance/general-ledger',
+          path: '/cfo',
           color: '#1890ff',
         },
         {
@@ -244,7 +244,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Accounts Payable',
           description: 'Vendor invoices and payments',
           icon: DollarOutlined,
-          path: '/finance/accounts-payable',
+          path: '/cfo',
           color: '#ff4d4f',
         },
         {
@@ -252,7 +252,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Accounts Receivable',
           description: 'Customer invoices and collections',
           icon: LineChartOutlined,
-          path: '/finance/accounts-receivable',
+          path: '/cfo',
           color: '#52c41a',
         },
         {
@@ -260,7 +260,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Banking & Treasury',
           description: 'Bank accounts and cash management',
           icon: BankOutlined,
-          path: '/finance/banking-treasury',
+          path: '/cfo',
           color: '#722ed1',
         },
         {
@@ -268,7 +268,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Payroll System',
           description: 'Employee payroll processing',
           icon: TeamOutlined,
-          path: '/finance/payroll',
+          path: '/cfo',
           color: '#fa8c16',
         },
         {
@@ -276,7 +276,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Budget & Forecast',
           description: 'Financial planning and analysis',
           icon: BarChartOutlined,
-          path: '/finance/budget-forecast',
+          path: '/cfo',
           color: '#13c2c2',
         },
         {
@@ -284,7 +284,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Financial Reports',
           description: 'Financial statements and reports',
           icon: FileTextOutlined,
-          path: '/finance/reports',
+          path: '/cfo',
           color: '#eb2f96',
         },
         {
@@ -292,7 +292,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Tax Management',
           description: 'Tax compliance and reporting',
           icon: SafetyOutlined,
-          path: '/finance/tax-management',
+          path: '/cfo',
           color: '#fa541c',
         },
         {
@@ -300,7 +300,7 @@ const DepartmentHub: React.FC = () => {
           name: 'Audit & Compliance',
           description: 'Internal audit and controls',
           icon: AuditOutlined,
-          path: '/finance/audit',
+          path: '/cfo',
           color: '#2f54eb',
         },
         {

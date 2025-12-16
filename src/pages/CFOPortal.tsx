@@ -117,6 +117,7 @@ import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { CFOOnboardingGovernance } from '@/components/cfo/CFOOnboardingGovernance';
 import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 // Reusable InfoIcon component with Popover
 function InfoIcon({ content, title }: { content: string; title?: string }) {
@@ -674,6 +675,7 @@ function CFOPortalContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const toast = useToast();
   
   // Track user activity
@@ -681,6 +683,17 @@ function CFOPortalContent() {
   
   // Auto-logout after 30 minutes of inactivity
   useAutoLogout('cfo');
+
+  // Get current user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
+
+  const isTorrance = user ? hasFullAccess(user.email) : false;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -898,7 +911,16 @@ function CFOPortalContent() {
   const shouldWrapContent = activeSection !== 'overview';
 
   return (
-    <EnterpriseFinancePortalLayout>
+    <EnterpriseFinancePortalLayout onNavigate={(sectionId) => {
+      // Map finance portal section IDs to CFO Portal section IDs
+      const sectionMap: Record<string, string> = {
+        'dashboard': 'overview',
+        'investor-relations': 'investor',
+        'cfo-evaluation': 'evaluation',
+        // Add more mappings as needed
+      };
+      setActiveSection(sectionMap[sectionId] || sectionId);
+    }}>
       <div className="space-y-6">
         <Alert color="green" style={{ padding: 16 }}>
           <Group justify="space-between" wrap="wrap" gap={12}>
