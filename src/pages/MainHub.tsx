@@ -1936,7 +1936,6 @@ const MainHub: React.FC = () => {
                             {allowed ? 'Access Portal →' : 'No Access'}
                           </Button>
                         </Tooltip>
-                      </div>
                     </div>
                   </Card>
                 </Col>
