@@ -209,7 +209,7 @@ Persistent access status per user.
 
 4. Progress (High-level traction, NO numbers)
    - Platform development substantially complete
-   - Multi-portal ecosystem live
+   - Multi-portal ecosystem live (drivers, merchants, executives, customers)
    - Active market entry strategy
    - Strategic partnerships in development
    - Leadership team operational
