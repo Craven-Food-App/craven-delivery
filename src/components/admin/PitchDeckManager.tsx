@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Eye, X, Upload, Loader2, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, X, Upload, Loader2, ArrowLeft, FileText, Pencil, Check, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface InvestmentOpportunity {
@@ -71,6 +71,10 @@ export const PitchDeckManager: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [editingDocName, setEditingDocName] = useState<string | null>(null);
+  const [tempDocName, setTempDocName] = useState('');
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -283,17 +287,32 @@ export const PitchDeckManager: React.FC = () => {
     }
 
     setUploading(type);
-    const fileExt = file.name.split('.').pop();
+    setUploadProgress(0);
     const fileName = `${type}/${Date.now()}_${file.name}`;
 
     try {
       const bucket = type === 'video' ? 'pitch-deck-videos' : 'pitch-deck-assets';
       
+      // Simulate progress for better UX (Supabase doesn't expose real progress)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(fileName, file, { upsert: true });
 
+      clearInterval(progressInterval);
+      
       if (uploadError) throw uploadError;
+
+      setUploadProgress(100);
 
       const { data: { publicUrl } } = supabase.storage
         .from(bucket)
@@ -314,7 +333,10 @@ export const PitchDeckManager: React.FC = () => {
       });
       return null;
     } finally {
-      setUploading(null);
+      setTimeout(() => {
+        setUploading(null);
+        setUploadProgress(0);
+      }, 500);
     }
   };
 
@@ -330,19 +352,22 @@ export const PitchDeckManager: React.FC = () => {
 
   const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    const urls: string[] = [];
+    // Upload one at a time and add to gallery immediately after each upload
     for (let i = 0; i < files.length; i++) {
       const url = await uploadFile(files[i], 'gallery');
-      if (url) urls.push(url);
+      if (url) {
+        setFormData(prev => ({
+          ...prev,
+          gallery_images: [...(prev.gallery_images || []), url],
+        }));
+      }
     }
-
-    if (urls.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        gallery_images: [...(prev.gallery_images || []), ...urls],
-      }));
+    
+    // Reset the input so the same file can be selected again
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
     }
   };
 
@@ -799,34 +824,90 @@ export const PitchDeckManager: React.FC = () => {
 
             {/* Gallery Images */}
             <div>
-              <Label>Gallery Images</Label>
-              <div className="grid grid-cols-4 gap-2 mb-2 mt-2">
-                {formData.gallery_images?.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img src={img} alt={`Gallery ${index + 1}`} className="w-full h-24 object-cover rounded border" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => {
-                        const newImages = formData.gallery_images?.filter((_, i) => i !== index) || [];
-                        setFormData(prev => ({ ...prev, gallery_images: newImages }));
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+              <Label className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Gallery Images
+                {formData.gallery_images && formData.gallery_images.length > 0 && (
+                  <Badge variant="secondary">{formData.gallery_images.length} images</Badge>
+                )}
+              </Label>
+              
+              {/* Upload progress bar */}
+              {uploading === 'gallery' && (
+                <div className="mt-2 mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-muted-foreground">Uploading image...</span>
+                    <span className="text-sm font-medium text-orange-600">{uploadProgress}%</span>
                   </div>
-                ))}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-500 h-2 rounded-full transition-all duration-200"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Gallery grid */}
+              {formData.gallery_images && formData.gallery_images.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 mb-3">
+                  {formData.gallery_images.map((img, index) => (
+                    <div key={index} className="relative group aspect-video rounded-lg overflow-hidden border-2 border-gray-200 hover:border-orange-400 transition-colors">
+                      <img 
+                        src={img} 
+                        alt={`Gallery ${index + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            const newImages = formData.gallery_images?.filter((_, i) => i !== index) || [];
+                            setFormData(prev => ({ ...prev, gallery_images: newImages }));
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
+                      <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                        {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Upload button */}
+              <div className="flex items-center gap-3 mt-2">
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleGalleryUpload}
+                  disabled={uploading === 'gallery'}
+                  className="hidden"
+                  id="gallery-upload"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={uploading === 'gallery'}
+                  className="w-full border-dashed border-2 h-20 hover:border-orange-400 hover:bg-orange-50"
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      {uploading === 'gallery' ? 'Uploading...' : 'Click to upload images'}
+                    </span>
+                    <span className="text-xs text-gray-400">PNG, JPG, GIF up to 20MB</span>
+                  </div>
+                </Button>
               </div>
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleGalleryUpload}
-                disabled={uploading === 'gallery'}
-              />
-              {uploading === 'gallery' && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
             </div>
 
             {/* Financials */}
@@ -971,29 +1052,113 @@ export const PitchDeckManager: React.FC = () => {
               <Label>Documents</Label>
               <div className="space-y-2 mb-2 mt-2">
                 {formData.documents?.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between border p-2 rounded">
-                    <span className="text-sm">{doc.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const newDocs = formData.documents?.filter((_, i) => i !== index) || [];
-                        setFormData(prev => ({ ...prev, documents: newDocs }));
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  <div key={doc.id} className="flex items-center gap-3 border p-3 rounded-lg bg-gray-50">
+                    <FileText className="h-8 w-8 text-red-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {editingDocName === doc.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={tempDocName}
+                            onChange={(e) => setTempDocName(e.target.value)}
+                            className="h-8 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const newDocs = formData.documents?.map(d => 
+                                  d.id === doc.id ? { ...d, name: tempDocName } : d
+                                ) || [];
+                                setFormData(prev => ({ ...prev, documents: newDocs }));
+                                setEditingDocName(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingDocName(null);
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newDocs = formData.documents?.map(d => 
+                                d.id === doc.id ? { ...d, name: tempDocName } : d
+                              ) || [];
+                              setFormData(prev => ({ ...prev, documents: newDocs }));
+                              setEditingDocName(null);
+                            }}
+                          >
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingDocName(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium truncate block">{doc.name}</span>
+                      )}
+                    </div>
+                    {editingDocName !== doc.id && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingDocName(doc.id);
+                            setTempDocName(doc.name);
+                          }}
+                          title="Rename"
+                        >
+                          <Pencil className="h-4 w-4 text-gray-500" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newDocs = formData.documents?.filter((_, i) => i !== index) || [];
+                            setFormData(prev => ({ ...prev, documents: newDocs }));
+                          }}
+                          title="Remove"
+                        >
+                          <X className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-              <Input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleDocumentUpload}
-                disabled={uploading === 'document'}
-              />
-              {uploading === 'document' && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
+              
+              {/* Upload progress bar */}
+              {uploading === 'document' && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-muted-foreground">Uploading document...</span>
+                    <span className="text-sm font-medium text-orange-600">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-orange-500 h-2 rounded-full transition-all duration-200"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                  onChange={handleDocumentUpload}
+                  disabled={uploading === 'document'}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Supported: PDF, Word, PowerPoint, Excel</p>
             </div>
 
             {/* Active Status */}
