@@ -646,12 +646,48 @@ const MainHub: React.FC = () => {
     if (!user) return false;
     
     try {
-      // Check if user is an employee
+      // CEO/Torrance bypass - check if user is CEO first
+      const isTorranceUser = hasFullAccess(user.email) || 
+                            user.email?.toLowerCase() === 'tstroman.ceo@cravenusa.com' ||
+                            user.email?.toLowerCase().includes('torrance') ||
+                            user.email?.toLowerCase().includes('tstroman');
+      
+      if (isTorranceUser) {
+        // For CEO, first try to get employee record
+        const { data: employee, error: employeeError } = await supabase
+          .from('employees')
+          .select('ssn_last4, id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        // If employee record exists and has SSN, verify it
+        if (employee && employee.ssn_last4) {
+          const isValid = employee.ssn_last4 === ssnLast4;
+          console.log('CEO SSN verification:', { 
+            provided: ssnLast4, 
+            stored: employee.ssn_last4, 
+            match: isValid 
+          });
+          return isValid;
+        }
+        
+        // If no employee record or no SSN set, log warning but allow CEO to proceed
+        // This ensures CEO can always clock in/out even if employee record is missing
+        if (employeeError && employeeError.code !== 'PGRST116') {
+          console.warn('Error fetching CEO employee record:', employeeError);
+        }
+        console.log('CEO user - no employee record or SSN found, allowing SSN verification to proceed');
+        // Note: In production, you may want to add a hardcoded CEO SSN check here
+        // For now, allowing CEO to proceed if employee record doesn't exist
+        return true;
+      }
+      
+      // Regular employee verification
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
         .select('ssn_last4, id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       if (employeeError) {
         console.error('Error fetching employee:', employeeError);
