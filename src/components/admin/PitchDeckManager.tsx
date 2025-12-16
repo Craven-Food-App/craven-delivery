@@ -165,7 +165,7 @@ export const PitchDeckManager: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (closeAfterSave = true) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -178,11 +178,13 @@ export const PitchDeckManager: React.FC = () => {
       }
 
       if (!formData.company_name || !formData.location || !formData.short_summary) {
-        toast({
-          title: 'Error',
-          description: 'Please fill in all required fields',
-          variant: 'destructive',
-        });
+        if (closeAfterSave) {
+          toast({
+            title: 'Error',
+            description: 'Please fill in all required fields',
+            variant: 'destructive',
+          });
+        }
         return;
       }
 
@@ -193,23 +195,35 @@ export const PitchDeckManager: React.FC = () => {
       };
 
       if (isCreating) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('investment_opportunities')
-          .insert(payload);
+          .insert(payload)
+          .select()
+          .single();
 
         if (error) throw error;
 
-        toast({
-          title: 'Success',
-          description: 'Investment opportunity created successfully',
-        });
+        // Update form with the new ID so subsequent saves work as updates
+        if (data) {
+          setFormData(prev => ({ ...prev, id: data.id }));
+          setIsCreating(false);
+        }
+
+        if (closeAfterSave) {
+          toast({
+            title: 'Success',
+            description: 'Investment opportunity created successfully',
+          });
+        }
       } else {
         if (!formData.id) {
-          toast({
-            title: 'Error',
-            description: 'Missing opportunity ID',
-            variant: 'destructive',
-          });
+          if (closeAfterSave) {
+            toast({
+              title: 'Error',
+              description: 'Missing opportunity ID',
+              variant: 'destructive',
+            });
+          }
           return;
         }
 
@@ -220,21 +234,34 @@ export const PitchDeckManager: React.FC = () => {
 
         if (error) throw error;
 
-        toast({
-          title: 'Success',
-          description: 'Investment opportunity updated successfully',
-        });
+        if (closeAfterSave) {
+          toast({
+            title: 'Success',
+            description: 'Investment opportunity updated successfully',
+          });
+        }
       }
 
-      setIsEditDialogOpen(false);
-      fetchOpportunities();
+      if (closeAfterSave) {
+        setIsEditDialogOpen(false);
+        fetchOpportunities();
+      }
     } catch (error: any) {
       console.error('Error saving opportunity:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save investment opportunity',
-        variant: 'destructive',
-      });
+      if (closeAfterSave) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to save investment opportunity',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  // Auto-save after uploads (only if we have required fields)
+  const autoSave = async () => {
+    if (formData.company_name && formData.location && formData.short_summary) {
+      await handleSave(false);
     }
   };
 
@@ -346,7 +373,12 @@ export const PitchDeckManager: React.FC = () => {
 
     const url = await uploadFile(file, type);
     if (url) {
-      setFormData(prev => ({ ...prev, [`${type}_url`]: url }));
+      setFormData(prev => {
+        const updated = { ...prev, [`${type}_url`]: url };
+        // Auto-save after state update
+        setTimeout(() => autoSave(), 100);
+        return updated;
+      });
     }
   };
 
@@ -369,6 +401,9 @@ export const PitchDeckManager: React.FC = () => {
     if (galleryInputRef.current) {
       galleryInputRef.current.value = '';
     }
+    
+    // Auto-save after all uploads complete
+    setTimeout(() => autoSave(), 100);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,6 +413,8 @@ export const PitchDeckManager: React.FC = () => {
     const url = await uploadFile(file, 'video');
     if (url) {
       setFormData(prev => ({ ...prev, video_url: url }));
+      // Auto-save after upload
+      setTimeout(() => autoSave(), 100);
     }
   };
 
@@ -398,6 +435,9 @@ export const PitchDeckManager: React.FC = () => {
         ...prev,
         documents: [...(prev.documents || []), newDoc],
       }));
+      
+      // Auto-save after upload
+      setTimeout(() => autoSave(), 100);
     }
   };
 
