@@ -173,18 +173,10 @@ export const PitchDeckManager: React.FC = () => {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: 'Error',
-          description: 'You must be logged in',
-          variant: 'destructive',
-        });
-        return;
-      }
-
+      // Validate required fields first (no network call)
       if (!formData.company_name || !formData.location || !formData.short_summary) {
         if (closeAfterSave) {
+          setSaving(false);
           toast({
             title: 'Error',
             description: 'Please fill in all required fields',
@@ -194,16 +186,28 @@ export const PitchDeckManager: React.FC = () => {
         return;
       }
 
+      // Only strip created_by for updates, keep it simple
       const payload = {
         ...formData,
         updated_at: new Date().toISOString(),
-        created_by: isCreating ? user.id : undefined,
       };
 
       if (isCreating) {
+        // Get user only when creating (need user.id)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setSaving(false);
+          toast({
+            title: 'Error',
+            description: 'You must be logged in',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         const { data, error } = await supabase
           .from('investment_opportunities')
-          .insert(payload)
+          .insert({ ...payload, created_by: user.id })
           .select()
           .single();
 
@@ -220,10 +224,16 @@ export const PitchDeckManager: React.FC = () => {
             title: 'Success',
             description: 'Investment opportunity created successfully',
           });
+          // Update local state instead of refetching
+          if (data) {
+            setOpportunities(prev => [data, ...prev]);
+          }
+          setIsEditDialogOpen(false);
         }
       } else {
         if (!formData.id) {
           if (closeAfterSave) {
+            setSaving(false);
             toast({
               title: 'Error',
               description: 'Missing opportunity ID',
@@ -233,9 +243,12 @@ export const PitchDeckManager: React.FC = () => {
           return;
         }
 
+        // Remove id from payload for update
+        const { id, ...updatePayload } = payload;
+
         const { error } = await supabase
           .from('investment_opportunities')
-          .update(payload)
+          .update(updatePayload)
           .eq('id', formData.id);
 
         if (error) throw error;
@@ -245,12 +258,12 @@ export const PitchDeckManager: React.FC = () => {
             title: 'Success',
             description: 'Investment opportunity updated successfully',
           });
+          // Update local state instead of refetching all
+          setOpportunities(prev => 
+            prev.map(opp => opp.id === formData.id ? { ...opp, ...updatePayload } as InvestmentOpportunity : opp)
+          );
+          setIsEditDialogOpen(false);
         }
-      }
-
-      if (closeAfterSave) {
-        setIsEditDialogOpen(false);
-        fetchOpportunities();
       }
     } catch (error: any) {
       console.error('Error saving opportunity:', error);
