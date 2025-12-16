@@ -1360,15 +1360,15 @@ const MainHub: React.FC = () => {
         <Header
           style={{
             background: "#ffffff",
-            padding: "0 24px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+            padding: "0 16px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             borderBottom: "1px solid #e5e7eb",
-            height: 72,
+            height: 56,
             flexWrap: "wrap",
-            minHeight: 72,
+            minHeight: 56,
           }}
         >
           <div
@@ -1384,7 +1384,7 @@ const MainHub: React.FC = () => {
               src={cravenLogo}
               alt="Crave'N"
               style={{
-                height: 40,
+                height: 32,
                 width: "auto",
                 flexShrink: 0,
               }}
@@ -1404,11 +1404,11 @@ const MainHub: React.FC = () => {
               }}
             >
               <Title
-                level={3}
+                level={4}
                 style={{
                   margin: 0,
                   color: "#111827",
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 600,
                   lineHeight: 1.3,
                   whiteSpace: "nowrap",
@@ -1421,13 +1421,13 @@ const MainHub: React.FC = () => {
               <Text
                 type="secondary"
                 style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   color: "#6b7280",
                   display: "block",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  lineHeight: 1.4,
+                  lineHeight: 1.3,
                 }}
               >
                 {employeeInfo ? `${employeeInfo.full_name} • ${employeeInfo.position}` : "Corporate Access Portal"}
@@ -1443,7 +1443,7 @@ const MainHub: React.FC = () => {
           >
             {employeeInfo && (
               <Avatar
-                size={36}
+                size={32}
                 style={{
                   backgroundColor: "#ff7a45",
                   color: "#fff",
@@ -1474,96 +1474,96 @@ const MainHub: React.FC = () => {
         {/* Main Content */}
         <Content
           style={{
-            padding: "64px 32px",
+            padding: "24px 16px",
             maxWidth: 1600,
             margin: "0 auto",
             width: "100%",
             background: "#ffffff",
           }}
         >
-          <div style={{ marginBottom: 48 }} />
+          <div style={{ marginBottom: 24 }} />
 
           {/* Time Clock Section - Show when user is logged in */}
           {user && (
             <Card
               style={{
-                marginBottom: 48,
+                marginBottom: 24,
                 background: flashColor === 'green' 
                   ? 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)'
                   : flashColor === 'red'
                   ? 'linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%)'
                   : '#ffffff',
                 border: '1px solid #e5e7eb',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 transition: 'background 0.3s ease',
               }}
-              bodyStyle={{ padding: 32 }}
+              bodyStyle={{ padding: 20 }}
             >
-              <Row gutter={[24, 24]} align="middle">
+              <Row gutter={[16, 16]} align="middle">
                 {/* Clock Display Section */}
                 <Col xs={24} lg={12}>
                   <div style={{ textAlign: 'center', color: flashColor ? '#fff' : '#111827' }}>
-                    <ClockCircleOutlined style={{ fontSize: 64, marginBottom: 16, opacity: 0.9 }} />
+                    <ClockCircleOutlined style={{ fontSize: 40, marginBottom: 12, opacity: 0.9 }} />
                     
                     {/* Current Time */}
-                    <div style={{ fontSize: 56, fontWeight: 900, marginBottom: 8, letterSpacing: 2 }}>
+                    <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 6, letterSpacing: 1 }}>
                       {formatTime(currentTime).split(' ')[0]}
-                      <span style={{ fontSize: 24, fontWeight: 300, marginLeft: 8, opacity: 0.9 }}>
+                      <span style={{ fontSize: 18, fontWeight: 300, marginLeft: 6, opacity: 0.9 }}>
                         {formatTime(currentTime).split(' ')[1]}
                       </span>
                     </div>
                     
                     {/* Current Date */}
-                    <div style={{ fontSize: 16, opacity: 0.9, marginBottom: 24 }}>
+                    <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 16 }}>
                       {formatDate(currentTime)}
                     </div>
                     
                     {/* Status Badge */}
                     <div style={{
                       display: 'inline-block',
-                      padding: '8px 24px',
-                      borderRadius: 20,
+                      padding: '6px 16px',
+                      borderRadius: 16,
                       background: flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6',
-                      marginBottom: 24,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      letterSpacing: 2,
+                      marginBottom: 16,
+                      fontWeight: 600,
+                      fontSize: 12,
+                      letterSpacing: 1,
                       color: flashColor ? '#fff' : '#111827',
                       border: flashColor ? 'none' : '1px solid #e5e7eb',
                     }}>
                       {clockStatus.isClockedIn ? (
-                        <span><LogoutOutlined style={{ marginRight: 8 }} />CLOCKED IN</span>
+                        <span><LogoutOutlined style={{ marginRight: 6, fontSize: 12 }} />CLOCKED IN</span>
                       ) : (
-                        <span><LoginOutlined style={{ marginRight: 8 }} />CLOCKED OUT</span>
+                        <span><LoginOutlined style={{ marginRight: 6, fontSize: 12 }} />CLOCKED OUT</span>
                       )}
                     </div>
                     
                     {/* Active Session Duration */}
                     {clockStatus.isClockedIn && clockStatus.clockInAt && (
                       <div style={{
-                        padding: 16,
+                        padding: 12,
                         background: flashColor ? 'rgba(255,255,255,0.2)' : '#f9fafb',
-                        borderRadius: 12,
-                        marginBottom: 24,
+                        borderRadius: 8,
+                        marginBottom: 16,
                         border: flashColor ? 'none' : '1px solid #e5e7eb',
                       }}>
-                        <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4, color: flashColor ? '#fff' : '#6b7280' }}>
+                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 4, color: flashColor ? '#fff' : '#6b7280' }}>
                           SESSION DURATION
                         </div>
-                        <div style={{ fontSize: 32, fontWeight: 700, fontFamily: 'monospace', color: flashColor ? '#fff' : '#111827' }}>
+                        <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'monospace', color: flashColor ? '#fff' : '#111827' }}>
                           {currentDuration}
                         </div>
-                        <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4, color: flashColor ? '#fff' : '#6b7280' }}>
+                        <div style={{ fontSize: 11, opacity: 0.8, marginTop: 4, color: flashColor ? '#fff' : '#6b7280' }}>
                           Since: {formatTime(clockStatus.clockInAt)}
                         </div>
                       </div>
                     )}
                     
                     {/* Clock In/Out Buttons - Always Show Both */}
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
                       <Button
                         type="primary"
-                        size="large"
+                        size="middle"
                         icon={<LoginOutlined />}
                         loading={clockLoading && pendingClockAction === 'in'}
                         onClick={handleClockIn}
@@ -1573,10 +1573,10 @@ const MainHub: React.FC = () => {
                           background: clockStatus.isClockedIn ? '#d1d5db' : '#52c41a',
                           color: '#fff',
                           border: 'none',
-                          height: 56,
-                          fontSize: 18,
-                          fontWeight: 700,
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                          height: 40,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                         }}
                       >
                         CLOCK IN
@@ -1584,7 +1584,7 @@ const MainHub: React.FC = () => {
                       
                       <Button
                         type="primary"
-                        size="large"
+                        size="middle"
                         icon={<LogoutOutlined />}
                         loading={clockLoading && pendingClockAction === 'out'}
                         onClick={handleClockOut}
@@ -1594,10 +1594,10 @@ const MainHub: React.FC = () => {
                           background: !clockStatus.isClockedIn ? '#d1d5db' : '#ff4d4f',
                           color: '#fff',
                           border: 'none',
-                          height: 56,
-                          fontSize: 18,
-                          fontWeight: 700,
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                          height: 40,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                           cursor: (!clockLoading && clockStatus.isClockedIn && pendingClockAction !== 'in') ? 'pointer' : 'not-allowed',
                           opacity: (!clockLoading && clockStatus.isClockedIn && pendingClockAction !== 'in') ? 1 : 0.6,
                         }}
@@ -1626,7 +1626,7 @@ const MainHub: React.FC = () => {
                 
                 {/* Stats Section */}
                 <Col xs={24} lg={12}>
-                  <Row gutter={[16, 16]}>
+                  <Row gutter={[12, 12]}>
                     <Col span={12}>
                       <Card 
                         size="small" 
@@ -1635,12 +1635,12 @@ const MainHub: React.FC = () => {
                           border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
                           textAlign: 'center'
                         }}
-                        bodyStyle={{ padding: 20 }}
+                        bodyStyle={{ padding: 12 }}
                       >
-                        <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, color: flashColor ? '#fff' : '#6b7280' }}>
+                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 6, color: flashColor ? '#fff' : '#6b7280' }}>
                           HOURS TODAY
                         </div>
-                        <div style={{ fontSize: 36, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
                           {clockStatus.hoursToday.toFixed(1)}
                         </div>
                       </Card>
@@ -1653,12 +1653,12 @@ const MainHub: React.FC = () => {
                           border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
                           textAlign: 'center'
                         }}
-                        bodyStyle={{ padding: 20 }}
+                        bodyStyle={{ padding: 12 }}
                       >
-                        <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, color: flashColor ? '#fff' : '#6b7280' }}>
+                        <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 6, color: flashColor ? '#fff' : '#6b7280' }}>
                           HOURS THIS WEEK
                         </div>
-                        <div style={{ fontSize: 36, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: flashColor ? '#fff' : '#111827' }}>
                           {clockStatus.weeklyHours.toFixed(1)}
                         </div>
                       </Card>
@@ -1669,28 +1669,30 @@ const MainHub: React.FC = () => {
               
               {/* History Table */}
               {showClockHistory && (
-                <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
                   <Card
                     style={{
                       background: 'rgba(255,255,255,0.95)',
                       border: 'none',
                     }}
+                    bodyStyle={{ padding: 16 }}
                   >
-                    <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
-                        <HistoryOutlined style={{ marginRight: 8, color: '#ff7a45' }} />
+                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 16 }}>
+                        <HistoryOutlined style={{ marginRight: 6, color: '#ff7a45', fontSize: 16 }} />
                         Recent Time Entries
                       </Title>
                     </div>
                     
                     {timeEntries.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                      <div style={{ textAlign: 'center', padding: 24, color: '#999', fontSize: 13 }}>
                         No time entries recorded yet.
                       </div>
                     ) : (
                       <Table
                         dataSource={timeEntries}
                         rowKey="id"
+                        size="small"
                         pagination={{ pageSize: 10 }}
                         columns={[
                           {
@@ -1746,23 +1748,24 @@ const MainHub: React.FC = () => {
           {user && employeeInfo && (
             <Card
               style={{
-                marginBottom: 48,
+                marginBottom: 24,
                 background: '#ffffff',
                 border: '1px solid #e5e7eb',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
-              bodyStyle={{ padding: 32 }}
+              bodyStyle={{ padding: 20 }}
             >
-              <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
-                  <TeamOutlined style={{ marginRight: 12, color: '#ff7a45', fontSize: 24 }} />
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 16 }}>
+                  <TeamOutlined style={{ marginRight: 8, color: '#ff7a45', fontSize: 18 }} />
                   Company Departments
                 </Title>
                 <Button
                   type="text"
+                  size="small"
                   icon={showDepartments ? <span>−</span> : <span>+</span>}
                   onClick={() => setShowDepartments(!showDepartments)}
-                  style={{ fontSize: 18, fontWeight: 600 }}
+                  style={{ fontSize: 14, fontWeight: 600 }}
                 >
                   {showDepartments ? 'Collapse' : 'Expand'}
                 </Button>
@@ -1771,24 +1774,24 @@ const MainHub: React.FC = () => {
               {showDepartments && (
                 <Spin spinning={departmentsLoading}>
                   {departments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                    <div style={{ textAlign: 'center', padding: 24, color: '#999', fontSize: 13 }}>
                       No departments found.
                     </div>
                   ) : (
-                    <Row gutter={[16, 16]}>
+                    <Row gutter={[12, 12]}>
                       {departments.map((dept) => (
                         <Col xs={24} sm={12} lg={8} xl={6} key={dept.id}>
                           <Card
                             hoverable
                             style={{
                               height: '100%',
-                              borderRadius: 8,
+                              borderRadius: 6,
                               border: '1px solid #e5e7eb',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                               transition: 'all 0.2s',
                               cursor: 'pointer',
                             }}
-                            bodyStyle={{ padding: 20 }}
+                            bodyStyle={{ padding: 16 }}
                             onClick={() => {
                               const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
                               navigate(`/hub/department/${deptName}`);
@@ -1906,7 +1909,7 @@ const MainHub: React.FC = () => {
           )}
 
           {/* Portal Grid - Corporate Style */}
-          <Row gutter={[32, 32]}>
+          <Row gutter={[16, 16]}>
             {portals.map((portal) => {
               const allowed = isPortalAllowed(portal.id);
               const Icon = portal.icon;
@@ -1916,11 +1919,11 @@ const MainHub: React.FC = () => {
                     hoverable
                     style={{
                       height: "100%",
-                      borderRadius: 8,
+                      borderRadius: 6,
                       cursor: allowed ? "pointer" : "not-allowed",
                       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                       border: "1px solid #e5e7eb",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
                       background: "#ffffff",
                       opacity: allowed ? 1 : 0.5,
                     }}
@@ -1931,16 +1934,16 @@ const MainHub: React.FC = () => {
                         message.warning('Access denied for this portal');
                       }
                     }}
-                    bodyStyle={{ padding: 28 }}
+                    bodyStyle={{ padding: 16 }}
                     onMouseEnter={(e) => {
                       if (allowed) {
-                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+                        e.currentTarget.style.transform = "translateY(-1px)";
                         e.currentTarget.style.borderColor = portal.color;
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.08)";
                       e.currentTarget.style.transform = "translateY(0)";
                       e.currentTarget.style.borderColor = "#e5e7eb";
                     }}
@@ -1948,25 +1951,25 @@ const MainHub: React.FC = () => {
                     <div style={{ textAlign: "center" }}>
                       <div
                         style={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: 8,
+                          width: 48,
+                          height: 48,
+                          borderRadius: 6,
                           background: `linear-gradient(135deg, ${portal.color}15 0%, ${portal.color}08 100%)`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          margin: "0 auto 20px",
+                          margin: "0 auto 12px",
                           border: `1px solid ${portal.color}20`,
                         }}
                       >
-                        <Icon style={{ fontSize: 36, color: portal.color }} />
+                        <Icon style={{ fontSize: 24, color: portal.color }} />
                       </div>
                       <Title
-                        level={4}
+                        level={5}
                         style={{
-                          marginBottom: 12,
+                          marginBottom: 8,
                           color: "#111827",
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: 600,
                         }}
                       >
@@ -1975,12 +1978,12 @@ const MainHub: React.FC = () => {
                       <Text
                         type="secondary"
                         style={{
-                          fontSize: 14,
+                          fontSize: 12,
                           color: "#6b7280",
-                          lineHeight: 1.5,
+                          lineHeight: 1.4,
                           display: "block",
-                          marginBottom: 20,
-                          minHeight: 42,
+                          marginBottom: 12,
+                          minHeight: 32,
                         }}
                       >
                         {portal.description}
@@ -1989,14 +1992,15 @@ const MainHub: React.FC = () => {
                         <Tooltip title={allowed ? '' : 'No access'}>
                           <Button
                             type="primary"
+                            size="small"
                             style={{
                               background: portal.color,
                               borderColor: portal.color,
                               width: "100%",
-                              height: 42,
+                              height: 32,
                               fontWeight: 500,
-                              fontSize: 14,
-                              borderRadius: 6,
+                              fontSize: 12,
+                              borderRadius: 4,
                               boxShadow: `0 2px 4px ${portal.color}30`,
                             }}
                             onMouseEnter={(e) => {
