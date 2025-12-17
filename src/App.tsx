@@ -78,8 +78,8 @@ import { VehiclePhotosUpload } from "./components/onboarding/VehiclePhotosUpload
 import { PayoutSetup } from "./components/onboarding/PayoutSetup";
 import { SafetyQuiz } from "./components/onboarding/SafetyQuiz";
 import { DriverReferralPage } from "./components/onboarding/DriverReferralPage";
-import BoardPortal from "./pages/BoardPortal";
 import CFOPortal from "./pages/CFOPortal";
+import ArticlesGeneratorPortal from "./pages/ArticlesGeneratorPortal";
 import CEOPortal from "./pages/CEOPortal";
 import ExecutiveAccountability from "./pages/ExecutiveAccountability";
 import COOPortal from "./pages/COOPortal";
@@ -374,6 +374,7 @@ const App = () => {
                   <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />
+                  <Route path="/technology/articles-generator" element={<BusinessAuthGuard><ArticlesGeneratorPortal /></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/merchant-operations" element={<MerchantOperationsPortal />} />
@@ -383,7 +384,6 @@ const App = () => {
                   <Route path="/testing" element={<TestingPortal />} />
                     <Route path="/marketing-portal" element={<MarketingPortal />} />
                     <Route path="/hr-portal" element={<BusinessAuthGuard><HRPortal /></BusinessAuthGuard>} />
-                    <Route path="/board" element={<BoardPortal />} />
                   <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
                   <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
                   <Route path="/enhanced-onboarding/vehicle-photos" element={<VehiclePhotosUpload />} />
@@ -729,9 +729,9 @@ const App = () => {
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
           <Route path="/technology/developer-portal" element={<BusinessAuthGuard><DeveloperPortal /></BusinessAuthGuard>} />
+          <Route path="/technology/articles-generator" element={<BusinessAuthGuard><ArticlesGeneratorPortal /></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hr-portal" element={<BusinessAuthGuard><HRPortal /></BusinessAuthGuard>} />
-          <Route path="/board" element={<BusinessAuthGuard><BoardPortal /></BusinessAuthGuard>} />
           <Route path="/cfo" element={<BusinessAuthGuard><CFOPortal /></BusinessAuthGuard>} />
           <Route path="/ceo" element={<BusinessAuthGuard><CEOPortal /></BusinessAuthGuard>} />
           <Route path="/coo" element={<BusinessAuthGuard><COOPortal /></BusinessAuthGuard>} />

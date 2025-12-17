@@ -1156,14 +1156,6 @@ const MainHub: React.FC = () => {
       color: "#ff7a45",
     },
     {
-      id: "board",
-      name: "Board Portal",
-      description: "Executive board dashboard and governance",
-      icon: CrownOutlined,
-      path: "/board",
-      color: "#722ed1",
-    },
-    {
       id: "ceo",
       name: "CEO Command Center",
       description: "Executive leadership and strategic oversight",
@@ -1194,6 +1186,14 @@ const MainHub: React.FC = () => {
       icon: BarChartOutlined,
       path: "/cto",
       color: "#eb2f96",
+    },
+    {
+      id: "articles-generator",
+      name: "Articles Generator",
+      description: "Generate Articles of Incorporation documents",
+      icon: FileTextOutlined,
+      path: "/technology/articles-generator",
+      color: "#722ed1",
     },
     {
       id: "cxo",
@@ -1288,7 +1288,6 @@ const MainHub: React.FC = () => {
   // Permission flags (used to gray out tiles but keep visible)
   const canAdmin = usePermission('admin.view');
   const canMarketing = usePermission('marketing.view');
-  const canBoard = usePermission('board.view');
   const canCEO = usePermission('ceo.view');
   const canCFO = usePermission('finance.view');
   const canCOO = usePermission('coo.view');
@@ -1323,11 +1322,11 @@ const MainHub: React.FC = () => {
       case 'company': return hasCompanyAccess;
       case 'admin': return canAdmin;
       case 'marketing': return canMarketing;
-      case 'board': return canBoard || canCEO; // CEOs can access board
       case 'ceo': return canCEO;
       case 'cfo': return canCFO;
       case 'coo': return canCOO;
       case 'cto': return canCTO;
+      case 'articles-generator': return canCTO; // Technology department access
       case 'cxo': return canCEO;
       case 'hr': return canHR;
       default: return true;
