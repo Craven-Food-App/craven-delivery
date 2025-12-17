@@ -8,8 +8,6 @@ const CompanyPortalLayout: React.FC = () => {
   const location = useLocation();
   const path = location.pathname;
   
-  console.log('🏢 [CompanyPortalLayout] Rendering, path:', path);
-  
   // Direct render for SOP route to bypass Outlet issues
   const isSopRoute = path === '/company/sop' || path.endsWith('/sop');
   
@@ -23,18 +21,10 @@ const CompanyPortalLayout: React.FC = () => {
       ]}
     >
       <CompanyShell>
-        {isSopRoute ? (
-          (() => {
-            console.log('🏢 [CompanyPortalLayout] Rendering SOPManagement directly');
-            return <SOPManagement />;
-          })()
-        ) : (
-          <Outlet />
-        )}
+        {isSopRoute ? <SOPManagement /> : <Outlet />}
       </CompanyShell>
     </CompanySecureRoute>
   );
 };
 
 export default CompanyPortalLayout;
-

@@ -20,8 +20,6 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  
-  console.log('🔐 [CompanySecureRoute] Rendering, allowedRoles:', allowedRoles);
 
   useEffect(() => {
     const checkAccess = async () => {

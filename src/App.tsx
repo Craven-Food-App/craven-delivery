@@ -363,7 +363,6 @@ const App = () => {
   }
 
   // If on HQ/business subdomain, show only business routes
-  console.log('🔍 isHQSubdomain:', isHQSubdomain, 'current path:', window.location.pathname);
   if (isHQSubdomain) {
     return (
       <ErrorBoundary>
