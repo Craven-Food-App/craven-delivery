@@ -142,6 +142,33 @@ const InvestorAccess: React.FC = () => {
     setSubmitting(true);
 
     try {
+      // Find the default investment opportunity (Craven Delivery, or first active one)
+      let opportunity = null;
+      const { data: cravenOpp, error: cravenError } = await supabase
+        .from('investment_opportunities')
+        .select('id')
+        .eq('is_active', true)
+        .eq('company_name', 'Craven Delivery')
+        .maybeSingle();
+
+      if (!cravenError && cravenOpp) {
+        opportunity = cravenOpp;
+      } else {
+        // Fallback to first active opportunity
+        const { data: firstOpp, error: firstError } = await supabase
+          .from('investment_opportunities')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+
+        if (!firstError && firstOpp) {
+          opportunity = firstOpp;
+        } else if (firstError) {
+          console.error('Error fetching investment opportunity:', firstError);
+        }
+      }
+
       // Insert access request
       const { data: requestData, error: requestError } = await supabase
         .from('investor_access_requests')
@@ -160,6 +187,40 @@ const InvestorAccess: React.FC = () => {
         .single();
 
       if (requestError) throw requestError;
+
+      // Also insert into investor_interests so it shows up in Investor Relations
+      if (opportunity?.id) {
+        // Map investor_type from access form to investor_interests format
+        const investorTypeMap: Record<string, string> = {
+          'angel': 'angel',
+          'strategic': 'corporate',
+          'institutional': 'vc',
+          'other': 'other',
+        };
+
+        const { error: interestError } = await supabase
+          .from('investor_interests')
+          .insert({
+            opportunity_id: opportunity.id,
+            user_id: user?.id || null,
+            full_name: formData.full_name,
+            email: formData.email,
+            phone: null,
+            company_name: formData.organization || null,
+            investor_type: investorTypeMap[formData.investor_type] || 'other',
+            investment_range: null,
+            message: formData.notes || null,
+            status: 'new',
+            source: 'investor_access_form',
+          });
+
+        if (interestError) {
+          console.error('Error inserting investor interest:', interestError);
+          // Don't fail the whole request if interest insert fails
+        }
+      } else {
+        console.warn('No active investment opportunity found. Investor interest not recorded.');
+      }
 
       // Upsert investor profile
       if (user) {
