@@ -1,9 +1,18 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { CompanyShell } from './components/CompanyShell';
 import { CompanySecureRoute } from '@/lib/authGuard';
+import SOPManagement from './sop/SOPManagement';
 
 const CompanyPortalLayout: React.FC = () => {
+  const location = useLocation();
+  const path = location.pathname;
+  
+  console.log('🏢 [CompanyPortalLayout] Rendering, path:', path);
+  
+  // Direct render for SOP route to bypass Outlet issues
+  const isSopRoute = path === '/company/sop' || path.endsWith('/sop');
+  
   return (
     <CompanySecureRoute
       allowedRoles={[
@@ -14,7 +23,14 @@ const CompanyPortalLayout: React.FC = () => {
       ]}
     >
       <CompanyShell>
-        <Outlet />
+        {isSopRoute ? (
+          (() => {
+            console.log('🏢 [CompanyPortalLayout] Rendering SOPManagement directly');
+            return <SOPManagement />;
+          })()
+        ) : (
+          <Outlet />
+        )}
       </CompanyShell>
     </CompanySecureRoute>
   );

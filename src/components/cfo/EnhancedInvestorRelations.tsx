@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Stack, Title, Text, Card, Group, Badge, Button, Grid, Tabs, Table, Alert, Textarea, Select, ActionIcon, Menu, Modal, TextInput } from '@mantine/core';
-import { IconZoomMoney, IconMail, IconUsers, IconChartPie, IconDownload, IconSend, IconFileText, IconUserPlus, IconDotsVertical, IconPhone, IconCheck, IconX, IconEye } from '@tabler/icons-react';
+import { IconZoomMoney, IconMail, IconUsers, IconChartPie, IconDownload, IconSend, IconFileText, IconUserPlus, IconDotsVertical, IconPhone, IconCheck, IconX, IconEye, IconRefresh } from '@tabler/icons-react';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { supabase } from '@/integrations/supabase/client';
 import { PitchDeckManager } from '@/components/admin/PitchDeckManager';
@@ -210,6 +210,16 @@ export const EnhancedInvestorRelations: React.FC = () => {
           <Text c="dimmed" size="sm">Manage investor communications, updates, and fundraising activities</Text>
         </div>
         <Group>
+          <Button 
+            variant="light" 
+            leftSection={<IconRefresh size={16} />}
+            onClick={() => {
+              setInterestsLoading(true);
+              fetchInterests();
+            }}
+          >
+            Refresh
+          </Button>
           <Button variant="light" leftSection={<IconMail size={16} />}>Schedule Call</Button>
           <Button leftSection={<IconDownload size={16} />} color="blue">Data Room</Button>
         </Group>

@@ -51,13 +51,15 @@ import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
-import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
-import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
-import MorningTechnicalReview from '@/components/cto/MorningTechnicalReview';
-import SprintManagement from '@/components/cto/SprintManagement';
-import CodeReviewQueue from '@/components/cto/CodeReviewQueue';
-import ITHelpDeskDashboard from '@/components/cto/ITHelpDeskDashboard';
-import CodeEditorPortal from '@/components/cto/CodeEditorPortal';
+
+// Lazy load heavy components for performance
+const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
+const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
+const MorningTechnicalReview = React.lazy(() => import('@/components/cto/MorningTechnicalReview'));
+const SprintManagement = React.lazy(() => import('@/components/cto/SprintManagement'));
+const CodeReviewQueue = React.lazy(() => import('@/components/cto/CodeReviewQueue'));
+const ITHelpDeskDashboard = React.lazy(() => import('@/components/cto/ITHelpDeskDashboard'));
+const CodeEditorPortal = React.lazy(() => import('@/components/cto/CodeEditorPortal'));
 import DeveloperOnboarding from '@/components/cto/DeveloperOnboarding';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import { EnhancedCTODashboard } from '@/components/cto/EnhancedCTODashboard';

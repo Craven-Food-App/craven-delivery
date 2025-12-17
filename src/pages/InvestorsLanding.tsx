@@ -20,7 +20,7 @@ const InvestorsLanding: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button
-              onClick={() => navigate('/investors/access')}
+              onClick={() => navigate('/investors/interest')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg"
             >
               Request Investor Access
@@ -179,7 +179,7 @@ const InvestorsLanding: React.FC = () => {
             Access detailed investor materials and engage with our team.
           </p>
           <Button
-            onClick={() => navigate('/investors/access')}
+            onClick={() => navigate('/investors/interest')}
             className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg"
           >
             Request Investor Access

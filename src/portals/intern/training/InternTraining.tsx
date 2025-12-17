@@ -604,14 +604,15 @@ const InternTraining: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  // Determine effective role track (use default if no activation status)
+  const effectiveRoleTrack: ModuleScope = activationStatus?.role_track || 'MARKETING_GROWTH';
+
   // Fetch all modules relevant to this intern
   const { data: modules = [], isLoading: modulesLoading } = useQuery({
-    queryKey: ['training-modules', activationStatus?.role_track],
+    queryKey: ['training-modules', effectiveRoleTrack],
     queryFn: async () => {
-      const scopes: ModuleScope[] = ['CORE'];
-      if (activationStatus?.role_track) {
-        scopes.push(activationStatus.role_track);
-      }
+      // Always include both CORE and role-specific modules
+      const scopes: ModuleScope[] = ['CORE', effectiveRoleTrack];
 
       const { data, error } = await supabase
         .from('intern_training_modules')
@@ -620,9 +621,10 @@ const InternTraining: React.FC = () => {
         .eq('is_active', true)
         .order('sort_order');
       if (error) throw error;
+      
       return data as TrainingModule[];
     },
-    enabled: !!activationStatus || activationStatus === null,
+    enabled: true, // Always enabled - we want modules even without activation status
   });
 
   // Fetch user's progress for all modules
@@ -866,7 +868,33 @@ const InternTraining: React.FC = () => {
   ], []);
 
   // Use demo modules if no real modules exist
-  const effectiveModules = modules.length > 0 ? modules : demoModules;
+  // Also ensure both CORE and role-specific modules are present
+  const effectiveModules = useMemo(() => {
+    if (modules.length === 0) {
+      // Use demo modules filtered by effective role track
+      return demoModules.filter(m => m.scope === 'CORE' || m.scope === effectiveRoleTrack);
+    }
+    
+    // Check if we have both CORE and role-specific modules
+    const hasCoreModules = modules.some(m => m.scope === 'CORE');
+    const hasRoleModules = modules.some(m => m.scope === effectiveRoleTrack);
+    
+    const result: TrainingModule[] = [...modules];
+    
+    // Add demo CORE modules if missing from database
+    if (!hasCoreModules) {
+      const coreDemoModules = demoModules.filter(m => m.scope === 'CORE');
+      result.unshift(...coreDemoModules);
+    }
+    
+    // Add demo role-specific modules if missing from database
+    if (!hasRoleModules) {
+      const roleDemoModules = demoModules.filter(m => m.scope === effectiveRoleTrack);
+      result.push(...roleDemoModules);
+    }
+    
+    return result;
+  }, [modules, effectiveRoleTrack]);
 
   // Compute module status based on prerequisites and unlock rules
   const modulesWithStatus: ModuleWithProgress[] = useMemo(() => {
@@ -1079,7 +1107,7 @@ const InternTraining: React.FC = () => {
   const effectiveActivationStatus: InternActivationStatus = activationStatus || {
     id: 'demo',
     user_id: user?.id || 'demo',
-    role_track: 'MARKETING_GROWTH',
+    role_track: effectiveRoleTrack,
     core_modules_completed: false,
     role_modules_completed: false,
     is_activated: false,

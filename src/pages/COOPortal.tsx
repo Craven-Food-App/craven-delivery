@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
-import { Layout, Typography, Row, Col, Statistic, Tabs, Table, Badge, Card, Button, Space, Divider, Modal, Form, Input, InputNumber, Select, message, Popconfirm } from 'antd';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Layout, Typography, Row, Col, Statistic, Tabs, Table, Badge, Card, Button, Space, Divider, Modal, Form, Input, InputNumber, Select, message, Popconfirm, Spin } from 'antd';
 import { DashboardOutlined, CarOutlined, ShopOutlined, FileProtectOutlined, AlertOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, MailOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
@@ -8,8 +8,10 @@ import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
-import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
-import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
+
+// Lazy load heavy components
+const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
+const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;

@@ -10,6 +10,7 @@ import {
   IconUserCheck,
   IconUsersGroup,
   IconWorld,
+  IconBook,
 } from '@tabler/icons-react';
 import { fetchUserRoles, canManageGovernance, canVoteOnResolutions } from '@/lib/roles';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,9 @@ const CompanySidebar: React.FC = () => {
   // Permission checks for specific tabs
   const hasExecutivesAccess = usePermission('company.executives.view');
   const hasLeadershipAccess = usePermission('company.leadership.view');
+  // SOP Documents should be accessible to all executives (roles: ['all'] handles this)
+  // Permission check is optional fallback
+  const hasSOPAccess = usePermission('company.sop.view') ?? true; // Default to true if permission doesn't exist
 
   useEffect(() => {
     let mounted = true;
@@ -114,6 +118,13 @@ const CompanySidebar: React.FC = () => {
       path: '/company/leadership/templates',
       roles: ['CRAVEN_FOUNDER', 'CRAVEN_CORPORATE_SECRETARY', 'CRAVEN_CEO'],
     },
+    {
+      label: 'SOP Documents',
+      icon: IconBook,
+      path: '/company/sop',
+      roles: ['all'],
+      permission: 'company.sop.view',
+    },
   ];
 
   const isActive = (path: string) => {
@@ -134,15 +145,25 @@ const CompanySidebar: React.FC = () => {
           (item.label === 'Board' && canVote);
         
         // Check permission-based access for specific tabs
+        // Note: If roles includes 'all', hasAccess is already true, so permission check is skipped
         if (!hasAccess && item.permission) {
           if (item.label === 'Executives') {
             hasAccess = hasExecutivesAccess;
           } else if (item.label === 'Leadership') {
             hasAccess = hasLeadershipAccess;
+          } else if (item.label === 'SOP Documents') {
+            // SOP Documents: roles: ['all'] means all executives can access
+            // Permission is optional, default to true
+            hasAccess = hasSOPAccess !== false; // Allow if permission check passes or doesn't exist
           }
         }
 
-        if (!hasAccess) return null;
+        if (!hasAccess) {
+          console.log(`[Sidebar] Hiding ${item.label} - hasAccess: ${hasAccess}, roles: ${item.roles}, permission: ${item.permission}`);
+          return null;
+        }
+        
+        console.log(`[Sidebar] Showing ${item.label} - path: ${item.path}`);
 
         const Icon = item.icon;
 
@@ -189,4 +210,5 @@ const CompanySidebar: React.FC = () => {
 };
 
 export default CompanySidebar;
+
 

@@ -22,14 +22,15 @@ import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundChe
 import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";
 import AccessGuard from "./components/AccessGuard";
 import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import MerchantOperationsPortal from "./pages/MerchantOperationsPortal";
-import DriverOperationsPortal from "./pages/DriverOperationsPortal";
-import CustomerSuccessPortal from "./pages/CustomerSuccessPortal";
-import SupportOperationsPortal from "./pages/SupportOperationsPortal";
-import TestingPortal from "./pages/TestingPortal";
+const Admin = lazy(() => import("./pages/Admin"));
+// Operations portals - lazy loaded
+const MerchantOperationsPortal = lazy(() => import("./pages/MerchantOperationsPortal"));
+const DriverOperationsPortal = lazy(() => import("./pages/DriverOperationsPortal"));
+const CustomerSuccessPortal = lazy(() => import("./pages/CustomerSuccessPortal"));
+const SupportOperationsPortal = lazy(() => import("./pages/SupportOperationsPortal"));
+const TestingPortal = lazy(() => import("./pages/TestingPortal"));
 import RestaurantRegister from "./pages/RestaurantRegister";
-import MerchantPortal from "./pages/MerchantPortal";
+const MerchantPortal = lazy(() => import("./pages/MerchantPortal"));
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import RestaurantAuth from "./pages/RestaurantAuth";
 import RequestDelivery from "./pages/RequestDelivery";
@@ -50,8 +51,11 @@ import PartnerWithUs from "./pages/PartnerWithUs";
 import AboutUs from "./pages/AboutUs";
 import PitchDeck from "./pages/PitchDeck";
 import InvestorsLanding from "./pages/InvestorsLanding";
-import InvestorAccess from "./pages/InvestorAccess";
+import InvestorAccess from "./pages/legacy/InvestorAccess";
 import InvestorOverview from "./pages/InvestorOverview";
+import InvestorInterest from "./pages/InvestorInterest";
+import InvestorPortal from "./pages/InvestorPortal";
+import InvestorRequestStatus from "./pages/InvestorRequestStatus";
 import Careers from "./pages/Careers";
 import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
@@ -78,19 +82,20 @@ import { VehiclePhotosUpload } from "./components/onboarding/VehiclePhotosUpload
 import { PayoutSetup } from "./components/onboarding/PayoutSetup";
 import { SafetyQuiz } from "./components/onboarding/SafetyQuiz";
 import { DriverReferralPage } from "./components/onboarding/DriverReferralPage";
-import CFOPortal from "./pages/CFOPortal";
-import CEOPortal from "./pages/CEOPortal";
-import ExecutiveAccountability from "./pages/ExecutiveAccountability";
-import COOPortal from "./pages/COOPortal";
-import CTOPortal from "./pages/CTOPortal";
-import CXOPortal from "./pages/CXOPortal";
+// Heavy portals - lazy loaded for performance
+const CFOPortal = lazy(() => import("./pages/CFOPortal"));
+const CEOPortal = lazy(() => import("./pages/CEOPortal"));
+const ExecutiveAccountability = lazy(() => import("./pages/ExecutiveAccountability"));
+const COOPortal = lazy(() => import("./pages/COOPortal"));
+const CTOPortal = lazy(() => import("./pages/CTOPortal"));
+const CXOPortal = lazy(() => import("./pages/CXOPortal"));
 // EnterpriseFinancePortal consolidated into CFO Portal - redirecting /finance to /cfo
-import DriverCompensationPortal from "./pages/DriverCompensationPortal";
-import MarketingPortal from "./pages/MarketingPortal";
-import HRPortal from "./pages/HRPortal";
+const DriverCompensationPortal = lazy(() => import("./pages/DriverCompensationPortal"));
+const MarketingPortal = lazy(() => import("./pages/MarketingPortal"));
+const HRPortal = lazy(() => import("./pages/HRPortal"));
 import MainHub from "./pages/MainHub";
 import DepartmentHub from "./pages/DepartmentHub";
-import DeveloperPortal from "./pages/DeveloperPortal";
+const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 import BusinessAuth from "./pages/BusinessAuth";
 import BusinessAuthWrapper from "./components/BusinessAuthWrapper";
 import BusinessAuthGuard from "./components/BusinessAuthGuard";
@@ -100,54 +105,58 @@ import ExecutiveDocumentSign from "./pages/ExecutiveDocumentSign";
 import ExecutiveSigningPortal from "./pages/ExecutiveSigningPortal";
 import ExecutiveProfile from "./pages/ExecutiveProfile";
 import ExecutiveResetPassword from "./pages/ExecutiveResetPassword";
-import CompanyPortalLayout from "./portals/company/index";
-import CompanyDashboard from "./portals/company/dashboard/CompanyDashboard";
-import GovernanceAdminDashboard from "./portals/company/governance-admin/GovernanceAdminDashboard";
-import AppointmentList from "./portals/company/governance-admin/AppointmentList";
-import NewAppointmentForm from "./portals/company/governance-admin/NewAppointmentForm";
-import ResolutionList from "./portals/company/governance-admin/ResolutionList";
-import OfficerLedger from "./portals/company/governance-admin/OfficerLedger";
-import GovernanceLogList from "./portals/company/governance-admin/GovernanceLogList";
-import BoardDashboard from "./portals/company/board/BoardDashboard";
-import BoardResolutionDetail from "./portals/company/board/BoardResolutionDetail";
-import ExecutiveDashboard from "./portals/company/executives/ExecutiveDashboard";
-import MyAppointment from "./portals/company/executives/MyAppointment";
-import OfficerDirectoryInternal from "./portals/company/executives/OfficerDirectoryInternal";
-import LeadershipPublicPage from "./portals/company/leadership-public/LeadershipPublicPage";
+// Company Portal - lazy loaded
+const CompanyPortalLayout = lazy(() => import("./portals/company/index"));
+const CompanyDashboard = lazy(() => import("./portals/company/dashboard/CompanyDashboard"));
+const GovernanceAdminDashboard = lazy(() => import("./portals/company/governance-admin/GovernanceAdminDashboard"));
+const AppointmentList = lazy(() => import("./portals/company/governance-admin/AppointmentList"));
+const NewAppointmentForm = lazy(() => import("./portals/company/governance-admin/NewAppointmentForm"));
+const ResolutionList = lazy(() => import("./portals/company/governance-admin/ResolutionList"));
+const OfficerLedger = lazy(() => import("./portals/company/governance-admin/OfficerLedger"));
+const GovernanceLogList = lazy(() => import("./portals/company/governance-admin/GovernanceLogList"));
+const BoardDashboard = lazy(() => import("./portals/company/board/BoardDashboard"));
+const BoardResolutionDetail = lazy(() => import("./portals/company/board/BoardResolutionDetail"));
+const ExecutiveDashboard = lazy(() => import("./portals/company/executives/ExecutiveDashboard"));
+const MyAppointment = lazy(() => import("./portals/company/executives/MyAppointment"));
+const OfficerDirectoryInternal = lazy(() => import("./portals/company/executives/OfficerDirectoryInternal"));
+const LeadershipPublicPage = lazy(() => import("./portals/company/leadership-public/LeadershipPublicPage"));
+const SOPManagement = lazy(() => import("./portals/company/sop/SOPManagement"));
+const SOPWrapper = lazy(() => import("./portals/company/sop/SOPWrapper"));
 import { TemplateManager } from "./components/board/TemplateManager";
-import InternPortalLayout from "./portals/intern/InternPortalLayout";
-import InternDashboard from "./portals/intern/dashboard/InternDashboard";
-import InternTraining from "./portals/intern/training/InternTraining";
-import InternWork from "./portals/intern/work/InternWork";
-import InternPerformance from "./portals/intern/performance/InternPerformance";
-import InternAcademicCredit from "./portals/intern/academic/InternAcademicCredit";
-import InternConversion from "./portals/intern/conversion/InternConversion";
-import InternExit from "./portals/intern/exit/InternExit";
-import ManagerPortalLayout from "./portals/manager/ManagerPortalLayout";
-import ManagerDashboard from "./portals/manager/dashboard/ManagerDashboard";
-import ManagerInternDetail from "./portals/manager/interns/ManagerInternDetail";
-import ManagerReviews from "./portals/manager/reviews/ManagerReviews";
-import ManagerApprovals from "./portals/manager/approvals/ManagerApprovals";
-import SponsorPortalLayout from "./portals/executive-sponsor/SponsorPortalLayout";
-import SponsorPipeline from "./portals/executive-sponsor/pipeline/SponsorPipeline";
-import SponsorInternDetail from "./portals/executive-sponsor/interns/SponsorInternDetail";
-import SponsorApprovals from "./portals/executive-sponsor/approvals/SponsorApprovals";
-import AdminInternProgramLayout from "./portals/intern-program-admin/AdminInternProgramLayout";
-import InternProgramDashboard from "./portals/intern-program-admin/dashboard/InternProgramDashboard";
-import SponsorPortalLayoutV2 from "./portals/sponsor-portal/SponsorPortalLayout";
-import SponsorOverview from "./portals/sponsor-portal/overview/SponsorOverview";
-import ApprovalQueue from "./portals/sponsor-portal/approval-queue/ApprovalQueue";
-import SponsorInterns from "./portals/sponsor-portal/interns/SponsorInterns";
-import EnforcementApprovals from "./portals/sponsor-portal/enforcement/EnforcementApprovals";
-import SponsorAuditLog from "./portals/sponsor-portal/audit-log/SponsorAuditLog";
-import InternRolesPermissions from "./portals/intern-program-admin/roles/InternRolesPermissions";
-import InternProgramTemplates from "./portals/intern-program-admin/templates/InternProgramTemplates";
-import InternsTable from "./portals/intern-program-admin/interns/InternsTable";
-import TestModuleLibrary from "./portals/intern-program-admin/test-modules/TestModuleLibrary";
-import RoleTracksPlaylists from "./portals/intern-program-admin/role-tracks/RoleTracksPlaylists";
-import PromotionRulesEngine from "./portals/intern-program-admin/promotion-rules/PromotionRulesEngine";
-import ReviewsEnforcement from "./portals/intern-program-admin/reviews/ReviewsEnforcement";
-import AuditLog from "./portals/intern-program-admin/audit-log/AuditLog";
+// Intern & Manager Portals - lazy loaded
+const InternPortalLayout = lazy(() => import("./portals/intern/InternPortalLayout"));
+const InternDashboard = lazy(() => import("./portals/intern/dashboard/InternDashboard"));
+const InternTraining = lazy(() => import("./portals/intern/training/InternTraining"));
+const InternWork = lazy(() => import("./portals/intern/work/InternWork"));
+const InternPerformance = lazy(() => import("./portals/intern/performance/InternPerformance"));
+const InternAcademicCredit = lazy(() => import("./portals/intern/academic/InternAcademicCredit"));
+const InternConversion = lazy(() => import("./portals/intern/conversion/InternConversion"));
+const InternExit = lazy(() => import("./portals/intern/exit/InternExit"));
+const ManagerPortalLayout = lazy(() => import("./portals/manager/ManagerPortalLayout"));
+const ManagerDashboard = lazy(() => import("./portals/manager/dashboard/ManagerDashboard"));
+const ManagerInternDetail = lazy(() => import("./portals/manager/interns/ManagerInternDetail"));
+const ManagerReviews = lazy(() => import("./portals/manager/reviews/ManagerReviews"));
+const ManagerApprovals = lazy(() => import("./portals/manager/approvals/ManagerApprovals"));
+const SponsorPortalLayout = lazy(() => import("./portals/executive-sponsor/SponsorPortalLayout"));
+const SponsorPipeline = lazy(() => import("./portals/executive-sponsor/pipeline/SponsorPipeline"));
+const SponsorInternDetail = lazy(() => import("./portals/executive-sponsor/interns/SponsorInternDetail"));
+const SponsorApprovals = lazy(() => import("./portals/executive-sponsor/approvals/SponsorApprovals"));
+const AdminInternProgramLayout = lazy(() => import("./portals/intern-program-admin/AdminInternProgramLayout"));
+const InternProgramDashboard = lazy(() => import("./portals/intern-program-admin/dashboard/InternProgramDashboard"));
+const SponsorPortalLayoutV2 = lazy(() => import("./portals/sponsor-portal/SponsorPortalLayout"));
+const SponsorOverview = lazy(() => import("./portals/sponsor-portal/overview/SponsorOverview"));
+const ApprovalQueue = lazy(() => import("./portals/sponsor-portal/approval-queue/ApprovalQueue"));
+const SponsorInterns = lazy(() => import("./portals/sponsor-portal/interns/SponsorInterns"));
+const EnforcementApprovals = lazy(() => import("./portals/sponsor-portal/enforcement/EnforcementApprovals"));
+const SponsorAuditLog = lazy(() => import("./portals/sponsor-portal/audit-log/SponsorAuditLog"));
+const InternRolesPermissions = lazy(() => import("./portals/intern-program-admin/roles/InternRolesPermissions"));
+const InternProgramTemplates = lazy(() => import("./portals/intern-program-admin/templates/InternProgramTemplates"));
+const InternsTable = lazy(() => import("./portals/intern-program-admin/interns/InternsTable"));
+const TestModuleLibrary = lazy(() => import("./portals/intern-program-admin/test-modules/TestModuleLibrary"));
+const RoleTracksPlaylists = lazy(() => import("./portals/intern-program-admin/role-tracks/RoleTracksPlaylists"));
+const PromotionRulesEngine = lazy(() => import("./portals/intern-program-admin/promotion-rules/PromotionRulesEngine"));
+const ReviewsEnforcement = lazy(() => import("./portals/intern-program-admin/reviews/ReviewsEnforcement"));
+const AuditLog = lazy(() => import("./portals/intern-program-admin/audit-log/AuditLog"));
 
 // Lazy load guide pages
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
@@ -411,6 +420,7 @@ const App = () => {
                     <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
                     <Route path="leadership-public" element={<LeadershipPublicPage />} />
                     <Route path="leadership/templates" element={<TemplateManager />} />
+                    <Route path="sop" element={<SOPWrapper />} />
                   </Route>
                   {/* Intern program portals (HQ view) */}
                   <Route path="/intern/*" element={<InternPortalLayout />}>
@@ -829,7 +839,10 @@ const App = () => {
           <Route path="/pitch-deck/:id" element={<PitchDeck />} />
           <Route path="/investors" element={<InvestorsLanding />} />
           <Route path="/investors/access" element={<InvestorAccess />} />
+          <Route path="/investors/interest" element={<InvestorInterest />} />
+          <Route path="/investors/status" element={<InvestorRequestStatus />} />
           <Route path="/investors/overview" element={<InvestorOverview />} />
+          <Route path="/investors/portal" element={<InvestorPortal />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/careers/internship" element={<InternshipProgram />} />
           <Route path="/testing" element={<Testing />} />

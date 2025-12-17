@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, Suspense, lazy } from 'react';
 import {
   Grid,
   Badge,
@@ -31,26 +31,38 @@ import {
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { PersonnelManager } from '@/components/ceo/PersonnelManager';
-import { FinancialApprovals } from '@/components/ceo/FinancialApprovals';
-import { CodeChangeQueue } from '@/components/ceo/CodeChangeQueue';
-import { EmergencyControls } from '@/components/ceo/EmergencyControls';
-import { StrategicPlanning } from '@/components/ceo/StrategicPlanning';
-import { StrategicMindMap } from '@/components/ceo/StrategicMindMap';
-import { AuditTrail } from '@/components/ceo/AuditTrail';
-import { QuickActions } from '@/components/ceo/QuickActions';
-import { EquityDashboard } from '@/components/ceo/EquityDashboard';
-import ExecutiveCommunicationsCenter from '@/components/executive/ExecutiveCommunicationsCenter';
 import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
-import CEOSignatureManager from '@/components/ceo/CEOSignatureManager';
-import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
-import ActiveUsersMonitor from '@/components/ceo/ActiveUsersMonitor';
-import { InternsManagement } from '@/components/ceo/InternsManagement';
-import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
-import CtoEvaluationGatePanel from '@/components/cto/CtoEvaluationGatePanel';
+
+// Lazy load heavy components for performance
+const PersonnelManager = lazy(() => import('@/components/ceo/PersonnelManager').then(m => ({ default: m.PersonnelManager })));
+const FinancialApprovals = lazy(() => import('@/components/ceo/FinancialApprovals').then(m => ({ default: m.FinancialApprovals })));
+const CodeChangeQueue = lazy(() => import('@/components/ceo/CodeChangeQueue').then(m => ({ default: m.CodeChangeQueue })));
+const EmergencyControls = lazy(() => import('@/components/ceo/EmergencyControls').then(m => ({ default: m.EmergencyControls })));
+const StrategicPlanning = lazy(() => import('@/components/ceo/StrategicPlanning').then(m => ({ default: m.StrategicPlanning })));
+const StrategicMindMap = lazy(() => import('@/components/ceo/StrategicMindMap').then(m => ({ default: m.StrategicMindMap })));
+const AuditTrail = lazy(() => import('@/components/ceo/AuditTrail').then(m => ({ default: m.AuditTrail })));
+const QuickActions = lazy(() => import('@/components/ceo/QuickActions').then(m => ({ default: m.QuickActions })));
+const EquityDashboard = lazy(() => import('@/components/ceo/EquityDashboard').then(m => ({ default: m.EquityDashboard })));
+const ExecutiveCommunicationsCenter = lazy(() => import('@/components/executive/ExecutiveCommunicationsCenter'));
+const CEOSignatureManager = lazy(() => import('@/components/ceo/CEOSignatureManager'));
+const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
+const ActiveUsersMonitor = lazy(() => import('@/components/ceo/ActiveUsersMonitor'));
+const InternsManagement = lazy(() => import('@/components/ceo/InternsManagement').then(m => ({ default: m.InternsManagement })));
+const CfoEvaluationGatePanel = lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
+const CtoEvaluationGatePanel = lazy(() => import('@/components/cto/CtoEvaluationGatePanel'));
+
+// Loading fallback
+const ModuleLoader = () => (
+  <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+    <Stack align="center" gap="md">
+      <Loader size="lg" />
+      <Text c="dimmed">Loading module...</Text>
+    </Stack>
+  </Box>
+);
 // No Card components: full-page Ant layout
 
 interface CEOMetrics {
@@ -537,7 +549,9 @@ const CEOPortal: React.FC = () => {
           </Grid>
         </Stack>
 
-        <Stack gap="xl">{renderContent()}</Stack>
+        <Suspense fallback={<ModuleLoader />}>
+          <Stack gap="xl">{renderContent()}</Stack>
+        </Suspense>
 
         <Divider />
 

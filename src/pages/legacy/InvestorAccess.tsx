@@ -198,7 +198,7 @@ const InvestorAccess: React.FC = () => {
           'other': 'other',
         };
 
-        const { error: interestError } = await supabase
+        const { data: interestData, error: interestError } = await supabase
           .from('investor_interests')
           .insert({
             opportunity_id: opportunity.id,
@@ -212,14 +212,28 @@ const InvestorAccess: React.FC = () => {
             message: formData.notes || null,
             status: 'new',
             source: 'investor_access_form',
-          });
+          })
+          .select()
+          .single();
 
         if (interestError) {
           console.error('Error inserting investor interest:', interestError);
-          // Don't fail the whole request if interest insert fails
+          // Log the full error for debugging
+          toast({
+            title: 'Warning',
+            description: 'Request submitted, but there was an issue recording your interest. Please contact support.',
+            variant: 'default',
+          });
+        } else {
+          console.log('Investor interest recorded successfully:', interestData);
         }
       } else {
         console.warn('No active investment opportunity found. Investor interest not recorded.');
+        toast({
+          title: 'Warning',
+          description: 'Request submitted, but no investment opportunity found to link your interest to.',
+          variant: 'default',
+        });
       }
 
       // Upsert investor profile

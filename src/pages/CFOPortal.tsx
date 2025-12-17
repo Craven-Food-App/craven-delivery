@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo, Suspense } from "react";
 import {
   Grid,
   Group,
@@ -94,30 +94,50 @@ import {
   Mail,
 } from 'lucide-react';
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
-import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
-import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
-import { EnterpriseFinancePortalLayout } from '@/components/finance/EnterpriseFinancePortalLayout';
-import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
-import { FinancePortal } from '@/components/finance/FinancePortal';
+import { CFOPortalLayout, CFONavItem } from '@/components/cfo/CFOPortalLayout';
 import { MantineTable } from '@/components/cfo/MantineTable';
-import { EnhancedCFODashboard } from '@/components/cfo/EnhancedCFODashboard';
-import { AdvancedTreasuryManagement } from '@/components/cfo/AdvancedTreasuryManagement';
-import { EnhancedFPandA } from '@/components/cfo/EnhancedFPandA';
-import { CFOKnowledgeBase } from '@/components/cfo/CFOKnowledgeBase';
-import { EnhancedPayroll } from '@/components/cfo/EnhancedPayroll';
-import { EnhancedTaxPlanning } from '@/components/cfo/EnhancedTaxPlanning';
-import { EnhancedFinancialControls } from '@/components/cfo/EnhancedFinancialControls';
-import { EnhancedBoardReporting } from '@/components/cfo/EnhancedBoardReporting';
-import { EnhancedInvestorRelations } from '@/components/cfo/EnhancedInvestorRelations';
-import { EnhancedAuditManagement } from '@/components/cfo/EnhancedAuditManagement';
-import { EnhancedRiskManagement } from '@/components/cfo/EnhancedRiskManagement';
-import { EnhancedCapitalStructure } from '@/components/cfo/EnhancedCapitalStructure';
-import { EnhancedScenarioPlanning } from '@/components/cfo/EnhancedScenarioPlanning';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
-import { CFOOnboardingGovernance } from '@/components/cfo/CFOOnboardingGovernance';
-import CfoEvaluationGatePanel from '@/components/cfo/CfoEvaluationGatePanel';
 import { hasFullAccess } from '@/utils/torranceAccess';
+
+// LAZY LOAD all heavy modules for performance - only load when tab is selected
+const BusinessEmailSystem = React.lazy(() => import('@/components/executive/BusinessEmailSystem'));
+const ExecutiveWordProcessor = React.lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
+const EnhancedCFODashboard = React.lazy(() => import('@/components/cfo/EnhancedCFODashboard').then(m => ({ default: m.EnhancedCFODashboard })));
+const AdvancedTreasuryManagement = React.lazy(() => import('@/components/cfo/AdvancedTreasuryManagement').then(m => ({ default: m.AdvancedTreasuryManagement })));
+const EnhancedFPandA = React.lazy(() => import('@/components/cfo/EnhancedFPandA').then(m => ({ default: m.EnhancedFPandA })));
+const CFOKnowledgeBase = React.lazy(() => import('@/components/cfo/CFOKnowledgeBase').then(m => ({ default: m.CFOKnowledgeBase })));
+const EnhancedPayroll = React.lazy(() => import('@/components/cfo/EnhancedPayroll').then(m => ({ default: m.EnhancedPayroll })));
+const EnhancedTaxPlanning = React.lazy(() => import('@/components/cfo/EnhancedTaxPlanning').then(m => ({ default: m.EnhancedTaxPlanning })));
+const EnhancedFinancialControls = React.lazy(() => import('@/components/cfo/EnhancedFinancialControls').then(m => ({ default: m.EnhancedFinancialControls })));
+const EnhancedBoardReporting = React.lazy(() => import('@/components/cfo/EnhancedBoardReporting').then(m => ({ default: m.EnhancedBoardReporting })));
+const EnhancedInvestorRelations = React.lazy(() => import('@/components/cfo/EnhancedInvestorRelations').then(m => ({ default: m.EnhancedInvestorRelations })));
+const EnhancedAuditManagement = React.lazy(() => import('@/components/cfo/EnhancedAuditManagement').then(m => ({ default: m.EnhancedAuditManagement })));
+const EnhancedRiskManagement = React.lazy(() => import('@/components/cfo/EnhancedRiskManagement').then(m => ({ default: m.EnhancedRiskManagement })));
+const EnhancedCapitalStructure = React.lazy(() => import('@/components/cfo/EnhancedCapitalStructure').then(m => ({ default: m.EnhancedCapitalStructure })));
+const EnhancedScenarioPlanning = React.lazy(() => import('@/components/cfo/EnhancedScenarioPlanning').then(m => ({ default: m.EnhancedScenarioPlanning })));
+const CFOOnboardingGovernance = React.lazy(() => import('@/components/cfo/CFOOnboardingGovernance').then(m => ({ default: m.CFOOnboardingGovernance })));
+const CfoEvaluationGatePanel = React.lazy(() => import('@/components/cfo/CfoEvaluationGatePanel'));
+// Enterprise Finance Modules - Lazy loaded
+const CorporateGeneralLedger = React.lazy(() => import('@/components/finance/CorporateGeneralLedger').then(m => ({ default: m.CorporateGeneralLedger })));
+const CorporateAccountsPayable = React.lazy(() => import('@/components/finance/CorporateAccountsPayable').then(m => ({ default: m.CorporateAccountsPayable })));
+const CorporateAccountsReceivable = React.lazy(() => import('@/components/finance/CorporateAccountsReceivable').then(m => ({ default: m.CorporateAccountsReceivable })));
+const BankingTreasuryView = React.lazy(() => import('@/components/finance/BankingTreasuryView').then(m => ({ default: m.BankingTreasuryView })));
+const FinanceDashboard = React.lazy(() => import('@/components/finance/FinanceDashboard').then(m => ({ default: m.FinanceDashboard })));
+const FinancialReportsDashboard = React.lazy(() => import('@/components/finance/FinancialReportsDashboard').then(m => ({ default: m.FinancialReportsDashboard })));
+const BudgetManagement = React.lazy(() => import('@/components/finance/BudgetManagement').then(m => ({ default: m.BudgetManagement })));
+const FinanceAuditComponent = React.lazy(() => import('@/components/finance/audit/FinanceAuditComponent').then(m => ({ default: m.FinanceAuditComponent })));
+const DriverCompensationDashboard = React.lazy(() => import('@/components/finance/driver-compensation/DriverCompensationDashboard').then(m => ({ default: m.DriverCompensationDashboard })));
+
+// Loading fallback component
+const ModuleLoader = () => (
+  <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+    <Stack align="center" gap="md">
+      <Loader size="lg" />
+      <Text c="dimmed">Loading module...</Text>
+    </Stack>
+  </Box>
+);
 
 // Reusable InfoIcon component with Popover
 function InfoIcon({ content, title }: { content: string; title?: string }) {
@@ -758,35 +778,49 @@ function CFOPortalContent() {
     };
   }, [fetchData]);
 
-  const navItems = useMemo<ExecutiveNavItem[]>(() => [
-    { id: 'evaluation', label: 'CFO Evaluation Gate', icon: ShieldAlert },
-    { id: 'onboarding', label: 'CFO Onboarding & Governance', icon: Scale },
-    { id: 'overview', label: 'CFO Command Center', icon: BarChart3 },
-    { id: 'finance', label: 'Finance Department', icon: DollarSign },
-    { id: 'fpa', label: 'FP&A & Forecasting', icon: Rocket },
-    { id: 'treasury', label: 'Advanced Treasury', icon: DollarSign },
-    { id: 'transactions', label: `Review Transactions (${transactions.length})`, icon: FileText },
-    { id: 'payouts', label: `Process Payouts (${payouts.length})`, icon: DollarSign },
-    { id: 'manager', label: 'Manage Team', icon: Users },
-    { id: 'ap', label: 'Run Payables', icon: FileText },
-    { id: 'ar', label: 'Collect Receivables', icon: FileText },
-    { id: 'payroll', label: 'Payroll Management', icon: Users },
-    { id: 'tax', label: 'Tax Planning', icon: FileText },
-    { id: 'controls', label: 'Financial Controls', icon: ShieldAlert },
-    { id: 'approvals', label: 'Approve Spend', icon: ShieldAlert },
-    { id: 'forecast', label: 'Cash Flow Forecast', icon: Rocket },
-    { id: 'bva', label: 'Track Budget vs Actuals', icon: Lightbulb },
-    { id: 'board', label: 'Board Reporting', icon: FileText },
-    { id: 'investor', label: 'Investor Relations', icon: DollarSign },
-    { id: 'audit', label: 'Audit Management', icon: FileText },
-    { id: 'risk', label: 'Risk Management', icon: ShieldAlert },
-    { id: 'capital', label: 'Capital Structure', icon: DollarSign },
-    { id: 'scenario', label: 'Scenario Planning', icon: Rocket },
-    { id: 'close', label: 'Close Checklist', icon: FileText },
-    { id: 'communications', label: 'Executive Communications', icon: Mail },
-    { id: 'messages', label: 'Message Center', icon: Mail },
-    { id: 'wordprocessor', label: 'Draft Documents', icon: FileText },
-    { id: 'manual', label: 'CFO Knowledge', icon: FileText },
+  const navItems = useMemo<CFONavItem[]>(() => [
+    // Core Executive Functions
+    { id: 'evaluation', label: 'CFO Evaluation Gate' },
+    { id: 'onboarding', label: 'CFO Onboarding & Governance' },
+    { id: 'overview', label: 'CFO Command Center' },
+    { id: 'finance-dashboard', label: 'Finance Dashboard' },
+    // Core Accounting
+    { id: 'general-ledger', label: 'General Ledger' },
+    { id: 'ap', label: 'Accounts Payable' },
+    { id: 'ar', label: 'Accounts Receivable' },
+    // Banking & Treasury
+    { id: 'banking', label: 'Bank Accounts & Treasury' },
+    { id: 'treasury', label: 'Advanced Treasury Ops' },
+    { id: 'transactions', label: 'Review Transactions', badge: transactions.length > 0 ? transactions.length : undefined },
+    { id: 'payouts', label: 'Process Payouts', badge: payouts.length > 0 ? payouts.length : undefined },
+    // Team & Operations
+    { id: 'manager', label: 'Manage Team' },
+    { id: 'payroll', label: 'Payroll Management' },
+    { id: 'driver-comp', label: 'Driver Compensation' },
+    // Planning & Analysis
+    { id: 'fpa', label: 'FP&A & Forecasting' },
+    { id: 'budget', label: 'Budget Management' },
+    { id: 'forecast', label: 'Cash Flow Forecast' },
+    { id: 'bva', label: 'Budget vs Actuals' },
+    { id: 'scenario', label: 'Scenario Planning' },
+    // Compliance & Controls
+    { id: 'tax', label: 'Tax Planning' },
+    { id: 'controls', label: 'Financial Controls' },
+    { id: 'approvals', label: 'Approve Spend' },
+    { id: 'audit', label: 'Audit & Compliance' },
+    { id: 'risk', label: 'Risk Management' },
+    // Reporting & Investor
+    { id: 'reports', label: 'Financial Reports' },
+    { id: 'board', label: 'Board Reporting' },
+    { id: 'investor', label: 'Investor Relations' },
+    { id: 'capital', label: 'Capital Structure' },
+    // Period Close
+    { id: 'close', label: 'Close Checklist' },
+    // Communications
+    { id: 'communications', label: 'Executive Communications' },
+    { id: 'messages', label: 'Message Center' },
+    { id: 'wordprocessor', label: 'Draft Documents' },
+    { id: 'manual', label: 'CFO Knowledge' },
   ], [transactions.length, payouts.length]);
 
   const openPortal = (path: string, subdomain?: string) => {
@@ -812,6 +846,7 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
+      // Core Executive Functions
       case 'evaluation':
         return (
           <Stack gap="md">
@@ -822,10 +857,20 @@ function CFOPortalContent() {
         return <CFOOnboardingGovernance />;
       case 'overview':
         return <EnhancedCFODashboard />;
-      case 'finance':
-        return <FinancePortal />;
-      case 'fpa':
-        return <EnhancedFPandA />;
+      case 'finance-dashboard':
+        return <FinanceDashboard />;
+      
+      // Core Accounting - Enterprise Grade
+      case 'general-ledger':
+        return <CorporateGeneralLedger />;
+      case 'ap':
+        return <CorporateAccountsPayable />;
+      case 'ar':
+        return <CorporateAccountsReceivable />;
+      
+      // Banking & Treasury
+      case 'banking':
+        return <BankingTreasuryView />;
       case 'treasury':
         return <AdvancedTreasuryManagement />;
       case 'transactions':
@@ -864,44 +909,63 @@ function CFOPortalContent() {
             />
           </Box>
         );
+      
+      // Team & Operations
       case 'manager':
         return <ManagerConsole />;
-      case 'ap':
-        return <AccountsPayable />;
-      case 'ar':
-        return <AccountsReceivable />;
-      case 'approvals':
-        return <ApprovalsPanel />;
+      case 'payroll':
+        return <EnhancedPayroll />;
+      case 'driver-comp':
+        return <DriverCompensationDashboard />;
+      
+      // Planning & Analysis
+      case 'fpa':
+        return <EnhancedFPandA />;
+      case 'budget':
+        return <BudgetManagement />;
       case 'forecast':
         return <CashFlowForecast />;
       case 'bva':
         return <BudgetVsActuals />;
-      case 'close':
-        return <CloseManagement />;
-      case 'communications':
-        return <BusinessEmailSystem />;
-      case 'payroll':
-        return <EnhancedPayroll />;
+      case 'scenario':
+        return <EnhancedScenarioPlanning />;
+      
+      // Compliance & Controls
       case 'tax':
         return <EnhancedTaxPlanning />;
       case 'controls':
         return <EnhancedFinancialControls />;
+      case 'approvals':
+        return <ApprovalsPanel />;
+      case 'audit':
+        return <FinanceAuditComponent />;
+      case 'risk':
+        return <EnhancedRiskManagement />;
+      
+      // Reporting & Investor
+      case 'reports':
+        return <FinancialReportsDashboard />;
       case 'board':
         return <EnhancedBoardReporting />;
       case 'investor':
         return <EnhancedInvestorRelations />;
-      case 'audit':
-        return <EnhancedAuditManagement />;
-      case 'risk':
-        return <EnhancedRiskManagement />;
       case 'capital':
         return <EnhancedCapitalStructure />;
-      case 'scenario':
-        return <EnhancedScenarioPlanning />;
+      
+      // Period Close
+      case 'close':
+        return <CloseManagement />;
+      
+      // Communications
+      case 'communications':
+        return <BusinessEmailSystem />;
+      case 'messages':
+        return <ExecutiveInboxIMessage role="cfo" deviceId={`cfo-portal-${window.location.hostname}`} />;
       case 'wordprocessor':
         return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
       case 'manual':
         return <CFOKnowledgeBase onNavigateToTab={setActiveSection} />;
+      
       default:
         return <EnhancedCFODashboard />;
     }
@@ -911,16 +975,11 @@ function CFOPortalContent() {
   const shouldWrapContent = activeSection !== 'overview';
 
   return (
-    <EnterpriseFinancePortalLayout onNavigate={(sectionId) => {
-      // Map finance portal section IDs to CFO Portal section IDs
-      const sectionMap: Record<string, string> = {
-        'dashboard': 'overview',
-        'investor-relations': 'investor',
-        'cfo-evaluation': 'evaluation',
-        // Add more mappings as needed
-      };
-      setActiveSection(sectionMap[sectionId] || sectionId);
-    }}>
+    <CFOPortalLayout
+      activeSection={activeSection}
+      onNavigate={setActiveSection}
+      navItems={navItems}
+    >
       <div className="space-y-6">
         <Alert color="green" style={{ padding: 16 }}>
           <Group justify="space-between" wrap="wrap" gap={12}>
@@ -950,15 +1009,17 @@ function CFOPortalContent() {
           )}
         </SectionCard>
 
-        {shouldWrapContent ? (
-          <SectionCard style={{ padding: isMobile ? 16 : 24, overflow: 'hidden' }}>
-            {content}
-          </SectionCard>
-        ) : (
-          content
-        )}
+        <Suspense fallback={<ModuleLoader />}>
+          {shouldWrapContent ? (
+            <SectionCard style={{ padding: isMobile ? 16 : 24, overflow: 'hidden' }}>
+              {content}
+            </SectionCard>
+          ) : (
+            content
+          )}
+        </Suspense>
       </div>
-    </EnterpriseFinancePortalLayout>
+    </CFOPortalLayout>
   );
 }
 

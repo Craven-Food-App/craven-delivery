@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import AdminAccessGuard from '@/components/AdminAccessGuard';
-import LiveDashboard from '@/components/admin/LiveDashboard';
-import { NotificationSettingsManager } from '@/components/admin/NotificationSettingsManager';
-import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
-import DeliveryZoneManager from '@/components/admin/DeliveryZoneManager';
-import { FeatureToggleManager } from '@/components/admin/FeatureToggleManager';
-import InvestorAccessManager from '@/components/admin/InvestorAccessManager';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin, Users, FileCheck, Loader2 } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
+
+// Lazy load heavy admin components
+const LiveDashboard = lazy(() => import('@/components/admin/LiveDashboard'));
+const NotificationSettingsManager = lazy(() => import('@/components/admin/NotificationSettingsManager').then(m => ({ default: m.NotificationSettingsManager })));
+const AnalyticsDashboard = lazy(() => import('@/components/admin/AnalyticsDashboard'));
+const DeliveryZoneManager = lazy(() => import('@/components/admin/DeliveryZoneManager'));
+const FeatureToggleManager = lazy(() => import('@/components/admin/FeatureToggleManager').then(m => ({ default: m.FeatureToggleManager })));
+const InvestorAccessManager = lazy(() => import('@/components/admin/InvestorAccessManager'));
+const InvestorIntakeManager = lazy(() => import('@/components/admin/InvestorIntakeManager'));
+
+// Loading fallback
+const ModuleLoader = () => (
+  <div className="flex items-center justify-center min-h-[300px]">
+    <div className="flex flex-col items-center gap-2">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">Loading module...</span>
+    </div>
+  </div>
+);
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -29,6 +42,7 @@ const Admin: React.FC = () => {
     { id: 'feature-toggles', label: 'Feature Toggles', icon: Eye },
     { id: 'delivery-zones', label: 'Delivery Zones', icon: MapPin },
     { id: 'investor-access', label: 'Investor Access', icon: Users },
+    { id: 'investor-intake', label: 'Investor Intake', icon: FileCheck },
   ];
 
   const renderContent = () => {
@@ -45,6 +59,8 @@ const Admin: React.FC = () => {
         return <DeliveryZoneManager />;
       case 'investor-access':
         return <InvestorAccessManager />;
+      case 'investor-intake':
+        return <InvestorIntakeManager />;
       default:
         return <LiveDashboard />;
     }
@@ -97,7 +113,9 @@ const Admin: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           <div className="container mx-auto p-6">
-            {renderContent()}
+            <Suspense fallback={<ModuleLoader />}>
+              {renderContent()}
+            </Suspense>
           </div>
         </main>
       </div>

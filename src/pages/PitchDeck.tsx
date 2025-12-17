@@ -114,7 +114,7 @@ const PitchDeck: React.FC = () => {
   const documentsRef = useRef<HTMLDivElement>(null);
   const questionsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch investment opportunity data
+  // Fetch investment opportunity data and check shortlist status
   useEffect(() => {
     const fetchOpportunity = async () => {
       if (!id) return;
@@ -144,6 +144,19 @@ const PitchDeck: React.FC = () => {
         };
 
         setOpportunity(parsed as InvestmentOpportunity);
+
+        // Check if user has shortlisted this opportunity
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: shortlistData } = await supabase
+            .from('investor_shortlists')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('opportunity_id', id)
+            .maybeSingle();
+
+          setShortlisted(!!shortlistData);
+        }
       } catch (error) {
         console.error('Error fetching opportunity:', error);
         toast({
@@ -235,14 +248,60 @@ const PitchDeck: React.FC = () => {
   };
 
   const handleShortlist = async () => {
-    // TODO: Implement shortlist functionality with backend
-    setShortlisted(!shortlisted);
-    toast({
-      title: shortlisted ? 'Removed from shortlist' : 'Added to shortlist',
-      description: shortlisted
-        ? 'This opportunity has been removed from your shortlist'
-        : 'This opportunity has been added to your shortlist',
-    });
+    if (!id) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Sign in required',
+          description: 'Please sign in to shortlist opportunities',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (shortlisted) {
+        // Remove from shortlist
+        const { error } = await supabase
+          .from('investor_shortlists')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('opportunity_id', id);
+
+        if (error) throw error;
+
+        setShortlisted(false);
+        toast({
+          title: 'Removed from shortlist',
+          description: 'This opportunity has been removed from your shortlist',
+        });
+      } else {
+        // Add to shortlist
+        const { error } = await supabase
+          .from('investor_shortlists')
+          .insert({
+            user_id: user.id,
+            opportunity_id: id,
+          });
+
+        if (error) throw error;
+
+        setShortlisted(true);
+        toast({
+          title: 'Added to shortlist',
+          description: 'This opportunity has been added to your shortlist',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error toggling shortlist:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update shortlist. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleInterest = () => {
