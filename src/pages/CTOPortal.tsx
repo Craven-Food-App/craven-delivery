@@ -73,6 +73,7 @@ import { IncidentsDashboard } from '@/components/cto/IncidentsDashboard';
 import { AssetManagement } from '@/components/cto/AssetManagement';
 import { CTOOnboardingGovernance } from '@/components/cto/CTOOnboardingGovernance';
 import CtoTrainingRouter from '@/components/cto/training/CtoTrainingRouter';
+import ArticlesOfIncorporationGenerator from '@/components/board/ArticlesOfIncorporationGenerator';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -90,6 +91,7 @@ import {
   Settings,
   Database,
   Scale,
+  ScrollText,
 } from 'lucide-react';
 
 function CTOPortalContent() {
@@ -166,6 +168,7 @@ function CTOPortalContent() {
     { id: 'assets', label: 'Assets', icon: Database },
     { id: 'communications', label: 'Executive Communications', icon: Mail },
     { id: 'word', label: 'Draft Documents', icon: FileText },
+    { id: 'articles-generator', label: 'Articles Generator', icon: ScrollText },
     { id: 'manual', label: 'Instruction Manual', icon: FileText },
   ], []);
 
@@ -225,6 +228,8 @@ function CTOPortalContent() {
         return <BusinessEmailSystem />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="cto" supabaseTable="cto_documents" />;
+      case 'articles-generator':
+        return <ArticlesOfIncorporationGenerator />;
       case 'manual':
         return <CTOPortalInstructionManual />;
       default:

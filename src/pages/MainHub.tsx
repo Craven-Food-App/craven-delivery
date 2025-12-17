@@ -1188,14 +1188,6 @@ const MainHub: React.FC = () => {
       color: "#eb2f96",
     },
     {
-      id: "articles-generator",
-      name: "Articles Generator",
-      description: "Generate Articles of Incorporation documents",
-      icon: FileTextOutlined,
-      path: "/technology/articles-generator",
-      color: "#722ed1",
-    },
-    {
       id: "cxo",
       name: "CXO Experience Portal",
       description: "Experience leadership and customer insights",
@@ -1326,7 +1318,6 @@ const MainHub: React.FC = () => {
       case 'cfo': return canCFO;
       case 'coo': return canCOO;
       case 'cto': return canCTO;
-      case 'articles-generator': return canCTO; // Technology department access
       case 'cxo': return canCEO;
       case 'hr': return canHR;
       default: return true;
