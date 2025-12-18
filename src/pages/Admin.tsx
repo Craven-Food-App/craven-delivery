@@ -2,7 +2,7 @@ import React, { useState, Suspense, lazy } from 'react';
 import AdminAccessGuard from '@/components/AdminAccessGuard';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin, Users, FileCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Bell, TrendingUp, Eye, MapPin, FileCheck, Loader2 } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -13,7 +13,6 @@ const NotificationSettingsManager = lazy(() => import('@/components/admin/Notifi
 const AnalyticsDashboard = lazy(() => import('@/components/admin/AnalyticsDashboard'));
 const DeliveryZoneManager = lazy(() => import('@/components/admin/DeliveryZoneManager'));
 const FeatureToggleManager = lazy(() => import('@/components/admin/FeatureToggleManager').then(m => ({ default: m.FeatureToggleManager })));
-const InvestorAccessManager = lazy(() => import('@/components/admin/InvestorAccessManager'));
 const InvestorIntakeManager = lazy(() => import('@/components/admin/InvestorIntakeManager'));
 
 // Loading fallback
@@ -41,7 +40,6 @@ const Admin: React.FC = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'feature-toggles', label: 'Feature Toggles', icon: Eye },
     { id: 'delivery-zones', label: 'Delivery Zones', icon: MapPin },
-    { id: 'investor-access', label: 'Investor Access', icon: Users },
     { id: 'investor-intake', label: 'Investor Intake', icon: FileCheck },
   ];
 
@@ -57,8 +55,6 @@ const Admin: React.FC = () => {
         return <FeatureToggleManager />;
       case 'delivery-zones':
         return <DeliveryZoneManager />;
-      case 'investor-access':
-        return <InvestorAccessManager />;
       case 'investor-intake':
         return <InvestorIntakeManager />;
       default:
