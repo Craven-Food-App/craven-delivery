@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   TrendingUp,
   TrendingDown,
@@ -313,6 +314,7 @@ const goalCategoryConfig = {
 };
 
 const InternPerformance: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   // Calculate overall stats
@@ -406,44 +408,45 @@ const InternPerformance: React.FC = () => {
 
   // Overview Tab
   const OverviewTab = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
       {/* Performance Score Card */}
       <div
         style={{
           background: 'linear-gradient(135deg, #ff5f1f 0%, #ff8c42 100%)',
-          borderRadius: '16px',
-          padding: '32px',
+          borderRadius: isMobile ? '12px' : '16px',
+          padding: isMobile ? '20px' : '32px',
           color: 'white',
           display: 'grid',
-          gridTemplateColumns: '1fr auto',
-          gap: '32px',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr auto',
+          gap: isMobile ? '20px' : '32px',
           alignItems: 'center',
         }}
       >
         <div>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
+          <h2 style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: 800, marginBottom: '8px' }}>
             Overall Performance Score
           </h2>
-          <p style={{ fontSize: '16px', opacity: 0.9, marginBottom: '24px' }}>
+          <p style={{ fontSize: isMobile ? '14px' : '16px', opacity: 0.9, marginBottom: isMobile ? '16px' : '24px' }}>
             Based on KPIs, reviews, and goal completion
           </p>
-          <div style={{ display: 'flex', gap: '32px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? '16px' : '32px' }}>
             <div>
-              <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '4px' }}>Review Score</p>
-              <p style={{ fontSize: '24px', fontWeight: 700 }}>{overallStats.reviewScore}/5.0</p>
+              <p style={{ fontSize: isMobile ? '12px' : '14px', opacity: 0.8, marginBottom: '4px' }}>Review Score</p>
+              <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700 }}>{overallStats.reviewScore}/5.0</p>
             </div>
             <div>
-              <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '4px' }}>KPI Progress</p>
-              <p style={{ fontSize: '24px', fontWeight: 700 }}>{overallStats.kpiProgress}%</p>
+              <p style={{ fontSize: isMobile ? '12px' : '14px', opacity: 0.8, marginBottom: '4px' }}>KPI Progress</p>
+              <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700 }}>{overallStats.kpiProgress}%</p>
             </div>
             <div>
-              <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '4px' }}>Goals On Track</p>
-              <p style={{ fontSize: '24px', fontWeight: 700 }}>
+              <p style={{ fontSize: isMobile ? '12px' : '14px', opacity: 0.8, marginBottom: '4px' }}>Goals On Track</p>
+              <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700 }}>
                 {overallStats.goalsOnTrack}/{overallStats.totalGoals}
               </p>
             </div>
           </div>
         </div>
+        {!isMobile && (
         <div style={{ position: 'relative' }}>
           <ProgressRing value={overallStats.kpiProgress} size={140} strokeWidth={10} color="white" />
           <div
@@ -458,52 +461,54 @@ const InternPerformance: React.FC = () => {
             <p style={{ fontSize: '32px', fontWeight: 800 }}>{overallStats.kpiProgress}%</p>
           </div>
         </div>
+        )}
       </div>
 
       {/* Quick Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' }}>
         {[
-          { icon: <Target size={24} />, label: 'KPIs Met', value: `${mockKPIs.filter((k) => k.current >= k.target).length}/${mockKPIs.length}`, color: '#3b82f6' },
-          { icon: <Star size={24} />, label: 'Avg Skill Level', value: `${overallStats.skillLevel}/5`, color: '#f59e0b' },
-          { icon: <Trophy size={24} />, label: 'Reviews Completed', value: `${mockReviews.filter((r) => r.status === 'completed').length}`, color: '#10b981' },
-          { icon: <Flame size={24} />, label: 'Feedback Received', value: `${mockFeedback.length}`, color: '#8b5cf6' },
+          { icon: <Target size={isMobile ? 18 : 24} />, label: 'KPIs Met', value: `${mockKPIs.filter((k) => k.current >= k.target).length}/${mockKPIs.length}`, color: '#3b82f6' },
+          { icon: <Star size={isMobile ? 18 : 24} />, label: 'Avg Skill Level', value: `${overallStats.skillLevel}/5`, color: '#f59e0b' },
+          { icon: <Trophy size={isMobile ? 18 : 24} />, label: 'Reviews Done', value: `${mockReviews.filter((r) => r.status === 'completed').length}`, color: '#10b981' },
+          { icon: <Flame size={isMobile ? 18 : 24} />, label: 'Feedback', value: `${mockFeedback.length}`, color: '#8b5cf6' },
         ].map((stat, idx) => (
           <div
             key={idx}
             style={{
               backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '20px',
+              borderRadius: isMobile ? '10px' : '12px',
+              padding: isMobile ? '12px' : '20px',
               border: '1px solid #e5e7eb',
               display: 'flex',
               alignItems: 'center',
-              gap: '16px',
+              gap: isMobile ? '10px' : '16px',
             }}
           >
             <div
               style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
+                width: isMobile ? '36px' : '48px',
+                height: isMobile ? '36px' : '48px',
+                borderRadius: isMobile ? '8px' : '12px',
                 backgroundColor: `${stat.color}15`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: stat.color,
+                flexShrink: 0,
               }}
             >
               {stat.icon}
             </div>
-            <div>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '4px' }}>{stat.label}</p>
-              <p style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#6b7280', marginBottom: '2px' }}>{stat.label}</p>
+              <p style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: 700, color: '#111827' }}>{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Two Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '16px' : '24px' }}>
         {/* Recent Reviews */}
         <div
           style={{
@@ -684,7 +689,7 @@ const InternPerformance: React.FC = () => {
             View All <ChevronRight size={14} />
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: isMobile ? '12px' : '16px' }}>
           {mockFeedback.slice(0, 4).map((fb) => (
             <div
               key={fb.id}
@@ -718,8 +723,8 @@ const InternPerformance: React.FC = () => {
 
   // KPIs Tab
   const KPIsTab = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? '12px' : '20px' }}>
         {mockKPIs.map((kpi) => {
           const config = categoryConfig[kpi.category];
           const progress = Math.min(100, (kpi.current / kpi.target) * 100);
@@ -910,7 +915,7 @@ const InternPerformance: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '16px' : '24px', marginBottom: '20px' }}>
               <div>
                 <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#10b981', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ThumbsUp size={16} /> Strengths
@@ -1173,7 +1178,7 @@ const InternPerformance: React.FC = () => {
             {/* Milestones */}
             <div>
               <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>Milestones</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '10px' }}>
                 {goal.milestones.map((milestone, idx) => (
                   <div
                     key={idx}
@@ -1230,7 +1235,7 @@ const InternPerformance: React.FC = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Feedback Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? '12px' : '16px' }}>
           <div
             style={{
               backgroundColor: '#ecfdf5',
@@ -1349,11 +1354,11 @@ const InternPerformance: React.FC = () => {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
           Performance & Evaluation
         </h1>
-        <p style={{ fontSize: '15px', color: '#6b7280' }}>
+        <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280' }}>
           Track your KPIs, reviews, skills development, and feedback
         </p>
       </div>
@@ -1366,17 +1371,18 @@ const InternPerformance: React.FC = () => {
           backgroundColor: '#f3f4f6',
           padding: '4px',
           borderRadius: '12px',
-          marginBottom: '24px',
-          width: 'fit-content',
+          marginBottom: isMobile ? '16px' : '24px',
+          width: isMobile ? '100%' : 'fit-content',
+          overflowX: 'auto',
         }}
       >
         {[
-          { key: 'overview' as TabType, label: 'Overview', icon: <BarChart3 size={16} /> },
-          { key: 'kpis' as TabType, label: 'KPIs', icon: <Target size={16} /> },
-          { key: 'reviews' as TabType, label: 'Reviews', icon: <FileText size={16} /> },
-          { key: 'skills' as TabType, label: 'Skills', icon: <Award size={16} /> },
-          { key: 'goals' as TabType, label: 'Goals', icon: <Trophy size={16} /> },
-          { key: 'feedback' as TabType, label: 'Feedback', icon: <MessageSquare size={16} /> },
+          { key: 'overview' as TabType, label: isMobile ? '' : 'Overview', icon: <BarChart3 size={16} /> },
+          { key: 'kpis' as TabType, label: isMobile ? '' : 'KPIs', icon: <Target size={16} /> },
+          { key: 'reviews' as TabType, label: isMobile ? '' : 'Reviews', icon: <FileText size={16} /> },
+          { key: 'skills' as TabType, label: isMobile ? '' : 'Skills', icon: <Award size={16} /> },
+          { key: 'goals' as TabType, label: isMobile ? '' : 'Goals', icon: <Trophy size={16} /> },
+          { key: 'feedback' as TabType, label: isMobile ? '' : 'Feedback', icon: <MessageSquare size={16} /> },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -1384,8 +1390,9 @@ const InternPerformance: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
-              padding: '10px 18px',
+              padding: isMobile ? '10px 14px' : '10px 18px',
               borderRadius: '8px',
               border: 'none',
               backgroundColor: activeTab === tab.key ? 'white' : 'transparent',
@@ -1395,6 +1402,8 @@ const InternPerformance: React.FC = () => {
               cursor: 'pointer',
               boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               transition: 'all 0.15s',
+              flex: isMobile ? 1 : 'none',
+              flexShrink: 0,
             }}
           >
             {tab.icon}

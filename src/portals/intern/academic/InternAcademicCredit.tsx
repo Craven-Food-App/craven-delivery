@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   GraduationCap,
   School,
@@ -232,6 +233,7 @@ const approvalStatusConfig = {
 };
 
 const InternAcademicCredit: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -335,17 +337,17 @@ const InternAcademicCredit: React.FC = () => {
 
   // Overview Tab
   const OverviewTab = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
       {/* Status Card */}
       <div
         style={{
           background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
-          borderRadius: '16px',
-          padding: '32px',
+          borderRadius: isMobile ? '12px' : '16px',
+          padding: isMobile ? '20px' : '32px',
           color: 'white',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', gap: isMobile ? '20px' : '0' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <GraduationCap size={32} />
@@ -398,7 +400,7 @@ const InternAcademicCredit: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' }}>
         {[
           { icon: <Clock size={24} />, label: 'Hours Logged', value: `${stats.totalLoggedHours}`, color: '#3b82f6' },
           { icon: <CheckCircle2 size={24} />, label: 'Hours Approved', value: `${stats.totalApprovedHours}`, color: '#10b981' },
@@ -440,7 +442,7 @@ const InternAcademicCredit: React.FC = () => {
       </div>
 
       {/* Two Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '16px' : '24px' }}>
         {/* Academic Information */}
         <div
           style={{
@@ -705,7 +707,7 @@ const InternAcademicCredit: React.FC = () => {
         </div>
 
         {/* Document Types Checklist */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {Object.entries(documentTypeConfig).map(([type, config]) => {
             const doc = mockDocuments.find((d) => d.documentType === type);
             const hasApproved = doc?.approvalStatus === 'approved';
@@ -1100,7 +1102,7 @@ const InternAcademicCredit: React.FC = () => {
   const EvaluationsTab = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Evaluation Status */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '16px' : '20px' }}>
         {(['midterm', 'final'] as EvaluationType[]).map((type) => {
           const evaluation = mockEvaluations.find((e) => e.evaluationType === type);
           const isCompleted = !!evaluation?.supervisorSignature;
@@ -1285,11 +1287,11 @@ const InternAcademicCredit: React.FC = () => {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
           Academic Credit
         </h1>
-        <p style={{ fontSize: '15px', color: '#6b7280' }}>
+        <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280' }}>
           Track your academic credit requirements, hours, and evaluations
         </p>
       </div>
@@ -1302,15 +1304,16 @@ const InternAcademicCredit: React.FC = () => {
           backgroundColor: '#f3f4f6',
           padding: '4px',
           borderRadius: '12px',
-          marginBottom: '24px',
-          width: 'fit-content',
+          marginBottom: isMobile ? '16px' : '24px',
+          width: isMobile ? '100%' : 'fit-content',
+          overflowX: 'auto',
         }}
       >
         {[
-          { key: 'overview' as TabType, label: 'Overview', icon: <GraduationCap size={16} /> },
-          { key: 'documents' as TabType, label: 'Documents', icon: <FileText size={16} /> },
-          { key: 'time_logs' as TabType, label: 'Time Logs', icon: <Clock size={16} /> },
-          { key: 'evaluations' as TabType, label: 'Evaluations', icon: <ClipboardCheck size={16} /> },
+          { key: 'overview' as TabType, label: isMobile ? '' : 'Overview', icon: <GraduationCap size={16} /> },
+          { key: 'documents' as TabType, label: isMobile ? '' : 'Docs', icon: <FileText size={16} /> },
+          { key: 'time_logs' as TabType, label: isMobile ? '' : 'Hours', icon: <Clock size={16} /> },
+          { key: 'evaluations' as TabType, label: isMobile ? '' : 'Evals', icon: <ClipboardCheck size={16} /> },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -1318,8 +1321,9 @@ const InternAcademicCredit: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
-              padding: '10px 18px',
+              padding: isMobile ? '10px 14px' : '10px 18px',
               borderRadius: '8px',
               border: 'none',
               backgroundColor: activeTab === tab.key ? 'white' : 'transparent',
@@ -1329,6 +1333,8 @@ const InternAcademicCredit: React.FC = () => {
               cursor: 'pointer',
               boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               transition: 'all 0.15s',
+              flex: isMobile ? 1 : 'none',
+              flexShrink: 0,
             }}
           >
             {tab.icon}

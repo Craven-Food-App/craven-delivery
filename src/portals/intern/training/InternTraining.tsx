@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   BookOpen,
   CheckCircle2,
@@ -51,6 +52,7 @@ interface ModuleCardProps {
   onContinue: (moduleId: string) => void;
   onViewCertificate: (certification: Certification) => void;
   isUpdating: boolean;
+  isMobile?: boolean;
 }
 
 const ModuleCard: React.FC<ModuleCardProps> = ({
@@ -59,6 +61,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   onContinue,
   onViewCertificate,
   isUpdating,
+  isMobile = false,
 }) => {
   const statusColor = STATUS_COLORS[module.effectiveStatus];
   const scopeColor = SCOPE_COLORS[module.scope];
@@ -92,8 +95,8 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
     <div
       style={{
         backgroundColor: 'white',
-        borderRadius: '16px',
-        padding: '24px',
+        borderRadius: isMobile ? '12px' : '16px',
+        padding: isMobile ? '16px' : '24px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
         border: `1px solid ${isLocked ? '#e5e7eb' : statusColor.border}20`,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -102,7 +105,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         overflow: 'hidden',
       }}
       onMouseEnter={(e) => {
-        if (!isLocked) {
+        if (!isLocked && !isMobile) {
           e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)';
           e.currentTarget.style.transform = 'translateY(-4px)';
         }
@@ -125,12 +128,12 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
       />
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '12px' : '16px', marginBottom: isMobile ? '12px' : '16px' }}>
         <div
           style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '14px',
+            width: isMobile ? '44px' : '56px',
+            height: isMobile ? '44px' : '56px',
+            borderRadius: isMobile ? '10px' : '14px',
             backgroundColor: statusColor.bg,
             display: 'flex',
             alignItems: 'center',
@@ -140,19 +143,19 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           }}
         >
           {isCompleted ? (
-            <CheckCircle2 size={28} />
+            <CheckCircle2 size={isMobile ? 22 : 28} />
           ) : isLocked ? (
-            <Lock size={28} />
+            <Lock size={isMobile ? 22 : 28} />
           ) : isInProgress ? (
-            <RefreshCw size={28} style={{ animation: 'none' }} />
+            <RefreshCw size={isMobile ? 22 : 28} style={{ animation: 'none' }} />
           ) : (
-            <PlayCircle size={28} />
+            <PlayCircle size={isMobile ? 22 : 28} />
           )}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
-            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+            <h3 style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
               {module.name}
             </h3>
             {module.certification_issued && (
@@ -212,12 +215,12 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
+          gap: isMobile ? '8px' : '16px',
           flexWrap: 'wrap',
-          marginBottom: '16px',
-          padding: '12px 16px',
+          marginBottom: isMobile ? '12px' : '16px',
+          padding: isMobile ? '10px 12px' : '12px 16px',
           backgroundColor: '#f9fafb',
-          borderRadius: '10px',
+          borderRadius: isMobile ? '8px' : '10px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -308,7 +311,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         disabled={isLocked || isUpdating}
         style={{
           width: '100%',
-          padding: '14px 20px',
+          padding: isMobile ? '12px 16px' : '14px 20px',
           background: isLocked
             ? '#f3f4f6'
             : isCompleted && module.certification
@@ -316,14 +319,14 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
             : `linear-gradient(135deg, ${statusColor.text}, ${statusColor.border})`,
           color: isLocked ? '#9ca3af' : 'white',
           border: 'none',
-          borderRadius: '12px',
-          fontSize: '14px',
+          borderRadius: isMobile ? '10px' : '12px',
+          fontSize: isMobile ? '13px' : '14px',
           fontWeight: 700,
           cursor: isLocked ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '10px',
+          gap: isMobile ? '8px' : '10px',
           transition: 'all 0.2s',
           boxShadow: isLocked ? 'none' : '0 2px 8px rgba(0,0,0,0.15)',
         }}
@@ -386,41 +389,43 @@ interface StatsCardProps {
   subtext?: string;
   color: string;
   bgColor: string;
+  isMobile?: boolean;
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ icon, label, value, subtext, color, bgColor }) => (
+const StatsCard: React.FC<StatsCardProps> = ({ icon, label, value, subtext, color, bgColor, isMobile = false }) => (
   <div
     style={{
       backgroundColor: 'white',
-      borderRadius: '16px',
-      padding: '20px',
+      borderRadius: isMobile ? '12px' : '16px',
+      padding: isMobile ? '12px' : '20px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       border: '1px solid #e5e7eb',
     }}
   >
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '10px' : '16px' }}>
       <div
         style={{
-          width: '52px',
-          height: '52px',
-          borderRadius: '14px',
+          width: isMobile ? '40px' : '52px',
+          height: isMobile ? '40px' : '52px',
+          borderRadius: isMobile ? '10px' : '14px',
           backgroundColor: bgColor,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: color,
+          flexShrink: 0,
         }}
       >
-        {icon}
+        {isMobile ? React.cloneElement(icon as React.ReactElement, { size: 20 }) : icon}
       </div>
-      <div>
-        <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500, marginBottom: '4px' }}>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#6b7280', fontWeight: 500, marginBottom: '2px' }}>
           {label}
         </p>
-        <p style={{ fontSize: '28px', fontWeight: 800, color: '#111827', lineHeight: 1 }}>
+        <p style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: 800, color: '#111827', lineHeight: 1 }}>
           {value}
         </p>
-        {subtext && (
+        {subtext && !isMobile && (
           <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{subtext}</p>
         )}
       </div>
@@ -436,7 +441,7 @@ interface ActivationBannerProps {
   stats: TrainingStats;
 }
 
-const ActivationBanner: React.FC<ActivationBannerProps> = ({ activationStatus, stats }) => {
+const ActivationBanner: React.FC<ActivationBannerProps & { isMobile?: boolean }> = ({ activationStatus, stats, isMobile = false }) => {
   if (!activationStatus) return null;
 
   const isActivated = activationStatus.is_activated;
@@ -449,12 +454,13 @@ const ActivationBanner: React.FC<ActivationBannerProps> = ({ activationStatus, s
         style={{
           background: 'linear-gradient(135deg, #10b981, #059669)',
           borderRadius: '16px',
-          padding: '24px',
-          marginBottom: '32px',
+          padding: isMobile ? '16px' : '24px',
+          marginBottom: isMobile ? '20px' : '32px',
           color: 'white',
           display: 'flex',
-          alignItems: 'center',
-          gap: '20px',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          gap: isMobile ? '16px' : '20px',
         }}
       >
         <div
@@ -492,36 +498,37 @@ const ActivationBanner: React.FC<ActivationBannerProps> = ({ activationStatus, s
       style={{
         background: 'linear-gradient(135deg, #f59e0b, #d97706)',
         borderRadius: '16px',
-        padding: '24px',
-        marginBottom: '32px',
+        padding: isMobile ? '16px' : '24px',
+        marginBottom: isMobile ? '20px' : '32px',
         color: 'white',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '12px' : '20px', marginBottom: '16px' }}>
         <div
           style={{
-            width: '56px',
-            height: '56px',
+            width: isMobile ? '44px' : '56px',
+            height: isMobile ? '44px' : '56px',
             borderRadius: '50%',
             backgroundColor: 'rgba(255,255,255,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
-          <AlertTriangle size={28} />
+          <AlertTriangle size={isMobile ? 22 : 28} />
         </div>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '4px' }}>
+          <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 800, marginBottom: '4px' }}>
             Complete Training to Activate Your Account
           </h3>
-          <p style={{ fontSize: '14px', opacity: 0.9 }}>
+          <p style={{ fontSize: isMobile ? '13px' : '14px', opacity: 0.9 }}>
             You must complete all required modules before gaining full portal access.
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : '16px' }}>
         <div
           style={{
             flex: 1,
@@ -573,6 +580,7 @@ const ActivationBanner: React.FC<ActivationBannerProps> = ({ activationStatus, s
 // MAIN COMPONENT: InternTraining
 // ============================================
 const InternTraining: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const queryClient = useQueryClient();
   const [selectedScope, setSelectedScope] = useState<'all' | ModuleScope>('all');
   const [user, setUser] = useState<{ id: string; email: string; name?: string } | null>(null);
@@ -1130,9 +1138,9 @@ const InternTraining: React.FC = () => {
       </style>
 
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#111827', margin: 0 }}>
+      <div style={{ marginBottom: isMobile ? '20px' : '32px' }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '12px', marginBottom: '8px' }}>
+          <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: 800, color: '#111827', margin: 0 }}>
             Training & Onboarding
           </h1>
           <span
@@ -1178,15 +1186,15 @@ const InternTraining: React.FC = () => {
       )}
 
       {/* Activation Banner */}
-      <ActivationBanner activationStatus={effectiveActivationStatus} stats={stats} />
+      <ActivationBanner activationStatus={effectiveActivationStatus} stats={stats} isMobile={isMobile} />
 
       {/* Stats Overview */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px',
-          marginBottom: '32px',
+          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: isMobile ? '10px' : '16px',
+          marginBottom: isMobile ? '20px' : '32px',
         }}
       >
         <StatsCard
@@ -1196,6 +1204,7 @@ const InternTraining: React.FC = () => {
           subtext={`${stats.requiredCompleted} of ${stats.requiredTotal} required`}
           color="#ff5f1f"
           bgColor="#fff4ed"
+          isMobile={isMobile}
         />
         <StatsCard
           icon={<CheckCircle2 size={26} />}
@@ -1204,6 +1213,7 @@ const InternTraining: React.FC = () => {
           subtext={`${stats.total - stats.completed} remaining`}
           color="#10b981"
           bgColor="#ecfdf5"
+          isMobile={isMobile}
         />
         <StatsCard
           icon={<Star size={26} />}
@@ -1212,6 +1222,7 @@ const InternTraining: React.FC = () => {
           subtext="Across completed modules"
           color="#8b5cf6"
           bgColor="#f5f3ff"
+          isMobile={isMobile}
         />
         <StatsCard
           icon={<Award size={26} />}
@@ -1220,6 +1231,7 @@ const InternTraining: React.FC = () => {
           subtext="Earned certificates"
           color="#f59e0b"
           bgColor="#fef3c7"
+          isMobile={isMobile}
         />
       </div>
 
@@ -1335,8 +1347,8 @@ const InternTraining: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))',
-                gap: '20px',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(400px, 1fr))',
+                gap: isMobile ? '12px' : '20px',
               }}
             >
               {scopeModules.map((module) => (
@@ -1347,6 +1359,7 @@ const InternTraining: React.FC = () => {
                   onContinue={() => setActiveModule(module)}
                   onViewCertificate={setCertificateModal}
                   isUpdating={isUpdating}
+                  isMobile={isMobile}
                 />
               ))}
             </div>
@@ -1357,14 +1370,15 @@ const InternTraining: React.FC = () => {
       {/* Help Section */}
       <div
         style={{
-          marginTop: '40px',
+          marginTop: isMobile ? '24px' : '40px',
           background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
           border: '2px solid #3b82f6',
           borderRadius: '16px',
-          padding: '24px',
+          padding: isMobile ? '16px' : '24px',
           display: 'flex',
-          alignItems: 'center',
-          gap: '20px',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
+          gap: isMobile ? '16px' : '20px',
         }}
       >
         <div

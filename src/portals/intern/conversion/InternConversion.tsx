@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   Award,
   CheckCircle2,
@@ -190,6 +191,7 @@ const categoryConfig = {
 };
 
 const InternConversion: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const [expandedRequirement, setExpandedRequirement] = useState<string | null>(null);
   const [showOfferDetails, setShowOfferDetails] = useState(false);
 
@@ -284,10 +286,10 @@ const InternConversion: React.FC = () => {
           onClick={() => setExpandedRequirement(isExpanded ? null : req.id)}
           style={{
             width: '100%',
-            padding: '20px',
+            padding: isMobile ? '14px' : '20px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            gap: isMobile ? '12px' : '16px',
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -296,9 +298,9 @@ const InternConversion: React.FC = () => {
         >
           <div
             style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
+              width: isMobile ? '40px' : '48px',
+              height: isMobile ? '40px' : '48px',
+              borderRadius: isMobile ? '10px' : '12px',
               backgroundColor: req.status === 'completed' ? '#ecfdf5' : config.bgColor,
               display: 'flex',
               alignItems: 'center',
@@ -307,16 +309,16 @@ const InternConversion: React.FC = () => {
               flexShrink: 0,
             }}
           >
-            {req.status === 'completed' ? <CheckCircle2 size={24} /> : config.icon}
+            {req.status === 'completed' ? <CheckCircle2 size={isMobile ? 20 : 24} /> : config.icon}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+              <h4 style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 600, color: '#111827', margin: 0 }}>
                 {req.title}
               </h4>
               <span
                 style={{
-                  fontSize: '10px',
+                  fontSize: isMobile ? '9px' : '10px',
                   fontWeight: 600,
                   padding: '2px 6px',
                   borderRadius: '4px',
@@ -328,44 +330,48 @@ const InternConversion: React.FC = () => {
                 {config.label}
               </span>
             </div>
-            <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{req.description}</p>
+            <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#6b7280', margin: 0 }}>{req.description}</p>
           </div>
-          <div style={{ textAlign: 'right', marginRight: '8px' }}>
-            <p style={{ fontSize: '18px', fontWeight: 700, color: req.status === 'completed' ? '#10b981' : '#111827', margin: 0 }}>
-              {req.currentValue}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? '' : '/'}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? req.unit : req.targetValue}
-            </p>
-            <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-              {req.weight}% weight
-            </p>
-          </div>
-          <div
-            style={{
-              width: '60px',
-              height: '60px',
-              position: 'relative',
-              flexShrink: 0,
-            }}
-          >
-            <ProgressRing
-              value={progress}
-              size={60}
-              strokeWidth={6}
-              color={req.status === 'completed' ? '#10b981' : config.color}
-            />
+          {!isMobile && (
+            <div style={{ textAlign: 'right', marginRight: '8px' }}>
+              <p style={{ fontSize: '18px', fontWeight: 700, color: req.status === 'completed' ? '#10b981' : '#111827', margin: 0 }}>
+                {req.currentValue}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? '' : '/'}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? req.unit : req.targetValue}
+              </p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                {req.weight}% weight
+              </p>
+            </div>
+          )}
+          {!isMobile && (
             <div
               style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: req.status === 'completed' ? '#10b981' : '#111827',
+                width: '60px',
+                height: '60px',
+                position: 'relative',
+                flexShrink: 0,
               }}
             >
-              {Math.round(progress)}%
+              <ProgressRing
+                value={progress}
+                size={60}
+                strokeWidth={6}
+                color={req.status === 'completed' ? '#10b981' : config.color}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: req.status === 'completed' ? '#10b981' : '#111827',
+                }}
+              >
+                {Math.round(progress)}%
+              </div>
             </div>
-          </div>
+          )}
           <ChevronDown
             size={20}
             style={{
@@ -454,11 +460,11 @@ const InternConversion: React.FC = () => {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 800, color: '#111827', marginBottom: '4px' }}>
           Conversion & Advancement
         </h1>
-        <p style={{ fontSize: '15px', color: '#6b7280' }}>
+        <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280' }}>
           Track your path from Intern to Acting Executive and beyond
         </p>
       </div>
@@ -468,46 +474,68 @@ const InternConversion: React.FC = () => {
         style={{
           background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           borderRadius: '16px',
-          padding: '32px',
-          marginBottom: '24px',
+          padding: isMobile ? '20px' : '32px',
+          marginBottom: isMobile ? '16px' : '24px',
           color: 'white',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <Crown size={28} style={{ color: '#fbbf24' }} />
-          <h2 style={{ fontSize: '22px', fontWeight: 700, margin: 0 }}>Your Career Pathway</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '16px' : '24px' }}>
+          <Crown size={isMobile ? 22 : 28} style={{ color: '#fbbf24' }} />
+          <h2 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: 700, margin: 0 }}>Your Career Pathway</h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-          {/* Connection Line */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '40px',
-              left: '80px',
-              right: '80px',
-              height: '4px',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              borderRadius: '2px',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '40px',
-              left: '80px',
-              width: '33%',
-              height: '4px',
-              backgroundColor: '#ff5f1f',
-              borderRadius: '2px',
-            }}
-          />
-
-          {mockPathwayStages.map((stage, idx) => (
-            <div key={stage.id} style={{ textAlign: 'center', position: 'relative', zIndex: 1, flex: 1 }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center', 
+          justifyContent: 'space-between', 
+          position: 'relative',
+          gap: isMobile ? '16px' : '0',
+        }}>
+          {/* Connection Line - hide on mobile */}
+          {!isMobile && (
+            <>
               <div
                 style={{
-                  width: '80px',
-                  height: '80px',
+                  position: 'absolute',
+                  top: '40px',
+                  left: '80px',
+                  right: '80px',
+                  height: '4px',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  borderRadius: '2px',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '40px',
+                  left: '80px',
+                  width: '33%',
+                  height: '4px',
+                  backgroundColor: '#ff5f1f',
+                  borderRadius: '2px',
+                }}
+              />
+            </>
+          )}
+
+          {mockPathwayStages.map((stage, idx) => (
+            <div key={stage.id} style={{ 
+              textAlign: isMobile ? 'left' : 'center', 
+              position: 'relative', 
+              zIndex: 1, 
+              flex: 1,
+              display: isMobile ? 'flex' : 'block',
+              alignItems: 'center',
+              gap: isMobile ? '16px' : '0',
+              padding: isMobile ? '12px' : '0',
+              backgroundColor: isMobile ? 'rgba(255,255,255,0.05)' : 'transparent',
+              borderRadius: isMobile ? '12px' : '0',
+            }}>
+              <div
+                style={{
+                  width: isMobile ? '56px' : '80px',
+                  height: isMobile ? '56px' : '80px',
                   borderRadius: '50%',
                   backgroundColor:
                     stage.status === 'completed'
@@ -519,66 +547,80 @@ const InternConversion: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 16px',
+                  margin: isMobile ? '0' : '0 auto 16px',
                   boxShadow: stage.status === 'current' ? '0 0 30px rgba(255, 95, 31, 0.4)' : 'none',
+                  flexShrink: 0,
                 }}
               >
                 {stage.status === 'completed' ? (
-                  <CheckCircle2 size={36} />
+                  <CheckCircle2 size={isMobile ? 24 : 36} />
                 ) : stage.status === 'current' ? (
-                  idx === 0 ? <GraduationCap size={36} /> : <Award size={36} />
+                  idx === 0 ? <GraduationCap size={isMobile ? 24 : 36} /> : <Award size={isMobile ? 24 : 36} />
                 ) : (
-                  <Lock size={28} style={{ opacity: 0.5 }} />
+                  <Lock size={isMobile ? 20 : 28} style={{ opacity: 0.5 }} />
                 )}
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{stage.title}</h3>
-              <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '12px' }}>{stage.description}</p>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  padding: '4px 12px',
-                  borderRadius: '12px',
-                  backgroundColor:
-                    stage.status === 'completed'
-                      ? 'rgba(16, 185, 129, 0.2)'
-                      : stage.status === 'current'
-                      ? 'rgba(255, 95, 31, 0.2)'
-                      : 'rgba(255,255,255,0.1)',
-                  color:
-                    stage.status === 'completed'
-                      ? '#10b981'
-                      : stage.status === 'current'
-                      ? '#ff5f1f'
-                      : 'rgba(255,255,255,0.5)',
-                }}
-              >
-                {stage.status === 'completed' ? 'Completed' : stage.status === 'current' ? 'Current Stage' : 'Locked'}
-              </span>
+              <div style={{ flex: isMobile ? 1 : 'none' }}>
+                <h3 style={{ fontSize: isMobile ? '15px' : '18px', fontWeight: 700, marginBottom: isMobile ? '4px' : '8px' }}>{stage.title}</h3>
+                <p style={{ fontSize: isMobile ? '12px' : '13px', opacity: 0.8, marginBottom: isMobile ? '8px' : '12px' }}>{stage.description}</p>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '4px 12px',
+                    borderRadius: '12px',
+                    backgroundColor:
+                      stage.status === 'completed'
+                        ? 'rgba(16, 185, 129, 0.2)'
+                        : stage.status === 'current'
+                        ? 'rgba(255, 95, 31, 0.2)'
+                        : 'rgba(255,255,255,0.1)',
+                    color:
+                      stage.status === 'completed'
+                        ? '#10b981'
+                        : stage.status === 'current'
+                        ? '#ff5f1f'
+                        : 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {stage.status === 'completed' ? 'Completed' : stage.status === 'current' ? 'Current Stage' : 'Locked'}
+                </span>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 380px', 
+        gap: isMobile ? '16px' : '24px' 
+      }}>
         {/* Left Column - Requirements */}
         <div>
           <div
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
-              padding: '24px',
+              padding: isMobile ? '16px' : '24px',
               border: '1px solid #e5e7eb',
-              marginBottom: '24px',
+              marginBottom: isMobile ? '16px' : '24px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'flex-start' : 'center', 
+              justifyContent: 'space-between', 
+              marginBottom: isMobile ? '16px' : '24px',
+              gap: isMobile ? '12px' : '0',
+            }}>
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>
+                <h3 style={{ fontSize: isMobile ? '17px' : '20px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>
                   Eligibility Requirements
                 </h3>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+                <p style={{ fontSize: isMobile ? '12px' : '14px', color: '#6b7280', margin: 0 }}>
                   Complete all requirements to unlock Acting Executive conversion
                 </p>
               </div>
@@ -587,19 +629,19 @@ const InternConversion: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '8px 16px',
+                  padding: isMobile ? '6px 12px' : '8px 16px',
                   backgroundColor: eligibilityStats.isEligible ? '#ecfdf5' : '#fef3c7',
                   borderRadius: '10px',
                 }}
               >
                 {eligibilityStats.isEligible ? (
-                  <Unlock size={18} style={{ color: '#10b981' }} />
+                  <Unlock size={isMobile ? 16 : 18} style={{ color: '#10b981' }} />
                 ) : (
-                  <Lock size={18} style={{ color: '#f59e0b' }} />
+                  <Lock size={isMobile ? 16 : 18} style={{ color: '#f59e0b' }} />
                 )}
                 <span
                   style={{
-                    fontSize: '14px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: 600,
                     color: eligibilityStats.isEligible ? '#10b981' : '#f59e0b',
                   }}
@@ -621,44 +663,44 @@ const InternConversion: React.FC = () => {
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
-              padding: '24px',
+              padding: isMobile ? '16px' : '24px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <Sparkles size={24} style={{ color: '#ff5f1f' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '14px' : '20px' }}>
+              <Sparkles size={isMobile ? 20 : 24} style={{ color: '#ff5f1f' }} />
+              <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
                 What Happens Next?
               </h3>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '10px' : '16px' }}>
               {[
                 {
                   step: 1,
                   title: 'Complete All Requirements',
                   description: 'Finish the remaining eligibility requirements to unlock conversion',
-                  icon: <ClipboardCheck size={20} />,
+                  icon: <ClipboardCheck size={isMobile ? 16 : 20} />,
                   status: 'current',
                 },
                 {
                   step: 2,
                   title: 'Receive Conversion Offer',
                   description: 'Your manager will extend an Acting Executive offer letter',
-                  icon: <FileText size={20} />,
+                  icon: <FileText size={isMobile ? 16 : 20} />,
                   status: 'pending',
                 },
                 {
                   step: 3,
                   title: 'Executive Orientation',
                   description: 'Complete the Acting Executive onboarding program',
-                  icon: <GraduationCap size={20} />,
+                  icon: <GraduationCap size={isMobile ? 16 : 20} />,
                   status: 'pending',
                 },
                 {
                   step: 4,
                   title: 'Begin Acting Role',
                   description: 'Start your journey as an Acting Executive with expanded responsibilities',
-                  icon: <Award size={20} />,
+                  icon: <Award size={isMobile ? 16 : 20} />,
                   status: 'pending',
                 },
               ].map((item) => (
@@ -667,8 +709,8 @@ const InternConversion: React.FC = () => {
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
-                    gap: '16px',
-                    padding: '16px',
+                    gap: isMobile ? '10px' : '16px',
+                    padding: isMobile ? '12px' : '16px',
                     backgroundColor: item.status === 'current' ? '#fff7ed' : '#fafafa',
                     borderRadius: '12px',
                     border: item.status === 'current' ? '2px solid #ff5f1f' : '1px solid #f3f4f6',
@@ -676,9 +718,9 @@ const InternConversion: React.FC = () => {
                 >
                   <div
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '10px',
+                      width: isMobile ? '32px' : '40px',
+                      height: isMobile ? '32px' : '40px',
+                      borderRadius: isMobile ? '8px' : '10px',
                       backgroundColor: item.status === 'current' ? '#ff5f1f' : '#e5e7eb',
                       color: item.status === 'current' ? 'white' : '#6b7280',
                       display: 'flex',
@@ -689,11 +731,11 @@ const InternConversion: React.FC = () => {
                   >
                     {item.icon}
                   </div>
-                  <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <h4 style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
                       Step {item.step}: {item.title}
                     </h4>
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{item.description}</p>
+                    <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#6b7280', margin: 0 }}>{item.description}</p>
                   </div>
                 </div>
               ))}
@@ -702,25 +744,25 @@ const InternConversion: React.FC = () => {
         </div>
 
         {/* Right Column - Progress & Benefits */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
           {/* Overall Progress */}
           <div
             style={{
               background: 'linear-gradient(135deg, #ff5f1f 0%, #ff8c42 100%)',
               borderRadius: '16px',
-              padding: '32px',
+              padding: isMobile ? '20px' : '32px',
               color: 'white',
               textAlign: 'center',
             }}
           >
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '24px', opacity: 0.9 }}>
+            <h3 style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 600, marginBottom: isMobile ? '16px' : '24px', opacity: 0.9 }}>
               Overall Eligibility Progress
             </h3>
-            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '24px' }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: isMobile ? '16px' : '24px' }}>
               <ProgressRing
                 value={eligibilityStats.overallProgress}
-                size={160}
-                strokeWidth={12}
+                size={isMobile ? 120 : 160}
+                strokeWidth={isMobile ? 10 : 12}
                 color="white"
                 bgColor="rgba(255,255,255,0.2)"
               />
@@ -732,21 +774,21 @@ const InternConversion: React.FC = () => {
                   transform: 'translate(-50%, -50%)',
                 }}
               >
-                <p style={{ fontSize: '40px', fontWeight: 800, margin: 0 }}>{eligibilityStats.overallProgress}%</p>
-                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Complete</p>
+                <p style={{ fontSize: isMobile ? '28px' : '40px', fontWeight: 800, margin: 0 }}>{eligibilityStats.overallProgress}%</p>
+                <p style={{ fontSize: isMobile ? '10px' : '12px', opacity: 0.8, margin: 0 }}>Complete</p>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: isMobile ? '16px' : '24px' }}>
               <div>
-                <p style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>{eligibilityStats.completedCount}</p>
-                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Completed</p>
+                <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, margin: 0 }}>{eligibilityStats.completedCount}</p>
+                <p style={{ fontSize: isMobile ? '10px' : '12px', opacity: 0.8, margin: 0 }}>Completed</p>
               </div>
               <div style={{ width: '1px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
               <div>
-                <p style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>
+                <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, margin: 0 }}>
                   {eligibilityStats.totalCount - eligibilityStats.completedCount}
                 </p>
-                <p style={{ fontSize: '12px', opacity: 0.8, margin: 0 }}>Remaining</p>
+                <p style={{ fontSize: isMobile ? '10px' : '12px', opacity: 0.8, margin: 0 }}>Remaining</p>
               </div>
             </div>
           </div>
@@ -756,54 +798,55 @@ const InternConversion: React.FC = () => {
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
-              padding: '24px',
+              padding: isMobile ? '16px' : '24px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <Trophy size={24} style={{ color: '#f59e0b' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '14px' : '20px' }}>
+              <Trophy size={isMobile ? 20 : 24} style={{ color: '#f59e0b' }} />
+              <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
                 Acting Executive Benefits
               </h3>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '12px' }}>
               {[
-                { icon: <DollarSign size={18} />, title: 'Deferred Compensation', description: '$120,000 annual accrual', color: '#10b981' },
-                { icon: <Percent size={18} />, title: 'Equity Participation', description: '0.5% target equity stake', color: '#8b5cf6' },
-                { icon: <Building2 size={18} />, title: 'Department Leadership', description: 'Lead your own team', color: '#3b82f6' },
-                { icon: <Shield size={18} />, title: 'Executive Access', description: 'Strategic planning & decisions', color: '#f59e0b' },
-                { icon: <Star size={18} />, title: 'Mentorship Program', description: 'Direct C-suite mentorship', color: '#ef4444' },
+                { icon: <DollarSign size={isMobile ? 16 : 18} />, title: 'Deferred Compensation', description: '$120,000 annual accrual', color: '#10b981' },
+                { icon: <Percent size={isMobile ? 16 : 18} />, title: 'Equity Participation', description: '0.5% target equity stake', color: '#8b5cf6' },
+                { icon: <Building2 size={isMobile ? 16 : 18} />, title: 'Department Leadership', description: 'Lead your own team', color: '#3b82f6' },
+                { icon: <Shield size={isMobile ? 16 : 18} />, title: 'Executive Access', description: 'Strategic planning & decisions', color: '#f59e0b' },
+                { icon: <Star size={isMobile ? 16 : 18} />, title: 'Mentorship Program', description: 'Direct C-suite mentorship', color: '#ef4444' },
               ].map((benefit, idx) => (
                 <div
                   key={idx}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '14px',
-                    padding: '14px',
+                    gap: isMobile ? '10px' : '14px',
+                    padding: isMobile ? '10px' : '14px',
                     backgroundColor: '#fafafa',
                     borderRadius: '10px',
                   }}
                 >
                   <div
                     style={{
-                      width: '36px',
-                      height: '36px',
+                      width: isMobile ? '32px' : '36px',
+                      height: isMobile ? '32px' : '36px',
                       borderRadius: '8px',
                       backgroundColor: `${benefit.color}15`,
                       color: benefit.color,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     {benefit.icon}
                   </div>
-                  <div>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: 600, color: '#111827', margin: 0 }}>
                       {benefit.title}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{benefit.description}</p>
+                    <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', margin: 0 }}>{benefit.description}</p>
                   </div>
                 </div>
               ))}
@@ -815,30 +858,30 @@ const InternConversion: React.FC = () => {
             style={{
               backgroundColor: '#f0fdf4',
               borderRadius: '16px',
-              padding: '24px',
+              padding: isMobile ? '16px' : '24px',
               border: '2px solid #86efac',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <Calendar size={24} style={{ color: '#10b981' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#065f46', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '12px' : '16px' }}>
+              <Calendar size={isMobile ? 20 : 24} style={{ color: '#10b981' }} />
+              <h3 style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: '#065f46', margin: 0 }}>
                 Estimated Timeline
               </h3>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', color: '#065f46' }}>Days remaining</span>
-                <span style={{ fontSize: '18px', fontWeight: 700, color: '#10b981' }}>~45 days</span>
+                <span style={{ fontSize: isMobile ? '12px' : '14px', color: '#065f46' }}>Days remaining</span>
+                <span style={{ fontSize: isMobile ? '15px' : '18px', fontWeight: 700, color: '#10b981' }}>~45 days</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px', color: '#065f46' }}>Projected eligibility</span>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: '#065f46' }}>March 1, 2025</span>
+                <span style={{ fontSize: isMobile ? '12px' : '14px', color: '#065f46' }}>Projected eligibility</span>
+                <span style={{ fontSize: isMobile ? '12px' : '14px', fontWeight: 600, color: '#065f46' }}>March 1, 2025</span>
               </div>
             </div>
             <div
               style={{
-                marginTop: '16px',
-                padding: '12px',
+                marginTop: isMobile ? '12px' : '16px',
+                padding: isMobile ? '10px' : '12px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 display: 'flex',
@@ -846,8 +889,8 @@ const InternConversion: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <Info size={16} style={{ color: '#10b981' }} />
-              <p style={{ fontSize: '12px', color: '#065f46', margin: 0 }}>
+              <Info size={isMobile ? 14 : 16} style={{ color: '#10b981', flexShrink: 0 }} />
+              <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#065f46', margin: 0 }}>
                 Based on your current progress rate
               </p>
             </div>
@@ -859,26 +902,26 @@ const InternConversion: React.FC = () => {
               style={{
                 background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                 borderRadius: '16px',
-                padding: '24px',
+                padding: isMobile ? '16px' : '24px',
                 color: 'white',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <FileText size={24} />
-                <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Active Offer</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: isMobile ? '12px' : '16px' }}>
+                <FileText size={isMobile ? 20 : 24} />
+                <h3 style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 700, margin: 0 }}>Active Offer</h3>
               </div>
-              <p style={{ fontSize: '14px', opacity: 0.9, marginBottom: '20px' }}>
+              <p style={{ fontSize: isMobile ? '13px' : '14px', opacity: 0.9, marginBottom: isMobile ? '14px' : '20px' }}>
                 You have a pending conversion offer!
               </p>
               <button
                 style={{
                   width: '100%',
-                  padding: '14px',
+                  padding: isMobile ? '12px' : '14px',
                   borderRadius: '10px',
                   border: 'none',
                   backgroundColor: 'white',
                   color: '#10b981',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '13px' : '14px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'flex',
@@ -888,7 +931,7 @@ const InternConversion: React.FC = () => {
                 }}
               >
                 View Offer Details
-                <ArrowRight size={18} />
+                <ArrowRight size={isMobile ? 16 : 18} />
               </button>
             </div>
           )}
@@ -899,15 +942,15 @@ const InternConversion: React.FC = () => {
               style={{
                 backgroundColor: 'white',
                 borderRadius: '16px',
-                padding: '24px',
+                padding: isMobile ? '20px' : '24px',
                 border: '1px solid #e5e7eb',
                 textAlign: 'center',
               }}
             >
               <div
                 style={{
-                  width: '64px',
-                  height: '64px',
+                  width: isMobile ? '52px' : '64px',
+                  height: isMobile ? '52px' : '64px',
                   borderRadius: '50%',
                   backgroundColor: '#f3f4f6',
                   display: 'flex',
@@ -916,12 +959,12 @@ const InternConversion: React.FC = () => {
                   margin: '0 auto 16px',
                 }}
               >
-                <FileText size={28} style={{ color: '#9ca3af' }} />
+                <FileText size={isMobile ? 22 : 28} style={{ color: '#9ca3af' }} />
               </div>
-              <h4 style={{ fontSize: '16px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
+              <h4 style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 600, color: '#111827', marginBottom: '8px' }}>
                 No Active Offer
               </h4>
-              <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+              <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#6b7280', margin: 0 }}>
                 Complete all eligibility requirements to receive your conversion offer
               </p>
             </div>

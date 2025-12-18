@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   Briefcase,
   Plus,
@@ -298,6 +299,7 @@ const mockActivityLogs: ActivityLog[] = [
 ];
 
 const InternWork: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const [activeTab, setActiveTab] = useState<TabType>('board');
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [deliverables] = useState<Deliverable[]>(mockDeliverables);
@@ -535,9 +537,9 @@ const InternWork: React.FC = () => {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: '16px',
-        overflowX: 'auto',
+        gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
+        gap: isMobile ? '12px' : '16px',
+        overflowX: isMobile ? 'hidden' : 'auto',
         paddingBottom: '16px',
       }}
     >
@@ -546,10 +548,10 @@ const InternWork: React.FC = () => {
           key={col.key}
           style={{
             backgroundColor: '#fafafa',
-            borderRadius: '12px',
-            padding: '16px',
-            minWidth: '260px',
-            minHeight: '400px',
+            borderRadius: isMobile ? '10px' : '12px',
+            padding: isMobile ? '12px' : '16px',
+            minWidth: isMobile ? 'auto' : '260px',
+            minHeight: isMobile ? 'auto' : '400px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
@@ -606,11 +608,12 @@ const InternWork: React.FC = () => {
     <div
       style={{
         backgroundColor: 'white',
-        borderRadius: '12px',
+        borderRadius: isMobile ? '10px' : '12px',
         border: '1px solid #e5e7eb',
         overflow: 'hidden',
       }}
     >
+      {!isMobile && (
       <div
         style={{
           display: 'grid',
@@ -632,13 +635,65 @@ const InternWork: React.FC = () => {
         <span>Due Date</span>
         <span>Status</span>
       </div>
+      )}
       {filteredTasks.map((task) => {
         const dueInfo = formatDate(task.due_date);
         const cat = categoryConfig[task.category];
         const pri = priorityConfig[task.priority];
         const status = statusColumns.find((s) => s.key === task.status) || statusColumns[0];
 
-        return (
+        return isMobile ? (
+          <div
+            key={task.id}
+            style={{
+              padding: '14px 16px',
+              borderBottom: '1px solid #f3f4f6',
+              cursor: 'pointer',
+            }}
+            onClick={() => setSelectedTask(task)}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '16px' }}>{cat.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0, marginBottom: '4px' }}>
+                  {task.title}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: pri.bgColor,
+                      color: pri.color,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {pri.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: status.bgColor,
+                      color: status.color,
+                    }}
+                  >
+                    {status.label}
+                  </span>
+                  {dueInfo && (
+                    <span style={{ fontSize: '11px', color: dueInfo.color, fontWeight: 500 }}>
+                      {dueInfo.text}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div
             key={task.id}
             style={{
@@ -987,35 +1042,38 @@ const InternWork: React.FC = () => {
         <div
           style={{
             position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            top: isMobile ? 0 : '50%',
+            left: isMobile ? 0 : '50%',
+            right: isMobile ? 0 : 'auto',
+            bottom: isMobile ? 0 : 'auto',
+            transform: isMobile ? 'none' : 'translate(-50%, -50%)',
             backgroundColor: 'white',
-            borderRadius: '16px',
-            width: '90%',
-            maxWidth: '640px',
-            maxHeight: '90vh',
+            borderRadius: isMobile ? 0 : '16px',
+            width: isMobile ? '100%' : '90%',
+            maxWidth: isMobile ? 'none' : '640px',
+            maxHeight: isMobile ? '100%' : '90vh',
             overflow: 'auto',
             zIndex: 51,
-            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            boxShadow: isMobile ? 'none' : '0 25px 50px rgba(0,0,0,0.25)',
           }}
         >
           <div
             style={{
-              padding: '24px',
+              padding: isMobile ? '16px' : '24px',
               borderBottom: '1px solid #e5e7eb',
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
+              gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '24px' }}>{cat.icon}</span>
-              <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', margin: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '12px', flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: isMobile ? '20px' : '24px', flexShrink: 0 }}>{cat.icon}</span>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ fontSize: isMobile ? '17px' : '20px', fontWeight: 700, color: '#111827', margin: 0 }}>
                   {selectedTask.title}
                 </h2>
-                <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0 0' }}>
+                <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#6b7280', margin: '4px 0 0 0' }}>
                   Created {formatRelativeTime(selectedTask.created_at)}
                 </p>
               </div>
@@ -1034,8 +1092,8 @@ const InternWork: React.FC = () => {
               <X size={20} />
             </button>
           </div>
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <div style={{ padding: isMobile ? '16px' : '24px' }}>
+            <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', marginBottom: isMobile ? '16px' : '24px', flexWrap: 'wrap' }}>
               <span
                 style={{
                   fontSize: '12px',
@@ -1090,9 +1148,9 @@ const InternWork: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '16px',
-                marginBottom: '24px',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                gap: isMobile ? '12px' : '16px',
+                marginBottom: isMobile ? '16px' : '24px',
               }}
             >
               <div
@@ -1161,7 +1219,7 @@ const InternWork: React.FC = () => {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : '12px' }}>
               <select
                 value={selectedTask.status}
                 onChange={(e) => {
@@ -1170,7 +1228,7 @@ const InternWork: React.FC = () => {
                 }}
                 style={{
                   flex: 1,
-                  padding: '12px 16px',
+                  padding: isMobile ? '10px 14px' : '12px 16px',
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb',
                   fontSize: '14px',
@@ -1187,7 +1245,7 @@ const InternWork: React.FC = () => {
               </select>
               <button
                 style={{
-                  padding: '12px 24px',
+                  padding: isMobile ? '10px 20px' : '12px 24px',
                   borderRadius: '8px',
                   border: 'none',
                   backgroundColor: '#ff5f1f',
@@ -1209,13 +1267,13 @@ const InternWork: React.FC = () => {
   return (
     <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: '8px', gap: isMobile ? '12px' : '0' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#111827', margin: 0 }}>
+            <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 800, color: '#111827', margin: 0 }}>
               Work & Execution
             </h1>
-            <p style={{ fontSize: '15px', color: '#6b7280', margin: '4px 0 0 0' }}>
+            <p style={{ fontSize: isMobile ? '13px' : '15px', color: '#6b7280', margin: '4px 0 0 0' }}>
               Manage your tasks, track deliverables, and monitor your progress
             </p>
           </div>
@@ -1224,21 +1282,24 @@ const InternWork: React.FC = () => {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
-              padding: '12px 20px',
+              padding: isMobile ? '10px 16px' : '12px 20px',
               borderRadius: '10px',
               border: 'none',
               backgroundColor: '#ff5f1f',
               color: 'white',
-              fontSize: '14px',
+              fontSize: isMobile ? '13px' : '14px',
               fontWeight: 600,
               cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(255, 95, 31, 0.3)',
               transition: 'all 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e5541b';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              if (!isMobile) {
+                e.currentTarget.style.backgroundColor = '#e5541b';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#ff5f1f';
@@ -1254,122 +1315,126 @@ const InternWork: React.FC = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            marginTop: '20px',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            gap: isMobile ? '10px' : '16px',
+            marginTop: isMobile ? '16px' : '20px',
           }}
         >
           <div
             style={{
               backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '20px',
+              borderRadius: isMobile ? '10px' : '12px',
+              padding: isMobile ? '12px' : '20px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '12px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
+                  width: isMobile ? '36px' : '44px',
+                  height: isMobile ? '36px' : '44px',
+                  borderRadius: isMobile ? '8px' : '10px',
                   backgroundColor: '#eff6ff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <Briefcase size={22} style={{ color: '#3b82f6' }} />
+                <Briefcase size={isMobile ? 18 : 22} style={{ color: '#3b82f6' }} />
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Total Tasks</p>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.total}</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Total Tasks</p>
+                <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.total}</p>
               </div>
             </div>
           </div>
           <div
             style={{
               backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '20px',
+              borderRadius: isMobile ? '10px' : '12px',
+              padding: isMobile ? '12px' : '20px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '12px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
+                  width: isMobile ? '36px' : '44px',
+                  height: isMobile ? '36px' : '44px',
+                  borderRadius: isMobile ? '8px' : '10px',
                   backgroundColor: '#fef3c7',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <Play size={22} style={{ color: '#f59e0b' }} />
+                <Play size={isMobile ? 18 : 22} style={{ color: '#f59e0b' }} />
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>In Progress</p>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.inProgress}</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>In Progress</p>
+                <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.inProgress}</p>
               </div>
             </div>
           </div>
           <div
             style={{
               backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '20px',
+              borderRadius: isMobile ? '10px' : '12px',
+              padding: isMobile ? '12px' : '20px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '12px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
+                  width: isMobile ? '36px' : '44px',
+                  height: isMobile ? '36px' : '44px',
+                  borderRadius: isMobile ? '8px' : '10px',
                   backgroundColor: '#ecfdf5',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <CheckCircle2 size={22} style={{ color: '#10b981' }} />
+                <CheckCircle2 size={isMobile ? 18 : 22} style={{ color: '#10b981' }} />
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Completed</p>
-                <p style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.completed}</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Completed</p>
+                <p style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 700, color: '#111827', margin: 0 }}>{stats.completed}</p>
               </div>
             </div>
           </div>
           <div
             style={{
               backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '20px',
+              borderRadius: isMobile ? '10px' : '12px',
+              padding: isMobile ? '12px' : '20px',
               border: '1px solid #e5e7eb',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '12px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '10px',
+                  width: isMobile ? '36px' : '44px',
+                  height: isMobile ? '36px' : '44px',
+                  borderRadius: isMobile ? '8px' : '10px',
                   backgroundColor: stats.overdue > 0 ? '#fef2f2' : '#f3f4f6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                <AlertCircle size={22} style={{ color: stats.overdue > 0 ? '#ef4444' : '#6b7280' }} />
+                <AlertCircle size={isMobile ? 18 : 22} style={{ color: stats.overdue > 0 ? '#ef4444' : '#6b7280' }} />
               </div>
-              <div>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Overdue</p>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Overdue</p>
                 <p
                   style={{
-                    fontSize: '24px',
+                    fontSize: isMobile ? '20px' : '24px',
                     fontWeight: 700,
                     color: stats.overdue > 0 ? '#ef4444' : '#111827',
                     margin: 0,
@@ -1387,11 +1452,12 @@ const InternWork: React.FC = () => {
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
           justifyContent: 'space-between',
-          marginBottom: '20px',
+          marginBottom: isMobile ? '16px' : '20px',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: isMobile ? '12px' : '16px',
         }}
       >
         <div
@@ -1401,13 +1467,14 @@ const InternWork: React.FC = () => {
             backgroundColor: '#f3f4f6',
             padding: '4px',
             borderRadius: '10px',
+            overflowX: isMobile ? 'auto' : 'visible',
           }}
         >
           {[
-            { key: 'board' as TabType, label: 'Board', icon: <GripVertical size={16} /> },
-            { key: 'list' as TabType, label: 'List', icon: <Briefcase size={16} /> },
-            { key: 'deliverables' as TabType, label: 'Deliverables', icon: <FileText size={16} /> },
-            { key: 'activity' as TabType, label: 'Activity', icon: <Activity size={16} /> },
+            { key: 'board' as TabType, label: isMobile ? '' : 'Board', icon: <GripVertical size={16} /> },
+            { key: 'list' as TabType, label: isMobile ? '' : 'List', icon: <Briefcase size={16} /> },
+            { key: 'deliverables' as TabType, label: isMobile ? '' : 'Deliverables', icon: <FileText size={16} /> },
+            { key: 'activity' as TabType, label: isMobile ? '' : 'Activity', icon: <Activity size={16} /> },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -1416,7 +1483,7 @@ const InternWork: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '10px 16px',
+                padding: isMobile ? '10px 14px' : '10px 16px',
                 borderRadius: '8px',
                 border: 'none',
                 backgroundColor: activeTab === tab.key ? 'white' : 'transparent',
@@ -1426,6 +1493,7 @@ const InternWork: React.FC = () => {
                 cursor: 'pointer',
                 boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                 transition: 'all 0.15s',
+                flexShrink: 0,
               }}
             >
               {tab.icon}
@@ -1435,8 +1503,8 @@ const InternWork: React.FC = () => {
         </div>
 
         {(activeTab === 'board' || activeTab === 'list') && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: isMobile ? 1 : 'none' }}>
               <Search
                 size={18}
                 style={{
@@ -1449,15 +1517,15 @@ const InternWork: React.FC = () => {
               />
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  padding: '10px 12px 10px 40px',
+                  padding: isMobile ? '10px 12px 10px 36px' : '10px 12px 10px 40px',
                   borderRadius: '8px',
                   border: '1px solid #e5e7eb',
                   fontSize: '14px',
-                  width: '240px',
+                  width: isMobile ? '100%' : '240px',
                   outline: 'none',
                 }}
               />
@@ -1468,7 +1536,7 @@ const InternWork: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '10px 16px',
+                padding: isMobile ? '10px 12px' : '10px 16px',
                 borderRadius: '8px',
                 border: '1px solid #e5e7eb',
                 backgroundColor: showFilters ? '#f3f4f6' : 'white',
@@ -1476,10 +1544,11 @@ const InternWork: React.FC = () => {
                 fontSize: '14px',
                 fontWeight: 500,
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
               <Filter size={16} />
-              Filters
+              {!isMobile && 'Filters'}
               {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
           </div>
@@ -1491,13 +1560,14 @@ const InternWork: React.FC = () => {
         <div
           style={{
             backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '20px',
+            borderRadius: isMobile ? '10px' : '12px',
+            padding: isMobile ? '12px 14px' : '16px 20px',
+            marginBottom: isMobile ? '16px' : '20px',
             border: '1px solid #e5e7eb',
             display: 'flex',
-            gap: '16px',
-            alignItems: 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '12px' : '16px',
+            alignItems: isMobile ? 'stretch' : 'center',
           }}
         >
           <div>

@@ -468,7 +468,7 @@ const InternPortalLayout: React.FC = () => {
           marginTop: isMobile ? '60px' : 0,
         }}
       >
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: isMobile ? '16px' : '24px' }}>
           <Outlet />
         </div>
       </main>

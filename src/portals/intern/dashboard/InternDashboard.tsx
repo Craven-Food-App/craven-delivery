@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   TrendingUp,
   Target,
@@ -27,6 +28,7 @@ interface InternStats {
 }
 
 const InternDashboard: React.FC = () => {
+  const { isMobile, isTablet } = useResponsive();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<InternStats>({
     overallProgress: 67,
@@ -56,40 +58,43 @@ const InternDashboard: React.FC = () => {
       style={{
         backgroundColor: 'white',
         borderRadius: '12px',
-        padding: '20px',
+        padding: isMobile ? '16px' : '20px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         border: '1px solid #e5e7eb',
         transition: 'all 0.2s',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
+        if (!isMobile) {
+          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '12px' : '16px' }}>
         <div
           style={{
-            width: '48px',
-            height: '48px',
+            width: isMobile ? '40px' : '48px',
+            height: isMobile ? '40px' : '48px',
             borderRadius: '10px',
             backgroundColor: bgColor,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color,
+            flexShrink: 0,
           }}
         >
           {icon}
         </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '13px', color: '#6b7280', fontWeight: 500, marginBottom: '4px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: isMobile ? '12px' : '13px', color: '#6b7280', fontWeight: 500, marginBottom: '4px' }}>
             {label}
           </p>
-          <p style={{ fontSize: '28px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>
+          <p style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: 700, color: '#111827', lineHeight: 1 }}>
             {value}
           </p>
           {subtext && (
@@ -177,11 +182,11 @@ const InternDashboard: React.FC = () => {
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>
+      <div style={{ marginBottom: isMobile ? '20px' : '32px' }}>
+        <h1 style={{ fontSize: isMobile ? '24px' : '32px', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>
           Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}
         </h1>
-        <p style={{ fontSize: '16px', color: '#6b7280' }}>
+        <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#6b7280' }}>
           Here's your progress and what's next in your development pathway.
         </p>
       </div>
@@ -190,9 +195,9 @@ const InternDashboard: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '20px',
-          marginBottom: '32px',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: isMobile ? '12px' : '20px',
+          marginBottom: isMobile ? '20px' : '32px',
         }}
       >
         <StatCard
@@ -229,7 +234,7 @@ const InternDashboard: React.FC = () => {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 400px', gap: isMobile ? '16px' : '24px', marginBottom: isMobile ? '20px' : '32px' }}>
         {/* Main Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Progress Breakdown */}
