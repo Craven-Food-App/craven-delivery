@@ -1297,8 +1297,8 @@ const InternWork: React.FC = () => {
             }}
             onMouseEnter={(e) => {
               if (!isMobile) {
-                e.currentTarget.style.backgroundColor = '#e5541b';
-                e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.backgroundColor = '#e5541b';
+              e.currentTarget.style.transform = 'translateY(-1px)';
               }
             }}
             onMouseLeave={(e) => {

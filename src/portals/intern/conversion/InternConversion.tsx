@@ -333,44 +333,44 @@ const InternConversion: React.FC = () => {
             <p style={{ fontSize: isMobile ? '11px' : '13px', color: '#6b7280', margin: 0 }}>{req.description}</p>
           </div>
           {!isMobile && (
-            <div style={{ textAlign: 'right', marginRight: '8px' }}>
-              <p style={{ fontSize: '18px', fontWeight: 700, color: req.status === 'completed' ? '#10b981' : '#111827', margin: 0 }}>
-                {req.currentValue}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? '' : '/'}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? req.unit : req.targetValue}
-              </p>
-              <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
-                {req.weight}% weight
-              </p>
-            </div>
+          <div style={{ textAlign: 'right', marginRight: '8px' }}>
+            <p style={{ fontSize: '18px', fontWeight: 700, color: req.status === 'completed' ? '#10b981' : '#111827', margin: 0 }}>
+              {req.currentValue}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? '' : '/'}{req.unit !== 'project' && req.unit !== 'modules' && req.unit !== 'skills' && req.unit !== 'reviews' ? req.unit : req.targetValue}
+            </p>
+            <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+              {req.weight}% weight
+            </p>
+          </div>
           )}
           {!isMobile && (
+          <div
+            style={{
+              width: '60px',
+              height: '60px',
+              position: 'relative',
+              flexShrink: 0,
+            }}
+          >
+            <ProgressRing
+              value={progress}
+              size={60}
+              strokeWidth={6}
+              color={req.status === 'completed' ? '#10b981' : config.color}
+            />
             <div
               style={{
-                width: '60px',
-                height: '60px',
-                position: 'relative',
-                flexShrink: 0,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontSize: '12px',
+                fontWeight: 700,
+                color: req.status === 'completed' ? '#10b981' : '#111827',
               }}
             >
-              <ProgressRing
-                value={progress}
-                size={60}
-                strokeWidth={6}
-                color={req.status === 'completed' ? '#10b981' : config.color}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: req.status === 'completed' ? '#10b981' : '#111827',
-                }}
-              >
-                {Math.round(progress)}%
-              </div>
+              {Math.round(progress)}%
             </div>
+          </div>
           )}
           <ChevronDown
             size={20}
@@ -494,28 +494,28 @@ const InternConversion: React.FC = () => {
           {/* Connection Line - hide on mobile */}
           {!isMobile && (
             <>
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '40px',
-                  left: '80px',
-                  right: '80px',
-                  height: '4px',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  borderRadius: '2px',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '40px',
-                  left: '80px',
-                  width: '33%',
-                  height: '4px',
-                  backgroundColor: '#ff5f1f',
-                  borderRadius: '2px',
-                }}
-              />
+          <div
+            style={{
+              position: 'absolute',
+              top: '40px',
+              left: '80px',
+              right: '80px',
+              height: '4px',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              borderRadius: '2px',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '40px',
+              left: '80px',
+              width: '33%',
+              height: '4px',
+              backgroundColor: '#ff5f1f',
+              borderRadius: '2px',
+            }}
+          />
             </>
           )}
 
@@ -563,28 +563,28 @@ const InternConversion: React.FC = () => {
               <div style={{ flex: isMobile ? 1 : 'none' }}>
                 <h3 style={{ fontSize: isMobile ? '15px' : '18px', fontWeight: 700, marginBottom: isMobile ? '4px' : '8px' }}>{stage.title}</h3>
                 <p style={{ fontSize: isMobile ? '12px' : '13px', opacity: 0.8, marginBottom: isMobile ? '8px' : '12px' }}>{stage.description}</p>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    backgroundColor:
-                      stage.status === 'completed'
-                        ? 'rgba(16, 185, 129, 0.2)'
-                        : stage.status === 'current'
-                        ? 'rgba(255, 95, 31, 0.2)'
-                        : 'rgba(255,255,255,0.1)',
-                    color:
-                      stage.status === 'completed'
-                        ? '#10b981'
-                        : stage.status === 'current'
-                        ? '#ff5f1f'
-                        : 'rgba(255,255,255,0.5)',
-                  }}
-                >
-                  {stage.status === 'completed' ? 'Completed' : stage.status === 'current' ? 'Current Stage' : 'Locked'}
-                </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  backgroundColor:
+                    stage.status === 'completed'
+                      ? 'rgba(16, 185, 129, 0.2)'
+                      : stage.status === 'current'
+                      ? 'rgba(255, 95, 31, 0.2)'
+                      : 'rgba(255,255,255,0.1)',
+                  color:
+                    stage.status === 'completed'
+                      ? '#10b981'
+                      : stage.status === 'current'
+                      ? '#ff5f1f'
+                      : 'rgba(255,255,255,0.5)',
+                }}
+              >
+                {stage.status === 'completed' ? 'Completed' : stage.status === 'current' ? 'Current Stage' : 'Locked'}
+              </span>
               </div>
             </div>
           ))}

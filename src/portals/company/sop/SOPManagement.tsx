@@ -333,7 +333,7 @@ const SOPManagement: React.FC = () => {
                     <Table.Td>
                       <div>
                         <Group gap="xs">
-                          <Text fw={500}>{sop.title}</Text>
+                        <Text fw={500}>{sop.title}</Text>
                           {sop.id.startsWith('auto-') && (
                             <Badge size="xs" color="grape" variant="light" leftSection={<IconSparkles size={10} />}>
                               Auto-Discovered

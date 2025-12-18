@@ -65,8 +65,8 @@ const InternDashboard: React.FC = () => {
       }}
       onMouseEnter={(e) => {
         if (!isMobile) {
-          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
         }
       }}
       onMouseLeave={(e) => {
