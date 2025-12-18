@@ -156,6 +156,24 @@ INSERT INTO public.sop_documents (
   90
 ) ON CONFLICT DO NOTHING;
 
+-- 6. Admin Delivery Zones SOP (from docs folder)
+INSERT INTO public.sop_documents (
+  title, description, category, version, status,
+  markdown_file_path, owner_department, tags, keywords,
+  review_frequency_days
+) VALUES (
+  'Admin Portal - Delivery Zone Management',
+  'Operating procedures for managing delivery zones including creating, editing, activating/deactivating zones, and using the interactive map interface',
+  'Operations',
+  '1.0',
+  'active',
+  'SOP-ADMIN-DELIVERY-ZONES.md',
+  'Operations',
+  ARRAY['admin', 'delivery', 'zones', 'map', 'operations', 'geography'],
+  ARRAY['delivery zones', 'admin', 'map', 'polygon', 'geographic', 'coverage', 'postGIS', 'mapbox'],
+  90
+) ON CONFLICT DO NOTHING;
+
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sop_documents_status ON public.sop_documents(status);
 CREATE INDEX IF NOT EXISTS idx_sop_documents_category ON public.sop_documents(category);
