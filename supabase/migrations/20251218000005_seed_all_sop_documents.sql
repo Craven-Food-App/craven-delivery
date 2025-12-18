@@ -174,6 +174,24 @@ INSERT INTO public.sop_documents (
   90
 ) ON CONFLICT DO NOTHING;
 
+-- 7. Admin Investor Intake SOP (from docs folder)
+INSERT INTO public.sop_documents (
+  title, description, category, version, status,
+  markdown_file_path, owner_department, tags, keywords,
+  review_frequency_days
+) VALUES (
+  'Admin Portal - Investor Intake Management',
+  'Reg D 506(b) compliant procedures for managing investor intake requests, including review process, approval workflow, and audit trail requirements',
+  'Finance',
+  '1.0',
+  'active',
+  'SOP-ADMIN-INVESTOR-INTAKE.md',
+  'CFO Office',
+  ARRAY['admin', 'investor', 'intake', 'compliance', 'reg-d', 'securities', 'finance'],
+  ARRAY['investor', 'intake', 'compliance', 'reg d', '506b', 'audit', 'approval', 'securities', 'CFO'],
+  90
+) ON CONFLICT DO NOTHING;
+
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_sop_documents_status ON public.sop_documents(status);
 CREATE INDEX IF NOT EXISTS idx_sop_documents_category ON public.sop_documents(category);
