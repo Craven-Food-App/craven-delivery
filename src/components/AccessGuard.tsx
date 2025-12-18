@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -55,7 +55,9 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
 
       // If approved but onboarding not complete, redirect to onboarding
       if (approved && !completed) {
-        navigate('/enhanced-onboarding');
+        startTransition(() => {
+          navigate('/enhanced-onboarding');
+        });
       }
     };
 

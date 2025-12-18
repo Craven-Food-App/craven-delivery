@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Stack, Title, Text, Card, Group, Badge, Button, Table, Select, TextInput, Grid, Loader, Center, Alert } from '@mantine/core';
-import { IconFileText, IconDownload, IconSearch, IconFilter, IconEye, IconRefresh, IconAlertCircle } from '@tabler/icons-react';
+import { IconFileText, IconDownload, IconSearch, IconFilter, IconEye, IconRefresh, IconAlertCircle, IconSparkles } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { markdownToPdf } from '@/utils/markdownToPdf';
-import { SOP_CONTENT } from './sopContent';
+import { SOP_CONTENT, DISCOVERED_SOPS, extractSopMetadata } from './sopContent';
 
 console.log('📦 [SOP] SOPManagement module loaded');
+console.log('📦 [SOP] Auto-discovered SOPs:', DISCOVERED_SOPS);
 
 interface SOPDocument {
   id: string;
@@ -32,11 +33,51 @@ interface SOPDocument {
 const SOPManagement: React.FC = () => {
   console.log('📄 [SOP] SOPManagement component function called!');
   
-  const [sops, setSops] = useState<SOPDocument[]>([]);
+  const [dbSops, setDbSops] = useState<SOPDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+
+  // Merge database SOPs with auto-discovered SOPs
+  const sops = useMemo(() => {
+    const dbFilePaths = new Set(dbSops.map(s => s.markdown_file_path).filter(Boolean));
+    
+    // Start with database SOPs
+    const merged: SOPDocument[] = [...dbSops];
+    
+    // Add auto-discovered SOPs that aren't in the database
+    DISCOVERED_SOPS.forEach(filename => {
+      if (!dbFilePaths.has(filename)) {
+        const content = SOP_CONTENT[filename];
+        if (content) {
+          const metadata = extractSopMetadata(filename, content);
+          merged.push({
+            id: `auto-${filename}`,
+            title: metadata.title,
+            description: metadata.description,
+            category: metadata.category,
+            version: metadata.version,
+            status: 'active' as const,
+            markdown_file_path: filename,
+            pdf_file_path: null,
+            owner_department: metadata.department,
+            last_reviewed_at: null,
+            next_review_due_at: null,
+            review_frequency_days: 90,
+            page_count: null,
+            file_size_bytes: null,
+            tags: metadata.tags,
+            keywords: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        }
+      }
+    });
+    
+    return merged;
+  }, [dbSops]);
 
   useEffect(() => {
     console.log('🚀 [SOP] Component mounted, fetching SOPs...');
@@ -65,11 +106,8 @@ const SOPManagement: React.FC = () => {
         console.error('❌ [SOP] Fetch error:', error);
         
         if (error.code === '42P01' || error.message.includes('does not exist')) {
-          toast({
-            title: 'Setup Required',
-            description: 'The sop_documents table has not been created. Please run the migration first.',
-            variant: 'destructive',
-          });
+          console.log('⚠️ [SOP] Table not created yet, showing auto-discovered SOPs only');
+          // Don't show error toast - auto-discovered SOPs will still be shown
         } else if (error.code === '42501' || error.message.includes('permission denied')) {
           toast({
             title: 'Permission Denied',
@@ -77,36 +115,26 @@ const SOPManagement: React.FC = () => {
             variant: 'destructive',
           });
         } else {
-          toast({
-            title: 'Error Loading SOPs',
-            description: `${error.code}: ${error.message}`,
-            variant: 'destructive',
-          });
+          console.warn('⚠️ [SOP] Database error, showing auto-discovered SOPs:', error.message);
         }
-        setSops([]);
+        setDbSops([]);
         return;
       }
       
-      setSops(data || []);
+      setDbSops(data || []);
       
       if (data && data.length > 0) {
-        console.log(`✅ [SOP] Loaded ${data.length} document(s)`);
+        console.log(`✅ [SOP] Loaded ${data.length} document(s) from database`);
       } else {
-        console.warn('⚠️ [SOP] No documents found');
-        toast({
-          title: 'No SOPs Found',
-          description: 'No SOP documents found in the database.',
-          variant: 'default',
-        });
+        console.log('ℹ️ [SOP] No documents in database, showing auto-discovered SOPs');
       }
+      
+      console.log(`✅ [SOP] Total SOPs available (including auto-discovered): ${DISCOVERED_SOPS.length}`);
     } catch (error: any) {
       console.error('💥 [SOP] Exception:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to load SOP documents',
-        variant: 'destructive',
-      });
-      setSops([]);
+      // Don't show error toast - auto-discovered SOPs will still be shown
+      console.log('ℹ️ [SOP] Falling back to auto-discovered SOPs');
+      setDbSops([]);
     } finally {
       setLoading(false);
     }
@@ -273,8 +301,8 @@ const SOPManagement: React.FC = () => {
             <Alert icon={<IconAlertCircle size={16} />} color="blue" m="md">
               <Text mb="sm" fw={500}>No SOP documents found.</Text>
               <Text size="sm" c="dimmed" mb="sm">
-                If you just ran the migration, the Investor Compliance SOP should appear. 
-                Make sure the migration completed successfully.
+                Create SOP markdown files in the /docs folder with "SOP" in the filename.
+                They will be automatically discovered and displayed here.
               </Text>
               <Button 
                 size="xs" 
@@ -304,9 +332,16 @@ const SOPManagement: React.FC = () => {
                   <Table.Tr key={sop.id}>
                     <Table.Td>
                       <div>
-                        <Text fw={500}>{sop.title}</Text>
+                        <Group gap="xs">
+                          <Text fw={500}>{sop.title}</Text>
+                          {sop.id.startsWith('auto-') && (
+                            <Badge size="xs" color="grape" variant="light" leftSection={<IconSparkles size={10} />}>
+                              Auto-Discovered
+                            </Badge>
+                          )}
+                        </Group>
                         {sop.description && (
-                          <Text size="sm" c="dimmed">{sop.description}</Text>
+                          <Text size="sm" c="dimmed" lineClamp={1}>{sop.description}</Text>
                         )}
                       </div>
                     </Table.Td>
@@ -382,9 +417,13 @@ const SOPManagement: React.FC = () => {
             <IconFileText size={20} style={{ color: 'var(--mantine-color-orange-6)' }} />
             <Title order={4}>About SOP Documents</Title>
           </Group>
-          <Text size="sm" c="dimmed">
-            Standard Operating Procedures are stored as Markdown files in the repository and converted to PDF on-demand.
+          <Text size="sm" c="dimmed" mb="xs">
+            SOPs are automatically discovered from markdown files in the repository. 
             Click "View PDF" to open in a new tab or "Download" to save a copy.
+          </Text>
+          <Text size="xs" c="dimmed">
+            <strong>Auto-Discovery:</strong> Place any .md file with "SOP" in the filename in the <code>/docs</code> folder 
+            and it will automatically appear here. Currently showing {DISCOVERED_SOPS.length} discovered SOP(s).
           </Text>
         </Card>
       </Stack>

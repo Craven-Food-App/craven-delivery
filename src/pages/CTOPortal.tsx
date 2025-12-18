@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, startTransition } from 'react';
 import {
   Grid,
   Group,
@@ -274,10 +274,16 @@ function CTOPortalContent() {
   // Always render code editor in standalone corporate mode
   if (activeSection === 'code-editor') {
     return (
-      <CodeEditorPortal 
-        standalone={true}
-        onBack={() => setActiveSection('overview')}
-      />
+      <Suspense fallback={
+        <Center style={{ height: '100vh' }}>
+          <Loader size="lg" />
+        </Center>
+      }>
+        <CodeEditorPortal 
+          standalone={true}
+          onBack={() => setActiveSection('overview')}
+        />
+      </Suspense>
     );
   }
 
@@ -288,7 +294,9 @@ function CTOPortalContent() {
       navItems={navItems}
       activeItemId={activeSection}
       onSelect={(id) => {
-        setActiveSection(id);
+        startTransition(() => {
+          setActiveSection(id);
+        });
         if (id === 'training') {
           navigate('/cto/training');
         } else if (id === 'onboarding') {
@@ -334,13 +342,21 @@ function CTOPortalContent() {
           )}
         </Card>
 
-        {shouldWrapContent ? (
-          <Card shadow="sm" padding="lg" radius="md" withBorder style={{ overflow: 'hidden' }}>
-            {content}
+        <Suspense fallback={
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Center py="xl">
+              <Loader size="lg" />
+            </Center>
           </Card>
-        ) : (
-          content
-        )}
+        }>
+          {shouldWrapContent ? (
+            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ overflow: 'hidden' }}>
+              {content}
+            </Card>
+          ) : (
+            content
+          )}
+        </Suspense>
       </div>
     </ExecutivePortalLayout>
   );

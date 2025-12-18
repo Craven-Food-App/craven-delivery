@@ -41,3 +41,4 @@ CREATE POLICY "Admins can view all shortlists"
     OR auth.jwt()->>'email' = 'craven@usa.com'
   );
 
+
