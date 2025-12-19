@@ -208,11 +208,20 @@ interface ContentSection {
 
 function parseMarkdown(markdown: string): ContentSection[] {
   const sections: ContentSection[] = [];
-  const lines = markdown.split('\n');
+  
+  // Strip YAML frontmatter if present
+  let contentToProcess = markdown;
+  const frontmatterMatch = markdown.match(/^---\s*\n[\s\S]*?\n---\s*\n/);
+  if (frontmatterMatch) {
+    contentToProcess = markdown.substring(frontmatterMatch[0].length);
+  }
+  
+  const lines = contentToProcess.split('\n');
   let currentParagraph: string[] = [];
   let inList = false;
   let listItems: string[] = [];
   let listType: 'bullet' | 'numbered' = 'bullet';
+  let inCodeBlock = false;
   
   const flushParagraph = () => {
     if (currentParagraph.length > 0) {
@@ -235,6 +244,19 @@ function parseMarkdown(markdown: string): ContentSection[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
+    
+    // Handle code blocks
+    if (trimmed.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      flushParagraph();
+      flushList();
+      continue;
+    }
+    
+    // Skip content inside code blocks
+    if (inCodeBlock) {
+      continue;
+    }
     
     // Skip empty lines
     if (!trimmed) {
@@ -301,8 +323,8 @@ function parseMarkdown(markdown: string): ContentSection[] {
       continue;
     }
     
-    // Skip code blocks and tables for now
-    if (trimmed.startsWith('```') || trimmed.startsWith('|')) {
+    // Skip tables for now (they're complex to render)
+    if (trimmed.startsWith('|')) {
       flushParagraph();
       flushList();
       continue;

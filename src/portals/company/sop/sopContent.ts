@@ -74,10 +74,13 @@ function parseYamlFrontmatter(content: string): Record<string, any> {
   
   // Simple YAML parser for our frontmatter
   yaml.split('\n').forEach(line => {
-    const match = line.match(/^(\w+):\s*"?([^"]+)"?$/);
+    // Match key: value or key: "value" patterns
+    const match = line.match(/^(\w+):\s*(.+)$/);
     if (match) {
       const [, key, value] = match;
-      metadata[key] = value.replace(/^["']|["']$/g, '').trim();
+      // Remove surrounding quotes if present
+      const cleanValue = value.replace(/^["']|["']$/g, '').trim();
+      metadata[key] = cleanValue;
     }
   });
   
