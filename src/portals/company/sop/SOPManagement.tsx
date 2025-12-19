@@ -4,10 +4,9 @@ import { IconFileText, IconDownload, IconSearch, IconFilter, IconEye, IconRefres
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { markdownToPdf } from '@/utils/markdownToPdf';
-import { SOP_CONTENT, DISCOVERED_SOPS, extractSopMetadata } from './sopContent';
+import { loadSopContent, extractSopMetadata } from './sopContent';
 
 console.log('📦 [SOP] SOPManagement module loaded');
-console.log('📦 [SOP] Auto-discovered SOPs:', DISCOVERED_SOPS);
 
 interface SOPDocument {
   id: string;
@@ -34,6 +33,8 @@ const SOPManagement: React.FC = () => {
   console.log('📄 [SOP] SOPManagement component function called!');
   
   const [dbSops, setDbSops] = useState<SOPDocument[]>([]);
+  const [sopContent, setSopContent] = useState<Record<string, string>>({});
+  const [discoveredSops, setDiscoveredSops] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,9 +48,9 @@ const SOPManagement: React.FC = () => {
     const merged: SOPDocument[] = [...dbSops];
     
     // Add auto-discovered SOPs that aren't in the database
-    DISCOVERED_SOPS.forEach(filename => {
+    discoveredSops.forEach(filename => {
       if (!dbFilePaths.has(filename)) {
-        const content = SOP_CONTENT[filename];
+        const content = sopContent[filename];
         if (content) {
           const metadata = extractSopMetadata(filename, content);
           merged.push({
@@ -77,10 +78,20 @@ const SOPManagement: React.FC = () => {
     });
     
     return merged;
-  }, [dbSops]);
+  }, [dbSops, sopContent, discoveredSops]);
 
   useEffect(() => {
-    console.log('🚀 [SOP] Component mounted, fetching SOPs...');
+    console.log('🚀 [SOP] Component mounted, loading SOP content and fetching SOPs...');
+    
+    // Load SOP content asynchronously
+    loadSopContent().then(content => {
+      setSopContent(content);
+      setDiscoveredSops(Object.keys(content));
+      console.log(`✅ [SOP] Loaded ${Object.keys(content).length} SOPs from files`);
+    }).catch(error => {
+      console.error('❌ [SOP] Error loading SOP content:', error);
+    });
+    
     fetchSOPs();
   }, []);
 
@@ -129,7 +140,7 @@ const SOPManagement: React.FC = () => {
         console.log('ℹ️ [SOP] No documents in database, showing auto-discovered SOPs');
       }
       
-      console.log(`✅ [SOP] Total SOPs available (including auto-discovered): ${DISCOVERED_SOPS.length}`);
+      console.log(`✅ [SOP] Total SOPs available (including auto-discovered): ${discoveredSops.length}`);
     } catch (error: any) {
       console.error('💥 [SOP] Exception:', error);
       // Don't show error toast - auto-discovered SOPs will still be shown
@@ -151,7 +162,7 @@ const SOPManagement: React.FC = () => {
       return null;
     }
 
-    const content = SOP_CONTENT[markdownPath];
+    const content = sopContent[markdownPath];
     if (!content) {
       toast({
         title: 'Content Not Found',
@@ -367,7 +378,7 @@ const SOPManagement: React.FC = () => {
                       </Badge>
                     </Table.Td>
                     <Table.Td>
-                      {sop.markdown_file_path && SOP_CONTENT[sop.markdown_file_path] ? (
+                      {sop.markdown_file_path && sopContent[sop.markdown_file_path] ? (
                         <Badge color="green" variant="light" size="sm">
                           Ready
                         </Badge>
@@ -389,7 +400,7 @@ const SOPManagement: React.FC = () => {
                           variant="light"
                           leftSection={<IconEye size={14} />}
                           onClick={() => handleViewPDF(sop)}
-                          disabled={!sop.markdown_file_path || !SOP_CONTENT[sop.markdown_file_path]}
+                          disabled={!sop.markdown_file_path || !sopContent[sop.markdown_file_path]}
                         >
                           View PDF
                         </Button>
@@ -398,7 +409,7 @@ const SOPManagement: React.FC = () => {
                           variant="light"
                           leftSection={<IconDownload size={14} />}
                           onClick={() => handleDownloadPDF(sop)}
-                          disabled={!sop.markdown_file_path || !SOP_CONTENT[sop.markdown_file_path]}
+                          disabled={!sop.markdown_file_path || !sopContent[sop.markdown_file_path]}
                         >
                           Download
                         </Button>
@@ -423,7 +434,7 @@ const SOPManagement: React.FC = () => {
           </Text>
           <Text size="xs" c="dimmed">
             <strong>Auto-Discovery:</strong> Place any .md file with "SOP" in the filename in the <code>/docs</code> folder 
-            and it will automatically appear here. Currently showing {DISCOVERED_SOPS.length} discovered SOP(s).
+            and it will automatically appear here. Currently showing {discoveredSops.length} discovered SOP(s).
           </Text>
         </Card>
       </Stack>

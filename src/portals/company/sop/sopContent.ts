@@ -16,23 +16,31 @@
  */
 
 // Auto-import all markdown files from docs folder and subdirectories
-// Using eager: true to avoid async issues, but wrapped properly to prevent suspension
+// Using lazy loading to prevent React Suspense errors
 const docsModules = import.meta.glob('/docs/**/*.md', { 
-  eager: true, 
+  eager: false,  // Changed to false to prevent suspension
   query: '?raw',
   import: 'default' 
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 // Cache the built content to prevent re-computation
 let cachedSopContent: Record<string, string> | null = null;
+let isLoading = false;
+let loadPromise: Promise<Record<string, string>> | null = null;
 
-// Build the SOP_CONTENT record dynamically
-function buildSopContent(): Record<string, string> {
+// Build the SOP_CONTENT record dynamically (async version)
+async function buildSopContentAsync(): Promise<Record<string, string>> {
   // Return cached content if available
   if (cachedSopContent) {
     return cachedSopContent;
   }
   
+  // If already loading, return the existing promise
+  if (isLoading && loadPromise) {
+    return loadPromise;
+  }
+  
+  isLoading = true;
   const content: Record<string, string> = {};
   
   // Regex pattern for SOP files: SOP-[CATEGORY]-[NUMBER]_[Title].md
@@ -40,7 +48,9 @@ function buildSopContent(): Record<string, string> {
   
   // Process docs folder files
   try {
-    for (const [path, markdown] of Object.entries(docsModules)) {
+    const entries = Object.entries(docsModules);
+    
+    for (const [path, loader] of entries) {
       const filename = path.split('/').pop() || '';
       
       // VALIDATION 1: Filename must match SOP naming convention
@@ -48,14 +58,21 @@ function buildSopContent(): Record<string, string> {
         continue;
       }
       
-      // VALIDATION 2: File must have YAML frontmatter with document_id
-      if (typeof markdown === 'string' && 
-          markdown.startsWith('---') && 
-          markdown.includes('document_id:')) {
-        content[filename] = markdown as string;
-        console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
-      } else {
-        console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
+      try {
+        // Load the markdown content
+        const markdown = await loader();
+        
+        // VALIDATION 2: File must have YAML frontmatter with document_id
+        if (typeof markdown === 'string' && 
+            markdown.startsWith('---') && 
+            markdown.includes('document_id:')) {
+          content[filename] = markdown;
+          console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
+        } else {
+          console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
+        }
+      } catch (error) {
+        console.error(`❌ [SOP Auto-Discovery] Error loading ${filename}:`, error);
       }
     }
   } catch (error) {
@@ -64,18 +81,42 @@ function buildSopContent(): Record<string, string> {
   
   // Cache the result
   cachedSopContent = content;
+  isLoading = false;
   return content;
 }
 
-// Export the dynamically built SOP content (computed once at module load)
-export const SOP_CONTENT: Record<string, string> = buildSopContent();
+// Synchronous version that returns empty object initially
+function buildSopContent(): Record<string, string> {
+  if (cachedSopContent) {
+    return cachedSopContent;
+  }
+  
+  // Start loading in background if not already loading
+  if (!isLoading && !loadPromise) {
+    loadPromise = buildSopContentAsync();
+  }
+  
+  // Return empty object initially (will be populated after async load)
+  return {};
+}
 
-// Export list of discovered SOPs for debugging/admin purposes
-export const DISCOVERED_SOPS = Object.keys(SOP_CONTENT);
+// Export async loader for components that need to wait for content
+export async function loadSopContent(): Promise<Record<string, string>> {
+  return buildSopContentAsync();
+}
 
-// Log discovery summary
-console.log(`📚 [SOP Auto-Discovery] Total SOPs discovered: ${DISCOVERED_SOPS.length}`);
-console.log(`📚 [SOP Auto-Discovery] Files:`, DISCOVERED_SOPS);
+// Export function to get discovered SOP filenames
+export async function getDiscoveredSops(): Promise<string[]> {
+  const content = await buildSopContentAsync();
+  return Object.keys(content);
+}
+
+// Log discovery summary on load
+loadSopContent().then(content => {
+  const count = Object.keys(content).length;
+  console.log(`📚 [SOP Auto-Discovery] Total SOPs discovered: ${count}`);
+  console.log(`📚 [SOP Auto-Discovery] Files:`, Object.keys(content));
+});
 
 /**
  * Helper function to parse YAML frontmatter from markdown
