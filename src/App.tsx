@@ -419,7 +419,11 @@ const App = () => {
                     <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
                     <Route path="leadership-public" element={<LeadershipPublicPage />} />
                     <Route path="leadership/templates" element={<TemplateManager />} />
-                    <Route path="sop" element={<SOPWrapper />} />
+                    <Route path="sop" element={
+                      <Suspense fallback={<SuspenseLoader message="Loading SOP Documents" />}>
+                        <SOPWrapper />
+                      </Suspense>
+                    } />
                   </Route>
                   {/* Intern program portals (HQ view) */}
                   <Route path="/intern/*" element={<InternPortalLayout />}>
