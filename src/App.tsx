@@ -409,61 +409,61 @@ const App = () => {
                       <CompanyPortalLayout />
                     </Suspense>
                   }>
-                    <Route index element={<CompanyDashboard />} />
-                    <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
-                    <Route path="governance-admin/appointments" element={<AppointmentList />} />
-                    <Route path="governance-admin/appointments/new" element={<NewAppointmentForm />} />
-                    <Route path="governance-admin/resolutions" element={<ResolutionList />} />
-                    <Route path="governance-admin/officers" element={<OfficerLedger />} />
-                    <Route path="governance-admin/logs" element={<GovernanceLogList />} />
-                    <Route path="board" element={<BoardDashboard />} />
-                    <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
-                    <Route path="executives" element={<ExecutiveDashboard />} />
-                    <Route path="executives/my-appointment" element={<MyAppointment />} />
-                    <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
-                    <Route path="leadership-public" element={<LeadershipPublicPage />} />
+                    <Route index element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><CompanyDashboard /></Suspense>} />
+                    <Route path="governance-admin" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><GovernanceAdminDashboard /></Suspense>} />
+                    <Route path="governance-admin/appointments" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><AppointmentList /></Suspense>} />
+                    <Route path="governance-admin/appointments/new" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><NewAppointmentForm /></Suspense>} />
+                    <Route path="governance-admin/resolutions" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ResolutionList /></Suspense>} />
+                    <Route path="governance-admin/officers" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><OfficerLedger /></Suspense>} />
+                    <Route path="governance-admin/logs" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><GovernanceLogList /></Suspense>} />
+                    <Route path="board" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><BoardDashboard /></Suspense>} />
+                    <Route path="board/resolution/:id" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><BoardResolutionDetail /></Suspense>} />
+                    <Route path="executives" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ExecutiveDashboard /></Suspense>} />
+                    <Route path="executives/my-appointment" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><MyAppointment /></Suspense>} />
+                    <Route path="executives/directory" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><OfficerDirectoryInternal /></Suspense>} />
+                    <Route path="leadership-public" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><LeadershipPublicPage /></Suspense>} />
                     <Route path="leadership/templates" element={<TemplateManager />} />
                     <Route path="sop" element={<SOPWrapper />} />
                   </Route>
                   {/* Intern program portals (HQ view) */}
                   <Route path="/intern/*" element={<Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense>}>
-                    <Route path="dashboard" element={<InternDashboard />} />
-                    <Route path="training" element={<InternTraining />} />
-                    <Route path="work" element={<InternWork />} />
-                    <Route path="performance" element={<InternPerformance />} />
-                    <Route path="academic" element={<InternAcademicCredit />} />
-                    <Route path="conversion" element={<InternConversion />} />
-                    <Route path="exit" element={<InternExit />} />
+                    <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternDashboard /></Suspense>} />
+                    <Route path="training" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternTraining /></Suspense>} />
+                    <Route path="work" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternWork /></Suspense>} />
+                    <Route path="performance" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternPerformance /></Suspense>} />
+                    <Route path="academic" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternAcademicCredit /></Suspense>} />
+                    <Route path="conversion" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternConversion /></Suspense>} />
+                    <Route path="exit" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternExit /></Suspense>} />
                   </Route>
                   <Route path="/manager/*" element={<Suspense fallback={<SuspenseLoader message="Loading Manager Portal" />}><ManagerPortalLayout /></Suspense>}>
-                    <Route path="dashboard" element={<ManagerDashboard />} />
-                    <Route path="interns/:internId" element={<ManagerInternDetail />} />
-                    <Route path="reviews" element={<ManagerReviews />} />
-                    <Route path="approvals" element={<ManagerApprovals />} />
+                    <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerDashboard /></Suspense>} />
+                    <Route path="interns/:internId" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerInternDetail /></Suspense>} />
+                    <Route path="reviews" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerReviews /></Suspense>} />
+                    <Route path="approvals" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerApprovals /></Suspense>} />
                   </Route>
                   <Route path="/executive-sponsor/*" element={<Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayout /></Suspense>}>
-                    <Route path="pipeline" element={<SponsorPipeline />} />
-                    <Route path="interns/:internId" element={<SponsorInternDetail />} />
-                    <Route path="approvals" element={<SponsorApprovals />} />
+                    <Route path="pipeline" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorPipeline /></Suspense>} />
+                    <Route path="interns/:internId" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorInternDetail /></Suspense>} />
+                    <Route path="approvals" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorApprovals /></Suspense>} />
                   </Route>
                   <Route path="/admin/intern-program/*" element={<Suspense fallback={<SuspenseLoader message="Loading Admin Portal" />}><AdminInternProgramLayout /></Suspense>}>
-                    <Route path="dashboard" element={<InternProgramDashboard />} />
-                    <Route path="interns" element={<InternsTable />} />
-                    <Route path="test-modules" element={<TestModuleLibrary />} />
-                    <Route path="role-tracks" element={<RoleTracksPlaylists />} />
-                    <Route path="promotion-rules" element={<PromotionRulesEngine />} />
-                    <Route path="reviews" element={<ReviewsEnforcement />} />
-                    <Route path="roles-permissions" element={<InternRolesPermissions />} />
-                    <Route path="templates" element={<InternProgramTemplates />} />
-                    <Route path="audit-log" element={<AuditLog />} />
+                    <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternProgramDashboard /></Suspense>} />
+                    <Route path="interns" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternsTable /></Suspense>} />
+                    <Route path="test-modules" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><TestModuleLibrary /></Suspense>} />
+                    <Route path="role-tracks" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><RoleTracksPlaylists /></Suspense>} />
+                    <Route path="promotion-rules" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><PromotionRulesEngine /></Suspense>} />
+                    <Route path="reviews" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ReviewsEnforcement /></Suspense>} />
+                    <Route path="roles-permissions" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternRolesPermissions /></Suspense>} />
+                    <Route path="templates" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternProgramTemplates /></Suspense>} />
+                    <Route path="audit-log" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><AuditLog /></Suspense>} />
                   </Route>
                   <Route path="/sponsor/*" element={<Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayoutV2 /></Suspense>}>
-                    <Route index element={<SponsorOverview />} />
-                    <Route path="overview" element={<SponsorOverview />} />
-                    <Route path="approval-queue" element={<ApprovalQueue />} />
-                    <Route path="interns" element={<SponsorInterns />} />
-                    <Route path="enforcement" element={<EnforcementApprovals />} />
-                    <Route path="audit-log" element={<SponsorAuditLog />} />
+                    <Route index element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorOverview /></Suspense>} />
+                    <Route path="overview" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorOverview /></Suspense>} />
+                    <Route path="approval-queue" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ApprovalQueue /></Suspense>} />
+                    <Route path="interns" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorInterns /></Suspense>} />
+                    <Route path="enforcement" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><EnforcementApprovals /></Suspense>} />
+                    <Route path="audit-log" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorAuditLog /></Suspense>} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
