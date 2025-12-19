@@ -2,14 +2,17 @@
  * Auto-Discovery SOP Content System
  * 
  * This file automatically discovers and imports all SOP markdown files.
- * New SOPs are automatically available when added to:
- * - /docs/*.md (any file with SOP in name or containing "Standard Operating Procedure")
- * - Root /*.md (any file with SOP in name)
+ * 
+ * DISCOVERY RULES:
+ * 1. Filename must match pattern: SOP-[CATEGORY]-[###]_[Title].md
+ *    Examples: SOP-CFO-001_Finance_Modules.md, SOP-INTERN-005_Academic_Credit.md
+ * 2. File must contain YAML frontmatter with document_id field
  * 
  * HOW TO ADD A NEW SOP:
- * 1. Create your SOP markdown file in /docs/ folder (e.g., docs/SOP-YOUR-TOPIC.md)
- * 2. The system will automatically detect and include it
- * 3. Run the database seeder migration to add metadata to the portal
+ * 1. Create your SOP markdown file following naming convention
+ * 2. Add YAML frontmatter with title, document_id, version, etc.
+ * 3. Place in /docs/sops/[category]/ folder
+ * 4. The system will automatically detect and include it
  */
 
 // Auto-import all markdown files from docs folder and subdirectories
@@ -19,38 +22,30 @@ const docsModules = import.meta.glob('/docs/**/*.md', {
   import: 'default' 
 }) as Record<string, string>;
 
-// Auto-import all SOP markdown files from root
-const rootModules = import.meta.glob('/*.md', { 
-  eager: true, 
-  query: '?raw',
-  import: 'default' 
-}) as Record<string, string>;
-
 // Build the SOP_CONTENT record dynamically
 function buildSopContent(): Record<string, string> {
   const content: Record<string, string> = {};
   
+  // Regex pattern for SOP files: SOP-[CATEGORY]-[NUMBER]_[Title].md
+  const sopPattern = /^SOP-[A-Z]+-\d+_/i;
+  
   // Process docs folder files
   for (const [path, markdown] of Object.entries(docsModules)) {
-    // Extract filename from path (e.g., "/docs/SOP-CTO-Advanced-Infrastructure.md" -> "SOP-CTO-Advanced-Infrastructure.md")
     const filename = path.split('/').pop() || '';
     
-    // Include if it has SOP in name or contains "Standard Operating Procedure"
-    if (filename.toLowerCase().includes('sop') || 
-        (typeof markdown === 'string' && markdown.includes('Standard Operating Procedure'))) {
-      content[filename] = markdown as string;
-      console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename}`);
+    // VALIDATION 1: Filename must match SOP naming convention
+    if (!sopPattern.test(filename)) {
+      continue;
     }
-  }
-  
-  // Process root folder files (only SOP files)
-  for (const [path, markdown] of Object.entries(rootModules)) {
-    const filename = path.split('/').pop() || '';
     
-    // Only include files with SOP in the name from root
-    if (filename.toLowerCase().includes('sop')) {
+    // VALIDATION 2: File must have YAML frontmatter with document_id
+    if (typeof markdown === 'string' && 
+        markdown.startsWith('---') && 
+        markdown.includes('document_id:')) {
       content[filename] = markdown as string;
-      console.log(`📄 [SOP Auto-Discovery] Loaded from root: ${filename}`);
+      console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
+    } else {
+      console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
     }
   }
   
@@ -68,6 +63,28 @@ console.log(`📚 [SOP Auto-Discovery] Total SOPs discovered: ${DISCOVERED_SOPS.
 console.log(`📚 [SOP Auto-Discovery] Files:`, DISCOVERED_SOPS);
 
 /**
+ * Helper function to parse YAML frontmatter from markdown
+ */
+function parseYamlFrontmatter(content: string): Record<string, any> {
+  const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return {};
+  
+  const yaml = frontmatterMatch[1];
+  const metadata: Record<string, any> = {};
+  
+  // Simple YAML parser for our frontmatter
+  yaml.split('\n').forEach(line => {
+    const match = line.match(/^(\w+):\s*"?([^"]+)"?$/);
+    if (match) {
+      const [, key, value] = match;
+      metadata[key] = value.replace(/^["']|["']$/g, '').trim();
+    }
+  });
+  
+  return metadata;
+}
+
+/**
  * Helper function to extract metadata from SOP markdown content
  */
 export function extractSopMetadata(filename: string, content: string): {
@@ -78,43 +95,51 @@ export function extractSopMetadata(filename: string, content: string): {
   department: string;
   tags: string[];
 } {
-  // Extract title from first H1 or H2
-  const titleMatch = content.match(/^#\s+(.+)$/m) || content.match(/^##\s+(.+)$/m);
-  const title = titleMatch ? titleMatch[1].replace(/[*_]/g, '').trim() : filename.replace('.md', '').replace(/-/g, ' ');
+  // First, try to parse YAML frontmatter
+  const frontmatter = parseYamlFrontmatter(content);
   
-  // Extract version
-  const versionMatch = content.match(/\*\*Version[:\s]*\*\*\s*(\d+\.\d+)/i) || 
-                       content.match(/Version[:\s]*(\d+\.\d+)/i);
-  const version = versionMatch ? versionMatch[1] : '1.0';
-  
-  // Extract department/owner
-  const deptMatch = content.match(/\*\*(?:Department|Owner|Document Owner)[:\s]*\*\*\s*(.+)/i) ||
-                    content.match(/(?:Department|Owner)[:\s]*(.+)/i);
-  const department = deptMatch ? deptMatch[1].trim() : 'Operations';
-  
-  // Try to determine category from content
-  let category = 'General';
-  const lowerContent = content.toLowerCase();
-  if (lowerContent.includes('investor') || lowerContent.includes('compliance')) {
-    category = 'Investor Relations';
-  } else if (lowerContent.includes('infrastructure') || lowerContent.includes('cto')) {
-    category = 'Technology';
-  } else if (lowerContent.includes('intern') || lowerContent.includes('hr') || lowerContent.includes('onboarding')) {
-    category = 'Human Resources';
-  } else if (lowerContent.includes('finance') || lowerContent.includes('cfo')) {
-    category = 'Finance';
-  } else if (lowerContent.includes('portal') || lowerContent.includes('setup')) {
-    category = 'IT Operations';
+  // Extract title from YAML frontmatter or fallback to H1
+  let title = frontmatter.title || '';
+  if (!title) {
+    const titleMatch = content.match(/^#\s+(.+)$/m) || content.match(/^##\s+(.+)$/m);
+    title = titleMatch ? titleMatch[1].replace(/[*_]/g, '').trim() : filename.replace('.md', '').replace(/_/g, ' ');
   }
   
-  // Extract description from first paragraph after title
-  const descMatch = content.match(/^(?:#[^#].*\n)+\n+(.+?)(?:\n\n|---)/s);
+  // Extract version from YAML or content
+  const version = frontmatter.version || '1.0';
+  
+  // Extract department from YAML or content
+  let department = frontmatter.department || frontmatter.process_owner || 'Operations';
+  
+  // Extract category from YAML or infer from content
+  let category = frontmatter.category || 'General';
+  
+  // If category is still generic, try to infer from content
+  if (category === 'General') {
+    const lowerContent = content.toLowerCase();
+    if (lowerContent.includes('investor') || lowerContent.includes('compliance')) {
+      category = 'Investor Relations';
+    } else if (lowerContent.includes('infrastructure') || lowerContent.includes('cto')) {
+      category = 'Technology';
+    } else if (lowerContent.includes('intern') || lowerContent.includes('hr') || lowerContent.includes('onboarding')) {
+      category = 'Human Resources';
+    } else if (lowerContent.includes('finance') || lowerContent.includes('cfo')) {
+      category = 'Finance';
+    } else if (lowerContent.includes('portal') || lowerContent.includes('setup')) {
+      category = 'IT Operations';
+    }
+  }
+  
+  // Extract description from first paragraph after frontmatter and title
+  const contentWithoutFrontmatter = content.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '');
+  const descMatch = contentWithoutFrontmatter.match(/^(?:#[^#].*\n)+\n+(.+?)(?:\n\n|---)/s);
   const description = descMatch 
     ? descMatch[1].replace(/[*_#]/g, '').trim().substring(0, 200) 
     : `Standard Operating Procedure: ${title}`;
   
   // Generate tags from keywords found in content
   const tags: string[] = [];
+  const lowerContent = content.toLowerCase();
   const tagKeywords = [
     'compliance', 'investor', 'infrastructure', 'incident', 'sla', 
     'capacity', 'cost', 'intern', 'onboarding', 'portal', 'admin',
