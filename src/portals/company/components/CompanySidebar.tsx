@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import React, { startTransition } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { NavLink as MantineNavLink, Stack, Group, Text, Divider, Badge } from '@mantine/core';
 import {
   IconDashboard,
@@ -19,6 +19,7 @@ import { usePermission } from '@/hooks/usePermission';
 
 const CompanySidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [userRoles, setUserRoles] = useState<string[]>([]);
   
   // Permission checks for specific tabs
@@ -170,16 +171,21 @@ const CompanySidebar: React.FC = () => {
         return (
           <div key={item.path}>
             <MantineNavLink
-              component={NavLink}
-              to={item.path}
               label={item.label}
               leftSection={<Icon size={20} />}
               active={isActive(item.path)}
+              onClick={(e) => {
+                e.preventDefault();
+                startTransition(() => {
+                  navigate(item.path);
+                });
+              }}
               style={{
                 borderRadius: '8px',
                 color: isActive(item.path) ? '#ff6a00' : '#374151',
                 backgroundColor: isActive(item.path) ? 'rgba(255, 106, 0, 0.1)' : 'transparent',
                 fontWeight: isActive(item.path) ? 600 : 400,
+                cursor: 'pointer',
               }}
             />
             {item.children && isActive(item.path) && (
@@ -187,16 +193,21 @@ const CompanySidebar: React.FC = () => {
                 {item.children.map((child) => (
                   <MantineNavLink
                     key={child.path}
-                    component={NavLink}
-                    to={child.path}
                     label={child.label}
                     active={location.pathname === child.path}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      startTransition(() => {
+                        navigate(child.path);
+                      });
+                    }}
                     style={{
                       borderRadius: '6px',
                       fontSize: '14px',
                       color: location.pathname === child.path ? '#ff6a00' : '#6b7280',
                       backgroundColor: location.pathname === child.path ? 'rgba(255, 106, 0, 0.1)' : 'transparent',
                       fontWeight: location.pathname === child.path ? 600 : 400,
+                      cursor: 'pointer',
                     }}
                   />
                 ))}
