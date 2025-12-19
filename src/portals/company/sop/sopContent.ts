@@ -16,43 +16,58 @@
  */
 
 // Auto-import all markdown files from docs folder and subdirectories
+// Using eager: true to avoid async issues, but wrapped properly to prevent suspension
 const docsModules = import.meta.glob('/docs/**/*.md', { 
   eager: true, 
   query: '?raw',
   import: 'default' 
 }) as Record<string, string>;
 
+// Cache the built content to prevent re-computation
+let cachedSopContent: Record<string, string> | null = null;
+
 // Build the SOP_CONTENT record dynamically
 function buildSopContent(): Record<string, string> {
+  // Return cached content if available
+  if (cachedSopContent) {
+    return cachedSopContent;
+  }
+  
   const content: Record<string, string> = {};
   
   // Regex pattern for SOP files: SOP-[CATEGORY]-[NUMBER]_[Title].md
   const sopPattern = /^SOP-[A-Z]+-\d+_/i;
   
   // Process docs folder files
-  for (const [path, markdown] of Object.entries(docsModules)) {
-    const filename = path.split('/').pop() || '';
-    
-    // VALIDATION 1: Filename must match SOP naming convention
-    if (!sopPattern.test(filename)) {
-      continue;
+  try {
+    for (const [path, markdown] of Object.entries(docsModules)) {
+      const filename = path.split('/').pop() || '';
+      
+      // VALIDATION 1: Filename must match SOP naming convention
+      if (!sopPattern.test(filename)) {
+        continue;
+      }
+      
+      // VALIDATION 2: File must have YAML frontmatter with document_id
+      if (typeof markdown === 'string' && 
+          markdown.startsWith('---') && 
+          markdown.includes('document_id:')) {
+        content[filename] = markdown as string;
+        console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
+      } else {
+        console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
+      }
     }
-    
-    // VALIDATION 2: File must have YAML frontmatter with document_id
-    if (typeof markdown === 'string' && 
-        markdown.startsWith('---') && 
-        markdown.includes('document_id:')) {
-      content[filename] = markdown as string;
-      console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
-    } else {
-      console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
-    }
+  } catch (error) {
+    console.error('❌ [SOP Auto-Discovery] Error building SOP content:', error);
   }
   
+  // Cache the result
+  cachedSopContent = content;
   return content;
 }
 
-// Export the dynamically built SOP content
+// Export the dynamically built SOP content (computed once at module load)
 export const SOP_CONTENT: Record<string, string> = buildSopContent();
 
 // Export list of discovered SOPs for debugging/admin purposes
