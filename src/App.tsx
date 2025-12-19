@@ -404,7 +404,11 @@ const App = () => {
                   <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
                   <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><DriverCompensationPortal /></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
-                  <Route path="/company/*" element={<CompanyPortalLayout />}>
+                  <Route path="/company/*" element={
+                    <Suspense fallback={<SuspenseLoader message="Loading Company Portal" />}>
+                      <CompanyPortalLayout />
+                    </Suspense>
+                  }>
                     <Route index element={<CompanyDashboard />} />
                     <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
                     <Route path="governance-admin/appointments" element={<AppointmentList />} />
