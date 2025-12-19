@@ -1,5 +1,15 @@
-# Standard Operating Procedure (SOP)
-## Admin Portal - Delivery Zone Management
+---
+title: "SOP-ADMIN-002: Delivery Zone Configuration & Management"
+document_id: "SOP-ADMIN-ZONES-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Operations"
+category: "ADMIN"
+process_owner: "COO"
+review_frequency: "Quarterly"
+---
+
+# SOP-ADMIN-002: Delivery Zone Configuration & Management
 
 **Document ID:** SOP-ADMIN-ZONES-001  
 **Version:** 1.0  

@@ -1,5 +1,15 @@
-# Standard Operating Procedure (SOP)
-## CTO Portal - Advanced Infrastructure Management
+---
+title: "SOP-CTO-001: Infrastructure & DevOps Management"
+document_id: "SOP-CTO-INFRA-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Technology"
+category: "TECHNOLOGY"
+process_owner: "CTO"
+review_frequency: "Quarterly"
+---
+
+# SOP-CTO-001: Infrastructure & DevOps Management
 
 **Document ID:** SOP-CTO-INFRA-001  
 **Version:** 1.0  

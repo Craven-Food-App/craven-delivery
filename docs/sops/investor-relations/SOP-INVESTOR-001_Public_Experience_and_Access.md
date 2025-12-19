@@ -1,4 +1,15 @@
-# Investor Experience Layer - Standard Operating Procedure (SOP)
+---
+title: "SOP-INVESTOR-001: Public Investor Experience & Access Management"
+document_id: "SOP-INVESTOR-EXP-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Finance"
+category: "INVESTOR RELATIONS"
+process_owner: "CFO"
+review_frequency: "Quarterly"
+---
+
+# SOP-INVESTOR-001: Public Investor Experience & Access Management
 
 ## Overview
 

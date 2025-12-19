@@ -1,5 +1,15 @@
-# Standard Operating Procedure (SOP)
-## CFO Portal - Finance Modules Operations Guide
+---
+title: "SOP-CFO-001: Finance Modules & Accounting Operations"
+document_id: "SOP-CFO-FIN-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Finance"
+category: "FINANCE"
+process_owner: "CFO"
+review_frequency: "Quarterly"
+---
+
+# SOP-CFO-001: Finance Modules & Accounting Operations
 
 **Document ID:** SOP-CFO-FIN-001  
 **Version:** 1.0  

@@ -1,5 +1,15 @@
-# Standard Operating Procedure (SOP)
-## Admin Portal - Investor Intake Management
+---
+title: "SOP-ADMIN-001: Investor Intake & Onboarding"
+document_id: "SOP-ADMIN-INTAKE-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Finance"
+category: "ADMIN"
+process_owner: "CFO"
+review_frequency: "Quarterly"
+---
+
+# SOP-ADMIN-001: Investor Intake & Onboarding
 
 **Document ID:** SOP-ADMIN-INTAKE-001  
 **Version:** 1.0  

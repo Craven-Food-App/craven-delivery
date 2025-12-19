@@ -2,17 +2,19 @@
 ## Crave'n Inc. - Complete SOP Library
 
 **Last Updated:** December 18, 2025  
-**Total SOPs:** 9  
+**Total SOPs:** 16  
 **Status:** Production Ready  
 
 ---
 
 ## 📋 SOP Categories
 
-### 1. Intern Program (7 SOPs)
+### 1. Intern Program (8 SOPs)
 ### 2. Management & Leadership (2 SOPs)
-### 3. HR & People Operations (Integrated)
-### 4. Technology & Infrastructure (Planned)
+### 3. Finance & Accounting (1 SOP)
+### 4. Technology & Infrastructure (1 SOP)
+### 5. Admin & Operations (2 SOPs)
+### 6. Investor Relations (2 SOPs)
 
 ---
 
@@ -182,6 +184,31 @@
 
 ---
 
+### SOP-INTERN-010: Admin Portal for Intern Program Management
+**Category:** Intern Program  
+**Version:** 1.0  
+**Effective Date:** February 18, 2025  
+**Department:** Human Resources  
+**Process Owner:** HR Director  
+**Location:** `docs/sops/intern-program/SOP-INTERN-010_Admin_Portal_Management.md`
+
+**Purpose:** Comprehensive guide for HR administrators on using the Intern Program Admin Portal to manage the entire intern lifecycle, test modules, role tracks, and promotion rules.
+
+**Key Topics:**
+- Portal navigation and dashboard
+- Interns management interface
+- Test module library creation
+- Role tracks and playlists
+- Promotion rules engine
+- Reviews and enforcement
+- Roles and permissions
+- Reports and analytics
+
+**Target Users:** HR Administrators, Program Coordinators  
+**Review Frequency:** Quarterly
+
+---
+
 ## 👔 MANAGEMENT & LEADERSHIP SOPs
 
 ### SOP-INTERN-008: Manager Portal Usage Guide
@@ -234,6 +261,159 @@
 
 ---
 
+## 💰 FINANCE & ACCOUNTING SOPs
+
+### SOP-CFO-001: Finance Modules & Accounting Operations
+**Category:** Finance  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Finance  
+**Process Owner:** CFO  
+**Location:** `docs/sops/finance/SOP-CFO-001_Finance_Modules_and_Accounting_Operations.md`
+
+**Purpose:** Comprehensive guide for CFO and finance team on using the CFO Portal's finance modules for general ledger, accounts payable/receivable, treasury, and financial reporting.
+
+**Key Topics:**
+- General ledger management
+- Accounts payable processing
+- Accounts receivable tracking
+- Treasury and banking operations
+- Financial reporting and analytics
+- Month-end close procedures
+- Audit trail and compliance
+
+**Target Users:** CFO, Finance Team, Accounting Staff  
+**Review Frequency:** Quarterly
+
+---
+
+## 🖥️ TECHNOLOGY & INFRASTRUCTURE SOPs
+
+### SOP-CTO-001: Infrastructure & DevOps Management
+**Category:** Technology  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Technology  
+**Process Owner:** CTO  
+**Location:** `docs/sops/technology/SOP-CTO-001_Infrastructure_and_DevOps_Management.md`
+
+**Purpose:** Guide for CTO and technical team on managing advanced infrastructure, incident response, capacity planning, and DevOps operations.
+
+**Key Topics:**
+- Operations dashboard monitoring
+- Incident management and response
+- Capacity planning and scaling
+- Deployment management
+- Performance optimization
+- Security operations
+- Disaster recovery
+
+**Target Users:** CTO, DevOps Team, Infrastructure Engineers  
+**Review Frequency:** Quarterly
+
+---
+
+## 🏢 ADMIN & OPERATIONS SOPs
+
+### SOP-ADMIN-001: Investor Intake & Onboarding
+**Category:** Admin  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Finance  
+**Process Owner:** CFO  
+**Location:** `docs/sops/admin/SOP-ADMIN-001_Investor_Intake_and_Onboarding.md`
+
+**Purpose:** Define the process for managing investor interest intake, compliance review, and access approval through the Admin Portal.
+
+**Key Topics:**
+- Public intake form management
+- Admin review interface
+- Compliance verification
+- Accreditation checks
+- Access approval workflow
+- Investor portal provisioning
+- Regulatory compliance
+
+**Target Users:** CFO, Finance Team, Investor Relations  
+**Review Frequency:** Quarterly
+
+---
+
+### SOP-ADMIN-002: Delivery Zone Configuration & Management
+**Category:** Admin  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Operations  
+**Process Owner:** COO  
+**Location:** `docs/sops/admin/SOP-ADMIN-002_Delivery_Zone_Configuration.md`
+
+**Purpose:** Guide for operations team on creating, managing, and optimizing delivery zones for efficient service coverage.
+
+**Key Topics:**
+- Zone creation and boundaries
+- Polygon drawing on maps
+- Delivery fee configuration
+- Zone activation and testing
+- Zone optimization
+- Restaurant assignment
+- Performance monitoring
+
+**Target Users:** COO, Operations Team, Logistics Coordinators  
+**Review Frequency:** Quarterly
+
+---
+
+## 📈 INVESTOR RELATIONS SOPs
+
+### SOP-INVESTOR-001: Public Investor Experience & Access Management
+**Category:** Investor Relations  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Finance  
+**Process Owner:** CFO  
+**Location:** `docs/sops/investor-relations/SOP-INVESTOR-001_Public_Experience_and_Access.md`
+
+**Purpose:** Define compliance-safe management of investor interest and access to investment materials through public and private investor pages.
+
+**Key Topics:**
+- Public investor landing page
+- Access request process
+- Private investor overview (gated)
+- Compliance requirements
+- Content restrictions
+- Legal safeguards
+- Access control
+
+**Target Users:** CFO, Investor Relations, Legal Team  
+**Review Frequency:** Quarterly
+
+---
+
+### SOP-INVESTOR-002: Compliance & Intake Process
+**Category:** Investor Relations  
+**Version:** 1.0  
+**Effective Date:** December 18, 2025  
+**Department:** Finance  
+**Process Owner:** CFO  
+**Location:** `docs/sops/investor-relations/SOP-INVESTOR-002_Compliance_and_Intake_Process.md`
+
+**Purpose:** End-to-end process for investor intake, compliance verification, approval workflow, and portal access management.
+
+**Key Topics:**
+- Public interest form submission
+- Backend data storage
+- Admin review process
+- Approval and access management
+- Investor portal access
+- CFO portal management
+- Compliance requirements
+- Troubleshooting
+
+**Target Users:** CFO, Finance Team, Investor Relations, Legal Team  
+**Review Frequency:** Quarterly
+
+---
+
 ## 📊 SOP USAGE GUIDELINES
 
 ### Who Should Use These SOPs:
@@ -245,6 +425,7 @@
 - SOP-INTERN-005 (Academic Credit)
 - SOP-INTERN-006 (Conversion)
 - SOP-INTERN-007 (Exit)
+- SOP-INTERN-010 (Admin Portal)
 
 **Managers:**
 - SOP-INTERN-002 (Onboarding)
@@ -261,6 +442,18 @@
 - SOP-INTERN-002 (Onboarding - reference)
 - SOP-INTERN-003 (Task Management - reference)
 - SOP-INTERN-005 (Academic Credit - if applicable)
+
+**Finance Team:**
+- SOP-CFO-001 (Finance Modules)
+- SOP-ADMIN-001 (Investor Intake)
+- SOP-INVESTOR-001 (Public Experience)
+- SOP-INVESTOR-002 (Compliance & Intake)
+
+**Technology Team:**
+- SOP-CTO-001 (Infrastructure & DevOps)
+
+**Operations Team:**
+- SOP-ADMIN-002 (Delivery Zones)
 
 ---
 

@@ -1,4 +1,15 @@
-# Investor Compliance & Intake Process — Standard Operating Procedure
+---
+title: "SOP-INVESTOR-002: Compliance & Intake Process"
+document_id: "SOP-INVESTOR-COMP-001"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Finance"
+category: "INVESTOR RELATIONS"
+process_owner: "CFO"
+review_frequency: "Quarterly"
+---
+
+# SOP-INVESTOR-002: Compliance & Intake Process
 
 **Version:** 1.0  
 **Last Updated:** December 18, 2025  
