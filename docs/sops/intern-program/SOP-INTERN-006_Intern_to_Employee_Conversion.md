@@ -1,3 +1,14 @@
+---
+title: "Intern-to-Employee Conversion Process"
+document_id: "SOP-INTERN-006"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Human Resources"
+category: "INTERN PROGRAM"
+process_owner: "HR Director"
+review_frequency: "Quarterly"
+---
+
 # Intern-to-Employee Conversion Process
 
 **Document ID:** SOP-INTERN-006  

@@ -1,3 +1,14 @@
+---
+title: "Intern Exit & Offboarding Process"
+document_id: "SOP-INTERN-007"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Human Resources"
+category: "INTERN PROGRAM"
+process_owner: "HR Coordinator"
+review_frequency: "Quarterly"
+---
+
 # Intern Exit & Offboarding Process
 
 **Document ID:** SOP-INTERN-007  

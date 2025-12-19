@@ -1,3 +1,14 @@
+---
+title: "Academic Credit Management for Interns"
+document_id: "SOP-INTERN-005"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Human Resources"
+category: "INTERN PROGRAM"
+process_owner: "Academic Coordinator"
+review_frequency: "Quarterly"
+---
+
 # Academic Credit Management for Interns
 
 **Document ID:** SOP-INTERN-005  

@@ -1,3 +1,14 @@
+---
+title: "Intern Onboarding Process"
+document_id: "SOP-INTERN-002"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Human Resources"
+category: "INTERN PROGRAM"
+process_owner: "HR Coordinator"
+review_frequency: "Quarterly"
+---
+
 # Intern Onboarding Process
 
 **Document ID:** SOP-INTERN-002  

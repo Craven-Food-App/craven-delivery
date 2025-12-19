@@ -1,3 +1,14 @@
+---
+title: "Executive Sponsor Workflow for Intern Program"
+document_id: "SOP-INTERN-009"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Executive Leadership"
+category: "MANAGEMENT"
+process_owner: "Executive Sponsor"
+review_frequency: "Quarterly"
+---
+
 # Executive Sponsor Workflow for Intern Program
 
 **Document ID:** SOP-INTERN-009  

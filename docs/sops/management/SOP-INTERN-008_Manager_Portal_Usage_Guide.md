@@ -1,3 +1,14 @@
+---
+title: "Manager Portal Usage for Intern Supervision"
+document_id: "SOP-INTERN-008"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Management"
+category: "MANAGEMENT"
+process_owner: "Hiring Manager"
+review_frequency: "Quarterly"
+---
+
 # Manager Portal Usage for Intern Supervision
 
 **Document ID:** SOP-INTERN-008  

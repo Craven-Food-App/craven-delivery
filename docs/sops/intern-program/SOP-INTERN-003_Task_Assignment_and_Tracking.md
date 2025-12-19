@@ -1,3 +1,14 @@
+---
+title: "Task Assignment & Tracking for Interns"
+document_id: "SOP-INTERN-003"
+version: "1.0"
+effective_date: "2025-12-18"
+department: "Human Resources"
+category: "INTERN PROGRAM"
+process_owner: "Hiring Manager"
+review_frequency: "Quarterly"
+---
+
 # Task Assignment & Tracking for Interns
 
 **Document ID:** SOP-INTERN-003  
