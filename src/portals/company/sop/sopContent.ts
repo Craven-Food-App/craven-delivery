@@ -12,8 +12,8 @@
  * 3. Run the database seeder migration to add metadata to the portal
  */
 
-// Auto-import all markdown files from docs folder
-const docsModules = import.meta.glob('/docs/*.md', { 
+// Auto-import all markdown files from docs folder and subdirectories
+const docsModules = import.meta.glob('/docs/**/*.md', { 
   eager: true, 
   query: '?raw',
   import: 'default' 

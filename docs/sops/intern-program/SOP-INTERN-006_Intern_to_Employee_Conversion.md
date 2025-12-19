@@ -1,5 +1,5 @@
 ---
-title: "Intern-to-Employee Conversion Process"
+title: "SOP-006: Converting Interns to Full-Time Employees"
 document_id: "SOP-INTERN-006"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "HR Director"
 review_frequency: "Quarterly"
 ---
 
-# Intern-to-Employee Conversion Process
+# SOP-006: Converting Interns to Full-Time Employees
 
 **Document ID:** SOP-INTERN-006  
 **Version:** 1.0  

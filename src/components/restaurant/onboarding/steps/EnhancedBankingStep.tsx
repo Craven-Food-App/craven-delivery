@@ -44,7 +44,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
       if (error) throw error;
 
       // Load Stripe.js
-      const stripePublishableKey = 'pk_test_51QWlM4RsKJ4xfVZhfqCEBdDhEI7mYYAcvZ5p4mU3xHuLvUIJC0zP8F5RLcEzFRQdG6zP8F5RLcEzFRQdG6';
+      const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_live_51SKpbkLTHUzAWwQrpeD8B1TXtBgH1aN2q0tM8CuobPHtAMeBZI6lqem4Kb7zcKI7RaAG9QT9806lxchjZMHrSbx100WC0Vq7Oe';
       const stripe = await (window as any).Stripe(stripePublishableKey);
       
       // Launch the Financial Connections flow

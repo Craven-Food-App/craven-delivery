@@ -1,5 +1,5 @@
 ---
-title: "Executive Sponsor Workflow for Intern Program"
+title: "SOP-009: Executive Mentorship & Sponsorship"
 document_id: "SOP-INTERN-009"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "Executive Sponsor"
 review_frequency: "Quarterly"
 ---
 
-# Executive Sponsor Workflow for Intern Program
+# SOP-009: Executive Mentorship & Sponsorship
 
 **Document ID:** SOP-INTERN-009  
 **Version:** 1.0  

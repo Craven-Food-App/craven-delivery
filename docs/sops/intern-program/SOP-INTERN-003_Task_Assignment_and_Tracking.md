@@ -1,5 +1,5 @@
 ---
-title: "Task Assignment & Tracking for Interns"
+title: "SOP-003: Daily Task Management & Time Tracking"
 document_id: "SOP-INTERN-003"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "Hiring Manager"
 review_frequency: "Quarterly"
 ---
 
-# Task Assignment & Tracking for Interns
+# SOP-003: Daily Task Management & Time Tracking
 
 **Document ID:** SOP-INTERN-003  
 **Version:** 1.0  

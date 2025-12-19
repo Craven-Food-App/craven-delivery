@@ -1,5 +1,5 @@
 ---
-title: "Intern Program Setup & Configuration"
+title: "SOP-001: Initial Intern Program Setup & System Configuration"
 document_id: "SOP-INTERN-001"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "HR Director"
 review_frequency: "Quarterly"
 ---
 
-# Intern Program Setup & Configuration
+# SOP-001: Initial Intern Program Setup & System Configuration
 
 **Document ID:** SOP-INTERN-001  
 **Version:** 1.0  

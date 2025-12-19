@@ -537,7 +537,7 @@ const App = () => {
     );
   }
 
-  // If on board subdomain, show only executive board portal
+  // If on board subdomain, redirect to company portal board section
   if (isBoardSubdomain) {
     return (
       <ErrorBoundary>
@@ -548,13 +548,13 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<BoardPortal />} />
+                  <Route path="/" element={<Navigate to="/company/board" replace />} />
                   <Route path="/auth" element={<BusinessAuth />} />
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/company/board" replace />} />
                 </Routes>
               </BrowserRouter>
             </TooltipProvider>

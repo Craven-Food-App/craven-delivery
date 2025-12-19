@@ -112,7 +112,6 @@ const EnhancedTaxPlanning = React.lazy(() => import('@/components/cfo/EnhancedTa
 const EnhancedFinancialControls = React.lazy(() => import('@/components/cfo/EnhancedFinancialControls').then(m => ({ default: m.EnhancedFinancialControls })));
 const EnhancedBoardReporting = React.lazy(() => import('@/components/cfo/EnhancedBoardReporting').then(m => ({ default: m.EnhancedBoardReporting })));
 const EnhancedInvestorRelations = React.lazy(() => import('@/components/cfo/EnhancedInvestorRelations').then(m => ({ default: m.EnhancedInvestorRelations })));
-const EnhancedAuditManagement = React.lazy(() => import('@/components/cfo/EnhancedAuditManagement').then(m => ({ default: m.EnhancedAuditManagement })));
 const EnhancedRiskManagement = React.lazy(() => import('@/components/cfo/EnhancedRiskManagement').then(m => ({ default: m.EnhancedRiskManagement })));
 const EnhancedCapitalStructure = React.lazy(() => import('@/components/cfo/EnhancedCapitalStructure').then(m => ({ default: m.EnhancedCapitalStructure })));
 const EnhancedScenarioPlanning = React.lazy(() => import('@/components/cfo/EnhancedScenarioPlanning').then(m => ({ default: m.EnhancedScenarioPlanning })));
@@ -122,8 +121,6 @@ const CfoEvaluationGatePanel = React.lazy(() => import('@/components/cfo/CfoEval
 const CorporateGeneralLedger = React.lazy(() => import('@/components/finance/CorporateGeneralLedger').then(m => ({ default: m.CorporateGeneralLedger })));
 const CorporateAccountsPayable = React.lazy(() => import('@/components/finance/CorporateAccountsPayable').then(m => ({ default: m.CorporateAccountsPayable })));
 const CorporateAccountsReceivable = React.lazy(() => import('@/components/finance/CorporateAccountsReceivable').then(m => ({ default: m.CorporateAccountsReceivable })));
-const BankingTreasuryView = React.lazy(() => import('@/components/finance/BankingTreasuryView').then(m => ({ default: m.BankingTreasuryView })));
-const FinanceDashboard = React.lazy(() => import('@/components/finance/FinanceDashboard').then(m => ({ default: m.FinanceDashboard })));
 const FinancialReportsDashboard = React.lazy(() => import('@/components/finance/FinancialReportsDashboard').then(m => ({ default: m.FinancialReportsDashboard })));
 const BudgetManagement = React.lazy(() => import('@/components/finance/BudgetManagement').then(m => ({ default: m.BudgetManagement })));
 const FinanceAuditComponent = React.lazy(() => import('@/components/finance/audit/FinanceAuditComponent').then(m => ({ default: m.FinanceAuditComponent })));
@@ -783,14 +780,12 @@ function CFOPortalContent() {
     { id: 'evaluation', label: 'CFO Evaluation Gate' },
     { id: 'onboarding', label: 'CFO Onboarding & Governance' },
     { id: 'overview', label: 'CFO Command Center' },
-    { id: 'finance-dashboard', label: 'Finance Dashboard' },
     // Core Accounting
     { id: 'general-ledger', label: 'General Ledger' },
     { id: 'ap', label: 'Accounts Payable' },
     { id: 'ar', label: 'Accounts Receivable' },
     // Banking & Treasury
-    { id: 'banking', label: 'Bank Accounts & Treasury' },
-    { id: 'treasury', label: 'Advanced Treasury Ops' },
+    { id: 'treasury', label: 'Treasury & Banking' },
     { id: 'transactions', label: 'Review Transactions', badge: transactions.length > 0 ? transactions.length : undefined },
     { id: 'payouts', label: 'Process Payouts', badge: payouts.length > 0 ? payouts.length : undefined },
     // Team & Operations
@@ -801,7 +796,6 @@ function CFOPortalContent() {
     { id: 'fpa', label: 'FP&A & Forecasting' },
     { id: 'budget', label: 'Budget Management' },
     { id: 'forecast', label: 'Cash Flow Forecast' },
-    { id: 'bva', label: 'Budget vs Actuals' },
     { id: 'scenario', label: 'Scenario Planning' },
     // Compliance & Controls
     { id: 'tax', label: 'Tax Planning' },
@@ -817,8 +811,7 @@ function CFOPortalContent() {
     // Period Close
     { id: 'close', label: 'Close Checklist' },
     // Communications
-    { id: 'communications', label: 'Executive Communications' },
-    { id: 'messages', label: 'Message Center' },
+    { id: 'communications', label: 'Communications' },
     { id: 'wordprocessor', label: 'Draft Documents' },
     { id: 'manual', label: 'CFO Knowledge' },
   ], [transactions.length, payouts.length]);
@@ -857,8 +850,6 @@ function CFOPortalContent() {
         return <CFOOnboardingGovernance />;
       case 'overview':
         return <EnhancedCFODashboard />;
-      case 'finance-dashboard':
-        return <FinanceDashboard />;
       
       // Core Accounting - Enterprise Grade
       case 'general-ledger':
@@ -868,9 +859,7 @@ function CFOPortalContent() {
       case 'ar':
         return <CorporateAccountsReceivable />;
       
-      // Banking & Treasury
-      case 'banking':
-        return <BankingTreasuryView />;
+      // Banking & Treasury (consolidated)
       case 'treasury':
         return <AdvancedTreasuryManagement />;
       case 'transactions':
@@ -925,8 +914,6 @@ function CFOPortalContent() {
         return <BudgetManagement />;
       case 'forecast':
         return <CashFlowForecast />;
-      case 'bva':
-        return <BudgetVsActuals />;
       case 'scenario':
         return <EnhancedScenarioPlanning />;
       
@@ -956,11 +943,9 @@ function CFOPortalContent() {
       case 'close':
         return <CloseManagement />;
       
-      // Communications
+      // Communications (consolidated - includes email and messaging)
       case 'communications':
         return <BusinessEmailSystem />;
-      case 'messages':
-        return <ExecutiveInboxIMessage role="cfo" deviceId={`cfo-portal-${window.location.hostname}`} />;
       case 'wordprocessor':
         return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
       case 'manual':
@@ -1318,93 +1303,6 @@ function RoleManagement() {
     </div>
   );
 }
-function BudgetVsActuals() {
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const [{ data: budgets, error: bErr }, { data: orders, error: oErr }] = await Promise.all([
-          supabase.from('budgets').select('id, period, dept, amount').order('period', { ascending: true }),
-          supabase.from('orders').select('total_amount, created_at').gte('created_at', new Date(Date.now() - 365*24*60*60*1000).toISOString())
-        ]);
-        if (bErr) {
-          setRows([]);
-          return;
-        }
-        const actualsByPeriod: Record<string, number> = (orders || []).reduce((m: Record<string, number>, o: any) => {
-          const period = new Date(o.created_at).toISOString().slice(0,7); // YYYY-MM
-          m[period] = (m[period] || 0) + (o.total_amount || 0);
-          return m;
-        }, {});
-        const grouped = (budgets || []).map((b: any) => {
-          const actual = actualsByPeriod[b.period] || 0;
-          const variance = actual - (b.amount || 0);
-          const variancePct = b.amount ? (variance / b.amount) * 100 : 0;
-          return { key: b.id, ...b, actual, variance, variancePct };
-        });
-        setRows(grouped);
-        // Aggregate by period for chart
-        const byPeriod: Record<string, { budget: number; actual: number }> = {};
-        for (const r of grouped) {
-          byPeriod[r.period] = byPeriod[r.period] || { budget: 0, actual: 0 };
-          byPeriod[r.period].budget += r.amount || 0;
-          byPeriod[r.period].actual += r.actual || 0;
-        }
-        const chart = Object.keys(byPeriod).sort().map((p) => ({ period: p, ...byPeriod[p] }));
-        setChartData(chart);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <ChartContainer config={{ budget: { label: 'Budget', color: '#94a3b8' }, actual: { label: 'Actual', color: '#2563eb' } }}>
-          <BarChart data={chartData} margin={{ left: 12, right: 12, top: 8, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={(v)=>`$${v.toLocaleString()}`} width={72} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="budget" fill="var(--color-budget)" />
-            <Bar dataKey="actual" fill="var(--color-actual)" />
-          </BarChart>
-        </ChartContainer>
-      </div>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={rows}
-          loading={loading}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          columns={[
-            { title: 'Period', dataIndex: 'period' },
-            { title: 'Dept', dataIndex: 'dept' },
-            { title: 'Budget', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            { title: 'Actual', dataIndex: 'actual', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            { title: 'Variance', dataIndex: 'variance', render: (v: number) => {
-                const color = v >= 0 ? '#16a34a' : '#dc2626';
-                const prefix = v >= 0 ? '+' : '-';
-                return <Text c={color}>{prefix}${Math.abs(v).toLocaleString()}</Text>;
-              } },
-            { title: 'Variance %', dataIndex: 'variancePct', render: (v: number) => `${(v||0).toFixed(1)}%` },
-          ]}
-        />
-      </Box>
-    </div>
-  );
-}
-
 function CashFlowForecast() {
   const [series, setSeries] = useState<Array<{ period: string; cash: number; revenue: number; expenses: number }>>([]);
   const [loading, setLoading] = useState(false);

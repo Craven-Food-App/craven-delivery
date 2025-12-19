@@ -118,17 +118,17 @@ const getIconForSection = (id: string): React.ReactNode => {
   return iconMap[id] || <IconDashboard size={20} />;
 };
 
-// Group definitions - Enterprise Fortune 500 Grade
+// Group definitions - Enterprise Fortune 500 Grade (consolidated)
 const navGroups = [
-  { id: 'executive', label: 'Executive Functions', items: ['evaluation', 'onboarding', 'overview', 'finance-dashboard'] },
+  { id: 'executive', label: 'Executive Functions', items: ['evaluation', 'onboarding', 'overview'] },
   { id: 'accounting', label: 'Core Accounting', items: ['general-ledger', 'ap', 'ar'] },
-  { id: 'banking', label: 'Banking & Treasury', items: ['banking', 'treasury', 'transactions', 'payouts'] },
+  { id: 'banking', label: 'Banking & Treasury', items: ['treasury', 'transactions', 'payouts'] },
   { id: 'team', label: 'Team & Operations', items: ['manager', 'payroll', 'driver-comp'] },
-  { id: 'planning', label: 'Planning & Analysis', items: ['fpa', 'budget', 'forecast', 'bva', 'scenario'] },
+  { id: 'planning', label: 'Planning & Analysis', items: ['fpa', 'budget', 'forecast', 'scenario'] },
   { id: 'compliance', label: 'Compliance & Controls', items: ['tax', 'controls', 'approvals', 'audit', 'risk'] },
   { id: 'reporting', label: 'Reporting & Investor', items: ['reports', 'board', 'investor', 'capital'] },
   { id: 'close', label: 'Period Close', items: ['close'] },
-  { id: 'communications', label: 'Communications', items: ['communications', 'messages', 'wordprocessor', 'manual'] },
+  { id: 'communications', label: 'Communications', items: ['communications', 'wordprocessor', 'manual'] },
 ];
 
 export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({

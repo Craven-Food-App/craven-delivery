@@ -1,5 +1,5 @@
 ---
-title: "Academic Credit Management for Interns"
+title: "SOP-005: School Credit & Academic Partnerships"
 document_id: "SOP-INTERN-005"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "Academic Coordinator"
 review_frequency: "Quarterly"
 ---
 
-# Academic Credit Management for Interns
+# SOP-005: School Credit & Academic Partnerships
 
 **Document ID:** SOP-INTERN-005  
 **Version:** 1.0  

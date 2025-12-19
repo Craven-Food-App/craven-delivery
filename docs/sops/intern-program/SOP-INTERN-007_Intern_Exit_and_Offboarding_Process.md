@@ -1,5 +1,5 @@
 ---
-title: "Intern Exit & Offboarding Process"
+title: "SOP-007: Program Completion & Exit Procedures"
 document_id: "SOP-INTERN-007"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "HR Coordinator"
 review_frequency: "Quarterly"
 ---
 
-# Intern Exit & Offboarding Process
+# SOP-007: Program Completion & Exit Procedures
 
 **Document ID:** SOP-INTERN-007  
 **Version:** 1.0  

@@ -1,5 +1,5 @@
 ---
-title: "Intern Onboarding Process"
+title: "SOP-002: New Intern Onboarding (Day 1-30)"
 document_id: "SOP-INTERN-002"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "HR Coordinator"
 review_frequency: "Quarterly"
 ---
 
-# Intern Onboarding Process
+# SOP-002: New Intern Onboarding (Day 1-30)
 
 **Document ID:** SOP-INTERN-002  
 **Version:** 1.0  

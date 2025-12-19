@@ -1,5 +1,5 @@
 ---
-title: "Manager Portal Usage for Intern Supervision"
+title: "SOP-008: Manager's Guide to Intern Portal"
 document_id: "SOP-INTERN-008"
 version: "1.0"
 effective_date: "2025-12-18"
@@ -9,7 +9,7 @@ process_owner: "Hiring Manager"
 review_frequency: "Quarterly"
 ---
 
-# Manager Portal Usage for Intern Supervision
+# SOP-008: Manager's Guide to Intern Portal
 
 **Document ID:** SOP-INTERN-008  
 **Version:** 1.0  

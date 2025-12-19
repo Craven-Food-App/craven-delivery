@@ -156,9 +156,6 @@ const Header = () => {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/board" className="w-full cursor-pointer">Board Portal</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
                       <Link to="/ceo" className="w-full cursor-pointer">CEO Portal</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
