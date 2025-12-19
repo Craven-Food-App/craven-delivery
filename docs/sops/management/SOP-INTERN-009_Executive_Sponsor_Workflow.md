@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Executive Sponsor Workflow for Intern Program
+# Executive Sponsor Workflow for Intern Program
 
 **Document ID:** SOP-INTERN-009  
 **Version:** 1.0  

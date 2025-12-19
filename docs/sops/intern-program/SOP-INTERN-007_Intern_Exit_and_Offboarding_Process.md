@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Intern Exit & Offboarding Process
+# Intern Exit & Offboarding Process
 
 **Document ID:** SOP-INTERN-007  
 **Version:** 1.0  

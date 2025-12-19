@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Intern Onboarding Process
+# Intern Onboarding Process
 
 **Document ID:** SOP-INTERN-002  
 **Version:** 1.0  

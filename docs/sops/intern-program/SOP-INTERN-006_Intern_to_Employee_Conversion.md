@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Intern-to-Employee Conversion Process
+# Intern-to-Employee Conversion Process
 
 **Document ID:** SOP-INTERN-006  
 **Version:** 1.0  

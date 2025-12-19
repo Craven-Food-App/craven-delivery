@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Academic Credit Management for Interns
+# Academic Credit Management for Interns
 
 **Document ID:** SOP-INTERN-005  
 **Version:** 1.0  

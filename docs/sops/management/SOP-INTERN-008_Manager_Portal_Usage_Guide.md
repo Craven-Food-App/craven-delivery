@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Manager Portal Usage for Intern Supervision
+# Manager Portal Usage for Intern Supervision
 
 **Document ID:** SOP-INTERN-008  
 **Version:** 1.0  

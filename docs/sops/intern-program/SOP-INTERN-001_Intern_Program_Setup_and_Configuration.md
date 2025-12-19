@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Intern Program Setup & Configuration
+# Intern Program Setup & Configuration
 
 **Document ID:** SOP-INTERN-001  
 **Version:** 1.0  

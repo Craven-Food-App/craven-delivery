@@ -1,5 +1,4 @@
-# Standard Operating Procedure
-## Task Assignment & Tracking for Interns
+# Task Assignment & Tracking for Interns
 
 **Document ID:** SOP-INTERN-003  
 **Version:** 1.0  
