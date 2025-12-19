@@ -1,7 +1,7 @@
 /**
- * Auto-Discovery SOP Content System
+ * SOP Content System
  * 
- * This file automatically discovers and imports all SOP markdown files.
+ * This file manages loading of SOP markdown files.
  * 
  * DISCOVERY RULES:
  * 1. Filename must match pattern: SOP-[CATEGORY]-[###]_[Title].md
@@ -12,21 +12,33 @@
  * 1. Create your SOP markdown file following naming convention
  * 2. Add YAML frontmatter with title, document_id, version, etc.
  * 3. Place in /docs/sops/[category]/ folder
- * 4. The system will automatically detect and include it
+ * 4. Add the path to the SOP_PATHS array below
  */
 
-// Auto-import all markdown files from docs folder and subdirectories
-// Using lazy loading to prevent React Suspense errors
-const docsModules = import.meta.glob('/docs/**/*.md', { 
-  eager: false,  // Changed to false to prevent suspension
-  query: '?raw',
-  import: 'default' 
-}) as Record<string, () => Promise<string>>;
+// Static list of SOP file paths
+// This prevents React Suspense errors from dynamic imports
+const SOP_PATHS = [
+  '/docs/sops/finance/SOP-CFO-001_Finance_Modules_and_Accounting_Operations.md',
+  '/docs/sops/technology/SOP-CTO-001_Infrastructure_and_DevOps_Management.md',
+  '/docs/sops/admin/SOP-ADMIN-001_Investor_Intake_and_Onboarding.md',
+  '/docs/sops/admin/SOP-ADMIN-002_Delivery_Zone_Configuration.md',
+  '/docs/sops/investor-relations/SOP-INVESTOR-001_Public_Experience_and_Access.md',
+  '/docs/sops/investor-relations/SOP-INVESTOR-002_Compliance_and_Intake_Process.md',
+  '/docs/sops/intern-program/SOP-INTERN-001_Intern_Program_Setup_and_Configuration.md',
+  '/docs/sops/intern-program/SOP-INTERN-002_Intern_Onboarding_Process.md',
+  '/docs/sops/intern-program/SOP-INTERN-003_Task_Assignment_and_Tracking.md',
+  '/docs/sops/intern-program/SOP-INTERN-004_Performance_Reviews_and_Evaluations.md',
+  '/docs/sops/intern-program/SOP-INTERN-005_Academic_Credit_Management.md',
+  '/docs/sops/intern-program/SOP-INTERN-006_Intern_to_Employee_Conversion.md',
+  '/docs/sops/intern-program/SOP-INTERN-007_Intern_Exit_and_Offboarding_Process.md',
+  '/docs/sops/intern-program/SOP-INTERN-010_Admin_Portal_Management.md',
+  '/docs/sops/management/SOP-INTERN-008_Manager_Portal_Usage_Guide.md',
+  '/docs/sops/management/SOP-INTERN-009_Executive_Sponsor_Workflow.md',
+];
 
 // Cache the built content to prevent re-computation
 let cachedSopContent: Record<string, string> | null = null;
 let isLoading = false;
-let loadPromise: Promise<Record<string, string>> | null = null;
 
 // Build the SOP_CONTENT record dynamically (async version)
 async function buildSopContentAsync(): Promise<Record<string, string>> {
@@ -35,69 +47,52 @@ async function buildSopContentAsync(): Promise<Record<string, string>> {
     return cachedSopContent;
   }
   
-  // If already loading, return the existing promise
-  if (isLoading && loadPromise) {
-    return loadPromise;
+  // Prevent multiple simultaneous loads
+  if (isLoading) {
+    // Wait a bit and try again
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return buildSopContentAsync();
   }
   
   isLoading = true;
   const content: Record<string, string> = {};
   
-  // Regex pattern for SOP files: SOP-[CATEGORY]-[NUMBER]_[Title].md
-  const sopPattern = /^SOP-[A-Z]+-\d+_/i;
-  
-  // Process docs folder files
   try {
-    const entries = Object.entries(docsModules);
-    
-    for (const [path, loader] of entries) {
+    // Load all SOPs
+    for (const path of SOP_PATHS) {
       const filename = path.split('/').pop() || '';
       
-      // VALIDATION 1: Filename must match SOP naming convention
-      if (!sopPattern.test(filename)) {
-        continue;
-      }
-      
       try {
-        // Load the markdown content
-        const markdown = await loader();
+        // Fetch the markdown content
+        const response = await fetch(path);
+        if (!response.ok) {
+          console.warn(`⚠️ [SOP] Failed to load ${filename}: ${response.status}`);
+          continue;
+        }
         
-        // VALIDATION 2: File must have YAML frontmatter with document_id
-        if (typeof markdown === 'string' && 
-            markdown.startsWith('---') && 
-            markdown.includes('document_id:')) {
+        const markdown = await response.text();
+        
+        // Validate: File must have YAML frontmatter with document_id
+        if (markdown.startsWith('---') && markdown.includes('document_id:')) {
           content[filename] = markdown;
-          console.log(`📄 [SOP Auto-Discovery] Loaded: ${filename} from ${path}`);
+          console.log(`📄 [SOP] Loaded: ${filename}`);
         } else {
-          console.warn(`⚠️ [SOP Auto-Discovery] Skipped ${filename}: Missing valid YAML frontmatter`);
+          console.warn(`⚠️ [SOP] Skipped ${filename}: Missing valid YAML frontmatter`);
         }
       } catch (error) {
-        console.error(`❌ [SOP Auto-Discovery] Error loading ${filename}:`, error);
+        console.error(`❌ [SOP] Error loading ${filename}:`, error);
       }
     }
   } catch (error) {
-    console.error('❌ [SOP Auto-Discovery] Error building SOP content:', error);
+    console.error('❌ [SOP] Error building SOP content:', error);
   }
   
   // Cache the result
   cachedSopContent = content;
   isLoading = false;
+  
+  console.log(`✅ [SOP] Loaded ${Object.keys(content).length} SOPs`);
   return content;
-}
-
-// Synchronous version that returns empty object initially
-function buildSopContent(): Record<string, string> {
-  if (cachedSopContent) {
-    return cachedSopContent;
-  }
-  
-  // Start loading in background if not already loading
-  if (!isLoading && !loadPromise) {
-    loadPromise = buildSopContentAsync();
-  }
-  
-  // Return empty object initially (will be populated after async load)
-  return {};
 }
 
 // Export async loader for components that need to wait for content
