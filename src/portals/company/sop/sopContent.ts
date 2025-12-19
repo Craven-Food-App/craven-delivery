@@ -111,13 +111,6 @@ export async function getDiscoveredSops(): Promise<string[]> {
   return Object.keys(content);
 }
 
-// Log discovery summary on load
-loadSopContent().then(content => {
-  const count = Object.keys(content).length;
-  console.log(`📚 [SOP Auto-Discovery] Total SOPs discovered: ${count}`);
-  console.log(`📚 [SOP Auto-Discovery] Files:`, Object.keys(content));
-});
-
 /**
  * Helper function to parse YAML frontmatter from markdown
  */
