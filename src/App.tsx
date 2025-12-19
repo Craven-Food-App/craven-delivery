@@ -526,8 +526,8 @@ const App = () => {
                   <Route path="/auth" element={<RestaurantAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/dashboard" element={<RestaurantDashboard />} />
-                  <Route path="/portal" element={<MerchantPortal />} />
+                  <Route path="/dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading Dashboard" />}><RestaurantDashboard /></Suspense>} />
+                  <Route path="/portal" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Portal" />}><MerchantPortal /></Suspense>} />
                   <Route path="/solutions" element={<SolutionsCenter />} />
                   <Route path="/most-loved" element={<MostLovedProgram />} />
                   <Route path="/request-delivery" element={<RequestDelivery />} />
@@ -557,7 +557,7 @@ const App = () => {
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
+                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="*" element={<Navigate to="/company/board" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -579,12 +579,12 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<CFOPortal />} />
+                  <Route path="/" element={<Suspense fallback={<SuspenseLoader message="Loading CFO Portal" />}><CFOPortal /></Suspense>} />
                   <Route path="/auth" element={<BusinessAuth />} />
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
+                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -606,12 +606,12 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<CEOPortal />} />
+                  <Route path="/" element={<Suspense fallback={<SuspenseLoader message="Loading CEO Portal" />}><CEOPortal /></Suspense>} />
                   <Route path="/auth" element={<BusinessAuth />} />
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
+                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -633,12 +633,12 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<COOPortal />} />
+                  <Route path="/" element={<Suspense fallback={<SuspenseLoader message="Loading COO Portal" />}><COOPortal /></Suspense>} />
                   <Route path="/auth" element={<BusinessAuth />} />
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
+                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
@@ -660,12 +660,12 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<CTOPortal />} />
+                  <Route path="/" element={<Suspense fallback={<SuspenseLoader message="Loading CTO Portal" />}><CTOPortal /></Suspense>} />
                   <Route path="/auth" element={<BusinessAuth />} />
                   <Route path="/business-auth" element={<BusinessAuth />} />
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
+                  <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
