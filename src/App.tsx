@@ -106,20 +106,20 @@ import ExecutiveSigningPortal from "./pages/ExecutiveSigningPortal";
 import ExecutiveProfile from "./pages/ExecutiveProfile";
 import ExecutiveResetPassword from "./pages/ExecutiveResetPassword";
 // Company Portal - lazy loaded
-const CompanyPortalLayout = lazy(() => import("./portals/company/index"));
-const CompanyDashboard = lazy(() => import("./portals/company/dashboard/CompanyDashboard"));
-const GovernanceAdminDashboard = lazy(() => import("./portals/company/governance-admin/GovernanceAdminDashboard"));
-const AppointmentList = lazy(() => import("./portals/company/governance-admin/AppointmentList"));
-const NewAppointmentForm = lazy(() => import("./portals/company/governance-admin/NewAppointmentForm"));
-const ResolutionList = lazy(() => import("./portals/company/governance-admin/ResolutionList"));
-const OfficerLedger = lazy(() => import("./portals/company/governance-admin/OfficerLedger"));
-const GovernanceLogList = lazy(() => import("./portals/company/governance-admin/GovernanceLogList"));
-const BoardDashboard = lazy(() => import("./portals/company/board/BoardDashboard"));
-const BoardResolutionDetail = lazy(() => import("./portals/company/board/BoardResolutionDetail"));
-const ExecutiveDashboard = lazy(() => import("./portals/company/executives/ExecutiveDashboard"));
-const MyAppointment = lazy(() => import("./portals/company/executives/MyAppointment"));
-const OfficerDirectoryInternal = lazy(() => import("./portals/company/executives/OfficerDirectoryInternal"));
-const LeadershipPublicPage = lazy(() => import("./portals/company/leadership-public/LeadershipPublicPage"));
+import CompanyPortalLayout from "./portals/company/index";
+import CompanyDashboard from "./portals/company/dashboard/CompanyDashboard";
+import GovernanceAdminDashboard from "./portals/company/governance-admin/GovernanceAdminDashboard";
+import AppointmentList from "./portals/company/governance-admin/AppointmentList";
+import NewAppointmentForm from "./portals/company/governance-admin/NewAppointmentForm";
+import ResolutionList from "./portals/company/governance-admin/ResolutionList";
+import OfficerLedger from "./portals/company/governance-admin/OfficerLedger";
+import GovernanceLogList from "./portals/company/governance-admin/GovernanceLogList";
+import BoardDashboard from "./portals/company/board/BoardDashboard";
+import BoardResolutionDetail from "./portals/company/board/BoardResolutionDetail";
+import ExecutiveDashboard from "./portals/company/executives/ExecutiveDashboard";
+import MyAppointment from "./portals/company/executives/MyAppointment";
+import OfficerDirectoryInternal from "./portals/company/executives/OfficerDirectoryInternal";
+import LeadershipPublicPage from "./portals/company/leadership-public/LeadershipPublicPage";
 const SOPManagement = lazy(() => import("./portals/company/sop/SOPManagement"));
 import SOPWrapper from "./portals/company/sop/SOPWrapper";
 import { TemplateManager } from "./components/board/TemplateManager";
@@ -404,24 +404,20 @@ const App = () => {
                   <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
                   <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
-                  <Route path="/company/*" element={
-                    <Suspense fallback={<SuspenseLoader message="Loading Company Portal" />}>
-                      <CompanyPortalLayout />
-                    </Suspense>
-                  }>
-                    <Route index element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><CompanyDashboard /></Suspense>} />
-                    <Route path="governance-admin" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><GovernanceAdminDashboard /></Suspense>} />
-                    <Route path="governance-admin/appointments" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><AppointmentList /></Suspense>} />
-                    <Route path="governance-admin/appointments/new" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><NewAppointmentForm /></Suspense>} />
-                    <Route path="governance-admin/resolutions" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ResolutionList /></Suspense>} />
-                    <Route path="governance-admin/officers" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><OfficerLedger /></Suspense>} />
-                    <Route path="governance-admin/logs" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><GovernanceLogList /></Suspense>} />
-                    <Route path="board" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><BoardDashboard /></Suspense>} />
-                    <Route path="board/resolution/:id" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><BoardResolutionDetail /></Suspense>} />
-                    <Route path="executives" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ExecutiveDashboard /></Suspense>} />
-                    <Route path="executives/my-appointment" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><MyAppointment /></Suspense>} />
-                    <Route path="executives/directory" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><OfficerDirectoryInternal /></Suspense>} />
-                    <Route path="leadership-public" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><LeadershipPublicPage /></Suspense>} />
+                  <Route path="/company/*" element={<CompanyPortalLayout />}>
+                    <Route index element={<CompanyDashboard />} />
+                    <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
+                    <Route path="governance-admin/appointments" element={<AppointmentList />} />
+                    <Route path="governance-admin/appointments/new" element={<NewAppointmentForm />} />
+                    <Route path="governance-admin/resolutions" element={<ResolutionList />} />
+                    <Route path="governance-admin/officers" element={<OfficerLedger />} />
+                    <Route path="governance-admin/logs" element={<GovernanceLogList />} />
+                    <Route path="board" element={<BoardDashboard />} />
+                    <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
+                    <Route path="executives" element={<ExecutiveDashboard />} />
+                    <Route path="executives/my-appointment" element={<MyAppointment />} />
+                    <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
+                    <Route path="leadership-public" element={<LeadershipPublicPage />} />
                     <Route path="leadership/templates" element={<TemplateManager />} />
                     <Route path="sop" element={<SOPWrapper />} />
                   </Route>
