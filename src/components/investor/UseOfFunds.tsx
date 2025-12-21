@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   PieChart, 
   MapPin, 
@@ -11,10 +12,12 @@ import {
   Target,
   Users,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  ArrowLeft
 } from 'lucide-react';
 
 const UseOfFunds: React.FC = () => {
+  const navigate = useNavigate();
   const fundingAllocation = [
     { 
       category: "Market Operations & Expansion", 

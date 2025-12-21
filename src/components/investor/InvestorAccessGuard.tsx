@@ -49,25 +49,45 @@ const InvestorAccessGuard: React.FC<InvestorAccessGuardProps> = ({ children, fal
         }
 
         // Check investor_profiles for access status
-        const { data: profile, error } = await supabase
-          .from('investor_profiles')
-          .select('access_status')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // Handle errors gracefully - if table doesn't exist, allow CEO but deny others
+        try {
+          const { data: profile, error } = await supabase
+            .from('investor_profiles')
+            .select('access_status')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking investor access:', error);
+          // If table/column doesn't exist (500 error), treat as no access for non-CEO users
+          if (error) {
+            if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '42703') {
+              // Table or column doesn't exist - deny access for non-CEO users
+              console.warn('investor_profiles table may not exist yet:', error);
+              setIsApproved(false);
+              setLoading(false);
+              navigate('/investors/access', { 
+                state: { message: 'Investor access required. Please request access to view materials.' } 
+              });
+              return;
+            }
+            // Other errors - log but continue
+            console.warn('Error checking investor access:', error);
+          }
+
+          const accessStatus = profile?.access_status || 'none';
+          const approved = accessStatus === 'approved';
+
+          setIsApproved(approved);
+          
+          if (!approved) {
+            navigate('/investors/access', { 
+              state: { message: 'Investor access required. Please request access to view materials.' } 
+            });
+          }
+        } catch (profileError) {
+          // Handle any unexpected errors gracefully
+          console.warn('Error checking investor profile:', profileError);
           setIsApproved(false);
           setLoading(false);
-          return;
-        }
-
-        const accessStatus = profile?.access_status || 'none';
-        const approved = accessStatus === 'approved';
-
-        setIsApproved(approved);
-        
-        if (!approved) {
           navigate('/investors/access', { 
             state: { message: 'Investor access required. Please request access to view materials.' } 
           });

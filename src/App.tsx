@@ -54,6 +54,7 @@ import InvestorsLanding from "./pages/InvestorsLanding";
 import InvestorAccess from "./pages/legacy/InvestorAccess";
 import InvestorOverview from "./pages/InvestorOverview";
 import InvestorInterest from "./pages/InvestorInterest";
+import InvestorOpportunities from "./pages/InvestorOpportunities";
 import InvestorPortal from "./pages/InvestorPortal";
 import InvestorRequestStatus from "./pages/InvestorRequestStatus";
 import PitchDeckPresentation from "./pages/PitchDeckPresentation";
@@ -844,6 +845,7 @@ const App = () => {
           <Route path="/investors/interest" element={<InvestorInterest />} />
           <Route path="/investors/status" element={<InvestorRequestStatus />} />
           <Route path="/investors/overview" element={<InvestorOverview />} />
+          <Route path="/investors/opportunities" element={<InvestorOpportunities />} />
           <Route path="/investors/portal" element={<InvestorPortal />} />
           <Route path="/investors/presentation" element={<PitchDeckPresentation />} />
           <Route path="/investors/executive-summary" element={<ExecutiveSummary />} />

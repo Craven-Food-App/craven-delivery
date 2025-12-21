@@ -1,24 +1,20 @@
 import React from 'react';
 import InvestorAccessGuard from '@/components/investor/InvestorAccessGuard';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import InvestorLayout from '@/components/investor/InvestorLayout';
 import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const InvestorOverview: React.FC = () => {
   return (
     <InvestorAccessGuard>
-      <div className="min-h-screen bg-white">
-        <Header />
-        
-        {/* Confidentiality Banner */}
-        <div className="bg-amber-50 border-b border-amber-200 py-3 px-4">
-          <p className="text-sm text-amber-900 text-center max-w-4xl mx-auto">
-            <strong>Confidential materials.</strong> Do not distribute. Provided for evaluation purposes only.
-          </p>
-        </div>
-
-        <div className="max-w-6xl mx-auto py-12 px-4">
+      <InvestorLayout>
+        <div className="container mx-auto py-12 px-6">
+          {/* Confidentiality Banner */}
+          <div className="bg-amber-50 border-b border-amber-200 py-3 px-4 mb-8 -mx-6">
+            <p className="text-sm text-amber-900 text-center max-w-4xl mx-auto">
+              <strong>Confidential materials.</strong> Do not distribute. Provided for evaluation purposes only.
+            </p>
+          </div>
           <h1 className="text-4xl font-bold mb-8 text-gray-900">Investor Overview</h1>
 
           {/* Executive Summary */}
@@ -71,9 +67,7 @@ const InvestorOverview: React.FC = () => {
             </div>
           </section>
         </div>
-
-        <Footer />
-      </div>
+      </InvestorLayout>
     </InvestorAccessGuard>
   );
 };

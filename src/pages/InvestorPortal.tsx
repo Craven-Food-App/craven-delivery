@@ -8,9 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FileText, TrendingUp, DollarSign, Shield, Download, CheckCircle2, AlertCircle } from 'lucide-react';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import InvestorAccessGuard from '@/components/investor/InvestorAccessGuard';
+import InvestorLayout from '@/components/investor/InvestorLayout';
 
 const InvestorPortal: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -27,15 +26,25 @@ const InvestorPortal: React.FC = () => {
         setUser(authUser);
 
         if (authUser) {
-          // Fetch accreditation status
-          const { data: profile } = await supabase
-            .from('investor_profiles')
-            .select('accreditation_status')
-            .eq('user_id', authUser.id)
-            .maybeSingle();
+          // Fetch accreditation status - handle errors gracefully
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('investor_profiles')
+              .select('accreditation_status')
+              .eq('user_id', authUser.id)
+              .maybeSingle();
 
-          if (profile?.accreditation_status) {
-            setAccreditationStatus(profile.accreditation_status);
+            // Only log error if it's not a table/column missing error
+            if (profileError && profileError.code !== 'PGRST116' && profileError.code !== '42P01') {
+              console.warn('Error fetching accreditation status:', profileError);
+            }
+
+            if (profile?.accreditation_status) {
+              setAccreditationStatus(profile.accreditation_status);
+            }
+          } catch (profileError) {
+            // Silently handle errors - accreditation status is optional
+            console.warn('Could not fetch accreditation status (table may not exist yet):', profileError);
           }
         }
       } catch (error) {
@@ -64,7 +73,19 @@ const InvestorPortal: React.FC = () => {
           onConflict: 'user_id',
         });
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a table/column missing error
+        if (error.code === '42P01' || error.code === '42703') {
+          toast({
+            title: 'Database Setup Required',
+            description: 'The investor_profiles table needs to be set up. Please contact support.',
+            variant: 'destructive',
+          });
+          console.error('Database table/column missing:', error);
+          return;
+        }
+        throw error;
+      }
 
       setAccreditationStatus(value === 'none' ? '' : value);
       toast({
@@ -73,9 +94,12 @@ const InvestorPortal: React.FC = () => {
       });
     } catch (error: any) {
       console.error('Error saving accreditation:', error);
+      const errorMessage = error?.message || 'Failed to save accreditation status';
       toast({
         title: 'Error',
-        description: 'Failed to save accreditation status',
+        description: errorMessage.includes('table') || errorMessage.includes('column') 
+          ? 'Database setup required. Please contact support.' 
+          : 'Failed to save accreditation status. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -93,15 +117,14 @@ const InvestorPortal: React.FC = () => {
 
   return (
     <InvestorAccessGuard>
-      <div className="min-h-screen bg-white">
-        <Header />
-        <div className="max-w-6xl mx-auto py-12 px-4">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Investor Portal</h1>
-            <p className="text-gray-600">
-              Access to confidential investor materials for Crave'n Inc.
-            </p>
-          </div>
+      <InvestorLayout>
+        <div className="container mx-auto py-12 px-6">
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold mb-2">Investor Portal</h1>
+              <p className="text-gray-600">
+                Access to confidential investor materials for Crave'n Inc.
+              </p>
+            </div>
 
           {/* Accreditation Self-Certification (Reg D 506b) */}
           <Card className="mb-8 border-orange-200">
@@ -284,7 +307,7 @@ const InvestorPortal: React.FC = () => {
                 <div>
                   <Label>Investor Relations</Label>
                   <p className="text-sm text-gray-700">
-                    Email: <a href="mailto:investors@cravenusa.com" className="text-orange-500 hover:underline">investors@cravenusa.com</a>
+                    Email: <a href="mailto:invest@cravenusa.com" className="text-orange-500 hover:underline">invest@cravenusa.com</a>
                   </p>
                 </div>
                 <div>
@@ -300,8 +323,7 @@ const InvestorPortal: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        <Footer />
-      </div>
+      </InvestorLayout>
     </InvestorAccessGuard>
   );
 };

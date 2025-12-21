@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Target, 
   TrendingUp, 
@@ -12,10 +13,12 @@ import {
   ArrowUpRight,
   MapPin,
   Clock,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 
 const ExecutiveSummary: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'basic' | 'digital'>('basic');
 
   // Digital Version Component

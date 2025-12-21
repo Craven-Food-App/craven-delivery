@@ -1,11 +1,14 @@
 import React from 'react';
 import UseOfFunds from '@/components/investor/UseOfFunds';
 import InvestorAccessGuard from '@/components/investor/InvestorAccessGuard';
+import InvestorLayout from '@/components/investor/InvestorLayout';
 
 const UseOfFundsPage: React.FC = () => {
   return (
     <InvestorAccessGuard>
-      <UseOfFunds />
+      <InvestorLayout fullScreen={true}>
+        <UseOfFunds />
+      </InvestorLayout>
     </InvestorAccessGuard>
   );
 };

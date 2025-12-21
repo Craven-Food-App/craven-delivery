@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, 
   ChevronLeft, 
@@ -13,10 +14,12 @@ import {
   MapPin, 
   DollarSign,
   Layers,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
 
 const PitchDeckPresentation: React.FC = () => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = [

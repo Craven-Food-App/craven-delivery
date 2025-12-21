@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Target, 
   TrendingUp, 
@@ -14,10 +15,12 @@ import {
   Users,
   LineChart,
   Activity,
-  ArrowDownRight
+  ArrowDownRight,
+  ArrowLeft
 } from 'lucide-react';
 
 const FinancialProjections: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'summary' | 'projections'>('summary');
 
   const stats = [
