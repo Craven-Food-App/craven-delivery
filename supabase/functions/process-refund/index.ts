@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 // Get allowed origins from environment or use defaults
 const getAllowedOrigins = (): string[] => {
@@ -41,6 +42,21 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // SECURITY: Rate limiting for refund processing (3 per minute)
+    const rateLimitResult = await checkRateLimit(req, supabase, RateLimitPresets.PAYMENT);
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: rateLimitResult.message || 'Too many refund requests',
+          resetIn: rateLimitResult.resetIn 
+        }),
+        { 
+          status: 429, 
+          headers: addRateLimitHeaders(corsHeaders, rateLimitResult)
+        }
+      );
+    }
 
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');

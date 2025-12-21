@@ -1,8 +1,14 @@
-import React from 'react';
-import SOPManagement from './SOPManagement';
+import React, { Suspense, lazy } from 'react';
+import SuspenseLoader from '@/components/SuspenseLoader';
+
+const SOPManagement = lazy(() => import('./SOPManagement'));
 
 const SOPWrapper: React.FC = () => {
-  return <SOPManagement />;
+  return (
+    <Suspense fallback={<SuspenseLoader message="Loading SOP Management" />}>
+      <SOPManagement />
+    </Suspense>
+  );
 };
 
 export default SOPWrapper;

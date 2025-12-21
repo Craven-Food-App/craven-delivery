@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Container,
   Card,
@@ -1015,7 +1016,7 @@ export const TemplateManager: React.FC = () => {
         {/* Preview Modal */}
         <Modal opened={previewVisible} onClose={() => setPreviewVisible(false)} title="Template Preview" size="xl">
           <Paper p="md" withBorder>
-            <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent) }} />
           </Paper>
         </Modal>
 

@@ -20,6 +20,7 @@ import {
   message,
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CopyOutlined,
@@ -772,7 +773,7 @@ const IBOESender: React.FC = () => {
 
           {mode === 'preview' && (
             <Card key={previewKey} bordered className="shadow-inner" style={{ minHeight: 300 }}>
-              <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }} />
             </Card>
           )}
 
@@ -792,7 +793,7 @@ const IBOESender: React.FC = () => {
                 suppressContentEditableWarning
                 className="border border-dashed border-slate-300 rounded-md p-4 min-h-[300px]"
                 style={{ outline: 'none' }}
-                dangerouslySetInnerHTML={{ __html: liveHtml }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(liveHtml) }}
                 onInput={(event) => {
                   const target = event.currentTarget as HTMLDivElement;
                   setLiveHtml(target.innerHTML);

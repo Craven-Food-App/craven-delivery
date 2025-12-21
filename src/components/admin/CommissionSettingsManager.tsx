@@ -176,15 +176,15 @@ export const CommissionSettingsManager: React.FC = () => {
               <Slider
                 value={[peakMultiplier]}
                 onValueChange={(v) => setPeakMultiplier(v[0])}
-                min={1}
-                max={3}
+                min={1.3}
+                max={1.6}
                 step={0.1}
                 className="flex-1"
               />
               <Input
                 type="number"
-                min={1}
-                max={3}
+                min={1.3}
+                max={1.6}
                 step={0.1}
                 value={peakMultiplier}
                 onChange={(e) => setPeakMultiplier(Number(e.target.value))}
@@ -193,7 +193,7 @@ export const CommissionSettingsManager: React.FC = () => {
               <span className="text-sm text-muted-foreground">x</span>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              Applied during peak hours (11 AM - 1 PM, 5 PM - 8 PM)
+              Applied during peak hours (11 AM - 1 PM, 5 PM - 8 PM). Range: 1.3x-1.6x
             </p>
           </div>
 

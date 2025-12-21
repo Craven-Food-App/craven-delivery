@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { hasFullAccess } from '@/utils/torranceAccess';
 
 interface InvestorAccessGuardProps {
   children: React.ReactNode;
@@ -24,6 +25,26 @@ const InvestorAccessGuard: React.FC<InvestorAccessGuardProps> = ({ children, fal
           navigate('/investors/access', { 
             state: { message: 'Please log in to access investor materials.' } 
           });
+          return;
+        }
+
+        // TORRANCE STROMAN (CEO): FULL ACCESS TO ALL INVESTOR MATERIALS
+        if (hasFullAccess(user.email)) {
+          setIsApproved(true);
+          setLoading(false);
+          return;
+        }
+
+        // Check if user is CEO via exec_users table
+        const { data: execUser } = await supabase
+          .from('exec_users')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (execUser?.role?.toLowerCase() === 'ceo') {
+          setIsApproved(true);
+          setLoading(false);
           return;
         }
 

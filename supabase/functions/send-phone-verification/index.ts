@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -46,6 +47,26 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: Rate limiting for phone verification (3 per hour)
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
+  const rateLimitResult = await checkRateLimit(req, supabase, RateLimitPresets.PHONE_VERIFY);
+  if (!rateLimitResult.allowed) {
+    return new Response(
+      JSON.stringify({ 
+        error: rateLimitResult.message || 'Too many verification attempts',
+        resetIn: rateLimitResult.resetIn 
+      }),
+      { 
+        status: 429, 
+        headers: addRateLimitHeaders(corsHeaders, rateLimitResult)
+      }
+    );
+  }
+
   try {
     const { phone, email }: PhoneVerificationRequest = await req.json();
 
@@ -56,10 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    // Supabase client already initialized for rate limiting above
 
     // Extract last 4 digits of phone number
     const phoneDigits = phone.replace(/\D/g, '');

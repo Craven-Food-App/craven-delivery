@@ -5085,8 +5085,6 @@ export type Database = {
           estimated_delivery_time: string | null
           estimated_pickup_time: string | null
           id: string
-          moov_payment_id: string | null
-          moov_transfer_id: string | null
           order_items: Json
           order_status: string
           payment_provider: string | null
@@ -14711,7 +14709,6 @@ export type Database = {
           id: string
           is_default: boolean | null
           last4: string | null
-          moov_card_id: string | null
           provider: string
           token: string
           user_id: string | null
@@ -14722,7 +14719,6 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           last4?: string | null
-          moov_card_id?: string | null
           provider: string
           token: string
           user_id?: string | null
@@ -14733,7 +14729,6 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           last4?: string | null
-          moov_card_id?: string | null
           provider?: string
           token?: string
           user_id?: string | null

@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "verify:stripe": "tsx scripts/verify-stripe-setup.ts",
+    "test:payments": "tsx scripts/test-payment-flow.ts",
     "dev": "npx vite",
     "dev:server": "tsx watch server/index.ts",
     "dev:all": "concurrently \"npm:dev\" \"npm:dev:server\"",

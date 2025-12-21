@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import {
   FileText,
@@ -536,7 +537,7 @@ const InternProgramTemplates: React.FC = () => {
               <div 
                 className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm p-8 prose prose-sm"
                 dangerouslySetInnerHTML={{ 
-                  __html: renderPreviewContent(previewTemplate.html_content) 
+                  __html: DOMPurify.sanitize(renderPreviewContent(previewTemplate.html_content))
                 }}
               />
             </div>

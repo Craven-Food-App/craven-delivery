@@ -1,8 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 serve(async (req) => {
+  // SECURITY: Get secure CORS headers based on request origin
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -12,6 +16,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // SECURITY: Rate limiting for password reset (3 per hour)
+    const rateLimitResult = await checkRateLimit(req, supabase, RateLimitPresets.PASSWORD_RESET);
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: rateLimitResult.message || 'Too many password reset attempts',
+          resetIn: rateLimitResult.resetIn 
+        }),
+        { 
+          status: 429, 
+          headers: addRateLimitHeaders(corsHeaders, rateLimitResult)
+        }
+      );
+    }
 
     // Parse request body
     const { email, newPassword } = await req.json();

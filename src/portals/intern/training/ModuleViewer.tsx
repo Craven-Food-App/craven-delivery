@@ -11,6 +11,7 @@ import {
   Award,
   AlertCircle,
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import type { TrainingModule, ModuleProgress, DeliveryType } from '@/types/internTraining';
 import { formatDuration } from '@/types/internTraining';
 
@@ -279,7 +280,7 @@ const ModuleViewer: React.FC<ModuleViewerProps> = ({ module, progress, onClose, 
           {showQuiz && section.quiz ? (
             <div><h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Target className="w-6 h-6 text-orange-500" />Knowledge Check</h3><QuizView questions={section.quiz} onComplete={handleQuizDone} passingScore={module.passing_score || undefined} /></div>
           ) : (
-            <div><h3 className="text-xl font-bold mb-4">{section.title}</h3><div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: section.content }} /></div>
+            <div><h3 className="text-xl font-bold mb-4">{section.title}</h3><div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.content) }} /></div>
           )}
         </div>
         <div className="border-t px-6 py-4 bg-gray-50 flex items-center justify-between">

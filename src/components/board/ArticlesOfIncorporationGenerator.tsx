@@ -19,6 +19,7 @@ import {
   message,
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import {
   CloudUploadOutlined,
@@ -2021,7 +2022,7 @@ const ArticlesOfIncorporationGenerator: React.FC = () => {
 
           {mode === 'preview' ? (
             <div style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: 24, maxHeight: 900, overflow: 'auto' }}>
-              <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }} />
             </div>
           ) : (
             <TextArea value={htmlContent} onChange={(event) => setHtmlContent(event.target.value)} autoSize={{ minRows: 16 }} spellCheck={false} />

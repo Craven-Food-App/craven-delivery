@@ -9,7 +9,7 @@ interface PaymentMethod {
   last4: string | null;
   brand: string | null;
   is_default: boolean;
-  moov_card_id?: string | null;
+  stripe_card_id?: string | null;
 }
 
 interface PaymentMethodSelectorProps {
@@ -72,21 +72,21 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ on
       return;
     }
 
-    // In production, you would tokenize the card with Moov.js here
+    // In production, you would tokenize the card with Stripe.js here
     // For now, we'll create a mock payment method
-    const mockMoovId = `moov_card_${Date.now()}`;
+    const mockStripeId = `stripe_card_${Date.now()}`;
     const lastFour = cardDetails.cardNumber.slice(-4);
     
     const { data, error } = await supabase
       .from('payment_methods')
       .insert({
         user_id: user.id,
-        provider: 'moov',
-        token: mockMoovId,
+        provider: 'stripe',
+        token: mockStripeId,
         last4: lastFour,
         brand: 'Visa', // In production, detect from card number
         is_default: paymentMethods.length === 0,
-        moov_card_id: mockMoovId
+        stripe_card_id: mockStripeId
       })
       .select()
       .single();
@@ -180,7 +180,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ on
             </button>
           </div>
           <p className="text-xs text-gray-500">
-            Card information is securely processed by Moov.io
+            Card information is securely processed by Stripe
           </p>
         </div>
       ) : (

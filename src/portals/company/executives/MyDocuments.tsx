@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Stack,
   Card,
@@ -1160,7 +1161,7 @@ const MyDocuments: React.FC = () => {
                     padding: '1rem',
                     backgroundColor: '#fff',
                   }}
-                  dangerouslySetInnerHTML={{ __html: documentHtmlContent }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(documentHtmlContent) }}
                 />
               ) : (
                 <iframe
@@ -1223,7 +1224,7 @@ const MyDocuments: React.FC = () => {
                         padding: '1rem',
                         backgroundColor: '#fff',
                       }}
-                      dangerouslySetInnerHTML={{ __html: documentHtmlContent }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(documentHtmlContent) }}
                     />
                   ) : (
                     <iframe

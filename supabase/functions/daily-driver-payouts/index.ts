@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 interface DriverEarning {
   driver_id: string;
@@ -17,6 +14,9 @@ interface DriverEarning {
 }
 
 serve(async (req) => {
+  // SECURITY: Get secure CORS headers based on request origin
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,6 +28,21 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // SECURITY: Rate limiting for payout processing (3 per minute)
+    const rateLimitResult = await checkRateLimit(req, supabase, RateLimitPresets.PAYMENT);
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: rateLimitResult.message || 'Too many payout requests',
+          resetIn: rateLimitResult.resetIn 
+        }),
+        { 
+          status: 429, 
+          headers: addRateLimitHeaders(corsHeaders, rateLimitResult)
+        }
+      );
+    }
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -200,7 +215,7 @@ serve(async (req) => {
   }
 });
 
-// Process payout using real payment processors (Stripe/Moov)
+// Process payout using Stripe Connect
 async function processPayout(earning: DriverEarning): Promise<{ success: boolean; transactionId?: string; error?: string }> {
   try {
     const paymentType = earning.payment_method.payment_type;
@@ -218,8 +233,9 @@ async function processPayout(earning: DriverEarning): Promise<{ success: boolean
       case 'paypal':
       case 'venmo':
       case 'zelle':
-        // Use Moov API for instant payouts
-        return await processMoovPayout(paymentType, accountIdentifier, amount);
+        // Instant payment apps - use Stripe Connect or return unsupported
+        // Note: These require Stripe Connect setup for instant payouts
+        throw new Error(`${paymentType} payouts not yet supported. Please use bank_account.`);
         
       default:
         throw new Error(`Unsupported payment method: ${paymentType}`);
@@ -276,74 +292,6 @@ async function processStripePayout(stripeAccountId: string, amount: number): Pro
     return {
       success: false,
       error: error instanceof Error ? error.message : "Stripe payout failed",
-    };
-  }
-}
-
-// Process Moov payout for instant payment apps
-async function processMoovPayout(
-  paymentType: string,
-  accountIdentifier: string,
-  amount: number
-): Promise<{ success: boolean; transactionId?: string; error?: string }> {
-  const moovApiKey = Deno.env.get("MOOV_API_KEY");
-  const moovWebhookSecret = Deno.env.get("MOOV_WEBHOOK_SECRET");
-
-  if (!moovApiKey) {
-    console.warn("MOOV_API_KEY not configured, using simulation");
-    return {
-      success: true,
-      transactionId: `moov_sim_${Date.now()}`,
-    };
-  }
-
-  try {
-    // Map payment types to Moov payment methods
-    const moovPaymentMethodMap: Record<string, string> = {
-      cashapp: "cashapp",
-      paypal: "paypal",
-      venmo: "venmo",
-      zelle: "zelle",
-    };
-
-    const moovMethod = moovPaymentMethodMap[paymentType] || paymentType;
-
-    const response = await fetch("https://api.moov.io/v2/payouts", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${moovApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        source: {
-          paymentMethodID: accountIdentifier,
-        },
-        destination: {
-          paymentMethodID: accountIdentifier,
-        },
-        amount: {
-          currency: "USD",
-          value: amount.toFixed(2),
-        },
-        description: `Driver payout via ${paymentType}`,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Moov payout failed");
-    }
-
-    const payout = await response.json();
-
-    return {
-      success: true,
-      transactionId: payout.payoutID || payout.id,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Moov payout failed",
     };
   }
 }

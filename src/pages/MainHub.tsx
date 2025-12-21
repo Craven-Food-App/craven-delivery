@@ -20,6 +20,7 @@ import {
   UserOutlined,
   SafetyOutlined,
   BugOutlined,
+  FundOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -1250,6 +1251,14 @@ const MainHub: React.FC = () => {
       icon: UserOutlined,
       path: "/intern/dashboard",
       color: "#6366f1",
+    },
+    {
+      id: "investors",
+      name: "Investors Portal",
+      description: "Investor relations, pitch deck, and confidential materials",
+      icon: FundOutlined,
+      path: "/investors/portal",
+      color: "#722ed1",
     },
     {
       id: "intern-manager",

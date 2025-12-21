@@ -161,16 +161,10 @@ const InvestorPortal: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    // TODO: Link to actual pitch deck document
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'Pitch deck will be available here.',
-                    });
-                  }}
+                  onClick={() => navigate('/investors/presentation')}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Pitch Deck
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Pitch Deck Presentation
                 </Button>
               </CardContent>
             </Card>
@@ -189,15 +183,10 @@ const InvestorPortal: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'Executive summary will be available here.',
-                    });
-                  }}
+                  onClick={() => navigate('/investors/executive-summary')}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Executive Summary
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Executive Summary
                 </Button>
               </CardContent>
             </Card>
@@ -216,14 +205,9 @@ const InvestorPortal: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'Financial projections will be available here.',
-                    });
-                  }}
+                  onClick={() => navigate('/investors/financial-projections')}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <TrendingUp className="mr-2 h-4 w-4" />
                   View Financial Projections
                 </Button>
               </CardContent>
@@ -243,14 +227,9 @@ const InvestorPortal: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => {
-                    toast({
-                      title: 'Coming Soon',
-                      description: 'Use of funds document will be available here.',
-                    });
-                  }}
+                  onClick={() => navigate('/investors/use-of-funds')}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  <DollarSign className="mr-2 h-4 w-4" />
                   View Use of Funds
                 </Button>
               </CardContent>

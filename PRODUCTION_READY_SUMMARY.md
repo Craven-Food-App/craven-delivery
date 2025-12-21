@@ -122,11 +122,11 @@
 
 ```bash
 # Option A: Via Supabase CLI
-supabase secrets set STRIPE_SECRET_KEY=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
+supabase secrets set STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY_HERE
 
 # Option B: Via Supabase Dashboard
 # Go to: Settings → Edge Functions → Secrets
-# Add: STRIPE_SECRET_KEY = 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
+# Add: STRIPE_SECRET_KEY = sk_live_YOUR_SECRET_KEY_HERE
 ```
 
 ---
@@ -139,7 +139,7 @@ supabase secrets set STRIPE_SECRET_KEY=sk_live_51SKpbkLTHUzAWwQrUB6MpGdRFhVmMnxD
 3. Go to **Settings** → **Environment Variables**
 4. Add:
    ```
-   VITE_STRIPE_PUBLISHABLE_KEY=pk_live_51SKpbkLTHUzAWwQrpeD8B1TXtBgH1aN2q0tM8CuobPHtAMeBZI6lqem4Kb7zcKI7RaAG9QT9806lxchjZMHrSbx100WC0Vq7Oe
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY_HERE
    ```
 5. Redeploy
 

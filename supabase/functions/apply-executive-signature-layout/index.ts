@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1?bundle";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 interface CeoSignatureSetting {
   typed_name?: string;
@@ -31,11 +32,6 @@ interface SignatureFieldLayoutItem {
   auto_filled_by?: string | null;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 const base64ToUint8Array = (base64: string): Uint8Array => {
   const cleaned = base64.includes(",") ? base64.split(",").pop() ?? "" : base64;
   const binaryString = atob(cleaned);
@@ -50,6 +46,8 @@ const base64ToUint8Array = (base64: string): Uint8Array => {
 const normalizeRole = (role: string | null | undefined): string => String(role || "").trim().toLowerCase();
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

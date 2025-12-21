@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { Modal, Stack, Group, Button, Text, Title, Badge, ScrollArea, Divider } from '@mantine/core';
 import { IconDownload, IconFileText, IconCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -131,7 +132,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
         <ScrollArea h={600}>
           <div
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
             style={{
               padding: '1rem',
               fontFamily: 'system-ui, -apple-system, sans-serif',

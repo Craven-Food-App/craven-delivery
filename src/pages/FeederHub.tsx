@@ -10,7 +10,7 @@ import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import becomeDriverHero from "@/assets/20251002_2239_Animated-Logo-Driver_remix_01k6kyy1m7f108g2r5qjd0a8x8.png";
 import { PhoneVerificationModal } from "@/components/feeder/PhoneVerificationModal";
-import { validateAndSanitizeEmail, validateAndSanitizePhone } from "@/utils/validation";
+import { validateEmail, validatePhone, sanitizeForDB } from "@/utils/validation";
 
 const FeederHub = () => {
   const navigate = useNavigate();
@@ -94,14 +94,14 @@ const FeederHub = () => {
     setIsSubmitting(true);
     try {
       // Validate and sanitize inputs again (defense in depth)
-      const emailValidation = validateAndSanitizeEmail(emailAddress);
+      const emailValidation = validateEmail(emailAddress);
       if (!emailValidation.valid) {
         toast.error('Invalid email address');
         setIsSubmitting(false);
         return;
       }
 
-      const phoneValidation = validateAndSanitizePhone(phoneNumber, countryCode);
+      const phoneValidation = validatePhone(phoneNumber);
       if (!phoneValidation.valid) {
         toast.error('Invalid phone number');
         setIsSubmitting(false);
@@ -275,13 +275,13 @@ const FeederHub = () => {
     }
 
     // Validate and sanitize inputs
-    const emailValidation = validateAndSanitizeEmail(emailAddress);
+    const emailValidation = validateEmail(emailAddress);
     if (!emailValidation.valid) {
       toast.error('Please enter a valid email address');
       return;
     }
 
-    const phoneValidation = validateAndSanitizePhone(phoneNumber, countryCode);
+    const phoneValidation = validatePhone(phoneNumber);
     if (!phoneValidation.valid) {
       toast.error('Please enter a valid phone number');
       return;

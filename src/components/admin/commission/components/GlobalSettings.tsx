@@ -29,6 +29,12 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const [peakMultiplier, setPeakMultiplier] = useState<number>(
     settings?.peak_hour_multiplier || 1.5
   );
+  const [stripeFeePct, setStripeFeePct] = useState<number>(
+    settings?.stripe_fee_percent || 2.9
+  );
+  const [stripeFeeFixed, setStripeFeeFixed] = useState<number>(
+    settings?.stripe_fee_fixed_cents / 100 || 0.30
+  );
   const [loading, setLoading] = useState<boolean>(false);
 
   const saveSettings = async () => {
@@ -51,6 +57,8 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
           delivery_fee_base_cents: Math.round(deliveryFeeBase * 100),
           delivery_fee_per_mile_cents: Math.round(deliveryFeePerMile * 100),
           peak_hour_multiplier: peakMultiplier,
+          stripe_fee_percent: stripeFeePct,
+          stripe_fee_fixed_cents: Math.round(stripeFeeFixed * 100),
           is_active: true,
           updated_by: userData?.user?.id || null,
         });
@@ -72,9 +80,11 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const serviceFee = exampleSubtotal * (serviceFeePct / 100);
   const deliveryFee = deliveryFeeBase + (exampleMiles * deliveryFeePerMile);
   const total = exampleSubtotal + serviceFee + deliveryFee;
+  const stripeFee = (total * (stripeFeePct / 100)) + stripeFeeFixed;
   const restaurantGets = exampleSubtotal * (1 - (restaurantCommission / 100));
   const cravenCommission = exampleSubtotal * (restaurantCommission / 100);
-  const cravenTotal = cravenCommission + serviceFee + deliveryFee;
+  const cravenGrossRevenue = cravenCommission + serviceFee + deliveryFee;
+  const cravenNetRevenue = cravenGrossRevenue - stripeFee;
 
   return (
     <div className="space-y-6">
@@ -183,15 +193,15 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
               <Slider
                 value={[peakMultiplier]}
                 onValueChange={(v) => setPeakMultiplier(v[0])}
-                min={1}
-                max={3}
+                min={1.3}
+                max={1.6}
                 step={0.1}
                 className="flex-1"
               />
               <Input
                 type="number"
-                min={1}
-                max={3}
+                min={1.3}
+                max={1.6}
                 step={0.1}
                 value={peakMultiplier}
                 onChange={(e) => setPeakMultiplier(Number(e.target.value))}
@@ -200,8 +210,51 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
               <span className="text-sm text-muted-foreground w-8">x</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Applied to delivery fee during peak hours
+              Applied to delivery fee during peak hours (1.3x-1.6x range)
             </p>
+          </div>
+
+          <div className="pt-4 border-t">
+            <h4 className="font-medium mb-4 text-sm text-muted-foreground">Payment Processing Fees (Stripe)</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-2 block">Stripe Fee Percentage (%)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={stripeFeePct}
+                    onChange={(e) => setStripeFeePct(Number(e.target.value))}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Standard: 2.9%
+                </p>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Stripe Fixed Fee ($)</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={stripeFeeFixed}
+                    onChange={(e) => setStripeFeeFixed(Number(e.target.value))}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-muted-foreground">per transaction</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Standard: $0.30
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end pt-4 border-t">
@@ -271,16 +324,29 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
                     <span>Delivery Fee:</span>
                     <span className="font-medium">${deliveryFee.toFixed(2)}</span>
                   </div>
+                  <div className="flex justify-between pt-2 border-t text-sm">
+                    <span>Gross Platform Revenue:</span>
+                    <span className="font-medium">${cravenGrossRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-red-600">
+                    <span>Stripe Processing Fee:</span>
+                    <span className="font-medium">-${stripeFee.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between pt-2 border-t font-bold text-base">
-                    <span>Platform Revenue:</span>
-                    <span className="text-green-600">${cravenTotal.toFixed(2)}</span>
+                    <span>Net Platform Revenue:</span>
+                    <span className="text-green-600">${cravenNetRevenue.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-3 bg-green-100 rounded border border-green-300 text-sm">
-              <strong>Platform Take Rate:</strong> {((cravenTotal / total) * 100).toFixed(1)}% of total order value
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-green-100 rounded border border-green-300 text-sm">
+                <strong>Gross Take Rate:</strong> {((cravenGrossRevenue / total) * 100).toFixed(1)}% of total order value
+              </div>
+              <div className="p-3 bg-blue-100 rounded border border-blue-300 text-sm">
+                <strong>Net Take Rate:</strong> {((cravenNetRevenue / total) * 100).toFixed(1)}% (after Stripe fees)
+              </div>
             </div>
           </div>
         </CardContent>

@@ -1,12 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 serve(async (req) => {
+  // SECURITY: Get secure CORS headers based on request origin
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,6 +16,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // SECURITY: Rate limiting for webhook (30 per minute)
+    const rateLimitResult = await checkRateLimit(req, supabaseClient, RateLimitPresets.API);
+    if (!rateLimitResult.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: rateLimitResult.message || 'Too many webhook requests',
+          resetIn: rateLimitResult.resetIn 
+        }),
+        { 
+          status: 429, 
+          headers: addRateLimitHeaders(corsHeaders, rateLimitResult)
+        }
+      );
+    }
 
     const webhookData = await req.json();
     console.log('Checkr webhook received:', webhookData.type);

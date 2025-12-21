@@ -316,7 +316,7 @@ const Checkout: React.FC = () => {
         }
       }
 
-      // Create payment session with Moov
+      // Create payment session with Stripe
       const paymentBody: any = {
         orderTotal: total,
         orderId: newOrder.id,
@@ -324,8 +324,7 @@ const Checkout: React.FC = () => {
           name: formData.name,
           email: formData.email,
           phone: formData.phone
-        },
-        paymentProvider: 'moov'
+        }
       };
 
       // Add payment method if selected
