@@ -52,6 +52,7 @@ import AboutUs from "./pages/AboutUs";
 import PitchDeck from "./pages/PitchDeck";
 import InvestorsLanding from "./pages/InvestorsLanding";
 import InvestorAccess from "./pages/legacy/InvestorAccess";
+import InvestorLogin from "./pages/InvestorLogin";
 import InvestorOverview from "./pages/InvestorOverview";
 import InvestorInterest from "./pages/InvestorInterest";
 import InvestorOpportunities from "./pages/InvestorOpportunities";
@@ -766,6 +767,7 @@ const App = () => {
             <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
             <Route path="leadership-public" element={<LeadershipPublicPage />} />
             <Route path="leadership/templates" element={<TemplateManager />} />
+            <Route path="sop" element={<SOPWrapper />} />
           </Route>
           <Route path="/intern/*" element={<Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense>}>
             <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternDashboard /></Suspense>} />
@@ -841,6 +843,7 @@ const App = () => {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/pitch-deck/:id" element={<PitchDeck />} />
           <Route path="/investors" element={<InvestorsLanding />} />
+          <Route path="/investors/login" element={<InvestorLogin />} />
           <Route path="/investors/access" element={<InvestorAccess />} />
           <Route path="/investors/interest" element={<InvestorInterest />} />
           <Route path="/investors/status" element={<InvestorRequestStatus />} />

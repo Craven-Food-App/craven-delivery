@@ -1,0 +1,332 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Upload,
+  X,
+  Loader2,
+  Image as ImageIcon
+} from 'lucide-react';
+
+export const InvestorHeroImageManager: React.FC = () => {
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const fetchHeroImage = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('marketing_settings')
+        .select('investor_hero_image_url')
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+      
+      const imageUrl = data?.investor_hero_image_url || '';
+      setHeroImageUrl(imageUrl);
+      setImagePreview(imageUrl || null);
+    } catch (error: any) {
+      console.error('Error fetching investor hero image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch investor hero image settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHeroImage();
+  }, []);
+
+  useEffect(() => {
+    // Set preview when heroImageUrl changes
+    if (heroImageUrl && !imageFile) {
+      setImagePreview(heroImageUrl);
+    }
+  }, [heroImageUrl, imageFile]);
+
+  const handleImageUpload = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please upload an image smaller than 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    setImageFile(file);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `investor-hero/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('promotional-banners')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('promotional-banners')
+        .getPublicUrl(fileName);
+
+      // Update settings with the public URL
+      setHeroImageUrl(publicUrl);
+      
+      toast({
+        title: 'Success',
+        description: 'Image uploaded successfully',
+      });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+      setImagePreview(null);
+      setImageFile(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setImageFile(null);
+    setHeroImageUrl('');
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Check if a row exists
+      const { data: existing } = await supabase
+        .from('marketing_settings')
+        .select('id')
+        .limit(1)
+        .single();
+
+      let error;
+      if (existing) {
+        // Update existing row
+        const { error: updateError } = await supabase
+          .from('marketing_settings')
+          .update({
+            investor_hero_image_url: heroImageUrl || null,
+            updated_by: user.id,
+          })
+          .eq('id', existing.id);
+        error = updateError;
+      } else {
+        // Insert new row
+        const { error: insertError } = await supabase
+          .from('marketing_settings')
+          .insert({
+            investor_hero_image_url: heroImageUrl || null,
+            updated_by: user.id,
+          });
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Investor hero image updated successfully',
+      });
+
+      fetchHeroImage();
+    } catch (error: any) {
+      console.error('Error saving investor hero image:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save investor hero image',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !heroImageUrl) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p>Loading...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Investor Login Hero Image</CardTitle>
+          <CardDescription>
+            Set the hero background image displayed on the investor login page
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Upload Section */}
+          <div className="space-y-2">
+            <Label>Hero Image</Label>
+            
+            {!imagePreview ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="investor-hero-image"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <label htmlFor="investor-hero-image" className="cursor-pointer">
+                  <div className="flex flex-col items-center justify-center">
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="h-10 w-10 animate-spin text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">Uploading...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                        <p className="text-sm font-medium text-gray-700">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, WEBP up to 10MB
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Investor Hero Preview" 
+                  className="w-full h-64 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            {/* URL Input as Alternative */}
+            <div className="mt-2">
+              <p className="text-xs text-gray-500 mb-1">Or enter image URL:</p>
+              <Input
+                id="investor_hero_image_url"
+                type="url"
+                value={heroImageUrl}
+                onChange={(e) => {
+                  setHeroImageUrl(e.target.value);
+                  if (e.target.value) {
+                    setImagePreview(e.target.value);
+                    setImageFile(null);
+                  }
+                }}
+                placeholder="https://images.unsplash.com/photo-..."
+                disabled={uploadingImage}
+              />
+            </div>
+          </div>
+
+          {/* Preview Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> This image will be displayed as the full-screen hero background on the investor login page. 
+              Ensure the image has good contrast for white text overlay.
+            </p>
+          </div>
+
+          {/* Save Button */}
+          <Button 
+            onClick={handleSave} 
+            disabled={uploadingImage || loading}
+            className="w-full"
+          >
+            {uploadingImage || loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {uploadingImage ? 'Uploading...' : 'Saving...'}
+              </>
+            ) : (
+              'Save Investor Hero Image'
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
