@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasInvestorAccess } from '@/utils/torranceAccess';
 
 interface InvestorAccessGuardProps {
   children: React.ReactNode;
@@ -34,23 +34,24 @@ const InvestorAccessGuard: React.FC<InvestorAccessGuardProps> = ({ children, fal
           return;
         }
 
-        // TORRANCE STROMAN (CEO): FULL ACCESS TO ALL INVESTOR MATERIALS
-        if (hasFullAccess(user.email)) {
-          console.log('[InvestorAccessGuard] User has full access (Torrance/CEO)');
+        // TORRANCE STROMAN (CEO) & JUSTIN SWEET (CFO): FULL ACCESS TO ALL INVESTOR MATERIALS
+        if (hasInvestorAccess(user.email)) {
+          console.log('[InvestorAccessGuard] User has full access (Torrance/CEO or Justin/CFO)');
           setIsApproved(true);
           setLoading(false);
           return;
         }
 
-        // Check if user is CEO via exec_users table
+        // Check if user is CEO or CFO via exec_users table
         const { data: execUser } = await supabase
           .from('exec_users')
           .select('role')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (execUser?.role?.toLowerCase() === 'ceo') {
-          console.log('[InvestorAccessGuard] User is CEO via exec_users table');
+        const role = execUser?.role?.toLowerCase();
+        if (role === 'ceo' || role === 'cfo') {
+          console.log('[InvestorAccessGuard] User is CEO/CFO via exec_users table');
           setIsApproved(true);
           setLoading(false);
           return;
@@ -113,11 +114,11 @@ const InvestorAccessGuard: React.FC<InvestorAccessGuardProps> = ({ children, fal
         }
       } catch (error) {
         console.error('[InvestorAccessGuard] Error checking investor access:', error);
-        // On error, check if user is Torrance/CEO - if so, grant access anyway
+        // On error, check if user is Torrance/CEO or Justin/CFO - if so, grant access anyway
         try {
           const { data: { user: errorUser } } = await supabase.auth.getUser();
-          if (errorUser && hasFullAccess(errorUser.email)) {
-            console.log('[InvestorAccessGuard] Error occurred but user has full access (Torrance/CEO), granting access');
+          if (errorUser && hasInvestorAccess(errorUser.email)) {
+            console.log('[InvestorAccessGuard] Error occurred but user has full access (Torrance/CEO or Justin/CFO), granting access');
             setIsApproved(true);
             setLoading(false);
             return;
@@ -125,7 +126,7 @@ const InvestorAccessGuard: React.FC<InvestorAccessGuardProps> = ({ children, fal
         } catch (fallbackError) {
           console.error('[InvestorAccessGuard] Error in fallback check:', fallbackError);
         }
-        // If not Torrance/CEO, redirect to access page
+        // If not Torrance/CEO or Justin/CFO, redirect to access page
         setIsApproved(false);
         setLoading(false);
         setRedirecting(true);

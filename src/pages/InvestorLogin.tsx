@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { hasFullAccess } from '@/utils/torranceAccess';
+import { hasFullAccess, hasInvestorAccess } from '@/utils/torranceAccess';
 
 const InvestorLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -60,20 +60,21 @@ const InvestorLogin: React.FC = () => {
 
   const checkAccessAndRedirect = async (user: any) => {
     try {
-      // Check if CEO/Torrance
-      if (hasFullAccess(user.email)) {
+      // Check if CEO/Torrance or CFO/Justin
+      if (hasInvestorAccess(user.email)) {
         navigate('/investors/portal', { replace: true });
         return;
       }
 
-      // Check exec_users for CEO role
+      // Check exec_users for CEO or CFO role
       const { data: execUser } = await supabase
         .from('exec_users')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (execUser?.role?.toLowerCase() === 'ceo') {
+      const role = execUser?.role?.toLowerCase();
+      if (role === 'ceo' || role === 'cfo') {
         navigate('/investors/portal', { replace: true });
         return;
       }
