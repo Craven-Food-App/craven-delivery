@@ -212,6 +212,7 @@ serve(async (req) => {
     const totalAmountCents = priceCents + processingFeeCents;
     
     // Create a payment session record
+    // Use service role client which bypasses RLS
     const { data: paymentSession, error: sessionError } = await supabase
       .from("cravemore_payment_sessions")
       .insert({
@@ -226,6 +227,8 @@ serve(async (req) => {
       })
       .select()
       .single();
+    
+    console.log("Payment session insert result:", { paymentSession, sessionError });
 
     if (sessionError) {
       console.error("Error creating payment session:", sessionError);
