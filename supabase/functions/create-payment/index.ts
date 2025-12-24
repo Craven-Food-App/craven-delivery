@@ -21,8 +21,17 @@ const getAllowedOrigins = (): string[] => {
 
 const getCorsHeaders = (origin: string | null) => {
   const allowedOrigins = getAllowedOrigins();
-  // Check if origin is in allowed list, otherwise use the first allowed origin
-  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  // Check if origin is in allowed list
+  let allowedOrigin: string;
+  if (origin && allowedOrigins.includes(origin)) {
+    allowedOrigin = origin;
+  } else {
+    // Default to first in list (localhost:8080 for dev)
+    allowedOrigin = allowedOrigins[0];
+  }
+  
+  console.log("CORS check:", { origin, allowedOrigin, allowedOrigins, originInList: origin ? allowedOrigins.includes(origin) : false });
   
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
