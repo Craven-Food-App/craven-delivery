@@ -139,6 +139,47 @@ export type Database = {
           },
         ]
       }
+      account_balances: {
+        Row: {
+          account_id: string
+          closing_balance: number | null
+          id: string
+          opening_balance: number | null
+          period: string
+          period_credits: number | null
+          period_debits: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          closing_balance?: number | null
+          id?: string
+          opening_balance?: number | null
+          period: string
+          period_credits?: number | null
+          period_debits?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          closing_balance?: number | null
+          id?: string
+          opening_balance?: number | null
+          period?: string
+          period_credits?: number | null
+          period_debits?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_balances_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts_receivable: {
         Row: {
           amount: number
@@ -474,6 +515,81 @@ export type Database = {
           {
             foreignKeyName: "admin_settings_updated_by_fkey"
             columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ai_anomalies: {
+        Row: {
+          anomaly_data: Json
+          anomaly_type: string
+          audit_log_id: string | null
+          confidence_score: number
+          created_at: string | null
+          description: string
+          detected_at: string | null
+          id: string
+          next_steps: string[] | null
+          recommended_actions: string[] | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_score: number
+          status: string | null
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anomaly_data: Json
+          anomaly_type: string
+          audit_log_id?: string | null
+          confidence_score: number
+          created_at?: string | null
+          description: string
+          detected_at?: string | null
+          id?: string
+          next_steps?: string[] | null
+          recommended_actions?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score: number
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anomaly_data?: Json
+          anomaly_type?: string
+          audit_log_id?: string | null
+          confidence_score?: number
+          created_at?: string | null
+          description?: string
+          detected_at?: string | null
+          id?: string
+          next_steps?: string[] | null
+          recommended_actions?: string[] | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score?: number
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_anomalies_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_anomalies_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
@@ -890,38 +1006,387 @@ export type Database = {
           },
         ]
       }
+      audit_documents: {
+        Row: {
+          audit_log_id: string | null
+          created_at: string | null
+          description: string | null
+          document_name: string
+          document_type: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          tags: string[] | null
+          transaction_id: string | null
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          audit_log_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_name: string
+          document_type: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          tags?: string[] | null
+          transaction_id?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          audit_log_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_name?: string
+          document_type?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          tags?: string[] | null
+          transaction_id?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_documents_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "audit_documents_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      audit_flags: {
+        Row: {
+          audit_log_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          description: string
+          detected_at: string | null
+          detected_by: string | null
+          flag_type: string
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string | null
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          audit_log_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          description: string
+          detected_at?: string | null
+          detected_by?: string | null
+          flag_type: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          audit_log_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string
+          detected_at?: string | null
+          detected_by?: string | null
+          flag_type?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_flags_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_flags_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
+          account_category: string | null
+          ai_confidence_score: number | null
+          amount: number | null
+          anomaly_detected: boolean | null
+          approved_by: string | null
+          audit_trail: Json | null
+          cfo_comment: string | null
+          cleared_date: string | null
           created_at: string | null
+          currency: string | null
           details: Json | null
+          device_info: Json | null
+          documentation_count: number | null
+          entered_by: string | null
+          entered_date: string | null
+          expense_category: string | null
+          flag_reason: string | null
+          geo_location: Json | null
+          has_documentation: boolean | null
           id: string
+          internal_notes: string | null
+          ip_address: unknown
+          linked_customer_id: string | null
+          linked_driver_id: string | null
+          linked_merchant_id: string | null
+          linked_order_id: string | null
+          linked_vendor_id: string | null
+          locked_at: string | null
+          notes: string | null
           operation: string
+          reviewed_by: string | null
+          risk_score: number | null
+          severity: string | null
+          source: string | null
+          status: string | null
           table_name: string
           timestamp: string | null
+          transaction_date: string | null
+          transaction_id: string | null
+          transaction_type: string | null
+          updated_at: string | null
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          account_category?: string | null
+          ai_confidence_score?: number | null
+          amount?: number | null
+          anomaly_detected?: boolean | null
+          approved_by?: string | null
+          audit_trail?: Json | null
+          cfo_comment?: string | null
+          cleared_date?: string | null
           created_at?: string | null
+          currency?: string | null
           details?: Json | null
+          device_info?: Json | null
+          documentation_count?: number | null
+          entered_by?: string | null
+          entered_date?: string | null
+          expense_category?: string | null
+          flag_reason?: string | null
+          geo_location?: Json | null
+          has_documentation?: boolean | null
           id?: string
+          internal_notes?: string | null
+          ip_address?: unknown
+          linked_customer_id?: string | null
+          linked_driver_id?: string | null
+          linked_merchant_id?: string | null
+          linked_order_id?: string | null
+          linked_vendor_id?: string | null
+          locked_at?: string | null
+          notes?: string | null
           operation: string
+          reviewed_by?: string | null
+          risk_score?: number | null
+          severity?: string | null
+          source?: string | null
+          status?: string | null
           table_name: string
           timestamp?: string | null
+          transaction_date?: string | null
+          transaction_id?: string | null
+          transaction_type?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          account_category?: string | null
+          ai_confidence_score?: number | null
+          amount?: number | null
+          anomaly_detected?: boolean | null
+          approved_by?: string | null
+          audit_trail?: Json | null
+          cfo_comment?: string | null
+          cleared_date?: string | null
           created_at?: string | null
+          currency?: string | null
           details?: Json | null
+          device_info?: Json | null
+          documentation_count?: number | null
+          entered_by?: string | null
+          entered_date?: string | null
+          expense_category?: string | null
+          flag_reason?: string | null
+          geo_location?: Json | null
+          has_documentation?: boolean | null
           id?: string
+          internal_notes?: string | null
+          ip_address?: unknown
+          linked_customer_id?: string | null
+          linked_driver_id?: string | null
+          linked_merchant_id?: string | null
+          linked_order_id?: string | null
+          linked_vendor_id?: string | null
+          locked_at?: string | null
+          notes?: string | null
           operation?: string
+          reviewed_by?: string | null
+          risk_score?: number | null
+          severity?: string | null
+          source?: string | null
+          status?: string | null
           table_name?: string
           timestamp?: string | null
+          transaction_date?: string | null
+          transaction_id?: string | null
+          transaction_type?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "audit_logs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_entered_by_fkey"
+            columns: ["entered_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "audit_logs_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      audit_reports: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          pdf_url: string | null
+          report_data: Json
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status: string | null
+          summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          report_data: Json
+          report_name: string
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          report_data?: Json
+          report_name?: string
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          status?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_reports_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "audit_reports_generated_by_fkey"
+            columns: ["generated_by"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
@@ -984,6 +1449,77 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      audit_trail: {
+        Row: {
+          action_description: string
+          action_type: string
+          changed_fields: string[] | null
+          created_at: string | null
+          device_info: Json | null
+          geo_location: Json | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          session_id: string | null
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          changed_fields?: string[] | null
+          created_at?: string | null
+          device_info?: Json | null
+          geo_location?: Json | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          session_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          changed_fields?: string[] | null
+          created_at?: string | null
+          device_info?: Json | null
+          geo_location?: Json | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          session_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_trail_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       auto_escalations: {
         Row: {
@@ -2774,6 +3310,261 @@ export type Database = {
           },
         ]
       }
+      cfo_evaluation_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          details: Json
+          evaluation_id: string
+          event_type: string
+          gate_id: string | null
+          id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          evaluation_id: string
+          event_type: string
+          gate_id?: string | null
+          id?: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          evaluation_id?: string
+          event_type?: string
+          gate_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_evaluation_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cfo_evaluation_events_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfo_evaluation_events_gate_id_fkey"
+            columns: ["gate_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_evaluation_gates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_evaluation_gates: {
+        Row: {
+          auto_fail_reason: string | null
+          ceo_decided_at: string | null
+          ceo_decision: string | null
+          created_at: string
+          due_date: string
+          evaluation_id: string
+          gate_code: Database["public"]["Enums"]["cfo_gate_code"]
+          gate_order: number
+          id: string
+          status: Database["public"]["Enums"]["cfo_gate_status"]
+        }
+        Insert: {
+          auto_fail_reason?: string | null
+          ceo_decided_at?: string | null
+          ceo_decision?: string | null
+          created_at?: string
+          due_date: string
+          evaluation_id: string
+          gate_code: Database["public"]["Enums"]["cfo_gate_code"]
+          gate_order: number
+          id?: string
+          status?: Database["public"]["Enums"]["cfo_gate_status"]
+        }
+        Update: {
+          auto_fail_reason?: string | null
+          ceo_decided_at?: string | null
+          ceo_decision?: string | null
+          created_at?: string
+          due_date?: string
+          evaluation_id?: string
+          gate_code?: Database["public"]["Enums"]["cfo_gate_code"]
+          gate_order?: number
+          id?: string
+          status?: Database["public"]["Enums"]["cfo_gate_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_evaluation_gates_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_evaluation_submissions: {
+        Row: {
+          gate_id: string
+          id: string
+          payload: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        Insert: {
+          gate_id: string
+          id?: string
+          payload?: Json
+          submitted_at?: string
+          submitted_by: string
+        }
+        Update: {
+          gate_id?: string
+          id?: string
+          payload?: Json
+          submitted_at?: string
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_evaluation_submissions_gate_id_fkey"
+            columns: ["gate_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_evaluation_gates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfo_evaluation_submissions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cfo_evaluations: {
+        Row: {
+          ceo_user_id: string
+          cfo_user_id: string
+          completed_at: string | null
+          created_at: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          fail_count: number
+          id: string
+          is_test: boolean
+          outcome: string | null
+          status: Database["public"]["Enums"]["cfo_eval_status"]
+        }
+        Insert: {
+          ceo_user_id: string
+          cfo_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          fail_count?: number
+          id?: string
+          is_test?: boolean
+          outcome?: string | null
+          status?: Database["public"]["Enums"]["cfo_eval_status"]
+        }
+        Update: {
+          ceo_user_id?: string
+          cfo_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          evaluation_end_date?: string
+          evaluation_start_date?: string
+          fail_count?: number
+          id?: string
+          is_test?: boolean
+          outcome?: string | null
+          status?: Database["public"]["Enums"]["cfo_eval_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_evaluations_ceo_user_id_fkey"
+            columns: ["ceo_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cfo_evaluations_cfo_user_id_fkey"
+            columns: ["cfo_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      chart_of_accounts: {
+        Row: {
+          account_code: string
+          account_name: string
+          account_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system_account: boolean | null
+          normal_balance: string
+          parent_account_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          account_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_account?: boolean | null
+          normal_balance: string
+          parent_account_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          account_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_account?: boolean | null
+          normal_balance?: string
+          parent_account_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "chart_of_accounts_parent_account_id_fkey"
+            columns: ["parent_account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           admin_id: string | null
@@ -3193,6 +3984,66 @@ export type Database = {
           },
         ]
       }
+      compensation_config: {
+        Row: {
+          base_percentage: number
+          bonus_per_delivery: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          minimum_per_delivery: number
+          peak_hour_multiplier: number | null
+          surge_multiplier: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          base_percentage?: number
+          bonus_per_delivery?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_per_delivery?: number
+          peak_hour_multiplier?: number | null
+          surge_multiplier?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          base_percentage?: number
+          bonus_per_delivery?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_per_delivery?: number
+          peak_hour_multiplier?: number | null
+          surge_multiplier?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compensation_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "compensation_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       compliance_records: {
         Row: {
           created_at: string | null
@@ -3362,6 +4213,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cravemore_plans: {
+        Row: {
+          badge_text: string | null
+          billing_period: string
+          created_at: string | null
+          display_name: string
+          id: string
+          is_active: boolean | null
+          is_most_popular: boolean | null
+          lifetime_cap_total: number | null
+          lifetime_cap_used: number | null
+          plan_key: string
+          price_cents: number
+          promo_price_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          billing_period: string
+          created_at?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          is_most_popular?: boolean | null
+          lifetime_cap_total?: number | null
+          lifetime_cap_used?: number | null
+          plan_key: string
+          price_cents: number
+          promo_price_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          billing_period?: string
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_most_popular?: boolean | null
+          lifetime_cap_total?: number | null
+          lifetime_cap_used?: number | null
+          plan_key?: string
+          price_cents?: number
+          promo_price_cents?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cravemore_promos: {
+        Row: {
+          created_at: string | null
+          ends_at: string
+          id: string
+          is_active: boolean | null
+          promo_key: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          ends_at: string
+          id?: string
+          is_active?: boolean | null
+          promo_key: string
+          starts_at: string
+        }
+        Update: {
+          created_at?: string | null
+          ends_at?: string
+          id?: string
+          is_active?: boolean | null
+          promo_key?: string
+          starts_at?: string
+        }
+        Relationships: []
       }
       craver_applications: {
         Row: {
@@ -4039,6 +4965,207 @@ export type Database = {
           {
             foreignKeyName: "cto_documents_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_evaluation_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          details: Json
+          evaluation_id: string
+          event_type: string
+          gate_id: string | null
+          id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          evaluation_id: string
+          event_type: string
+          gate_id?: string | null
+          id?: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          evaluation_id?: string
+          event_type?: string
+          gate_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_evaluation_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cto_evaluation_events_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "cto_evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_evaluation_events_gate_id_fkey"
+            columns: ["gate_id"]
+            isOneToOne: false
+            referencedRelation: "cto_evaluation_gates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_evaluation_gates: {
+        Row: {
+          auto_fail_reason: string | null
+          ceo_decided_at: string | null
+          ceo_decision: string | null
+          created_at: string
+          due_date: string
+          evaluation_id: string
+          gate_code: Database["public"]["Enums"]["cto_gate_code"]
+          gate_order: number
+          id: string
+          status: Database["public"]["Enums"]["cto_gate_status"]
+        }
+        Insert: {
+          auto_fail_reason?: string | null
+          ceo_decided_at?: string | null
+          ceo_decision?: string | null
+          created_at?: string
+          due_date: string
+          evaluation_id: string
+          gate_code: Database["public"]["Enums"]["cto_gate_code"]
+          gate_order: number
+          id?: string
+          status?: Database["public"]["Enums"]["cto_gate_status"]
+        }
+        Update: {
+          auto_fail_reason?: string | null
+          ceo_decided_at?: string | null
+          ceo_decision?: string | null
+          created_at?: string
+          due_date?: string
+          evaluation_id?: string
+          gate_code?: Database["public"]["Enums"]["cto_gate_code"]
+          gate_order?: number
+          id?: string
+          status?: Database["public"]["Enums"]["cto_gate_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_evaluation_gates_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "cto_evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cto_evaluation_submissions: {
+        Row: {
+          gate_id: string
+          id: string
+          payload: Json
+          submitted_at: string
+          submitted_by: string
+        }
+        Insert: {
+          gate_id: string
+          id?: string
+          payload?: Json
+          submitted_at?: string
+          submitted_by: string
+        }
+        Update: {
+          gate_id?: string
+          id?: string
+          payload?: Json
+          submitted_at?: string
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_evaluation_submissions_gate_id_fkey"
+            columns: ["gate_id"]
+            isOneToOne: false
+            referencedRelation: "cto_evaluation_gates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cto_evaluation_submissions_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cto_evaluations: {
+        Row: {
+          auto_generated_demote: boolean
+          auto_generated_terminate: boolean
+          ceo_user_id: string
+          completed_at: string | null
+          created_at: string
+          cto_user_id: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          fail_count: number
+          id: string
+          is_test: boolean
+          outcome: string | null
+          status: Database["public"]["Enums"]["cto_eval_status"]
+        }
+        Insert: {
+          auto_generated_demote?: boolean
+          auto_generated_terminate?: boolean
+          ceo_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          cto_user_id: string
+          evaluation_end_date: string
+          evaluation_start_date: string
+          fail_count?: number
+          id?: string
+          is_test?: boolean
+          outcome?: string | null
+          status?: Database["public"]["Enums"]["cto_eval_status"]
+        }
+        Update: {
+          auto_generated_demote?: boolean
+          auto_generated_terminate?: boolean
+          ceo_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          cto_user_id?: string
+          evaluation_end_date?: string
+          evaluation_start_date?: string
+          fail_count?: number
+          id?: string
+          is_test?: boolean
+          outcome?: string | null
+          status?: Database["public"]["Enums"]["cto_eval_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cto_evaluations_ceo_user_id_fkey"
+            columns: ["ceo_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cto_evaluations_cto_user_id_fkey"
+            columns: ["cto_user_id"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
@@ -5111,8 +6238,6 @@ export type Database = {
           estimated_delivery_time?: string | null
           estimated_pickup_time?: string | null
           id?: string
-          moov_payment_id?: string | null
-          moov_transfer_id?: string | null
           order_items: Json
           order_status?: string
           payment_provider?: string | null
@@ -5139,8 +6264,6 @@ export type Database = {
           estimated_delivery_time?: string | null
           estimated_pickup_time?: string | null
           id?: string
-          moov_payment_id?: string | null
-          moov_transfer_id?: string | null
           order_items?: Json
           order_status?: string
           payment_provider?: string | null
@@ -8242,6 +9365,89 @@ export type Database = {
           },
         ]
       }
+      driver_weekly_stats: {
+        Row: {
+          active_hours: number | null
+          avg_earnings_per_hour: number | null
+          avg_earnings_per_trip: number | null
+          avg_miles_per_trip: number | null
+          avg_rating: number | null
+          base_earnings_cents: number | null
+          bonuses_cents: number | null
+          calculated_at: string | null
+          cancelled_trips: number | null
+          completed_trips: number | null
+          driver_id: string
+          id: string
+          on_time_percentage: number | null
+          surge_earnings_cents: number | null
+          tips_cents: number | null
+          total_earnings_cents: number | null
+          total_hours: number | null
+          total_miles: number | null
+          total_ratings: number | null
+          total_trips: number | null
+          updated_at: string | null
+          week_start_date: string
+        }
+        Insert: {
+          active_hours?: number | null
+          avg_earnings_per_hour?: number | null
+          avg_earnings_per_trip?: number | null
+          avg_miles_per_trip?: number | null
+          avg_rating?: number | null
+          base_earnings_cents?: number | null
+          bonuses_cents?: number | null
+          calculated_at?: string | null
+          cancelled_trips?: number | null
+          completed_trips?: number | null
+          driver_id: string
+          id?: string
+          on_time_percentage?: number | null
+          surge_earnings_cents?: number | null
+          tips_cents?: number | null
+          total_earnings_cents?: number | null
+          total_hours?: number | null
+          total_miles?: number | null
+          total_ratings?: number | null
+          total_trips?: number | null
+          updated_at?: string | null
+          week_start_date: string
+        }
+        Update: {
+          active_hours?: number | null
+          avg_earnings_per_hour?: number | null
+          avg_earnings_per_trip?: number | null
+          avg_miles_per_trip?: number | null
+          avg_rating?: number | null
+          base_earnings_cents?: number | null
+          bonuses_cents?: number | null
+          calculated_at?: string | null
+          cancelled_trips?: number | null
+          completed_trips?: number | null
+          driver_id?: string
+          id?: string
+          on_time_percentage?: number | null
+          surge_earnings_cents?: number | null
+          tips_cents?: number | null
+          total_earnings_cents?: number | null
+          total_hours?: number | null
+          total_miles?: number | null
+          total_ratings?: number | null
+          total_trips?: number | null
+          updated_at?: string | null
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_weekly_stats_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           activated_at: string | null
@@ -9054,6 +10260,8 @@ export type Database = {
           remote_allowed: boolean | null
           salary: number | null
           salary_status: string | null
+          sponsor_id: string | null
+          sponsor_super: boolean | null
           ssn_last4: string | null
           start_date: string
           terminated_by: string | null
@@ -9092,6 +10300,8 @@ export type Database = {
           remote_allowed?: boolean | null
           salary?: number | null
           salary_status?: string | null
+          sponsor_id?: string | null
+          sponsor_super?: boolean | null
           ssn_last4?: string | null
           start_date?: string
           terminated_by?: string | null
@@ -9130,6 +10340,8 @@ export type Database = {
           remote_allowed?: boolean | null
           salary?: number | null
           salary_status?: string | null
+          sponsor_id?: string | null
+          sponsor_super?: boolean | null
           ssn_last4?: string | null
           start_date?: string
           terminated_by?: string | null
@@ -9173,6 +10385,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "positions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
           },
           {
             foreignKeyName: "employees_terminated_by_fkey"
@@ -10373,6 +11599,91 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      executive_emails: {
+        Row: {
+          attachments: Json | null
+          body: string | null
+          created_at: string | null
+          employee_id: string | null
+          exec_user_id: string | null
+          folder: string
+          id: string
+          message: string | null
+          priority: string | null
+          read: boolean | null
+          read_at: string | null
+          recipient_email: string
+          recipient_name: string | null
+          sender_email: string
+          sender_name: string | null
+          sent_at: string | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          body?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          exec_user_id?: string | null
+          folder?: string
+          id?: string
+          message?: string | null
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          sender_email: string
+          sender_name?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          exec_user_id?: string | null
+          folder?: string
+          id?: string
+          message?: string | null
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          sender_email?: string
+          sender_name?: string | null
+          sent_at?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_emails_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "executive_emails_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_summary"
+            referencedColumns: ["employee_id"]
+          },
+          {
+            foreignKeyName: "executive_emails_exec_user_id_fkey"
+            columns: ["exec_user_id"]
+            isOneToOne: false
+            referencedRelation: "exec_users"
             referencedColumns: ["id"]
           },
         ]
@@ -12343,6 +13654,1785 @@ export type Database = {
           },
         ]
       }
+      infrastructure_capacity_plans: {
+        Row: {
+          action_priority: string | null
+          created_at: string | null
+          current_capacity: number
+          current_utilization: number
+          estimated_cost: number | null
+          id: string
+          notes: string | null
+          projected_growth_rate: number | null
+          projected_utilization_date: string | null
+          recommended_action: string | null
+          resource_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_id: string | null
+          updated_at: string | null
+          utilization_percent: number | null
+        }
+        Insert: {
+          action_priority?: string | null
+          created_at?: string | null
+          current_capacity: number
+          current_utilization: number
+          estimated_cost?: number | null
+          id?: string
+          notes?: string | null
+          projected_growth_rate?: number | null
+          projected_utilization_date?: string | null
+          recommended_action?: string | null
+          resource_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+          utilization_percent?: number | null
+        }
+        Update: {
+          action_priority?: string | null
+          created_at?: string | null
+          current_capacity?: number
+          current_utilization?: number
+          estimated_cost?: number | null
+          id?: string
+          notes?: string | null
+          projected_growth_rate?: number | null
+          projected_utilization_date?: string | null
+          recommended_action?: string | null
+          resource_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_id?: string | null
+          updated_at?: string | null
+          utilization_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infrastructure_capacity_plans_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      infrastructure_changes: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          affected_services: string[] | null
+          approved_by: string | null
+          change_number: string
+          change_type: string
+          created_at: string | null
+          description: string
+          id: string
+          implementation_notes: string | null
+          implemented_by: string | null
+          planned_end: string
+          planned_start: string
+          post_implementation_review: string | null
+          requested_by: string | null
+          risk_assessment: string | null
+          rollback_plan: string | null
+          status: string | null
+          testing_notes: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          affected_services?: string[] | null
+          approved_by?: string | null
+          change_number: string
+          change_type: string
+          created_at?: string | null
+          description: string
+          id?: string
+          implementation_notes?: string | null
+          implemented_by?: string | null
+          planned_end: string
+          planned_start: string
+          post_implementation_review?: string | null
+          requested_by?: string | null
+          risk_assessment?: string | null
+          rollback_plan?: string | null
+          status?: string | null
+          testing_notes?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          affected_services?: string[] | null
+          approved_by?: string | null
+          change_number?: string
+          change_type?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          implementation_notes?: string | null
+          implemented_by?: string | null
+          planned_end?: string
+          planned_start?: string
+          post_implementation_review?: string | null
+          requested_by?: string | null
+          risk_assessment?: string | null
+          rollback_plan?: string | null
+          status?: string | null
+          testing_notes?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infrastructure_changes_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_changes_implemented_by_fkey"
+            columns: ["implemented_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_changes_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      infrastructure_cost_optimizations: {
+        Row: {
+          actual_savings: number | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string | null
+          current_cost: number
+          id: string
+          implementation_effort: string | null
+          implemented_at: string | null
+          optimization_type: string
+          potential_savings: number
+          recommendation: string
+          resource_id: string | null
+          resource_type: string
+          risk_level: string | null
+          savings_percent: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_savings?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_cost: number
+          id?: string
+          implementation_effort?: string | null
+          implemented_at?: string | null
+          optimization_type: string
+          potential_savings: number
+          recommendation: string
+          resource_id?: string | null
+          resource_type: string
+          risk_level?: string | null
+          savings_percent?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_savings?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_cost?: number
+          id?: string
+          implementation_effort?: string | null
+          implemented_at?: string | null
+          optimization_type?: string
+          potential_savings?: number
+          recommendation?: string
+          resource_id?: string | null
+          resource_type?: string
+          risk_level?: string | null
+          savings_percent?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infrastructure_cost_optimizations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_cost_optimizations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      infrastructure_incidents: {
+        Row: {
+          acknowledged_at: string | null
+          affected_services: string[] | null
+          affected_users: number | null
+          assigned_team: string | null
+          assigned_to: string | null
+          closed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          detected_at: string
+          follow_up_required: boolean | null
+          id: string
+          incident_number: string
+          metadata: Json | null
+          post_mortem_url: string | null
+          priority: string
+          resolution_notes: string | null
+          resolution_steps: Json | null
+          resolved_at: string | null
+          revenue_impact: number | null
+          root_cause: string | null
+          service_impact: string | null
+          severity: string
+          sla_breach: boolean | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          affected_services?: string[] | null
+          affected_users?: number | null
+          assigned_team?: string | null
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          detected_at?: string
+          follow_up_required?: boolean | null
+          id?: string
+          incident_number: string
+          metadata?: Json | null
+          post_mortem_url?: string | null
+          priority?: string
+          resolution_notes?: string | null
+          resolution_steps?: Json | null
+          resolved_at?: string | null
+          revenue_impact?: number | null
+          root_cause?: string | null
+          service_impact?: string | null
+          severity: string
+          sla_breach?: boolean | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          affected_services?: string[] | null
+          affected_users?: number | null
+          assigned_team?: string | null
+          assigned_to?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          detected_at?: string
+          follow_up_required?: boolean | null
+          id?: string
+          incident_number?: string
+          metadata?: Json | null
+          post_mortem_url?: string | null
+          priority?: string
+          resolution_notes?: string | null
+          resolution_steps?: Json | null
+          resolved_at?: string | null
+          revenue_impact?: number | null
+          root_cause?: string | null
+          service_impact?: string | null
+          severity?: string
+          sla_breach?: boolean | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infrastructure_incidents_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_incidents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      infrastructure_provisioning_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          completion_notes: string | null
+          created_at: string | null
+          estimated_cost: number | null
+          id: string
+          justification: string
+          priority: string | null
+          provider: string
+          provisioned_at: string | null
+          provisioned_by: string | null
+          request_number: string
+          request_type: string
+          requested_at: string | null
+          requested_by: string | null
+          resource_type: string
+          service_name: string
+          specifications: Json
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          id?: string
+          justification: string
+          priority?: string | null
+          provider: string
+          provisioned_at?: string | null
+          provisioned_by?: string | null
+          request_number: string
+          request_type: string
+          requested_at?: string | null
+          requested_by?: string | null
+          resource_type: string
+          service_name: string
+          specifications: Json
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          id?: string
+          justification?: string
+          priority?: string | null
+          provider?: string
+          provisioned_at?: string | null
+          provisioned_by?: string | null
+          request_number?: string
+          request_type?: string
+          requested_at?: string | null
+          requested_by?: string | null
+          resource_type?: string
+          service_name?: string
+          specifications?: Json
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infrastructure_provisioning_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_provisioning_requests_provisioned_by_fkey"
+            columns: ["provisioned_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "infrastructure_provisioning_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      infrastructure_slas: {
+        Row: {
+          breach_count: number | null
+          created_at: string | null
+          current_value: number | null
+          id: string
+          is_active: boolean | null
+          last_measured_at: string | null
+          measurement_period: string
+          service_id: string | null
+          sla_name: string
+          sla_type: string
+          status: string | null
+          target_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          breach_count?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_measured_at?: string | null
+          measurement_period?: string
+          service_id?: string | null
+          sla_name: string
+          sla_type: string
+          status?: string | null
+          target_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          breach_count?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_measured_at?: string | null
+          measurement_period?: string
+          service_id?: string | null
+          sla_name?: string
+          sla_type?: string
+          status?: string | null
+          target_value?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      intern_activation_status: {
+        Row: {
+          activated_at: string | null
+          core_modules_completed: boolean | null
+          created_at: string | null
+          id: string
+          is_activated: boolean | null
+          onboarding_started_at: string | null
+          role_modules_completed: boolean | null
+          role_track: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          core_modules_completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_activated?: boolean | null
+          onboarding_started_at?: string | null
+          role_modules_completed?: boolean | null
+          role_track: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          core_modules_completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_activated?: boolean | null
+          onboarding_started_at?: string | null
+          role_modules_completed?: boolean | null
+          role_track?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_activation_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_certifications: {
+        Row: {
+          certificate_url: string | null
+          expires_at: string | null
+          id: string
+          issued_at: string | null
+          module_id: string
+          module_name: string
+          score: number
+          user_id: string
+          verification_code: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          module_id: string
+          module_name: string
+          score: number
+          user_id: string
+          verification_code?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          expires_at?: string | null
+          id?: string
+          issued_at?: string | null
+          module_id?: string
+          module_name?: string
+          score?: number
+          user_id?: string
+          verification_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_certifications_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "intern_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_certifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_enforcement_actions: {
+        Row: {
+          action_type: string
+          engagement_id: string
+          id: string
+          is_active: boolean | null
+          performed_at: string | null
+          performed_by: string
+          reason: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          action_type: string
+          engagement_id: string
+          id?: string
+          is_active?: boolean | null
+          performed_at?: string | null
+          performed_by: string
+          reason: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          engagement_id?: string
+          id?: string
+          is_active?: boolean | null
+          performed_at?: string | null
+          performed_by?: string
+          reason?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_enforcement_actions_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_enforcement_actions_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_enforcement_actions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_enforcement_requests: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          decided_at: string | null
+          engagement_id: string
+          evidence_links: string[] | null
+          id: string
+          reason: string
+          recommended_duration: number | null
+          requested_by: string
+          severity: string
+          sponsor_comment: string | null
+          sponsor_id: string | null
+          sponsor_reason_code: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          decided_at?: string | null
+          engagement_id: string
+          evidence_links?: string[] | null
+          id?: string
+          reason: string
+          recommended_duration?: number | null
+          requested_by: string
+          severity?: string
+          sponsor_comment?: string | null
+          sponsor_id?: string | null
+          sponsor_reason_code?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          decided_at?: string | null
+          engagement_id?: string
+          evidence_links?: string[] | null
+          id?: string
+          reason?: string
+          recommended_duration?: number | null
+          requested_by?: string
+          severity?: string
+          sponsor_comment?: string | null
+          sponsor_id?: string | null
+          sponsor_reason_code?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_enforcement_requests_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_enforcement_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_enforcement_requests_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_module_progress: {
+        Row: {
+          attempts: number | null
+          completed_at: string | null
+          id: string
+          last_activity_at: string | null
+          module_id: string
+          progress_percent: number | null
+          score: number | null
+          started_at: string | null
+          status: string
+          time_spent_minutes: number | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          completed_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          module_id: string
+          progress_percent?: number | null
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_minutes?: number | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          completed_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          module_id?: string
+          progress_percent?: number | null
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_minutes?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_module_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "intern_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_module_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_module_unlocks: {
+        Row: {
+          id: string
+          module_id: string
+          reason: string
+          unlocked_at: string | null
+          unlocked_by: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          reason: string
+          unlocked_at?: string | null
+          unlocked_by: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          reason?: string
+          unlocked_at?: string | null
+          unlocked_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_module_unlocks_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "intern_training_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_module_unlocks_unlocked_by_fkey"
+            columns: ["unlocked_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_module_unlocks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_program_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          affected_user_id: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          reason: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          affected_user_id?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          reason: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          affected_user_id?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_program_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_program_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          html_content: string
+          id: string
+          is_active: boolean | null
+          name: string
+          placeholders: string[] | null
+          template_type: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          html_content: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          placeholders?: string[] | null
+          template_type: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          html_content?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          placeholders?: string[] | null
+          template_type?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_program_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_promotion_requests: {
+        Row: {
+          created_at: string | null
+          decided_at: string | null
+          eligibility_snapshot: Json
+          eligibility_status: string
+          engagement_id: string
+          id: string
+          manager_recommendation: string | null
+          requested_by: string
+          sponsor_comment: string | null
+          sponsor_decision: string | null
+          sponsor_id: string | null
+          sponsor_reason_code: string | null
+          status: string
+          target_role_state: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          decided_at?: string | null
+          eligibility_snapshot?: Json
+          eligibility_status?: string
+          engagement_id: string
+          id?: string
+          manager_recommendation?: string | null
+          requested_by: string
+          sponsor_comment?: string | null
+          sponsor_decision?: string | null
+          sponsor_id?: string | null
+          sponsor_reason_code?: string | null
+          status?: string
+          target_role_state: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          decided_at?: string | null
+          eligibility_snapshot?: Json
+          eligibility_status?: string
+          engagement_id?: string
+          id?: string
+          manager_recommendation?: string | null
+          requested_by?: string
+          sponsor_comment?: string | null
+          sponsor_decision?: string | null
+          sponsor_id?: string | null
+          sponsor_reason_code?: string | null
+          status?: string
+          target_role_state?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_promotion_requests_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_promotion_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_promotion_requests_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_promotion_rules: {
+        Row: {
+          acting_term_completed: boolean | null
+          compliance_required: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          from_state: string
+          id: string
+          is_active: boolean | null
+          min_passed_tests: number | null
+          min_review_score: number | null
+          min_tenure_days: number | null
+          min_test_level: string | null
+          priority: number | null
+          required_categories: string[] | null
+          rule_name: string
+          sponsor_approval_required: boolean | null
+          to_state: string
+          updated_at: string | null
+        }
+        Insert: {
+          acting_term_completed?: boolean | null
+          compliance_required?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          from_state: string
+          id?: string
+          is_active?: boolean | null
+          min_passed_tests?: number | null
+          min_review_score?: number | null
+          min_tenure_days?: number | null
+          min_test_level?: string | null
+          priority?: number | null
+          required_categories?: string[] | null
+          rule_name: string
+          sponsor_approval_required?: boolean | null
+          to_state: string
+          updated_at?: string | null
+        }
+        Update: {
+          acting_term_completed?: boolean | null
+          compliance_required?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          from_state?: string
+          id?: string
+          is_active?: boolean | null
+          min_passed_tests?: number | null
+          min_review_score?: number | null
+          min_tenure_days?: number | null
+          min_test_level?: string | null
+          priority?: number | null
+          required_categories?: string[] | null
+          rule_name?: string
+          sponsor_approval_required?: boolean | null
+          to_state?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_promotion_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_role_tracks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          leadership_required: boolean | null
+          minimum_test_level: string | null
+          name: string
+          recommended_test_modules: string[] | null
+          required_competency_tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          leadership_required?: boolean | null
+          minimum_test_level?: string | null
+          name: string
+          recommended_test_modules?: string[] | null
+          required_competency_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          leadership_required?: boolean | null
+          minimum_test_level?: string | null
+          name?: string
+          recommended_test_modules?: string[] | null
+          required_competency_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      intern_sponsor_notes: {
+        Row: {
+          context: string | null
+          created_at: string
+          engagement_id: string
+          id: string
+          note_text: string
+          related_request_id: string | null
+          related_request_type: string | null
+          sponsor_id: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          engagement_id: string
+          id?: string
+          note_text: string
+          related_request_id?: string | null
+          related_request_type?: string | null
+          sponsor_id: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          engagement_id?: string
+          id?: string
+          note_text?: string
+          related_request_id?: string | null
+          related_request_type?: string | null
+          sponsor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_sponsor_notes_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_sponsor_notes_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_test_assignments: {
+        Row: {
+          artifact_url: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          attempts: number | null
+          due_date: string | null
+          engagement_id: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          score: number | null
+          status: string
+          submitted_at: string | null
+          test_module_id: string
+        }
+        Insert: {
+          artifact_url?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          attempts?: number | null
+          due_date?: string | null
+          engagement_id: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          score?: number | null
+          status?: string
+          submitted_at?: string | null
+          test_module_id: string
+        }
+        Update: {
+          artifact_url?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          attempts?: number | null
+          due_date?: string | null
+          engagement_id?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          score?: number | null
+          status?: string
+          submitted_at?: string | null
+          test_module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_test_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_test_assignments_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intern_test_assignments_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "intern_test_assignments_test_module_id_fkey"
+            columns: ["test_module_id"]
+            isOneToOne: false
+            referencedRelation: "intern_test_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intern_test_modules: {
+        Row: {
+          allowed_role_states: string[] | null
+          artifact_required: boolean | null
+          category: string
+          competency_tags: string[] | null
+          content_json: Json | null
+          counts_toward_promotion: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          instructions: string | null
+          is_archived: boolean | null
+          level: string
+          name: string
+          pass_threshold: number
+          retake_limit: number | null
+          reviewer_type: string
+          test_type: string
+          time_limit_minutes: number | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          allowed_role_states?: string[] | null
+          artifact_required?: boolean | null
+          category: string
+          competency_tags?: string[] | null
+          content_json?: Json | null
+          counts_toward_promotion?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean | null
+          level: string
+          name: string
+          pass_threshold?: number
+          retake_limit?: number | null
+          reviewer_type?: string
+          test_type: string
+          time_limit_minutes?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          allowed_role_states?: string[] | null
+          artifact_required?: boolean | null
+          category?: string
+          competency_tags?: string[] | null
+          content_json?: Json | null
+          counts_toward_promotion?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean | null
+          level?: string
+          name?: string
+          pass_threshold?: number
+          retake_limit?: number | null
+          reviewer_type?: string
+          test_type?: string
+          time_limit_minutes?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_test_modules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      intern_training_modules: {
+        Row: {
+          admin_unlock_only: boolean | null
+          certification_issued: boolean | null
+          content_json: Json | null
+          content_url: string | null
+          created_at: string | null
+          delivery_type: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          name: string
+          passing_score: number | null
+          performance_flag_required: boolean | null
+          prerequisite_module_ids: string[] | null
+          scope: string
+          sort_order: number | null
+          unlock_after_weeks: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_unlock_only?: boolean | null
+          certification_issued?: boolean | null
+          content_json?: Json | null
+          content_url?: string | null
+          created_at?: string | null
+          delivery_type: string
+          description?: string | null
+          duration_minutes: number
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name: string
+          passing_score?: number | null
+          performance_flag_required?: boolean | null
+          prerequisite_module_ids?: string[] | null
+          scope: string
+          sort_order?: number | null
+          unlock_after_weeks?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_unlock_only?: boolean | null
+          certification_issued?: boolean | null
+          content_json?: Json | null
+          content_url?: string | null
+          created_at?: string | null
+          delivery_type?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name?: string
+          passing_score?: number | null
+          performance_flag_required?: boolean | null
+          prerequisite_module_ids?: string[] | null
+          scope?: string
+          sort_order?: number | null
+          unlock_after_weeks?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      investment_opportunities: {
+        Row: {
+          banner_url: string | null
+          business_description: string | null
+          company_name: string
+          created_at: string | null
+          created_by: string | null
+          deal_description: string | null
+          documents: Json | null
+          financials: Json | null
+          gallery_images: string[] | null
+          highlights: string[] | null
+          id: string
+          investment_raised: number | null
+          investor_role: string
+          is_active: boolean | null
+          location: string
+          logo_url: string | null
+          market_description: string | null
+          minimum_investment: number
+          objectives_description: string | null
+          previous_rounds: number | null
+          progress_description: string | null
+          short_summary: string
+          stage: string
+          tags: string[] | null
+          target_amount: number
+          team_members: Json | null
+          updated_at: string | null
+          video_url: string | null
+          why_we_win: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          business_description?: string | null
+          company_name: string
+          created_at?: string | null
+          created_by?: string | null
+          deal_description?: string | null
+          documents?: Json | null
+          financials?: Json | null
+          gallery_images?: string[] | null
+          highlights?: string[] | null
+          id?: string
+          investment_raised?: number | null
+          investor_role: string
+          is_active?: boolean | null
+          location: string
+          logo_url?: string | null
+          market_description?: string | null
+          minimum_investment: number
+          objectives_description?: string | null
+          previous_rounds?: number | null
+          progress_description?: string | null
+          short_summary: string
+          stage: string
+          tags?: string[] | null
+          target_amount: number
+          team_members?: Json | null
+          updated_at?: string | null
+          video_url?: string | null
+          why_we_win?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          business_description?: string | null
+          company_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          deal_description?: string | null
+          documents?: Json | null
+          financials?: Json | null
+          gallery_images?: string[] | null
+          highlights?: string[] | null
+          id?: string
+          investment_raised?: number | null
+          investor_role?: string
+          is_active?: boolean | null
+          location?: string
+          logo_url?: string | null
+          market_description?: string | null
+          minimum_investment?: number
+          objectives_description?: string | null
+          previous_rounds?: number | null
+          progress_description?: string | null
+          short_summary?: string
+          stage?: string
+          tags?: string[] | null
+          target_amount?: number
+          team_members?: Json | null
+          updated_at?: string | null
+          video_url?: string | null
+          why_we_win?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investment_opportunities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_access_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          investor_type: string
+          linkedin_url: string | null
+          location: string | null
+          notes: string | null
+          organization: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          investor_type: string
+          linkedin_url?: string | null
+          location?: string | null
+          notes?: string | null
+          organization?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          investor_type?: string
+          linkedin_url?: string | null
+          location?: string | null
+          notes?: string | null
+          organization?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_access_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "investor_access_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_intake: {
+        Row: {
+          accepted_at: string | null
+          acknowledgment_accepted: boolean
+          admin_notes: string | null
+          capital_range: string | null
+          created_at: string | null
+          email: string
+          entity_name: string | null
+          full_name: string
+          id: string
+          investor_type: string
+          ip_address: string | null
+          jurisdiction: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          acknowledgment_accepted?: boolean
+          admin_notes?: string | null
+          capital_range?: string | null
+          created_at?: string | null
+          email: string
+          entity_name?: string | null
+          full_name: string
+          id?: string
+          investor_type: string
+          ip_address?: string | null
+          jurisdiction?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          acknowledgment_accepted?: boolean
+          admin_notes?: string | null
+          capital_range?: string | null
+          created_at?: string | null
+          email?: string
+          entity_name?: string | null
+          full_name?: string
+          id?: string
+          investor_type?: string
+          ip_address?: string | null
+          jurisdiction?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_intake_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "investor_intake_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_interests: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          investment_range: string | null
+          investor_type: string | null
+          message: string | null
+          notes: string | null
+          opportunity_id: string
+          phone: string | null
+          shortlisted: boolean | null
+          source: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          investment_range?: string | null
+          investor_type?: string | null
+          message?: string | null
+          notes?: string | null
+          opportunity_id: string
+          phone?: string | null
+          shortlisted?: boolean | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          investment_range?: string | null
+          investor_type?: string | null
+          message?: string | null
+          notes?: string | null
+          opportunity_id?: string
+          phone?: string | null
+          shortlisted?: boolean | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_interests_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "investment_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_profiles: {
+        Row: {
+          access_status: string
+          accreditation_self_certified_at: string | null
+          accreditation_status: string | null
+          created_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_status?: string
+          accreditation_self_certified_at?: string | null
+          accreditation_status?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_status?: string
+          accreditation_self_certified_at?: string | null
+          accreditation_status?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_shortlists: {
+        Row: {
+          created_at: string | null
+          id: string
+          opportunity_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          opportunity_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          opportunity_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_shortlists_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "investment_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investor_shortlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       investor_updates: {
         Row: {
           created_at: string | null
@@ -12823,6 +15913,171 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string
+          description: string
+          entity_code: string | null
+          entry_date: string
+          entry_number: string
+          id: string
+          period: string | null
+          posted_at: string | null
+          posted_by: string | null
+          reference_number: string | null
+          requires_approval: boolean | null
+          reversal_entry_id: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          status: string | null
+          total_credits: number | null
+          total_debits: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by: string
+          description: string
+          entity_code?: string | null
+          entry_date: string
+          entry_number: string
+          id?: string
+          period?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          requires_approval?: boolean | null
+          reversal_entry_id?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          status?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string
+          entity_code?: string | null
+          entry_date?: string
+          entry_number?: string
+          id?: string
+          period?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          requires_approval?: boolean | null
+          reversal_entry_id?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          status?: string | null
+          total_credits?: number | null
+          total_debits?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "journal_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "journal_entries_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "journal_entries_reversal_entry_id_fkey"
+            columns: ["reversal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          credit_amount: number | null
+          debit_amount: number | null
+          description: string | null
+          id: string
+          journal_entry_id: string
+          line_number: number
+          reference_id: string | null
+          reference_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id: string
+          line_number: number
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          credit_amount?: number | null
+          debit_amount?: number | null
+          description?: string | null
+          id?: string
+          journal_entry_id?: string
+          line_number?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_documents: {
         Row: {
           category: string
@@ -13252,23 +16507,35 @@ export type Database = {
       }
       marketing_settings: {
         Row: {
+          application_background_image_url: string | null
           created_at: string
+          feeder_hero_image_url: string | null
           id: string
+          independent_contractor_agreement_url: string | null
           mobile_hero_image_url: string | null
+          partner_hero_image_url: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          application_background_image_url?: string | null
           created_at?: string
+          feeder_hero_image_url?: string | null
           id?: string
+          independent_contractor_agreement_url?: string | null
           mobile_hero_image_url?: string | null
+          partner_hero_image_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          application_background_image_url?: string | null
           created_at?: string
+          feeder_hero_image_url?: string | null
           id?: string
+          independent_contractor_agreement_url?: string | null
           mobile_hero_image_url?: string | null
+          partner_hero_image_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -13277,6 +16544,44 @@ export type Database = {
             foreignKeyName: "marketing_settings_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      membership_entitlements: {
+        Row: {
+          early_access: boolean | null
+          id: string
+          member_discounts: boolean | null
+          priority_support: boolean | null
+          updated_at: string | null
+          user_id: string
+          zero_delivery_fee: boolean | null
+        }
+        Insert: {
+          early_access?: boolean | null
+          id?: string
+          member_discounts?: boolean | null
+          priority_support?: boolean | null
+          updated_at?: string | null
+          user_id: string
+          zero_delivery_fee?: boolean | null
+        }
+        Update: {
+          early_access?: boolean | null
+          id?: string
+          member_discounts?: boolean | null
+          priority_support?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+          zero_delivery_fee?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_entitlements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
           },
@@ -13474,6 +16779,7 @@ export type Database = {
         Row: {
           address: string | null
           avg_prep_minutes: number | null
+          cravemore_eligible: boolean | null
           created_at: string | null
           id: string
           is_at_risk: boolean | null
@@ -13485,6 +16791,7 @@ export type Database = {
         Insert: {
           address?: string | null
           avg_prep_minutes?: number | null
+          cravemore_eligible?: boolean | null
           created_at?: string | null
           id?: string
           is_at_risk?: boolean | null
@@ -13496,6 +16803,7 @@ export type Database = {
         Update: {
           address?: string | null
           avg_prep_minutes?: number | null
+          cravemore_eligible?: boolean | null
           created_at?: string | null
           id?: string
           is_at_risk?: boolean | null
@@ -15441,6 +18749,39 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_verifications: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          phone: string
+          step: number | null
+          verified: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          phone: string
+          step?: number | null
+          verified?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          step?: number | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       positions: {
         Row: {
           code: string
@@ -15806,6 +19147,413 @@ export type Database = {
           },
         ]
       }
+      promotion_approvals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          comment: string | null
+          created_at: string | null
+          document_id: string
+          id: string
+          required_role: string
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          comment?: string | null
+          created_at?: string | null
+          document_id: string
+          id?: string
+          required_role: string
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          comment?: string | null
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          required_role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "promotion_approvals_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_authority_revocations: {
+        Row: {
+          authority_scope: string | null
+          created_at: string | null
+          document_id: string | null
+          engagement_id: string
+          id: string
+          reason: string
+          revoked_at: string | null
+          revoked_by: string | null
+        }
+        Insert: {
+          authority_scope?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          engagement_id: string
+          id?: string
+          reason: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Update: {
+          authority_scope?: string | null
+          created_at?: string | null
+          document_id?: string | null
+          engagement_id?: string
+          id?: string
+          reason?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_authority_revocations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_authority_revocations_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_authority_revocations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      promotion_comp_packages: {
+        Row: {
+          created_at: string | null
+          deferred_salary_annual: number | null
+          engagement_id: string
+          equity_conditions: string | null
+          equity_percent_target: number | null
+          equity_type: string | null
+          id: string
+          salary_accrual_start_date: string | null
+          salary_activation_triggers: string | null
+          updated_at: string | null
+          vesting_schedule: string | null
+          visibility_level: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deferred_salary_annual?: number | null
+          engagement_id: string
+          equity_conditions?: string | null
+          equity_percent_target?: number | null
+          equity_type?: string | null
+          id?: string
+          salary_accrual_start_date?: string | null
+          salary_activation_triggers?: string | null
+          updated_at?: string | null
+          vesting_schedule?: string | null
+          visibility_level?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deferred_salary_annual?: number | null
+          engagement_id?: string
+          equity_conditions?: string | null
+          equity_percent_target?: number | null
+          equity_type?: string | null
+          id?: string
+          salary_accrual_start_date?: string | null
+          salary_activation_triggers?: string | null
+          updated_at?: string | null
+          vesting_schedule?: string | null
+          visibility_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_comp_packages_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: true
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_documents: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          doc_type: string
+          engagement_id: string
+          html_template_id: string | null
+          id: string
+          rendered_html: string | null
+          rendered_pdf_url: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          doc_type: string
+          engagement_id: string
+          html_template_id?: string | null
+          id?: string
+          rendered_html?: string | null
+          rendered_pdf_url?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          doc_type?: string
+          engagement_id?: string
+          html_template_id?: string | null
+          id?: string
+          rendered_html?: string | null
+          rendered_pdf_url?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "promotion_documents_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_engagements: {
+        Row: {
+          created_at: string | null
+          current_stage: string
+          current_title: string
+          end_date: string | null
+          exit_date: string | null
+          exit_document_id: string | null
+          exit_reason: string | null
+          id: string
+          is_review_blocked: boolean | null
+          is_successor_eligible: boolean | null
+          missed_review_count: number | null
+          next_review_due_date: string | null
+          notes: string | null
+          person_id: string
+          promotion_lock_reason: string | null
+          promotion_locked: boolean | null
+          promotion_readiness_percent: number | null
+          reports_to_person_id: string | null
+          review_cadence_days: number | null
+          risk_status: string | null
+          start_date: string
+          successor_for_role: string | null
+          successor_readiness_score: number | null
+          track: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_stage?: string
+          current_title: string
+          end_date?: string | null
+          exit_date?: string | null
+          exit_document_id?: string | null
+          exit_reason?: string | null
+          id?: string
+          is_review_blocked?: boolean | null
+          is_successor_eligible?: boolean | null
+          missed_review_count?: number | null
+          next_review_due_date?: string | null
+          notes?: string | null
+          person_id: string
+          promotion_lock_reason?: string | null
+          promotion_locked?: boolean | null
+          promotion_readiness_percent?: number | null
+          reports_to_person_id?: string | null
+          review_cadence_days?: number | null
+          risk_status?: string | null
+          start_date?: string
+          successor_for_role?: string | null
+          successor_readiness_score?: number | null
+          track?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_stage?: string
+          current_title?: string
+          end_date?: string | null
+          exit_date?: string | null
+          exit_document_id?: string | null
+          exit_reason?: string | null
+          id?: string
+          is_review_blocked?: boolean | null
+          is_successor_eligible?: boolean | null
+          missed_review_count?: number | null
+          next_review_due_date?: string | null
+          notes?: string | null
+          person_id?: string
+          promotion_lock_reason?: string | null
+          promotion_locked?: boolean | null
+          promotion_readiness_percent?: number | null
+          reports_to_person_id?: string | null
+          review_cadence_days?: number | null
+          risk_status?: string | null
+          start_date?: string
+          successor_for_role?: string | null
+          successor_readiness_score?: number | null
+          track?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_engagements_exit_document_id_fkey"
+            columns: ["exit_document_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_engagements_reports_to_person_id_fkey"
+            columns: ["reports_to_person_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_performance_reviews: {
+        Row: {
+          created_at: string | null
+          deliverables_complete: boolean | null
+          engagement_id: string
+          id: string
+          kpi_json: Json | null
+          period_end: string
+          period_start: string
+          rating: number
+          recommendation: string | null
+          reviewer_person_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deliverables_complete?: boolean | null
+          engagement_id: string
+          id?: string
+          kpi_json?: Json | null
+          period_end: string
+          period_start: string
+          rating: number
+          recommendation?: string | null
+          reviewer_person_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deliverables_complete?: boolean | null
+          engagement_id?: string
+          id?: string
+          kpi_json?: Json | null
+          period_end?: string
+          period_start?: string
+          rating?: number
+          recommendation?: string | null
+          reviewer_person_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_performance_reviews_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_review_schedules: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          engagement_id: string
+          id: string
+          is_blocking: boolean | null
+          review_id: string | null
+          review_type: string
+          scheduled_date: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          engagement_id: string
+          id?: string
+          is_blocking?: boolean | null
+          review_id?: string | null
+          review_type: string
+          scheduled_date: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          engagement_id?: string
+          id?: string
+          is_blocking?: boolean | null
+          review_id?: string | null
+          review_type?: string
+          scheduled_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_review_schedules_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_review_schedules_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_performance_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promotional_banners: {
         Row: {
           action_type: string | null
@@ -16025,6 +19773,167 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      reconciliation_bank: {
+        Row: {
+          account_name: string
+          account_type: string
+          actual_balance: number | null
+          checklist_completed: boolean | null
+          checklist_items: Json | null
+          closing_balance: number
+          created_at: string | null
+          discrepancy_notes: string | null
+          expected_balance: number | null
+          id: string
+          notes: string | null
+          opening_balance: number
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_date: string
+          reconciliation_period_end: string
+          reconciliation_period_start: string
+          status: string | null
+          updated_at: string | null
+          variance: number | null
+        }
+        Insert: {
+          account_name: string
+          account_type: string
+          actual_balance?: number | null
+          checklist_completed?: boolean | null
+          checklist_items?: Json | null
+          closing_balance: number
+          created_at?: string | null
+          discrepancy_notes?: string | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opening_balance: number
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date: string
+          reconciliation_period_end: string
+          reconciliation_period_start: string
+          status?: string | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Update: {
+          account_name?: string
+          account_type?: string
+          actual_balance?: number | null
+          checklist_completed?: boolean | null
+          checklist_items?: Json | null
+          closing_balance?: number
+          created_at?: string | null
+          discrepancy_notes?: string | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opening_balance?: number
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_date?: string
+          reconciliation_period_end?: string
+          reconciliation_period_start?: string
+          status?: string | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_bank_reconciled_by_fkey"
+            columns: ["reconciled_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      reconciliation_ledger: {
+        Row: {
+          actual_amount: number | null
+          audit_log_id: string | null
+          auto_suggestion: Json | null
+          created_at: string | null
+          description: string
+          expected_amount: number | null
+          id: string
+          ledger_entry_id: string | null
+          manual_adjustment_log: Json | null
+          mismatch_type: string
+          reconciliation_date: string
+          reconciliation_period_end: string
+          reconciliation_period_start: string
+          resolution_action: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          suggestion_confidence: number | null
+          updated_at: string | null
+          variance: number | null
+        }
+        Insert: {
+          actual_amount?: number | null
+          audit_log_id?: string | null
+          auto_suggestion?: Json | null
+          created_at?: string | null
+          description: string
+          expected_amount?: number | null
+          id?: string
+          ledger_entry_id?: string | null
+          manual_adjustment_log?: Json | null
+          mismatch_type: string
+          reconciliation_date: string
+          reconciliation_period_end: string
+          reconciliation_period_start: string
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          suggestion_confidence?: number | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Update: {
+          actual_amount?: number | null
+          audit_log_id?: string | null
+          auto_suggestion?: Json | null
+          created_at?: string | null
+          description?: string
+          expected_amount?: number | null
+          id?: string
+          ledger_entry_id?: string | null
+          manual_adjustment_log?: Json | null
+          mismatch_type?: string
+          reconciliation_date?: string
+          reconciliation_period_end?: string
+          reconciliation_period_start?: string
+          resolution_action?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          suggestion_confidence?: number | null
+          updated_at?: string | null
+          variance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_ledger_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reconciliation_ledger_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       reconciliations: {
         Row: {
@@ -17684,6 +21593,60 @@ export type Database = {
           },
         ]
       }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          label: string | null
+          name: Database["public"]["Enums"]["role_name"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          label?: string | null
+          name: Database["public"]["Enums"]["role_name"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          label?: string | null
+          name?: Database["public"]["Enums"]["role_name"]
+        }
+        Relationships: []
+      }
+      roles_catalog: {
+        Row: {
+          authority_template: string | null
+          created_at: string | null
+          default_deferred_salary: number | null
+          default_equity_target: number | null
+          id: string
+          role_name: string
+          tier: number
+        }
+        Insert: {
+          authority_template?: string | null
+          created_at?: string | null
+          default_deferred_salary?: number | null
+          default_equity_target?: number | null
+          id?: string
+          role_name: string
+          tier: number
+        }
+        Update: {
+          authority_template?: string | null
+          created_at?: string | null
+          default_deferred_salary?: number | null
+          default_equity_target?: number | null
+          id?: string
+          role_name?: string
+          tier?: number
+        }
+        Relationships: []
+      }
       rollback_recommendations: {
         Row: {
           created_at: string | null
@@ -17977,6 +21940,90 @@ export type Database = {
           violation_severity?: string | null
         }
         Relationships: []
+      }
+      sop_documents: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          file_size_bytes: number | null
+          id: string
+          keywords: string[] | null
+          last_reviewed_at: string | null
+          markdown_file_path: string | null
+          next_review_due_at: string | null
+          owner_department: string | null
+          page_count: number | null
+          pdf_file_path: string | null
+          review_frequency_days: number | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          keywords?: string[] | null
+          last_reviewed_at?: string | null
+          markdown_file_path?: string | null
+          next_review_due_at?: string | null
+          owner_department?: string | null
+          page_count?: number | null
+          pdf_file_path?: string | null
+          review_frequency_days?: number | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          keywords?: string[] | null
+          last_reviewed_at?: string | null
+          markdown_file_path?: string | null
+          next_review_due_at?: string | null
+          owner_department?: string | null
+          page_count?: number | null
+          pdf_file_path?: string | null
+          review_frequency_days?: number | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sop_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sop_documents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       spatial_ref_sys: {
         Row: {
@@ -19612,6 +23659,62 @@ export type Database = {
           },
         ]
       }
+      user_memberships: {
+        Row: {
+          canceled_at: string | null
+          created_at: string | null
+          founding_member: boolean | null
+          id: string
+          plan_key: string
+          provider: string | null
+          provider_customer_id: string | null
+          provider_subscription_id: string | null
+          renews_at: string | null
+          started_at: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string | null
+          founding_member?: boolean | null
+          id?: string
+          plan_key: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          renews_at?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string | null
+          founding_member?: boolean | null
+          id?: string
+          plan_key?: string
+          provider?: string | null
+          provider_customer_id?: string | null
+          provider_subscription_id?: string | null
+          renews_at?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_notification_preferences: {
         Row: {
           created_at: string
@@ -19699,11 +23802,13 @@ export type Database = {
           fcm_token: string | null
           full_name: string | null
           id: string
+          needs_password_reset: boolean | null
           notification_preferences: Json | null
           phone: string | null
           preferences: Json | null
           role: string | null
           settings: Json | null
+          stripe_customer_id: string | null
           suspension_reason: string | null
           suspension_until: string | null
           updated_at: string | null
@@ -19717,11 +23822,13 @@ export type Database = {
           fcm_token?: string | null
           full_name?: string | null
           id?: string
+          needs_password_reset?: boolean | null
           notification_preferences?: Json | null
           phone?: string | null
           preferences?: Json | null
           role?: string | null
           settings?: Json | null
+          stripe_customer_id?: string | null
           suspension_reason?: string | null
           suspension_until?: string | null
           updated_at?: string | null
@@ -19735,11 +23842,13 @@ export type Database = {
           fcm_token?: string | null
           full_name?: string | null
           id?: string
+          needs_password_reset?: boolean | null
           notification_preferences?: Json | null
           phone?: string | null
           preferences?: Json | null
           role?: string | null
           settings?: Json | null
+          stripe_customer_id?: string | null
           suspension_reason?: string | null
           suspension_until?: string | null
           updated_at?: string | null
@@ -20216,6 +24325,7 @@ export type Database = {
           active_drivers: number
           capacity: number
           city: string
+          cravemore_eligible: boolean | null
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -20228,6 +24338,7 @@ export type Database = {
           active_drivers?: number
           capacity?: number
           city: string
+          cravemore_eligible?: boolean | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -20240,6 +24351,7 @@ export type Database = {
           active_drivers?: number
           capacity?: number
           city?: string
+          cravemore_eligible?: boolean | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -20631,6 +24743,10 @@ export type Database = {
         Args: { p_appointment_id: string }
         Returns: boolean
       }
+      check_core_modules_completed: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       check_cost_variances: {
         Args: never
         Returns: {
@@ -20650,11 +24766,16 @@ export type Database = {
           zone_name: string
         }[]
       }
+      check_role_modules_completed: {
+        Args: { p_role_track: string; p_user_id: string }
+        Returns: boolean
+      }
       check_sod_violation: {
         Args: { p_permission_codes: string[]; p_user_id: string }
         Returns: boolean
       }
       cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_verifications: { Args: never; Returns: undefined }
       clock_in:
         | { Args: { p_user_id: string }; Returns: string }
         | {
@@ -20787,6 +24908,7 @@ export type Database = {
       generate_employee_number: { Args: never; Returns: string }
       generate_expense_number: { Args: never; Returns: string }
       generate_governance_resolution_number: { Args: never; Returns: string }
+      generate_journal_entry_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_payroll_invoice: {
         Args: { payroll_end: string; payroll_start: string }
@@ -20912,6 +25034,7 @@ export type Database = {
           total_errors: number
         }[]
       }
+      get_cravemore_price: { Args: { p_plan_key: string }; Returns: number }
       get_current_user_email: { Args: never; Returns: string }
       get_daily_uptime_percentage: {
         Args: { target_date?: string }
@@ -21023,6 +25146,7 @@ export type Database = {
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
+      has_active_cravemore: { Args: { p_user_id: string }; Returns: boolean }
       has_active_subscription: { Args: { p_user_id: string }; Returns: boolean }
       has_finance_permission:
         | {
@@ -21037,6 +25161,10 @@ export type Database = {
             Args: { p_permission_code: string; p_user_id: string }
             Returns: boolean
           }
+      has_finance_role_safe: {
+        Args: { p_role_codes: string[]; p_user_id: string }
+        Returns: boolean
+      }
       has_permission: {
         Args: { p_permission: string; p_user_id: string }
         Returns: boolean
@@ -21046,6 +25174,11 @@ export type Database = {
       hash_and_update_pin: {
         Args: { p_email: string; p_new_pin: string }
         Returns: boolean
+      }
+      increment_lifetime_cap: { Args: never; Returns: number }
+      increment_missed_review_count: {
+        Args: { engagement_id_param: string }
+        Returns: undefined
       }
       is_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
@@ -21057,7 +25190,16 @@ export type Database = {
       is_cxo_or_admin: { Args: { user_uuid: string }; Returns: boolean }
       is_diamond_driver: { Args: { p_driver_id: string }; Returns: boolean }
       is_executive: { Args: { user_uuid: string }; Returns: boolean }
+      is_executive_role: {
+        Args: { exec_role: string; user_uuid: string }
+        Returns: boolean
+      }
+      is_executive_role_safe: {
+        Args: { exec_role?: string; user_uuid: string }
+        Returns: boolean
+      }
       is_universal_ceo: { Args: never; Returns: boolean }
+      is_user_admin: { Args: { user_id_param: string }; Returns: boolean }
       is_user_in_exec_users: {
         Args: { check_user_id: string }
         Returns: boolean
@@ -21086,6 +25228,19 @@ export type Database = {
         }
         Returns: string
       }
+      log_audit_trail_entry: {
+        Args: {
+          p_action_description: string
+          p_action_type: string
+          p_changed_fields?: string[]
+          p_metadata?: Json
+          p_new_values?: Json
+          p_old_values?: Json
+          p_target_id?: string
+          p_target_type?: string
+        }
+        Returns: string
+      }
       log_ceo_action: {
         Args: {
           p_action_category: string
@@ -21111,13 +25266,25 @@ export type Database = {
         }
         Returns: string
       }
+      log_intern_program_action: {
+        Args: {
+          p_action: string
+          p_actor_id: string
+          p_affected_user_id: string
+          p_entity_id: string
+          p_entity_type: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_reason: string
+        }
+        Returns: string
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       lookup_user_by_email: {
         Args: { p_email: string }
         Returns: {
-          created_at: string
           email: string
-          full_name: string
+          found_in: string
           user_id: string
         }[]
       }
@@ -21132,6 +25299,10 @@ export type Database = {
       position_to_exec_role: {
         Args: { position_text: string }
         Returns: string
+      }
+      post_journal_entry: {
+        Args: { entry_id: string; posted_by_user: string }
+        Returns: boolean
       }
       postgis_constraint_dims: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string }
@@ -21170,6 +25341,8 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      process_cfo_evaluation_timeouts: { Args: never; Returns: undefined }
+      process_cto_evaluation_timeouts: { Args: never; Returns: undefined }
       process_driver_referral_milestone: {
         Args: { p_milestone_number: number; p_referral_id: string }
         Returns: boolean
@@ -21776,6 +25949,19 @@ export type Database = {
         }
         Returns: string
       }
+      start_cfo_evaluation_prefunding: {
+        Args: { p_cfo_user_id: string }
+        Returns: string
+      }
+      start_cfo_test_evaluation_prefunding: {
+        Args: { p_cfo_user_id: string }
+        Returns: string
+      }
+      start_cto_evaluation: { Args: { p_cto_user_id: string }; Returns: string }
+      start_cto_test_evaluation: {
+        Args: { p_cto_user_id: string }
+        Returns: string
+      }
       sync_user_roles_for_employee: {
         Args: {
           p_employee_id: string
@@ -21802,6 +25988,10 @@ export type Database = {
         Args: { new_status: string; old_status: string }
         Returns: boolean
       }
+      validate_journal_entry_balance: {
+        Args: { entry_id: string }
+        Returns: boolean
+      }
       verify_ceo_master_pin: { Args: { p_pin: string }; Returns: boolean }
       verify_ceo_pin: {
         Args: { check_email: string; check_pin: string }
@@ -21820,7 +26010,80 @@ export type Database = {
       }
     }
     Enums: {
+      cfo_eval_status: "active" | "completed" | "cancelled"
+      cfo_gate_code:
+        | "G1_FINANCIAL_SNAPSHOT"
+        | "G2_RUNWAY_SURVIVAL"
+        | "G3_RISK_DISCLOSURE"
+        | "G4_FUNDBILITY_READINESS"
+        | "G5_EXEC_BRIEFING"
+      cfo_gate_status:
+        | "locked"
+        | "open"
+        | "submitted"
+        | "ceo_review"
+        | "passed"
+        | "failed"
+        | "auto_failed"
+      cto_eval_status: "active" | "completed" | "cancelled"
+      cto_gate_code:
+        | "GATE_1_ARCHITECTURE"
+        | "GATE_2_SECURITY"
+        | "GATE_3_EXECUTION"
+        | "GATE_4_LEADERSHIP"
+        | "GATE_5_CEO_BRIEFING"
+      cto_gate_status:
+        | "locked"
+        | "open"
+        | "submitted"
+        | "ceo_review"
+        | "passed"
+        | "failed"
+        | "auto_failed"
       menu_preparation_status: "not_started" | "in_progress" | "ready"
+      role_name:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "employee"
+        | "executive"
+        | "customer"
+        | "driver"
+        | "ceo"
+        | "cfo"
+        | "coo"
+        | "cto"
+        | "cxo"
+        | "cmo"
+        | "cro"
+        | "cpo"
+        | "cdo"
+        | "chro"
+        | "clo"
+        | "cso"
+        | "board_member"
+        | "advisor"
+        | "CRAVEN_FOUNDER"
+        | "CRAVEN_CORPORATE_SECRETARY"
+        | "CRAVEN_BOARD_MEMBER"
+        | "CRAVEN_EXECUTIVE"
+        | "CRAVEN_CEO"
+        | "CRAVEN_CFO"
+        | "CRAVEN_CTO"
+        | "CRAVEN_CXO"
+        | "CRAVEN_COO"
+        | "CRAVEN_CMO"
+        | "CRAVEN_CCO"
+        | "CRAVEN_STAFF"
+        | "CRAVEN_SUPPORT"
+        | "CRAVEN_DISPATCH"
+        | "CRAVEN_DRIVER"
+        | "CRAVEN_RESTAURANT"
+        | "CRAVEN_CUSTOMER"
+        | "INTERN"
+        | "INTERN_MANAGER"
+        | "INTERN_SPONSOR"
+        | "INTERN_PROGRAM_ADMIN"
       verification_task_status:
         | "pending"
         | "in_progress"
@@ -21967,7 +26230,85 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cfo_eval_status: ["active", "completed", "cancelled"],
+      cfo_gate_code: [
+        "G1_FINANCIAL_SNAPSHOT",
+        "G2_RUNWAY_SURVIVAL",
+        "G3_RISK_DISCLOSURE",
+        "G4_FUNDBILITY_READINESS",
+        "G5_EXEC_BRIEFING",
+      ],
+      cfo_gate_status: [
+        "locked",
+        "open",
+        "submitted",
+        "ceo_review",
+        "passed",
+        "failed",
+        "auto_failed",
+      ],
+      cto_eval_status: ["active", "completed", "cancelled"],
+      cto_gate_code: [
+        "GATE_1_ARCHITECTURE",
+        "GATE_2_SECURITY",
+        "GATE_3_EXECUTION",
+        "GATE_4_LEADERSHIP",
+        "GATE_5_CEO_BRIEFING",
+      ],
+      cto_gate_status: [
+        "locked",
+        "open",
+        "submitted",
+        "ceo_review",
+        "passed",
+        "failed",
+        "auto_failed",
+      ],
       menu_preparation_status: ["not_started", "in_progress", "ready"],
+      role_name: [
+        "admin",
+        "moderator",
+        "user",
+        "employee",
+        "executive",
+        "customer",
+        "driver",
+        "ceo",
+        "cfo",
+        "coo",
+        "cto",
+        "cxo",
+        "cmo",
+        "cro",
+        "cpo",
+        "cdo",
+        "chro",
+        "clo",
+        "cso",
+        "board_member",
+        "advisor",
+        "CRAVEN_FOUNDER",
+        "CRAVEN_CORPORATE_SECRETARY",
+        "CRAVEN_BOARD_MEMBER",
+        "CRAVEN_EXECUTIVE",
+        "CRAVEN_CEO",
+        "CRAVEN_CFO",
+        "CRAVEN_CTO",
+        "CRAVEN_CXO",
+        "CRAVEN_COO",
+        "CRAVEN_CMO",
+        "CRAVEN_CCO",
+        "CRAVEN_STAFF",
+        "CRAVEN_SUPPORT",
+        "CRAVEN_DISPATCH",
+        "CRAVEN_DRIVER",
+        "CRAVEN_RESTAURANT",
+        "CRAVEN_CUSTOMER",
+        "INTERN",
+        "INTERN_MANAGER",
+        "INTERN_SPONSOR",
+        "INTERN_PROGRAM_ADMIN",
+      ],
       verification_task_status: [
         "pending",
         "in_progress",
