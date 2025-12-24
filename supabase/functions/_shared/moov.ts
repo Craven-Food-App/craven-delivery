@@ -81,6 +81,7 @@ export async function moovRequest(
   const headers: Record<string, string> = {
     "Authorization": `Bearer ${secretKey}`,
     "Content-Type": "application/json",
+    "x-moov-version": "v2024.01.00", // Required Moov API version header
   };
 
   // Add Moov-Account header if account ID is provided
@@ -330,5 +331,223 @@ export async function verifyMoovWebhook(
     console.error("Signature verification error:", error);
     return false;
   }
+}
+
+/**
+ * Moov Onboarding Types
+ */
+export interface MoovOnboardingPrefill {
+  mode?: "production" | "sandbox";
+  accountType?: "individual" | "business";
+  profile?: {
+    business?: {
+      legalBusinessName?: string;
+      doingBusinessAs?: string;
+      businessType?: string;
+      address?: MoovAddress;
+      phone?: {
+        number: string;
+        countryCode: string;
+      };
+      email?: string;
+      website?: string;
+      description?: string;
+      taxID?: {
+        ein?: {
+          number: string;
+        };
+      };
+      industryCodes?: {
+        naics?: string;
+        sic?: string;
+        mcc?: string;
+      };
+      primaryRegulator?: string;
+    };
+    individual?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: {
+        number: string;
+        countryCode: string;
+      };
+      address?: MoovAddress;
+      dateOfBirth?: {
+        day: number;
+        month: number;
+        year: number;
+      };
+      ssn?: {
+        full?: string;
+        last4?: string;
+      };
+    };
+  };
+  metadata?: Record<string, string>;
+  termsOfService?: {
+    token: string;
+  };
+  foreignID?: string;
+  customerSupport?: {
+    phone?: {
+      number: string;
+      countryCode: string;
+    };
+    email?: string;
+    address?: MoovAddress;
+    website?: string;
+  };
+  settings?: {
+    cardPayment?: {
+      statementDescriptor?: string;
+    };
+    achPayment?: {
+      companyName?: string;
+    };
+  };
+}
+
+export interface MoovOnboardingInvite {
+  code: string;
+  link: string;
+  status?: string;
+  createdAt?: string;
+  expiresAt?: string;
+}
+
+/**
+ * Create a Moov onboarding invite
+ * Generates a link to a co-branded onboarding form
+ */
+export async function createMoovOnboardingInvite(params: {
+  returnURL?: string;
+  termsOfServiceURL?: string;
+  scopes: string[];
+  capabilities: string[];
+  feePlanCodes: string[];
+  prefill?: MoovOnboardingPrefill;
+  config?: MoovConfig;
+}): Promise<MoovOnboardingInvite> {
+  const response = await moovRequest(
+    "POST",
+    "/onboarding-invites",
+    {
+      returnURL: params.returnURL,
+      termsOfServiceURL: params.termsOfServiceURL,
+      scopes: params.scopes,
+      capabilities: params.capabilities,
+      feePlanCodes: params.feePlanCodes,
+      prefill: params.prefill,
+    },
+    params.config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(
+      `Moov onboarding invite creation failed: ${error.message || response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  return {
+    code: data.code,
+    link: data.link,
+    status: data.status,
+    createdAt: data.createdAt,
+    expiresAt: data.expiresAt,
+  };
+}
+
+/**
+ * List all Moov onboarding invites
+ */
+export async function listMoovOnboardingInvites(
+  config?: MoovConfig
+): Promise<MoovOnboardingInvite[]> {
+  const response = await moovRequest("GET", "/onboarding-invites", undefined, config);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(
+      `Failed to list onboarding invites: ${error.message || response.statusText}`
+    );
+  }
+
+  const data = await response.json();
+  return data.invites || [];
+}
+
+/**
+ * Get a specific Moov onboarding invite by code
+ */
+export async function getMoovOnboardingInvite(
+  code: string,
+  config?: MoovConfig
+): Promise<MoovOnboardingInvite> {
+  const response = await moovRequest(
+    "GET",
+    `/onboarding-invites/${code}`,
+    undefined,
+    config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(
+      `Failed to get onboarding invite: ${error.message || response.statusText}`
+    );
+  }
+
+  return await response.json();
+}
+
+/**
+ * Revoke a Moov onboarding invite
+ * This renders the link unusable
+ */
+export async function revokeMoovOnboardingInvite(
+  code: string,
+  config?: MoovConfig
+): Promise<void> {
+  const response = await moovRequest(
+    "DELETE",
+    `/onboarding-invites/${code}`,
+    undefined,
+    config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(
+      `Failed to revoke onboarding invite: ${error.message || response.statusText}`
+    );
+  }
+}
+
+/**
+ * Generate a terms of service token for Moov account
+ * This should be called before creating an onboarding link if terms acceptance is required
+ */
+export async function generateMoovTermsOfServiceToken(
+  accountID: string,
+  config?: MoovConfig
+): Promise<{ token: string }> {
+  const response = await moovRequest(
+    "POST",
+    `/accounts/${accountID}/terms-of-service`,
+    {},
+    config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(
+      `Failed to generate terms of service token: ${error.message || response.statusText}`
+    );
+  }
+
+  return await response.json();
 }
 

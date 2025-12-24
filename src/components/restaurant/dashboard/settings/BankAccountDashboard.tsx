@@ -7,6 +7,7 @@ import { CheckCircle2, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
+import { MoovOnboardingCard } from "./MoovOnboardingCard";
 
 interface StripeConnectStatus {
   hasAccount: boolean;
@@ -298,6 +299,11 @@ const BankAccountDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Moov Onboarding */}
+      <div className="mt-6">
+        <MoovOnboardingCard />
+      </div>
     </div>
   );
 };
