@@ -1,12 +1,146 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  listMoovOnboardingInvites,
-  getMoovOnboardingInvite,
-  revokeMoovOnboardingInvite,
-  getMoovConfig,
-} from "../_shared/moov.ts";
+
+// CORS helper (inlined for standalone deployment)
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map(o => o.trim());
+  }
+  return [
+    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
+    "https://cravenusa.com",
+    "https://www.cravenusa.com",
+    "https://feeder.cravenusa.com",
+    "https://merchant.cravenusa.com",
+    "https://board.cravenusa.com",
+    "https://hq.cravenusa.com",
+    "https://ceo.cravenusa.com",
+    "https://cfo.cravenusa.com",
+    "https://coo.cravenusa.com",
+    "https://cto.cravenusa.com",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+  ];
+};
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+};
+
+// Moov API utilities (inlined for standalone deployment)
+const MOOV_API_URL = Deno.env.get("MOOV_API_URL") || "https://api.moov.io";
+const MOOV_ACCOUNT_ID = Deno.env.get("MOOV_ACCOUNT_ID") || "";
+
+interface MoovConfig {
+  apiUrl?: string;
+  accountId?: string;
+  publicKey?: string;
+  secretKey?: string;
+}
+
+interface MoovOnboardingInvite {
+  code: string;
+  link: string;
+  status?: string;
+  createdAt?: string;
+  expiresAt?: string;
+}
+
+function getMoovConfig(): MoovConfig {
+  return {
+    apiUrl: MOOV_API_URL,
+    accountId: MOOV_ACCOUNT_ID,
+    publicKey: Deno.env.get("MOOV_PUBLIC_KEY") || "",
+    secretKey: Deno.env.get("MOOV_SECRET_KEY") || "",
+  };
+}
+
+async function moovRequest(
+  method: string,
+  path: string,
+  body?: any,
+  config?: MoovConfig
+): Promise<Response> {
+  const moovConfig = config || getMoovConfig();
+  const secretKey = moovConfig.secretKey;
+
+  if (!secretKey) {
+    throw new Error("Moov secret key not configured");
+  }
+
+  const url = `${moovConfig.apiUrl}${path}`;
+  const headers: Record<string, string> = {
+    "Authorization": `Bearer ${secretKey}`,
+    "Content-Type": "application/json",
+    "x-moov-version": "v2024.01.00",
+  };
+
+  if (moovConfig.accountId) {
+    headers["Moov-Account"] = moovConfig.accountId;
+  }
+
+  const options: RequestInit = { method, headers };
+  if (body && (method === "POST" || method === "PUT" || method === "PATCH")) {
+    options.body = JSON.stringify(body);
+  }
+
+  return fetch(url, options);
+}
+
+async function listMoovOnboardingInvites(config?: MoovConfig): Promise<MoovOnboardingInvite[]> {
+  const response = await moovRequest("GET", "/onboarding-invites", undefined, config);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(`Failed to list onboarding invites: ${error.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.invites || [];
+}
+
+async function getMoovOnboardingInvite(
+  code: string,
+  config?: MoovConfig
+): Promise<MoovOnboardingInvite> {
+  const response = await moovRequest(
+    "GET",
+    `/onboarding-invites/${code}`,
+    undefined,
+    config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(`Failed to get onboarding invite: ${error.message || response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function revokeMoovOnboardingInvite(code: string, config?: MoovConfig): Promise<void> {
+  const response = await moovRequest(
+    "DELETE",
+    `/onboarding-invites/${code}`,
+    undefined,
+    config
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new Error(`Failed to revoke onboarding invite: ${error.message || response.statusText}`);
+  }
+}
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
