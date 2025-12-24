@@ -127,8 +127,21 @@ async function createMoovPaymentHandler(
   try {
     // Check Moov configuration
     const moovConfig = getMoovConfig();
+    
+    // Debug: Check if secret key is set (don't log the actual key)
+    console.log('Moov config check:', {
+      hasSecretKey: !!moovConfig.secretKey,
+      secretKeyLength: moovConfig.secretKey?.length || 0,
+      apiUrl: moovConfig.apiUrl,
+      hasAccountId: !!moovConfig.accountId,
+      envCheck: {
+        MOOV_SECRET_KEY_exists: !!Deno.env.get("MOOV_SECRET_KEY"),
+        MOOV_SECRET_KEY_length: Deno.env.get("MOOV_SECRET_KEY")?.length || 0
+      }
+    });
+    
     if (!moovConfig.secretKey) {
-      throw new Error("Moov secret key not configured. Please set MOOV_SECRET_KEY environment variable in Supabase.");
+      throw new Error("Moov secret key not configured. Please set MOOV_SECRET_KEY environment variable in Supabase Edge Function secrets.");
     }
     
     console.log('Creating Moov payment:', {
