@@ -38,6 +38,12 @@ CREATE POLICY "System can update payment sessions"
   TO authenticated
   USING (true); -- Edge functions need this
 
+DROP POLICY IF EXISTS "System can insert payment sessions" ON public.cravemore_payment_sessions;
+CREATE POLICY "System can insert payment sessions"
+  ON public.cravemore_payment_sessions FOR INSERT
+  TO authenticated
+  WITH CHECK (true); -- Edge functions need this
+
 DROP POLICY IF EXISTS "Admins can view all payment sessions" ON public.cravemore_payment_sessions;
 CREATE POLICY "Admins can view all payment sessions"
   ON public.cravemore_payment_sessions FOR SELECT
