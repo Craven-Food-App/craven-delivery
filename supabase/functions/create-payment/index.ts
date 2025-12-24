@@ -10,12 +10,12 @@ const getAllowedOrigins = (): string[] => {
     return envOrigins.split(",").map(o => o.trim());
   }
   return [
+    "http://localhost:8080",
+    "http://localhost:5173",
     "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
     "https://cravenusa.com",
     "https://www.cravenusa.com",
     "https://feeder.cravenusa.com",
-    "http://localhost:8080",
-    "http://localhost:5173",
   ];
 };
 
