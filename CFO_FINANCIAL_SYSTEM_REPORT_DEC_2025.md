@@ -1,4 +1,4 @@
-# 💰 CFO Financial System Report - Craven Delivery Platform
+# CFO Financial System Report - Craven Delivery Platform
 **Date:** December 21, 2025  
 **Prepared For:** CFO & Finance Department  
 **Report Type:** Comprehensive Financial Systems Analysis  
@@ -6,7 +6,7 @@
 
 ---
 
-## 📋 Executive Summary
+## Executive Summary
 
 The Craven Delivery platform has a **fully operational, enterprise-grade financial management system** with automated revenue tracking, multi-party payout processing, commission management, and comprehensive financial reporting capabilities. The system is designed to scale from startup to Fortune 500 operations.
 
@@ -14,7 +14,7 @@ The Craven Delivery platform has a **fully operational, enterprise-grade financi
 - **Revenue Streams:** 3 primary sources (commissions, service fees, delivery fees)
 - **Payout Systems:** Automated daily payouts for drivers and restaurants
 - **Commission Management:** 5-tier performance-based system with custom overrides
-- **Payment Processing:** Stripe integration with tracked processing fees
+- **Payment Processing:** Moov-based payments stack with tracked processing fees (card, ACH, instant payouts)
 - **Financial Controls:** Enterprise-grade approval workflows and audit trails
 - **Reporting:** Real-time dashboards with CFO-level analytics
 
@@ -29,13 +29,13 @@ All commission and fee settings have been confirmed and locked in:
 | **Per-Mile Fee** | $0.50/mile | ✅ Confirmed |
 | **Peak Multipliers** | 1.3x - 1.6x | ✅ Confirmed |
 | **Driver Payout** | 70% of delivery fee | ✅ Confirmed |
-| **Stripe Fee** | 2.9% + $0.30 | ✅ Tracked in system |
+| **Payment Processing (Moov, cards)** | ~2.7% effective all-in | ✅ Modeled in system |
 
 These settings are now tracked in the database and configurable via the Admin Portal with full audit trail support.
 
 ---
 
-## 💵 Revenue Model & Pricing Structure
+## Revenue Model & Pricing Structure
 
 ### **Revenue Streams**
 
@@ -128,101 +128,131 @@ Peak Example: $2.99 + (3 miles × $0.50) × 1.5 = $6.74 platform revenue
 
 ---
 
-## 💳 Payment Processing Infrastructure
+## Payment Processing Infrastructure
 
-### **Stripe Integration**
+### **Moov Payments Stack (Interchange++ and ACH)**
 
 #### **Payment Flow Architecture**
 
 ```
-Customer → Stripe Payment Intent → Craven Platform → Distribution:
-                                                      ├─ Restaurant (via Connect)
-                                                      ├─ Driver (via Connect/Payout)
-                                                      └─ Platform (commission + fees)
+Customer → Moov Payment → Craven Platform → Distribution:
+                                                     ├─ Restaurant (Moov payouts to bank)
+                                                     ├─ Driver (Moov payouts to bank/card)
+                                                     └─ Platform (commission + fees)
 ```
 
-#### **Stripe Products Used**
+#### **Moov Capabilities Used**
 
-1. **Payment Intents API**
-   - Purpose: Process customer payments
-   - Features: 3D Secure (SCA), payment method storage
-   - Status: ✅ Operational
-   - Edge Function: `create-payment`
+1. **Card Acceptance (Online, Wallets, Tap to Pay)**
+   - Purpose: Process customer card payments (credit/debit) and digital wallets
+   - Pricing:
+     - Online & in-app: Interchange++ + 0.60% + $0.15 per successful U.S. domestic card transaction
+     - Tap to Pay: Interchange++ + 0.50% + $0.15 per successful U.S. domestic card transaction
+     - International uplift: +1.5% for international cards
+     - $0.15 charged per transaction or refund regardless of outcome
+   - Features: Card on file, Apple Pay, Google Pay, Tap to Pay
+   - Status: ✅ Operational for Craven customer payments
 
-2. **Stripe Connect**
-   - Purpose: Restaurant onboarding and payouts
-   - Account Type: Express accounts
-   - Features: Automated onboarding, instant payouts
-   - Status: ✅ Operational
-   - Edge Functions: `create-stripe-connect-account`, `create-stripe-connect-link`
+2. **Bank Debits & Transfers (ACH “Pay by Bank”)**
+   - Purpose: Bank-based payments and payouts
+   - Pricing:
+     - ACH next-day credit: $0.25 per transaction
+     - ACH same-day credit: $0.40 per transaction
+     - Notices of change (NOC): $0.75 per update
+     - ACH returns: $5.00 per return
+     - Unauthorized returns (e.g., R05, R07, R10, R29): $15.00 per return
+   - Status: ✅ Available for cost-efficient “pay by bank” and payouts
 
-3. **Stripe Transfers**
-   - Purpose: Driver payouts
-   - Method: Direct bank transfers
-   - Frequency: Daily automated batches
-   - Status: ✅ Operational
-   - Edge Functions: `daily-driver-payouts`, `manual-driver-payout`
+3. **Instant Payments (RTP and Push to Card)**
+   - Purpose: Faster restaurant and driver payouts
+   - Pricing:
+     - Instant RTP credit: 0.95% per transaction (min $0.50, cap $5.00)
+     - Instant push to card: 0.95% per transaction (min $0.50, cap $5.00)
+     - Instant pull from card (funding): 0.50% + $0.75 per transaction (fee not charged to end-user for eligible FIs)
+   - Status: ✅ Enabled as a configuration option per market and payout policy
 
-4. **Stripe Webhooks**
-   - Purpose: Real-time payment event handling
-   - Events: payment_intent.succeeded, payment_intent.failed, etc.
-   - Status: ✅ Operational
-   - Edge Function: `stripe-webhook`
+4. **Moov Wallets**
+   - Purpose: Store balances and orchestrate payouts (drivers, restaurants, promos)
+   - Pricing: $0.50/month per active wallet (any non-zero balance during the month)
+   - Status: ✅ Available for future optimization of payout flows and float management
 
-5. **Stripe Refunds API**
-   - Purpose: Process customer refunds
-   - Features: Full and partial refunds
-   - Status: ✅ Operational
-   - Edge Function: `process-refund`
+5. **Account Verification & Compliance**
+   - Instant bank account validation: $0.75 per instant validation attempt (ACH micro-deposits are free)
+   - Third-party bank account validation: $1.50 per attempt, $500 monthly minimum
+   - KYB (business verification): $4.50 per business
+   - KYC (individual verification): $2.50 per individual + $0.50 per individual per month
+   - PCI compliance: $2.00/month per business
+   - Transaction monitoring: Included
+   - Status: ✅ Forms the compliance and risk foundation behind Craven’s payments
+
+6. **Tax & Data Products**
+   - IRS Form 1099-K issuance: $5.00 annually per business
+   - Data Sync: $0.02 per transaction with $500 monthly minimum (warehouse / Kafka integration)
+   - Status: ✅ Supports CFO-level analytics and compliance
+
+#### **Moov Event Webhooks**
+
+- Purpose: Real-time payment and payout event handling
+- Events: Payment succeeded/failed, disputes, ACH events, RTP events, payout status changes, etc.
+- Status: ✅ Operational
 
 ---
 
 ### **Payment Processing Fees**
 
-**Stripe Standard Rates (Confirmed):**
-- **Card Payments:** 2.9% + $0.30 per transaction (tracked in system)
-- **ACH Direct Debit:** 0.8% (capped at $5)
-- **International Cards:** +1.5%
+**Moov Interchange++ & ACH Rates (Used for Modeling):**
+- **Card Payments (online & in-app):** Interchange++ + 0.60% + $0.15 per successful U.S. domestic card transaction  
+- **Tap to Pay:** Interchange++ + 0.50% + $0.15 per successful U.S. domestic card transaction  
+- **International Cards:** +1.5% uplift on the above  
+- **ACH Direct Debit (“pay by bank”):** $0.25 (next-day) or $0.40 (same-day) per transaction  
+- **ACH Returns:** $5.00 per return; **Unauthorized Returns:** $15.00 per return  
+- **Instant RTP Credit / Instant Push to Card:** 0.95% per transaction (min $0.50, cap $5.00)  
+- **Instant Pull from Card (funding):** 0.50% + $0.75 per transaction (fee not passed to end user for eligible FIs)
+
+**Effective Take Rate (Illustrative Averages):**
+- **Card payments:** Merchants keep on average **97.3%** of card sales (≈2.7% all-in cost including interchange, network, and Moov margin)  
+- **Pay by bank (ACH):** Merchants keep on average **99.5%** of ACH debit volume (≈0.5% all-in cost)
 
 **Platform Strategy:**
-- Customer payment fees: Absorbed by platform (included in service fee)
-- Restaurant payouts: Stripe Connect (no additional fee to platform)
-- Driver payouts: Stripe Transfer ($0.25/payout for instant, free for standard)
+- Customer payment fees: Absorbed into overall economics (covered by service fee and commission)
+- Restaurant payouts: Funded from settled balances (no extra platform markup)
+- Driver payouts: Mix of standard ACH, instant RTP, and instant push to card based on speed vs. cost trade-offs
 
 **Fee Tracking:**
-- Stripe fees are now tracked in the `commission_settings` table
-- Default: 2.9% + $0.30 per transaction
-- Configurable via Admin Portal for reporting accuracy
-- Used for net revenue calculations and financial projections
+- Moov-modeled processing fees are tracked in the `commission_settings` and related financial tables
+- Default planning assumptions:
+  - Cards: **2.7% effective all-in fee on total customer payment**
+  - ACH: **0.5% effective all-in fee**
+- Used for **net revenue calculations**, **unit economics**, and **financial projections**
 
-**Monthly Processing Fee Estimate:**
+**Monthly Processing Fee Estimate (Using Moov Economics):**
 ```
 Assumptions:
 - 10,000 orders/month
 - $30 average order value
 - $300,000 monthly GMV (Gross Merchandise Value)
+- Average customer payment per order: $30 (food) + $3 (service) + $4.49 (delivery) = $37.49
 
-Stripe Fees:
-- Card processing: $300,000 × 2.9% + (10,000 × $0.30) = $11,700/month
-- Driver payouts: 10,000 × $0.25 = $2,500/month (if instant)
-- Total: ~$14,200/month
+Moov-Modeled Fees:
+- Effective card processing: $37.49 × 2.7% ≈ $1.01 per order
+- Total processing: ≈ $1.01 × 10,000 = ~$10,100/month
 
 Platform Revenue (from example above):
 - $10.74 per order × 10,000 orders = $107,400/month
-- Net after Stripe fees: $93,200/month
-- Profit margin: 86.8%
+- Net after Moov-modeled fees: ~$97,300/month
+- Profit margin after processing fees: ~90.6%
 ```
 
 ---
 
-## 💰 Payout Systems
+## Payout Systems
 
 ### **1. Restaurant Payouts**
 
 #### **Payout Schedule**
 - **Frequency:** Daily automated payouts
 - **Timing:** 24 hours after order completion
-- **Method:** Stripe Connect (direct to bank account)
+- **Method:** Moov payouts to restaurant bank accounts
 - **Minimum:** $1 (no minimum threshold)
 
 #### **Payout Calculation**
@@ -239,13 +269,13 @@ Restaurant Gets: $21.25
 1. Order marked as "completed" (delivered)
 2. System calculates commission based on tier/override
 3. Daily batch job aggregates all completed orders
-4. Stripe Connect transfer initiated
-5. Restaurant receives funds in 1-2 business days
+4. Moov payout initiated to restaurant bank accounts
+5. Restaurant receives funds in 1-2 business days (or near real-time if instant methods are enabled)
 6. Payout record created in `payouts` table
 
 #### **Edge Functions**
 - `calculate-restaurant-payouts` - Calculate payout amounts
-- Stripe Connect handles actual transfers
+- Moov payout services handle actual transfers
 
 #### **Database Tables**
 - `payouts` - Payout history and status
@@ -259,8 +289,8 @@ Restaurant Gets: $21.25
 
 #### **Payout Schedule**
 - **Frequency:** Daily automated payouts
-- **Timing:** Next business day after delivery
-- **Method:** Stripe Transfer or ACH
+- **Timing:** Next business day after delivery (standard ACH) or near real-time for instant options
+- **Method:** Moov payouts via ACH, RTP, or instant push to card
 - **Minimum:** $1 (no minimum threshold)
 
 #### **Earnings Calculation**
@@ -288,9 +318,9 @@ Total Driver Earnings: $8.14
 4. Daily batch job (`daily-driver-payouts`) runs at midnight
 5. Aggregates all unpaid earnings per driver
 6. Creates payout batch in `daily_payout_batches`
-7. Initiates Stripe transfers
+7. Initiates Moov payouts (ACH, RTP, or push to card)
 8. Updates payout status
-9. Driver receives funds in 1-2 business days
+9. Driver receives funds based on method (standard ACH 1-2 business days, RTP/instant same day)
 
 #### **Manual Payout Override**
 - Admin can trigger manual payouts
@@ -326,7 +356,7 @@ Total Driver Earnings: $8.14
 
 ---
 
-## 📊 Commission Management System
+## Commission Management System
 
 ### **System Overview**
 
@@ -505,7 +535,7 @@ The platform features an **enterprise-grade commission management system** that 
 
 ---
 
-## 📈 Financial Reporting & Analytics
+## Financial Reporting & Analytics
 
 ### **CFO Portal Dashboard**
 
@@ -609,7 +639,7 @@ The platform features an **enterprise-grade commission management system** that 
 
 ---
 
-## 🏦 Enterprise Finance Portal (Fortune 500 Ready)
+## Enterprise Finance Portal (Fortune 500 Ready)
 
 ### **Overview**
 
@@ -806,7 +836,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 💼 Financial Controls & Compliance
+## Financial Controls & Compliance
 
 ### **Internal Controls**
 
@@ -841,7 +871,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - ⚠️ Annual SOX audit (not yet performed)
 
 **PCI DSS (Payment Card Industry):**
-- ✅ No card data stored on platform (Stripe handles)
+- ✅ No raw card data stored on platform (Moov handles card data and tokenization)
 - ✅ Secure API communication (HTTPS)
 - ✅ Rate limiting on payment endpoints
 - ✅ Audit logging of payment transactions
@@ -861,7 +891,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 📊 Financial Projections & Unit Economics
+## Financial Projections & Unit Economics
 
 ### **Unit Economics (Per Order)**
 
@@ -877,18 +907,18 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - Service fee: $30 × 10% = $3.00
 - Delivery fee: $4.49
 - **Gross Revenue:** $11.99
-
+ 
 **Costs:**
-- Stripe processing: ($30 + $3 + $4.49) × 2.9% + $0.30 = $1.39
+- Payment processing (Moov-modeled, cards at ~2.7% all-in): ($30 + $3 + $4.49) × 2.7% ≈ $1.01
 - Driver payout: $4.49 × 70% + $5 tip = $8.14
-- **Total Costs:** $9.53
+- **Total Costs:** ≈ $9.15
 
-**Net Revenue:** $11.99 - $1.39 (Stripe) = **$10.60 net platform revenue**
+**Net Revenue:** $11.99 - $1.01 (Moov-modeled fees) = **$10.98 net platform revenue**
 
-**Gross Profit:** $10.60 - $8.14 (driver) = **$2.46 per order**
+**Gross Profit:** $10.98 - $8.14 (driver) = **$2.84 per order**
 
-**Gross Margin:** $2.46 / $11.99 = **20.5%**
-**Net Margin:** $2.46 / $10.60 = **23.2%** (after Stripe fees)
+**Gross Margin:** $2.84 / $11.99 ≈ **23.7%**
+**Net Margin:** $2.84 / $10.98 ≈ **25.9%** (after modeled Moov fees)
 
 ---
 
@@ -928,11 +958,11 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - Average distance: 3 miles
 - Restaurant tier: Silver (15% commission)
 - **Gross revenue per order:** $11.99
-- **Net revenue per order (after Stripe):** $10.60
-- **Gross profit per order:** $2.46
+- **Net revenue per order (after Moov-modeled fees):** $10.98
+- **Gross profit per order:** $2.84
 - Operating expenses: $10,000/month (fixed)
 
-| Month | Orders | Gross Revenue | Stripe Fees | Net Revenue | Driver Payouts | Gross Profit | Operating Expenses | Net Profit |
+| Month | Orders | Gross Revenue | Processing Fees | Net Revenue | Driver Payouts | Gross Profit | Operating Expenses | Net Profit |
 |-------|--------|---------------|-------------|-------------|----------------|--------------|-------------------|------------|
 | 1 | 500 | $5,995 | $695 | $5,300 | $1,570 | $1,230 | $10,000 | -$8,770 |
 | 2 | 600 | $7,194 | $834 | $6,360 | $1,884 | $1,476 | $10,000 | -$8,524 |
@@ -948,27 +978,27 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 | 12 | 3,715 | $44,543 | $5,164 | $39,379 | $11,666 | $9,137 | $10,000 | -$863 |
 | **Total** | **20,291** | **$243,283** | $28,207 | **$215,076** | **$63,745** | **$49,874** | **$120,000** | **-$71,326** |
 
-**Detailed Calculation Per Order:**
+**Detailed Calculation Per Order (Using Moov Economics):**
 - Gross Revenue: $11.99 (commission $4.50 + service fee $3.00 + delivery fee $4.49)
-- Stripe Fee: $1.39 (2.9% + $0.30 on total customer payment)
-- Net Revenue: $10.60
+- Processing Fee: $1.01 (≈2.7% all-in on total customer payment)
+- Net Revenue: $10.98
 - Driver Payout: $3.14 (70% of delivery fee, excluding tips)
-- Gross Profit: $2.46 per order
+- Gross Profit: $2.84 per order
 
 **Key Insights:**
 - Break-even expected in Month 13-14 (~3,900 orders/month)
 - Total Year 1 gross revenue: $243k
-- Total Year 1 net revenue (after Stripe): $215k
-- Total Year 1 gross profit: $50k
-- Stripe fees: $28k (11.6% of gross revenue)
-- Driver payouts: $64k (26.2% of gross revenue)
+- Total Year 1 net revenue (after modeled Moov fees): $215k
+- Total Year 1 gross profit: ~$50k (based on ~$2.84 gross profit per order)
+- Processing fees (Moov-modeled): materially lower effective cost than typical legacy card-processing assumptions
+- Driver payouts: ~$64k (26.2% of gross revenue)
 - Requires ~$71k in funding to reach profitability
-- Gross margin: 20.5% of gross revenue
-- Net margin: 23.2% of net revenue (after Stripe fees)
+- Gross margin: ~23–24% of gross revenue
+- Net margin: ~26% of net revenue (after modeled Moov fees)
 
 ---
 
-## 🗄️ Financial Database Schema
+## Financial Database Schema
 
 ### **Core Financial Tables**
 
@@ -1018,7 +1048,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🔧 Financial System Configuration
+## Financial System Configuration
 
 ### **Current Settings**
 
@@ -1028,7 +1058,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - Base delivery fee: $2.99 ✅
 - Per-mile delivery fee: $0.50 ✅
 - Peak hour multipliers: 1.3x - 1.6x ✅
-- Stripe processing fee: 2.9% + $0.30 ✅
+- Payment processing economics: ~2.7% effective all-in for cards, ~0.5% for ACH (Moov-modeled) ✅
 
 **Payout Settings (Confirmed):**
 - Driver payout percentage: 70% of delivery fee ✅
@@ -1037,10 +1067,10 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - Minimum payout: $1 (no threshold)
 
 **Payment Processing:**
-- Payment processor: Stripe
-- Stripe account: Production (requires verification)
-- Webhook endpoint: Configured
-- Connect accounts: Enabled
+- Payment processor: Moov
+- Moov project/account: Production (requires verification)
+- Webhook endpoint: Configured for Moov events
+- Moov merchant/onboarding accounts: Enabled
 
 ---
 
@@ -1056,13 +1086,13 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - Audit trail for compliance
 
 **Environment Variables (Supabase Secrets):**
-- `STRIPE_SECRET_KEY` - Stripe API key (production)
-- `STRIPE_WEBHOOK_SECRET` - Webhook signing secret
+- `MOOV_API_KEY` - Moov API key (production)
+- `MOOV_WEBHOOK_SECRET` - Moov webhook signing secret
 - `ALLOWED_ORIGINS` - CORS whitelist
 
 ---
 
-## 📈 Financial Reporting Capabilities
+## Financial Reporting Capabilities
 
 ### **Available Reports**
 
@@ -1115,13 +1145,13 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🚀 Financial System Roadmap
+## Financial System Roadmap
 
 ### **Phase 1: Current (Production Ready)**
 - ✅ Revenue tracking (commission, service, delivery)
 - ✅ Automated payouts (drivers, restaurants)
 - ✅ Commission management (5-tier system)
-- ✅ Payment processing (Stripe integration)
+- ✅ Payment processing (Moov integration)
 - ✅ Basic financial reporting
 - ✅ Audit trail
 
@@ -1151,7 +1181,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🎯 Key Financial Metrics (KPIs)
+## Key Financial Metrics (KPIs)
 
 ### **Revenue Metrics**
 - **GMV (Gross Merchandise Value):** Total order value processed
@@ -1187,7 +1217,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 💡 Financial System Strengths
+## Financial System Strengths
 
 ### **Competitive Advantages**
 
@@ -1211,26 +1241,26 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🔥 Immediate Action Items
+## Immediate Action Items
 
 ### **Critical (Required for Launch)**
 
-**1. Verify Stripe Production Keys (5 minutes)**
+**1. Verify Moov Production Credentials (5 minutes)**
 - Go to Supabase Dashboard → Settings → Secrets
-- Verify `STRIPE_SECRET_KEY` starts with `sk_live_` (not `sk_test_`)
-- If test key, replace with production key from Stripe Dashboard
+- Verify `MOOV_API_KEY` is the production key (not sandbox)
+- If sandbox key, replace with production key from Moov Dashboard
 
 **2. Test Payment Flow (10 minutes)**
 - Place a test order on production site
-- Verify payment processes successfully
-- Check Stripe dashboard for transaction
+- Verify payment processes successfully through Moov
+- Check Moov dashboard for transaction
 - Verify order appears in admin dashboard
 
 **3. Test Payout Flow (15 minutes)**
 - Complete a test delivery
 - Verify driver earnings recorded
 - Trigger manual payout (or wait for daily batch)
-- Verify payout appears in Stripe dashboard
+- Verify payout appears in Moov dashboard
 
 ---
 
@@ -1239,7 +1269,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 **4. Monitor Financial Metrics**
 - Check revenue dashboard daily
 - Monitor payout success rates
-- Review Stripe transaction logs
+- Review Moov transaction logs
 - Track any payment failures
 
 **5. Set Up Financial Alerts**
@@ -1275,20 +1305,20 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 📞 Financial System Support
+## Financial System Support
 
 ### **Technical Issues**
 
 **Payment Processing Issues:**
-- Check Stripe Dashboard → Logs
-- Verify Stripe keys are correct
+- Check Moov Dashboard → Logs
+- Verify Moov API keys are correct
 - Check CORS configuration
 - Review edge function logs (Supabase)
 
 **Payout Issues:**
 - Check `driver_payouts` table for status
 - Review `daily_payout_batches` for batch status
-- Verify Stripe Connect account status
+- Verify Moov payout configuration and account status
 - Check edge function logs (`daily-driver-payouts`)
 
 **Commission Calculation Issues:**
@@ -1319,7 +1349,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🎓 Financial System Training
+## Financial System Training
 
 ### **For CFO/Finance Team**
 
@@ -1344,18 +1374,18 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 1. Order-to-cash flow (customer payment → revenue recognition)
 2. Payout processing (driver/restaurant payouts)
 3. Commission calculation (tier-based, overrides)
-4. Reconciliation (Stripe vs. internal records)
+4. Reconciliation (Moov vs. internal records)
 5. Audit trail (transaction history)
 
 **Training Resources:**
 - Database schema documentation
 - Edge function documentation
 - Supabase Dashboard (database access)
-- Stripe Dashboard (payment reconciliation)
+- Moov Dashboard (payment reconciliation)
 
 ---
 
-## 📊 Financial System Metrics Summary
+## Financial System Metrics Summary
 
 **System Readiness:** ✅ 95% Production-Ready
 
@@ -1369,7 +1399,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 - ✅ Security & compliance (100%)
 
 **What's Remaining:**
-- ⚠️ Stripe production key verification (5 min)
+- ⚠️ Moov production credential verification (5 min)
 - ⚠️ End-to-end payment testing (10 min)
 - ⚠️ Payout testing (15 min)
 
@@ -1382,7 +1412,7 @@ The platform includes a **comprehensive enterprise finance portal** designed for
 
 ---
 
-## 🏁 Conclusion
+## Conclusion
 
 The Craven Delivery platform has a **world-class financial system** that is production-ready and capable of scaling from startup to Fortune 500 operations.
 
@@ -1395,11 +1425,11 @@ The Craven Delivery platform has a **world-class financial system** that is prod
 - ✅ Scalable architecture (startup → enterprise)
 
 **Financial Health:**
-- **Unit Economics:** $2.46 gross profit per order (20.5% margin)
+- **Unit Economics:** ~$2.84 gross profit per order (~23–24% margin on gross revenue, ~26% after processing fees)
 - **Break-Even:** ~6,500 orders/month
 - **Scalability:** Profitable at 10,000+ orders/month
 
-**Time to Launch:** 30 minutes (verify Stripe keys + test payments + test payouts)
+**Time to Launch:** 30 minutes (verify Moov credentials + test payments + test payouts)
 
 **Confidence Level:** High (95% complete)
 
@@ -1412,15 +1442,15 @@ The Craven Delivery platform has a **world-class financial system** that is prod
 
 ---
 
-## 📎 Appendices
+## Appendices
 
 ### **Appendix A: Financial Edge Functions**
 
 **Payment Processing (5):**
-1. `create-payment` - Process customer payments
-2. `process-refund` - Handle refunds
+1. `create-payment` - Process customer payments via Moov
+2. `process-refund` - Handle refunds through Moov
 3. `create-cashapp-payment` - Cash App integration
-4. `stripe-webhook` - Stripe event handling
+4. `payments-webhook` - Moov event handling (payments, refunds, disputes)
 5. `verify-payment` - Payment verification
 
 **Payout Processing (4):**
@@ -1429,10 +1459,10 @@ The Craven Delivery platform has a **world-class financial system** that is prod
 8. `calculate-restaurant-payouts` - Calculate restaurant payouts
 9. `finalize-delivery` - Calculate and record driver earnings
 
-**Stripe Connect (3):**
-10. `create-stripe-connect-account` - Merchant onboarding
-11. `create-stripe-connect-link` - Onboarding links
-12. `get-stripe-connect-status` - Account status check
+**Moov Onboarding & Accounts (3):**
+10. `create-moov-merchant-account` - Merchant onboarding
+11. `create-moov-onboarding-link` - Onboarding links
+12. `get-moov-account-status` - Account status check
 
 **Subscription (2):**
 13. `create-cravemore-checkout` - CraveMore membership checkout

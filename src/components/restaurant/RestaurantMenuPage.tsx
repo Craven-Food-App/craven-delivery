@@ -1377,9 +1377,33 @@ const RestaurantMenuPage = () => {
                             fullWidth
                             color="orange"
                             onClick={() => {
+                              // Ensure cart has items before navigating
+                              if (!cartItems || cartItems.length === 0) {
+                                notifications.show({
+                                  title: "Cart is Empty",
+                                  message: "Please add items to your cart before checking out.",
+                                  color: "red",
+                                });
+                                return;
+                              }
+                              
+                              // Save to localStorage
                               localStorage.setItem('checkout_cart', JSON.stringify(cartItems));
                               localStorage.setItem('checkout_restaurant', JSON.stringify(restaurant));
                               localStorage.setItem('checkout_delivery_method', deliveryMethod);
+                              
+                              // Verify it was saved
+                              const saved = localStorage.getItem('checkout_cart');
+                              if (!saved || JSON.parse(saved).length === 0) {
+                                console.error('Failed to save cart to localStorage');
+                                notifications.show({
+                                  title: "Error",
+                                  message: "Failed to save cart. Please try again.",
+                                  color: "red",
+                                });
+                                return;
+                              }
+                              
                               navigate('/checkout');
                             }}
                           >
@@ -2309,6 +2333,19 @@ const RestaurantMenuPage = () => {
                   color="orange"
                   radius="xl"
                   onClick={() => {
+                    // Ensure cart has items before navigating
+                    if (!cartItems || cartItems.length === 0) {
+                      notifications.show({
+                        title: "Cart is Empty",
+                        message: "Please add items to your cart before checking out.",
+                        color: "red",
+                      });
+                      return;
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('checkout_cart', JSON.stringify(cartItems));
+                    localStorage.setItem('checkout_restaurant', JSON.stringify(restaurant));
                     localStorage.setItem('checkout_delivery_method', deliveryMethod);
                     navigate('/checkout');
                   }}
@@ -2362,6 +2399,19 @@ const RestaurantMenuPage = () => {
                   color="orange"
                   leftSection={<IconShoppingCart size={20} />}
                   onClick={() => {
+                    // Ensure cart has items before navigating
+                    if (!cartItems || cartItems.length === 0) {
+                      notifications.show({
+                        title: "Cart is Empty",
+                        message: "Please add items to your cart before checking out.",
+                        color: "red",
+                      });
+                      return;
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('checkout_cart', JSON.stringify(cartItems));
+                    localStorage.setItem('checkout_restaurant', JSON.stringify(restaurant));
                     localStorage.setItem('checkout_delivery_method', deliveryMethod);
                     navigate('/checkout');
                   }}

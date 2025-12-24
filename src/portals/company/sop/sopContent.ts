@@ -204,12 +204,13 @@ export function extractSopMetadata(filename: string, content: string): {
 /**
  * Get all SOPs with their extracted metadata
  */
-export function getAllSopsWithMetadata(): Array<{
+export async function getAllSopsWithMetadata(): Promise<Array<{
   filename: string;
   content: string;
   metadata: ReturnType<typeof extractSopMetadata>;
-}> {
-  return Object.entries(SOP_CONTENT).map(([filename, content]) => ({
+}>> {
+  const content = await loadSopContent();
+  return Object.entries(content).map(([filename, content]) => ({
     filename,
     content,
     metadata: extractSopMetadata(filename, content)

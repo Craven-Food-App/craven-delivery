@@ -172,6 +172,24 @@ serve(async (req) => {
       ? plan.promo_price_cents
       : plan.price_cents;
 
+    // Load processing fee configuration (Moov-style) from commission_settings
+    let processingFeeCents = 0;
+    try {
+      const { data: feeSettings } = await supabase
+        .from("commission_settings")
+        .select("moov_card_processing_percent")
+        .eq("is_active", true)
+        .single();
+
+      const percent = feeSettings?.moov_card_processing_percent as number | null;
+      if (typeof percent === "number" && percent > 0) {
+        processingFeeCents = Math.round(priceCents * (percent / 100));
+      }
+    } catch (feeError) {
+      console.error("Error loading processing fee configuration:", feeError);
+      // Fail open: continue without adding a processing fee line item
+    }
+
     // Get or create Stripe customer
     let customerId: string | undefined;
     let profile: any = null;
@@ -263,6 +281,19 @@ serve(async (req) => {
             },
             quantity: 1,
           },
+          ...(processingFeeCents > 0
+            ? [{
+                price_data: {
+                  currency: "usd",
+                  product_data: {
+                    name: "Processing Fee (Moov)",
+                    description: "Processing fee for membership payment",
+                  },
+                  unit_amount: processingFeeCents,
+                },
+                quantity: 1,
+              }]
+            : []),
         ],
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -302,6 +333,19 @@ serve(async (req) => {
             },
             quantity: 1,
           },
+          ...(processingFeeCents > 0
+            ? [{
+                price_data: {
+                  currency: "usd",
+                  product_data: {
+                    name: "Processing Fee (Moov)",
+                    description: "Processing fee for membership payment",
+                  },
+                  unit_amount: processingFeeCents,
+                },
+                quantity: 1,
+              }]
+            : []),
         ],
         success_url: successUrl,
         cancel_url: cancelUrl,

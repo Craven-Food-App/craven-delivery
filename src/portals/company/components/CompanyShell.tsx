@@ -134,10 +134,7 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
           backgroundColor: '#ffffff',
         }}
       >
-        {(() => {
-          console.log('🏠 [CompanyShell] Rendering children/Outlet, children type:', typeof children, 'isOutlet:', children?.type?.name === 'Outlet' || children?.type?.toString().includes('Outlet'));
-          return children;
-        })()}
+        {children}
       </AppShell.Main>
     </AppShell>
   );

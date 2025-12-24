@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
+import { createMoovTransfer } from '../_shared/moov.ts';
 
 serve(async (req) => {
   // SECURITY: Get secure CORS headers based on request origin
@@ -43,7 +44,7 @@ serve(async (req) => {
     // Get payment method details
     const { data: paymentMethod, error: pmError } = await supabase
       .from('driver_payment_methods')
-      .select('*')
+      .select('*, moov_payment_method_id, moov_account_id')
       .eq('id', payment_method_id)
       .eq('driver_id', driver_id)
       .single();
@@ -89,22 +90,48 @@ serve(async (req) => {
       throw new Error(`Failed to create payout record: ${payoutError.message}`);
     }
 
-    // Process the payment based on payment method type
-    let paymentResult;
+    // Process the payment using Moov
+    if (!paymentMethod.moov_payment_method_id) {
+      throw new Error("Moov payment method ID not found. Driver needs to set up Moov payment method.");
+    }
+
+    // Determine Moov transfer type
+    let moovTransferType: "ach-credit-fund-source" | "rtp-credit-fund-source" | "card-fund-source";
     
     switch (paymentMethod.payment_type) {
       case 'bank_account':
-        paymentResult = await processStripePayout(paymentMethod.account_identifier, amount);
+        moovTransferType = "ach-credit-fund-source";
         break;
-      case 'cashapp':
-      case 'paypal':
-      case 'venmo':
-      case 'zelle':
-        // Instant payment apps - use Stripe Connect or return unsupported
-        throw new Error(`${paymentMethod.payment_type} payouts not yet supported. Please use bank_account.`);
+      case 'instant_rtp':
+        moovTransferType = "rtp-credit-fund-source";
+        break;
+      case 'card':
+        moovTransferType = "card-fund-source";
+        break;
       default:
-        throw new Error(`Unsupported payment method: ${paymentMethod.payment_type}`);
+        throw new Error(`Unsupported payment method type: ${paymentMethod.payment_type}`);
     }
+
+    // Create Moov transfer
+    const transfer = await createMoovTransfer({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: "USD",
+      destination: {
+        paymentMethodID: paymentMethod.moov_payment_method_id,
+        paymentMethodType: moovTransferType,
+      },
+      description: `Manual driver payout for ${driver_id}`,
+      metadata: {
+        driver_id: driver_id,
+        payout_type: paymentMethod.payment_type,
+        manual: "true",
+      },
+    });
+
+    const paymentResult = {
+      success: transfer.status === 'pending' || transfer.status === 'completed',
+      transactionId: transfer.transferID,
+    };
 
     // Update payout record with result
     await supabase
@@ -150,48 +177,3 @@ serve(async (req) => {
   }
 });
 
-// Process Stripe Connect payout for bank accounts
-async function processStripePayout(stripeAccountId: string, amount: number): Promise<{ success: boolean; transactionId?: string; error?: string }> {
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-  
-  if (!stripeSecretKey) {
-    console.warn("STRIPE_SECRET_KEY not configured, using simulation");
-    return {
-      success: true,
-      transactionId: `stripe_sim_${Date.now()}`,
-    };
-  }
-
-  try {
-    const response = await fetch("https://api.stripe.com/v1/transfers", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${stripeSecretKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        amount: Math.round(amount * 100).toString(),
-        currency: "usd",
-        destination: stripeAccountId,
-        description: "Driver manual payout",
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Stripe transfer failed");
-    }
-
-    const transfer = await response.json();
-    
-    return {
-      success: true,
-      transactionId: transfer.id,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Stripe payout failed",
-    };
-  }
-}

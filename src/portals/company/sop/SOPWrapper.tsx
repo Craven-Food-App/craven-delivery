@@ -1,13 +1,12 @@
-import React, { Suspense, lazy } from 'react';
-import SuspenseLoader from '@/components/SuspenseLoader';
-
-const SOPManagement = lazy(() => import('./SOPManagement'));
+import React from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import SOPManagement from './SOPManagement';
 
 const SOPWrapper: React.FC = () => {
   return (
-    <Suspense fallback={<SuspenseLoader message="Loading SOP Management" />}>
+    <ErrorBoundary>
       <SOPManagement />
-    </Suspense>
+    </ErrorBoundary>
   );
 };
 

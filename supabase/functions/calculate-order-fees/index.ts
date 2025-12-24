@@ -120,7 +120,7 @@ serve(async (req) => {
     }
 
     const restaurantCommissionCents = Math.round(orderData.subtotal_cents * (settings.restaurant_commission_percent / 100));
-    
+
     const totalCents = orderData.subtotal_cents + serviceFeeCents + deliveryFeeCents;
     const restaurantEarningsCents = orderData.subtotal_cents - restaurantCommissionCents;
     const craveNEarningsCents = restaurantCommissionCents + serviceFeeCents + deliveryFeeCents;
@@ -137,6 +137,10 @@ serve(async (req) => {
         distance_miles: distance,
         is_peak_hour: isPeakHour,
         cravemore_delivery_fee_waived: cravemore_delivery_fee_waived,
+        // Expose processing fee configuration so front-end can calculate
+        processing_fee_percent_card: settings.moov_card_processing_percent ?? null,
+        processing_fee_percent_ach: settings.moov_ach_processing_percent ?? null,
+        processing_fee_applies_to_full_amount: settings.moov_processing_applies_to_full_amount ?? true,
         fee_breakdown: {
           base_delivery_fee: settings.delivery_fee_base_cents,
           distance_fee: Math.round(distance * settings.delivery_fee_per_mile_cents),

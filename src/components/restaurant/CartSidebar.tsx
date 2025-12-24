@@ -248,21 +248,15 @@ export const CartSidebar = ({
         return;
       }
 
-      console.log('Creating Stripe payment session for amount:', finalTotal);
+      // For paid orders, redirect to checkout page to select payment method and complete payment
+      // Save order info to localStorage for checkout page
+      localStorage.setItem('pending_order_id', newOrder.id);
+      localStorage.setItem('checkout_cart', JSON.stringify(cart));
+      localStorage.setItem('checkout_restaurant', JSON.stringify(restaurant));
+      localStorage.setItem('checkout_delivery_method', deliveryMethod);
       
-      // Create Stripe payment session for non-free orders
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderTotal: finalTotal,
-          customerInfo,
-          orderId: newOrder.id
-        }
-      });
-
-      if (paymentError) throw paymentError;
-
-      // Redirect to Stripe Checkout
-      window.location.href = paymentData.url;
+      // Redirect to checkout page where user can select payment method and complete payment
+      window.location.href = '/checkout';
       
     } catch (error) {
       console.error('Error placing order:', error);

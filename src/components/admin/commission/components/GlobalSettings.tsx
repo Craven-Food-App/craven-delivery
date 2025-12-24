@@ -29,11 +29,11 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const [peakMultiplier, setPeakMultiplier] = useState<number>(
     settings?.peak_hour_multiplier || 1.5
   );
-  const [stripeFeePct, setStripeFeePct] = useState<number>(
-    settings?.stripe_fee_percent || 2.9
+  const [moovCardPct, setMoovCardPct] = useState<number>(
+    settings?.moov_card_processing_percent ?? 2.7
   );
-  const [stripeFeeFixed, setStripeFeeFixed] = useState<number>(
-    settings?.stripe_fee_fixed_cents / 100 || 0.30
+  const [moovAchPct, setMoovAchPct] = useState<number>(
+    settings?.moov_ach_processing_percent ?? 0.5
   );
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -57,8 +57,8 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
           delivery_fee_base_cents: Math.round(deliveryFeeBase * 100),
           delivery_fee_per_mile_cents: Math.round(deliveryFeePerMile * 100),
           peak_hour_multiplier: peakMultiplier,
-          stripe_fee_percent: stripeFeePct,
-          stripe_fee_fixed_cents: Math.round(stripeFeeFixed * 100),
+          moov_card_processing_percent: moovCardPct,
+          moov_ach_processing_percent: moovAchPct,
           is_active: true,
           updated_by: userData?.user?.id || null,
         });
@@ -78,13 +78,13 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
   const exampleSubtotal = 25.00;
   const exampleMiles = 3;
   const serviceFee = exampleSubtotal * (serviceFeePct / 100);
-  const deliveryFee = deliveryFeeBase + (exampleMiles * deliveryFeePerMile);
+  const deliveryFee = exampleSubtotal * 0 + (deliveryFeeBase + (exampleMiles * deliveryFeePerMile)); // keep existing units
   const total = exampleSubtotal + serviceFee + deliveryFee;
-  const stripeFee = (total * (stripeFeePct / 100)) + stripeFeeFixed;
+  const moovFee = total * (moovCardPct / 100);
   const restaurantGets = exampleSubtotal * (1 - (restaurantCommission / 100));
   const cravenCommission = exampleSubtotal * (restaurantCommission / 100);
   const cravenGrossRevenue = cravenCommission + serviceFee + deliveryFee;
-  const cravenNetRevenue = cravenGrossRevenue - stripeFee;
+  const cravenNetRevenue = cravenGrossRevenue - moovFee;
 
   return (
     <div className="space-y-6">
@@ -215,43 +215,45 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
           </div>
 
           <div className="pt-4 border-t">
-            <h4 className="font-medium mb-4 text-sm text-muted-foreground">Payment Processing Fees (Stripe)</h4>
+            <h4 className="font-medium mb-4 text-sm text-muted-foreground">
+              Payment Processing Fees (Moov)
+            </h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="mb-2 block">Stripe Fee Percentage (%)</Label>
+                <Label className="mb-2 block">Card Processing Fee (%)</Label>
                 <div className="flex items-center gap-4">
                   <Input
                     type="number"
                     min={0}
                     max={10}
                     step={0.1}
-                    value={stripeFeePct}
-                    onChange={(e) => setStripeFeePct(Number(e.target.value))}
+                    value={moovCardPct}
+                    onChange={(e) => setMoovCardPct(Number(e.target.value))}
                     className="w-32"
                   />
                   <span className="text-sm text-muted-foreground">%</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Standard: 2.9%
+                  Effective all-in Moov card processing percentage.
                 </p>
               </div>
 
               <div>
-                <Label className="mb-2 block">Stripe Fixed Fee ($)</Label>
+                <Label className="mb-2 block">ACH Processing Fee (%)</Label>
                 <div className="flex items-center gap-4">
                   <Input
                     type="number"
                     min={0}
-                    max={1}
-                    step={0.01}
-                    value={stripeFeeFixed}
-                    onChange={(e) => setStripeFeeFixed(Number(e.target.value))}
+                    max={5}
+                    step={0.1}
+                    value={moovAchPct}
+                    onChange={(e) => setMoovAchPct(Number(e.target.value))}
                     className="w-32"
                   />
-                  <span className="text-sm text-muted-foreground">per transaction</span>
+                  <span className="text-sm text-muted-foreground">%</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Standard: $0.30
+                  Effective Moov ACH processing percentage.
                 </p>
               </div>
             </div>

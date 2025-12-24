@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
+import { createMoovTransfer } from '../_shared/moov.ts';
 
 interface DriverEarning {
   driver_id: string;
@@ -10,6 +11,8 @@ interface DriverEarning {
     id: string;
     payment_type: string;
     account_identifier: string;
+    moov_payment_method_id?: string;
+    moov_account_id?: string;
   };
 }
 
@@ -75,7 +78,9 @@ serve(async (req) => {
           id,
           payment_type,
           account_identifier,
-          is_primary
+          is_primary,
+          moov_payment_method_id,
+          moov_account_id
         )
       `)
       .gte('created_at', `${payoutDate}T00:00:00Z`)
@@ -215,83 +220,61 @@ serve(async (req) => {
   }
 });
 
-// Process payout using Stripe Connect
+// Process payout using Moov transfers
 async function processPayout(earning: DriverEarning): Promise<{ success: boolean; transactionId?: string; error?: string }> {
   try {
     const paymentType = earning.payment_method.payment_type;
     const amount = earning.amount;
-    const accountIdentifier = earning.payment_method.account_identifier;
+    const moovPaymentMethodId = earning.payment_method.moov_payment_method_id;
 
-    console.log(`Processing ${paymentType} payout: $${amount} to ${accountIdentifier}`);
+    if (!moovPaymentMethodId) {
+      throw new Error("Moov payment method ID not found. Driver needs to set up Moov payment method.");
+    }
 
+    console.log(`Processing ${paymentType} payout via Moov: $${amount} using payment method ${moovPaymentMethodId}`);
+
+    // Determine Moov transfer type based on payment method
+    let moovTransferType: "ach-credit-fund-source" | "rtp-credit-fund-source" | "card-fund-source";
+    
     switch (paymentType) {
       case 'bank_account':
-        // Use Stripe Connect for bank transfers
-        return await processStripePayout(accountIdentifier, amount);
-        
-      case 'cashapp':
-      case 'paypal':
-      case 'venmo':
-      case 'zelle':
-        // Instant payment apps - use Stripe Connect or return unsupported
-        // Note: These require Stripe Connect setup for instant payouts
-        throw new Error(`${paymentType} payouts not yet supported. Please use bank_account.`);
-        
+        // Default to ACH credit (next-day), can be upgraded to RTP for instant
+        moovTransferType = "ach-credit-fund-source";
+        break;
+      case 'instant_rtp':
+        moovTransferType = "rtp-credit-fund-source";
+        break;
+      case 'card':
+        moovTransferType = "card-fund-source";
+        break;
       default:
-        throw new Error(`Unsupported payment method: ${paymentType}`);
+        throw new Error(`Unsupported payment method type: ${paymentType}`);
     }
+
+    // Create Moov transfer
+    const transfer = await createMoovTransfer({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: "USD",
+      destination: {
+        paymentMethodID: moovPaymentMethodId,
+        paymentMethodType: moovTransferType,
+      },
+      description: `Driver payout for ${earning.driver_id}`,
+      metadata: {
+        driver_id: earning.driver_id,
+        payout_type: paymentType,
+      },
+    });
+
+    return {
+      success: transfer.status === 'pending' || transfer.status === 'completed',
+      transactionId: transfer.transferID,
+    };
   } catch (error) {
-    console.error("Payout processing error:", error);
+    console.error("Moov payout processing error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
-// Process Stripe Connect payout for bank accounts
-async function processStripePayout(stripeAccountId: string, amount: number): Promise<{ success: boolean; transactionId?: string; error?: string }> {
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-  
-  if (!stripeSecretKey) {
-    console.warn("STRIPE_SECRET_KEY not configured, using simulation");
-    return {
-      success: true,
-      transactionId: `stripe_sim_${Date.now()}`,
-    };
-  }
-
-  try {
-    // Use Stripe API for transfers
-    const response = await fetch("https://api.stripe.com/v1/transfers", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${stripeSecretKey}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        amount: Math.round(amount * 100).toString(), // Convert to cents
-        currency: "usd",
-        destination: stripeAccountId,
-        description: "Driver daily payout",
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || "Stripe transfer failed");
-    }
-
-    const transfer = await response.json();
-    
-    return {
-      success: true,
-      transactionId: transfer.id,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Stripe payout failed",
     };
   }
 }
