@@ -43,9 +43,59 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
 
       if (error) throw error;
 
-      // Load Stripe.js
+      // Load Stripe.js script if not already loaded
       const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_live_51SKpbkLTHUzAWwQrpeD8B1TXtBgH1aN2q0tM8CuobPHtAMeBZI6lqem4Kb7zcKI7RaAG9QT9806lxchjZMHrSbx100WC0Vq7Oe';
-      const stripe = await (window as any).Stripe(stripePublishableKey);
+      
+      // Ensure Stripe.js is loaded and DOM is ready
+      if (!(window as any).Stripe) {
+        await new Promise<void>((resolve, reject) => {
+          // Check if script is already being loaded
+          const existingScript = document.querySelector('script[src*="js.stripe.com"]');
+          if (existingScript) {
+            // Wait for it to load
+            if ((window as any).Stripe) {
+              resolve();
+            } else {
+              existingScript.addEventListener('load', () => resolve());
+              existingScript.addEventListener('error', () => reject(new Error('Failed to load Stripe.js')));
+            }
+            return;
+          }
+
+          // Create and load script
+          const script = document.createElement('script');
+          script.src = 'https://js.stripe.com/v3/';
+          script.async = true;
+          script.onload = () => {
+            // Ensure body exists before resolving
+            if (document.body) {
+              resolve();
+            } else {
+              // Wait for body to exist (should be instant in React apps)
+              const checkBody = setInterval(() => {
+                if (document.body && (window as any).Stripe) {
+                  clearInterval(checkBody);
+                  resolve();
+                }
+              }, 10);
+              setTimeout(() => {
+                clearInterval(checkBody);
+                reject(new Error('Timeout waiting for DOM to be ready'));
+              }, 5000);
+            }
+          };
+          script.onerror = () => reject(new Error('Failed to load Stripe.js'));
+          document.head.appendChild(script);
+        });
+      }
+
+      // Ensure body exists (Stripe.js requirement)
+      if (!document.body) {
+        throw new Error('DOM not ready - body element not found');
+      }
+
+      // Initialize Stripe (not async - it's a constructor)
+      const stripe = (window as any).Stripe(stripePublishableKey);
       
       // Launch the Financial Connections flow
       const { financialConnectionsSession, error: sessionError } = await stripe.collectFinancialConnectionsAccounts({
