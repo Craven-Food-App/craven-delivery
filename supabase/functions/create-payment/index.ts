@@ -21,7 +21,8 @@ const getAllowedOrigins = (): string[] => {
 
 const getCorsHeaders = (origin: string | null) => {
   const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = origin && allowedOrigins.includes(origin) ? allowedOrigins[0] : allowedOrigins[0];
+  // Check if origin is in allowed list, otherwise use the first allowed origin
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
   
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
