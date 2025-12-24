@@ -274,10 +274,7 @@ serve(async (req) => {
     let userFriendlyError = errorMessage;
     let statusCode = 500;
     
-    if (errorMessage.includes("Moov secret key not configured")) {
-      userFriendlyError = "Payment processing is not configured. Please check your MOOV_SECRET_KEY environment variable in Supabase.";
-      statusCode = 503; // Service Unavailable
-    } else if (errorMessage.includes("Database migration required")) {
+    if (errorMessage.includes("Database migration required")) {
       userFriendlyError = "Database migration required. Please contact support or apply the migration: 20251224102610_create_cravemore_payment_sessions.sql";
       statusCode = 503; // Service Unavailable
     } else if (errorMessage.includes("Payment session")) {
