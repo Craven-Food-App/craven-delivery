@@ -232,6 +232,17 @@ serve(async (req) => {
 
     if (sessionError) {
       console.error("Error creating payment session:", sessionError);
+      
+      // Check if it's a table doesn't exist error
+      if (sessionError.message?.includes("does not exist") || 
+          sessionError.message?.includes("relation") ||
+          sessionError.code === "42P01") {
+        throw new Error(
+          `Database migration required: cravemore_payment_sessions table is missing. ` +
+          `Please run migration: 20251224102610_create_cravemore_payment_sessions.sql`
+        );
+      }
+      
       throw new Error(`Failed to create payment session: ${sessionError.message}`);
     }
 
@@ -268,6 +279,9 @@ serve(async (req) => {
     
     if (errorMessage.includes("Moov secret key not configured")) {
       userFriendlyError = "Payment processing is not configured. Please check your MOOV_SECRET_KEY environment variable in Supabase.";
+      statusCode = 503; // Service Unavailable
+    } else if (errorMessage.includes("Database migration required")) {
+      userFriendlyError = "Database migration required. Please contact support or apply the migration: 20251224102610_create_cravemore_payment_sessions.sql";
       statusCode = 503; // Service Unavailable
     } else if (errorMessage.includes("Payment session")) {
       userFriendlyError = "Failed to create payment session. Please try again.";

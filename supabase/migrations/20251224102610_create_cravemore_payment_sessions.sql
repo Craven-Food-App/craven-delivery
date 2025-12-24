@@ -20,21 +20,25 @@ CREATE TABLE IF NOT EXISTS public.cravemore_payment_sessions (
 ALTER TABLE public.cravemore_payment_sessions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "Users can view their own payment sessions" ON public.cravemore_payment_sessions;
 CREATE POLICY "Users can view their own payment sessions"
   ON public.cravemore_payment_sessions FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can create their own payment sessions" ON public.cravemore_payment_sessions;
 CREATE POLICY "Users can create their own payment sessions"
   ON public.cravemore_payment_sessions FOR INSERT
   TO authenticated
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can update payment sessions" ON public.cravemore_payment_sessions;
 CREATE POLICY "System can update payment sessions"
   ON public.cravemore_payment_sessions FOR UPDATE
   TO authenticated
   USING (true); -- Edge functions need this
 
+DROP POLICY IF EXISTS "Admins can view all payment sessions" ON public.cravemore_payment_sessions;
 CREATE POLICY "Admins can view all payment sessions"
   ON public.cravemore_payment_sessions FOR SELECT
   TO authenticated
@@ -52,6 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_cravemore_payment_sessions_status ON public.crave
 CREATE INDEX IF NOT EXISTS idx_cravemore_payment_sessions_expires_at ON public.cravemore_payment_sessions(expires_at);
 
 -- Create trigger to update updated_at
+DROP TRIGGER IF EXISTS cravemore_payment_sessions_updated_at ON public.cravemore_payment_sessions;
 CREATE TRIGGER cravemore_payment_sessions_updated_at
   BEFORE UPDATE ON public.cravemore_payment_sessions
   FOR EACH ROW
