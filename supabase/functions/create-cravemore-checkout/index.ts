@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2023-10-16",
-});
+import { getMoovConfig } from '../_shared/moov.ts';
 
 // CORS helper (inlined for standalone deployment)
 const getAllowedOrigins = (): string[] => {
@@ -49,14 +45,14 @@ serve(async (req) => {
     // Validate required environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const moovConfig = getMoovConfig();
     
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.");
     }
     
-    if (!stripeSecretKey) {
-      throw new Error("Missing Stripe configuration. Check STRIPE_SECRET_KEY environment variable.");
+    if (!moovConfig.secretKey) {
+      throw new Error("Missing Moov configuration. Check MOOV_SECRET_KEY environment variable.");
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -190,179 +186,70 @@ serve(async (req) => {
       // Fail open: continue without adding a processing fee line item
     }
 
-    // Get or create Stripe customer
-    let customerId: string | undefined;
+    // Get user profile for email
     let profile: any = null;
-    
     try {
       const { data: profileData, error: profileError } = await supabase
         .from("user_profiles")
-        .select("stripe_customer_id, email")
+        .select("email")
         .eq("user_id", user.id)
         .single();
 
-      if (profileError) {
-        // Check if it's a column doesn't exist error
-        if (profileError.message?.includes("does not exist") || 
-            profileError.message?.includes("column") && profileError.message?.includes("stripe_customer_id")) {
-          console.error("stripe_customer_id column missing. Migration required:", profileError);
-          throw new Error(
-            "Database migration required: stripe_customer_id column is missing from user_profiles table. " +
-            "Please run migration: 20250201000002_add_stripe_customer_id_to_user_profiles.sql"
-          );
-        }
-        
-        // PGRST116 = no rows returned (profile doesn't exist yet)
-        if (profileError.code !== "PGRST116") {
-          console.error("Error fetching user profile:", profileError);
-          throw new Error(`Failed to fetch user profile: ${profileError.message}`);
-        }
+      if (profileError && profileError.code !== "PGRST116") {
+        console.error("Error fetching user profile:", profileError);
+        // Continue anyway - we can use user.email
       } else {
         profile = profileData;
-        customerId = profile?.stripe_customer_id;
       }
     } catch (error) {
-      // Re-throw if it's our custom migration error
-      if (error instanceof Error && error.message.includes("Database migration required")) {
-        throw error;
-      }
-      // Otherwise, log and continue (will create new customer)
-      console.error("Error fetching profile, will create new customer:", error);
+      console.error("Error fetching profile:", error);
+      // Continue anyway
     }
 
-    if (!customerId) {
-      try {
-        const customer = await stripe.customers.create({
-          email: user.email || profile?.email,
-          metadata: {
-            supabase_user_id: user.id,
-          },
-        });
-        customerId = customer.id;
-
-        // Update user profile with Stripe customer ID
-        const { error: updateError } = await supabase
-          .from("user_profiles")
-          .update({ stripe_customer_id: customerId })
-          .eq("user_id", user.id);
-          
-        if (updateError) {
-          console.error("Error updating user profile with Stripe customer ID:", updateError);
-          // Continue anyway - customer was created successfully
-        }
-      } catch (stripeError) {
-        console.error("Error creating Stripe customer:", stripeError);
-        throw new Error(`Failed to create Stripe customer: ${stripeError instanceof Error ? stripeError.message : String(stripeError)}`);
-      }
-    }
-
-    // Create Stripe checkout session
+    // Create payment session in database
     // Get frontend URL from environment or use default
     const frontendUrl = Deno.env.get("FRONTEND_URL") || 
                        Deno.env.get("SUPABASE_URL")?.replace("/functions/v1", "").replace("https://", "https://") ||
                        "http://localhost:8080";
-    const successUrl = `${frontendUrl}/cravemore/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${frontendUrl}/cravemore?canceled=true`;
+    
+    const totalAmountCents = priceCents + processingFeeCents;
+    
+    // Create a payment session record
+    const { data: paymentSession, error: sessionError } = await supabase
+      .from("cravemore_payment_sessions")
+      .insert({
+        user_id: user.id,
+        plan_key: planKey,
+        plan_id: plan.id,
+        amount_cents: totalAmountCents,
+        base_price_cents: priceCents,
+        processing_fee_cents: processingFeeCents,
+        status: "pending",
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
+      })
+      .select()
+      .single();
 
-    if (planKey === "lifetime") {
-      // One-time payment for lifetime
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: "payment",
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `CraveMore ${plan.display_name}`,
-                description: "Lifetime membership - Founding Member",
-              },
-              unit_amount: priceCents,
-            },
-            quantity: 1,
-          },
-          ...(processingFeeCents > 0
-            ? [{
-                price_data: {
-                  currency: "usd",
-                  product_data: {
-                    name: "Processing Fee (Moov)",
-                    description: "Processing fee for membership payment",
-                  },
-                  unit_amount: processingFeeCents,
-                },
-                quantity: 1,
-              }]
-            : []),
-        ],
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        metadata: {
-          plan_key: planKey,
-          user_id: user.id,
-          founding_member: "true",
-        },
-      });
-
-      return new Response(
-        JSON.stringify({ sessionId: session.id, url: session.url }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    } else {
-      // Recurring subscription for monthly/annual
-      const interval = planKey === "annual" ? "year" : "month";
-
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        mode: "subscription",
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: {
-                name: `CraveMore ${plan.display_name}`,
-                description: `CraveMore membership - ${plan.display_name}`,
-              },
-              unit_amount: priceCents,
-              recurring: {
-                interval,
-              },
-            },
-            quantity: 1,
-          },
-          ...(processingFeeCents > 0
-            ? [{
-                price_data: {
-                  currency: "usd",
-                  product_data: {
-                    name: "Processing Fee (Moov)",
-                    description: "Processing fee for membership payment",
-                  },
-                  unit_amount: processingFeeCents,
-                },
-                quantity: 1,
-              }]
-            : []),
-        ],
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        metadata: {
-          plan_key: planKey,
-          user_id: user.id,
-        },
-      });
-
-      return new Response(
-        JSON.stringify({ sessionId: session.id, url: session.url }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
+    if (sessionError) {
+      console.error("Error creating payment session:", sessionError);
+      throw new Error(`Failed to create payment session: ${sessionError.message}`);
     }
+
+    // Return payment session with redirect URL to payment page
+    const paymentUrl = `${frontendUrl}/cravemore/payment?session_id=${paymentSession.id}`;
+    
+    return new Response(
+      JSON.stringify({ 
+        sessionId: paymentSession.id, 
+        url: paymentUrl,
+        amount: totalAmountCents,
+        planKey,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Error creating checkout session:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -375,19 +262,16 @@ serve(async (req) => {
       error: JSON.stringify(error, Object.getOwnPropertyNames(error)),
     });
     
-    // Handle specific Stripe errors
+    // Handle specific errors
     let userFriendlyError = errorMessage;
     let statusCode = 500;
     
-    if (errorMessage.includes("cannot currently make live charges")) {
-      userFriendlyError = "Stripe account is not activated for live mode. Please use test mode keys for development or activate your Stripe account for live mode.";
+    if (errorMessage.includes("Moov secret key not configured")) {
+      userFriendlyError = "Payment processing is not configured. Please check your MOOV_SECRET_KEY environment variable in Supabase.";
       statusCode = 503; // Service Unavailable
-    } else if (errorMessage.includes("Invalid API Key")) {
-      userFriendlyError = "Invalid Stripe API key. Please check your STRIPE_SECRET_KEY environment variable.";
+    } else if (errorMessage.includes("Payment session")) {
+      userFriendlyError = "Failed to create payment session. Please try again.";
       statusCode = 500;
-    } else if (errorMessage.includes("No such customer")) {
-      userFriendlyError = "Customer not found. Please try again.";
-      statusCode = 404;
     }
     
     return new Response(
