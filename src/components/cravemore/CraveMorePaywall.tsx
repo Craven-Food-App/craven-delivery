@@ -102,9 +102,13 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
           navigate('/login?redirect=/cravemore');
         } else if (displayError.includes('sold out')) {
           toast.error('This plan is currently sold out. Please select another plan.');
-        } else if (displayError.includes('stripe_customer_id') || displayError.includes('column') || displayError.includes('does not exist')) {
-          toast.error('Database configuration error. Please contact support or check that migrations have been run.', {
-            duration: 8000,
+        } else if (displayError.includes('Database migration required') || displayError.includes('cravemore_payment_sessions') || displayError.includes('does not exist') || displayError.includes('relation')) {
+          toast.error('Database migration required. Please apply migration: 20251224102610_create_cravemore_payment_sessions.sql', {
+            duration: 10000,
+          });
+        } else if (displayError.includes('Moov secret key not configured') || displayError.includes('MOOV_SECRET_KEY')) {
+          toast.error('Payment processing is not configured. Please set MOOV_SECRET_KEY in Supabase environment variables.', {
+            duration: 10000,
           });
         } else if (displayError.includes('cannot currently make live charges') || displayError.includes('Stripe account is not activated')) {
           toast.error('Payment processing is not available. Please use Stripe test mode keys for development or activate your Stripe account for live mode.', {

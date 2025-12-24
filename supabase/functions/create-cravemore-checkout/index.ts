@@ -288,9 +288,11 @@ serve(async (req) => {
       statusCode = 500;
     }
     
+    // Always include error message in response for debugging
     return new Response(
       JSON.stringify({ 
         error: userFriendlyError,
+        message: errorMessage, // Include original error message
         details: Deno.env.get("ENVIRONMENT") === "development" ? errorStack : undefined,
         originalError: Deno.env.get("ENVIRONMENT") === "development" ? errorMessage : undefined,
       }),
