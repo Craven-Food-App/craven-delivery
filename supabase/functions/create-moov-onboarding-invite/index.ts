@@ -5,12 +5,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 /*                                  CONFIG                                     */
 /* -------------------------------------------------------------------------- */
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const MOOV_API_URL = Deno.env.get("MOOV_API_URL") ?? "https://api.moov.io";
-const MOOV_SECRET_KEY = Deno.env.get("MOOV_SECRET_KEY")!;
+const MOOV_SECRET_KEY = Deno.env.get("MOOV_SECRET_KEY");
 const MOOV_ACCOUNT_ID = Deno.env.get("MOOV_ACCOUNT_ID") ?? "";
 
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") ?? "https://cravenusa.com";
@@ -111,6 +111,15 @@ serve(async req => {
   }
 
   try {
+    // Validate environment variables
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing Supabase environment variables");
+      return new Response(
+        JSON.stringify({ error: "Server misconfiguration" }),
+        { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -131,16 +140,25 @@ serve(async req => {
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Validate user JWT using anon client
-    const { data: { user }, error } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
-    if (error || !user) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
 
-    const body = await req.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
 
     const {
       restaurantId,
@@ -159,7 +177,7 @@ serve(async req => {
 
     /* ----------------------------- RESTAURANT ------------------------------ */
 
-    const { data: restaurant } = restaurantId
+    const { data: restaurant, error: restaurantError } = restaurantId
       ? await adminClient
           .from("restaurants")
           .select("*")
@@ -173,6 +191,14 @@ serve(async req => {
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+    if (restaurantError) {
+      console.error("Error fetching restaurant:", restaurantError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch restaurant data" }),
+        { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
+      );
+    }
 
     // Verify restaurant exists and user owns it
     if (restaurantId && !restaurant) {
@@ -200,7 +226,7 @@ serve(async req => {
     /* ----------------------------- SIDE EFFECT ------------------------------ */
 
     if (restaurant?.id) {
-      await adminClient
+      const { error: updateError } = await adminClient
         .from("restaurants")
         .update({
           moov_onboarding_invite_code: invite.code,
@@ -208,6 +234,11 @@ serve(async req => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", restaurant.id);
+
+      if (updateError) {
+        console.error("Error updating restaurant:", updateError);
+        // Don't fail the request if DB update fails - the invite was created successfully
+      }
     }
 
     return new Response(

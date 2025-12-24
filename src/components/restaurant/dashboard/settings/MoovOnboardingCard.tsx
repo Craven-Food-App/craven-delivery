@@ -28,41 +28,20 @@ export const MoovOnboardingCard = () => {
 
     setIsCreatingInvite(true);
     try {
-      const returnURL = `${window.location.origin}/merchant-portal?tab=settings&subtab=bank-account&moov_onboarding=complete`;
-      const termsOfServiceURL = `${window.location.origin}/terms-of-service`;
+      const response = await supabase.functions.invoke('create-moov-onboarding-invite', {
+        body: { restaurantId: restaurant.id, feePlanCodes: ["merchant-direct"] }
+      });
 
-      const { data, error } = await supabase.functions.invoke(
-        "create-moov-onboarding-invite",
-        {
-          method: "POST", // Explicitly set POST method
-          body: {
-            restaurantId: restaurant.id,
-            returnURL,
-            termsOfServiceURL,
-            scopes: ["accounts.read"],
-            capabilities: [
-              "wallet.balance",
-              "collect-funds.ach",
-              "collect-funds.card-payments",
-              "send-funds.ach",
-            ],
-            feePlanCodes: ["merchant-direct"], // Update with your actual fee plan code
-            accountType: "business",
-          },
-        }
-      );
+      if (response.error) throw response.error;
 
-      if (error) {
-        throw error;
+      const { link: onboardingLink } = response.data;
+
+      if (!onboardingLink) {
+        throw new Error('No onboarding link received');
       }
 
-      if (data?.link) {
-        toast.success("Redirecting to Moov onboarding...");
-        // Redirect to Moov onboarding
-        window.location.href = data.link;
-      } else {
-        throw new Error("No onboarding link received");
-      }
+      // Use the link
+      window.open(onboardingLink, '_blank');
     } catch (error: any) {
       console.error("Error creating Moov onboarding invite:", error);
       const errorMessage =
