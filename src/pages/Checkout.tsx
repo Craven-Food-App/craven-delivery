@@ -179,8 +179,14 @@ const Checkout: React.FC = () => {
   // Check CraveMore membership and calculate fees
   useEffect(() => {
     const checkCravemoreAndCalculateFees = async () => {
-      if (!restaurant || cart.length === 0 || formData.deliveryMethod !== 'delivery') {
+      if (!restaurant || cart.length === 0) {
         setDeliveryFee(300);
+        return;
+      }
+      
+      // No delivery fee for pickup orders
+      if (formData.deliveryMethod !== 'delivery') {
+        setDeliveryFee(0);
         return;
       }
 
@@ -367,7 +373,7 @@ const Checkout: React.FC = () => {
             customer_id: user?.id || null,
             restaurant_id: restaurant.id,
             subtotal_cents: subtotal,
-            delivery_fee_cents: deliveryFee,
+            delivery_fee_cents: formData.deliveryMethod === 'delivery' ? deliveryFee : 0,
             tax_cents: tax,
             tip_cents: tipAmount,
             total_cents: total,
@@ -686,12 +692,14 @@ const Checkout: React.FC = () => {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Delivery fee</span>
-                      <span className={cravemoreEligible ? 'text-green-600 font-semibold' : ''}>
-                        {cravemoreEligible ? '$0.00' : `$${(deliveryFee / 100).toFixed(2)}`}
-                      </span>
-                    </div>
+                    {formData.deliveryMethod === 'delivery' && (
+                      <div className="flex justify-between">
+                        <span>Delivery fee</span>
+                        <span className={cravemoreEligible ? 'text-green-600 font-semibold' : ''}>
+                          {cravemoreEligible ? '$0.00' : `$${(deliveryFee / 100).toFixed(2)}`}
+                        </span>
+                      </div>
+                    )}
                     {cravemoreEligible && (
                       <p className="text-xs text-green-600">✓ CraveMore benefit applied</p>
                     )}
