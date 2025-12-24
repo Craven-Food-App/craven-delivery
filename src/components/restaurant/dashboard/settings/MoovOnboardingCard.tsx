@@ -34,6 +34,7 @@ export const MoovOnboardingCard = () => {
       const { data, error } = await supabase.functions.invoke(
         "create-moov-onboarding-invite",
         {
+          method: "POST", // Explicitly set POST method
           body: {
             restaurantId: restaurant.id,
             returnURL,

@@ -214,8 +214,8 @@ serve(async (req) => {
     // Create payment session in database
     // Get frontend URL from environment or use default
     const frontendUrl = Deno.env.get("FRONTEND_URL") || 
-                       Deno.env.get("SUPABASE_URL")?.replace("/functions/v1", "").replace("https://", "https://") ||
-                       "http://localhost:8080";
+                       Deno.env.get("SUPABASE_URL")?.replace("/functions/v1", "") ||
+                       "https://cravenusa.com";
     
     const totalAmountCents = priceCents + processingFeeCents;
     
