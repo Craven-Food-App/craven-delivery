@@ -72,16 +72,32 @@ export const CraveMorePaywall: React.FC<CraveMorePaywallProps> = ({
         let errorMsg = error.message || '';
         let serverError = '';
         
+        // Try to read the response body if available
+        if (error.context && error.context instanceof Response) {
+          try {
+            const errorText = await error.context.clone().text();
+            console.error('Error response body:', errorText);
+            try {
+              const parsed = JSON.parse(errorText);
+              serverError = parsed.error || parsed.message || parsed.details || errorText;
+            } catch {
+              serverError = errorText;
+            }
+          } catch (e) {
+            console.error('Failed to read error response:', e);
+          }
+        }
+        
         // Check error.data (Supabase client usually puts parsed response here)
         if (error.data) {
           if (typeof error.data === 'object') {
-            serverError = error.data.error || error.data.message || '';
+            serverError = error.data.error || error.data.message || serverError || '';
           } else if (typeof error.data === 'string') {
             try {
               const parsed = JSON.parse(error.data);
-              serverError = parsed.error || parsed.message || error.data;
+              serverError = parsed.error || parsed.message || parsed.details || error.data;
             } catch {
-              serverError = error.data;
+              serverError = error.data || serverError;
             }
           }
         }
