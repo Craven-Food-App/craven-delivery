@@ -128,8 +128,24 @@ export async function createMoovPayment(params: {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Unknown error" }));
-    throw new Error(`Moov payment creation failed: ${error.message || response.statusText}`);
+    let errorDetails: any;
+    try {
+      errorDetails = await response.json();
+    } catch {
+      errorDetails = { message: response.statusText || "Unknown error" };
+    }
+    
+    const errorMessage = errorDetails.message || errorDetails.error || response.statusText || "Unknown error";
+    const statusCode = response.status;
+    
+    console.error("Moov payment API error:", {
+      status: statusCode,
+      statusText: response.statusText,
+      errorDetails,
+      url: response.url,
+    });
+    
+    throw new Error(`Moov payment failed: ${errorMessage} (Status: ${statusCode})`);
   }
 
   return await response.json();
