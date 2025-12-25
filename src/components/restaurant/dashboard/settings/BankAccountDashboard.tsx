@@ -300,10 +300,12 @@ const BankAccountDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Moov Onboarding */}
-      <div className="mt-6">
-        <MoovOnboardingCard />
-      </div>
+      {/* Moov Onboarding - FIXED: Now passing restaurantId prop */}
+      {restaurant?.id && (
+        <div className="mt-6">
+          <MoovOnboardingCard restaurantId={restaurant.id} />
+        </div>
+      )}
     </div>
   );
 };
