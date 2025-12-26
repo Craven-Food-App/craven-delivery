@@ -77,7 +77,7 @@ const CategorySection = () => {
       isComingSoon: false
     },
     {
-      name: "Convenience",
+      name: "Quick Stops",
       image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop",
       color: "from-blue-500 to-indigo-600",
       isComingSoon: true
@@ -89,19 +89,19 @@ const CategorySection = () => {
       isComingSoon: true
     },
     {
-      name: "Beauty",
+      name: "Cosmetics",
       image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=200&h=200&fit=crop",
       color: "from-pink-400 to-rose-500",
       isComingSoon: true
     },
     {
-      name: "Pets",
+      name: "Animals",
       image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=200&h=200&fit=crop",
       color: "from-amber-500 to-orange-500",
       isComingSoon: true
     },
     {
-      name: "Health",
+      name: "Self Care",
       image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=200&h=200&fit=crop",
       color: "from-teal-500 to-cyan-600",
       isComingSoon: true

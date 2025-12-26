@@ -6,8 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, Navigate, HashRouter, useLocation } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
-import MobileBottomNav from "@/components/mobile/MobileBottomNav";
-import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import Favorites from "./pages/Favorites";
@@ -170,21 +168,6 @@ const DriverGuide = lazy(() => import("./pages/DriverGuide"));
 
 const queryClient = new QueryClient();
 
-// Wrapper component to conditionally render MobileBottomNav based on route
-const ConditionalMobileBottomNav = ({ user }: { user: any }) => {
-  const location = useLocation();
-  
-  // Check if route is driver-related or restaurants page
-  const isDriverRoute = location.pathname.startsWith('/mobile') || 
-                        location.pathname.startsWith('/driver') || 
-                        location.pathname.startsWith('/enhanced-onboarding');
-  
-  if (isDriverRoute || location.pathname === '/restaurants') {
-    return null;
-  }
-  
-  return <MobileBottomNav user={user} />;
-};
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -883,8 +866,6 @@ const App = () => {
           </ChatButton>
         </div>
 
-        {/* Global Mobile Bottom Navigation - Shows on all customer pages */}
-        <GlobalMobileBottomNav />
         </CartProvider>
       </BrowserRouter>
     </TooltipProvider>

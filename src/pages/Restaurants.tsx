@@ -480,11 +480,11 @@ const Restaurants = () => {
   const navCategories = [
     { id: 'all', label: 'All', icon: IconHome, active: activeCategory === 'all' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
-    { id: 'convenience', label: 'Convenience', icon: IconCoffee, active: activeCategory === 'convenience' },
+    { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
-    { id: 'beauty', label: 'Beauty', icon: IconHeart, active: activeCategory === 'beauty' },
-    { id: 'pets', label: 'Pets', icon: IconHeart, active: activeCategory === 'pets' },
-    { id: 'health', label: 'Health', icon: IconShield, active: activeCategory === 'health' },
+    { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
+    { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
+    { id: 'health', label: 'Self Care', icon: IconShield, active: activeCategory === 'health' },
     { id: 'browse', label: 'Browse All', icon: IconSearch, active: activeCategory === 'browse' },
     { id: 'orders', label: 'Orders', icon: IconClock, active: activeCategory === 'orders' },
     { id: 'account', label: 'Account', icon: IconUser, active: activeCategory === 'account' }
