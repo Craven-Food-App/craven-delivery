@@ -207,7 +207,8 @@ const RestaurantMenuPage = () => {
     // Use deliveryMethod for both mobile and desktop - synced state
            const [pickupInfo, setPickupInfo] = useState({
                address: '',
-               driveTime: 0,
+               walkTime: 0,
+               walkDistance: '',
                readyTime: 0
            });
            const [showItemModal, setShowItemModal] = useState(false);
@@ -354,9 +355,9 @@ const RestaurantMenuPage = () => {
     };
   }, []);
 
-    // Calculate drive time based on user's location
-    const calculateDriveTime = (userLat: number, userLng: number, restaurantLat: number, restaurantLng: number): number => {
-        // Haversine formula to calculate distance in miles
+    // Calculate walking distance and time based on user's location with pin-point precision
+    const calculateWalkingDistance = (userLat: number, userLng: number, restaurantLat: number, restaurantLng: number): { time: number; distance: string } => {
+        // Haversine formula to calculate distance in miles with high precision
         const R = 3959; // Earth's radius in miles
         const dLat = (restaurantLat - userLat) * Math.PI / 180;
         const dLng = (restaurantLng - userLng) * Math.PI / 180;
@@ -367,22 +368,42 @@ const RestaurantMenuPage = () => {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const distanceMiles = R * c;
         
-        // If very close (less than 0.001 miles / ~5 feet), show 1 minute
-        if (distanceMiles < 0.001) {
-            return 1;
+        // Convert to feet for precise measurements
+        const distanceFeet = distanceMiles * 5280;
+        const distanceYards = distanceFeet / 3;
+        
+        // Format distance string with precision
+        let distanceStr: string;
+        if (distanceFeet < 10) {
+            // Less than 10 feet - show in feet with 1 decimal
+            distanceStr = `${distanceFeet.toFixed(1)} ft`;
+        } else if (distanceFeet < 528) { // Less than 0.1 miles (528 feet)
+            // Show in feet for very close distances
+            distanceStr = `${Math.round(distanceFeet)} ft`;
+        } else if (distanceMiles < 0.1) { // Less than 0.1 miles
+            // Show in yards for close distances
+            distanceStr = `${Math.round(distanceYards)} yd`;
+        } else if (distanceMiles < 1) {
+            // Show in miles with 2 decimal places for short distances
+            distanceStr = `${distanceMiles.toFixed(2)} mi`;
+        } else {
+            // Show in miles with 1 decimal place for longer distances
+            distanceStr = `${distanceMiles.toFixed(1)} mi`;
         }
         
-        // If close (less than 0.05 miles / ~264 feet), show 1-2 minutes
-        if (distanceMiles < 0.05) {
-            return distanceMiles < 0.01 ? 1 : 2;
-        }
+        // Calculate walking time
+        // Average walking speed: 3 mph = 0.05 miles per minute = 264 feet per minute
+        const walkingSpeedMph = 3; // miles per hour
+        const walkingSpeedMpm = walkingSpeedMph / 60; // miles per minute
+        const walkingTimeMinutes = distanceMiles / walkingSpeedMpm;
         
-        // Estimate drive time: assume average speed of 30 mph in city traffic
-        // Calculate time in minutes: (distance / speed) * 60
-        const driveTimeMinutes = Math.round((distanceMiles / 30) * 60);
+        // Round to nearest minute, minimum 1 minute
+        const roundedTime = Math.max(1, Math.round(walkingTimeMinutes));
         
-        // Minimum 1 minute, maximum reasonable drive time
-        return Math.max(1, Math.min(driveTimeMinutes, 60));
+        return {
+            time: roundedTime,
+            distance: distanceStr
+        };
     };
 
     // Set pickup info when restaurant data is loaded
@@ -394,47 +415,53 @@ const RestaurantMenuPage = () => {
                     (position) => {
                         const userLat = position.coords.latitude;
                         const userLng = position.coords.longitude;
-                        const driveTime = calculateDriveTime(
+                        const accuracy = position.coords.accuracy; // Accuracy in meters
+                        const walkingInfo = calculateWalkingDistance(
                             userLat,
                             userLng,
                             restaurant.latitude!,
                             restaurant.longitude!
                         );
                         
-                        console.log('Drive time calculation:', {
-                            userLat,
-                            userLng,
-                            restaurantLat: restaurant.latitude,
-                            restaurantLng: restaurant.longitude,
-                            driveTime
+                        console.log('Walking distance calculation:', {
+                            userLat: userLat.toFixed(8),
+                            userLng: userLng.toFixed(8),
+                            restaurantLat: restaurant.latitude!.toFixed(8),
+                            restaurantLng: restaurant.longitude!.toFixed(8),
+                            accuracy: `${accuracy}m`,
+                            walkTime: walkingInfo.time,
+                            walkDistance: walkingInfo.distance
                         });
                         
                         setPickupInfo({
                             address: restaurant.address,
-                            driveTime: driveTime,
+                            walkTime: walkingInfo.time,
+                            walkDistance: walkingInfo.distance,
                             readyTime: restaurant.min_delivery_time || 15
                         });
                     },
                     (error) => {
-                        // If geolocation fails, default to 1 minute (assuming user might be at location)
+                        // If geolocation fails, default to minimal values
                         console.error('Error getting location:', error);
                         setPickupInfo({
                             address: restaurant.address,
-                            driveTime: 1,
+                            walkTime: 1,
+                            walkDistance: '0 ft',
                             readyTime: restaurant.min_delivery_time || 15
                         });
                     },
                     {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
+                        enableHighAccuracy: true, // Use GPS if available for maximum precision
+                        timeout: 15000, // Increased timeout for high accuracy
                         maximumAge: 0 // Don't use cached location, get fresh one
                     }
                 );
             } else {
-                // Browser doesn't support geolocation, default to 1 minute
+                // Browser doesn't support geolocation, default to minimal values
                 setPickupInfo({
                     address: restaurant.address,
-                    driveTime: 1,
+                    walkTime: 1,
+                    walkDistance: '0 ft',
                     readyTime: restaurant.min_delivery_time || 15
                 });
             }
@@ -806,8 +833,8 @@ const RestaurantMenuPage = () => {
                                     {pickupInfo.address || restaurant.address}
                                 </Text>
                                 <Group gap="xs">
-                                    <IconCar size={16} style={{ color: 'var(--mantine-color-gray-6)' }} />
-                                    <Text size="sm" c="dimmed">{pickupInfo.driveTime} min drive</Text>
+                                    <IconNavigation size={16} style={{ color: 'var(--mantine-color-gray-6)' }} />
+                                    <Text size="sm" c="dimmed">{pickupInfo.walkDistance} • {pickupInfo.walkTime} min walk</Text>
                                 </Group>
                             </Stack>
                         </Stack>
