@@ -22,6 +22,7 @@ interface Modifier {
   is_available: boolean;
   display_order: number;
   max_selections: number | null;
+  is_recommended: boolean;
 }
 
 interface MenuItemModifierManagerProps {
@@ -59,6 +60,7 @@ export const MenuItemModifierManager = ({
     is_required: false,
     is_available: true,
     max_selections: 1,
+    is_recommended: false,
   });
 
   useEffect(() => {
@@ -115,6 +117,7 @@ export const MenuItemModifierManager = ({
         is_required: false,
         is_available: true,
         max_selections: 1,
+        is_recommended: false,
       });
       setIsAddingModifier(false);
       fetchModifiers();
@@ -295,7 +298,7 @@ export const MenuItemModifierManager = ({
                       placeholder="Enter positive for extra cost, negative for discount"
                     />
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="required"
@@ -303,6 +306,14 @@ export const MenuItemModifierManager = ({
                         onCheckedChange={(checked) => setNewModifier({ ...newModifier, is_required: checked })}
                       />
                       <Label htmlFor="required">Required Selection</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="recommended"
+                        checked={newModifier.is_recommended}
+                        onCheckedChange={(checked) => setNewModifier({ ...newModifier, is_recommended: checked })}
+                      />
+                      <Label htmlFor="recommended">Recommended (Pre-selected)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Switch
@@ -358,6 +369,9 @@ export const MenuItemModifierManager = ({
                           </div>
                           {modifier.is_required && (
                             <Badge variant="destructive" className="text-xs">Required</Badge>
+                          )}
+                          {modifier.is_recommended && (
+                            <Badge variant="default" className="text-xs bg-orange-500">Recommended</Badge>
                           )}
                           <Badge 
                             variant={modifier.is_available ? "default" : "secondary"}
@@ -455,7 +469,7 @@ export const MenuItemModifierManager = ({
                       })}
                     />
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4 flex-wrap">
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="edit-required"
@@ -463,6 +477,14 @@ export const MenuItemModifierManager = ({
                         onCheckedChange={(checked) => setEditingModifier({ ...editingModifier, is_required: checked })}
                       />
                       <Label htmlFor="edit-required">Required Selection</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="edit-recommended"
+                        checked={editingModifier.is_recommended}
+                        onCheckedChange={(checked) => setEditingModifier({ ...editingModifier, is_recommended: checked })}
+                      />
+                      <Label htmlFor="edit-recommended">Recommended (Pre-selected)</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Switch

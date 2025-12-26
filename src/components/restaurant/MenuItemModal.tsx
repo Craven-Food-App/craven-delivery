@@ -49,6 +49,7 @@ interface Modifier {
   price_cents: number;
   modifier_type: string;
   is_required: boolean;
+  is_recommended?: boolean;
 }
 
 interface SelectedModifier extends Modifier {
@@ -77,7 +78,19 @@ export const MenuItemModal = ({ item, onClose, onAddToCart }: MenuItemModalProps
         .order('display_order', { ascending: true });
 
       if (!error && data) {
-        setModifiers(data.map(mod => ({ ...mod, selected: false })));
+        // For size modifiers, only pre-select the first recommended one
+        // For other modifiers, pre-select all recommended ones
+        let hasSelectedRecommendedSize = false;
+        setModifiers(data.map(mod => {
+          if (mod.modifier_type === 'size') {
+            if (mod.is_recommended && !hasSelectedRecommendedSize) {
+              hasSelectedRecommendedSize = true;
+              return { ...mod, selected: true };
+            }
+            return { ...mod, selected: false };
+          }
+          return { ...mod, selected: mod.is_recommended === true };
+        }));
       }
       setLoading(false);
     };
@@ -229,7 +242,12 @@ export const MenuItemModal = ({ item, onClose, onAddToCart }: MenuItemModalProps
                               value={modifier.id}
                               label={
                                 <Group justify="space-between" style={{ flex: 1 }}>
-                                  <Text size="sm" fw={500}>{modifier.name}</Text>
+                                  <Group gap="xs">
+                                    <Text size="sm" fw={500}>{modifier.name}</Text>
+                                    {modifier.is_recommended && (
+                                      <Badge size="xs" color="orange" variant="light">Recommended</Badge>
+                                    )}
+                                  </Group>
                                   {modifier.price_cents > 0 && (
                                     <Text size="sm" c="dimmed">
                                       +${(modifier.price_cents / 100).toFixed(2)}
@@ -257,6 +275,9 @@ export const MenuItemModal = ({ item, onClose, onAddToCart }: MenuItemModalProps
                                 <Group gap="xs">
                                   {type === 'removal' && <IconX size={14} style={{ color: 'var(--mantine-color-red-6)' }} />}
                                   <Text size="sm" fw={500}>{modifier.name}</Text>
+                                  {modifier.is_recommended && (
+                                    <Badge size="xs" color="orange" variant="light">Recommended</Badge>
+                                  )}
                                 </Group>
                                 {modifier.price_cents > 0 && (
                                   <Text size="sm" c="dimmed">

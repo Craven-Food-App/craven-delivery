@@ -213,6 +213,8 @@ const RestaurantMenuPage = () => {
            const [showItemModal, setShowItemModal] = useState(false);
            const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
            const [modalQuantity, setModalQuantity] = useState(1);
+           const [selectedRecommendedOption, setSelectedRecommendedOption] = useState<number | null>(1);
+           const [selectedMenuItem, setSelectedMenuItem] = useState<string | null>(null);
            const reviewsScrollRef = useRef<HTMLDivElement>(null);
 
     // Reviews scroll functions
@@ -514,12 +516,16 @@ const RestaurantMenuPage = () => {
                setSelectedItem(item);
                setShowItemModal(true);
                setModalQuantity(1);
+               setSelectedRecommendedOption(1);
+               setSelectedMenuItem(null);
            }, []);
 
            const closeItemModal = useCallback(() => {
                setShowItemModal(false);
                setSelectedItem(null);
                setModalQuantity(1);
+               setSelectedRecommendedOption(1);
+               setSelectedMenuItem(null);
            }, []);
 
            const addToCartFromModal = useCallback(async () => {
@@ -798,7 +804,19 @@ const RestaurantMenuPage = () => {
                     </Group>
 
                     {/* Option #1 (Selected) */}
-                    <Card p="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)', border: '2px solid var(--mantine-color-orange-6)' }}>
+                    <Card 
+                        p="md" 
+                        style={{ 
+                            backgroundColor: selectedRecommendedOption === 1 ? 'var(--mantine-color-gray-0)' : 'white',
+                            border: selectedRecommendedOption === 1 ? '2px solid var(--mantine-color-orange-6)' : '1px solid var(--mantine-color-gray-3)',
+                            cursor: 'pointer'
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedRecommendedOption(1);
+                        }}
+                    >
                         <Group justify="space-between" align="flex-start">
                             <Stack gap="xs" style={{ flex: 1 }}>
                                 <Group justify="space-between" align="center">
@@ -807,22 +825,24 @@ const RestaurantMenuPage = () => {
                                         style={{
                                             width: '16px',
                                             height: '16px',
-                                            border: '2px solid var(--mantine-color-orange-6)',
+                                            border: selectedRecommendedOption === 1 ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
                                             borderRadius: '50%',
-                                            backgroundColor: 'var(--mantine-color-orange-6)',
+                                            backgroundColor: selectedRecommendedOption === 1 ? 'var(--mantine-color-orange-6)' : 'transparent',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                         }}
                                     >
-                                        <Box
-                                            style={{
-                                                width: '8px',
-                                                height: '8px',
-                                                backgroundColor: 'white',
-                                                borderRadius: '50%',
-                                            }}
-                                        />
+                                        {selectedRecommendedOption === 1 && (
+                                            <Box
+                                                style={{
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    backgroundColor: 'white',
+                                                    borderRadius: '50%',
+                                                }}
+                                            />
+                                        )}
                                     </Box>
                                 </Group>
                                 <Text size="sm" c="gray.7">
@@ -834,7 +854,16 @@ const RestaurantMenuPage = () => {
                     </Card>
 
                     {/* Option #2 (Partially Visible) */}
-                    <Card p="md" withBorder>
+                    <Card 
+                        p="md" 
+                        withBorder
+                        style={{ cursor: 'pointer' }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedRecommendedOption(2);
+                        }}
+                    >
                         <Group justify="space-between" align="flex-start">
                             <Stack gap="xs" style={{ flex: 1 }}>
                                 <Group justify="space-between" align="center">
@@ -843,10 +872,25 @@ const RestaurantMenuPage = () => {
                                         style={{
                                             width: '16px',
                                             height: '16px',
-                                            border: '2px solid var(--mantine-color-gray-3)',
+                                            border: selectedRecommendedOption === 2 ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
                                             borderRadius: '50%',
+                                            backgroundColor: selectedRecommendedOption === 2 ? 'var(--mantine-color-orange-6)' : 'transparent',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                         }}
-                                    />
+                                    >
+                                        {selectedRecommendedOption === 2 && (
+                                            <Box
+                                                style={{
+                                                    width: '8px',
+                                                    height: '8px',
+                                                    backgroundColor: 'white',
+                                                    borderRadius: '50%',
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
                                 </Group>
                                 <Text size="sm" c="gray.7">
                                     Southwestern Eggrolls • Big Mouth® Bites • Ranch...
@@ -873,31 +917,258 @@ const RestaurantMenuPage = () => {
                             </Stack>
                             
                             <Stack gap="sm">
-                                <Card p="sm" withBorder style={{ cursor: 'pointer' }}>
+                                <Card 
+                                    p="sm" 
+                                    withBorder 
+                                    style={{ 
+                                        cursor: 'pointer',
+                                        border: selectedMenuItem === 'big-mouth-bites' ? '2px solid var(--mantine-color-orange-6)' : undefined
+                                    }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedMenuItem('big-mouth-bites');
+                                    }}
+                                >
                                     <Group justify="space-between">
                                         <Text size="sm" fw={500}>Big Mouth® Bites</Text>
                                         <Box
                                             style={{
                                                 width: '16px',
                                                 height: '16px',
-                                                border: '2px solid var(--mantine-color-gray-3)',
+                                                border: selectedMenuItem === 'big-mouth-bites' ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
                                                 borderRadius: '50%',
+                                                backgroundColor: selectedMenuItem === 'big-mouth-bites' ? 'var(--mantine-color-orange-6)' : 'transparent',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                             }}
-                                        />
+                                        >
+                                            {selectedMenuItem === 'big-mouth-bites' && (
+                                                <Box
+                                                    style={{
+                                                        width: '8px',
+                                                        height: '8px',
+                                                        backgroundColor: 'white',
+                                                        borderRadius: '50%',
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
                                     </Group>
                                 </Card>
-                                <Card p="sm" withBorder style={{ cursor: 'pointer' }}>
+                                <Card 
+                                    p="sm" 
+                                    withBorder 
+                                    style={{ 
+                                        cursor: 'pointer',
+                                        border: selectedMenuItem === 'southwestern-eggrolls' ? '2px solid var(--mantine-color-orange-6)' : undefined
+                                    }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedMenuItem('southwestern-eggrolls');
+                                    }}
+                                >
                                     <Group justify="space-between">
                                         <Text size="sm" fw={500}>Southwestern Eggrolls</Text>
                                         <Box
                                             style={{
                                                 width: '16px',
                                                 height: '16px',
-                                                border: '2px solid var(--mantine-color-gray-3)',
+                                                border: selectedMenuItem === 'southwestern-eggrolls' ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
                                                 borderRadius: '50%',
+                                                backgroundColor: selectedMenuItem === 'southwestern-eggrolls' ? 'var(--mantine-color-orange-6)' : 'transparent',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                             }}
-                                        />
+                                        >
+                                            {selectedMenuItem === 'southwestern-eggrolls' && (
+                                                <Box
+                                                    style={{
+                                                        width: '8px',
+                                                        height: '8px',
+                                                        backgroundColor: 'white',
+                                                        borderRadius: '50%',
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
                                     </Group>
+                                </Card>
+                            </Stack>
+                        </Stack>
+                    </Tabs.Panel>
+
+                    {/* Reviews Content */}
+                    <Tabs.Panel value="reviews" pt="md">
+                        <Stack gap="md">
+                            {/* Overall Rating Summary */}
+                            <Card p="md" withBorder>
+                                <Group justify="space-between" align="center">
+                                    <Stack gap="xs">
+                                        <Group gap="xs">
+                                            <Text size="xl" fw={700}>{selectedItem?.rating || 4.5}</Text>
+                                            <IconStar size={20} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                        </Group>
+                                        <Text size="sm" c="dimmed">Based on 8 reviews</Text>
+                                    </Stack>
+                                    <RingProgress
+                                        size={80}
+                                        thickness={8}
+                                        sections={[{ value: ((selectedItem?.rating || 4.5) / 5) * 100, color: 'orange' }]}
+                                        label={
+                                            <Text size="xs" ta="center" fw={700}>
+                                                {((selectedItem?.rating || 4.5) / 5) * 100}%
+                                            </Text>
+                                        }
+                                    />
+                                </Group>
+                            </Card>
+
+                            {/* Review List */}
+                            <Stack gap="md">
+                                {/* Review 1 */}
+                                <Card p="md" withBorder>
+                                    <Stack gap="sm">
+                                        <Group justify="space-between">
+                                            <Group gap="xs">
+                                                <Avatar size="md" radius="xl" color="orange">
+                                                    JD
+                                                </Avatar>
+                                                <Stack gap={0}>
+                                                    <Text size="sm" fw={600}>John D.</Text>
+                                                    <Group gap="xs">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <IconStar 
+                                                                key={star}
+                                                                size={14} 
+                                                                style={{ 
+                                                                    color: 'var(--mantine-color-yellow-5)', 
+                                                                    fill: 'var(--mantine-color-yellow-5)' 
+                                                                }} 
+                                                            />
+                                                        ))}
+                                                    </Group>
+                                                </Stack>
+                                            </Group>
+                                            <Text size="xs" c="dimmed">2 days ago</Text>
+                                        </Group>
+                                        <Text size="sm" c="gray.7">
+                                            Absolutely delicious! The Big Mouth Bites were perfectly crispy and the ranch was amazing. Will definitely order again.
+                                        </Text>
+                                    </Stack>
+                                </Card>
+
+                                {/* Review 2 */}
+                                <Card p="md" withBorder>
+                                    <Stack gap="sm">
+                                        <Group justify="space-between">
+                                            <Group gap="xs">
+                                                <Avatar size="md" radius="xl" color="blue">
+                                                    SM
+                                                </Avatar>
+                                                <Stack gap={0}>
+                                                    <Text size="sm" fw={600}>Sarah M.</Text>
+                                                    <Group gap="xs">
+                                                        {[1, 2, 3, 4].map((star) => (
+                                                            <IconStar 
+                                                                key={star}
+                                                                size={14} 
+                                                                style={{ 
+                                                                    color: 'var(--mantine-color-yellow-5)', 
+                                                                    fill: 'var(--mantine-color-yellow-5)' 
+                                                                }} 
+                                                            />
+                                                        ))}
+                                                        <IconStar 
+                                                            size={14} 
+                                                            style={{ 
+                                                                color: 'var(--mantine-color-gray-3)', 
+                                                                fill: 'transparent' 
+                                                            }} 
+                                                        />
+                                                    </Group>
+                                                </Stack>
+                                            </Group>
+                                            <Text size="xs" c="dimmed">1 week ago</Text>
+                                        </Group>
+                                        <Text size="sm" c="gray.7">
+                                            Great value for money. The combination of flavors is fantastic. Delivery was quick too!
+                                        </Text>
+                                    </Stack>
+                                </Card>
+
+                                {/* Review 3 */}
+                                <Card p="md" withBorder>
+                                    <Stack gap="sm">
+                                        <Group justify="space-between">
+                                            <Group gap="xs">
+                                                <Avatar size="md" radius="xl" color="green">
+                                                    MR
+                                                </Avatar>
+                                                <Stack gap={0}>
+                                                    <Text size="sm" fw={600}>Mike R.</Text>
+                                                    <Group gap="xs">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <IconStar 
+                                                                key={star}
+                                                                size={14} 
+                                                                style={{ 
+                                                                    color: 'var(--mantine-color-yellow-5)', 
+                                                                    fill: 'var(--mantine-color-yellow-5)' 
+                                                                }} 
+                                                            />
+                                                        ))}
+                                                    </Group>
+                                                </Stack>
+                                            </Group>
+                                            <Text size="xs" c="dimmed">2 weeks ago</Text>
+                                        </Group>
+                                        <Text size="sm" c="gray.7">
+                                            One of my favorites on the menu. The portion size is generous and everything is always fresh.
+                                        </Text>
+                                    </Stack>
+                                </Card>
+
+                                {/* Review 4 */}
+                                <Card p="md" withBorder>
+                                    <Stack gap="sm">
+                                        <Group justify="space-between">
+                                            <Group gap="xs">
+                                                <Avatar size="md" radius="xl" color="pink">
+                                                    EW
+                                                </Avatar>
+                                                <Stack gap={0}>
+                                                    <Text size="sm" fw={600}>Emily W.</Text>
+                                                    <Group gap="xs">
+                                                        {[1, 2, 3, 4].map((star) => (
+                                                            <IconStar 
+                                                                key={star}
+                                                                size={14} 
+                                                                style={{ 
+                                                                    color: 'var(--mantine-color-yellow-5)', 
+                                                                    fill: 'var(--mantine-color-yellow-5)' 
+                                                                }} 
+                                                            />
+                                                        ))}
+                                                        <IconStar 
+                                                            size={14} 
+                                                            style={{ 
+                                                                color: 'var(--mantine-color-gray-3)', 
+                                                                fill: 'transparent' 
+                                                            }} 
+                                                        />
+                                                    </Group>
+                                                </Stack>
+                                            </Group>
+                                            <Text size="xs" c="dimmed">3 weeks ago</Text>
+                                        </Group>
+                                        <Text size="sm" c="gray.7">
+                                            Really good appetizer option. Perfect for sharing or as a meal by itself.
+                                        </Text>
+                                    </Stack>
                                 </Card>
                             </Stack>
                         </Stack>
@@ -911,7 +1182,11 @@ const RestaurantMenuPage = () => {
                             variant="outline"
                             color="gray"
                             radius="xl"
-                            onClick={() => setModalQuantity(Math.max(1, modalQuantity - 1))}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setModalQuantity(Math.max(1, modalQuantity - 1));
+                            }}
                         >
                             <IconMinus size={16} />
                         </ActionIcon>
@@ -920,7 +1195,11 @@ const RestaurantMenuPage = () => {
                             variant="outline"
                             color="gray"
                             radius="xl"
-                            onClick={() => setModalQuantity(modalQuantity + 1)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setModalQuantity(modalQuantity + 1);
+                            }}
                         >
                             <IconPlus size={16} />
                         </ActionIcon>
