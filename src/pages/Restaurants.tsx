@@ -716,9 +716,9 @@ const Restaurants = () => {
   // Mobile App Main Interface
   if (isMobile && showMain) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
         {/* Search & Address Bar (Sticky Header) */}
-        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
+        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
             <Button
@@ -783,7 +783,7 @@ const Restaurants = () => {
         </Box>
 
         {/* Scrollable Content */}
-        <ScrollArea style={{ flex: 1, backgroundColor: '#fafafa' }}>
+        <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fafafa' }}>
           <Box component="main">
             {/* Quick Filters/Categories */}
             <Group gap="xs" p="md" style={{ overflowX: 'auto', whiteSpace: 'nowrap', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white' }}>
@@ -883,7 +883,7 @@ const Restaurants = () => {
             {/* Spacing for Nav */}
             <Box style={{ height: '64px' }} />
           </Box>
-        </ScrollArea>
+        </Box>
 
         {/* Bottom Navigation removed - using global navigation */}
       </Box>
