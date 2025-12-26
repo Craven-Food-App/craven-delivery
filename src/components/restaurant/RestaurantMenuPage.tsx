@@ -433,12 +433,12 @@ const RestaurantMenuPage = () => {
                             walkDistance: walkingInfo.distance
                         });
                         
-                        setPickupInfo({
-                            address: restaurant.address,
+            setPickupInfo({
+                address: restaurant.address,
                             walkTime: walkingInfo.time,
                             walkDistance: walkingInfo.distance,
-                            readyTime: restaurant.min_delivery_time || 15
-                        });
+                readyTime: restaurant.min_delivery_time || 15
+            });
                     },
                     (error) => {
                         // If geolocation fails, default to minimal values
@@ -747,14 +747,28 @@ const RestaurantMenuPage = () => {
         const [mapLoaded, setMapLoaded] = useState(false);
 
         useEffect(() => {
-            if (deliveryMethod === 'pickup' && restaurant && mapContainer.current && !mapLoaded) {
+            if (deliveryMethod === 'pickup' && restaurant && mapContainer.current && !map.current) {
                 initializePickupMap();
             }
-        }, [deliveryMethod, restaurant, mapLoaded]);
+
+            // Cleanup function to remove map when component unmounts or dependencies change
+            return () => {
+                if (map.current) {
+                    map.current.remove();
+                    map.current = null;
+                    setMapLoaded(false);
+                }
+            };
+        }, [deliveryMethod, restaurant]);
 
         const initializePickupMap = async () => {
             if (!mapContainer.current) {
                 console.log('Map container not found');
+                return;
+            }
+            
+            // Don't create a new map if one already exists
+            if (map.current) {
                 return;
             }
             
@@ -789,7 +803,15 @@ const RestaurantMenuPage = () => {
         };
 
         const createMap = () => {
-            if (!mapContainer.current || !window.mapboxgl) return;
+            if (!mapContainer.current || !window.mapboxgl || map.current) {
+                // Map already exists or container not ready
+                return;
+            }
+
+            // Clear any existing content in the container
+            if (mapContainer.current) {
+                mapContainer.current.innerHTML = '';
+            }
 
             map.current = new window.mapboxgl.Map({
                 container: mapContainer.current,
@@ -806,6 +828,10 @@ const RestaurantMenuPage = () => {
 
             map.current.on('load', () => {
                 setMapLoaded(true);
+            });
+
+            map.current.on('error', (e) => {
+                console.error('Mapbox error:', e);
             });
         };
 
@@ -937,14 +963,14 @@ const RestaurantMenuPage = () => {
                                         }}
                                     >
                                         {selectedRecommendedOption === 1 && (
-                                            <Box
-                                                style={{
-                                                    width: '8px',
-                                                    height: '8px',
-                                                    backgroundColor: 'white',
-                                                    borderRadius: '50%',
-                                                }}
-                                            />
+                                        <Box
+                                            style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                backgroundColor: 'white',
+                                                borderRadius: '50%',
+                                            }}
+                                        />
                                         )}
                                     </Box>
                                 </Group>
@@ -989,9 +1015,9 @@ const RestaurantMenuPage = () => {
                                                     width: '8px',
                                                     height: '8px',
                                                     backgroundColor: 'white',
-                                                    borderRadius: '50%',
-                                                }}
-                                            />
+                                            borderRadius: '50%',
+                                        }}
+                                    />
                                         )}
                                     </Box>
                                 </Group>
@@ -1053,9 +1079,9 @@ const RestaurantMenuPage = () => {
                                                         width: '8px',
                                                         height: '8px',
                                                         backgroundColor: 'white',
-                                                        borderRadius: '50%',
-                                                    }}
-                                                />
+                                                borderRadius: '50%',
+                                            }}
+                                        />
                                             )}
                                         </Box>
                                     </Group>
@@ -1093,9 +1119,9 @@ const RestaurantMenuPage = () => {
                                                         width: '8px',
                                                         height: '8px',
                                                         backgroundColor: 'white',
-                                                        borderRadius: '50%',
-                                                    }}
-                                                />
+                                                borderRadius: '50%',
+                                            }}
+                                        />
                                             )}
                                         </Box>
                                     </Group>

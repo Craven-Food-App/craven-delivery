@@ -17,6 +17,11 @@ import { TeamAssignment } from './components/TeamAssignment';
 import { SLATracking } from './components/SLATracking';
 import { calculateStats } from './utils/helpers';
 import { logActivity, ActivityActionTypes } from './utils/activityLogger';
+// Enterprise components
+import { EnterpriseDataGrid } from '../restaurant-onboarding-enterprise/data-grid';
+import { ExecutiveDashboard } from '../restaurant-onboarding-enterprise/dashboard';
+import { MenuPreparationManager } from '../restaurant-onboarding-enterprise/menu-preparation';
+import { EnhancedDocumentVerificationPanel } from '../restaurant-onboarding-enterprise/document-verification';
 
 export function EnhancedRestaurantOnboarding() {
   const [restaurants, setRestaurants] = useState<RestaurantOnboardingData[]>([]);
@@ -24,6 +29,7 @@ export function EnhancedRestaurantOnboarding() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantOnboardingData | null>(null);
   const [isVerificationPanelOpen, setIsVerificationPanelOpen] = useState(false);
+  const [selectedRestaurantIds, setSelectedRestaurantIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRestaurants();
@@ -442,28 +448,34 @@ export function EnhancedRestaurantOnboarding() {
       {/* Main Content */}
       <Tabs defaultValue="all" className="w-full">
         <div className="space-y-2">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="all">
               All ({stats.total})
+            </TabsTrigger>
+            <TabsTrigger value="executive">
+              📊 Executive
             </TabsTrigger>
             <TabsTrigger value="kanban">
               📋 Kanban
             </TabsTrigger>
+            <TabsTrigger value="menu">
+              🍽️ Menu Prep
+            </TabsTrigger>
             <TabsTrigger value="pending">
-              Pending Review ({stats.pendingReview})
+              Pending ({stats.pendingReview})
             </TabsTrigger>
             <TabsTrigger value="in-progress">
               In Progress ({stats.inProgress})
             </TabsTrigger>
             <TabsTrigger value="ready">
-              Ready to Launch ({stats.readyToLaunch})
-            </TabsTrigger>
-            <TabsTrigger value="live">
-              Live ({stats.live})
+              Ready ({stats.readyToLaunch})
             </TabsTrigger>
           </TabsList>
           
           <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="live">
+              Live ({stats.live})
+            </TabsTrigger>
             <TabsTrigger value="analytics">
               📊 Analytics
             </TabsTrigger>
@@ -476,6 +488,9 @@ export function EnhancedRestaurantOnboarding() {
             <TabsTrigger value="sla">
               ⏱️ SLA Tracking
             </TabsTrigger>
+          </TabsList>
+          
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="activity">
               🕐 Activity Log
             </TabsTrigger>
@@ -483,19 +498,42 @@ export function EnhancedRestaurantOnboarding() {
         </div>
 
         <TabsContent value="all" className="mt-6">
-          <ListView
-            restaurants={restaurants}
-            onView={handleVerifyDocuments}
-            onApprove={(r) => handleApprove(r.restaurant_id, '')}
-            onReject={(r) => handleReject(r.restaurant_id, 'Rejected')}
-            onChat={handleChat}
-            onVerifyDocuments={handleVerifyDocuments}
-            onBulkApprove={handleBulkApprove}
-            onBulkReject={handleBulkReject}
-            onBulkEmail={handleBulkEmail}
-            onBulkAssign={handleBulkAssign}
-            onBulkStatusUpdate={handleBulkStatusUpdate}
+          <EnterpriseDataGrid
+            data={restaurants}
+            onRowClick={handleVerifyDocuments}
+            selectedIds={selectedRestaurantIds}
+            onSelectionChange={setSelectedRestaurantIds}
           />
+          {selectedRestaurantIds.length > 0 && (
+            <div className="mt-4 flex items-center gap-2 p-4 bg-muted rounded-lg">
+              <span className="text-sm font-medium">{selectedRestaurantIds.length} selected</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkApprove(selectedRestaurantIds)}
+              >
+                Approve Selected
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkReject(selectedRestaurantIds, 'Bulk rejected')}
+              >
+                Reject Selected
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedRestaurantIds([])}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="executive" className="mt-6">
+          <ExecutiveDashboard restaurants={restaurants} />
         </TabsContent>
 
         <TabsContent value="kanban" className="mt-6">
@@ -507,79 +545,58 @@ export function EnhancedRestaurantOnboarding() {
         </TabsContent>
 
         <TabsContent value="pending" className="mt-6">
-          <ListView
-            restaurants={restaurants.filter(r => 
+          <EnterpriseDataGrid
+            data={restaurants.filter(r => 
               !r.business_info_verified && 
               r.restaurant.business_license_url &&
               r.restaurant.owner_id_url &&
               r.restaurant.onboarding_status !== 'rejected'
             )}
-            onView={handleVerifyDocuments}
-            onApprove={(r) => handleApprove(r.restaurant_id, '')}
-            onReject={(r) => handleReject(r.restaurant_id, 'Rejected')}
-            onChat={handleChat}
-            onVerifyDocuments={handleVerifyDocuments}
-            onBulkApprove={handleBulkApprove}
-            onBulkReject={handleBulkReject}
-            onBulkEmail={handleBulkEmail}
-            onBulkAssign={handleBulkAssign}
-            onBulkStatusUpdate={handleBulkStatusUpdate}
+            onRowClick={handleVerifyDocuments}
+            selectedIds={selectedRestaurantIds}
+            onSelectionChange={setSelectedRestaurantIds}
           />
         </TabsContent>
 
         <TabsContent value="in-progress" className="mt-6">
-          <ListView
-            restaurants={restaurants.filter(r => 
+          <EnterpriseDataGrid
+            data={restaurants.filter(r => 
               r.business_info_verified && 
               (r.menu_preparation_status !== 'ready' || !r.restaurant.banking_complete)
             )}
-            onView={handleVerifyDocuments}
-            onApprove={(r) => handleApprove(r.restaurant_id, '')}
-            onReject={(r) => handleReject(r.restaurant_id, 'Rejected')}
-            onChat={handleChat}
-            onVerifyDocuments={handleVerifyDocuments}
-            onBulkApprove={handleBulkApprove}
-            onBulkReject={handleBulkReject}
-            onBulkEmail={handleBulkEmail}
-            onBulkAssign={handleBulkAssign}
-            onBulkStatusUpdate={handleBulkStatusUpdate}
+            onRowClick={handleVerifyDocuments}
+            selectedIds={selectedRestaurantIds}
+            onSelectionChange={setSelectedRestaurantIds}
+          />
+        </TabsContent>
+
+        <TabsContent value="menu" className="mt-6">
+          <MenuPreparationManager
+            restaurants={restaurants}
+            onUpdate={() => fetchRestaurants(false)}
           />
         </TabsContent>
 
         <TabsContent value="ready" className="mt-6">
-          <ListView
-            restaurants={restaurants.filter(r => 
+          <EnterpriseDataGrid
+            data={restaurants.filter(r => 
               r.business_info_verified && 
               r.restaurant.banking_complete && 
               r.menu_preparation_status === 'ready' &&
               !r.go_live_ready
             )}
-            onView={handleVerifyDocuments}
-            onApprove={(r) => handleApprove(r.restaurant_id, '')}
-            onReject={(r) => handleReject(r.restaurant_id, 'Rejected')}
-            onChat={handleChat}
-            onVerifyDocuments={handleVerifyDocuments}
-            onBulkApprove={handleBulkApprove}
-            onBulkReject={handleBulkReject}
-            onBulkEmail={handleBulkEmail}
-            onBulkAssign={handleBulkAssign}
-            onBulkStatusUpdate={handleBulkStatusUpdate}
+            onRowClick={handleVerifyDocuments}
+            selectedIds={selectedRestaurantIds}
+            onSelectionChange={setSelectedRestaurantIds}
           />
         </TabsContent>
 
         <TabsContent value="live" className="mt-6">
-          <ListView
-            restaurants={restaurants.filter(r => r.go_live_ready)}
-            onView={handleVerifyDocuments}
-            onApprove={(r) => handleApprove(r.restaurant_id, '')}
-            onReject={(r) => handleReject(r.restaurant_id, 'Rejected')}
-            onChat={handleChat}
-            onVerifyDocuments={handleVerifyDocuments}
-            onBulkApprove={handleBulkApprove}
-            onBulkReject={handleBulkReject}
-            onBulkEmail={handleBulkEmail}
-            onBulkAssign={handleBulkAssign}
-            onBulkStatusUpdate={handleBulkStatusUpdate}
+          <EnterpriseDataGrid
+            data={restaurants.filter(r => r.go_live_ready)}
+            onRowClick={handleVerifyDocuments}
+            selectedIds={selectedRestaurantIds}
+            onSelectionChange={setSelectedRestaurantIds}
           />
         </TabsContent>
 
@@ -607,65 +624,17 @@ export function EnhancedRestaurantOnboarding() {
         </TabsContent>
       </Tabs>
 
-      {/* View/Verify Panel */}
-      <Dialog open={isVerificationPanelOpen && !!selectedRestaurant} onOpenChange={(open) => {
-        if (!open) {
+      {/* Enhanced Document Verification Panel */}
+      <EnhancedDocumentVerificationPanel
+        restaurant={selectedRestaurant}
+        isOpen={isVerificationPanelOpen}
+        onClose={() => {
           setIsVerificationPanelOpen(false);
           setSelectedRestaurant(null);
-        }
-      }}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{selectedRestaurant?.restaurant.name}</DialogTitle>
-            <DialogDescription>Review onboarding details and documents</DialogDescription>
-          </DialogHeader>
-          {selectedRestaurant && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedRestaurant.restaurant.email || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedRestaurant.restaurant.phone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Location</p>
-                  <p className="font-medium">{[selectedRestaurant.restaurant.city, selectedRestaurant.restaurant.state].filter(Boolean).join(', ') || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Applied</p>
-                  <p className="font-medium">{new Date(selectedRestaurant.created_at).toLocaleDateString()}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-3 rounded-md border">
-                  <p className="text-sm text-muted-foreground">Verification</p>
-                  <p className="font-semibold">{selectedRestaurant.business_info_verified ? 'Verified' : 'Pending'}</p>
-                </div>
-                <div className="p-3 rounded-md border">
-                  <p className="text-sm text-muted-foreground">Banking</p>
-                  <p className="font-semibold">{selectedRestaurant.restaurant.banking_complete ? 'Complete' : 'Incomplete'}</p>
-                </div>
-                <div className="p-3 rounded-md border">
-                  <p className="text-sm text-muted-foreground">Menu</p>
-                  <p className="font-semibold capitalize">{selectedRestaurant.menu_preparation_status?.replace('_', ' ') || '—'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsVerificationPanelOpen(false)}>Close</Button>
-                <Button variant="outline" onClick={() => {
-                  setIsVerificationPanelOpen(false);
-                  setSelectedRestaurant(null);
-                }}>Done</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        }}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
     </div>
   );
 }
