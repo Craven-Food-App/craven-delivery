@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building2, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { validateRoutingNumber } from '@/utils/bankingValidation';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface EnhancedBankingStepProps {
   data: any;
@@ -17,110 +15,8 @@ interface EnhancedBankingStepProps {
 }
 
 export function EnhancedBankingStep({ data, updateData, onNext, onBack }: EnhancedBankingStepProps) {
-  const [showManualBankEntry, setShowManualBankEntry] = useState(false);
-  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
-  
   const isRoutingNumberValid = data.routingNumber?.length === 9 && validateRoutingNumber(data.routingNumber);
   const showRoutingError = data.routingNumber?.length === 9 && !isRoutingNumberValid;
-
-  const handleStripeConnect = async () => {
-    try {
-      setIsConnectingStripe(true);
-      
-      // Get user session
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        toast.error('Please sign in to continue');
-        return;
-      }
-
-      // Create Financial Connections session
-      const { data: result, error } = await supabase.functions.invoke('create-stripe-financial-connection', {
-        body: {
-          restaurantId: data.restaurantId || user.id,
-        },
-      });
-
-      if (error) throw error;
-
-      // Load Stripe.js script if not already loaded
-      const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_live_51SKpbkLTHUzAWwQrpeD8B1TXtBgH1aN2q0tM8CuobPHtAMeBZI6lqem4Kb7zcKI7RaAG9QT9806lxchjZMHrSbx100WC0Vq7Oe';
-      
-      // Ensure Stripe.js is loaded and DOM is ready
-      if (!(window as any).Stripe) {
-        await new Promise<void>((resolve, reject) => {
-          // Check if script is already being loaded
-          const existingScript = document.querySelector('script[src*="js.stripe.com"]');
-          if (existingScript) {
-            // Wait for it to load
-            if ((window as any).Stripe) {
-              resolve();
-            } else {
-              existingScript.addEventListener('load', () => resolve());
-              existingScript.addEventListener('error', () => reject(new Error('Failed to load Stripe.js')));
-            }
-            return;
-          }
-
-          // Create and load script
-          const script = document.createElement('script');
-          script.src = 'https://js.stripe.com/v3/';
-          script.async = true;
-          script.onload = () => {
-            // Ensure body exists before resolving
-            if (document.body) {
-              resolve();
-            } else {
-              // Wait for body to exist (should be instant in React apps)
-              const checkBody = setInterval(() => {
-                if (document.body && (window as any).Stripe) {
-                  clearInterval(checkBody);
-                  resolve();
-                }
-              }, 10);
-              setTimeout(() => {
-                clearInterval(checkBody);
-                reject(new Error('Timeout waiting for DOM to be ready'));
-              }, 5000);
-            }
-          };
-          script.onerror = () => reject(new Error('Failed to load Stripe.js'));
-          document.head.appendChild(script);
-        });
-      }
-
-      // Ensure body exists (Stripe.js requirement)
-      if (!document.body) {
-        throw new Error('DOM not ready - body element not found');
-      }
-
-      // Initialize Stripe (not async - it's a constructor)
-      const stripe = (window as any).Stripe(stripePublishableKey);
-      
-      // Launch the Financial Connections flow
-      const { financialConnectionsSession, error: sessionError } = await stripe.collectFinancialConnectionsAccounts({
-        clientSecret: result.clientSecret,
-      });
-
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      if (financialConnectionsSession) {
-        // Store the connected account
-        updateData({ 
-          stripeFinancialConnectionId: financialConnectionsSession.id,
-          bankConnected: true 
-        });
-        toast.success('Bank account connected successfully!');
-      }
-    } catch (error) {
-      console.error('Error connecting to Stripe:', error);
-      toast.error('Failed to connect bank account. Please try again.');
-    } finally {
-      setIsConnectingStripe(false);
-    }
-  };
   
   const isValid = 
     data.legalName?.trim() &&
@@ -128,11 +24,10 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
     data.legalBusinessName?.trim() &&
     data.businessType &&
     data.locationCount &&
-    (showManualBankEntry ? (
-      data.bankAccountType &&
-      isRoutingNumberValid &&
-      data.accountNumber?.length >= 4
-    ) : true) &&
+    data.bankAccountType &&
+    isRoutingNumberValid &&
+    data.accountNumber?.length >= 4 &&
+    data.accountNumber === data.accountNumberConfirm &&
     data.termsAgreed;
 
   return (
@@ -147,7 +42,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
         </button>
         <h2 className="text-2xl sm:text-3xl font-bold mb-2">Last step — verify your payout info</h2>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Add your business and bank account info to receive payouts.
+          Add your business and bank account info. You'll complete payment setup with Moov after approval.
         </p>
       </div>
 
@@ -155,118 +50,75 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
         {/* Bank Account Information */}
         <div className="space-y-3 sm:space-y-4">
           <h3 className="text-base sm:text-lg font-semibold">Bank account information</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            This information will be used for payouts. You'll complete secure payment setup with Moov after your account is approved.
+          </p>
           
-          {!showManualBankEntry ? (
-            <div className="border rounded-lg p-3 sm:p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1">
-                  <Building2 className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm sm:text-base">Connect to your bank</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Use Stripe's secure setup to{' '}
-                      <button 
-                        className="text-blue-600 hover:underline touch-manipulation"
-                        onClick={() => setShowManualBankEntry(true)}
-                      >
-                        link
-                      </button>{' '}
-                      your bank.
-                    </p>
-                    <div className="mt-2">
-                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                        Powered by Stripe
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  variant="outline"
-                  onClick={handleStripeConnect}
-                  disabled={isConnectingStripe}
-                  className="w-full sm:w-auto touch-manipulation"
-                  size="sm"
-                >
-                  {isConnectingStripe ? 'Connecting...' : 'Connect'}
-                </Button>
-              </div>
+          <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bankAccountType" className="text-sm sm:text-base">Account Type *</Label>
+              <Select
+                value={data.bankAccountType || ''}
+                onValueChange={(value) => updateData({ bankAccountType: value })}
+              >
+                <SelectTrigger id="bankAccountType" className="h-10 sm:h-11 touch-manipulation">
+                  <SelectValue placeholder="Select account type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="checking">Checking Account</SelectItem>
+                  <SelectItem value="savings">Savings Account</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          ) : (
-            <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="bankAccountType" className="text-sm sm:text-base">Account Type *</Label>
-                <Select
-                  value={data.bankAccountType || ''}
-                  onValueChange={(value) => updateData({ bankAccountType: value })}
-                >
-                  <SelectTrigger id="bankAccountType" className="h-10 sm:h-11 touch-manipulation">
-                    <SelectValue placeholder="Select account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="checking">Checking Account</SelectItem>
-                    <SelectItem value="savings">Savings Account</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="routingNumber" className="text-sm sm:text-base">Routing Number *</Label>
-                <Input
-                  id="routingNumber"
-                  type="text"
-                  maxLength={9}
-                  placeholder="123456789"
-                  value={data.routingNumber || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    updateData({ routingNumber: value });
-                  }}
-                  className={`h-10 sm:h-11 ${showRoutingError ? 'border-red-500' : ''}`}
-                />
-                {showRoutingError ? (
-                  <p className="text-xs text-red-600">Invalid routing number. Please enter a valid 9-digit bank routing number.</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">9-digit bank routing number</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accountNumber" className="text-sm sm:text-base">Account Number *</Label>
-                <Input
-                  id="accountNumber"
-                  type="password"
-                  placeholder="••••••••••"
-                  value={data.accountNumber || ''}
-                  onChange={(e) => updateData({ accountNumber: e.target.value })}
-                  className="h-10 sm:h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accountNumberConfirm" className="text-sm sm:text-base">Confirm Account Number *</Label>
-                <Input
-                  id="accountNumberConfirm"
-                  type="text"
-                  placeholder="Re-enter account number"
-                  value={data.accountNumberConfirm || ''}
-                  onChange={(e) => updateData({ accountNumberConfirm: e.target.value })}
-                  className="h-10 sm:h-11"
-                />
-                {data.accountNumber && data.accountNumberConfirm && data.accountNumber !== data.accountNumberConfirm && (
-                  <p className="text-xs text-red-600">Account numbers don't match</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="routingNumber" className="text-sm sm:text-base">Routing Number *</Label>
+              <Input
+                id="routingNumber"
+                type="text"
+                maxLength={9}
+                placeholder="123456789"
+                value={data.routingNumber || ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  updateData({ routingNumber: value });
+                }}
+                className={`h-10 sm:h-11 ${showRoutingError ? 'border-red-500' : ''}`}
+              />
+              {showRoutingError ? (
+                <p className="text-xs text-red-600">Invalid routing number. Please enter a valid 9-digit bank routing number.</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">9-digit bank routing number</p>
+              )}
             </div>
-          )}
-          
-          {!showManualBankEntry && (
-            <button
-              onClick={() => setShowManualBankEntry(true)}
-              className="text-xs sm:text-sm text-blue-600 hover:underline touch-manipulation"
-            >
-              Enter bank info manually
-            </button>
-          )}
+
+            <div className="space-y-2">
+              <Label htmlFor="accountNumber" className="text-sm sm:text-base">Account Number *</Label>
+              <Input
+                id="accountNumber"
+                type="password"
+                placeholder="••••••••••"
+                value={data.accountNumber || ''}
+                onChange={(e) => updateData({ accountNumber: e.target.value })}
+                className="h-10 sm:h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="accountNumberConfirm" className="text-sm sm:text-base">Confirm Account Number *</Label>
+              <Input
+                id="accountNumberConfirm"
+                type="password"
+                placeholder="Re-enter account number"
+                value={data.accountNumberConfirm || ''}
+                onChange={(e) => updateData({ accountNumberConfirm: e.target.value })}
+                className="h-10 sm:h-11"
+              />
+              {data.accountNumber && data.accountNumberConfirm && data.accountNumber !== data.accountNumberConfirm && (
+                <p className="text-xs text-red-600">Account numbers don't match</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Business Information */}
@@ -410,7 +262,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
       <div className="pt-4 sm:pt-6 sticky bottom-0 bg-background pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:static">
         <Button 
           onClick={onNext} 
-          disabled={!isValid || (showManualBankEntry && data.accountNumber !== data.accountNumberConfirm)}
+          disabled={!isValid}
           className="w-full h-12 sm:h-11 bg-red-600 hover:bg-red-700 text-base sm:text-sm touch-manipulation"
         >
           Finish setup

@@ -24,10 +24,10 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY_HERE
 ### Via Supabase CLI:
 ```bash
 # Set Stripe Secret Key
-supabase secrets set STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY_HERE
+supabase YOUR_SECRET_KEY_HERE
 
 # Set Stripe Webhook Secret (get this from Stripe Dashboard > Webhooks)
-supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET_HERE
+supabase YOUR_WEBHOOK_SECRET_HERE
 ```
 
 ### Via Supabase Dashboard:
@@ -35,7 +35,7 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET_HERE
 2. Select your project
 3. Go to **Settings** → **Edge Functions** → **Secrets**
 4. Add these secrets:
-   - `STRIPE_SECRET_KEY` = `sk_live_YOUR_SECRET_KEY_HERE`
+   - `YOUR_SECRET_KEY_HERE`
    - `STRIPE_WEBHOOK_SECRET` = (get from Stripe Dashboard)
 
 ---
@@ -121,12 +121,12 @@ const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_
 1. **Set environment variable locally:**
    ```bash
    # Add to .env file
-   echo "VITE_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PUBLISHABLE_KEY_HERE" >> .env
+   echo "YOUR_PUBLISHABLE_KEY_HERE" >> .env
    ```
 
 2. **Set Supabase secrets:**
    ```bash
-   supabase secrets set STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY_HERE
+   supabase secrets set STRIPE_SECRET_KEY=YOUR_SECRET_KEY_HERE
    ```
 
 3. **Configure webhook and get secret**

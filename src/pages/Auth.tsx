@@ -54,7 +54,7 @@ const Auth: React.FC = () => {
           const redirectPath = getRedirectPath();
           setTimeout(() => {
             window.location.href = redirectPath;
-          }, 1000);
+          }, 500);
         }
       }
     );

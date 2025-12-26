@@ -1,6 +1,6 @@
 # Moov Hosted Onboarding Setup Guide
 
-This guide explains how to use the Moov hosted onboarding integration for merchant account creation in the Crave'n Delivery platform.
+This guide explains how to use the Moov hosted onboarding integration for merchant account creation in the Crave'n Inc. platform.
 
 ## Overview
 

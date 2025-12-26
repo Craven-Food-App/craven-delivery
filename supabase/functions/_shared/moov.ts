@@ -98,7 +98,37 @@ export async function moovRequest(
     options.body = JSON.stringify(body);
   }
 
-  return fetch(url, options);
+  const response = await fetch(url, options);
+  
+  // Clone response for logging (so we don't consume the original body)
+  const clonedResponse = response.clone();
+  const responseText = await clonedResponse.text();
+  
+  // Log API status and response for debugging
+  console.log(`Moov API status: ${response.status}`);
+  console.log(`Moov API response (first 200 chars): ${responseText.substring(0, 200)}\n`);
+
+  if (!response.ok) {
+    let errorDetails: any;
+    try {
+      errorDetails = JSON.parse(responseText);
+    } catch {
+      errorDetails = { message: responseText || response.statusText };
+    }
+    
+    console.error("Moov API error details:", {
+      status: response.status,
+      statusText: response.statusText,
+      path,
+      method,
+      hasAccountId: !!moovConfig.accountId,
+      url,
+      errorDetails,
+    });
+  }
+
+  // Return the original response (body still readable)
+  return response;
 }
 
 /**

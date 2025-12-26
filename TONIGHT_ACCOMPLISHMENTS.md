@@ -283,11 +283,11 @@
 ### Immediate (Tonight - 40 min):
 ```bash
 # 1. Set Supabase secrets
-supabase secrets set STRIPE_SECRET_KEY=sk_live_YOUR_STRIPE_SECRET_KEY_HERE
+supabase YOUR_STRIPE_SECRET_KEY_HERE
 
 # 2. Set hosting environment variable
 # Add to Vercel/Netlify:
-VITE_STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
+VITE_STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_PUBLISHABLE_KEY_HERE
 
 # 3. Configure Stripe webhook
 # Go to dashboard.stripe.com/webhooks

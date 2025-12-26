@@ -718,7 +718,7 @@ const App = () => {
           <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
           <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
           <Route path="/admin/waitlist" element={<AdminDriverWaitlist />} />
-          <Route path="/customer-dashboard" element={<Navigate to="/order-history" replace />} />
+          <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
           <Route path="/account" element={<CustomerDashboard />} />
           <Route path="/mobile" element={<MobileDriverDashboard />} />
           <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />

@@ -1,4 +1,4 @@
-# Crave'n Delivery + Moov Merchant Onboarding Process
+# Crave'n Inc. + Moov Merchant Onboarding Process
 ## End-to-End Guide
 
 **Document Version:** 1.0  
@@ -23,7 +23,7 @@
 
 ## Overview
 
-The Crave'n Delivery merchant onboarding process is a comprehensive, multi-phase system designed to onboard restaurants efficiently while ensuring compliance, security, and operational readiness. The process integrates with Moov's hosted onboarding system for payment processing setup, providing a seamless merchant experience.
+The Crave'n Inc. merchant onboarding process is a comprehensive, multi-phase system designed to onboard restaurants efficiently while ensuring compliance, security, and operational readiness. The process integrates with Moov's hosted onboarding system for payment processing setup, providing a seamless merchant experience.
 
 ### Key Features
 
@@ -68,7 +68,7 @@ Phase 2: Onboarding Wizard (5 Steps)
   ├─> Step 2: Store Hours Configuration
   ├─> Step 3: Menu Setup
   ├─> Step 4: Pricing Plan Selection
-  └─> Step 5: Banking/Payout Information (Stripe Connect)
+  └─> Step 5: Banking/Payout Information (Basic Info Collection)
            │
            ▼
 Phase 3: Admin Review
@@ -273,19 +273,18 @@ Phase 5: Activation
 
 **Component:** `EnhancedBankingStep`
 
-**Purpose:** Set up payment processing and payout account information
+**Purpose:** Collect basic banking and business information for initial setup. Full payment processing setup with Moov will be completed after admin approval.
 
 **Information Collected:**
 - Bank account type (checking/savings)
 - Routing number
 - Account number
 - Business information for compliance
-- Stripe Connect account setup (optional at this stage)
+- Legal business name
+- Business type
+- Owner information
 
-**Stripe Connect Integration:**
-- Option to connect Stripe account immediately
-- Or defer to later in Merchant Portal
-- Stripe Financial Connections for bank account linking
+**Note:** This step collects basic banking information. Secure payment processing account setup with Moov will be completed in Phase 4 after the restaurant is approved.
 
 **Required Fields:**
 - Bank account type
@@ -294,22 +293,21 @@ Phase 5: Activation
 - Account number confirmation
 - Business legal name
 - Date of birth (for verification)
+- Legal name
+- Business type
+- Location count
 
 **Validation:**
 - Routing number must be valid 9-digit US routing number
 - Account numbers must match
 - Routing number validation algorithm applied
 
-**Options:**
-1. **Connect Bank Account** - Use Stripe Financial Connections (recommended)
-2. **Manual Entry** - Enter bank details manually
-
 **Security:**
-- Account numbers encrypted
-- Stripe handles secure financial data
-- PCI compliance maintained
+- Account numbers encrypted in database
+- Information used for Moov onboarding after approval
+- PCI compliance maintained through Moov integration
 
-**Next Action:** Complete wizard and proceed to review
+**Next Action:** Complete wizard and proceed to admin review
 
 ---
 
@@ -440,14 +438,15 @@ Phase 5: Activation
 1. ✅ Business information verified
 2. ✅ Documents approved
 3. ✅ Menu marked as ready
-4. ✅ Banking information complete (Stripe Connect OR Moov)
+4. ✅ Moov payment account setup complete
 5. ✅ Store hours configured
 6. ✅ Contact information verified
 
 **Database Status Updates:**
 - `business_info_verified: true`
 - `menu_preparation_status: 'ready'`
-- `banking_complete: true` (if Stripe Connect completed)
+- `moov_onboarding_complete: true`
+- `moov_account_id` present
 - `go_live_ready: true` (when all requirements met)
 
 ---
@@ -528,12 +527,12 @@ Phase 5: Activation
 
 1. **Redirect to Moov**
    - Merchant redirected to Moov's hosted onboarding form
-   - Co-branded with Crave'n Delivery branding
+   - Co-branded with Crave'n Inc. branding
    - Secure session created
 
 2. **Account Creation**
    - Merchant creates Moov account (if new)
-   - Grants permissions to Crave'n Delivery
+   - Grants permissions to Crave'n Inc.
    - Reviews pricing disclosure
    - Accepts Moov platform agreement
 
@@ -662,20 +661,20 @@ WHERE id = 'restaurant_id';
 - [ ] Menu marked as ready
 - [ ] Store hours configured
 - [ ] Contact information verified
-- [ ] Banking/payout setup complete (Stripe Connect OR Moov)
-- [ ] Moov account setup complete (if using Moov for payments)
+- [ ] Moov account setup complete
+- [ ] Moov onboarding status: `completed`
 - [ ] Admin approval granted
 - [ ] `go_live_ready: true` in database
 
-**Payment Processing Options:**
-- Option A: Stripe Connect (via EnhancedBankingStep)
-- Option B: Moov (via Moov onboarding)
-- Option C: Both (future multi-provider support)
+**Payment Processing:**
+- Moov is the primary and only payment processing provider
+- Moov account must be fully onboarded and verified
+- Banking information collected in onboarding wizard is used for Moov setup
 
 **Minimum Requirements:**
-- At least one payment provider must be configured
+- Moov payment account must be configured and verified
 - Banking information must be complete
-- Payout account must be verified
+- Payout account must be verified through Moov
 
 ---
 
@@ -702,7 +701,8 @@ UPDATE restaurants SET
 WHERE id = 'restaurant_id'
 AND business_info_verified = true
 AND menu_preparation_status = 'ready'
-AND (banking_complete = true OR moov_onboarding_complete = true);
+AND moov_onboarding_complete = true
+AND moov_account_id IS NOT NULL;
 ```
 
 ---
@@ -738,17 +738,15 @@ AND (banking_complete = true OR moov_onboarding_complete = true);
 
 **Home Dashboard:**
 - Incomplete tasks alert
-- Banking setup status
 - Moov onboarding status
-- Stripe Connect status
 - Menu readiness
 - Overall readiness score
 
 **Settings → Bank Account:**
-- Stripe Connect status card
-- Moov Onboarding Card
+- Moov Onboarding Card (primary)
 - Verification status
 - Account details
+- Legacy Stripe Connect section (hidden by default, for existing merchants only)
 
 ### Database Status Fields
 
@@ -757,19 +755,18 @@ AND (banking_complete = true OR moov_onboarding_complete = true);
 -- Onboarding Status
 onboarding_status: 'pending' | 'approved' | 'rejected' | 'needs_info'
 
--- Banking Status
-banking_complete: boolean
-stripe_connect_account_id: text
-stripe_onboarding_complete: boolean
-stripe_charges_enabled: boolean
-stripe_payouts_enabled: boolean
-
--- Moov Status
+-- Moov Payment Status (Primary)
 moov_account_id: text
 moov_onboarding_status: 'pending' | 'completed' | 'revoked' | 'failed'
 moov_onboarding_complete: boolean
 moov_capabilities: jsonb
 moov_fee_plan_codes: text[]
+
+-- Legacy Stripe Status (for existing merchants only)
+stripe_connect_account_id: text (deprecated)
+stripe_onboarding_complete: boolean (deprecated)
+stripe_charges_enabled: boolean (deprecated)
+stripe_payouts_enabled: boolean (deprecated)
 
 -- Activation Status
 is_active: boolean

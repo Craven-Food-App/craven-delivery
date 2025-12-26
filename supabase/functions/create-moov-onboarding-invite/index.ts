@@ -79,14 +79,34 @@ async function moovRequest(
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  // Log API status and response for debugging
+  const responseText = await res.text();
+  console.log(`Moov API status: ${res.status}`);
+  console.log(`Moov API response (first 200 chars): ${responseText.substring(0, 200)}\n`);
+
   if (!res.ok) {
-    const text = await res.text();
+    let errorDetails: any;
+    try {
+      errorDetails = JSON.parse(responseText);
+    } catch {
+      errorDetails = { message: responseText || res.statusText };
+    }
+    
+    console.error("Moov API error details:", {
+      status: res.status,
+      statusText: res.statusText,
+      path,
+      method,
+      hasAccountId: !!MOOV_ACCOUNT_ID,
+      errorDetails,
+    });
+    
     throw new Error(
-      `Moov API ${res.status}: ${text || res.statusText}`
+      `Moov API ${res.status}: ${errorDetails.message || errorDetails.error || responseText || res.statusText}`
     );
   }
 
-  return res.json();
+  return JSON.parse(responseText);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -94,6 +114,10 @@ async function moovRequest(
 /* -------------------------------------------------------------------------- */
 
 serve(async req => {
+  console.log("=== Moov Onboarding Invite Request ===");
+  console.log("Method:", req.method);
+  console.log("URL:", req.url);
+  
   const headers = corsHeaders(req.headers.get("origin"));
 
   if (req.method === "OPTIONS") {
@@ -153,9 +177,11 @@ serve(async req => {
     let body;
     try {
       body = await req.json();
+      console.log("Received request body:", JSON.stringify(body, null, 2));
     } catch (jsonError) {
+      console.error("JSON parse error:", jsonError);
       return new Response(
-        JSON.stringify({ error: "Invalid JSON in request body" }),
+        JSON.stringify({ error: "Invalid JSON in request body", details: jsonError instanceof Error ? jsonError.message : String(jsonError) }),
         { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
@@ -168,9 +194,12 @@ serve(async req => {
       prefill,
     } = body;
 
+    console.log("Parsed request:", { restaurantId, feePlanCodes, hasFeePlanCodes: !!feePlanCodes, isArray: Array.isArray(feePlanCodes), length: Array.isArray(feePlanCodes) ? feePlanCodes.length : 0 });
+
     if (!Array.isArray(feePlanCodes) || feePlanCodes.length === 0) {
+      console.error("feePlanCodes validation failed:", { feePlanCodes, isArray: Array.isArray(feePlanCodes), length: Array.isArray(feePlanCodes) ? feePlanCodes.length : 'not an array' });
       return new Response(
-        JSON.stringify({ error: "feePlanCodes is required" }),
+        JSON.stringify({ error: "feePlanCodes is required and must be a non-empty array", received: feePlanCodes }),
         { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
       );
     }
@@ -253,12 +282,32 @@ serve(async req => {
 
   } catch (err) {
     console.error("[Moov Onboarding Error]", err);
+    
+    // Determine status code based on error type
+    let statusCode = 500;
+    let errorMessage = err instanceof Error ? err.message : "Internal server error";
+    
+    // Check if it's a validation error (400)
+    if (err instanceof Error) {
+      if (errorMessage.includes("required") || errorMessage.includes("Invalid")) {
+        statusCode = 400;
+      } else if (errorMessage.includes("Unauthorized") || errorMessage.includes("not configured")) {
+        statusCode = 401;
+      } else if (errorMessage.includes("Moov API")) {
+        // Moov API errors might be 4xx or 5xx, try to extract status
+        const statusMatch = errorMessage.match(/Moov API (\d+)/);
+        if (statusMatch) {
+          statusCode = parseInt(statusMatch[1], 10);
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({
-        error: err instanceof Error ? err.message : "Internal server error",
+        error: errorMessage,
+        details: err instanceof Error ? err.stack : undefined,
       }),
-      { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
+      { status: statusCode, headers: { ...headers, "Content-Type": "application/json" } }
     );
   }
 });

@@ -207,17 +207,6 @@ const Header = () => {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center space-x-2">
-              {!isFeederSubdomain && !isMerchantSubdomain && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-primary hover:text-primary hover:bg-primary/10"
-                  asChild
-                >
-                  <Link to="/admin">Admin</Link>
-                </Button>
-              )}
-              
               {isMerchantSubdomain && (
                 <Button 
                   variant="outline" 
@@ -512,14 +501,6 @@ const Header = () => {
                         </Link>
                       </div>
                     </div>
-                    
-                    <Link 
-                      to="/admin" 
-                      className="block text-lg font-semibold text-primary hover:text-primary/80"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Admin
-                    </Link>
                   </>
                 )}
                 {isMerchantSubdomain && (

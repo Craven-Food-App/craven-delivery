@@ -42,13 +42,13 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       id: 'orders',
       label: 'Orders',
       icon: IconShoppingCart,
-      path: user ? '/customer-dashboard?tab=orders' : '/auth'
+      path: user ? '/order-history' : '/auth'
     }, 
     {
       id: 'profile',
       label: 'Account',
       icon: IconUser,
-      path: user ? '/customer-dashboard?tab=account' : '/auth'
+      path: user ? '/account' : '/auth'
     }
   ];
 
@@ -88,9 +88,9 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               : tab.id === 'restaurants' 
                 ? location.pathname === '/restaurants'
                 : tab.id === 'orders'
-                  ? location.pathname === '/customer-dashboard' && location.search.includes('tab=orders')
+                  ? location.pathname === '/order-history'
                   : tab.id === 'profile'
-                    ? location.pathname === '/customer-dashboard' && location.search.includes('tab=account')
+                    ? location.pathname === '/account'
                     : location.pathname === tab.path;
             
             return (
