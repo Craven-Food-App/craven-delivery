@@ -142,7 +142,6 @@ const MobileHeader = ({ restaurant, onBack, onShare }: { restaurant: Restaurant 
   <Box
     style={{
       display: 'block',
-      '@media (min-width: 1024px)': { display: 'none' },
       position: 'sticky',
       top: 0,
       zIndex: 50,
@@ -150,6 +149,7 @@ const MobileHeader = ({ restaurant, onBack, onShare }: { restaurant: Restaurant 
       borderBottom: '1px solid var(--mantine-color-gray-3)',
       boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     }}
+    className="lg:hidden"
   >
     <Group justify="space-between" align="center" p="md" px="lg">
       <ActionIcon
@@ -354,14 +354,90 @@ const RestaurantMenuPage = () => {
     };
   }, []);
 
+    // Calculate drive time based on user's location
+    const calculateDriveTime = (userLat: number, userLng: number, restaurantLat: number, restaurantLng: number): number => {
+        // Haversine formula to calculate distance in miles
+        const R = 3959; // Earth's radius in miles
+        const dLat = (restaurantLat - userLat) * Math.PI / 180;
+        const dLng = (restaurantLng - userLng) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(userLat * Math.PI / 180) * Math.cos(restaurantLat * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceMiles = R * c;
+        
+        // If very close (less than 0.001 miles / ~5 feet), show 1 minute
+        if (distanceMiles < 0.001) {
+            return 1;
+        }
+        
+        // If close (less than 0.05 miles / ~264 feet), show 1-2 minutes
+        if (distanceMiles < 0.05) {
+            return distanceMiles < 0.01 ? 1 : 2;
+        }
+        
+        // Estimate drive time: assume average speed of 30 mph in city traffic
+        // Calculate time in minutes: (distance / speed) * 60
+        const driveTimeMinutes = Math.round((distanceMiles / 30) * 60);
+        
+        // Minimum 1 minute, maximum reasonable drive time
+        return Math.max(1, Math.min(driveTimeMinutes, 60));
+    };
+
     // Set pickup info when restaurant data is loaded
   useEffect(() => {
-        if (restaurant && deliveryMethod === 'pickup') {
-            setPickupInfo({
-                address: restaurant.address,
-                driveTime: Math.floor(Math.random() * 10) + 5, // Random 5-15 min drive time
-                readyTime: restaurant.min_delivery_time || 15
-            });
+        if (restaurant && deliveryMethod === 'pickup' && restaurant.latitude && restaurant.longitude) {
+            // Try to get user's current location with high accuracy
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        const driveTime = calculateDriveTime(
+                            userLat,
+                            userLng,
+                            restaurant.latitude!,
+                            restaurant.longitude!
+                        );
+                        
+                        console.log('Drive time calculation:', {
+                            userLat,
+                            userLng,
+                            restaurantLat: restaurant.latitude,
+                            restaurantLng: restaurant.longitude,
+                            driveTime
+                        });
+                        
+                        setPickupInfo({
+                            address: restaurant.address,
+                            driveTime: driveTime,
+                            readyTime: restaurant.min_delivery_time || 15
+                        });
+                    },
+                    (error) => {
+                        // If geolocation fails, default to 1 minute (assuming user might be at location)
+                        console.error('Error getting location:', error);
+                        setPickupInfo({
+                            address: restaurant.address,
+                            driveTime: 1,
+                            readyTime: restaurant.min_delivery_time || 15
+                        });
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0 // Don't use cached location, get fresh one
+                    }
+                );
+            } else {
+                // Browser doesn't support geolocation, default to 1 minute
+                setPickupInfo({
+                    address: restaurant.address,
+                    driveTime: 1,
+                    readyTime: restaurant.min_delivery_time || 15
+                });
+            }
         }
     }, [restaurant, deliveryMethod]);
 
@@ -1274,22 +1350,13 @@ const RestaurantMenuPage = () => {
   const LeftColumn = () => (
     <Box
       pt="xl"
+      className="hidden lg:block"
       style={{
-        display: 'none',
-        '@media (min-width: 1024px)': { display: 'block' },
         ...(isMenuFixed ? {
           position: 'fixed',
           top: 4,
           left: '50%',
           transform: 'translateX(-50%)',
-          '@media (min-width: 1024px)': {
-            left: 'auto',
-            transform: 'none',
-            maxWidth: 'calc(25% - 1rem)',
-          },
-          '@media (min-width: 1280px)': {
-            maxWidth: 'calc((1120px * 0.25) - 1rem)',
-          },
           width: '100%',
           maxWidth: '320px',
         } : {})
@@ -1397,9 +1464,8 @@ const RestaurantMenuPage = () => {
 
       {/* Desktop Header - Hidden on Mobile */}
       <Box
+        className="hidden lg:block"
         style={{
-          display: 'none',
-          '@media (min-width: 1024px)': { display: 'block' },
           position: 'sticky',
           top: 0,
           zIndex: 50,
@@ -1704,10 +1770,7 @@ const RestaurantMenuPage = () => {
               <ActionIcon
                 variant="subtle"
                 onClick={() => setShowMobileNav(!showMobileNav)}
-                style={{
-                  display: 'block',
-                  '@media (min-width: 1024px)': { display: 'none' },
-                }}
+                className="block lg:hidden"
               >
                 {showMobileNav ? <IconX size={24} /> : <IconMenu2 size={24} />}
               </ActionIcon>
@@ -1719,9 +1782,8 @@ const RestaurantMenuPage = () => {
       <Box style={{ position: 'relative' }}>
         {/* Right Side Navigation - Fixed Overlay */}
         <Box
+          className="hidden lg:block"
           style={{
-            display: 'none',
-            '@media (min-width: 1024px)': { display: 'block' },
             position: 'fixed',
             left: 0,
             top: '64px',
@@ -1814,12 +1876,7 @@ const RestaurantMenuPage = () => {
           <Box style={{ backgroundColor: 'var(--mantine-color-gray-0)', minHeight: '100vh' }}>
             <Box style={{ maxWidth: '1280px', margin: '0 auto' }}>
               {/* --- Mobile Hero Section (DoorDash Style) --- */}
-              <Box
-                style={{
-                  display: 'block',
-                  '@media (min-width: 1024px)': { display: 'none' },
-                }}
-              >
+              <Box className="block lg:hidden">
                 {/* Hero Image */}
                 <Box style={{ position: 'relative', height: '192px' }}>
                   <MantineImage
@@ -2189,9 +2246,8 @@ const RestaurantMenuPage = () => {
 
               {/* --- Desktop Header Image Banner --- */}
               <Box
+                className="hidden lg:block"
                 style={{
-                  display: 'none',
-                  '@media (min-width: 1024px)': { display: 'block' },
                   position: 'relative',
                   height: '256px',
                   overflow: 'hidden',
@@ -2251,9 +2307,8 @@ const RestaurantMenuPage = () => {
             {/* --- Main Content Layout - Desktop Only --- */}
             <Box
               component="main"
+              className="hidden lg:block"
               style={{
-                display: 'none',
-                '@media (min-width: 1024px)': { display: 'block' },
                 maxWidth: '1280px',
                 margin: '0 auto',
                 padding: '32px 16px',
@@ -2595,9 +2650,8 @@ const RestaurantMenuPage = () => {
             {/* Floating Cart Button - Mobile (DoorDash Style) */}
             {cartItems.length > 0 && (
               <Box
+                className="block lg:hidden"
                 style={{
-                  display: 'block',
-                  '@media (min-width: 1024px)': { display: 'none' },
                   position: 'fixed',
                   bottom: 24,
                   left: 16,
@@ -2662,9 +2716,8 @@ const RestaurantMenuPage = () => {
             {/* Floating Cart Button - Desktop */}
             {cartItems.length > 0 && showCartButton && (
               <Box
+                className="hidden lg:block"
                 style={{
-                  display: 'none',
-                  '@media (min-width: 1024px)': { display: 'block' },
                   position: 'fixed',
                   bottom: 16,
                   right: 16,
