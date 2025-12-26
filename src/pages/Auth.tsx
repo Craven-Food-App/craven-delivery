@@ -29,7 +29,7 @@ const Auth: React.FC = () => {
     const getRedirectPath = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      return redirect || '/order-history';
+      return redirect || '/restaurants';
     };
 
     const checkUser = async () => {
