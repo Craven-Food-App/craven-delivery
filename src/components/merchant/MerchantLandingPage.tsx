@@ -325,7 +325,7 @@ export default function MerchantLandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">C</span>
@@ -343,62 +343,53 @@ export default function MerchantLandingPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-6xl mx-auto">
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full mb-6">
-              <Sparkles className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-900">Start Earning Today</span>
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               Join Crave'n and Grow Your Business
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Connect with customers in your area and increase your revenue with our delivery platform
+            <p className="text-base text-gray-600 max-w-xl mx-auto">
+              Connect with customers and increase your revenue
             </p>
           </div>
 
           {/* Earnings Estimate Card - Always visible */}
-          <Card className="mb-8 border-2 border-orange-300 bg-gradient-to-br from-orange-50 via-white to-orange-50 shadow-2xl">
-            <CardContent className="p-10">
-              <div className="flex flex-col md:flex-row items-start gap-6">
-                <div className="p-4 bg-orange-500 rounded-xl shadow-lg">
-                  <TrendingUp className="h-10 w-10 text-white" />
+          <Card className="mb-6 border-2 border-orange-300 bg-gradient-to-br from-orange-50 via-white to-orange-50 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-orange-500 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex-1">
                   {isCalculating ? (
-                    <>
-                      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                        Calculating your potential earnings...
-                      </h2>
-                      <p className="text-lg text-gray-600">Please wait while we analyze your market</p>
-                    </>
+                    <p className="text-sm text-gray-600">Calculating earnings...</p>
                   ) : earningsEstimate ? (
                     <>
-                      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                      <h2 className="text-lg font-bold text-gray-900 mb-2">
                         {earningsEstimate.city && earningsEstimate.state ? (
                           <>Your business in <span className="text-orange-600">{earningsEstimate.city}, {earningsEstimate.state}</span> could earn</>
                         ) : (
                           <>Your business could earn</>
                         )}
                       </h2>
-                      <div className="mb-4">
-                        <p className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
+                      <div className="mb-2">
+                        <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
                           {formatEarningsRange(earningsEstimate)}
                         </p>
-                        <p className="text-xl font-semibold text-gray-700 mt-2">per year in incremental sales</p>
+                        <p className="text-sm font-medium text-gray-700 mt-1">per year in incremental sales</p>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
                           {earningsEstimate.tier.label} Market
                         </span>
-                        <span>•</span>
-                        <span>
-                          {earningsEstimate.city && earningsEstimate.state 
-                            ? 'Based on local demand and comparable merchant performance'
-                            : 'Enter your location below for a personalized estimate'}
-                        </span>
+                        {earningsEstimate.city && earningsEstimate.state && (
+                          <>
+                            <span>•</span>
+                            <span>Based on local demand</span>
+                          </>
+                        )}
                       </div>
                     </>
                   ) : null}
@@ -408,38 +399,38 @@ export default function MerchantLandingPage() {
           </Card>
 
           {/* Signup Form Card */}
-          <Card className="shadow-xl border-2">
-            <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+          <Card className="shadow-lg border-2">
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   {/* Store Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="storeName" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="storeName" className="text-sm font-semibold">
                       Store Name *
                     </Label>
                     <div className="relative">
-                      <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="storeName"
                         value={formData.storeName}
                         onChange={(e) => handleInputChange('storeName', e.target.value)}
                         placeholder="Enter your store name"
-                        className="pl-10 h-12"
+                        className="pl-9 h-10"
                         required
                       />
                     </div>
                   </div>
 
                   {/* Business Type */}
-                  <div className="space-y-2">
-                    <Label htmlFor="businessType" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="businessType" className="text-sm font-semibold">
                       Business Type *
                     </Label>
                     <select
                       id="businessType"
                       value={formData.businessType}
                       onChange={(e) => handleInputChange('businessType', e.target.value)}
-                      className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       required
                     >
                       <option value="">Select business type</option>
@@ -452,27 +443,27 @@ export default function MerchantLandingPage() {
                   </div>
 
                   {/* Store Address */}
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="storeAddress" className="text-base font-semibold">
+                  <div className="md:col-span-2 space-y-1.5">
+                    <Label htmlFor="storeAddress" className="text-sm font-semibold">
                       Store Address *
                     </Label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="storeAddress"
                         value={formData.storeAddress}
                         onChange={(e) => handleInputChange('storeAddress', e.target.value)}
                         placeholder="123 Main St"
-                        className="pl-10 h-12"
+                        className="pl-9 h-10"
                         required
                       />
                     </div>
                   </div>
 
                   {/* City and State */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="city" className="text-base font-semibold">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="city" className="text-sm font-semibold">
                         City *
                       </Label>
                       <Input
@@ -480,23 +471,23 @@ export default function MerchantLandingPage() {
                         value={formData.city}
                         onChange={(e) => handleInputChange('city', e.target.value)}
                         placeholder="Detroit"
-                        className="h-12"
+                        className="h-10"
                         required
                       />
                       {isCalculating && formData.city && formData.state && (
-                        <p className="text-xs text-orange-600">Calculating earnings...</p>
+                        <p className="text-xs text-orange-600">Calculating...</p>
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="state" className="text-base font-semibold">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="state" className="text-sm font-semibold">
                         State *
                       </Label>
                       <select
                         id="state"
                         value={formData.state}
                         onChange={(e) => handleInputChange('state', e.target.value)}
-                        className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         required
                       >
                         <option value="">Select State</option>
@@ -555,8 +546,8 @@ export default function MerchantLandingPage() {
                   </div>
 
                   {/* Zip Code */}
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="zipCode" className="text-sm font-semibold">
                       ZIP Code *
                     </Label>
                     <Input
@@ -564,44 +555,44 @@ export default function MerchantLandingPage() {
                       value={formData.zipCode}
                       onChange={(e) => handleInputChange('zipCode', e.target.value)}
                       placeholder="48201"
-                      className="h-12"
+                      className="h-10"
                       required
                     />
                   </div>
 
                   {/* Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-sm font-semibold">
                       Email Address *
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder="your@email.com"
-                        className="pl-10 h-12"
+                        className="pl-9 h-10"
                         required
                       />
                     </div>
                   </div>
 
                   {/* Phone */}
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-base font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="phone" className="text-sm font-semibold">
                       Store Phone *
                     </Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="phone"
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="(555) 123-4567"
-                        className="pl-10 h-12"
+                        className="pl-9 h-10"
                         required
                       />
                     </div>
@@ -609,11 +600,9 @@ export default function MerchantLandingPage() {
                 </div>
 
                 {/* Legal Disclaimer */}
-                <div className="pt-4 border-t">
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Estimates are based on local demand, comparable merchant performance, and average order values. 
-                    Actual earnings vary based on availability, menu pricing, customer demand, and operational factors. 
-                    These estimates do not guarantee future performance.
+                <div className="pt-3 border-t">
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Estimates are based on local demand and comparable merchant performance. Actual earnings vary.
                   </p>
                 </div>
 
@@ -621,19 +610,19 @@ export default function MerchantLandingPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
+                  className="w-full h-11 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
                   disabled={isLoading || isCalculating}
                 >
                   {isLoading ? (
                     <>Starting Your Journey...</>
                   ) : (
                     <>
-                      Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
+                      Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
 
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-xs text-gray-500">
                   By continuing, you agree to our Terms of Service and Privacy Policy
                 </p>
               </form>
@@ -641,27 +630,27 @@ export default function MerchantLandingPage() {
           </Card>
 
           {/* Features Section */}
-          <div className="mt-16 grid md:grid-cols-3 gap-8">
+          <div className="mt-8 grid md:grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="inline-flex p-4 bg-orange-100 rounded-lg mb-4">
-                <Building2 className="h-8 w-8 text-orange-600" />
+              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
+                <Building2 className="h-5 w-5 text-orange-600" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Easy Setup</h3>
-              <p className="text-gray-600">Get started in minutes with our simple onboarding process</p>
+              <h3 className="text-sm font-semibold mb-1">Easy Setup</h3>
+              <p className="text-xs text-gray-600">Get started in minutes</p>
             </div>
             <div className="text-center">
-              <div className="inline-flex p-4 bg-orange-100 rounded-lg mb-4">
-                <TrendingUp className="h-8 w-8 text-orange-600" />
+              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
+                <TrendingUp className="h-5 w-5 text-orange-600" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Grow Your Revenue</h3>
-              <p className="text-gray-600">Reach new customers and increase your sales</p>
+              <h3 className="text-sm font-semibold mb-1">Grow Revenue</h3>
+              <p className="text-xs text-gray-600">Reach new customers</p>
             </div>
             <div className="text-center">
-              <div className="inline-flex p-4 bg-orange-100 rounded-lg mb-4">
-                <Sparkles className="h-8 w-8 text-orange-600" />
+              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
+                <Sparkles className="h-5 w-5 text-orange-600" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Full Support</h3>
-              <p className="text-gray-600">Dedicated support team to help you succeed</p>
+              <h3 className="text-sm font-semibold mb-1">Full Support</h3>
+              <p className="text-xs text-gray-600">Dedicated support team</p>
             </div>
           </div>
         </div>
