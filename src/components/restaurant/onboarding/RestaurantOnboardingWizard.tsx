@@ -12,6 +12,7 @@ import MobileVerificationModal from "./MobileVerificationModal";
 import PhoneNumberReminderModal from "./PhoneNumberReminderModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ensureAuthenticatedForOnboarding } from "./utils/authHelper";
 
 export interface OnboardingData {
   // Order Method
@@ -222,18 +223,108 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
 
   const handleCompleteOnboarding = async () => {
     try {
-      // Save progress
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        localStorage.setItem(`restaurant-onboarding-${user.id}`, JSON.stringify(data));
+      // Validate required fields
+      if (!data.contactEmail) {
+        toast.error("Email is required to complete setup");
+        return;
       }
 
-      // Navigate to merchant portal
+      if (!data.restaurantName) {
+        toast.error("Restaurant name is required");
+        return;
+      }
+
+      // Ensure user is authenticated (creates account if needed)
+      const user = await ensureAuthenticatedForOnboarding(data.contactEmail);
+      
+      if (!user) {
+        toast.error("Unable to authenticate. Please try again.");
+        return;
+      }
+
+      // Save progress to localStorage
+      localStorage.setItem(`restaurant-onboarding-${user.id}`, JSON.stringify(data));
+
+      // Create restaurant record
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .insert({
+          owner_id: user.id,
+          name: data.restaurantName,
+          description: data.description || '',
+          cuisine_type: data.cuisineType || '',
+          phone: data.contactPhone || '',
+          email: data.contactEmail,
+          address: data.streetAddress || '',
+          city: data.city || '',
+          state: data.state || '',
+          zip_code: data.zipCode || '',
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          logo_url: data.logoUrl || null,
+          image_url: data.coverImageUrl || null,
+          min_delivery_time: data.minPrepTime || 20,
+          max_delivery_time: data.maxPrepTime || 40,
+          delivery_fee_cents: data.deliveryFeeCents || 299,
+          minimum_order_cents: data.minimumOrderCents || 1000,
+          delivery_radius_miles: data.deliveryRadius || 5,
+          is_active: false, // Pending admin approval
+          rating: 5.0,
+          onboarding_status: 'pending',
+          restaurant_type: data.restaurantType || '',
+          expected_monthly_orders: data.expectedMonthlyOrders || 0,
+        })
+        .select()
+        .single();
+
+      if (restaurantError) {
+        console.error('Error creating restaurant:', restaurantError);
+        throw restaurantError;
+      }
+
+      // Save restaurant hours if provided
+      if (data.storeHours && restaurant) {
+        const hoursToInsert = Object.entries(data.storeHours).map(([day, hours]) => ({
+          restaurant_id: restaurant.id,
+          day_of_week: parseInt(day),
+          open_time: hours.closed ? null : hours.open,
+          close_time: hours.closed ? null : hours.close,
+          is_closed: hours.closed || false,
+        }));
+
+        const { error: hoursError } = await supabase
+          .from('restaurant_hours')
+          .insert(hoursToInsert);
+
+        if (hoursError) {
+          console.warn('Failed to save restaurant hours:', hoursError);
+          // Don't fail the whole process if hours fail
+        }
+      }
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-restaurant-welcome-email', {
+          body: {
+            restaurantName: data.restaurantName,
+            ownerEmail: data.contactEmail,
+            ownerName: data.contactName || '',
+          },
+        });
+      } catch (emailError) {
+        console.warn('Failed to send welcome email:', emailError);
+        // Don't fail the whole process if email fails
+      }
+
       toast.success("Setup completed! Redirecting to your dashboard...");
-      navigate("/merchant-portal");
-    } catch (error) {
+      
+      // Navigate to merchant portal
+      setTimeout(() => {
+        navigate("/merchant-portal");
+      }, 1500);
+    } catch (error: any) {
       console.error("Error completing onboarding:", error);
-      toast.error("Failed to complete setup. Please try again.");
+      toast.error(error?.message || "Failed to complete setup. Please try again.");
     }
   };
 
