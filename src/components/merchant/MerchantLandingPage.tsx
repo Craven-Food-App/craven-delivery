@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin } from 'lucide-react';
-import { calculateEarnings, formatEarningsRange, type EarningsEstimate } from '@/utils/marketTiers';
+import { calculateEarnings, formatEarningsRange, type EarningsEstimate, MARKET_TIERS } from '@/utils/marketTiers';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import cravenLogo from '@/assets/craven-logo.png';
 import {
   Select,
   SelectContent,
@@ -14,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface MerchantSignupForm {
   storeName: string;
@@ -43,6 +51,7 @@ export default function MerchantLandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<{ city: string; state: string } | null>(null);
+  const [showEarningsExplanation, setShowEarningsExplanation] = useState(false);
   const isAutoDetectingRef = useRef(false);
 
   // Automatically detect user location on page load
@@ -457,11 +466,10 @@ export default function MerchantLandingPage() {
       {/* Header */}
       <header className="bg-red-800 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-red-600 font-bold text-xl">C</span>
-            </div>
-            <span className="text-xl font-bold text-white">Crave'n</span>
+          <div className="flex items-center">
+            <Link to="/">
+              <img src={cravenLogo} alt="CRAVE'N" className="h-10" />
+            </Link>
           </div>
           <Button variant="ghost" size="sm" className="text-white hover:bg-red-700" onClick={() => navigate('/restaurant/auth')}>
             Sign In
@@ -478,16 +486,13 @@ export default function MerchantLandingPage() {
             <h1 className="text-2xl md:text-3xl font-bold uppercase text-red-700 mb-3 leading-tight">
               {getEarningsHeading()}
             </h1>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                // TODO: Add earnings estimation explanation modal/page
-              }}
-              className="text-sm text-gray-700 underline hover:text-red-600"
+            <button
+              type="button"
+              onClick={() => setShowEarningsExplanation(true)}
+              className="text-sm text-gray-700 underline hover:text-red-600 cursor-pointer"
             >
               How we estimate earnings
-            </a>
+            </button>
           </div>
 
           {/* Signup Form */}
@@ -584,7 +589,7 @@ export default function MerchantLandingPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-md"
+              className="w-full h-12 text-base font-semibold bg-[#d93c00] hover:bg-[#b83200] text-white rounded-md transition-colors"
               disabled={isLoading || isCalculating}
             >
               {isLoading ? 'Starting...' : 'Start Free Trial'}
@@ -595,9 +600,122 @@ export default function MerchantLandingPage() {
       </div>
       {/* Bottom red background */}
       <div className="bg-red-800 h-16"></div>
+
+      {/* Earnings Explanation Dialog */}
+      <Dialog open={showEarningsExplanation} onOpenChange={setShowEarningsExplanation}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">How We Estimate Earnings</DialogTitle>
+            <DialogDescription>
+              Our earnings estimates are based on market data and operating metrics from similar businesses in your area.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            {/* Overview */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Overview</h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                We calculate potential annual earnings by analyzing your city's population and comparing it to our market tier system. 
+                Each tier represents different market characteristics that affect order volume and average order value.
+              </p>
+            </div>
+
+            {/* Calculation Formula */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Calculation Formula</h3>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p className="text-sm font-mono text-gray-800 mb-2">
+                  Base Annual Revenue = Average Orders Per Day × Average Order Value × 360 Operating Days
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  We then apply conservative multipliers to account for utilization rates and provide realistic estimates. 
+                  The final estimates shown are rounded to the nearest thousand dollars.
+                </p>
+              </div>
+            </div>
+
+            {/* Market Tiers */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Market Tiers</h3>
+              <div className="space-y-3">
+                {MARKET_TIERS.map((tier) => {
+                  const populationRange = tier.populationMax === Infinity 
+                    ? `${tier.populationMin.toLocaleString()}+`
+                    : `${tier.populationMin.toLocaleString()} - ${tier.populationMax.toLocaleString()}`;
+                  
+                  const exampleEstimate = calculateEarnings(
+                    tier.populationMin === 0 ? 100000 : tier.populationMin,
+                    '',
+                    ''
+                  );
+                  
+                  return (
+                    <div key={tier.tier} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="font-bold text-lg text-gray-900">Tier {tier.tier}</span>
+                          <span className="ml-2 text-sm text-gray-600">({tier.label})</span>
+                        </div>
+                        {exampleEstimate && (
+                          <span className="text-sm font-semibold text-[#d93c00]">
+                            {formatEarningsRange(exampleEstimate)}/year
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Population:</span>
+                          <span className="ml-2 font-medium">{populationRange}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Avg Orders/Day:</span>
+                          <span className="ml-2 font-medium">{tier.avgOrdersPerDay}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Avg Order Value:</span>
+                          <span className="ml-2 font-medium">${tier.avgOrderValue}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Operating Days:</span>
+                          <span className="ml-2 font-medium">360 days/year</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Important Notes */}
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h3 className="font-semibold text-lg mb-2 text-orange-900">Important Notes</h3>
+              <ul className="space-y-2 text-sm text-orange-800">
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>These are <strong>estimates</strong> based on market data and may vary based on your specific business performance, location, and operational factors.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>Actual earnings depend on factors such as menu pricing, customer demand, marketing efforts, and service quality.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>We use conservative multipliers to provide realistic expectations rather than optimistic projections.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>Minimum estimates are set at $25,000 for low estimates and $50,000 for high estimates to ensure reasonable projections.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 
 

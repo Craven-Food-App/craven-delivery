@@ -99,7 +99,10 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(origin);
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { 
+      headers: corsHeaders,
+      status: 200 
+    });
   }
 
   try {
@@ -119,8 +122,8 @@ serve(async (req) => {
     let population: number | undefined;
     
     // If city is provided, try to find city population
-    if (city && city.trim()) {
-      const cityKey = `${city.toLowerCase().trim()},${stateUpper}`;
+    const cityKey = city && city.trim() ? `${city.toLowerCase().trim()},${stateUpper}` : null;
+    if (cityKey) {
       population = CITY_POPULATIONS[cityKey];
     }
 
@@ -129,12 +132,14 @@ serve(async (req) => {
       population = STATE_AVERAGES[stateUpper] || 400000; // Default fallback
     }
 
+    const source = cityKey && CITY_POPULATIONS[cityKey] ? "city" : "state_average";
+
     return new Response(
       JSON.stringify({
         city,
         state,
         population,
-        source: CITY_POPULATIONS[cityKey] ? "city" : "state_average",
+        source,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

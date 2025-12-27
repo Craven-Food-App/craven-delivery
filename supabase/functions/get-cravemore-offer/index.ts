@@ -15,6 +15,7 @@ const getAllowedOrigins = (): string[] => {
     "https://www.cravenusa.com",
     "https://feeder.cravenusa.com",
     "http://localhost:8080",
+    "http://localhost:8081",
     "http://localhost:5173",
   ];
 };
