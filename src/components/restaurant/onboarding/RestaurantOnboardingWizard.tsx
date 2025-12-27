@@ -279,7 +279,24 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
 
       if (restaurantError) {
         console.error('Error creating restaurant:', restaurantError);
+        toast.error(`Failed to create restaurant: ${restaurantError.message}`);
         throw restaurantError;
+      }
+
+      if (!restaurant || !restaurant.id) {
+        throw new Error('Restaurant was created but no ID was returned');
+      }
+
+      // Verify restaurant exists before proceeding
+      const { data: verifyRestaurant, error: verifyError } = await supabase
+        .from('restaurants')
+        .select('id')
+        .eq('id', restaurant.id)
+        .single();
+
+      if (verifyError || !verifyRestaurant) {
+        console.error('Error verifying restaurant:', verifyError);
+        throw new Error('Failed to verify restaurant creation');
       }
 
       // Save restaurant hours if provided
@@ -318,10 +335,16 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
 
       toast.success("Setup completed! Redirecting to your dashboard...");
       
-      // Navigate to merchant portal
+      // Wait a moment for database to be ready, then navigate
+      // Also force a page reload to ensure the restaurant selector picks up the new restaurant
       setTimeout(() => {
-        navigate("/merchant-portal");
-      }, 1500);
+        // Store restaurant ID in localStorage for the selector
+        if (restaurant?.id) {
+          localStorage.setItem('selected_restaurant_id', restaurant.id);
+        }
+        // Navigate and force a refresh of the restaurant data
+        window.location.href = '/merchant-portal';
+      }, 2000);
     } catch (error: any) {
       console.error("Error completing onboarding:", error);
       toast.error(error?.message || "Failed to complete setup. Please try again.");
