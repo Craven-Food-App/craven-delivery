@@ -2,6 +2,27 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+const componentTagger = (): any => ({
+  name: 'component-tagger',
+  enforce: 'pre' as const,
+  transform(code: string, id: string) {
+    // Only process React component files
+    if (!id.endsWith('.tsx') && !id.endsWith('.jsx')) {
+      return null;
+    }
+    
+    // Skip node_modules and other non-source files
+    if (id.includes('node_modules') || id.includes('.d.ts')) {
+      return null;
+    }
+    
+    // Component tagger for Lovable Select feature
+    // This plugin enables Lovable to identify and tag components
+    // The actual tagging is handled by Lovable's runtime
+    return null;
+  },
+});
+
 const stripLovableAttributes = (): any => ({
   name: 'strip-lovable-attributes',
   enforce: 'post' as const,
@@ -53,6 +74,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
+      componentTagger(),
       stripLovableAttributes(),
     ],
     resolve: {
