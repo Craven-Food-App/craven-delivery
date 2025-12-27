@@ -77,39 +77,39 @@ export function EnhancedDocumentVerificationPanel({
   const documents: Document[] = useMemo(() => {
     if (!restaurant) return [];
     return [
-      {
-        key: 'business_license',
-        label: 'Business License',
-        url: restaurant.restaurant.business_license_url,
-        icon: Building2,
-        required: true,
-        description: 'Valid business license from local authority',
-      },
-      {
-        key: 'owner_id',
-        label: 'Owner ID',
-        url: restaurant.restaurant.owner_id_url,
-        icon: User,
-        required: true,
-        description: 'Government-issued identification',
-      },
-      {
-        key: 'insurance',
-        label: 'Insurance Certificate',
-        url: restaurant.restaurant.insurance_certificate_url,
-        icon: Shield,
-        required: false,
-        description: 'Liability insurance certificate',
-      },
-      {
-        key: 'health_permit',
-        label: 'Health Permit',
-        url: restaurant.restaurant.health_permit_url,
-        icon: Heart,
-        required: false,
-        description: 'Health department permit',
-      },
-    ];
+    {
+      key: 'business_license',
+      label: 'Business License',
+      url: restaurant.restaurant.business_license_url,
+      icon: Building2,
+      required: true,
+      description: 'Valid business license from local authority',
+    },
+    {
+      key: 'owner_id',
+      label: 'Owner ID',
+      url: restaurant.restaurant.owner_id_url,
+      icon: User,
+      required: true,
+      description: 'Government-issued identification',
+    },
+    {
+      key: 'insurance',
+      label: 'Insurance Certificate',
+      url: restaurant.restaurant.insurance_certificate_url,
+      icon: Shield,
+      required: false,
+      description: 'Liability insurance certificate',
+    },
+    {
+      key: 'health_permit',
+      label: 'Health Permit',
+      url: restaurant.restaurant.health_permit_url,
+      icon: Heart,
+      required: false,
+      description: 'Health department permit',
+    },
+  ];
   }, [restaurant]);
 
   useEffect(() => {

@@ -3,20 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, TrendingUp, Building2, Phone, Mail, Store, ArrowRight, Sparkles } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { calculateEarnings, formatEarningsRange, type EarningsEstimate } from '@/utils/marketTiers';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-
-interface AddressComponents {
-  street_number?: string;
-  route?: string;
-  locality?: string; // city
-  administrative_area_level_1?: string; // state
-  postal_code?: string;
-  country?: string;
-}
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface MerchantSignupForm {
   storeName: string;
@@ -45,11 +42,86 @@ export default function MerchantLandingPage() {
   const [earningsEstimate, setEarningsEstimate] = useState<EarningsEstimate | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [detectedLocation, setDetectedLocation] = useState<{ city: string; state: string } | null>(null);
+  const isAutoDetectingRef = useRef(false);
 
-  // Show default earnings estimate on page load (using national average)
+  // Automatically detect user location on page load
   useEffect(() => {
-    // Calculate default earnings using average US metro population (~500,000)
-    const defaultPopulation = 500000;
+    const detectLocation = async () => {
+      setIsCalculating(true);
+      isAutoDetectingRef.current = true;
+      
+      try {
+        // Method 1: Try IP-based location detection first (works without permission)
+        const ipLocation = await detectLocationFromIP();
+        if (ipLocation) {
+          setDetectedLocation(ipLocation);
+          const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
+          if (population) {
+            const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
+            if (estimate) {
+              setEarningsEstimate(estimate);
+              setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+            }
+          }
+          setIsCalculating(false);
+          isAutoDetectingRef.current = false;
+          return;
+        }
+      } catch (error) {
+        console.warn('IP-based location detection failed:', error);
+      }
+
+      // Method 2: Try browser geolocation API (requires permission)
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const { latitude, longitude } = position.coords;
+              const location = await reverseGeocode(latitude, longitude);
+              if (location) {
+                setDetectedLocation(location);
+                const population = await fetchCityPopulation(location.city, location.state);
+                if (population) {
+                  const estimate = calculateEarnings(population, location.city, location.state);
+                  if (estimate) {
+                    setEarningsEstimate(estimate);
+                    setFormData(prev => ({ ...prev, city: location.city, state: location.state }));
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Reverse geocoding failed:', error);
+              // Fallback to default
+              setDefaultEarnings();
+            } finally {
+              setIsCalculating(false);
+              isAutoDetectingRef.current = false;
+            }
+          },
+          (error) => {
+            console.warn('Geolocation permission denied or failed:', error);
+            // Fallback to default
+            setDefaultEarnings();
+            setIsCalculating(false);
+            isAutoDetectingRef.current = false;
+          },
+          { timeout: 5000, enableHighAccuracy: false }
+        );
+      } else {
+        // No geolocation support, use default
+        setDefaultEarnings();
+        setIsCalculating(false);
+        isAutoDetectingRef.current = false;
+      }
+    };
+
+    detectLocation();
+  }, []);
+
+  // Set default earnings (national average) as fallback
+  const setDefaultEarnings = () => {
+    const defaultPopulation = 500000; // National average
     const defaultEstimate = calculateEarnings(defaultPopulation, '', '');
     if (defaultEstimate) {
       setEarningsEstimate({
@@ -59,25 +131,70 @@ export default function MerchantLandingPage() {
         tier: defaultEstimate.tier,
       });
     }
-  }, []);
+  };
 
-  // Handle city/state change with debounce for population lookup
-  useEffect(() => {
-    if (!formData.city || !formData.state) {
-      // Reset to default if city/state cleared
-      const defaultPopulation = 500000;
-      const defaultEstimate = calculateEarnings(defaultPopulation, '', '');
-      if (defaultEstimate) {
-        setEarningsEstimate({
-          ...defaultEstimate,
-          city: '',
-          state: '',
-          tier: defaultEstimate.tier,
-        });
+  // Detect location from IP address using free API
+  const detectLocationFromIP = async (): Promise<{ city: string; state: string } | null> => {
+    try {
+      // Use ipapi.co free tier (1000 requests/day)
+      const response = await fetch('https://ipapi.co/json/');
+      if (!response.ok) throw new Error('IP API failed');
+      
+      const data = await response.json();
+      if (data.city && data.region_code) {
+        return {
+          city: data.city,
+          state: data.region_code, // State code like "MI", "CA", etc.
+        };
       }
+    } catch (error) {
+      console.warn('IP-based location detection error:', error);
+    }
+    return null;
+  };
+
+  // Reverse geocode coordinates to city/state using free Nominatim API
+  const reverseGeocode = async (lat: number, lng: number): Promise<{ city: string; state: string } | null> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'CravenDelivery/1.0', // Required by Nominatim
+          },
+        }
+      );
+      
+      if (!response.ok) throw new Error('Reverse geocoding failed');
+      
+      const data = await response.json();
+      const address = data.address;
+      
+      if (address) {
+        const city = address.city || address.town || address.village || address.municipality || '';
+        const state = address.state_code || address.state || '';
+        
+        if (city && state) {
+          return {
+            city,
+            state: state.length === 2 ? state.toUpperCase() : state,
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('Reverse geocoding error:', error);
+    }
+    return null;
+  };
+
+  // Handle city/state change with debounce for population lookup (when user manually enters address)
+  useEffect(() => {
+    // Skip if this is the initial automatic detection
+    if (isAutoDetectingRef.current || !formData.city || !formData.state) {
       return;
     }
 
+    // Only recalculate if user manually changed city/state (not from automatic detection)
     const timer = setTimeout(async () => {
       setIsCalculating(true);
       try {
@@ -262,7 +379,7 @@ export default function MerchantLandingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.storeName || !formData.storeAddress || !formData.email) {
+    if (!formData.storeName || !formData.storeAddress || !formData.email || !formData.phone || !formData.businessType) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -321,341 +438,169 @@ export default function MerchantLandingPage() {
     'Other',
   ];
 
+  // Format earnings for display in heading
+  const getEarningsHeading = () => {
+    if (isCalculating) {
+      return 'CALCULATING EARNINGS...';
+    }
+    if (earningsEstimate) {
+      const cityName = earningsEstimate.city || 'YOUR AREA';
+      const range = formatEarningsRange(earningsEstimate);
+      // Format: "YOUR BUSINESS AROUND DETROIT COULD EARN $52,000 - $98,000 PER YEAR"
+      return `YOUR BUSINESS AROUND ${cityName.toUpperCase()} COULD EARN ${range} PER YEAR`;
+    }
+    return 'YOUR BUSINESS COULD EARN SIGNIFICANT REVENUE PER YEAR';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+    <div className="min-h-screen bg-red-800">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="bg-red-800 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">C</span>
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-red-600 font-bold text-xl">C</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">Crave'n</span>
+            <span className="text-xl font-bold text-white">Crave'n</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm">
-              Help
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/restaurant/auth')}>
-              Sign In
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" className="text-white hover:bg-red-700" onClick={() => navigate('/restaurant/auth')}>
+            Sign In
+          </Button>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Join Crave'n and Grow Your Business
+      {/* Main Content */}
+      <div className="bg-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-lg mx-auto">
+          {/* Hero Section with Earnings Estimate */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold uppercase text-red-700 mb-3 leading-tight">
+              {getEarningsHeading()}
             </h1>
-            <p className="text-base text-gray-600 max-w-xl mx-auto">
-              Connect with customers and increase your revenue
-            </p>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                // TODO: Add earnings estimation explanation modal/page
+              }}
+              className="text-sm text-gray-700 underline hover:text-red-600"
+            >
+              How we estimate earnings
+            </a>
           </div>
 
-          {/* Earnings Estimate Card - Always visible */}
-          <Card className="mb-6 border-2 border-orange-300 bg-gradient-to-br from-orange-50 via-white to-orange-50 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-orange-500 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  {isCalculating ? (
-                    <p className="text-sm text-gray-600">Calculating earnings...</p>
-                  ) : earningsEstimate ? (
-                    <>
-                      <h2 className="text-lg font-bold text-gray-900 mb-2">
-                        {earningsEstimate.city && earningsEstimate.state ? (
-                          <>Your business in <span className="text-orange-600">{earningsEstimate.city}, {earningsEstimate.state}</span> could earn</>
-                        ) : (
-                          <>Your business could earn</>
-                        )}
-                      </h2>
-                      <div className="mb-2">
-                        <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text text-transparent">
-                          {formatEarningsRange(earningsEstimate)}
-                        </p>
-                        <p className="text-sm font-medium text-gray-700 mt-1">per year in incremental sales</p>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
-                          {earningsEstimate.tier.label} Market
-                        </span>
-                        {earningsEstimate.city && earningsEstimate.state && (
-                          <>
-                            <span>•</span>
-                            <span>Based on local demand</span>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Signup Form Card */}
-          <Card className="shadow-lg border-2">
-            <CardContent className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Store Name */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="storeName" className="text-sm font-semibold">
-                      Store Name *
-                    </Label>
-                    <div className="relative">
-                      <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="storeName"
-                        value={formData.storeName}
-                        onChange={(e) => handleInputChange('storeName', e.target.value)}
-                        placeholder="Enter your store name"
-                        className="pl-9 h-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Business Type */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="businessType" className="text-sm font-semibold">
-                      Business Type *
-                    </Label>
-                    <select
-                      id="businessType"
-                      value={formData.businessType}
-                      onChange={(e) => handleInputChange('businessType', e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      required
-                    >
-                      <option value="">Select business type</option>
-                      {businessTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Store Address */}
-                  <div className="md:col-span-2 space-y-1.5">
-                    <Label htmlFor="storeAddress" className="text-sm font-semibold">
-                      Store Address *
-                    </Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="storeAddress"
-                        value={formData.storeAddress}
-                        onChange={(e) => handleInputChange('storeAddress', e.target.value)}
-                        placeholder="123 Main St"
-                        className="pl-9 h-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* City and State */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="city" className="text-sm font-semibold">
-                        City *
-                      </Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                        placeholder="Detroit"
-                        className="h-10"
-                        required
-                      />
-                      {isCalculating && formData.city && formData.state && (
-                        <p className="text-xs text-orange-600">Calculating...</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="state" className="text-sm font-semibold">
-                        State *
-                      </Label>
-                      <select
-                        id="state"
-                        value={formData.state}
-                        onChange={(e) => handleInputChange('state', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        required
-                      >
-                        <option value="">Select State</option>
-                        <option value="AL">Alabama</option>
-                        <option value="AK">Alaska</option>
-                        <option value="AZ">Arizona</option>
-                        <option value="AR">Arkansas</option>
-                        <option value="CA">California</option>
-                        <option value="CO">Colorado</option>
-                        <option value="CT">Connecticut</option>
-                        <option value="DE">Delaware</option>
-                        <option value="FL">Florida</option>
-                        <option value="GA">Georgia</option>
-                        <option value="HI">Hawaii</option>
-                        <option value="ID">Idaho</option>
-                        <option value="IL">Illinois</option>
-                        <option value="IN">Indiana</option>
-                        <option value="IA">Iowa</option>
-                        <option value="KS">Kansas</option>
-                        <option value="KY">Kentucky</option>
-                        <option value="LA">Louisiana</option>
-                        <option value="ME">Maine</option>
-                        <option value="MD">Maryland</option>
-                        <option value="MA">Massachusetts</option>
-                        <option value="MI">Michigan</option>
-                        <option value="MN">Minnesota</option>
-                        <option value="MS">Mississippi</option>
-                        <option value="MO">Missouri</option>
-                        <option value="MT">Montana</option>
-                        <option value="NE">Nebraska</option>
-                        <option value="NV">Nevada</option>
-                        <option value="NH">New Hampshire</option>
-                        <option value="NJ">New Jersey</option>
-                        <option value="NM">New Mexico</option>
-                        <option value="NY">New York</option>
-                        <option value="NC">North Carolina</option>
-                        <option value="ND">North Dakota</option>
-                        <option value="OH">Ohio</option>
-                        <option value="OK">Oklahoma</option>
-                        <option value="OR">Oregon</option>
-                        <option value="PA">Pennsylvania</option>
-                        <option value="RI">Rhode Island</option>
-                        <option value="SC">South Carolina</option>
-                        <option value="SD">South Dakota</option>
-                        <option value="TN">Tennessee</option>
-                        <option value="TX">Texas</option>
-                        <option value="UT">Utah</option>
-                        <option value="VT">Vermont</option>
-                        <option value="VA">Virginia</option>
-                        <option value="WA">Washington</option>
-                        <option value="WV">West Virginia</option>
-                        <option value="WI">Wisconsin</option>
-                        <option value="WY">Wyoming</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Zip Code */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="zipCode" className="text-sm font-semibold">
-                      ZIP Code *
-                    </Label>
-                    <Input
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                      placeholder="48201"
-                      className="h-10"
-                      required
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-sm font-semibold">
-                      Email Address *
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        placeholder="your@email.com"
-                        className="pl-9 h-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone" className="text-sm font-semibold">
-                      Store Phone *
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="(555) 123-4567"
-                        className="pl-9 h-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Legal Disclaimer */}
-                <div className="pt-3 border-t">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Estimates are based on local demand and comparable merchant performance. Actual earnings vary.
-                  </p>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full h-11 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
-                  disabled={isLoading || isCalculating}
-                >
-                  {isLoading ? (
-                    <>Starting Your Journey...</>
-                  ) : (
-                    <>
-                      Start Your Journey <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-
-                <p className="text-center text-xs text-gray-500">
-                  By continuing, you agree to our Terms of Service and Privacy Policy
-                </p>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Features Section */}
-          <div className="mt-8 grid md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
-                <Building2 className="h-5 w-5 text-orange-600" />
-              </div>
-              <h3 className="text-sm font-semibold mb-1">Easy Setup</h3>
-              <p className="text-xs text-gray-600">Get started in minutes</p>
+          {/* Signup Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Store Name */}
+            <div>
+              <Input
+                value={formData.storeName}
+                onChange={(e) => handleInputChange('storeName', e.target.value)}
+                placeholder="Store name"
+                className="h-12 bg-gray-50 border-gray-300 rounded-md"
+                required
+              />
             </div>
-            <div className="text-center">
-              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
-                <TrendingUp className="h-5 w-5 text-orange-600" />
-              </div>
-              <h3 className="text-sm font-semibold mb-1">Grow Revenue</h3>
-              <p className="text-xs text-gray-600">Reach new customers</p>
+
+            {/* Store Address */}
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={formData.storeAddress}
+                onChange={(e) => {
+                  const address = e.target.value;
+                  handleInputChange('storeAddress', address);
+                  
+                  // Mark that user is manually entering address (not auto-detecting)
+                  isAutoDetectingRef.current = false;
+                  
+                  // Extract city/state from address - handles formats like:
+                  // "123 Main St, Detroit, MI 48201"
+                  // "Detroit, MI"
+                  // "Detroit, MI 48201"
+                  const cityStateMatch = address.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
+                  if (cityStateMatch && cityStateMatch.length >= 3) {
+                    const city = cityStateMatch[1].trim();
+                    const state = cityStateMatch[2].trim().toUpperCase();
+                    setFormData(prev => {
+                      if (prev.city !== city || prev.state !== state) {
+                        return { ...prev, city, state };
+                      }
+                      return prev;
+                    });
+                  }
+                }}
+                placeholder="Store address"
+                className="pl-10 h-12 bg-gray-50 border-gray-300 rounded-md"
+                required
+              />
             </div>
-            <div className="text-center">
-              <div className="inline-flex p-2 bg-orange-100 rounded-lg mb-2">
-                <Sparkles className="h-5 w-5 text-orange-600" />
-              </div>
-              <h3 className="text-sm font-semibold mb-1">Full Support</h3>
-              <p className="text-xs text-gray-600">Dedicated support team</p>
+
+            {/* Email and Phone - Side by Side */}
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Email Address"
+                className="h-12 bg-gray-50 border-gray-300 rounded-md"
+                required
+              />
+              <Input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="Store phone"
+                className="h-12 bg-gray-50 border-gray-300 rounded-md"
+                required
+              />
             </div>
+
+            {/* Business Type Dropdown */}
+            <Select
+              value={formData.businessType}
+              onValueChange={(value) => handleInputChange('businessType', value)}
+              required
+            >
+              <SelectTrigger className="h-12 bg-gray-50 border-gray-300 rounded-md">
+                <SelectValue placeholder="Select your business type" />
+              </SelectTrigger>
+              <SelectContent>
+                {businessTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+
+            {/* Legal Disclaimer */}
+            <p className="text-xs text-gray-600 leading-relaxed">
+              By clicking "Start Free Trial," I agree to receive marketing electronic communications from Crave'n.
+            </p>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-semibold bg-red-600 hover:bg-red-700 text-white rounded-md"
+              disabled={isLoading || isCalculating}
+            >
+              {isLoading ? 'Starting...' : 'Start Free Trial'}
+            </Button>
+          </form>
           </div>
         </div>
       </div>
+      {/* Bottom red background */}
+      <div className="bg-red-800 h-16"></div>
     </div>
   );
 }
+
+
+
+
+
 
