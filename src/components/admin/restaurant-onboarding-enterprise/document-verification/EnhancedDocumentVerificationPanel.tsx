@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -74,42 +74,43 @@ export function EnhancedDocumentVerificationPanel({
   const [docNotes, setDocNotes] = useState<Record<string, string>>({});
   const [zoomLevel, setZoomLevel] = useState(100);
 
-  if (!restaurant) return null;
-
-  const documents: Document[] = [
-    {
-      key: 'business_license',
-      label: 'Business License',
-      url: restaurant.restaurant.business_license_url,
-      icon: Building2,
-      required: true,
-      description: 'Valid business license from local authority',
-    },
-    {
-      key: 'owner_id',
-      label: 'Owner ID',
-      url: restaurant.restaurant.owner_id_url,
-      icon: User,
-      required: true,
-      description: 'Government-issued identification',
-    },
-    {
-      key: 'insurance',
-      label: 'Insurance Certificate',
-      url: restaurant.restaurant.insurance_certificate_url,
-      icon: Shield,
-      required: false,
-      description: 'Liability insurance certificate',
-    },
-    {
-      key: 'health_permit',
-      label: 'Health Permit',
-      url: restaurant.restaurant.health_permit_url,
-      icon: Heart,
-      required: false,
-      description: 'Health department permit',
-    },
-  ];
+  const documents: Document[] = useMemo(() => {
+    if (!restaurant) return [];
+    return [
+      {
+        key: 'business_license',
+        label: 'Business License',
+        url: restaurant.restaurant.business_license_url,
+        icon: Building2,
+        required: true,
+        description: 'Valid business license from local authority',
+      },
+      {
+        key: 'owner_id',
+        label: 'Owner ID',
+        url: restaurant.restaurant.owner_id_url,
+        icon: User,
+        required: true,
+        description: 'Government-issued identification',
+      },
+      {
+        key: 'insurance',
+        label: 'Insurance Certificate',
+        url: restaurant.restaurant.insurance_certificate_url,
+        icon: Shield,
+        required: false,
+        description: 'Liability insurance certificate',
+      },
+      {
+        key: 'health_permit',
+        label: 'Health Permit',
+        url: restaurant.restaurant.health_permit_url,
+        icon: Heart,
+        required: false,
+        description: 'Health department permit',
+      },
+    ];
+  }, [restaurant]);
 
   useEffect(() => {
     const resolveAll = async () => {
@@ -140,11 +141,13 @@ export function EnhancedDocumentVerificationPanel({
       );
       setResolvedUrls(Object.fromEntries(entries));
     };
-    if (isOpen) resolveAll();
-  }, [isOpen, restaurant?.restaurant_id]);
+    if (isOpen && restaurant && documents.length > 0) {
+      resolveAll();
+    }
+  }, [isOpen, restaurant?.restaurant_id, documents]);
 
   const handleApprove = async () => {
-    if (isProcessing) return;
+    if (isProcessing || !restaurant) return;
     setIsProcessing(true);
     try {
       await onApprove(restaurant.restaurant_id, notes);
@@ -164,7 +167,7 @@ export function EnhancedDocumentVerificationPanel({
       toast.error('Please provide rejection notes');
       return;
     }
-    if (isProcessing) return;
+    if (isProcessing || !restaurant) return;
     setIsProcessing(true);
     try {
       await onReject(restaurant.restaurant_id, notes);
@@ -203,6 +206,8 @@ export function EnhancedDocumentVerificationPanel({
   const updateDocNotes = (docKey: string, note: string) => {
     setDocNotes(prev => ({ ...prev, [docKey]: note }));
   };
+
+  if (!restaurant || !isOpen) return null;
 
   const allDocsPresent = hasAllDocuments(restaurant);
   const missingDocs = getMissingDocuments(restaurant);

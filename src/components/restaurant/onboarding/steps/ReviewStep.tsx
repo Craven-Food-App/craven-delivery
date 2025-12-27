@@ -8,6 +8,7 @@ import { OnboardingData } from '../RestaurantOnboardingWizard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { ensureAuthenticatedForOnboarding } from '../utils/authHelper';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -106,15 +107,25 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
       if (isDrawingSignature && canvasRef.current) {
         signatureDataUrl = canvasRef.current.toDataURL('image/png');
       }
-      const { data: { user } } = await supabase.auth.getUser();
+
+      // Ensure user is authenticated (creates account if needed)
+      if (!data.contactEmail) {
+        toast({
+          title: 'Email required',
+          description: 'Please provide your email address to continue',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const user = await ensureAuthenticatedForOnboarding(data.contactEmail);
       
       if (!user) {
         toast({
-          title: 'Authentication required',
-          description: 'Please sign in to complete registration',
+          title: 'Authentication failed',
+          description: 'Unable to create account. Please try again.',
           variant: 'destructive',
         });
-        navigate('/restaurant/auth');
         return;
       }
 

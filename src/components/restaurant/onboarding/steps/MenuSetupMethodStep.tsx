@@ -82,11 +82,20 @@ const MenuSetupMethodStep = ({ data, updateData, onNext }: MenuSetupMethodStepPr
         })}
       </RadioGroup>
 
-      <div className="flex justify-end mt-6 sm:mt-8">
+      <div className="flex justify-between mt-6 sm:mt-8">
+        {onBack && (
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="w-full sm:w-auto min-w-32 h-11 sm:h-10 touch-manipulation"
+          >
+            Back
+          </Button>
+        )}
         <Button
           onClick={onNext}
           disabled={!data.menuSetupMethod}
-          className="w-full sm:w-auto min-w-32 h-11 sm:h-10 touch-manipulation"
+          className={`w-full sm:w-auto min-w-32 h-11 sm:h-10 touch-manipulation ${onBack ? 'ml-auto' : ''}`}
         >
           Continue
         </Button>

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Upload, FileCheck, Plus, Trash2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uploadFileForOnboarding } from '../utils/authHelper';
 
 interface MenuItem {
   id: string;
@@ -32,35 +33,22 @@ export function MenuBuilderStep({ data, updateData, onNext, onBack }: MenuBuilde
   const [showItemForm, setShowItemForm] = useState(false);
 
   const uploadFile = async (file: File, fileType: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in to upload files');
-      return null;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
+    if (!data.contactEmail) {
+      toast.error('Please enter your email address first before uploading images');
       return null;
     }
 
     setUploading(fileType);
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${fileType}_${Date.now()}.${fileExt}`;
-
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('restaurant-images')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('restaurant-images')
-        .getPublicUrl(fileName);
-
-      toast.success('Image uploaded successfully');
-      return publicUrl;
+      const publicUrl = await uploadFileForOnboarding(file, fileType, data.contactEmail);
+      
+      if (publicUrl) {
+        toast.success('Image uploaded successfully');
+        return publicUrl;
+      }
+      
+      return null;
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Failed to upload file');

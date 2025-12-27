@@ -168,22 +168,28 @@ const STEPS = [
     number: 2,
   },
   {
+    id: "menu-method",
+    title: "Menu setup method",
+    component: MenuSetupMethodStep,
+    number: 3,
+  },
+  {
     id: "menu",
     title: "Menu",
     component: MenuBuilderStep,
-    number: 3,
+    number: 4,
   },
   {
     id: "pricing",
     title: "Pricing plan",
     component: PricingPlanStep,
-    number: 4,
+    number: 5,
   },
   {
     id: "payout",
     title: "Payout info",
     component: EnhancedBankingStep,
-    number: 5,
+    number: 6,
   },
 ];
 

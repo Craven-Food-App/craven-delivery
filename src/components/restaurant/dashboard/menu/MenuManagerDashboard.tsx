@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,22 +77,23 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (restaurantId) {
-      fetchData();
+  const fetchData = useCallback(async () => {
+    if (!restaurantId) {
+      console.warn("MenuManagerDashboard: No restaurantId provided");
+      setLoading(false);
+      return;
     }
-  }, [restaurantId]);
 
-  const fetchData = async () => {
     try {
       setLoading(true);
+      console.log("MenuManagerDashboard: Fetching menu data for restaurant:", restaurantId);
       
       const [itemsResponse, categoriesResponse] = await Promise.all([
         supabase
           .from("menu_items")
           .select(`
             *,
-            menu_categories (
+            menu_categories!left (
               name
             )
           `)
@@ -106,29 +107,65 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
           .order("display_order", { ascending: true }),
       ]);
 
-      if (itemsResponse.error) throw itemsResponse.error;
-      if (categoriesResponse.error) throw categoriesResponse.error;
+      if (itemsResponse.error) {
+        console.error("MenuManagerDashboard: Error fetching menu items:", itemsResponse.error);
+        throw itemsResponse.error;
+      }
+      if (categoriesResponse.error) {
+        console.error("MenuManagerDashboard: Error fetching categories:", categoriesResponse.error);
+        throw categoriesResponse.error;
+      }
 
-      const formattedItems = itemsResponse.data?.map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        price_cents: item.price_cents,
-        category: item.menu_categories?.name || "Uncategorized",
-        category_id: item.category_id,
-        is_available: item.is_available,
-        image_url: item.image_url,
-      })) || [];
+      console.log("MenuManagerDashboard: Fetched items:", itemsResponse.data?.length || 0);
+      console.log("MenuManagerDashboard: Raw items response:", itemsResponse.data);
+      console.log("MenuManagerDashboard: Fetched categories:", categoriesResponse.data?.length || 0);
 
+      const formattedItems = itemsResponse.data?.map((item) => {
+        // Handle category - it could be an object (from join) or array
+        let categoryName = "Uncategorized";
+        if (item.menu_categories) {
+          if (Array.isArray(item.menu_categories)) {
+            categoryName = item.menu_categories[0]?.name || "Uncategorized";
+          } else {
+            categoryName = item.menu_categories.name || "Uncategorized";
+          }
+        }
+        
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price_cents: item.price_cents,
+          category: categoryName,
+          category_id: item.category_id,
+          is_available: item.is_available,
+          image_url: item.image_url,
+        };
+      }) || [];
+
+      console.log("MenuManagerDashboard: Formatted items:", formattedItems);
       setMenuItems(formattedItems);
       setCategories(categoriesResponse.data || []);
+      
+      if (formattedItems.length === 0) {
+        console.warn("MenuManagerDashboard: No menu items found for restaurant:", restaurantId);
+        console.warn("MenuManagerDashboard: Check if items exist in database for this restaurant_id");
+      } else {
+        console.log("MenuManagerDashboard: Successfully loaded", formattedItems.length, "menu items");
+      }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("MenuManagerDashboard: Error fetching data:", error);
       toast.error("Failed to load menu data. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [restaurantId]);
+
+  useEffect(() => {
+    if (restaurantId) {
+      fetchData();
+    }
+  }, [restaurantId, fetchData]);
 
   const handleCopyItem = async (item: MenuItem) => {
     const copiedItem = {

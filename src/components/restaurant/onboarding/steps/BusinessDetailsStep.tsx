@@ -8,6 +8,7 @@ import { ArrowRight, ArrowLeft, Building2, Upload, FileCheck, Shield } from 'luc
 import { OnboardingData } from '../RestaurantOnboardingWizard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { uploadFileForOnboarding } from '../utils/authHelper';
 
 interface BusinessDetailsStepProps {
   data: OnboardingData;
@@ -26,35 +27,25 @@ export function BusinessDetailsStep({ data, updateData, onNext, onBack }: Busine
   const [uploading, setUploading] = useState<string | null>(null);
 
   const uploadFile = async (file: File, fileType: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error('You must be logged in to upload files');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
+    if (!data.contactEmail) {
+      toast.error('Please enter your email address first before uploading documents');
       return;
     }
 
     setUploading(fileType);
     
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${fileType}_${Date.now()}.${fileExt}`;
-
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('restaurant-documents')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('restaurant-documents')
-        .getPublicUrl(fileName);
-
-      updateData({ [fileType]: publicUrl });
-      toast.success('Document uploaded successfully');
+      const publicUrl = await uploadFileForOnboarding(
+        file, 
+        fileType, 
+        data.contactEmail,
+        'restaurant-documents'
+      );
+      
+      if (publicUrl) {
+        updateData({ [fileType]: publicUrl });
+        toast.success('Document uploaded successfully');
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error(error.message || 'Failed to upload file');
