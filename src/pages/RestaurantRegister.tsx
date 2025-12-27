@@ -6,11 +6,34 @@ import RestaurantOnboardingWizard from "@/components/restaurant/onboarding/Resta
 const RestaurantRegister = () => {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
+  const [signupData, setSignupData] = useState<any>(null);
 
   useEffect(() => {
     const checkExistingRestaurant = async () => {
       try {
+        // Check for signup data from landing page
+        const storedSignupData = localStorage.getItem('merchant_signup_data');
+        let hasSignupData = false;
+        
+        if (storedSignupData) {
+          try {
+            const parsed = JSON.parse(storedSignupData);
+            setSignupData(parsed);
+            hasSignupData = true;
+            localStorage.removeItem('merchant_signup_data'); // Clear after reading
+          } catch (e) {
+            console.error('Error parsing signup data:', e);
+          }
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
+        
+        // If not logged in and no signup data, redirect to landing page
+        if (!user && !hasSignupData) {
+          navigate('/merchant/signup');
+          return;
+        }
+        
         if (!user) {
           setChecking(false);
           return;
@@ -59,7 +82,7 @@ const RestaurantRegister = () => {
 
   return (
     <div className="w-full">
-      <RestaurantOnboardingWizard />
+      <RestaurantOnboardingWizard initialData={signupData} />
     </div>
   );
 };

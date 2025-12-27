@@ -193,10 +193,28 @@ const STEPS = [
   },
 ];
 
-const RestaurantOnboardingWizard = () => {
+export interface RestaurantOnboardingWizardProps {
+  initialData?: any;
+}
+
+const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {}) => {
+  const { initialData } = props || {};
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<OnboardingData>(INITIAL_DATA);
+  
+  // Merge initial data from landing page if provided
+  const initialOnboardingData: OnboardingData = initialData ? {
+    ...INITIAL_DATA,
+    restaurantName: initialData.storeName || '',
+    contactEmail: initialData.email || '',
+    contactPhone: initialData.phone || '',
+    streetAddress: initialData.storeAddress || '',
+    city: initialData.city || '',
+    state: initialData.state || '',
+    zipCode: initialData.zipCode || '',
+  } : INITIAL_DATA;
+  
+  const [data, setData] = useState<OnboardingData>(initialOnboardingData);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);

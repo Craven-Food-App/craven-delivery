@@ -11,7 +11,7 @@ interface MenuSetupMethodStepProps {
   onBack?: () => void;
 }
 
-const MenuSetupMethodStep = ({ data, updateData, onNext }: MenuSetupMethodStepProps) => {
+const MenuSetupMethodStep = ({ data, updateData, onNext, onBack }: MenuSetupMethodStepProps) => {
   const menuMethods = [
     {
       value: "manual",
