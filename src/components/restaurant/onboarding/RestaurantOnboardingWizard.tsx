@@ -220,8 +220,15 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [wizardCompleted, setWizardCompleted] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const handleCompleteOnboarding = async () => {
+    // Prevent multiple submissions
+    if (isCompleting) {
+      return;
+    }
+
+    setIsCompleting(true);
     try {
       // Validate required fields
       if (!data.contactEmail) {
@@ -245,46 +252,92 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
       // Save progress to localStorage
       localStorage.setItem(`restaurant-onboarding-${user.id}`, JSON.stringify(data));
 
-      // Create restaurant record
-      const { data: restaurant, error: restaurantError } = await supabase
+      // Check if user already has a restaurant
+      const { data: existingRestaurants } = await supabase
         .from('restaurants')
-        .insert({
-          owner_id: user.id,
-          name: data.restaurantName,
-          description: data.description || '',
-          cuisine_type: data.cuisineType || '',
-          phone: data.contactPhone || '',
-          email: data.contactEmail,
-          address: data.streetAddress || '',
-          city: data.city || '',
-          state: data.state || '',
-          zip_code: data.zipCode || '',
-          latitude: data.latitude || null,
-          longitude: data.longitude || null,
-          logo_url: data.logoUrl || null,
-          image_url: data.coverImageUrl || null,
-          min_delivery_time: data.minPrepTime || 20,
-          max_delivery_time: data.maxPrepTime || 40,
-          delivery_fee_cents: data.deliveryFeeCents || 299,
-          minimum_order_cents: data.minimumOrderCents || 1000,
-          delivery_radius_miles: data.deliveryRadius || 5,
-          is_active: false, // Pending admin approval
-          rating: 5.0,
-          onboarding_status: 'pending',
-          restaurant_type: data.restaurantType || '',
-          expected_monthly_orders: data.expectedMonthlyOrders || 0,
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('owner_id', user.id)
+        .limit(1);
 
-      if (restaurantError) {
-        console.error('Error creating restaurant:', restaurantError);
-        toast.error(`Failed to create restaurant: ${restaurantError.message}`);
-        throw restaurantError;
+      let restaurant;
+      
+      if (existingRestaurants && existingRestaurants.length > 0) {
+        // Restaurant already exists, use it
+        const { data: existingRestaurant } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('id', existingRestaurants[0].id)
+          .single();
+        
+        restaurant = existingRestaurant;
+        toast.info('Using existing restaurant');
+      } else {
+        // Create new restaurant record
+        const { data: newRestaurant, error: restaurantError } = await supabase
+          .from('restaurants')
+          .insert({
+            owner_id: user.id,
+            name: data.restaurantName,
+            description: data.description || '',
+            cuisine_type: data.cuisineType || '',
+            phone: data.contactPhone || '',
+            email: data.contactEmail,
+            address: data.streetAddress || '',
+            city: data.city || '',
+            state: data.state || '',
+            zip_code: data.zipCode || '',
+            latitude: data.latitude || null,
+            longitude: data.longitude || null,
+            logo_url: data.logoUrl || null,
+            image_url: data.coverImageUrl || null,
+            min_delivery_time: data.minPrepTime || 20,
+            max_delivery_time: data.maxPrepTime || 40,
+            delivery_fee_cents: data.deliveryFeeCents || 299,
+            minimum_order_cents: data.minimumOrderCents || 1000,
+            delivery_radius_miles: data.deliveryRadius || 5,
+            is_active: false, // Pending admin approval
+            rating: 5.0,
+            onboarding_status: 'pending',
+            restaurant_type: data.restaurantType || '',
+            expected_monthly_orders: data.expectedMonthlyOrders || 0,
+          })
+          .select()
+          .single();
+
+        if (restaurantError) {
+          // Handle duplicate key error (restaurant_onboarding_progress constraint)
+          if (restaurantError.code === '23505' && restaurantError.message?.includes('restaurant_onboarding_progress')) {
+            // Restaurant was created but onboarding progress already exists
+            // Try to fetch the restaurant that was just created
+            const { data: createdRestaurant } = await supabase
+              .from('restaurants')
+              .select('*')
+              .eq('owner_id', user.id)
+              .eq('email', data.contactEmail)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+            
+            if (createdRestaurant) {
+              restaurant = createdRestaurant;
+              toast.info('Restaurant created successfully');
+            } else {
+              console.error('Error creating restaurant:', restaurantError);
+              toast.error('Restaurant may have been created. Please check your dashboard.');
+              throw restaurantError;
+            }
+          } else {
+            console.error('Error creating restaurant:', restaurantError);
+            toast.error(`Failed to create restaurant: ${restaurantError.message}`);
+            throw restaurantError;
+          }
+        } else {
+          restaurant = newRestaurant;
+        }
       }
 
       if (!restaurant || !restaurant.id) {
-        throw new Error('Restaurant was created but no ID was returned');
+        throw new Error('Restaurant was not found or created');
       }
 
       // Verify restaurant exists before proceeding
@@ -348,10 +401,17 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
     } catch (error: any) {
       console.error("Error completing onboarding:", error);
       toast.error(error?.message || "Failed to complete setup. Please try again.");
+    } finally {
+      setIsCompleting(false);
     }
   };
 
   const handleNext = async () => {
+    // Prevent multiple submissions
+    if (isCompleting) {
+      return;
+    }
+
     // Mark current step as completed
     if (!completedSteps.includes(STEPS[currentStep].number)) {
       setCompletedSteps([...completedSteps, STEPS[currentStep].number]);
