@@ -220,7 +220,24 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [wizardCompleted, setWizardCompleted] = useState(false);
 
-  const handleNext = () => {
+  const handleCompleteOnboarding = async () => {
+    try {
+      // Save progress
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        localStorage.setItem(`restaurant-onboarding-${user.id}`, JSON.stringify(data));
+      }
+
+      // Navigate to merchant portal
+      toast.success("Setup completed! Redirecting to your dashboard...");
+      navigate("/merchant-portal");
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      toast.error("Failed to complete setup. Please try again.");
+    }
+  };
+
+  const handleNext = async () => {
     // Mark current step as completed
     if (!completedSteps.includes(STEPS[currentStep].number)) {
       setCompletedSteps([...completedSteps, STEPS[currentStep].number]);
@@ -234,6 +251,9 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
       setWizardCompleted(true);
       if (!data.contactPhone) {
         setShowMobileModal(true);
+      } else {
+        // Phone number exists, complete onboarding and navigate
+        await handleCompleteOnboarding();
       }
     }
   };
@@ -270,12 +290,12 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
     }
   };
 
-  const handleMobileSubmit = (phoneNumber: string, countryCode: string) => {
+  const handleMobileSubmit = async (phoneNumber: string, countryCode: string) => {
     updateData({ contactPhone: `${countryCode} ${phoneNumber}` });
     setShowMobileModal(false);
     toast.success("Mobile number added successfully");
-    // Navigate to merchant portal
-    navigate("/merchant-portal");
+    // Complete onboarding and navigate
+    await handleCompleteOnboarding();
   };
 
   const handleRemindLater = () => {
@@ -288,11 +308,11 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
     setShowMobileModal(true);
   };
 
-  const handleReminderClose = () => {
+  const handleReminderClose = async () => {
     setShowReminderModal(false);
     toast.info("We'll remind you tomorrow");
-    // Navigate to merchant portal even without phone
-    navigate("/merchant-portal");
+    // Complete onboarding and navigate even without phone
+    await handleCompleteOnboarding();
   };
 
   const CurrentStepComponent = STEPS[currentStep].component;
