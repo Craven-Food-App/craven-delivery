@@ -242,10 +242,24 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
       }
 
       // Ensure user is authenticated (creates account if needed)
-      const user = await ensureAuthenticatedForOnboarding(data.contactEmail);
+      let user = await ensureAuthenticatedForOnboarding(data.contactEmail);
+      
+      // If authentication failed because account exists, try to get current user
+      if (!user) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser && currentUser.email === data.contactEmail) {
+          user = currentUser;
+        } else {
+          toast.error("Please sign in to complete onboarding. An account with this email already exists.");
+          // Redirect to sign in page
+          navigate('/restaurant/auth');
+          return;
+        }
+      }
       
       if (!user) {
-        toast.error("Unable to authenticate. Please try again.");
+        toast.error("Unable to authenticate. Please sign in and try again.");
+        navigate('/restaurant/auth');
         return;
       }
 

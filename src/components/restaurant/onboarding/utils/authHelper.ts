@@ -46,22 +46,22 @@ export async function ensureAuthenticatedForOnboarding(
       return signUpData.user;
     }
 
-    // If account already exists, send magic link for sign in
-    if (signUpError && (signUpError.message.includes('already registered') || signUpError.message.includes('User already registered'))) {
-      // Send magic link for existing user
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/restaurant/register`,
-        },
-      });
-
-      if (magicLinkError) {
-        console.error('Error sending magic link:', magicLinkError);
-        toast.error('An account with this email already exists. Please sign in to continue.');
-      } else {
-        toast.info('An account with this email already exists. Please check your email for a sign-in link.');
-      }
+    // If account already exists, try to sign in silently or inform user
+    if (signUpError && (
+      signUpError.message.includes('already registered') || 
+      signUpError.message.includes('User already registered') ||
+      signUpError.status === 422
+    )) {
+      // Try to sign in with password reset (doesn't require OTP)
+      // Or just inform user they need to sign in
+      console.log('Account already exists for email:', email);
+      
+      // Don't send magic link to avoid rate limiting
+      // Instead, inform user they need to sign in
+      toast.info('An account with this email already exists. Please sign in to continue with onboarding.');
+      
+      // Try to get the user by email (if possible without auth)
+      // For now, return null and let the calling code handle it
       return null;
     }
 

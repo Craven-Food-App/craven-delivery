@@ -1,11 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getCorsHeaders } from "../_shared/cors.ts";
 
 interface CityPopulation {
   city: string;
   state: string;
   population: number;
 }
+
+// CORS helper function (inlined for standalone deployment)
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map(o => o.trim());
+  }
+  // Default allowed origins
+  return [
+    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
+    "https://cravenusa.com",
+    "https://www.cravenusa.com",
+    "https://feeder.cravenusa.com",
+    "https://merchant.cravenusa.com",
+    "https://board.cravenusa.com",
+    "https://hq.cravenusa.com",
+    "https://ceo.cravenusa.com",
+    "https://cfo.cravenusa.com",
+    "https://coo.cravenusa.com",
+    "https://cto.cravenusa.com",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+  ];
+};
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+};
 
 // Known city populations (can be expanded or moved to database)
 const CITY_POPULATIONS: Record<string, number> = {
@@ -26,7 +62,6 @@ const CITY_POPULATIONS: Record<string, number> = {
   "washington,dc": 670050,
   "new york,ny": 8336817,
   "los angeles,ca": 3898747,
-  "chicago,il": 2693976,
   "houston,tx": 2320268,
   "phoenix,az": 1608139,
   "philadelphia,pa": 1603797,
@@ -46,7 +81,6 @@ const CITY_POPULATIONS: Record<string, number> = {
   "boston,ma": 692600,
   "el paso,tx": 678815,
   "nashville,tn": 678851,
-  "detroit,mi": 639111,
   "oklahoma city,ok": 681054,
   "portland,or": 652503,
   "las vegas,nv": 641903,
@@ -69,7 +103,6 @@ const CITY_POPULATIONS: Record<string, number> = {
   "oakland,ca": 433031,
   "minneapolis,mn": 429954,
   "tulsa,ok": 413066,
-  "cleveland,oh": 385525,
   "wichita,ks": 397532,
   "arlington,tx": 394266,
   "new orleans,la": 383997,
@@ -145,9 +178,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message || "Internal server error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
