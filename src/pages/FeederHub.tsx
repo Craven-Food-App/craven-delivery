@@ -276,13 +276,13 @@ const FeederHub = () => {
 
     // Validate and sanitize inputs
     const emailValidation = validateEmail(emailAddress);
-    if (!emailValidation.valid) {
+    if (!emailValidation.isValid) {
       toast.error('Please enter a valid email address');
       return;
     }
 
     const phoneValidation = validatePhone(phoneNumber);
-    if (!phoneValidation.valid) {
+    if (!phoneValidation.isValid) {
       toast.error('Please enter a valid phone number');
       return;
     }
