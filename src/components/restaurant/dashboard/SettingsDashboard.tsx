@@ -6,6 +6,7 @@ import ManageUsersDashboard from "./settings/ManageUsersDashboard";
 import StoreCommunicationsDashboard from "./settings/StoreCommunicationsDashboard";
 import BankAccountDashboard from "./settings/BankAccountDashboard";
 import IntegrationsDashboard from "./settings/IntegrationsDashboard";
+import DeleteStoreDashboard from "./settings/DeleteStoreDashboard";
 
 interface SettingsDashboardProps {
   defaultTab?: string;
@@ -26,6 +27,7 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
               <TabsTrigger value="communications">Store Communications</TabsTrigger>
               <TabsTrigger value="bank">Bank Account</TabsTrigger>
               <TabsTrigger value="integrations">Integrations</TabsTrigger>
+              <TabsTrigger value="delete-store">Delete Store</TabsTrigger>
             </TabsList>
 
             <TabsContent value="account" className="mt-6">
@@ -54,6 +56,10 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
 
             <TabsContent value="integrations" className="mt-6">
               <IntegrationsDashboard />
+            </TabsContent>
+
+            <TabsContent value="delete-store" className="mt-6">
+              <DeleteStoreDashboard />
             </TabsContent>
           </Tabs>
         </div>

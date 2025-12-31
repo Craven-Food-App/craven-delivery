@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MenuManagerDashboard from "./menu/MenuManagerDashboard";
 import PricingDashboard from "./menu/PricingDashboard";
+import ModifierGroupsManager from "./menu/ModifierGroupsManager";
 
 interface MenuDashboardProps {
   restaurantId: string;
@@ -15,11 +16,16 @@ const MenuDashboard = ({ restaurantId }: MenuDashboardProps) => {
           <Tabs defaultValue="manager" className="w-full">
             <TabsList className="bg-muted">
               <TabsTrigger value="manager">Menu Manager</TabsTrigger>
+              <TabsTrigger value="modifiers">Modifier Groups</TabsTrigger>
               <TabsTrigger value="pricing">Pricing</TabsTrigger>
             </TabsList>
 
             <TabsContent value="manager" className="mt-6">
               <MenuManagerDashboard restaurantId={restaurantId} />
+            </TabsContent>
+
+            <TabsContent value="modifiers" className="mt-6">
+              <ModifierGroupsManager restaurantId={restaurantId} />
             </TabsContent>
 
             <TabsContent value="pricing" className="mt-6">

@@ -47,7 +47,6 @@ import CustomersDashboard from "@/components/restaurant/dashboard/CustomersDashb
 import MenuDashboard from "@/components/restaurant/dashboard/MenuDashboard"; // Renamed to avoid conflict with Mantine Menu
 import FinancialsDashboard from "@/components/restaurant/dashboard/FinancialsDashboard";
 import SettingsDashboard from "@/components/restaurant/dashboard/SettingsDashboard";
-import CommercePlatformDashboard from "@/components/restaurant/dashboard/CommercePlatformDashboard";
 import ReportsDashboard from "@/components/restaurant/dashboard/insights/ReportsDashboard";
 import { RestaurantCustomerOrderManagement } from "@/components/restaurant/RestaurantCustomerOrderManagement";
 import StoreAvailabilityDashboard from "@/components/restaurant/dashboard/StoreAvailabilityDashboard";
@@ -57,7 +56,7 @@ import MerchantWelcomeConfetti from "@/components/merchant/MerchantWelcomeConfet
 
 const RestaurantSetup = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'availability' | 'financials' | 'settings' | 'commerce' | 'request-delivery'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
   const [prepareStoreExpanded, setPrepareStoreExpanded] = useState(true);
   const [userName, setUserName] = useState("User");
   const [settingsTab, setSettingsTab] = useState<string>("account");
@@ -333,18 +332,6 @@ const RestaurantSetup = () => {
 
           <Stack gap="xs">
             <Text size="xs" c="dimmed" fw={500} px="xs">Channels</Text>
-            
-            <Button
-              variant={activeTab === 'commerce' ? 'light' : 'subtle'}
-              color={activeTab === 'commerce' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconBuildingStore size={20} />}
-              rightSection={<Badge size="xs" color="green">New</Badge>}
-              onClick={() => setActiveTab('commerce')}
-            >
-              Commerce Platform
-            </Button>
             
             <Button
               variant={activeTab === 'request-delivery' ? 'light' : 'subtle'}
@@ -787,7 +774,7 @@ const RestaurantSetup = () => {
         <div className="p-6 text-center">
           <p className="text-muted-foreground">Please select a restaurant to continue.</p>
         </div>
-      ) : activeTab === 'insights' ? <InsightsDashboard /> : activeTab === 'reports' ? <ReportsDashboard /> : activeTab === 'customers' ? <CustomersDashboard /> : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> : activeTab === 'availability' ? <StoreAvailabilityDashboard /> : activeTab === 'financials' ? <FinancialsDashboard /> : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> : activeTab === 'commerce' ? <CommercePlatformDashboard /> : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> : null}
+      ) : activeTab === 'insights' ? <InsightsDashboard /> : activeTab === 'reports' ? <ReportsDashboard /> : activeTab === 'customers' ? <CustomersDashboard /> : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> : activeTab === 'availability' ? <StoreAvailabilityDashboard /> : activeTab === 'financials' ? <FinancialsDashboard /> : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> : null}
         </Box>
       </ScrollArea>
 
