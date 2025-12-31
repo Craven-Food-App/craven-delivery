@@ -95,14 +95,14 @@ const FeederHub = () => {
     try {
       // Validate and sanitize inputs again (defense in depth)
       const emailValidation = validateEmail(emailAddress);
-      if (!emailValidation.valid) {
+      if (!emailValidation.isValid) {
         toast.error('Invalid email address');
         setIsSubmitting(false);
         return;
       }
 
       const phoneValidation = validatePhone(phoneNumber);
-      if (!phoneValidation.valid) {
+      if (!phoneValidation.isValid) {
         toast.error('Invalid phone number');
         setIsSubmitting(false);
         return;
