@@ -22,6 +22,8 @@ import {
   Select,
   NumberInput,
   Checkbox,
+  Box,
+  ScrollArea,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
@@ -709,70 +711,75 @@ const AppointmentList: React.FC = () => {
   };
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
-        <Group justify="space-between">
+    <Stack gap="xl">
+      {/* Enterprise Header */}
+      <Paper
+        p="xl"
+        radius="md"
+        style={{
+          background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+          color: 'white',
+        }}
+      >
+        <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={1} c="dark" mb="xs">
-              Executive Appointments
-            </Title>
-            <Text c="dimmed" size="lg">
-              Manage executive appointments and view generated documents
-            </Text>
+            <Group gap={16} mb={8}>
+              <Box
+                style={{
+                  backgroundColor: 'rgba(255, 106, 0, 0.2)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconUsers size={32} color="#ff6a00" stroke={2.5} />
+              </Box>
+              <div>
+                <Title order={2} c="white" mb={4} style={{ letterSpacing: '0.5px' }}>
+                  Executive Appointments
+                </Title>
+                <Text c="gray.3" size="sm" style={{ letterSpacing: '0.3px' }}>
+                  Comprehensive executive appointment management and document generation
+                </Text>
+              </div>
+            </Group>
+            <Group gap="md" mt="md">
+              <Badge size="lg" variant="light" color="blue">
+                {appointments.length} Total Appointments
+              </Badge>
+              <Badge size="lg" variant="light" color="green">
+                {appointments.filter(a => a.status === 'ACTIVE').length} Active
+              </Badge>
+              <Badge size="lg" variant="light" color="yellow">
+                {appointments.filter(a => a.status === 'AWAITING_SIGNATURES' || a.status === 'READY_FOR_SECRETARY_REVIEW').length} Pending
+              </Badge>
+            </Group>
           </div>
-          <Group>
+          <Group gap="xs">
             <Button
-              variant="subtle"
-              leftSection={<IconRefresh size={16} />}
+              variant="light"
+              color="orange"
+              leftSection={<IconRefresh size={18} />}
               onClick={fetchAppointments}
               loading={loading}
+              size="md"
             >
               Refresh
             </Button>
             <Button
-              variant="outline"
+              variant="filled"
               color="orange"
-              leftSection={<IconRefresh size={16} />}
-              onClick={handleFixNathanAppointments}
-              loading={fixingNathan}
-            >
-              Fix Nathan Curry Appointments
-            </Button>
-            <Button
-              variant="outline"
-              color="blue"
-              leftSection={<IconUsers size={16} />}
-              onClick={handleMergeNathanAppointments}
-              loading={mergingNathan}
-            >
-              Merge Nathan Curry Appointments
-            </Button>
-            <Button
-              variant="outline"
-              color="green"
-              leftSection={<IconChecklist size={16} />}
-              onClick={handleUpdateNathanStatus}
-              loading={updatingNathanStatus}
-            >
-              Update Nathan Status
-            </Button>
-            <Button
-              variant="outline"
-              color="violet"
-              leftSection={<IconMail size={16} />}
-              onClick={handleSendNathanEmail}
-              loading={sendingNathanEmail}
-            >
-              Send Email to Nathan
-            </Button>
-            <Button
-              leftSection={<IconPlus size={16} />}
+              leftSection={<IconPlus size={18} />}
               onClick={() => navigate('/company/governance-admin/appointments/new')}
+              size="md"
             >
               New Appointment
             </Button>
           </Group>
         </Group>
+      </Paper>
 
         {/* Instructions Section */}
         <Card padding="md" radius="md" withBorder style={{ backgroundColor: '#f8f9fa' }}>
@@ -935,7 +942,7 @@ const AppointmentList: React.FC = () => {
                 </List>
 
                 <Alert icon={<IconClock size={14} />} title="Document Generation Timeline" color="yellow" variant="light" mt="md">
-                  <Text size="xs">
+                  <Text size="xs" component="div">
                     Documents typically generate within 10-30 seconds. If the <Badge size="xs" color="green">Documents</Badge> column shows "No Documents" after 1 minute, click the <Badge size="xs" color="orange">refresh icon</Badge> next to the appointment to regenerate. If documents still don't appear, check that all required company settings are configured (company name, state of incorporation, registered agent, etc.).
                   </Text>
                 </Alert>
@@ -1181,81 +1188,26 @@ const AppointmentList: React.FC = () => {
           </Collapse>
         </Card>
 
-        <Group justify="space-between">
-          <div></div>
-          <Group>
-            <Button
-              variant="subtle"
-              leftSection={<IconRefresh size={16} />}
-              onClick={fetchAppointments}
-              loading={loading}
-            >
-              Refresh
-            </Button>
-            <Button
-              variant="outline"
-              color="orange"
-              leftSection={<IconRefresh size={16} />}
-              onClick={handleFixNathanAppointments}
-              loading={fixingNathan}
-            >
-              Fix Nathan Curry Appointments
-            </Button>
-            <Button
-              variant="outline"
-              color="blue"
-              leftSection={<IconUsers size={16} />}
-              onClick={handleMergeNathanAppointments}
-              loading={mergingNathan}
-            >
-              Merge Nathan Curry Appointments
-            </Button>
-            <Button
-              variant="outline"
-              color="green"
-              leftSection={<IconChecklist size={16} />}
-              onClick={handleUpdateNathanStatus}
-              loading={updatingNathanStatus}
-            >
-              Update Nathan Status
-            </Button>
-            <Button
-              variant="outline"
-              color="violet"
-              leftSection={<IconMail size={16} />}
-              onClick={handleSendNathanEmail}
-              loading={sendingNathanEmail}
-            >
-              Send Email to Nathan
-            </Button>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={() => navigate('/company/governance-admin/appointments/new')}
-            >
-              New Appointment
-            </Button>
-          </Group>
-        </Group>
-
         {appointments.length === 0 ? (
-          <Card>
+          <Card padding="xl" radius="md" withBorder>
             <Alert icon={<IconAlertCircle size={16} />} title="No Appointments" color="blue">
               No executive appointments found. Create a new appointment to get started.
             </Alert>
           </Card>
         ) : (
-          <Card>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Officer</Table.Th>
-                  <Table.Th>Title</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Effective Date</Table.Th>
-                  <Table.Th>Documents</Table.Th>
-                  <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
+          <Card padding={0} radius="md" withBorder style={{ overflow: 'hidden' }}>
+            <ScrollArea>
+              <Table highlightOnHover verticalSpacing="md" horizontalSpacing="lg">
+                <Table.Thead style={{ backgroundColor: '#f9fafb' }}>
+                  <Table.Tr>
+                    <Table.Th style={{ fontWeight: 600 }}>Officer</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Title</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Status</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Effective Date</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Documents</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
               <Table.Tbody>
                 {appointments.map((appointment) => {
                   const { generatedCount, totalCount } = getDocumentStatus(appointment);
@@ -1324,10 +1276,10 @@ const AppointmentList: React.FC = () => {
                   );
                 })}
               </Table.Tbody>
-            </Table>
+              </Table>
+            </ScrollArea>
           </Card>
         )}
-      </Stack>
 
       {/* View Appointment Modal */}
       <Modal
@@ -2040,7 +1992,7 @@ const AppointmentList: React.FC = () => {
           </form>
         )}
       </Modal>
-    </Container>
+    </Stack>
   );
 };
 

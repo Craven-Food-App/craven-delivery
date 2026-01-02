@@ -66,6 +66,7 @@ import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import DriveOnDemandMerchantTerms from "./pages/DriveOnDemandMerchantTerms";
 import CookiePolicy from "./pages/CookiePolicy";
 import CraveMore from "./pages/CraveMore";
 import CraveMoreAccount from "./pages/CraveMoreAccount";
@@ -116,9 +117,11 @@ import CompanyDashboard from "./portals/company/dashboard/CompanyDashboard";
 import GovernanceAdminDashboard from "./portals/company/governance-admin/GovernanceAdminDashboard";
 import AppointmentList from "./portals/company/governance-admin/AppointmentList";
 import NewAppointmentForm from "./portals/company/governance-admin/NewAppointmentForm";
+import ExecutiveAppointmentWizard from "./portals/company/governance-admin/wizards/ExecutiveAppointmentWizard";
 import ResolutionList from "./portals/company/governance-admin/ResolutionList";
 import OfficerLedger from "./portals/company/governance-admin/OfficerLedger";
 import GovernanceLogList from "./portals/company/governance-admin/GovernanceLogList";
+import ResolutionVotingDashboard from "./portals/company/governance-admin/ResolutionVotingDashboard";
 import BoardDashboard from "./portals/company/board/BoardDashboard";
 import BoardResolutionDetail from "./portals/company/board/BoardResolutionDetail";
 import ExecutiveDashboard from "./portals/company/executives/ExecutiveDashboard";
@@ -397,12 +400,13 @@ const App = () => {
                     <Route index element={<CompanyDashboard />} />
                     <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
                     <Route path="governance-admin/appointments" element={<AppointmentList />} />
-                    <Route path="governance-admin/appointments/new" element={<NewAppointmentForm />} />
+                    <Route path="governance-admin/appointments/new" element={<ExecutiveAppointmentWizard />} />
                     <Route path="governance-admin/resolutions" element={<ResolutionList />} />
                     <Route path="governance-admin/officers" element={<OfficerLedger />} />
                     <Route path="governance-admin/logs" element={<GovernanceLogList />} />
                     <Route path="board" element={<BoardDashboard />} />
                     <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
+                    <Route path="voting" element={<ResolutionVotingDashboard />} />
                     <Route path="executives" element={<ExecutiveDashboard />} />
                     <Route path="executives/my-appointment" element={<MyAppointment />} />
                     <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
@@ -669,7 +673,12 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
             <CartProvider>
             {/* iOS PWA Install Banner */}
             <InstallAppBanner />
@@ -747,6 +756,7 @@ const App = () => {
             <Route path="governance-admin/logs" element={<GovernanceLogList />} />
             <Route path="board" element={<BoardDashboard />} />
             <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
+            <Route path="voting" element={<ResolutionVotingDashboard />} />
             <Route path="executives" element={<ExecutiveDashboard />} />
             <Route path="executives/my-appointment" element={<MyAppointment />} />
             <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
@@ -847,6 +857,7 @@ const App = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/drive-on-demand-merchant-terms" element={<DriveOnDemandMerchantTerms />} />
           
           {/* PWA Install page */}
           <Route path="/download" element={<DownloadApp />} />

@@ -1496,7 +1496,7 @@ const MainHub: React.FC = () => {
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                 transition: 'background 0.3s ease',
               }}
-              bodyStyle={{ padding: 16 }}
+              styles={{ body: { padding: 16 } }}
             >
               <Row gutter={[16, 12]} align="middle">
                 {/* Left Section: Time & Date */}
@@ -1722,7 +1722,7 @@ const MainHub: React.FC = () => {
                       background: 'rgba(255,255,255,0.95)',
                       border: 'none',
                     }}
-                    bodyStyle={{ padding: 12 }}
+                    styles={{ body: { padding: 12 } }}
                   >
                     <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
@@ -1800,7 +1800,7 @@ const MainHub: React.FC = () => {
                 border: '1px solid #e5e7eb',
                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
               }}
-              bodyStyle={{ padding: 16 }}
+              styles={{ body: { padding: 16 } }}
             >
               <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
@@ -1838,7 +1838,7 @@ const MainHub: React.FC = () => {
                               transition: 'all 0.2s',
                               cursor: 'pointer',
                             }}
-                            bodyStyle={{ padding: 12 }}
+                            styles={{ body: { padding: 12 } }}
                             onClick={() => {
                               const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
                               navigate(`/hub/department/${deptName}`);
@@ -1933,7 +1933,7 @@ const MainHub: React.FC = () => {
                         message.warning('Access denied for this portal');
                       }
                     }}
-                    bodyStyle={{ padding: 12 }}
+                    styles={{ body: { padding: 12 } }}
                     onMouseEnter={(e) => {
                       if (allowed) {
                         e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.1)";
@@ -2052,7 +2052,7 @@ const MainHub: React.FC = () => {
           footer={null}
           closable={false}
           maskClosable={false}
-          maskStyle={{ backgroundColor: "rgba(0, 0, 0, 0.45)" }}
+          styles={{ mask: { backgroundColor: "rgba(0, 0, 0, 0.45)" } }}
           style={{ top: 120 }}
           width={480}
           zIndex={1000}

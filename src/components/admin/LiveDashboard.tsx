@@ -348,27 +348,27 @@ const LiveDashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'preparing': return 'bg-orange-100 text-orange-800';
-      case 'ready': return 'bg-purple-100 text-purple-800';
-      case 'picked_up': return 'bg-indigo-100 text-indigo-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'canceled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'confirmed': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'preparing': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'ready': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'picked_up': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'delivered': return 'bg-green-50 text-green-700 border-green-200';
+      case 'canceled': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
+            <Card key={i} className="border border-gray-200">
+              <CardContent className="p-3">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
-                  <div className="h-8 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div>
+                  <div className="h-6 bg-gray-200 rounded w-1/2"></div>
                 </div>
               </CardContent>
             </Card>
@@ -379,200 +379,231 @@ const LiveDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Package className="h-8 w-8 text-blue-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Today's Orders</p>
-              <p className="text-2xl font-bold">{stats.totalOrders}</p>
+    <div className="space-y-3">
+      {/* Compact Metric Cards - Enterprise Style */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Today's Orders</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">{stats.totalOrders}</p>
+              </div>
+              <Package className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Clock className="h-8 w-8 text-orange-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
-              <p className="text-2xl font-bold">{stats.pendingOrders}</p>
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Pending</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">{stats.pendingOrders}</p>
+              </div>
+              <Clock className="h-4 w-4 text-orange-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Users className="h-8 w-8 text-green-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Drivers</p>
-              <p className="text-2xl font-bold">{stats.activeDrivers}</p>
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Active Drivers</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">{stats.activeDrivers}</p>
+              </div>
+              <Users className="h-4 w-4 text-green-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <DollarSign className="h-8 w-8 text-purple-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Today's Revenue</p>
-              <p className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(2)}</p>
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Revenue</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">${(stats.totalRevenue / 100).toFixed(2)}</p>
+              </div>
+              <DollarSign className="h-4 w-4 text-purple-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Users className="h-8 w-8 text-indigo-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-              <p className="text-2xl font-bold">{stats.totalUsers}</p>
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Total Users</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">{stats.totalUsers}</p>
+              </div>
+              <Users className="h-4 w-4 text-indigo-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Package className="h-8 w-8 text-pink-600" />
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Restaurants</p>
-              <p className="text-2xl font-bold">{stats.totalRestaurants}</p>
+        <Card className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-0.5">Restaurants</p>
+                <p className="text-xl font-semibold text-gray-900 leading-tight">{stats.totalRestaurants}</p>
+              </div>
+              <Package className="h-4 w-4 text-pink-600 flex-shrink-0 ml-2" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Dashboard */}
-      <Tabs defaultValue="orders" className="w-full">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Active Orders
-            </TabsTrigger>
-            <TabsTrigger value="drivers" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              Drivers
-            </TabsTrigger>
-          </TabsList>
-          
-          <Button onClick={fetchData} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
+      {/* Main Dashboard - Compact Tabs */}
+      <Card className="border border-gray-200 shadow-sm">
+        <Tabs defaultValue="orders" className="w-full">
+          <div className="border-b border-gray-200 bg-[#fafbfc]">
+            <div className="flex items-center justify-between px-4 py-2">
+              <TabsList className="bg-transparent h-8 p-0">
+                <TabsTrigger 
+                  value="orders" 
+                  className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  <Package className="h-3 w-3 mr-1.5" />
+                  Active Orders
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="drivers" 
+                  className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  <Truck className="h-3 w-3 mr-1.5" />
+                  Drivers
+                </TabsTrigger>
+              </TabsList>
+              
+              <Button 
+                onClick={fetchData} 
+                variant="outline" 
+                size="sm"
+                className="h-7 px-2.5 text-xs border-gray-300"
+              >
+                <RefreshCw className="h-3 w-3 mr-1.5" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+          {/* Orders Tab - Dense Table Style */}
+          <TabsContent value="orders" className="m-0 p-0">
+            <div className="overflow-x-auto">
+              {orders.length === 0 ? (
+                <div className="text-center py-8 text-sm text-gray-500">No orders found</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Order ID</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Restaurant</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Amount</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Location</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Time</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-2 font-mono text-xs text-gray-900">#{order.id.slice(-8)}</td>
+                        <td className="px-3 py-2">
+                          <Badge className={`${getStatusColor(order.order_status)} text-[10px] px-1.5 py-0.5 font-medium border`}>
+                            {order.order_status.replace('_', ' ')}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-gray-700 text-xs">{order.restaurants?.name || 'N/A'}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900 text-xs">${(order.total_cents / 100).toFixed(2)}</td>
+                        <td className="px-3 py-2">
+                          {order.delivery_address ? (
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate max-w-[120px]">
+                                {typeof order.delivery_address === 'object' 
+                                  ? `${order.delivery_address.city || ''}, ${order.delivery_address.state || ''}` 
+                                  : String(order.delivery_address).slice(0, 30)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-600 font-mono">
+                          {new Date(order.created_at).toLocaleString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </td>
+                        <td className="px-3 py-2">
+                          {order.order_status === 'pending' && (
+                            <Button 
+                              onClick={() => handleCancelOrder(order.id)}
+                              variant="destructive" 
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </TabsContent>
 
-        {/* Orders Tab */}
-        <TabsContent value="orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {orders.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No orders found</p>
-                ) : (
-                  orders.map((order) => (
-                    <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">#{order.id.slice(-8)}</span>
-                            <Badge className={getStatusColor(order.order_status)}>
-                              {order.order_status.replace('_', ' ')}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Order from {order.restaurants.name}
-                          </p>
-                          <p className="text-sm font-medium">${(order.total_cents / 100).toFixed(2)}</p>
-                        </div>
-                        <div className="text-right text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleString()}
-                        </div>
-                      </div>
-
-                      {order.delivery_address && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4" />
-                          <span className="truncate">
-                            {typeof order.delivery_address === 'object' 
-                              ? `${order.delivery_address.street_address}, ${order.delivery_address.city}` 
-                              : order.delivery_address}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        {order.order_status === 'pending' && (
-                          <Button 
-                            onClick={() => handleCancelOrder(order.id)}
-                            variant="destructive" 
-                            size="sm"
-                          >
-                            Cancel Order
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Drivers Tab */}
-        <TabsContent value="drivers" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Driver Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {drivers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8 col-span-full">No drivers found</p>
-                ) : (
-                  drivers.map((driver) => (
-                    <Card key={driver.id}>
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Driver #{driver.id.slice(-8)}</span>
-                          <Badge className="bg-green-100 text-green-800">
-                            online
+          {/* Drivers Tab - Compact Grid */}
+          <TabsContent value="drivers" className="m-0 p-0">
+            <div className="p-3">
+              {drivers.length === 0 ? (
+                <div className="text-center py-8 text-sm text-gray-500">No drivers found</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {drivers.map((driver) => (
+                    <Card key={driver.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-xs text-gray-900 font-mono">#{driver.id.slice(-8)}</span>
+                          <Badge className="bg-green-50 text-green-700 border border-green-200 text-[10px] px-1.5 py-0.5">
+                            Online
                           </Badge>
                         </div>
 
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Rating:</span>
-                            <span className="flex items-center gap-1">⭐ {driver.rating.toFixed(1)}</span>
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Rating:</span>
+                            <span className="font-medium text-gray-900">⭐ {driver.rating.toFixed(1)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Deliveries:</span>
-                            <span>{driver.total_deliveries}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Deliveries:</span>
+                            <span className="font-medium text-gray-900">{driver.total_deliveries}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Level:</span>
-                            <span>{driver.driver_level}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Level:</span>
+                            <span className="font-medium text-gray-900 capitalize">{driver.driver_level}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 text-green-600 text-sm">
-                          <CheckCircle className="h-4 w-4" />
-                          Available for orders
+                        <div className="flex items-center gap-1 text-green-700 text-[10px] mt-2 pt-2 border-t border-gray-100">
+                          <CheckCircle className="h-3 w-3" />
+                          <span className="font-medium">Available</span>
                         </div>
                       </CardContent>
                     </Card>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };

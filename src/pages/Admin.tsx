@@ -19,8 +19,8 @@ const InvestorIntakeManager = lazy(() => import('@/components/admin/InvestorInta
 const ModuleLoader = () => (
   <div className="flex items-center justify-center min-h-[300px]">
     <div className="flex flex-col items-center gap-2">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">Loading module...</span>
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">Loading module...</span>
     </div>
   </div>
 );
@@ -64,51 +64,59 @@ const Admin: React.FC = () => {
 
   return (
     <AdminAccessGuard>
-      <div className="flex h-screen w-full bg-background">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-card flex flex-col">
-          <div className="p-4 border-b">
-            <div className="flex items-center gap-2 mb-4">
-              <img src={cravenLogo} alt="Crave'n" className="h-6" />
-              <span className="font-bold">Admin Portal</span>
+      <div className="flex h-screen w-full bg-[#f8f9fa]">
+        {/* Compact Enterprise Sidebar */}
+        <aside className="w-56 border-r border-gray-200 bg-white flex flex-col shadow-sm">
+          {/* Header */}
+          <div className="px-3 py-2.5 border-b border-gray-200 bg-[#fafbfc]">
+            <div className="flex items-center gap-2 mb-2">
+              <img src={cravenLogo} alt="Crave'n" className="h-5" />
+              <span className="font-semibold text-sm text-gray-900">Admin Portal</span>
             </div>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => window.location.href = '/hub'}
-              className="w-full justify-start"
+              className="w-full justify-start h-7 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-3 w-3 mr-1.5" />
               Back to Hub
             </Button>
           </div>
 
-          <ScrollArea className="flex-1 px-3">
-            <div className="space-y-4 py-4">
-              <div className="pt-2 pb-2">
-                <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          {/* Navigation */}
+          <ScrollArea className="flex-1">
+            <div className="py-2 px-2">
+              <div className="px-2 py-1.5 mb-1">
+                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                   Core Admin Functions
                 </h3>
               </div>
 
-              {navItems.map((item) => (
-                <Button
-                  key={item.id}
-                  variant={activeTab === item.id ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  <item.icon className="h-4 w-4 mr-2" />
-                  {item.label}
-                </Button>
-              ))}
+              <div className="space-y-0.5">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant={activeTab === item.id ? 'secondary' : 'ghost'}
+                    className={`w-full justify-start h-8 text-xs px-2.5 ${
+                      activeTab === item.id 
+                        ? 'bg-[#e8f0fe] text-[#1a73e8] font-medium hover:bg-[#e8f0fe]' 
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                    onClick={() => setActiveTab(item.id)}
+                  >
+                    <item.icon className="h-3.5 w-3.5 mr-2" />
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </ScrollArea>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto p-6">
+        {/* Main Content Area - Compact */}
+        <main className="flex-1 overflow-auto bg-[#f8f9fa]">
+          <div className="h-full p-4">
             <Suspense fallback={<ModuleLoader />}>
               {renderContent()}
             </Suspense>
