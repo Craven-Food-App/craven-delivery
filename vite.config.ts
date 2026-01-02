@@ -63,6 +63,9 @@ export default defineConfig(({ mode }) => {
       cors: true,
       hmr: {
         overlay: true,
+        clientPort: 8080,
+        protocol: 'ws',
+        host: 'localhost',
       },
       proxy: {
         '/api': {
