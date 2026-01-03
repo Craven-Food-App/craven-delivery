@@ -1233,7 +1233,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Hamburger Menu Button - Top Left - Only on Home Tab, but NOT during delivery */}
       {activeTab === 'home' && driverState !== 'on_delivery' && (
-        <div className="fixed left-4 z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 8px)' }}>
+        <div className="fixed left-4 z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}>
           <button
             onClick={() => setIsMenuOpen(true)}
             className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
@@ -1245,7 +1245,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Speed Limit & Current Speed - Under Hamburger Menu - Only on Home Tab */}
       {activeTab === 'home' && (
-        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 60px)' }}>
+        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 95px)' }}>
           <SpeedLimitSign 
             currentSpeed={location?.speed ? location.speed * 2.237 : 0} // Convert m/s to mph
             location={location ? {

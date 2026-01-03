@@ -316,6 +316,14 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
 
   return (
     <div className={`relative w-full h-full ${className}`}>
+      <style>{`
+        .mapboxgl-ctrl-top-right {
+          top: calc(env(safe-area-inset-top, 0px) + 30px) !important;
+        }
+        .mapboxgl-ctrl-bottom-right {
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 350px) !important;
+        }
+      `}</style>
       <div ref={mapContainer} className="w-full h-full" style={{ pointerEvents: 'auto' }} />
 
       {isMapReady && (
