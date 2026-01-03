@@ -16,6 +16,7 @@ import IndependentContractorAgreement from "./pages/IndependentContractorAgreeme
 import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
+import { TestMobileScreen } from "./components/mobile/TestMobileScreen";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";
 import AccessGuard from "./components/AccessGuard";
@@ -95,6 +96,11 @@ const ExecutiveAccountability = lazy(() => import("./pages/ExecutiveAccountabili
 const COOPortal = lazy(() => import("./pages/COOPortal"));
 const CTOPortal = lazy(() => import("./pages/CTOPortal"));
 const CXOPortal = lazy(() => import("./pages/CXOPortal"));
+const EngineeringWorkspace = lazy(() => import("./pages/EngineeringWorkspace"));
+const PlatformInfrastructureHub = lazy(() => import("./pages/PlatformInfrastructureHub"));
+const ProductCommandCenter = lazy(() => import("./pages/ProductCommandCenter"));
+const QualityReleasePortal = lazy(() => import("./pages/QualityReleasePortal"));
+const InternalITOperations = lazy(() => import("./pages/InternalITOperations"));
 // EnterpriseFinancePortal consolidated into CFO Portal - redirecting /finance to /cfo
 const DriverCompensationPortal = lazy(() => import("./pages/DriverCompensationPortal"));
 const MarketingPortal = lazy(() => import("./pages/MarketingPortal"));
@@ -317,26 +323,7 @@ const App = () => {
             <Sonner />
             <HashRouter>
               <Routes>
-                <Route path="/mobile" element={
-                  <AccessGuard fallback={
-                      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-blue-50 to-purple-50">
-                        <div className="text-center max-w-md">
-                          <div className="mb-6 text-6xl">
-                            🚗
-                          </div>
-                          <h1 className="text-2xl font-bold mb-4">Feeder Access Required</h1>
-                          <p className="text-muted-foreground text-center mb-6">
-                            You need an approved Feeder application to access the mobile portal.
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Please log in or apply to become a Feeder driver.
-                          </p>
-                        </div>
-                      </div>
-                  }>
-                    <MobileDriverDashboard />
-                  </AccessGuard>
-                } />
+                <Route path="/mobile" element={<MobileDriverDashboard />} />
                 <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
                 <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
                 <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
@@ -392,6 +379,11 @@ const App = () => {
                   <Route path="/coo" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading COO Portal" />}><COOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/cto/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CTO Portal" />}><CTOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/cxo/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CXO Portal" />}><CXOPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/engineering-workspace" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Engineering Workspace" />}><EngineeringWorkspace /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/platform-infrastructure" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Platform Hub" />}><PlatformInfrastructureHub /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/product-command" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Product Command" />}><ProductCommandCenter /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/quality-release" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Quality Portal" />}><QualityReleasePortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/internal-it" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading IT Operations" />}><InternalITOperations /></Suspense></BusinessAuthGuard>} />
                   <Route path="/finance" element={<Navigate to="/cfo" replace />} />
                   <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
                   <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
@@ -742,6 +734,11 @@ const App = () => {
           <Route path="/coo" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading COO Portal" />}><COOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/cto/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CTO Portal" />}><CTOPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/cxo/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CXO Portal" />}><CXOPortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/engineering-workspace" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Engineering Workspace" />}><EngineeringWorkspace /></Suspense></BusinessAuthGuard>} />
+          <Route path="/platform-infrastructure" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Platform Hub" />}><PlatformInfrastructureHub /></Suspense></BusinessAuthGuard>} />
+          <Route path="/product-command" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Product Command" />}><ProductCommandCenter /></Suspense></BusinessAuthGuard>} />
+          <Route path="/quality-release" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Quality Portal" />}><QualityReleasePortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/internal-it" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading IT Operations" />}><InternalITOperations /></Suspense></BusinessAuthGuard>} />
           <Route path="/finance" element={<Navigate to="/cfo" replace />} />
           <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
           <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
