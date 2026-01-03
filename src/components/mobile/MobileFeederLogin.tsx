@@ -261,9 +261,9 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-orange-50 to-white overflow-y-auto z-50">
+    <div className="fixed inset-0 w-full h-full bg-white overflow-y-auto z-50" style={{ paddingTop: 'calc(env(safe-area-inset-top, 100px) + 70px)' }}>
       {/* Header with back button */}
-      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 'env(safe-area-inset-top, 150px)' }}>
+      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 0, paddingTop: 'env(safe-area-inset-top, 80px)', minHeight: 'calc(env(safe-area-inset-top, 80px) + 80px)' }}>
         <div className="flex items-center justify-between p-4">
           <button
             onClick={onBack || (() => navigate(-1))}
@@ -278,7 +278,7 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       </div>
 
       {/* Login Form */}
-      <div className="px-6 py-8 max-w-md mx-auto" style={{ marginTop: '130px' }}>
+      <div className="px-6 py-8 max-w-md mx-auto" style={{ marginTop: '-10px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 48px))` }}>
         {/* Welcome Section */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
