@@ -40,67 +40,121 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
   if (!isLoading) return null;
 
   return (
-    <Box
-      pos="fixed"
-      top={0}
-      left={0}
-      right={0}
-      bottom={0}
-      style={{ zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom right, var(--mantine-color-orange-5), var(--mantine-color-orange-6))' }}
-    >
-      <Stack gap="xl">
-        <Box pos="relative">
-          {!imageError ? (
-            <Image
-              src={cravenLogo}
-              alt="Crave'n"
-              w={128}
-              h={128}
-              style={{ animation: 'spin 2s ease-in-out infinite' }}
-              onError={() => {
-                console.error('LoadingScreen: Failed to load logo image');
-                setImageError(true);
-              }}
-              onLoad={() => console.log('LoadingScreen: Logo loaded successfully')}
+    <>
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+      <Box
+        pos="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        style={{ zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: 'linear-gradient(to bottom right, var(--mantine-color-orange-5), var(--mantine-color-orange-6))' }}
+      >
+      {/* Logo container - fixed dimensions, doesn't shift */}
+      <Box 
+        pos="relative" 
+        w={128} 
+        h={128}
+        style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          marginBottom: 48
+        }}
+      >
+        {!imageError ? (
+          <Image
+            src={cravenLogo}
+            alt="Crave'n"
+            w={128}
+            h={128}
+            style={{ 
+              animation: 'spin 2s ease-in-out infinite',
+              transformOrigin: 'center center',
+              display: 'block'
+            }}
+            onError={() => {
+              console.error('LoadingScreen: Failed to load logo image');
+              setImageError(true);
+            }}
+            onLoad={() => console.log('LoadingScreen: Logo loaded successfully')}
+          />
+        ) : (
+          <Loader
+            size="xl"
+            type="bars"
+            color="white"
+            style={{ opacity: 0.3 }}
+          />
+        )}
+        {/* Dots below logo - fixed position */}
+        <Box 
+          pos="absolute" 
+          bottom={-32} 
+          left="50%" 
+          style={{ transform: 'translateX(-50%)' }}
+        >
+          <Group gap={4}>
+            <Box
+              w={8}
+              h={8}
+              bg="white"
+              style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0s' }}
             />
-          ) : (
-            <Loader
-              size="xl"
-              type="bars"
-              color="white"
-              style={{ opacity: 0.3 }}
+            <Box
+              w={8}
+              h={8}
+              bg="white"
+              style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.2s' }}
             />
-          )}
-          <Box pos="absolute" bottom={-32} left="50%" style={{ transform: 'translateX(-50%)' }}>
-            <Group gap={4}>
-              <Box
-                w={8}
-                h={8}
-                bg="white"
-                style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0s' }}
-              />
-              <Box
-                w={8}
-                h={8}
-                bg="white"
-                style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.2s' }}
-              />
-              <Box
-                w={8}
-                h={8}
-                bg="white"
-                style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.4s' }}
-              />
-            </Group>
-          </Box>
+            <Box
+              w={8}
+              h={8}
+              bg="white"
+              style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.4s' }}
+            />
+          </Group>
         </Box>
-        
-        <Stack gap="xs" style={{ textAlign: 'center', color: 'white' }}>
-          <Text size="2xl" fw={700}>CRAVE'N</Text>
-          <Text size="lg" opacity={0.9}>{loadingText}</Text>
-        </Stack>
+      </Box>
+      
+      {/* Text container - fixed height to prevent shifting */}
+      <Stack 
+        gap="xs" 
+        style={{ 
+          textAlign: 'center', 
+          color: 'white',
+          minHeight: 80,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Text size="2xl" fw={700} style={{ lineHeight: 1.2 }}>CRAVE'N</Text>
+        <Text 
+          size="lg" 
+          opacity={0.9}
+          style={{ 
+            minHeight: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {loadingText}
+        </Text>
       </Stack>
     </Box>
+    </>
   );
 };
 

@@ -293,6 +293,7 @@ export const LiveDriverTesting = () => {
 
     setIsSendingTest(true);
     try {
+      // Step 1: Create order (must complete first)
       const { data: result, error: fnError } = await supabase.functions.invoke('create-test-order', {
         body: { driverId: selectedDriver }
       });
@@ -302,50 +303,66 @@ export const LiveDriverTesting = () => {
 
       const { notificationPayload, restaurant } = result as any;
 
-      // Send notification via driver-specific channel
+      // Step 2: Set up channels in parallel
       const driverChannel = supabase.channel(`driver_${selectedDriver}`);
-      await driverChannel.subscribe();
-      await driverChannel.send({
-        type: 'broadcast',
-        event: 'order_assignment',
-        payload: notificationPayload,
-      });
-
-      // Also send via user notifications channel
       const userChannel = supabase.channel(`user_notifications_${selectedDriver}`);
-      await userChannel.subscribe();
-      await userChannel.send({
-        type: 'broadcast',
-        event: 'push_notification',
-        payload: {
+      
+      // Subscribe to both channels in parallel
+      await Promise.all([
+        driverChannel.subscribe(),
+        userChannel.subscribe()
+      ]);
+
+      // Step 3: Send broadcasts in parallel
+      const broadcastPromises = [
+        driverChannel.send({
+          type: 'broadcast',
+          event: 'order_assignment',
+          payload: notificationPayload,
+        }),
+        userChannel.send({
+          type: 'broadcast',
+          event: 'push_notification',
+          payload: {
+            title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
+            message: `Test pickup - this is a test order`,
+            data: notificationPayload
+          }
+        })
+      ];
+
+      // Step 4: Run notifications in parallel (don't block on push notification)
+      const notificationPromises = [
+        // Insert notification record
+        supabase.from('order_notifications').insert({
+          user_id: selectedDriver,
+          order_id: (notificationPayload as any).order_id,
           title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
           message: `Test pickup - this is a test order`,
-          data: notificationPayload
-        }
+          notification_type: 'order_assignment'
+        }),
+        // Send push notification (fire and forget - don't block)
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId: selectedDriver,
+            title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
+            message: 'Test pickup - this is a test order',
+            data: notificationPayload
+          }
+        }).catch(err => {
+          console.warn('send-push-notification failed:', (err as any)?.message || err);
+        })
+      ];
+
+      // Wait for broadcasts to complete
+      await Promise.all(broadcastPromises);
+      
+      // Start notifications but don't wait (non-blocking)
+      Promise.all(notificationPromises).catch(err => {
+        console.warn('Some notifications failed:', err);
       });
 
-      // Create notification record
-      await supabase.from('order_notifications').insert({
-        user_id: selectedDriver,
-        order_id: (notificationPayload as any).order_id,
-        title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
-        message: `Test pickup - this is a test order`,
-        notification_type: 'order_assignment'
-      });
-
-      // Send push via edge function as reliable delivery channel
-      const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          userId: selectedDriver,
-          title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
-          message: 'Test pickup - this is a test order',
-          data: notificationPayload
-        }
-      });
-      if (pushError) {
-        console.warn('send-push-notification failed:', (pushError as any)?.message || pushError);
-      }
-
+      // Show success immediately after broadcasts complete
       toast({
         title: 'Test Order Sent!',
         description: 'Test order has been assigned to the selected driver.',

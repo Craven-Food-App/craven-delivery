@@ -69,33 +69,17 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
 
   return (
     <Box pos="fixed" top={0} left={0} right={0} bottom={0} w="100%" h="100%" bg="white">
-      <Box
-        pos="absolute"
-        left={0}
-        right={0}
-        style={{ zIndex: 10, top: 'calc(env(safe-area-inset-top, 150px) + 8px)' }}
-      >
-        <Box px="md" style={{ textAlign: 'center' }}>
-          <Text size="xs" c="dimmed">
-            Wrong app if you're Crave'N food{' '}
-            <Anchor href="/" c="dark" td="underline" fw={500} style={{ color: 'black' }}>
-              Download app for Customers
-            </Anchor>
-          </Text>
-        </Box>
-      </Box>
-
       <Image
         src={mobileDriverWelcomeImage}
         alt="CRAVE'N Delivery Rider"
         pos="absolute"
-        top={0}
+        top={-20}
         left={0}
         right={0}
         bottom={0}
         w="100%"
         h="100%"
-        style={{ objectFit: 'cover' }}
+        style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
         onLoad={() => console.log('Mobile driver welcome image loaded successfully')}
         onError={(e) => {
           console.error('Mobile driver welcome image failed to load:', e);
@@ -121,9 +105,11 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
           right={0}
           align="center"
           justify="flex-end"
-          pb="xl"
           px="xl"
-          style={{ zIndex: 20 }}
+          style={{ 
+            zIndex: 20,
+            paddingBottom: `calc(50px + env(safe-area-inset-bottom, 48px))`
+          }}
         >
           <Button
             size="lg"
@@ -132,10 +118,18 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
             h={56}
             style={{ fontSize: '20px', fontWeight: 700, background: 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-orange-6))', color: 'white', boxShadow: '0 20px 25px rgba(0,0,0,0.3)', borderRadius: '16px' }}
             onClick={handleFeedNow}
-            mb="md"
+            mb={8}
           >
             FEED NOW
           </Button>
+          <Box px="md" style={{ textAlign: 'center', width: '100%', maxWidth: 400, marginTop: 0 }}>
+            <Text size="xs" c="dimmed" style={{ lineHeight: 1.3, fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Wrong app if you're Crave'n food?{' '}
+              <Anchor href="/" c="dark" td="underline" fw={500} style={{ color: 'black', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                Download Ordering App
+              </Anchor>
+            </Text>
+          </Box>
         </Stack>
       )}
     </Box>
