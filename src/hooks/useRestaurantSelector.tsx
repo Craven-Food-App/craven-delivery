@@ -14,6 +14,7 @@ interface Restaurant {
   description: string | null;
   business_verified_at: string | null;
   merchant_welcome_shown: boolean;
+  restaurant_type: string | null;
 }
 
 export const useRestaurantSelector = () => {
@@ -35,7 +36,7 @@ export const useRestaurantSelector = () => {
 
         const { data, error } = await supabase
           .from('restaurants')
-          .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, description, business_verified_at, merchant_welcome_shown')
+          .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, description, business_verified_at, merchant_welcome_shown, restaurant_type')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false });
 

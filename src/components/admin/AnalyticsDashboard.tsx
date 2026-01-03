@@ -255,32 +255,30 @@ export const AnalyticsDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <BarChart3 className="h-8 w-8 animate-pulse text-primary" />
+      <div className="flex items-center justify-center py-8">
+        <BarChart3 className="h-6 w-6 animate-pulse text-gray-400" />
       </div>
     );
   }
 
   if (!analytics) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No analytics data available</p>
-      </div>
+      <div className="text-center py-8 text-sm text-gray-500">No analytics data available</div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Analytics Dashboard</h2>
-          <p className="text-muted-foreground">Comprehensive platform analytics and insights</p>
+          <h2 className="text-lg font-semibold text-gray-900">Analytics Dashboard</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Platform analytics and insights</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[150px]">
-              <Calendar className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-[130px] h-7 text-xs border-gray-300">
+              <Calendar className="h-3 w-3 mr-1.5" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -291,7 +289,7 @@ export const AnalyticsDashboard: React.FC = () => {
             </SelectContent>
           </Select>
           <Select value={exportType} onValueChange={(v) => setExportType(v as 'csv' | 'pdf')}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[100px] h-7 text-xs border-gray-300">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -299,229 +297,222 @@ export const AnalyticsDashboard: React.FC = () => {
               <SelectItem value="pdf">PDF</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button onClick={handleExport} size="sm" className="h-7 px-2.5 text-xs">
+            <Download className="h-3 w-3 mr-1.5" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-green-500" />
-                Revenue
-              </span>
+      {/* Compact Key Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Revenue</p>
               {analytics.revenue.change > 0 ? (
-                <ArrowUp className="h-4 w-4 text-green-500" />
+                <ArrowUp className="h-3 w-3 text-green-600" />
               ) : (
-                <ArrowDown className="h-4 w-4 text-red-500" />
+                <ArrowDown className="h-3 w-3 text-red-600" />
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${(analytics.revenue.total / 100).toFixed(2)}
             </div>
-            <p className={`text-xs ${analytics.revenue.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analytics.revenue.change > 0 ? '+' : ''}{analytics.revenue.change.toFixed(1)}% from previous period
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              ${(analytics.revenue.total / 100).toFixed(2)}
+            </p>
+            <p className={`text-[10px] mt-0.5 ${analytics.revenue.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analytics.revenue.change > 0 ? '+' : ''}{analytics.revenue.change.toFixed(1)}%
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4 text-blue-500" />
-              Orders
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analytics.orders.total}</div>
-            <p className={`text-xs ${analytics.orders.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {analytics.orders.change > 0 ? '+' : ''}{analytics.orders.change.toFixed(1)}% change
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Orders</p>
+              <ShoppingBag className="h-3 w-3 text-blue-600" />
+            </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{analytics.orders.total}</p>
+            <p className={`text-[10px] mt-0.5 ${analytics.orders.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {analytics.orders.change > 0 ? '+' : ''}{analytics.orders.change.toFixed(1)}%
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4 text-purple-500" />
-              Customers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analytics.customers.total}</div>
-            <p className="text-xs text-muted-foreground">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Customers</p>
+              <Users className="h-3 w-3 text-purple-600" />
+            </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{analytics.customers.total}</p>
+            <p className="text-[10px] mt-0.5 text-gray-500">
               {analytics.customers.new} new, {analytics.customers.returning} returning
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Car className="h-4 w-4 text-orange-500" />
-              Active Drivers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analytics.drivers.active}</div>
-            <p className="text-xs text-muted-foreground">
-              of {analytics.drivers.total} total drivers
-            </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Active Drivers</p>
+              <Car className="h-3 w-3 text-orange-600" />
+            </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{analytics.drivers.active}</p>
+            <p className="text-[10px] mt-0.5 text-gray-500">of {analytics.drivers.total} total</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detailed Analytics */}
-      <Tabs defaultValue="revenue" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="orders">Orders</TabsTrigger>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="revenue" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Daily Revenue</CardTitle>
-              <CardDescription>Revenue breakdown by day</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analytics.revenue.daily.map((day) => (
-                  <div key={day.date} className="flex items-center justify-between p-3 border rounded-md">
-                    <span className="text-sm font-medium">{format(new Date(day.date), 'MMM dd, yyyy')}</span>
-                    <span className="text-sm font-bold">${(day.amount / 100).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Orders by Status</CardTitle>
-              <CardDescription>Distribution of order statuses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analytics.orders.byStatus.map((item) => (
-                  <div key={item.status} className="flex items-center justify-between p-3 border rounded-md">
-                    <span className="text-sm font-medium capitalize">{item.status.replace('_', ' ')}</span>
-                    <span className="text-sm font-bold">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="customers" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Total Customers</span>
-                    <span className="text-2xl font-bold">{analytics.customers.total}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">New Customers</span>
-                    <span className="text-2xl font-bold text-green-600">{analytics.customers.new}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Returning Customers</span>
-                    <span className="text-2xl font-bold text-blue-600">{analytics.customers.returning}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Driver Metrics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Active Drivers</span>
-                    <span className="text-2xl font-bold">{analytics.drivers.active}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Total Drivers</span>
-                    <span className="text-2xl font-bold">{analytics.drivers.total}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Average Rating</span>
-                    <span className="text-2xl font-bold text-yellow-600">
-                      {analytics.drivers.avgRating.toFixed(1)} ⭐
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Detailed Analytics - Compact Tabs */}
+      <Card className="border border-gray-200 shadow-sm">
+        <Tabs defaultValue="revenue" className="w-full">
+          <div className="border-b border-gray-200 bg-[#fafbfc]">
+            <div className="px-4 py-2">
+              <TabsList className="bg-transparent h-8 p-0">
+                <TabsTrigger value="revenue" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Revenue
+                </TabsTrigger>
+                <TabsTrigger value="orders" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Orders
+                </TabsTrigger>
+                <TabsTrigger value="customers" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Customers
+                </TabsTrigger>
+                <TabsTrigger value="restaurants" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  Restaurants
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </div>
-        </TabsContent>
 
-        <TabsContent value="restaurants" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Performing Restaurants</CardTitle>
-              <CardDescription>Restaurants with highest revenue</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {analytics.restaurants.topPerformers.map((restaurant, index) => (
-                  <div key={restaurant.name} className="flex items-center justify-between p-3 border rounded-md">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
-                      <div>
-                        <p className="font-medium">{restaurant.name}</p>
-                        <p className="text-xs text-muted-foreground">{restaurant.orders} orders</p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold">${(restaurant.revenue / 100).toFixed(2)}</span>
-                  </div>
-                ))}
+          <TabsContent value="revenue" className="m-0 p-0">
+            <div className="p-3">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Date</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {analytics.revenue.daily.map((day) => (
+                    <tr key={day.date} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-xs text-gray-700">{format(new Date(day.date), 'MMM dd, yyyy')}</td>
+                      <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">${(day.amount / 100).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="orders" className="m-0 p-0">
+            <div className="p-3">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                    <th className="px-3 py-2 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Count</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {analytics.orders.byStatus.map((item) => (
+                    <tr key={item.status} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-xs text-gray-700 capitalize">{item.status.replace('_', ' ')}</td>
+                      <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">{item.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="customers" className="m-0 p-0">
+            <div className="p-3">
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Total</p>
+                    <p className="text-lg font-semibold text-gray-900">{analytics.customers.total}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">New</p>
+                    <p className="text-lg font-semibold text-green-600">{analytics.customers.new}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Returning</p>
+                    <p className="text-lg font-semibold text-blue-600">{analytics.customers.returning}</p>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+              <div className="grid grid-cols-2 gap-2">
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Active Drivers</p>
+                    <p className="text-lg font-semibold text-gray-900">{analytics.drivers.active}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">of {analytics.drivers.total} total</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Avg Rating</p>
+                    <p className="text-lg font-semibold text-yellow-600">{analytics.drivers.avgRating.toFixed(1)} ⭐</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Restaurants</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analytics.restaurants.active}</div>
-                <p className="text-sm text-muted-foreground">Currently accepting orders</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Total Restaurants</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analytics.restaurants.total}</div>
-                <p className="text-sm text-muted-foreground">Registered on platform</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="restaurants" className="m-0 p-0">
+            <div className="p-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Active</p>
+                    <p className="text-lg font-semibold text-gray-900">{analytics.restaurants.active}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border border-gray-200">
+                  <CardContent className="p-3">
+                    <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Total</p>
+                    <p className="text-lg font-semibold text-gray-900">{analytics.restaurants.total}</p>
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-700 mb-2">Top Performers</p>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Restaurant</th>
+                      <th className="px-3 py-1.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Orders</th>
+                      <th className="px-3 py-1.5 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {analytics.restaurants.topPerformers.map((restaurant, index) => (
+                      <tr key={restaurant.name} className="hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-400">#{index + 1}</span>
+                            <span className="text-xs text-gray-900">{restaurant.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-right text-xs text-gray-700">{restaurant.orders}</td>
+                        <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">${(restaurant.revenue / 100).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };

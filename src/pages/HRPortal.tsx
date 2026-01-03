@@ -20,6 +20,7 @@ import {
   TrophyOutlined,
   MailOutlined,
   UserAddOutlined,
+  UserDeleteOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +40,7 @@ import InternCandidateManagement from '@/components/hr/InternCandidateManagement
 import { useExecAuth } from '@/hooks/useExecAuth';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
+import { ExitWorkflowManager } from '@/components/hr/ExitWorkflowManager';
 
 const { Header, Content, Sider } = Layout;
 const { TabPane } = Tabs;
@@ -388,6 +390,22 @@ const HRPortal: React.FC = () => {
                 {!sidebarCollapsed && 'Personnel Management'}
               </Button>
               <Button
+                type={activeTab === 'exit_workflows' ? 'primary' : 'text'}
+                icon={<UserDeleteOutlined />}
+                block
+                style={{
+                  textAlign: 'left',
+                  height: '40px',
+                  marginBottom: '4px',
+                  background: activeTab === 'exit_workflows' ? '#ff7a45' : 'transparent',
+                  color: activeTab === 'exit_workflows' ? '#fff' : '#666',
+                  border: 'none',
+                }}
+                onClick={() => setActiveTab('exit_workflows')}
+              >
+                {!sidebarCollapsed && 'Exit Workflows'}
+              </Button>
+              <Button
                 type={activeTab === 'intern_candidates' ? 'primary' : 'text'}
                 icon={<UserAddOutlined />}
                 block
@@ -616,6 +634,18 @@ const HRPortal: React.FC = () => {
             key="personnel"
           >
             <PersonnelManagementView />
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <UserDeleteOutlined />
+                Exit Workflows
+              </span>
+            }
+            key="exit_workflows"
+          >
+            <ExitWorkflowManager />
           </TabPane>
 
           <TabPane

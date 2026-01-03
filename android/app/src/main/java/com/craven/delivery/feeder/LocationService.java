@@ -5,7 +5,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Binder;
@@ -78,18 +77,23 @@ public class LocationService extends Service {
     }
     
     private void startLocationUpdates() {
-        LocationRequest locationRequest = LocationRequest.create()
-            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
-            .setInterval(10000) // 10 seconds
-            .setFastestInterval(5000) // 5 seconds
-            .setMaxWaitTime(15000);
+        // Using the new LocationRequest.Builder API (non-deprecated)
+        LocationRequest locationRequest = new LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY, 
+            10000  // 10 seconds interval
+        )
+            .setMinUpdateIntervalMillis(5000)  // 5 seconds fastest interval
+            .setMaxUpdateDelayMillis(15000)    // 15 seconds max wait time
+            .build();
         
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult != null) {
                     Location location = locationResult.getLastLocation();
-                    sendLocationToWeb(location);
+                    if (location != null) {
+                        sendLocationToWeb(location);
+                    }
                 }
             }
         };
@@ -131,4 +135,3 @@ public class LocationService extends Service {
         }
     }
 }
-

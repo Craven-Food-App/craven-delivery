@@ -4,21 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Building2, TrendingUp, DollarSign, Users, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import CoBrandedCampaignModal from './CoBrandedCampaignModal';
-import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 
 interface Merchant {
   id: string;
@@ -47,7 +38,6 @@ const MerchantPartnerMarketing: React.FC = () => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [campaigns, setCampaigns] = useState<CoBrandedCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMerchant, setSelectedMerchant] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [preselectedMerchantId, setPreselectedMerchantId] = useState<string | undefined>();
 
@@ -63,7 +53,7 @@ const MerchantPartnerMarketing: React.FC = () => {
 
   const handleCampaignCreated = () => {
     fetchCampaigns();
-    fetchMerchants(); // Refresh merchant stats
+    fetchMerchants();
   };
 
   const fetchMerchants = async () => {
@@ -76,7 +66,6 @@ const MerchantPartnerMarketing: React.FC = () => {
 
       if (error) throw error;
 
-      // Get order stats for each merchant
       const merchantsWithStats = await Promise.all(
         (data || []).map(async (restaurant) => {
           const { count: ordersCount } = await supabase
@@ -113,7 +102,6 @@ const MerchantPartnerMarketing: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      // Fetch co-branded campaigns from marketing_campaigns
       const { data: campaignsData, error } = await supabase
         .from('marketing_campaigns')
         .select('*')
@@ -122,7 +110,6 @@ const MerchantPartnerMarketing: React.FC = () => {
 
       if (error) throw error;
 
-      // Transform to CoBrandedCampaign format
       const transformedCampaigns: CoBrandedCampaign[] = (campaignsData || []).map((campaign) => {
         const metadata = campaign.metadata || {};
         return {
@@ -135,7 +122,7 @@ const MerchantPartnerMarketing: React.FC = () => {
                  campaign.status === 'completed' ? 'completed' : 'active',
           startDate: campaign.start_date,
           endDate: campaign.end_date || '',
-          orders: 0, // TODO: Calculate from orders
+          orders: 0,
           revenue: Number(campaign.spend_to_date || 0),
         };
       });
@@ -148,134 +135,165 @@ const MerchantPartnerMarketing: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Merchant & Partner Marketing</h2>
-        <p className="text-gray-600 mt-1">Create co-branded campaigns and support partner restaurants</p>
+    <div className="space-y-3">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Merchant & Partner Marketing</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create co-branded campaigns and support partner restaurants</p>
+        </div>
+        <Button 
+          size="sm"
+          className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600"
+          onClick={() => handleCreateCampaign()}
+        >
+          Create Campaign
+        </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Merchants</p>
-              <p className="text-2xl font-bold">{merchants.length}</p>
+      {/* Compact Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Active Merchants</p>
+              <Building2 className="h-3 w-3 text-orange-600" />
             </div>
-            <Building2 className="h-8 w-8 text-orange-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{merchants.length}</p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold">
-                {merchants.reduce((sum, m) => sum + m.ordersCount, 0).toLocaleString()}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Orders</p>
+              <TrendingUp className="h-3 w-3 text-blue-600" />
             </div>
-            <TrendingUp className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {merchants.reduce((sum, m) => sum + m.ordersCount, 0).toLocaleString()}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Partner Revenue</p>
-              <p className="text-2xl font-bold">
-                ${(merchants.reduce((sum, m) => sum + m.revenue, 0)).toLocaleString()}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Partner Revenue</p>
+              <DollarSign className="h-3 w-3 text-green-600" />
             </div>
-            <DollarSign className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              ${(merchants.reduce((sum, m) => sum + m.revenue, 0)).toLocaleString()}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Campaigns</p>
-              <p className="text-2xl font-bold">{campaigns.filter(c => c.status === 'active').length}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Active Campaigns</p>
+              <Users className="h-3 w-3 text-purple-600" />
             </div>
-            <Users className="h-8 w-8 text-purple-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{campaigns.filter(c => c.status === 'active').length}</p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Merchant Directory */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Partner Directory</h3>
-          <Button 
-            className="bg-orange-600 hover:bg-orange-700"
-            onClick={() => handleCreateCampaign()}
-          >
-            Create Co-Branded Campaign
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {merchants.slice(0, 12).map((merchant) => (
-            <Card key={merchant.id} className="p-4 hover:shadow-lg transition-shadow">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                  {merchant.logoUrl ? (
-                    <img src={merchant.logoUrl} alt={merchant.name} className="w-full h-full rounded-lg object-cover" />
-                  ) : (
-                    <Building2 className="h-6 w-6 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 truncate">{merchant.name}</h4>
-                  <p className="text-sm text-gray-600">{merchant.city}</p>
-                  <p className="text-xs text-gray-500 mt-1">{merchant.cuisineType}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
-                    <span>{merchant.ordersCount} orders</span>
-                    <span>${merchant.revenue.toFixed(0)}</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="mt-2 w-full" 
-                    onClick={() => handleCreateCampaign(merchant.id)}
-                  >
-                    Create Campaign
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </Card>
-
-      {/* Co-Branded Campaigns */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Co-Branded Campaigns</h3>
-        {campaigns.length === 0 ? (
-          <div className="text-center py-8">
-            <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600">No co-branded campaigns yet</p>
-            <p className="text-sm text-gray-500 mt-2">Create campaigns featuring specific merchant partners</p>
+      {/* Merchant Directory - Compact Grid */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold">Partner Directory</CardTitle>
+            <Button 
+              size="sm"
+              className="h-6 px-2 text-[10px] bg-orange-500 hover:bg-orange-600"
+              onClick={() => handleCreateCampaign()}
+            >
+              Create Campaign
+            </Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {campaigns.map((campaign) => (
-              <div key={campaign.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div>
-                  <h4 className="font-semibold">{campaign.campaignName}</h4>
-                  <p className="text-sm text-gray-600">{campaign.merchantName}</p>
-                  <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                    <span>{campaign.orders} orders</span>
-                    <span>${campaign.revenue.toFixed(2)} revenue</span>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {merchants.slice(0, 12).map((merchant) => (
+              <Card key={merchant.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-2">
+                <div className="flex items-start gap-2">
+                  <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
+                    {merchant.logoUrl ? (
+                      <img src={merchant.logoUrl} alt={merchant.name} className="w-full h-full rounded-md object-cover" />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-xs text-gray-900 truncate">{merchant.name}</h4>
+                    <p className="text-[10px] text-gray-600">{merchant.city}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{merchant.cuisineType}</p>
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-600">
+                      <span>{merchant.ordersCount} orders</span>
+                      <span>${merchant.revenue.toFixed(0)}</span>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="mt-1.5 w-full h-6 px-1.5 text-[10px]" 
+                      onClick={() => handleCreateCampaign(merchant.id)}
+                    >
+                      Create Campaign
+                    </Button>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  campaign.status === 'active' ? 'bg-green-100 text-green-700' :
-                  campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {campaign.status}
-                </span>
-              </div>
+              </Card>
             ))}
           </div>
-        )}
+        </CardContent>
+      </Card>
+
+      {/* Co-Branded Campaigns - Dense */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">Co-Branded Campaigns</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {campaigns.length === 0 ? (
+            <div className="p-8 text-center">
+              <ImageIcon className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-xs text-gray-600">No co-branded campaigns yet</p>
+              <p className="text-[10px] text-gray-500 mt-1">Create campaigns featuring specific merchant partners</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Campaign</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Merchant</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Orders</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Revenue</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {campaigns.map((campaign) => (
+                    <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-xs text-gray-900">{campaign.campaignName}</div>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-700">{campaign.merchantName}</td>
+                      <td className="px-3 py-2 text-right text-xs text-gray-700">{campaign.orders}</td>
+                      <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">${campaign.revenue.toFixed(2)}</td>
+                      <td className="px-3 py-2">
+                        <Badge className={`text-[10px] px-1.5 py-0.5 font-medium border ${
+                          campaign.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                          campaign.status === 'paused' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                          'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}>
+                          {campaign.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Co-Branded Campaign Creation Modal */}
@@ -293,4 +311,3 @@ const MerchantPartnerMarketing: React.FC = () => {
 };
 
 export default MerchantPartnerMarketing;
-

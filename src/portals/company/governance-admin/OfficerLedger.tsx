@@ -13,10 +13,14 @@ import {
   Loader,
   Center,
   Modal,
+  Box,
+  Title,
+  ScrollArea,
+  Card,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
-import { IconEye, IconFileText } from '@tabler/icons-react';
+import { IconEye, IconFileText, IconUserCheck } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 
 interface CorporateOfficer {
@@ -34,6 +38,7 @@ const OfficerLedger: React.FC = () => {
   const [officers, setOfficers] = useState<CorporateOfficer[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
+  const [showRemoved, setShowRemoved] = useState<boolean>(true);
   const [selectedOfficer, setSelectedOfficer] = useState<CorporateOfficer | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
@@ -105,44 +110,84 @@ const OfficerLedger: React.FC = () => {
   }
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between">
-        <Text fw={600} size="lg" c="dark">
-          Corporate Officers Ledger
-        </Text>
-        <Select
-          placeholder="Filter by status"
-          value={statusFilter}
-          onChange={(value) => setStatusFilter(value || 'ACTIVE')}
-          data={[
-            { value: 'all', label: 'All Statuses' },
-            { value: 'ACTIVE', label: 'Active' },
-            { value: 'RESIGNED', label: 'Resigned' },
-            { value: 'REMOVED', label: 'Removed' },
-            { value: 'EXPIRED', label: 'Expired' },
-          ]}
-          style={{ width: 200 }}
-        />
-      </Group>
+    <Stack gap="xl">
+      {/* Enterprise Header */}
+      <Paper
+        p="xl"
+        radius="md"
+        style={{
+          background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+          color: 'white',
+        }}
+      >
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Group gap={16} mb={8}>
+              <Box
+                style={{
+                  backgroundColor: 'rgba(255, 106, 0, 0.2)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconUserCheck size={32} color="#ff6a00" stroke={2.5} />
+              </Box>
+              <div>
+                <Title order={2} c="white" mb={4} style={{ letterSpacing: '0.5px' }}>
+                  Corporate Officers Ledger
+                </Title>
+                <Text c="gray.3" size="sm" style={{ letterSpacing: '0.3px' }}>
+                  Complete registry of corporate officers and their appointments
+                </Text>
+              </div>
+            </Group>
+            <Group gap="md" mt="md">
+              <Badge size="lg" variant="light" color="blue">
+                {officers.length} Total Officers
+              </Badge>
+              <Badge size="lg" variant="light" color="green">
+                {officers.filter(o => o.status === 'ACTIVE').length} Active
+              </Badge>
+            </Group>
+          </div>
+          <Select
+            placeholder="Filter by status"
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value || 'ACTIVE')}
+            data={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'ACTIVE', label: 'Active' },
+              { value: 'RESIGNED', label: 'Resigned' },
+              { value: 'REMOVED', label: 'Removed' },
+              { value: 'EXPIRED', label: 'Expired' },
+            ]}
+            style={{ width: 200 }}
+            size="md"
+          />
+        </Group>
+      </Paper>
 
       {officers.length === 0 ? (
-        <Paper p="xl" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}>
+        <Card padding="xl" radius="md" withBorder>
           <Center>
             <Text c="dimmed">No officers found</Text>
           </Center>
-        </Paper>
+        </Card>
       ) : (
-        <Paper style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-          <Table.ScrollContainer minWidth={800}>
-            <Table verticalSpacing="md" highlightOnHover>
-              <Table.Thead>
+        <Card padding={0} radius="md" withBorder style={{ overflow: 'hidden' }}>
+          <ScrollArea>
+            <Table verticalSpacing="md" horizontalSpacing="lg" highlightOnHover>
+              <Table.Thead style={{ backgroundColor: '#f9fafb' }}>
                 <Table.Tr>
-                  <Table.Th c="dimmed">Name</Table.Th>
-                  <Table.Th c="dimmed">Title</Table.Th>
-                  <Table.Th c="dimmed">Status</Table.Th>
-                  <Table.Th c="dimmed">Effective Date</Table.Th>
-                  <Table.Th c="dimmed">Term End</Table.Th>
-                  <Table.Th c="dimmed">Actions</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Name</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Title</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Status</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Effective Date</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Term End</Table.Th>
+                  <Table.Th style={{ fontWeight: 600 }}>Actions</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -208,8 +253,8 @@ const OfficerLedger: React.FC = () => {
                 ))}
               </Table.Tbody>
             </Table>
-          </Table.ScrollContainer>
-        </Paper>
+          </ScrollArea>
+        </Card>
       )}
 
       {/* Detail Modal */}

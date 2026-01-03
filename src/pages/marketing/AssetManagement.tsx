@@ -4,10 +4,8 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Upload, Folder, Image as ImageIcon, FileText, Video, X, Download, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -66,7 +64,6 @@ const AssetManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // If table doesn't exist, show warning
         if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
           console.warn('marketing_assets table not found. Run migration 20250131000013_create_marketing_assets_table.sql');
           setAssets([]);
@@ -75,7 +72,6 @@ const AssetManagement: React.FC = () => {
         throw error;
       }
 
-      // Transform to Asset format
       const transformedAssets: Asset[] = (assetsData || []).map((asset) => ({
         id: asset.id,
         name: asset.name,
@@ -99,7 +95,6 @@ const AssetManagement: React.FC = () => {
     }
   };
 
-  // Generate thumbnail from video file
   const generateVideoThumbnail = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -112,7 +107,6 @@ const AssetManagement: React.FC = () => {
         return;
       }
 
-      // Cleanup function
       const cleanup = () => {
         if (videoUrl) {
           URL.revokeObjectURL(videoUrl);
@@ -123,18 +117,16 @@ const AssetManagement: React.FC = () => {
       };
 
       video.preload = 'metadata';
-      video.muted = true; // Required for autoplay in some browsers
+      video.muted = true;
       video.playsInline = true;
 
       video.onloadedmetadata = () => {
-        // Seek to 1 second (or 10% of video, whichever is smaller)
         const seekTime = Math.min(1, video.duration * 0.1);
         video.currentTime = seekTime;
       };
 
       video.onseeked = () => {
         try {
-          // Set canvas dimensions (maintain aspect ratio, max 400px width)
           const maxWidth = 400;
           const aspectRatio = video.videoWidth / video.videoHeight;
           const width = Math.min(maxWidth, video.videoWidth);
@@ -143,10 +135,8 @@ const AssetManagement: React.FC = () => {
           canvas.width = width;
           canvas.height = height;
 
-          // Draw video frame to canvas
           ctx.drawImage(video, 0, 0, width, height);
 
-          // Convert to blob then to data URL
           canvas.toBlob(
             (blob) => {
               if (blob) {
@@ -179,23 +169,18 @@ const AssetManagement: React.FC = () => {
         reject(new Error('Failed to load video for thumbnail generation'));
       };
 
-      // Create object URL for video
       videoUrl = URL.createObjectURL(file);
       video.src = videoUrl;
     });
   };
 
-  // Upload thumbnail image to storage
   const uploadThumbnail = async (thumbnailDataUrl: string, folderName: string, baseFileName: string): Promise<string> => {
-    // Convert data URL to blob
     const response = await fetch(thumbnailDataUrl);
     const blob = await response.blob();
 
-    // Create thumbnail file name
     const thumbnailFileName = `${baseFileName.replace(/\.[^/.]+$/, '')}_thumb.jpg`;
     const thumbnailPath = `${folderName}/thumbnails/${thumbnailFileName}`;
 
-    // Upload thumbnail
     const { data: thumbnailUpload, error: thumbnailError } = await supabase.storage
       .from('marketing-assets')
       .upload(thumbnailPath, blob, {
@@ -208,7 +193,6 @@ const AssetManagement: React.FC = () => {
       throw thumbnailError;
     }
 
-    // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from('marketing-assets')
       .getPublicUrl(thumbnailPath);
@@ -217,8 +201,7 @@ const AssetManagement: React.FC = () => {
   };
 
   const handleFileUpload = async (file: File) => {
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error('File size must be less than 10MB');
       return;
@@ -230,14 +213,12 @@ const AssetManagement: React.FC = () => {
 
     setUploading(true);
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('You must be logged in to upload assets');
         return;
       }
 
-      // Get user profile for name
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('full_name')
@@ -246,13 +227,11 @@ const AssetManagement: React.FC = () => {
 
       const userName = profile?.full_name || user.email || 'Unknown';
 
-      // Prepare file path
       const folderName = currentFolder === 'All' ? 'general' : getFolderName(currentFolder);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `${folderName}/${fileName}`;
 
-      // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('marketing-assets')
         .upload(filePath, file, {
@@ -261,7 +240,6 @@ const AssetManagement: React.FC = () => {
         });
 
       if (uploadError) {
-        // If bucket doesn't exist, create it via API or show helpful message
         if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('does not exist')) {
           toast.error('Storage bucket "marketing-assets" not found. Please create it in Supabase Storage.');
           console.error('Storage bucket error:', uploadError);
@@ -270,12 +248,10 @@ const AssetManagement: React.FC = () => {
         throw uploadError;
       }
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('marketing-assets')
         .getPublicUrl(filePath);
 
-      // Generate and upload thumbnail for videos
       let thumbnailUrl: string | null = null;
       if (fileType === 'video') {
         try {
@@ -283,11 +259,9 @@ const AssetManagement: React.FC = () => {
           thumbnailUrl = await uploadThumbnail(thumbnailDataUrl, folderName, fileName);
         } catch (thumbnailError) {
           console.warn('Failed to generate video thumbnail:', thumbnailError);
-          // Continue without thumbnail - not critical
         }
       }
 
-      // Save metadata to database
       const { data: assetData, error: dbError } = await supabase
         .from('marketing_assets')
         .insert({
@@ -307,7 +281,6 @@ const AssetManagement: React.FC = () => {
         .single();
 
       if (dbError) {
-        // If table doesn't exist, still show success but warn
         if (dbError.code === 'PGRST116' || dbError.message.includes('does not exist')) {
           console.warn('marketing_assets table not found. File uploaded but metadata not saved.');
           toast.warning('File uploaded but metadata not saved. Run migration to enable full functionality.');
@@ -315,7 +288,6 @@ const AssetManagement: React.FC = () => {
           throw dbError;
         }
       } else {
-        // Add to assets list
         const newAsset: Asset = {
           id: assetData.id,
           name: assetData.name,
@@ -332,7 +304,6 @@ const AssetManagement: React.FC = () => {
         toast.success('Asset uploaded successfully!');
       }
 
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -376,44 +347,46 @@ const AssetManagement: React.FC = () => {
     : assets.filter(a => a.folder === getFolderName(currentFolder));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Asset Management</h2>
-          <p className="text-gray-600 mt-1">Store and organize marketing assets and documents</p>
+          <h2 className="text-lg font-semibold text-gray-900">Asset Management</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Store and organize marketing assets and documents</p>
         </div>
-        <Button onClick={() => setShowUpload(true)} className="bg-orange-600 hover:bg-orange-700">
-          <Upload className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowUpload(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+          <Upload className="h-3 w-3 mr-1.5" />
           Upload Asset
         </Button>
       </div>
 
-      {/* Folders */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      {/* Compact Folders */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
         {folders.map((folder) => (
           <Button
             key={folder}
             variant={currentFolder === folder ? 'default' : 'outline'}
             onClick={() => setCurrentFolder(folder)}
-            className={currentFolder === folder ? 'bg-orange-600' : ''}
+            size="sm"
+            className={`h-7 px-2.5 text-xs ${currentFolder === folder ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
           >
-            <Folder className="h-4 w-4 mr-2" />
+            <Folder className="h-3 w-3 mr-1.5" />
             {folder}
           </Button>
         ))}
       </div>
 
-      {/* Upload Modal */}
+      {/* Upload Modal - Compact */}
       <Dialog open={showUpload} onOpenChange={setShowUpload}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Upload Asset</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base">Upload Asset</DialogTitle>
+            <DialogDescription className="text-xs">
               Upload marketing assets to organize and use in your campaigns. Supported formats: images, videos, and PDFs (max 10MB).
             </DialogDescription>
           </DialogHeader>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
               dragActive
                 ? 'border-orange-500 bg-orange-50'
                 : 'border-gray-300 bg-gray-50'
@@ -424,16 +397,16 @@ const AssetManagement: React.FC = () => {
           >
             {uploading ? (
               <div className="flex flex-col items-center">
-                <Loader2 className="h-12 w-12 mx-auto text-orange-600 mb-4 animate-spin" />
-                <p className="text-sm font-medium text-gray-700">Uploading...</p>
+                <Loader2 className="h-10 w-10 mx-auto text-orange-600 mb-3 animate-spin" />
+                <p className="text-xs font-medium text-gray-700">Uploading...</p>
               </div>
             ) : (
               <>
-                <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-sm font-medium text-gray-700 mb-2">
+                <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                <p className="text-xs font-medium text-gray-700 mb-1">
                   Drop files here or click to upload
                 </p>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-[10px] text-gray-500 mb-3">
                   Supports images, videos, PDFs (max 10MB)
                 </p>
                 <input
@@ -447,7 +420,8 @@ const AssetManagement: React.FC = () => {
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="bg-orange-600 hover:bg-orange-700"
+                  size="sm"
+                  className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600"
                 >
                   Select Files
                 </Button>
@@ -457,27 +431,31 @@ const AssetManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Assets Grid */}
+      {/* Assets Grid - Compact */}
       {loading ? (
-        <Card className="p-12 text-center">
-          <Loader2 className="h-12 w-12 mx-auto text-orange-600 mb-4 animate-spin" />
-          <p className="text-gray-600">Loading assets...</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <Loader2 className="h-8 w-8 mx-auto text-orange-600 mb-3 animate-spin" />
+            <p className="text-xs text-gray-600">Loading assets...</p>
+          </CardContent>
         </Card>
       ) : filteredAssets.length === 0 ? (
-        <Card className="p-12 text-center">
-          <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No assets in this folder</h3>
-          <p className="text-gray-600 mb-4">Upload your first marketing asset to get started</p>
-          <Button onClick={() => setShowUpload(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Asset
-          </Button>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">No assets in this folder</h3>
+            <p className="text-xs text-gray-600 mb-3">Upload your first marketing asset to get started</p>
+            <Button onClick={() => setShowUpload(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+              <Upload className="h-3 w-3 mr-1.5" />
+              Upload Asset
+            </Button>
+          </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {filteredAssets.map((asset) => (
-            <Card key={asset.id} className="p-3 hover:shadow-lg transition-shadow">
-              <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center overflow-hidden relative">
+            <Card key={asset.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-2">
+              <div className="aspect-square bg-gray-100 rounded-md mb-1.5 flex items-center justify-center overflow-hidden relative">
                 {asset.type === 'image' ? (
                   <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
                 ) : asset.type === 'video' ? (
@@ -490,30 +468,29 @@ const AssetManagement: React.FC = () => {
                           className="w-full h-full object-cover" 
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                          <Video className="h-8 w-8 text-white" />
+                          <Video className="h-6 w-6 text-white" />
                         </div>
                       </div>
                     ) : (
-                      <Video className="h-12 w-12 text-gray-400" />
+                      <Video className="h-8 w-8 text-gray-400" />
                     )}
                   </>
                 ) : (
-                  <FileText className="h-12 w-12 text-gray-400" />
+                  <FileText className="h-8 w-8 text-gray-400" />
                 )}
               </div>
-              <p className="text-xs font-medium text-gray-900 truncate" title={asset.name}>
+              <p className="text-[10px] font-medium text-gray-900 truncate mb-0.5" title={asset.name}>
                 {asset.name}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] text-gray-500 mb-1.5">
                 {(asset.size / 1024).toFixed(1)} KB
               </p>
-              <div className="flex gap-1 mt-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs" asChild>
-                  <a href={asset.url} download target="_blank" rel="noopener noreferrer">
-                    <Download className="h-3 w-3" />
-                  </a>
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" className="w-full h-6 px-1.5 text-[10px]" asChild>
+                <a href={asset.url} download target="_blank" rel="noopener noreferrer">
+                  <Download className="h-3 w-3 mr-1" />
+                  Download
+                </a>
+              </Button>
             </Card>
           ))}
         </div>
@@ -523,4 +500,3 @@ const AssetManagement: React.FC = () => {
 };
 
 export default AssetManagement;
-

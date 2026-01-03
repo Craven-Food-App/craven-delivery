@@ -218,21 +218,21 @@ export const ICADocumentManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card>
-        <CardHeader>
-          <CardTitle>Independent Contractor Agreement</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Independent Contractor Agreement</CardTitle>
+          <CardDescription className="text-xs">
             Set the Independent Contractor Agreement document URL that will be displayed when users click the link on the Feeder signup page.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 space-y-3">
           {/* Upload Section */}
-          <div className="space-y-2">
-            <Label>ICA Document</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">ICA Document</Label>
             
             {!documentPreview ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -246,16 +246,16 @@ export const ICADocumentManager: React.FC = () => {
                   <div className="flex flex-col items-center justify-center">
                     {uploadingDocument ? (
                       <>
-                        <Loader2 className="h-10 w-10 animate-spin text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600">Uploading...</p>
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400 mb-1.5" />
+                        <p className="text-xs text-gray-600">Uploading...</p>
                       </>
                     ) : (
                       <>
-                        <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                        <p className="text-sm font-medium text-gray-700">
+                        <Upload className="h-6 w-6 text-gray-400 mb-1.5" />
+                        <p className="text-xs font-medium text-gray-700">
                           Click to upload or drag and drop
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-0.5">
                           PDF, DOC, DOCX up to 10MB
                         </p>
                       </>
@@ -265,20 +265,21 @@ export const ICADocumentManager: React.FC = () => {
               </div>
             ) : (
               <div className="relative">
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-gray-600" />
+                <div className="border rounded-lg p-2.5 bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-gray-600" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">Document Preview Available</p>
+                      <p className="text-xs font-medium text-gray-900">Document Preview Available</p>
                       <p className="text-xs text-gray-500">Click the link on the Feeder page to view</p>
                     </div>
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
+                      className="h-6 w-6 p-0"
                       onClick={handleRemoveDocument}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -286,10 +287,11 @@ export const ICADocumentManager: React.FC = () => {
             )}
             
             {/* URL Input as Alternative */}
-            <div className="mt-2">
+            <div className="mt-1.5">
               <p className="text-xs text-gray-500 mb-1">Or enter document URL:</p>
               <Input
                 id="ica_document_url_input"
+                className="h-8 text-sm"
                 type="url"
                 value={icaDocumentUrl}
                 onChange={(e) => {
@@ -306,8 +308,8 @@ export const ICADocumentManager: React.FC = () => {
           </div>
 
           {/* Preview Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
+            <p className="text-xs text-blue-800">
               <strong>Note:</strong> This document will be displayed in a modal when users click the "Independent Contractor Agreement" link on the Feeder signup page. 
               PDF format is recommended for best compatibility.
             </p>
@@ -317,11 +319,12 @@ export const ICADocumentManager: React.FC = () => {
           <Button 
             onClick={handleSave} 
             disabled={uploadingDocument || loading}
-            className="w-full"
+            size="sm"
+            className="w-full h-8 text-xs"
           >
             {uploadingDocument || loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
                 {uploadingDocument ? 'Uploading...' : 'Saving...'}
               </>
             ) : (

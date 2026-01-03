@@ -19,7 +19,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { useParams, useNavigate } from 'react-router-dom';
-import { IconArrowLeft, IconCheck, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconCheck, IconX, IconPlayerPlay } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { canManageGovernance } from '@/lib/roles';
 
@@ -81,13 +81,46 @@ const BoardResolutionDetail: React.FC = () => {
 
   const fetchResolution = async () => {
     try {
-      const { data, error } = await supabase
+      // Try governance_board_resolutions first
+      let { data, error } = await supabase
         .from('governance_board_resolutions')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
+
+      // If not found in governance_board_resolutions, try board_resolutions
+      if (!data && !error) {
+        const { data: boardRes, error: boardError } = await supabase
+          .from('board_resolutions')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (boardError) throw boardError;
+        
+        if (boardRes) {
+          // Transform board_resolutions format to match governance format
+          data = {
+            id: boardRes.id,
+            resolution_number: boardRes.resolution_number,
+            title: boardRes.resolution_title || `Removal of ${boardRes.subject_person_name} as ${boardRes.subject_position}`,
+            description: boardRes.resolution_text,
+            type: boardRes.resolution_type === 'removal' ? 'EXECUTIVE_REMOVAL' : boardRes.resolution_type?.toUpperCase() || 'OTHER',
+            status: boardRes.status === 'pending' ? 'PENDING_VOTE' : boardRes.status === 'approved' ? 'ADOPTED' : boardRes.status === 'rejected' ? 'REJECTED' : boardRes.status?.toUpperCase() || 'DRAFT',
+            created_by: boardRes.created_by,
+            meeting_date: null,
+            effective_date: boardRes.effective_date,
+            created_at: boardRes.created_at,
+          };
+        }
+      }
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Resolution not found');
+      }
+      
       setResolution(data);
     } catch (error: any) {
       console.error('Error fetching resolution:', error);
@@ -129,6 +162,8 @@ const BoardResolutionDetail: React.FC = () => {
       case 'PENDING_VOTE':
         return 'blue';
       case 'ADOPTED':
+        return 'green';
+      case 'EXECUTED':
         return 'green';
       case 'REJECTED':
         return 'red';
@@ -213,6 +248,39 @@ const BoardResolutionDetail: React.FC = () => {
       notifications.show({
         title: 'Error',
         message: error.message || 'Failed to reject resolution',
+        color: 'red',
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleExecuteResolution = async () => {
+    if (!resolution) return;
+    setProcessing(true);
+    try {
+      const { error } = await supabase.functions.invoke('governance-execute-resolution', {
+        body: {
+          resolution_id: resolution.id,
+        },
+      });
+
+      if (error) throw error;
+
+      notifications.show({
+        title: 'Success',
+        message: 'Resolution executed successfully',
+        color: 'green',
+        icon: <IconCheck size={16} />,
+      });
+
+      fetchResolution();
+      fetchVotes();
+    } catch (error: any) {
+      console.error('Error executing resolution:', error);
+      notifications.show({
+        title: 'Error',
+        message: error.message || 'Failed to execute resolution',
         color: 'red',
       });
     } finally {
@@ -342,6 +410,22 @@ const BoardResolutionDetail: React.FC = () => {
                 >
                   Manually Reject Resolution
                 </Button>
+              </Group>
+            )}
+
+            {canManage && resolution.status === 'ADOPTED' && (
+              <Group mb="md">
+                <Button
+                  leftSection={<IconPlayerPlay size={16} />}
+                  color="blue"
+                  onClick={handleExecuteResolution}
+                  loading={processing}
+                >
+                  Execute Resolution
+                </Button>
+                <Text size="sm" c="dimmed">
+                  Execute this resolution to complete the appointment process and send notifications
+                </Text>
               </Group>
             )}
 

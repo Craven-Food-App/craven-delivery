@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Craven Delivery Driver</string>
     <string name="title_activity_main">Craven Delivery Driver</string>
-    <string name="package_name">com.craven.delivery.driver</string>
-    <string name="custom_url_scheme">com.craven.delivery.driver</string>
+    <string name="package_name">com.craven.delivery.feeder</string>
+    <string name="custom_url_scheme">com.craven.delivery.feeder</string>
 </resources>

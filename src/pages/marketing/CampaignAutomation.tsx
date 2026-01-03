@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface Automation {
   id: string;
@@ -80,131 +81,139 @@ const CampaignAutomation: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Campaign Automation</h2>
-          <p className="text-gray-600 mt-1">Create automated marketing campaigns with triggers</p>
+          <h2 className="text-lg font-semibold text-gray-900">Campaign Automation</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create automated marketing campaigns with triggers</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="bg-orange-600 hover:bg-orange-700">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+          <Plus className="h-3 w-3 mr-1.5" />
           Create Automation
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Automations</p>
-              <p className="text-2xl font-bold">
-                {automations.filter(a => a.status === 'active').length}
-              </p>
+      {/* Compact Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Active</p>
+              <Zap className="h-3 w-3 text-orange-600" />
             </div>
-            <Zap className="h-8 w-8 text-orange-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {automations.filter(a => a.status === 'active').length}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Runs</p>
-              <p className="text-2xl font-bold">
-                {automations.reduce((sum, a) => sum + a.runsCount, 0).toLocaleString()}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Runs</p>
+              <Clock className="h-3 w-3 text-blue-600" />
             </div>
-            <Clock className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {automations.reduce((sum, a) => sum + a.runsCount, 0).toLocaleString()}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Triggers</p>
-              <p className="text-2xl font-bold">{triggers.length}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Triggers</p>
+              <Target className="h-3 w-3 text-green-600" />
             </div>
-            <Target className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{triggers.length}</p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Actions</p>
-              <p className="text-2xl font-bold">{actions.length}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Actions</p>
+              <Mail className="h-3 w-3 text-purple-600" />
             </div>
-            <Mail className="h-8 w-8 text-purple-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{actions.length}</p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Automations List */}
+      {/* Automations List - Dense */}
       {automations.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Zap className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No automations yet</h3>
-          <p className="text-gray-600 mb-4">Create automated campaigns that trigger based on customer actions</p>
-          <Button onClick={() => setShowCreateModal(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Automation
-          </Button>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <Zap className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">No automations yet</h3>
+            <p className="text-xs text-gray-600 mb-3">Create automated campaigns that trigger based on customer actions</p>
+            <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+              <Plus className="h-3 w-3 mr-1.5" />
+              Create Automation
+            </Button>
+          </CardContent>
         </Card>
       ) : (
-        <Card className="p-6">
-          <div className="space-y-4">
-            {automations.map((automation) => (
-              <div key={automation.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Zap className="h-6 w-6 text-orange-600" />
+        <Card className="border border-gray-200 shadow-sm">
+          <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+            <CardTitle className="text-sm font-semibold">Automations</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <div className="space-y-2">
+              {automations.map((automation) => (
+                <div key={automation.id} className="flex items-center justify-between p-2.5 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 bg-orange-100 rounded-md flex items-center justify-center flex-shrink-0">
+                      <Zap className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-xs text-gray-900 truncate">{automation.name}</h4>
+                      <p className="text-[10px] text-gray-600 mt-0.5">
+                        When: {triggers.find(t => t.value === automation.trigger)?.label || automation.trigger} → 
+                        Action: {actions.find(a => a.value === automation.action)?.label || automation.action}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Runs: {automation.runsCount} | Created: {new Date(automation.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{automation.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      When: {triggers.find(t => t.value === automation.trigger)?.label || automation.trigger} → 
-                      Action: {actions.find(a => a.value === automation.action)?.label || automation.action}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Runs: {automation.runsCount} | Created: {new Date(automation.createdAt).toLocaleDateString()}
-                    </p>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge className={`text-[10px] px-1.5 py-0.5 font-medium border ${
+                      automation.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}>
+                      {automation.status}
+                    </Badge>
+                    <Button variant="outline" size="sm" className="h-6 px-2 text-[10px]">Edit</Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    automation.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {automation.status}
-                  </span>
-                  <Button variant="outline" size="sm">Edit</Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       )}
 
-      {/* Create Automation Modal */}
+      {/* Create Automation Modal - Compact */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create Automation</DialogTitle>
+            <DialogTitle className="text-base">Create Automation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3 mt-4">
             <div>
-              <Label htmlFor="autoName">Automation Name *</Label>
+              <Label htmlFor="autoName" className="text-xs">Automation Name *</Label>
               <Input
                 id="autoName"
                 value={newAutomation.name}
                 onChange={(e) => setNewAutomation(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Welcome New Users"
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
               />
             </div>
             <div>
-              <Label htmlFor="trigger">Trigger *</Label>
+              <Label htmlFor="trigger" className="text-xs">Trigger *</Label>
               <Select
                 value={newAutomation.trigger}
                 onValueChange={(value) => setNewAutomation(prev => ({ ...prev, trigger: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue placeholder="Select trigger" />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,12 +224,12 @@ const CampaignAutomation: React.FC = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="action">Action *</Label>
+              <Label htmlFor="action" className="text-xs">Action *</Label>
               <Select
                 value={newAutomation.action}
                 onValueChange={(value) => setNewAutomation(prev => ({ ...prev, action: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue placeholder="Select action" />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,12 +240,12 @@ const CampaignAutomation: React.FC = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="segment">Target Segment (Optional)</Label>
+              <Label htmlFor="segment" className="text-xs">Target Segment (Optional)</Label>
               <Select
                 value={newAutomation.segmentId}
                 onValueChange={(value) => setNewAutomation(prev => ({ ...prev, segmentId: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue placeholder="All customers" />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,11 +255,11 @@ const CampaignAutomation: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleCreateAutomation} className="bg-orange-600 hover:bg-orange-700">
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleCreateAutomation} size="sm" className="flex-1 h-8 text-xs bg-orange-500 hover:bg-orange-600">
                 Create Automation
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+              <Button variant="outline" onClick={() => setShowCreateModal(false)} size="sm" className="h-8 text-xs">
                 Cancel
               </Button>
             </div>
@@ -262,4 +271,3 @@ const CampaignAutomation: React.FC = () => {
 };
 
 export default CampaignAutomation;
-

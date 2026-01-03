@@ -61,7 +61,9 @@ const CodeReviewQueue = React.lazy(() => import('@/components/cto/CodeReviewQueu
 const ITHelpDeskDashboard = React.lazy(() => import('@/components/cto/ITHelpDeskDashboard'));
 const CodeEditorPortal = React.lazy(() => import('@/components/cto/CodeEditorPortal'));
 import DeveloperOnboarding from '@/components/cto/DeveloperOnboarding';
-import ExecutivePortalLayout, { ExecutiveNavItem } from '@/components/executive/ExecutivePortalLayout';
+import { PortalLayout } from '@/components/tpi/PortalLayout';
+import { PageHeader } from '@/components/tpi/PageHeader';
+import { SidebarItem } from '@/components/tpi/types';
 import { EnhancedCTODashboard } from '@/components/cto/EnhancedCTODashboard';
 import { AdvancedInfrastructureManagement } from '@/components/cto/AdvancedInfrastructureManagement';
 import { DevOpsDashboard } from '@/components/cto/DevOpsDashboard';
@@ -105,21 +107,38 @@ function CTOPortalContent() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const toast = useToast();
 
+  // Determine current section from path
+  const getCurrentSection = useCallback(() => {
+    const path = location.pathname;
+    if (path.includes('/training')) return 'training';
+    if (path.includes('/onboarding')) return 'onboarding';
+    if (path.includes('/evaluation')) return 'evaluation';
+    if (path.includes('/infrastructure')) return 'infra';
+    if (path.includes('/devops')) return 'devops';
+    if (path.includes('/security')) return 'security';
+    if (path.includes('/team')) return 'team';
+    if (path.includes('/roadmap')) return 'roadmap';
+    if (path.includes('/costs')) return 'costs';
+    if (path.includes('/morning-review')) return 'morning-review';
+    if (path.includes('/sprint')) return 'sprint';
+    if (path.includes('/code-review')) return 'code-review';
+    if (path.includes('/help-desk')) return 'help-desk';
+    if (path.includes('/code-editor')) return 'code-editor';
+    if (path.includes('/developer-onboarding')) return 'developer-onboarding';
+    if (path.includes('/incidents')) return 'incidents';
+    if (path.includes('/assets')) return 'assets';
+    if (path.includes('/communications')) return 'communications';
+    if (path.includes('/documents')) return 'word';
+    if (path.includes('/articles')) return 'articles-generator';
+    if (path.includes('/manual')) return 'manual';
+    return 'overview';
+  }, [location.pathname]);
+
   // Sync activeSection with URL path
   useEffect(() => {
-    const path = location.pathname;
-    if (path.includes('/training')) {
-      setActiveSection('training');
-      // Ensure we're at the right URL
-      if (path === '/cto' || path === '/cto/') {
-        navigate('/cto/training', { replace: true });
-      }
-    } else if (path.includes('/onboarding')) {
-      setActiveSection('onboarding');
-    } else if (path === '/cto' || path === '/cto/') {
-      setActiveSection('overview');
-    }
-  }, [location.pathname, navigate]);
+    const section = getCurrentSection();
+    setActiveSection(section);
+  }, [getCurrentSection]);
   
   // Track user activity
   useActivityTracking('cto');
@@ -149,49 +168,100 @@ function CTOPortalContent() {
   // TORRANCE GETS FULL ACCESS - NO EXCEPTIONS
   const finalIsAuthorized = isAuthorized || isTorrance;
 
-  const navItems = useMemo<ExecutiveNavItem[]>(() => [
-    { id: 'evaluation', label: 'CTO Evaluation Gate', icon: Shield },
-    { id: 'onboarding', label: 'CTO Onboarding & Governance', icon: Scale },
-    { id: 'training', label: 'Training', icon: FileText },
-    { id: 'overview', label: 'CTO Command Center', icon: BarChart3 },
-    { id: 'infra', label: 'Advanced Infrastructure', icon: Cloud },
-    { id: 'devops', label: 'DevOps & CI/CD', icon: Rocket },
-    { id: 'security', label: 'Security & Compliance', icon: Shield },
-    { id: 'team', label: 'Team & Resources', icon: Users },
-    { id: 'roadmap', label: 'Technology Roadmap', icon: Rocket },
-    { id: 'costs', label: 'Tech Cost Management', icon: Settings },
-    { id: 'morning-review', label: 'Morning Review', icon: BarChart3 },
-    { id: 'sprint', label: 'Sprint Management', icon: Rocket },
-    { id: 'code-review', label: 'Code Reviews', icon: Code },
-    { id: 'help-desk', label: 'IT Help Desk', icon: Users },
-    { id: 'code-editor', label: 'Code Editor', icon: Code },
-    { id: 'developer-onboarding', label: 'Developer Onboarding', icon: Rocket },
-    { id: 'incidents', label: 'Incidents', icon: IconBug },
-    { id: 'assets', label: 'Assets', icon: Database },
-    { id: 'communications', label: 'Executive Communications', icon: Mail },
-    { id: 'word', label: 'Draft Documents', icon: FileText },
-    { id: 'articles-generator', label: 'Articles Generator', icon: ScrollText },
-    { id: 'manual', label: 'Instruction Manual', icon: FileText },
+  const sidebarItems = useMemo<SidebarItem[]>(() => [
+    {
+      id: 'dashboard',
+      label: 'CTO Command Center',
+      icon: BarChart3,
+      path: '/cto',
+      children: [
+        { id: 'overview', label: 'Overview', icon: BarChart3, path: '/cto' },
+        { id: 'morning-review', label: 'Morning Review', icon: BarChart3, path: '/cto/morning-review' },
+      ],
+    },
+    {
+      id: 'governance',
+      label: 'Governance',
+      icon: Scale,
+      path: '/cto/governance',
+      children: [
+        { id: 'evaluation', label: 'Evaluation Gate', icon: Shield, path: '/cto/evaluation' },
+        { id: 'onboarding', label: 'Onboarding & Governance', icon: Scale, path: '/cto/onboarding' },
+        { id: 'training', label: 'Training', icon: FileText, path: '/cto/training' },
+      ],
+    },
+    {
+      id: 'infrastructure',
+      label: 'Infrastructure',
+      icon: Cloud,
+      path: '/cto/infrastructure',
+      children: [
+        { id: 'infra', label: 'Advanced Infrastructure', icon: Cloud, path: '/cto/infrastructure' },
+        { id: 'devops', label: 'DevOps & CI/CD', icon: Rocket, path: '/cto/devops' },
+        { id: 'security', label: 'Security & Compliance', icon: Shield, path: '/cto/security' },
+      ],
+    },
+    {
+      id: 'operations',
+      label: 'Operations',
+      icon: IconBug,
+      path: '/cto/operations',
+      children: [
+        { id: 'incidents', label: 'Incidents', icon: IconBug, path: '/cto/incidents' },
+        { id: 'assets', label: 'Assets', icon: Database, path: '/cto/assets' },
+        { id: 'help-desk', label: 'IT Help Desk', icon: Users, path: '/cto/help-desk' },
+      ],
+    },
+    {
+      id: 'engineering',
+      label: 'Engineering',
+      icon: Code,
+      path: '/cto/engineering',
+      children: [
+        { id: 'sprint', label: 'Sprint Management', icon: Rocket, path: '/cto/sprint' },
+        { id: 'code-review', label: 'Code Reviews', icon: Code, path: '/cto/code-review' },
+        { id: 'code-editor', label: 'Code Editor', icon: Code, path: '/cto/code-editor' },
+        { id: 'developer-onboarding', label: 'Developer Onboarding', icon: Rocket, path: '/cto/developer-onboarding' },
+      ],
+    },
+    {
+      id: 'management',
+      label: 'Management',
+      icon: Settings,
+      path: '/cto/management',
+      children: [
+        { id: 'team', label: 'Team & Resources', icon: Users, path: '/cto/team' },
+        { id: 'roadmap', label: 'Technology Roadmap', icon: Rocket, path: '/cto/roadmap' },
+        { id: 'costs', label: 'Tech Cost Management', icon: BarChart3, path: '/cto/costs' },
+      ],
+    },
+    {
+      id: 'business',
+      label: 'Business',
+      icon: Mail,
+      path: '/cto/business',
+      children: [
+        { id: 'communications', label: 'Communications', icon: Mail, path: '/cto/communications' },
+        { id: 'word', label: 'Documents', icon: FileText, path: '/cto/documents' },
+        { id: 'articles-generator', label: 'Articles of Incorporation', icon: ScrollText, path: '/cto/articles' },
+      ],
+    },
+    {
+      id: 'help',
+      label: 'Help',
+      icon: IconInfoCircle,
+      path: '/cto/manual',
+    },
   ], []);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      navigate('/auth?hq=true');
-    }
-  };
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'onboarding':
-        return <CTOOnboardingGovernance />;
       case 'training':
         return <CtoTrainingRouter />;
-      case 'overview':
-        return <EnhancedCTODashboard />;
+      case 'onboarding':
+        return <CTOOnboardingGovernance />;
+      case 'evaluation':
+        return <CtoEvaluationGatePanel />;
       case 'infra':
         return <AdvancedInfrastructureManagement />;
       case 'devops':
@@ -204,12 +274,6 @@ function CTOPortalContent() {
         return <TechnologyRoadmap />;
       case 'costs':
         return <TechCostManagement />;
-      case 'evaluation':
-        return (
-          <Stack gap="md">
-            <CtoEvaluationGatePanel mode={isTorrance ? 'ceo' : 'cto'} />
-          </Stack>
-        );
       case 'morning-review':
         return <MorningTechnicalReview />;
       case 'sprint':
@@ -218,8 +282,6 @@ function CTOPortalContent() {
         return <CodeReviewQueue />;
       case 'help-desk':
         return <ITHelpDeskDashboard />;
-      case 'code-editor':
-        return null; // Handled separately below
       case 'developer-onboarding':
         return <DeveloperOnboarding />;
       case 'incidents':
@@ -288,59 +350,42 @@ function CTOPortalContent() {
   }
 
   return (
-    <ExecutivePortalLayout
-      title="CTO Portal"
-      subtitle="Technology operations command center"
-      navItems={navItems}
-      activeItemId={activeSection}
-      onSelect={(id) => {
-        startTransition(() => {
-          setActiveSection(id);
-        });
-        if (id === 'training') {
-          navigate('/cto/training');
-        } else if (id === 'onboarding') {
-          navigate('/cto');
-        } else {
-          navigate(`/cto`);
+    <PortalLayout
+      portalName="Technology Executive Dashboard"
+      sidebarItems={sidebarItems}
+      user={{
+        id: user?.id || '',
+        name: execUser?.first_name && execUser?.last_name 
+          ? `${execUser.first_name} ${execUser.last_name}`
+          : user?.email?.split('@')[0] || 'User',
+        email: user?.email || '',
+        role: execUser?.title || 'CTO',
+      }}
+      activeSection={activeSection}
+      onSectionChange={(section) => {
+        const item = sidebarItems
+          .flatMap(parent => parent.children ? [parent, ...parent.children] : [parent])
+          .find(item => item.id === section);
+        if (item?.path) {
+          navigate(item.path);
         }
       }}
-      onBack={() => navigate('/hub')}
-      onSignOut={handleSignOut}
-      userInfo={{
-        initials: 'CT',
-        name: 'Chief Technology Officer',
-        role: 'Technology Leadership',
-      }}
     >
-      <div className="space-y-6">
-        <Alert color="green" style={{ padding: 16 }}>
-          <Group justify="space-between" wrap="wrap" gap={12}>
-            <Group gap={8}>
-              <IconCheck size={16} color="#059669" />
-              <Text size="sm" fw={600} c="green.7">Technology systems operational</Text>
-            </Group>
-            <Text size="xs" c="green.6">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </Text>
-          </Group>
-        </Alert>
-
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb={isChatCollapsed ? 0 : 16}>
-            <Title order={4} style={{ margin: 0 }}>Executive Chat</Title>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => setIsChatCollapsed((prev) => !prev)}
-            >
-              {isChatCollapsed ? 'Expand' : 'Collapse'}
-            </Button>
-          </Group>
-          {!isChatCollapsed && (
-            <ExecutiveInboxIMessage role="cto" deviceId={`cto-portal-${window.location.hostname}`} />
-          )}
-        </Card>
+      <div style={{ maxWidth: '100%', margin: '0 auto' }}>
+        {activeSection === 'overview' && (
+          <>
+            <PageHeader
+              title="Technology Executive Dashboard"
+              subtitle={`Welcome back, ${execUser?.first_name || user?.email?.split('@')[0] || 'User'}!`}
+              icon={IconRocket}
+            />
+            <Card shadow="sm" padding="lg" radius="md" withBorder mb="md">
+              <Alert icon={<IconInfoCircle size={16} />} title="Quick Stats" color="blue" variant="light" mb="md">
+                <Text size="sm">Last updated: {lastUpdated.toLocaleString()}</Text>
+              </Alert>
+            </Card>
+          </>
+        )}
 
         <Suspense fallback={
           <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -358,7 +403,7 @@ function CTOPortalContent() {
           )}
         </Suspense>
       </div>
-    </ExecutivePortalLayout>
+    </PortalLayout>
   );
 }
 

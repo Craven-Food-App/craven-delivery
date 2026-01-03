@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { Polygon } from 'geojson';
 import { MAPBOX_CONFIG } from '@/config/mapbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface DeliveryZone {
   id: string;
@@ -403,186 +404,212 @@ const DeliveryZoneManager: React.FC = () => {
   const driverLocation = driverLocations[driverIndex] ?? fallbackDriverLocation;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="space-y-3">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Zone Management</h1>
-          <p className="text-gray-600 mt-1">Visualize, create, and manage delivery coverage areas</p>
+          <h2 className="text-lg font-semibold text-gray-900">Delivery Zone Management</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Visualize, create, and manage delivery coverage areas</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={handleNewZone} className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2">
+          <Button onClick={handleNewZone} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+            <Plus className="h-3 w-3 mr-1.5" />
             New Zone
           </Button>
           {selectedZone && (
             <Button
               variant="outline"
-              className="border-red-200 text-red-600 hover:text-red-700"
+              size="sm"
+              className="h-7 px-2.5 text-xs border-red-200 text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => deleteZone(selectedZone.id)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Zone
+              <Trash2 className="h-3 w-3 mr-1.5" />
+              Delete
             </Button>
           )}
         </div>
       </div>
 
-      <AdminZoneMap
-        zones={zones}
-        selectedZoneId={selectedZoneId}
-        mode={mode}
-        driverLocation={driverLocation}
-        onZoneSelect={(zoneId) => setSelectedZoneId(zoneId)}
-        onPolygonChange={handlePolygonChange}
-        onDriverZoneChange={handleDriverZoneChange}
-      />
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 space-y-6 xl:col-span-2">
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-gray-800">Zone Controls</h2>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={handleRandomizeDemand}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
-                variant="default"
-              >
-                <RotateCw className="h-4 w-4 mr-2" />
-                Update Zone Demand
-              </Button>
-              <Button
-                onClick={handleMoveDriver}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
-                variant="default"
-              >
-                <CircleDashed className="h-4 w-4 mr-2" />
-                Change Driver Location
-              </Button>
-            </div>
-            <div className="mt-2 p-4 rounded-xl font-medium text-center bg-gray-100 border border-gray-200 text-gray-700">
-              {statusMessage}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Zone Name</label>
-              <Input
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="e.g., Downtown Core"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">City</label>
-              <Input
-                value={form.city}
-                onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
-                placeholder="City"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">State</label>
-              <Input
-                value={form.state}
-                onChange={(event) => setForm((prev) => ({ ...prev, state: event.target.value }))}
-                placeholder="State"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">ZIP Code</label>
-              <Input
-                value={form.zip_code}
-                onChange={(event) => setForm((prev) => ({ ...prev, zip_code: event.target.value }))}
-                placeholder="ZIP"
-                className="mt-1"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t pt-4">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <PencilLine className="h-4 w-4" />
-              {mode === 'edit' && selectedZone ? (
-                <span>Editing zone created {new Date(selectedZone.created_at).toLocaleDateString()}</span>
-              ) : (
-                <span>Draw a polygon on the map to create a new zone.</span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {selectedZone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={selectedZone.active}
-                    onCheckedChange={() => toggleZoneStatus(selectedZone.id, selectedZone.active)}
-                  />
-                  <span>{selectedZone.active ? 'Active' : 'Inactive'}</span>
-                </div>
-              )}
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-orange-500 hover:bg-orange-600"
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                {mode === 'edit' ? 'Update Zone' : 'Save Zone'}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 space-y-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Zone Details</h2>
-            <Badge variant="outline">{filteredZones.length} zones</Badge>
-          </div>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              className="pl-10"
-              placeholder="Search by name, city, or ZIP"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+      {/* Map - Compact */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardContent className="p-0">
+          <div className="h-[400px]">
+            <AdminZoneMap
+              zones={zones}
+              selectedZoneId={selectedZoneId}
+              mode={mode}
+              driverLocation={driverLocation}
+              onZoneSelect={(zoneId) => setSelectedZoneId(zoneId)}
+              onPolygonChange={handlePolygonChange}
+              onDriverZoneChange={handleDriverZoneChange}
             />
           </div>
-          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-gray-500 text-sm gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Loading zones...
-              </div>
-            ) : filteredZones.length === 0 ? (
-              <div className="text-center py-10 text-gray-500 text-sm">
-                No zones match your search.
-              </div>
-            ) : (
-              filteredZones.map((zone) => (
-                <button
-                  key={zone.id}
-                  onClick={() => setSelectedZoneId(zone.id)}
-                  className={`w-full text-left px-4 py-3 rounded-xl border transition shadow-sm hover:shadow ${selectedZoneId === zone.id ? 'border-orange-500 bg-orange-50' : 'border-gray-200 bg-white'}`}
+        </CardContent>
+      </Card>
+
+      {/* Two Column Layout - Compact */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+        {/* Zone Controls - Left */}
+        <div className="xl:col-span-2 space-y-3">
+          <Card className="border border-gray-200 shadow-sm">
+            <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+              <CardTitle className="text-sm font-semibold">Zone Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 space-y-3">
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleRandomizeDemand}
+                  size="sm"
+                  className="flex-1 h-7 px-2 text-xs bg-orange-500 hover:bg-orange-600"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{zone.name || 'Untitled Zone'}</h3>
-                      <p className="text-xs text-gray-500">{zone.city}, {zone.state} · {zone.zip_code}</p>
+                  <RotateCw className="h-3 w-3 mr-1.5" />
+                  Update Demand
+                </Button>
+                <Button
+                  onClick={handleMoveDriver}
+                  size="sm"
+                  className="flex-1 h-7 px-2 text-xs bg-orange-500 hover:bg-orange-600"
+                >
+                  <CircleDashed className="h-3 w-3 mr-1.5" />
+                  Move Driver
+                </Button>
+              </div>
+              <div className="p-2.5 rounded-md bg-gray-50 border border-gray-200 text-xs font-medium text-center text-gray-700">
+                {statusMessage}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">Zone Name</label>
+                  <Input
+                    value={form.name}
+                    onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="e.g., Downtown Core"
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">City</label>
+                  <Input
+                    value={form.city}
+                    onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
+                    placeholder="City"
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">State</label>
+                  <Input
+                    value={form.state}
+                    onChange={(event) => setForm((prev) => ({ ...prev, state: event.target.value }))}
+                    placeholder="State"
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-700 uppercase tracking-wide">ZIP Code</label>
+                  <Input
+                    value={form.zip_code}
+                    onChange={(event) => setForm((prev) => ({ ...prev, zip_code: event.target.value }))}
+                    placeholder="ZIP"
+                    className="mt-1 h-8 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-gray-200 pt-2">
+                <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                  <PencilLine className="h-3 w-3" />
+                  {mode === 'edit' && selectedZone ? (
+                    <span>Editing zone created {new Date(selectedZone.created_at).toLocaleDateString()}</span>
+                  ) : (
+                    <span>Draw a polygon on the map to create a new zone.</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedZone && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Switch
+                        checked={selectedZone.active}
+                        onCheckedChange={() => toggleZoneStatus(selectedZone.id, selectedZone.active)}
+                      />
+                      <span className="text-[10px] text-gray-600">{selectedZone.active ? 'Active' : 'Inactive'}</span>
                     </div>
-                    <Badge variant={zone.active ? 'default' : 'secondary'}>
-                      {zone.active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span>{new Date(zone.created_at).toLocaleDateString()}</span>
-                    <span>Demand: {(zone.demand * 100).toFixed(0)}%</span>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
+                  )}
+                  <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    size="sm"
+                    className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600"
+                  >
+                    <MapPin className="h-3 w-3 mr-1.5" />
+                    {mode === 'edit' ? 'Update' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Zone List - Right */}
+        <Card className="border border-gray-200 shadow-sm">
+          <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Zone Details</CardTitle>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">{filteredZones.length} zones</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 space-y-2">
+            <div className="relative">
+              <MapPin className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 h-3 w-3" />
+              <Input
+                className="pl-8 h-7 text-xs"
+                placeholder="Search by name, city, or ZIP"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
+              {loading ? (
+                <div className="flex items-center justify-center py-8 text-gray-500 text-xs gap-2">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Loading zones...
+                </div>
+              ) : filteredZones.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-xs">
+                  No zones match your search.
+                </div>
+              ) : (
+                filteredZones.map((zone) => (
+                  <button
+                    key={zone.id}
+                    onClick={() => setSelectedZoneId(zone.id)}
+                    className={`w-full text-left px-3 py-2 rounded-md border transition text-xs ${
+                      selectedZoneId === zone.id 
+                        ? 'border-orange-500 bg-orange-50' 
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 truncate">{zone.name || 'Untitled Zone'}</h3>
+                      <Badge 
+                        variant={zone.active ? 'default' : 'secondary'}
+                        className="text-[10px] px-1.5 py-0.5 flex-shrink-0"
+                      >
+                        {zone.active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-1">{zone.city}, {zone.state} · {zone.zip_code}</p>
+                    <div className="flex items-center justify-between text-[10px] text-gray-400">
+                      <span>{new Date(zone.created_at).toLocaleDateString()}</span>
+                      <span>Demand: {(zone.demand * 100).toFixed(0)}%</span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

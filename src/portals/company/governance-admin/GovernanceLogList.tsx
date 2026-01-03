@@ -11,9 +11,14 @@ import {
   Center,
   TextInput,
   Pagination,
+  Box,
+  Title,
+  ScrollArea,
+  Card,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
+import { IconHistory } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 
 interface GovernanceLog {
@@ -101,64 +106,102 @@ const GovernanceLogList: React.FC = () => {
   }
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between">
-        <Text fw={600} size="lg" c="dark">
-          Governance Logs
-        </Text>
-        <Group>
-          <TextInput
-            placeholder="Search logs..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                fetchLogs();
-              }
-            }}
-            style={{ width: 250 }}
-          />
-          <Select
-            placeholder="Filter by action"
-            value={actionFilter}
-            onChange={(value) => {
-              setActionFilter(value || 'all');
-              setPage(1);
-            }}
-            data={[
-              { value: 'all', label: 'All Actions' },
-              { value: 'APPOINTMENT_DRAFT_CREATED', label: 'Appointment Created' },
-              { value: 'APPOINTMENT_SENT_TO_BOARD', label: 'Sent to Board' },
-              { value: 'RESOLUTION_CREATED', label: 'Resolution Created' },
-              { value: 'RESOLUTION_VOTED', label: 'Resolution Voted' },
-              { value: 'RESOLUTION_ADOPTED', label: 'Resolution Adopted' },
-              { value: 'OFFICER_APPOINTED', label: 'Officer Appointed' },
-            ]}
-            style={{ width: 200 }}
-          />
+    <Stack gap="xl">
+      {/* Enterprise Header */}
+      <Paper
+        p="xl"
+        radius="md"
+        style={{
+          background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+          color: 'white',
+        }}
+      >
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Group gap={16} mb={8}>
+              <Box
+                style={{
+                  backgroundColor: 'rgba(255, 106, 0, 0.2)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconHistory size={32} color="#ff6a00" stroke={2.5} />
+              </Box>
+              <div>
+                <Title order={2} c="white" mb={4} style={{ letterSpacing: '0.5px' }}>
+                  Governance Logs
+                </Title>
+                <Text c="gray.3" size="sm" style={{ letterSpacing: '0.3px' }}>
+                  Complete audit trail of all governance actions and decisions
+                </Text>
+              </div>
+            </Group>
+            <Group gap="md" mt="md">
+              <Badge size="lg" variant="light" color="blue">
+                {logs.length} Logs
+              </Badge>
+            </Group>
+          </div>
+          <Group gap="xs">
+            <TextInput
+              placeholder="Search logs..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchLogs();
+                }
+              }}
+              style={{ width: 250 }}
+              size="md"
+            />
+            <Select
+              placeholder="Filter by action"
+              value={actionFilter}
+              onChange={(value) => {
+                setActionFilter(value || 'all');
+                setPage(1);
+              }}
+              data={[
+                { value: 'all', label: 'All Actions' },
+                { value: 'APPOINTMENT_DRAFT_CREATED', label: 'Appointment Created' },
+                { value: 'APPOINTMENT_SENT_TO_BOARD', label: 'Sent to Board' },
+                { value: 'RESOLUTION_CREATED', label: 'Resolution Created' },
+                { value: 'RESOLUTION_VOTED', label: 'Resolution Voted' },
+                { value: 'RESOLUTION_ADOPTED', label: 'Resolution Adopted' },
+                { value: 'OFFICER_APPOINTED', label: 'Officer Appointed' },
+              ]}
+              style={{ width: 200 }}
+              size="md"
+            />
+          </Group>
         </Group>
-      </Group>
+      </Paper>
 
       {logs.length === 0 ? (
-        <Paper p="xl" style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}>
+        <Card padding="xl" radius="md" withBorder>
           <Center>
             <Text c="dimmed">No logs found</Text>
           </Center>
-        </Paper>
+        </Card>
       ) : (
         <>
-          <Paper style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <Table.ScrollContainer minWidth={800}>
-              <Table verticalSpacing="md" highlightOnHover>
-                <Table.Thead>
+          <Card padding={0} radius="md" withBorder style={{ overflow: 'hidden' }}>
+            <ScrollArea>
+              <Table verticalSpacing="md" horizontalSpacing="lg" highlightOnHover>
+                <Table.Thead style={{ backgroundColor: '#f9fafb' }}>
                   <Table.Tr>
-                    <Table.Th c="dimmed">Timestamp</Table.Th>
-                    <Table.Th c="dimmed">Action</Table.Th>
-                    <Table.Th c="dimmed">Entity</Table.Th>
-                    <Table.Th c="dimmed">Description</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Timestamp</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Action</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Entity</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Description</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -188,8 +231,8 @@ const GovernanceLogList: React.FC = () => {
                   ))}
                 </Table.Tbody>
               </Table>
-            </Table.ScrollContainer>
-          </Paper>
+            </ScrollArea>
+          </Card>
           {totalPages > 1 && (
             <Group justify="center">
               <Pagination value={page} onChange={setPage} total={totalPages} />

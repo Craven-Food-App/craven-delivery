@@ -54,6 +54,28 @@ import RequestDeliveryDashboard from "@/components/restaurant/dashboard/RequestD
 import { HomeDashboard } from "@/components/merchant/HomeDashboard";
 import MerchantWelcomeConfetti from "@/components/merchant/MerchantWelcomeConfetti";
 
+// Helper function to format restaurant type for display
+const formatRestaurantType = (type: string | null | undefined): string => {
+  if (!type) return 'Store';
+  
+  const typeMap: Record<string, string> = {
+    'full_service': 'Full Service Restaurant',
+    'fast_casual': 'Fast Casual',
+    'quick_service': 'Quick Service',
+    'cafe': 'Café',
+    'bakery': 'Bakery',
+    'ghost_kitchen': 'Ghost Kitchen',
+    'catering': 'Catering',
+    'food_truck': 'Food Truck',
+    'retail_store': 'Retail Store',
+    'restaurant': 'Restaurant',
+  };
+  
+  return typeMap[type] || type.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+};
+
 const RestaurantSetup = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
@@ -197,12 +219,19 @@ const RestaurantSetup = () => {
                 justify="space-between"
                 leftSection={
                   <Group gap="xs">
-                    <Avatar size="sm" radius="xl" color="gray">
-                      <IconBuildingStore size={16} />
+                    <Avatar 
+                      size="sm" 
+                      radius="xl" 
+                      color="gray"
+                      src={restaurant?.logo_url}
+                    >
+                      {!restaurant?.logo_url && <IconBuildingStore size={16} />}
                     </Avatar>
                     <Stack gap={0}>
                       <Text size="sm" fw={600}>{restaurant.name}</Text>
-                      <Text size="xs" c="dimmed">Store {restaurants.length > 1 && `(${restaurants.length})`}</Text>
+                      <Text size="xs" c="dimmed">
+                        {formatRestaurantType(restaurant.restaurant_type)} {restaurants.length > 1 && `(${restaurants.length})`}
+                      </Text>
                     </Stack>
                   </Group>
                 }
@@ -214,7 +243,11 @@ const RestaurantSetup = () => {
                 <Menu.Item
                   key={r.id}
                   onClick={() => selectRestaurant(r.id)}
-                  leftSection={<IconBuildingStore size={16} />}
+                  leftSection={
+                    <Avatar size="xs" radius="xl" src={r.logo_url}>
+                      {!r.logo_url && <IconBuildingStore size={14} />}
+                    </Avatar>
+                  }
                   rightSection={restaurant?.id === r.id ? <IconCircleCheck size={16} color="var(--mantine-color-orange-6)" /> : null}
                   bg={restaurant?.id === r.id ? 'orange.0' : undefined}
                 >

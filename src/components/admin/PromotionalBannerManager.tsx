@@ -379,12 +379,12 @@ export const PromotionalBannerManager: React.FC = () => {
   const inactiveBanners = banners.filter(b => !b.is_active);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Promotional Banners</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-xl font-semibold">Promotional Banners</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Manage promotional carousel cards displayed on the mobile restaurants page
           </p>
         </div>
@@ -398,28 +398,33 @@ export const PromotionalBannerManager: React.FC = () => {
           }
         }}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingBanner(null);
-              setFormData(initialFormData);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button 
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                setEditingBanner(null);
+                setFormData(initialFormData);
+              }}
+            >
+              <Plus className="h-3 w-3 mr-1.5" />
               Create Banner
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg">
                 {editingBanner ? 'Edit' : 'Create'} Promotional Banner
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs">
                 Create promotional cards that appear in the mobile app carousel
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="title" className="text-xs">Title *</Label>
                 <Input
                   id="title"
+                  className="h-8 text-sm"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Exclusive: 20% Off All Sushi Orders"
@@ -427,10 +432,11 @@ export const PromotionalBannerManager: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Subtitle *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="subtitle" className="text-xs">Subtitle *</Label>
                 <Textarea
                   id="subtitle"
+                  className="text-sm min-h-[60px]"
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                   placeholder="Limited to the first 500 customers. Code: LUXURY20"
@@ -439,13 +445,13 @@ export const PromotionalBannerManager: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image">Banner Image *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="image" className="text-xs">Banner Image *</Label>
                 
                 {/* Upload Section */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {!imagePreview ? (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -459,16 +465,16 @@ export const PromotionalBannerManager: React.FC = () => {
                         <div className="flex flex-col items-center justify-center">
                           {uploadingImage ? (
                             <>
-                              <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-600">Uploading...</p>
+                              <Loader2 className="h-6 w-6 animate-spin text-gray-400 mb-1.5" />
+                              <p className="text-xs text-gray-600">Uploading...</p>
                             </>
                           ) : (
                             <>
-                              <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                              <p className="text-sm font-medium text-gray-700">
+                              <Upload className="h-6 w-6 text-gray-400 mb-1.5" />
+                              <p className="text-xs font-medium text-gray-700">
                                 Click to upload or drag and drop
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500 mt-0.5">
                                 PNG, JPG, WEBP up to 10MB
                               </p>
                             </>
@@ -481,7 +487,7 @@ export const PromotionalBannerManager: React.FC = () => {
                       <img 
                         src={imagePreview} 
                         alt="Preview" 
-                        className="w-full h-48 object-cover rounded-md border"
+                        className="w-full h-40 object-cover rounded-md border"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -490,19 +496,20 @@ export const PromotionalBannerManager: React.FC = () => {
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="absolute top-2 right-2"
+                        className="absolute top-1.5 right-1.5 h-6 w-6 p-0"
                         onClick={handleRemoveImage}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   )}
                   
                   {/* URL Input as Alternative */}
-                  <div className="mt-2">
+                  <div className="mt-1.5">
                     <p className="text-xs text-gray-500 mb-1">Or enter image URL:</p>
                     <Input
                       id="image_url"
+                      className="h-8 text-sm"
                       type="url"
                       value={formData.image_url}
                       onChange={(e) => {
@@ -519,11 +526,12 @@ export const PromotionalBannerManager: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="display_order">Display Order</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="display_order" className="text-xs">Display Order</Label>
                   <Input
                     id="display_order"
+                    className="h-8 text-sm"
                     type="number"
                     value={formData.display_order}
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
@@ -532,15 +540,15 @@ export const PromotionalBannerManager: React.FC = () => {
                   <p className="text-xs text-gray-500">Lower numbers appear first</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="target_audience">Target Audience</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="target_audience" className="text-xs">Target Audience</Label>
                   <Select
                     value={formData.target_audience}
                     onValueChange={(value: 'all' | 'new_users' | 'existing_users') => 
                       setFormData({ ...formData, target_audience: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -552,13 +560,13 @@ export const PromotionalBannerManager: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Valid From</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Valid From</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                      <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                        <CalendarIcon className="mr-1.5 h-3 w-3" />
                         {formData.valid_from ? format(formData.valid_from, 'PPP') : 'Pick a date'}
                       </Button>
                     </PopoverTrigger>
@@ -573,12 +581,12 @@ export const PromotionalBannerManager: React.FC = () => {
                   </Popover>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Valid Until (Optional)</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Valid Until (Optional)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                      <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                        <CalendarIcon className="mr-1.5 h-3 w-3" />
                         {formData.valid_until ? format(formData.valid_until, 'PPP') : 'No expiration'}
                       </Button>
                     </PopoverTrigger>
@@ -594,15 +602,15 @@ export const PromotionalBannerManager: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="action_type">Action Type</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="action_type" className="text-xs">Action Type</Label>
                 <Select
                   value={formData.action_type}
                   onValueChange={(value: 'none' | 'url' | 'promo_code' | 'restaurant') => 
                     setFormData({ ...formData, action_type: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -615,10 +623,11 @@ export const PromotionalBannerManager: React.FC = () => {
               </div>
 
               {formData.action_type === 'url' && (
-                <div className="space-y-2">
-                  <Label htmlFor="action_url">Action URL</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="action_url" className="text-xs">Action URL</Label>
                   <Input
                     id="action_url"
+                    className="h-8 text-sm"
                     type="url"
                     value={formData.action_url}
                     onChange={(e) => setFormData({ ...formData, action_url: e.target.value })}
@@ -633,17 +642,17 @@ export const PromotionalBannerManager: React.FC = () => {
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
-                <Label htmlFor="is_active">Active</Label>
+                <Label htmlFor="is_active" className="text-xs">Active</Label>
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <DialogFooter className="pt-2">
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={uploadingImage || !formData.image_url}>
+                <Button type="submit" size="sm" className="h-8 text-xs" disabled={uploadingImage || !formData.image_url}>
                   {uploadingImage ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
                       Uploading...
                     </>
                   ) : (
@@ -661,69 +670,71 @@ export const PromotionalBannerManager: React.FC = () => {
       {/* Active Banners */}
       {activeBanners.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Active Banners ({activeBanners.length})</CardTitle>
-            <CardDescription>
+          <CardHeader className="p-3">
+            <CardTitle className="text-base">Active Banners ({activeBanners.length})</CardTitle>
+            <CardDescription className="text-xs">
               These banners are currently displayed in the mobile app carousel
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Preview</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Valid Period</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Preview</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Title</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Order</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Status</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Valid Period</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {activeBanners.map((banner, index) => (
                   <TableRow key={banner.id}>
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <img 
                         src={banner.image_url} 
                         alt={banner.title}
-                        className="w-16 h-16 object-cover rounded"
+                        className="w-12 h-12 object-cover rounded"
                         onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/64x64/f5f5f5/333?text=Image';
+                          e.currentTarget.src = 'https://placehold.co/48x48/f5f5f5/333?text=Image';
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div>
-                        <div className="font-medium">{banner.title}</div>
-                        <div className="text-sm text-gray-500">{banner.subtitle}</div>
+                        <div className="text-xs font-medium">{banner.title}</div>
+                        <div className="text-xs text-gray-500">{banner.subtitle}</div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-6 w-6 p-0"
                           onClick={() => handleReorder(banner.id, 'up')}
                           disabled={index === 0}
                         >
-                          <ArrowUp className="h-4 w-4" />
+                          <ArrowUp className="h-3 w-3" />
                         </Button>
-                        <span className="px-2">{banner.display_order}</span>
+                        <span className="px-1.5 text-xs">{banner.display_order}</span>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-6 w-6 p-0"
                           onClick={() => handleReorder(banner.id, 'down')}
                           disabled={index === activeBanners.length - 1}
                         >
-                          <ArrowDown className="h-4 w-4" />
+                          <ArrowDown className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="default">Active</Badge>
+                    <TableCell className="py-2 px-3">
+                      <Badge variant="default" className="text-xs">Active</Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
+                    <TableCell className="py-2 px-3">
+                      <div className="text-xs">
                         <div>{format(new Date(banner.valid_from), 'MMM d, yyyy')}</div>
                         {banner.valid_until && (
                           <div className="text-gray-500">
@@ -732,28 +743,31 @@ export const PromotionalBannerManager: React.FC = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="py-2 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleToggleActive(banner)}
                         >
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleEdit(banner)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleDelete(banner.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -768,68 +782,71 @@ export const PromotionalBannerManager: React.FC = () => {
       {/* Inactive Banners */}
       {inactiveBanners.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Inactive Banners ({inactiveBanners.length})</CardTitle>
-            <CardDescription>
+          <CardHeader className="p-3">
+            <CardTitle className="text-base">Inactive Banners ({inactiveBanners.length})</CardTitle>
+            <CardDescription className="text-xs">
               These banners are not currently displayed
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Preview</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Preview</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Title</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Order</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Status</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {inactiveBanners.map((banner) => (
                   <TableRow key={banner.id}>
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <img 
                         src={banner.image_url} 
                         alt={banner.title}
-                        className="w-16 h-16 object-cover rounded opacity-50"
+                        className="w-12 h-12 object-cover rounded opacity-50"
                         onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/64x64/f5f5f5/333?text=Image';
+                          e.currentTarget.src = 'https://placehold.co/48x48/f5f5f5/333?text=Image';
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div>
-                        <div className="font-medium">{banner.title}</div>
-                        <div className="text-sm text-gray-500">{banner.subtitle}</div>
+                        <div className="text-xs font-medium">{banner.title}</div>
+                        <div className="text-xs text-gray-500">{banner.subtitle}</div>
                       </div>
                     </TableCell>
-                    <TableCell>{banner.display_order}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Inactive</Badge>
+                    <TableCell className="py-2 px-3 text-xs">{banner.display_order}</TableCell>
+                    <TableCell className="py-2 px-3">
+                      <Badge variant="secondary" className="text-xs">Inactive</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <TableCell className="py-2 px-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleToggleActive(banner)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleEdit(banner)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleDelete(banner.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -843,14 +860,14 @@ export const PromotionalBannerManager: React.FC = () => {
 
       {banners.length === 0 && (
         <Card>
-          <CardContent className="p-12 text-center">
-            <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No promotional banners</h3>
-            <p className="text-gray-600 mb-4">
+          <CardContent className="p-6 text-center">
+            <ImageIcon className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+            <h3 className="text-sm font-semibold mb-1">No promotional banners</h3>
+            <p className="text-xs text-gray-600 mb-3">
               Create your first promotional banner to display in the mobile app carousel
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="h-8 text-xs" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-3 w-3 mr-1.5" />
               Create Banner
             </Button>
           </CardContent>

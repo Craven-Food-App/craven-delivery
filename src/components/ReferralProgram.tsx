@@ -185,7 +185,7 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
   const referredBonusAmount = (settings?.referred_bonus_amount || 0) / 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Video Section - Show for all types if available */}
       {videoContent && (
         <Card className="overflow-hidden">
@@ -200,12 +200,12 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
             </video>
           </div>
           {(videoContent.title || videoContent.description) && (
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               {videoContent.title && (
-                <h3 className="font-bold text-lg mb-1">{videoContent.title}</h3>
+                <h3 className="font-bold text-base mb-1">{videoContent.title}</h3>
               )}
               {videoContent.description && (
-                <p className="text-sm text-gray-600">{videoContent.description}</p>
+                <p className="text-xs text-muted-foreground">{videoContent.description}</p>
               )}
             </CardContent>
           )}
@@ -214,113 +214,113 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
 
       {/* Driver-Specific Header */}
       {userType === 'driver' && (
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6 rounded-lg">
-          <h2 className="text-3xl font-bold mb-2">💸 Earn $400 Per Driver</h2>
-          <p className="text-orange-100">Bring the Hustlers. Grow Your Crew.</p>
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-lg">
+          <h2 className="text-2xl font-bold mb-1">💸 Earn $400 Per Driver</h2>
+          <p className="text-sm text-orange-100">Bring the Hustlers. Grow Your Crew.</p>
         </div>
       )}
 
       {/* Header */}
       {userType !== 'driver' && (
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2">Refer & Earn</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold mb-1">Refer & Earn</h2>
+          <p className="text-sm text-muted-foreground">
             Share the love and earn ${referralBonusAmount} for every friend you refer!
           </p>
         </div>
       )}
 
       {/* Referral Code Card */}
-      <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
+      <Card className="p-4 bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
         <div className="text-center">
-          <Gift className="w-16 h-16 mx-auto mb-4 text-orange-600" />
-          <h3 className="text-xl font-bold mb-2">Your Referral Code</h3>
-          <div className="flex gap-2 max-w-md mx-auto mb-4">
+          <Gift className="w-12 h-12 mx-auto mb-2 text-orange-600" />
+          <h3 className="text-lg font-bold mb-2">Your Referral Code</h3>
+          <div className="flex gap-2 max-w-md mx-auto mb-3">
             <Input
               value={referralCode}
               readOnly
-              className="text-center text-2xl font-bold tracking-wider bg-white"
+              className="text-center text-xl font-bold tracking-wider bg-white h-10"
             />
-            <Button onClick={handleCopyCode} variant="outline">
+            <Button onClick={handleCopyCode} variant="outline" size="sm" className="h-10">
               <Copy className="w-4 h-4" />
             </Button>
           </div>
-          <Button onClick={handleShare} className="bg-gradient-to-r from-orange-500 to-red-500">
-            <Share2 className="w-4 h-4 mr-2" />
+          <Button onClick={handleShare} size="sm" className="bg-gradient-to-r from-orange-500 to-red-500 h-9 text-sm">
+            <Share2 className="w-4 h-4 mr-1.5" />
             Share Your Code
           </Button>
         </div>
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            <span className="text-sm text-gray-600">Total Referrals</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="p-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Users className="w-4 h-4 text-blue-600" />
+            <span className="text-xs text-muted-foreground">Total Referrals</span>
           </div>
-          <p className="text-3xl font-bold text-blue-600">{stats.total_referrals}</p>
+          <p className="text-2xl font-bold text-blue-600">{stats.total_referrals}</p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-sm text-gray-600">Completed</span>
+        <Card className="p-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="text-xs text-muted-foreground">Completed</span>
           </div>
-          <p className="text-3xl font-bold text-green-600">{stats.completed_referrals}</p>
+          <p className="text-2xl font-bold text-green-600">{stats.completed_referrals}</p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5 text-orange-600" />
-            <span className="text-sm text-gray-600">Pending</span>
+        <Card className="p-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Clock className="w-4 h-4 text-orange-600" />
+            <span className="text-xs text-muted-foreground">Pending</span>
           </div>
-          <p className="text-3xl font-bold text-orange-600">
+          <p className="text-2xl font-bold text-orange-600">
             ${(stats.pending_bonuses / 100).toFixed(2)}
           </p>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-5 h-5 text-purple-600" />
-            <span className="text-sm text-gray-600">Total Earned</span>
+        <Card className="p-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <DollarSign className="w-4 h-4 text-purple-600" />
+            <span className="text-xs text-muted-foreground">Total Earned</span>
           </div>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-2xl font-bold text-purple-600">
             ${(stats.total_earned / 100).toFixed(2)}
           </p>
         </Card>
       </div>
 
       {/* How It Works */}
-      <Card className="p-6">
-        <h3 className="text-xl font-bold mb-4">How It Works</h3>
-        <div className="grid md:grid-cols-3 gap-6">
+      <Card className="p-4">
+        <h3 className="text-lg font-bold mb-3">How It Works</h3>
+        <div className="grid md:grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="bg-orange-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl font-bold text-orange-600">1</span>
+            <div className="bg-orange-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+              <span className="text-xl font-bold text-orange-600">1</span>
             </div>
-            <h4 className="font-bold mb-2">Share Your Code</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="font-bold mb-1.5 text-sm">Share Your Code</h4>
+            <p className="text-xs text-muted-foreground">
               Send your unique code to friends via text, email, or social media
             </p>
           </div>
 
           <div className="text-center">
-            <div className="bg-orange-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl font-bold text-orange-600">2</span>
+            <div className="bg-orange-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+              <span className="text-xl font-bold text-orange-600">2</span>
             </div>
-            <h4 className="font-bold mb-2">They Sign Up</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="font-bold mb-1.5 text-sm">They Sign Up</h4>
+            <p className="text-xs text-muted-foreground">
               Your friend signs up using your code and gets ${referredBonusAmount} off their first order
             </p>
           </div>
 
           <div className="text-center">
-            <div className="bg-orange-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl font-bold text-orange-600">3</span>
+            <div className="bg-orange-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+              <span className="text-xl font-bold text-orange-600">3</span>
             </div>
-            <h4 className="font-bold mb-2">You Both Earn</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="font-bold mb-1.5 text-sm">You Both Earn</h4>
+            <p className="text-xs text-muted-foreground">
               After they complete their first order, you both receive ${referralBonusAmount} in credits!
             </p>
           </div>
@@ -330,28 +330,28 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
       {/* Driver-Specific Earning Breakdown */}
       {userType === 'driver' && settings && (
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
+          <CardHeader className="p-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
               Earning Breakdown
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-              <span className="font-medium">Milestone 1: {settings.milestone_1_delivery_count || 1} delivery</span>
-              <span className="text-lg font-bold text-green-600">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex justify-between items-center p-2.5 bg-white rounded-lg">
+              <span className="text-sm font-medium">Milestone 1: {settings.milestone_1_delivery_count || 1} delivery</span>
+              <span className="text-base font-bold text-green-600">
                 ${((settings.milestone_1_amount_cents || 10000) / 100).toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-              <span className="font-medium">Milestone 2: {settings.milestone_2_delivery_count || 20} deliveries</span>
-              <span className="text-lg font-bold text-green-600">
+            <div className="flex justify-between items-center p-2.5 bg-white rounded-lg">
+              <span className="text-sm font-medium">Milestone 2: {settings.milestone_2_delivery_count || 20} deliveries</span>
+              <span className="text-base font-bold text-green-600">
                 ${((settings.milestone_2_amount_cents || 30000) / 100).toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg border-2 border-green-300">
-              <span className="font-bold">Total Per Driver</span>
-              <span className="text-xl font-bold text-green-600">
+            <div className="flex justify-between items-center p-2.5 bg-white rounded-lg border-2 border-green-300">
+              <span className="text-sm font-bold">Total Per Driver</span>
+              <span className="text-lg font-bold text-green-600">
                 ${(((settings.milestone_1_amount_cents || 10000) + (settings.milestone_2_amount_cents || 30000)) / 100).toFixed(2)}
               </span>
             </div>
@@ -362,20 +362,20 @@ export function ReferralProgram({ userType = 'customer' }: { userType?: 'custome
       {/* Driver-Specific Earning Examples */}
       {userType === 'driver' && (
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-green-600" />
+          <CardHeader className="p-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-green-600" />
               Earning Examples
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-              <span className="font-medium">Refer 5 drivers</span>
-              <span className="text-xl font-bold text-green-600">$2,000</span>
+          <CardContent className="p-3 space-y-2">
+            <div className="flex justify-between items-center p-2.5 bg-white rounded-lg">
+              <span className="text-sm font-medium">Refer 5 drivers</span>
+              <span className="text-lg font-bold text-green-600">$2,000</span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-              <span className="font-medium">Refer 10 drivers</span>
-              <span className="text-xl font-bold text-green-600">$4,000</span>
+            <div className="flex justify-between items-center p-2.5 bg-white rounded-lg">
+              <span className="text-sm font-medium">Refer 10 drivers</span>
+              <span className="text-lg font-bold text-green-600">$4,000</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-white rounded-lg">
               <span className="font-medium">Refer 20 drivers</span>

@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Instagram, Image, Plus, ExternalLink } from "lucide-react";
 import { AddressAutocomplete } from "@/components/common/AddressAutocomplete";
 import ImageCropper from "@/components/common/ImageCropper";
+import RestaurantHours from "@/components/restaurant/RestaurantHours";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
@@ -30,10 +32,24 @@ const StoreSettingsDashboard = () => {
   const [storeZip, setStoreZip] = useState("");
   const [storeWebsite, setStoreWebsite] = useState("");
   const [storeDescription, setStoreDescription] = useState("");
+  const [storeType, setStoreType] = useState<string>("");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const headerInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Restaurant type options (matching QualificationStep)
+  const restaurantTypeOptions = [
+    { value: "full_service", label: "Full Service Restaurant" },
+    { value: "fast_casual", label: "Fast Casual" },
+    { value: "quick_service", label: "Quick Service (Fast Food)" },
+    { value: "cafe", label: "Café or Coffee Shop" },
+    { value: "bakery", label: "Bakery" },
+    { value: "ghost_kitchen", label: "Ghost Kitchen/Virtual Brand" },
+    { value: "catering", label: "Catering Only" },
+    { value: "food_truck", label: "Food Truck" },
+    { value: "retail_store", label: "Retail Store" },
+  ];
 
   useEffect(() => {
     if (restaurant) {
@@ -47,6 +63,7 @@ const StoreSettingsDashboard = () => {
       setHeaderPhoto(restaurant.header_image_url || null);
       setLogoPhoto(restaurant.logo_url || null);
       setInstagramHandle(restaurant.instagram_handle || "");
+      setStoreType(restaurant.restaurant_type || "");
     }
   }, [restaurant]);
 
@@ -185,6 +202,56 @@ const StoreSettingsDashboard = () => {
                       <p>{storeName || 'Not set'}</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setEditingField('name')}>Edit</Button>
+                  </div>
+                )}
+
+                {/* Store Type */}
+                {editingField === 'restaurant_type' ? (
+                  <Dialog open={editingField === 'restaurant_type'} onOpenChange={(open) => !open && setEditingField(null)}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Store Type</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Store Type</Label>
+                          <Select
+                            value={storeType}
+                            onValueChange={(value) => setStoreType(value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select store type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {restaurantTypeOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button 
+                          onClick={() => handleSaveField('restaurant_type', storeType)}
+                          disabled={saving}
+                          className="w-full"
+                        >
+                          {saving ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold mb-1">Store type</h3>
+                      <p>
+                        {storeType 
+                          ? restaurantTypeOptions.find(opt => opt.value === storeType)?.label || storeType
+                          : 'Not set'}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setEditingField('restaurant_type')}>Edit</Button>
                   </div>
                 )}
 
@@ -440,6 +507,11 @@ const StoreSettingsDashboard = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Business Hours */}
+          {restaurant?.id && (
+            <RestaurantHours restaurantId={restaurant.id} />
+          )}
 
           {/* Brand Assets */}
           <Card>

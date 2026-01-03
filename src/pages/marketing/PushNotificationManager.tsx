@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface PushCampaign {
   id: string;
@@ -157,156 +158,161 @@ const PushNotificationManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Push Notifications</h2>
-          <p className="text-gray-600 mt-1">Create and send push notification campaigns</p>
+          <h2 className="text-lg font-semibold text-gray-900">Push Notifications</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create and send push notification campaigns</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="bg-orange-600 hover:bg-orange-700">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+          <Plus className="h-3 w-3 mr-1.5" />
           Create Campaign
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Campaigns</p>
-              <p className="text-2xl font-bold">{campaigns.length}</p>
+      {/* Compact Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Campaigns</p>
+              <Bell className="h-3 w-3 text-orange-600" />
             </div>
-            <Bell className="h-8 w-8 text-orange-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{campaigns.length}</p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Sent</p>
-              <p className="text-2xl font-bold">
-                {campaigns.reduce((sum, c) => sum + c.sentCount, 0).toLocaleString()}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Sent</p>
+              <Send className="h-3 w-3 text-blue-600" />
             </div>
-            <Send className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {campaigns.reduce((sum, c) => sum + c.sentCount, 0).toLocaleString()}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Avg Delivery Rate</p>
-              <p className="text-2xl font-bold">
-                {campaigns.length > 0
-                  ? (campaigns.reduce((sum, c) => sum + c.deliveryRate, 0) / campaigns.length).toFixed(1)
-                  : 0}%
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Avg Delivery</p>
+              <Smartphone className="h-3 w-3 text-green-600" />
             </div>
-            <Smartphone className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {campaigns.length > 0
+                ? (campaigns.reduce((sum, c) => sum + c.deliveryRate, 0) / campaigns.length).toFixed(1)
+                : 0}%
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Avg Click Rate</p>
-              <p className="text-2xl font-bold">
-                {campaigns.length > 0
-                  ? (campaigns.reduce((sum, c) => sum + c.clickRate, 0) / campaigns.length).toFixed(1)
-                  : 0}%
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Avg Click Rate</p>
+              <TrendingUp className="h-3 w-3 text-purple-600" />
             </div>
-            <TrendingUp className="h-8 w-8 text-purple-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {campaigns.length > 0
+                ? (campaigns.reduce((sum, c) => sum + c.clickRate, 0) / campaigns.length).toFixed(1)
+                : 0}%
+            </p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Campaigns Table */}
-      <Card className="p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Campaign</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Sent</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Delivery</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Click Rate</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map((campaign) => (
-                <tr key={campaign.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div className="font-medium text-gray-900">{campaign.title}</div>
-                    <div className="text-sm text-gray-500">{campaign.body}</div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      campaign.status === 'sent' ? 'bg-green-100 text-green-700' :
-                      campaign.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                      campaign.status === 'sending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {campaign.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">{campaign.sentCount.toLocaleString()}</td>
-                  <td className="py-3 px-4">{campaign.deliveryRate.toFixed(1)}%</td>
-                  <td className="py-3 px-4">{campaign.clickRate.toFixed(1)}%</td>
-                  <td className="py-3 px-4">
-                    {campaign.status === 'draft' && (
-                      <Button size="sm" onClick={() => handleSendCampaign(campaign)}>
-                        Send
-                      </Button>
-                    )}
-                  </td>
+      {/* Dense Campaigns Table */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">Campaigns</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Campaign</th>
+                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Sent</th>
+                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Delivery</th>
+                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Click Rate</th>
+                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {campaigns.map((campaign) => (
+                  <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-xs text-gray-900">{campaign.title}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">{campaign.body}</div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge className={`text-[10px] px-1.5 py-0.5 font-medium border ${
+                        campaign.status === 'sent' ? 'bg-green-50 text-green-700 border-green-200' :
+                        campaign.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        campaign.status === 'sending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                        'bg-gray-50 text-gray-700 border-gray-200'
+                      }`}>
+                        {campaign.status}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 text-right text-xs text-gray-700">{campaign.sentCount.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">{campaign.deliveryRate.toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">{campaign.clickRate.toFixed(1)}%</td>
+                    <td className="px-3 py-2 text-right">
+                      {campaign.status === 'draft' && (
+                        <Button size="sm" onClick={() => handleSendCampaign(campaign)} className="h-6 px-2 text-[10px] bg-orange-500 hover:bg-orange-600">
+                          Send
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Create Campaign Modal */}
+      {/* Create Campaign Modal - Compact */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create Push Notification</DialogTitle>
+            <DialogTitle className="text-base">Create Push Notification</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3 mt-4">
             <div>
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title" className="text-xs">Title *</Label>
               <Input
                 id="title"
                 value={newCampaign.title}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Notification title"
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
                 maxLength={50}
               />
-              <p className="text-xs text-gray-500 mt-1">{newCampaign.title.length}/50</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">{newCampaign.title.length}/50</p>
             </div>
             <div>
-              <Label htmlFor="body">Message *</Label>
+              <Label htmlFor="body" className="text-xs">Message *</Label>
               <Textarea
                 id="body"
                 value={newCampaign.body}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, body: e.target.value }))}
                 placeholder="Notification message"
-                className="mt-1"
+                className="mt-1 text-xs"
                 rows={3}
                 maxLength={150}
               />
-              <p className="text-xs text-gray-500 mt-1">{newCampaign.body.length}/150</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">{newCampaign.body.length}/150</p>
             </div>
             <div>
-              <Label htmlFor="segment">Target Segment</Label>
+              <Label htmlFor="segment" className="text-xs">Target Segment</Label>
               <Select
                 value={newCampaign.segmentId}
                 onValueChange={(value) => setNewCampaign(prev => ({ ...prev, segmentId: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -318,30 +324,30 @@ const PushNotificationManager: React.FC = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="actionUrl">Action URL (when clicked)</Label>
+              <Label htmlFor="actionUrl" className="text-xs">Action URL (when clicked)</Label>
               <Input
                 id="actionUrl"
                 value={newCampaign.actionUrl}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, actionUrl: e.target.value }))}
                 placeholder="/restaurants or specific page"
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
               />
             </div>
             <div>
-              <Label htmlFor="scheduledAt">Schedule (Optional)</Label>
+              <Label htmlFor="scheduledAt" className="text-xs">Schedule (Optional)</Label>
               <Input
                 id="scheduledAt"
                 type="datetime-local"
                 value={newCampaign.scheduledAt}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, scheduledAt: e.target.value }))}
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
               />
             </div>
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleCreateCampaign} className="bg-orange-600 hover:bg-orange-700">
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleCreateCampaign} size="sm" className="flex-1 h-8 text-xs bg-orange-500 hover:bg-orange-600">
                 Create Campaign
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+              <Button variant="outline" onClick={() => setShowCreateModal(false)} size="sm" className="h-8 text-xs">
                 Cancel
               </Button>
             </div>
@@ -353,4 +359,3 @@ const PushNotificationManager: React.FC = () => {
 };
 
 export default PushNotificationManager;
-

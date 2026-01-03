@@ -21,6 +21,11 @@ import {
   SafetyOutlined,
   BugOutlined,
   FundOutlined,
+  CodeOutlined,
+  CloudServerOutlined,
+  AppstoreOutlined,
+  CheckCircleOutlined,
+  DesktopOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -328,7 +333,7 @@ const MainHub: React.FC = () => {
               )
               .eq("email", email)
               .eq("employment_status", "active")
-              .single();
+              .maybeSingle();
 
             if (queryError) {
               console.log("Direct query error:", queryError);
@@ -379,11 +384,11 @@ const MainHub: React.FC = () => {
       }
 
       // Check if employee is also an admin
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("user_profiles")
         .select("role, full_name")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
 
@@ -620,18 +625,20 @@ const MainHub: React.FC = () => {
             } 
             // If entry has exec_user data, fetch name
             else if (entry.exec_users) {
-              const { data: profile } = await supabase
+              const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
                 .select('full_name, email')
                 .eq('user_id', entry.exec_users.user_id)
-                .single();
-              if (profile?.full_name) {
-                name = profile.full_name;
-              } else if (profile?.email) {
-                name = profile.email;
+                .maybeSingle();
+              if (!profileError && profile) {
+                if (profile.full_name) {
+                  name = profile.full_name;
+                } else if (profile.email) {
+                  name = profile.email;
+                }
               }
             }
-            
+
             return { ...entry, display_name: name };
           })
         );
@@ -808,7 +815,7 @@ const MainHub: React.FC = () => {
             .from('time_entries')
             .select('clock_in_at')
             .eq('id', data)
-            .single();
+            .maybeSingle();
           if (entry?.clock_in_at) {
             actualClockInAt = entry.clock_in_at;
           }
@@ -1014,7 +1021,7 @@ const MainHub: React.FC = () => {
               .from('employees')
               .select('id, first_name, last_name, email')
               .eq('id', dept.head_employee_id)
-              .single();
+              .maybeSingle();
             headEmployee = head;
           }
 
@@ -1189,6 +1196,46 @@ const MainHub: React.FC = () => {
       color: "#eb2f96",
     },
     {
+      id: "engineering-workspace",
+      name: "Engineering Workspace",
+      description: "Sprint management, code reviews, and team collaboration",
+      icon: CodeOutlined,
+      path: "/engineering-workspace",
+      color: "#722ed1",
+    },
+    {
+      id: "platform-infrastructure",
+      name: "Platform & Infrastructure Hub",
+      description: "Infrastructure monitoring, service health, and deployments",
+      icon: CloudServerOutlined,
+      path: "/platform-infrastructure",
+      color: "#1890ff",
+    },
+    {
+      id: "product-command",
+      name: "Product Command Center",
+      description: "Product management, feature tracking, and roadmap planning",
+      icon: AppstoreOutlined,
+      path: "/product-command",
+      color: "#52c41a",
+    },
+    {
+      id: "quality-release",
+      name: "Quality & Release Portal",
+      description: "QA workflows, release management, and testing coordination",
+      icon: CheckCircleOutlined,
+      path: "/quality-release",
+      color: "#fa8c16",
+    },
+    {
+      id: "internal-it",
+      name: "Internal IT Operations",
+      description: "IT help desk, asset management, and internal tooling",
+      icon: DesktopOutlined,
+      path: "/internal-it",
+      color: "#eb2f96",
+    },
+    {
       id: "cxo",
       name: "CXO Experience Portal",
       description: "Experience leadership and customer insights",
@@ -1294,6 +1341,12 @@ const MainHub: React.FC = () => {
   const canCOO = usePermission('coo.view');
   const canCTO = usePermission('cto.view');
   const canHR = usePermission('hr.view');
+  // Technology portal permissions - default to CTO permission for now
+  const canEngineering = canCTO || (user?.email && hasFullAccess(user.email));
+  const canPlatform = canCTO || (user?.email && hasFullAccess(user.email));
+  const canProduct = canCTO || (user?.email && hasFullAccess(user.email));
+  const canQuality = canCTO || (user?.email && hasFullAccess(user.email));
+  const canITOps = canCTO || (user?.email && hasFullAccess(user.email));
 
   const [hasCompanyAccess, setHasCompanyAccess] = useState(false);
 
@@ -1327,6 +1380,11 @@ const MainHub: React.FC = () => {
       case 'cfo': return canCFO;
       case 'coo': return canCOO;
       case 'cto': return canCTO;
+      case 'engineering-workspace': return canEngineering;
+      case 'platform-infrastructure': return canPlatform;
+      case 'product-command': return canProduct;
+      case 'quality-release': return canQuality;
+      case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
       case 'hr': return canHR;
       default: return true;
@@ -2250,3 +2308,4 @@ const MainHub: React.FC = () => {
 };
 
 export default MainHub;
+

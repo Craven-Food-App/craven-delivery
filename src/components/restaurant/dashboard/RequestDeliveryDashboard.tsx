@@ -113,7 +113,12 @@ const RequestDeliveryDashboard = () => {
               />
               <label htmlFor="terms" className="text-sm cursor-pointer">
                 I understand and agree to the{" "}
-                <a href="#" className="text-primary underline">
+                <a 
+                  href="/drive-on-demand-merchant-terms" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:text-primary/80"
+                >
                   Drive On-Demand Merchant Terms and Conditions
                 </a>
                 .

@@ -46,30 +46,30 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
   const progressPercentage = (userPoints / (pointsToNextTier + userPoints)) * 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header Card */}
       <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Crave'N Rewards</h2>
-              <p className="opacity-90">Earn points with every order!</p>
+              <h2 className="text-2xl font-bold mb-1">Crave'N Rewards</h2>
+              <p className="text-sm opacity-90">Earn points with every order!</p>
             </div>
-            <Crown className="h-16 w-16 opacity-50" />
+            <Crown className="h-12 w-12 opacity-50" />
           </div>
           
-          <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-3 gap-3 mt-4">
             <div>
-              <p className="text-sm opacity-75">Your Points</p>
-              <p className="text-2xl font-bold">{userPoints}</p>
+              <p className="text-xs opacity-75">Your Points</p>
+              <p className="text-xl font-bold">{userPoints}</p>
             </div>
             <div>
-              <p className="text-sm opacity-75">Tier</p>
-              <p className="text-2xl font-bold">{userTier}</p>
+              <p className="text-xs opacity-75">Tier</p>
+              <p className="text-xl font-bold">{userTier}</p>
             </div>
             <div>
-              <p className="text-sm opacity-75">Orders</p>
-              <p className="text-2xl font-bold">{totalOrders}</p>
+              <p className="text-xs opacity-75">Orders</p>
+              <p className="text-xl font-bold">{totalOrders}</p>
             </div>
           </div>
         </CardContent>
@@ -77,27 +77,27 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
 
       {/* Progress to Next Tier */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+        <CardHeader className="p-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
             {userTier === 'Platinum' as string ? 'Maximum Tier Reached!' : 'Progress to Next Tier'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           {(userTier as string) === 'Platinum' ? (
-            <div className="text-center py-4">
-              <Crown className="h-12 w-12 mx-auto mb-2 text-purple-600" />
-              <p className="font-semibold">You've reached the highest tier!</p>
-              <p className="text-sm text-muted-foreground">Enjoy all premium benefits</p>
+            <div className="text-center py-3">
+              <Crown className="h-10 w-10 mx-auto mb-1.5 text-purple-600" />
+              <p className="text-sm font-semibold">You've reached the highest tier!</p>
+              <p className="text-xs text-muted-foreground">Enjoy all premium benefits</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
                 <span>Current: {userPoints} points</span>
                 <span>Next: {userPoints + pointsToNextTier} points</span>
               </div>
-              <Progress value={progressPercentage} className="h-3" />
-              <p className="text-sm text-muted-foreground">
+              <Progress value={progressPercentage} className="h-2" />
+              <p className="text-xs text-muted-foreground">
                 {pointsToNextTier} more points to reach next tier!
               </p>
             </div>
@@ -107,33 +107,33 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
 
       {/* Tier Benefits */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5" />
+        <CardHeader className="p-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Star className="h-4 w-4" />
             Membership Tiers
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="p-3">
+          <div className="space-y-2">
             {tiers.map((tier) => (
               <div
                 key={tier.name}
-                className={`p-4 rounded-lg border-2 ${
+                className={`p-3 rounded-lg border-2 ${
                   tier.name === userTier ? 'border-primary bg-primary/5' : 'border-border'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${tier.color}`} />
-                    <h4 className="font-semibold">{tier.name}</h4>
+                    <div className={`w-2.5 h-2.5 rounded-full ${tier.color}`} />
+                    <h4 className="text-sm font-semibold">{tier.name}</h4>
                   </div>
-                  <Badge variant={tier.name === userTier ? 'default' : 'outline'}>
+                  <Badge variant={tier.name === userTier ? 'default' : 'outline'} className="text-xs">
                     {tier.minPoints}+ points
                   </Badge>
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1">
+                <ul className="text-xs text-muted-foreground space-y-0.5">
                   {tier.benefits.map((benefit, i) => (
-                    <li key={i} className="flex items-center gap-2">
+                    <li key={i} className="flex items-center gap-1.5">
                       <Award className="h-3 w-3" />
                       {benefit}
                     </li>
@@ -147,31 +147,31 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
 
       {/* Available Rewards */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
+        <CardHeader className="p-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gift className="h-4 w-4" />
             Redeem Rewards
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {rewards.map((reward) => {
               const Icon = reward.icon;
               const canRedeem = userPoints >= reward.points;
               
               return (
                 <Card key={reward.id} className={!canRedeem ? 'opacity-50' : ''}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Icon className="h-8 w-8 text-primary" />
-                      <Badge variant={canRedeem ? 'default' : 'outline'}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <Icon className="h-6 w-6 text-primary" />
+                      <Badge variant={canRedeem ? 'default' : 'outline'} className="text-xs">
                         {reward.points} pts
                       </Badge>
                     </div>
-                    <h4 className="font-semibold mb-2">{reward.name}</h4>
+                    <h4 className="text-sm font-semibold mb-1.5">{reward.name}</h4>
                     <Button 
                       size="sm" 
-                      className="w-full" 
+                      className="w-full h-8 text-xs" 
                       disabled={!canRedeem}
                       variant={canRedeem ? 'default' : 'outline'}
                     >
@@ -187,21 +187,21 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
 
       {/* Recent Activity */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+        <CardHeader className="p-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
             Recent Activity
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="p-3">
+          <div className="space-y-2">
             {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+              <div key={index} className="flex items-center justify-between py-1.5 border-b last:border-0">
                 <div>
-                  <p className="font-medium text-sm">{activity.description}</p>
+                  <p className="font-medium text-xs">{activity.description}</p>
                   <p className="text-xs text-muted-foreground">{activity.date}</p>
                 </div>
-                <Badge variant={activity.points > 0 ? 'default' : 'outline'}>
+                <Badge variant={activity.points > 0 ? 'default' : 'outline'} className="text-xs">
                   {activity.points > 0 ? '+' : ''}{activity.points} pts
                 </Badge>
               </div>
@@ -211,19 +211,19 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
       </Card>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2">
         <Card>
-          <CardContent className="p-4 text-center">
-            <ShoppingBag className="h-8 w-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">{totalOrders}</p>
-            <p className="text-sm text-muted-foreground">Total Orders</p>
+          <CardContent className="p-3 text-center">
+            <ShoppingBag className="h-6 w-6 mx-auto mb-1.5 text-primary" />
+            <p className="text-xl font-bold">{totalOrders}</p>
+            <p className="text-xs text-muted-foreground">Total Orders</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <Heart className="h-8 w-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">${lifetimeSpent.toFixed(2)}</p>
-            <p className="text-sm text-muted-foreground">Lifetime Spent</p>
+          <CardContent className="p-3 text-center">
+            <Heart className="h-6 w-6 mx-auto mb-1.5 text-primary" />
+            <p className="text-xl font-bold">${lifetimeSpent.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Lifetime Spent</p>
           </CardContent>
         </Card>
       </div>

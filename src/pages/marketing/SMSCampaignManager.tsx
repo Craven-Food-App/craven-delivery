@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface SMSCampaign {
   id: string;
@@ -67,100 +68,153 @@ const SMSCampaignManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">SMS Campaigns</h2>
-          <p className="text-gray-600 mt-1">Create and send SMS marketing messages</p>
+          <h2 className="text-lg font-semibold text-gray-900">SMS Campaigns</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create and send SMS marketing messages</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="bg-orange-600 hover:bg-orange-700">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+          <Plus className="h-3 w-3 mr-1.5" />
           Create Campaign
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Campaigns</p>
-              <p className="text-2xl font-bold">{campaigns.length}</p>
+      {/* Compact Stats Cards */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Campaigns</p>
+              <MessageSquare className="h-3 w-3 text-orange-600" />
             </div>
-            <MessageSquare className="h-8 w-8 text-orange-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{campaigns.length}</p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Sent</p>
-              <p className="text-2xl font-bold">
-                {campaigns.reduce((sum, c) => sum + c.sentCount, 0).toLocaleString()}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Sent</p>
+              <Send className="h-3 w-3 text-blue-600" />
             </div>
-            <Send className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {campaigns.reduce((sum, c) => sum + c.sentCount, 0).toLocaleString()}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Avg Delivery Rate</p>
-              <p className="text-2xl font-bold">
-                {campaigns.length > 0
-                  ? (campaigns.reduce((sum, c) => sum + c.deliveryRate, 0) / campaigns.length).toFixed(1)
-                  : 0}%
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Avg Delivery</p>
+              <Phone className="h-3 w-3 text-green-600" />
             </div>
-            <Phone className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">
+              {campaigns.length > 0
+                ? (campaigns.reduce((sum, c) => sum + c.deliveryRate, 0) / campaigns.length).toFixed(1)
+                : 0}%
+            </p>
+          </CardContent>
         </Card>
       </div>
 
-      {campaigns.length === 0 && (
-        <Card className="p-12 text-center">
-          <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No SMS campaigns yet</h3>
-          <p className="text-gray-600 mb-4">Create your first SMS campaign to reach customers directly</p>
-          <Button onClick={() => setShowCreateModal(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Campaign
-          </Button>
+      {/* Campaigns List or Empty State */}
+      {campaigns.length === 0 ? (
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <MessageSquare className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">No SMS campaigns yet</h3>
+            <p className="text-xs text-gray-600 mb-3">Create your first SMS campaign to reach customers directly</p>
+            <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+              <Plus className="h-3 w-3 mr-1.5" />
+              Create Campaign
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-gray-200 shadow-sm">
+          <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+            <CardTitle className="text-sm font-semibold">Campaigns</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Campaign</th>
+                    <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Sent</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Delivery</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {campaigns.map((campaign) => (
+                    <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-xs text-gray-900">{campaign.name}</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">{campaign.message.substring(0, 50)}...</div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge className={`text-[10px] px-1.5 py-0.5 font-medium border ${
+                          campaign.status === 'sent' ? 'bg-green-50 text-green-700 border-green-200' :
+                          campaign.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}>
+                          {campaign.status}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right text-xs text-gray-700">{campaign.sentCount.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-xs font-semibold text-gray-900">{campaign.deliveryRate.toFixed(1)}%</td>
+                      <td className="px-3 py-2 text-right">
+                        <Button variant="outline" size="sm" className="h-6 px-2 text-[10px]">
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
         </Card>
       )}
 
+      {/* Create Campaign Modal - Compact */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create SMS Campaign</DialogTitle>
+            <DialogTitle className="text-base">Create SMS Campaign</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3 mt-4">
             <div>
-              <Label htmlFor="smsName">Campaign Name *</Label>
+              <Label htmlFor="smsName" className="text-xs">Campaign Name *</Label>
               <Input
                 id="smsName"
                 value={newCampaign.name}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
               />
             </div>
             <div>
-              <Label htmlFor="smsMessage">Message * (160 chars max)</Label>
+              <Label htmlFor="smsMessage" className="text-xs">Message * (160 chars max)</Label>
               <Textarea
                 id="smsMessage"
                 value={newCampaign.message}
                 onChange={(e) => setNewCampaign(prev => ({ ...prev, message: e.target.value }))}
-                className="mt-1"
+                className="mt-1 text-xs"
                 rows={3}
                 maxLength={160}
               />
-              <p className="text-xs text-gray-500 mt-1">{newCampaign.message.length}/160</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">{newCampaign.message.length}/160</p>
             </div>
             <div>
-              <Label htmlFor="smsSegment">Target Segment</Label>
+              <Label htmlFor="smsSegment" className="text-xs">Target Segment</Label>
               <Select
                 value={newCampaign.segmentId}
                 onValueChange={(value) => setNewCampaign(prev => ({ ...prev, segmentId: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -169,11 +223,11 @@ const SMSCampaignManager: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleCreateCampaign} className="bg-orange-600 hover:bg-orange-700">
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleCreateCampaign} size="sm" className="flex-1 h-8 text-xs bg-orange-500 hover:bg-orange-600">
                 Create Campaign
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+              <Button variant="outline" onClick={() => setShowCreateModal(false)} size="sm" className="h-8 text-xs">
                 Cancel
               </Button>
             </div>
@@ -185,4 +239,3 @@ const SMSCampaignManager: React.FC = () => {
 };
 
 export default SMSCampaignManager;
-

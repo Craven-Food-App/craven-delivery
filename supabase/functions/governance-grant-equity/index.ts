@@ -230,13 +230,51 @@ serve(async (req) => {
 
     const capTableData = capTable.data;
 
+    // Recalculate cap table correctly:
+    // Total Issued = Trust shares (already issued) + Founder shares (already issued) + Grants from ledger
+    // Total Unissued = Authorized - Total Issued
+    const { data: existingGrants, error: existingGrantsError } = await supabaseAdmin
+      .from('equity_ledger')
+      .select('shares_amount')
+      .eq('transaction_type', 'grant');
+
+    if (existingGrantsError) {
+      console.warn('Error fetching existing grants for validation:', existingGrantsError);
+    }
+
+    const grantsFromLedger = existingGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
+    const trustShares = Number(capTableData.trust_shares || 0);
+    const founderShares = Number(capTableData.founder_shares || 0);
+    const totalAuthorized = Number(capTableData.total_authorized || 100000000);
+    
+    // Total issued = Trust + Founder + Grants from ledger
+    const currentTotalIssued = trustShares + founderShares + grantsFromLedger;
+    const currentUnissued = totalAuthorized - currentTotalIssued;
+
+    console.log('Cap table validation (corrected calculation):', {
+      total_authorized: totalAuthorized,
+      trust_shares: trustShares,
+      founder_shares: founderShares,
+      grants_from_ledger: grantsFromLedger,
+      total_issued: currentTotalIssued,
+      total_unissued: currentUnissued,
+      requested: shares_amount,
+    });
+
     // Check if we have enough unissued shares
-    if (capTableData.total_unissued < shares_amount) {
+    if (currentUnissued < shares_amount) {
       return new Response(
         JSON.stringify({ 
           error: 'Insufficient unissued shares in cap table',
-          available: capTableData.total_unissued,
+          available: currentUnissued,
           requested: shares_amount,
+          total_authorized: totalAuthorized,
+          total_issued: currentTotalIssued,
+          breakdown: {
+            trust_shares: trustShares,
+            founder_shares: founderShares,
+            grants_from_ledger: grantsFromLedger,
+          },
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -328,26 +366,42 @@ serve(async (req) => {
 
     console.log('✓ Equity ledger entry created:', ledgerEntry.id);
 
-    // Update cap table (deduct from unissued, add to issued)
-    // Get current values first to ensure we have the right data
-    const currentUnissued = Number(capTableData.total_unissued || 0);
-    const currentIssued = Number(capTableData.total_issued || 0);
-    const newUnissued = currentUnissued - shares_amount;
-    const newIssued = currentIssued + shares_amount;
+    // Recalculate cap table correctly after grant creation:
+    // Total Issued = Trust shares (already issued) + Founder shares (already issued) + Grants from ledger (including new grant)
+    const { data: allGrants, error: grantsError } = await supabaseAdmin
+      .from('equity_ledger')
+      .select('shares_amount')
+      .eq('transaction_type', 'grant');
 
-    console.log('Updating cap table:', {
-      current_unissued: currentUnissued,
-      current_issued: currentIssued,
-      shares_amount,
-      new_unissued: newUnissued,
-      new_issued: newIssued,
+    if (grantsError) {
+      console.error('Error fetching grants for cap table calculation:', grantsError);
+      throw grantsError;
+    }
+
+    const grantsFromLedger = allGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
+    const trustShares = Number(capTableData.trust_shares || 0);
+    const founderShares = Number(capTableData.founder_shares || 0);
+    const totalAuthorized = Number(capTableData.total_authorized || 100000000);
+    
+    // Total issued = Trust + Founder + Grants from ledger (now includes the new grant)
+    const totalIssuedCalculated = trustShares + founderShares + grantsFromLedger;
+    const totalUnissuedCalculated = totalAuthorized - totalIssuedCalculated;
+
+    console.log('Recalculating cap table (corrected calculation):', {
+      total_authorized: totalAuthorized,
+      trust_shares: trustShares,
+      founder_shares: founderShares,
+      grants_from_ledger: grantsFromLedger,
+      total_issued_calculated: totalIssuedCalculated,
+      total_unissued_calculated: totalUnissuedCalculated,
+      grants_count: allGrants?.length || 0,
     });
 
     const { data: updatedCapTable, error: capTableUpdateError } = await supabaseAdmin
       .from('cap_tables')
       .update({
-        total_unissued: newUnissued,
-        total_issued: newIssued,
+        total_issued: totalIssuedCalculated,
+        total_unissued: totalUnissuedCalculated,
         updated_at: new Date().toISOString(),
       })
       .eq('id', capTableData.id)

@@ -5,11 +5,11 @@ const config: CapacitorConfig = {
   appName: "Crave'N Feeder",
   webDir: 'dist',
 
-  // Load live Crave'N mobile site
-  server: {
-    url: 'https://cravenusa.com/mobile',
-    cleartext: true
-  },
+  // COMMENT OUT OR REMOVE THIS SERVER SECTION for local development
+  // server: {
+  //   url: 'https://cravenusa.com/mobile',
+  //   cleartext: true
+  // },
 
   android: {
     allowMixedContent: true,

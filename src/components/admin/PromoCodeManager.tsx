@@ -262,15 +262,15 @@ export const PromoCodeManager: React.FC = () => {
   const getPromoTypeIcon = (type: string) => {
     switch (type) {
       case 'percentage':
-        return <Percent className="h-4 w-4" />;
+        return <Percent className="h-3 w-3" />;
       case 'fixed_amount':
-        return <DollarSign className="h-4 w-4" />;
+        return <DollarSign className="h-3 w-3" />;
       case 'free_delivery':
-        return <Truck className="h-4 w-4" />;
+        return <Truck className="h-3 w-3" />;
       case 'bogo':
-        return <Gift className="h-4 w-4" />;
+        return <Gift className="h-3 w-3" />;
       default:
-        return <TrendingUp className="h-4 w-4" />;
+        return <TrendingUp className="h-3 w-3" />;
     }
   };
 
@@ -317,54 +317,58 @@ export const PromoCodeManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Promo Code Management</h2>
-          <p className="text-muted-foreground">Create and manage promotional codes and discounts</p>
+          <h2 className="text-xl font-semibold">Promo Code Management</h2>
+          <p className="text-xs text-muted-foreground">Create and manage promotional codes and discounts</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
+              size="sm"
+              className="h-8 text-xs"
               onClick={() => {
                 setEditingCode(null);
                 setFormData(initialFormData);
               }}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3 w-3 mr-1.5" />
               Create Promo Code
             </Button>
           </DialogTrigger>
           
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg">
                 {editingCode ? 'Edit Promo Code' : 'Create New Promo Code'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs">
                 {editingCode ? 'Update the promo code details below' : 'Fill in the details to create a new promotional code'}
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">Promo Code*</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="code" className="text-xs">Promo Code*</Label>
                   <Input
                     id="code"
+                    className="h-8 text-sm"
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                     placeholder="SAVE20"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Display Name*</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs">Display Name*</Label>
                   <Input
                     id="name"
+                    className="h-8 text-sm"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="20% Off Everything"
@@ -373,23 +377,24 @@ export const PromoCodeManager: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-xs">Description</Label>
                 <Textarea
                   id="description"
+                  className="text-sm min-h-[60px]"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Save 20% on your entire order"
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
               {/* Discount Configuration */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Discount Type*</Label>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="type" className="text-xs">Discount Type*</Label>
                   <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -403,12 +408,13 @@ export const PromoCodeManager: React.FC = () => {
                 </div>
 
                 {formData.type === 'percentage' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="discount_percentage">Discount Percentage*</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="discount_percentage" className="text-xs">Discount Percentage*</Label>
                       <div className="relative">
                         <Input
                           id="discount_percentage"
+                          className="h-8 text-sm"
                           type="number"
                           min="0"
                           max="100"
@@ -417,13 +423,14 @@ export const PromoCodeManager: React.FC = () => {
                           onChange={(e) => setFormData({ ...formData, discount_percentage: e.target.value })}
                           required
                         />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">%</span>
+                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground">%</span>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maximum_discount_cents">Maximum Discount ($)</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="maximum_discount_cents" className="text-xs">Maximum Discount ($)</Label>
                       <Input
                         id="maximum_discount_cents"
+                        className="h-8 text-sm"
                         type="number"
                         min="0"
                         step="0.01"
@@ -436,10 +443,11 @@ export const PromoCodeManager: React.FC = () => {
                 )}
 
                 {['fixed_amount', 'bogo'].includes(formData.type) && (
-                  <div className="space-y-2">
-                    <Label htmlFor="discount_amount_cents">Discount Amount ($)*</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="discount_amount_cents" className="text-xs">Discount Amount ($)*</Label>
                     <Input
                       id="discount_amount_cents"
+                      className="h-8 text-sm"
                       type="number"
                       min="0"
                       step="0.01"
@@ -452,14 +460,15 @@ export const PromoCodeManager: React.FC = () => {
               </div>
 
               {/* Usage Restrictions */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Usage Restrictions</h4>
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Usage Restrictions</h4>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="minimum_order_cents">Minimum Order ($)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="minimum_order_cents" className="text-xs">Minimum Order ($)</Label>
                     <Input
                       id="minimum_order_cents"
+                      className="h-8 text-sm"
                       type="number"
                       min="0"
                       step="0.01"
@@ -467,10 +476,11 @@ export const PromoCodeManager: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, minimum_order_cents: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="per_user_limit">Uses Per User</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="per_user_limit" className="text-xs">Uses Per User</Label>
                     <Input
                       id="per_user_limit"
+                      className="h-8 text-sm"
                       type="number"
                       min="1"
                       value={formData.per_user_limit}
@@ -480,11 +490,12 @@ export const PromoCodeManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="usage_limit">Total Usage Limit</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="usage_limit" className="text-xs">Total Usage Limit</Label>
                     <Input
                       id="usage_limit"
+                      className="h-8 text-sm"
                       type="number"
                       min="1"
                       value={formData.usage_limit}
@@ -492,10 +503,10 @@ export const PromoCodeManager: React.FC = () => {
                       placeholder="Unlimited"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customer_eligibility">Customer Eligibility</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="customer_eligibility" className="text-xs">Customer Eligibility</Label>
                     <Select value={formData.customer_eligibility} onValueChange={(value: any) => setFormData({ ...formData, customer_eligibility: value })}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -507,10 +518,10 @@ export const PromoCodeManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="applicable_to">Apply Discount To</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="applicable_to" className="text-xs">Apply Discount To</Label>
                   <Select value={formData.applicable_to} onValueChange={(value: any) => setFormData({ ...formData, applicable_to: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -523,16 +534,16 @@ export const PromoCodeManager: React.FC = () => {
               </div>
 
               {/* Validity Period */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Validity Period</h4>
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Validity Period</h4>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Valid From*</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Valid From*</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                          <CalendarIcon className="mr-1.5 h-3 w-3" />
                           {format(formData.valid_from, 'PPP')}
                         </Button>
                       </PopoverTrigger>
@@ -546,12 +557,12 @@ export const PromoCodeManager: React.FC = () => {
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Valid Until (Optional)</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Valid Until (Optional)</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                          <CalendarIcon className="mr-1.5 h-3 w-3" />
                           {formData.valid_until ? format(formData.valid_until, 'PPP') : 'No expiry'}
                         </Button>
                       </PopoverTrigger>
@@ -575,17 +586,19 @@ export const PromoCodeManager: React.FC = () => {
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
-                <Label htmlFor="is_active">Active</Label>
+                <Label htmlFor="is_active" className="text-xs">Active</Label>
               </div>
 
               {/* Submit */}
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1">
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" size="sm" className="flex-1 h-8 text-xs">
                   {editingCode ? 'Update Promo Code' : 'Create Promo Code'}
                 </Button>
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancel
@@ -598,93 +611,96 @@ export const PromoCodeManager: React.FC = () => {
 
       {/* Promo Codes Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Active Promo Codes</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Active Promo Codes</CardTitle>
+          <CardDescription className="text-xs">
             Manage all promotional codes and track their usage
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           {promoCodes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-6 text-xs text-muted-foreground">
               No promo codes created yet. Click "Create Promo Code" to get started.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Valid Until</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Code</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Name</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Type</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Discount</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Usage</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Valid Until</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-xs">Status</TableHead>
+                  <TableHead className="h-8 py-2 px-3 text-right text-xs">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {promoCodes.map((promoCode) => (
                   <TableRow key={promoCode.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                    <TableCell className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
                           {promoCode.code}
                         </code>
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-6 w-6 p-0"
                           onClick={() => copyPromoCode(promoCode.code)}
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{promoCode.name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getPromoTypeIcon(promoCode.type)}
-                        <span className="text-sm">{getPromoTypeLabel(promoCode.type)}</span>
+                    <TableCell className="py-2 px-3 text-xs font-medium">{promoCode.name}</TableCell>
+                    <TableCell className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-3 w-3">{getPromoTypeIcon(promoCode.type)}</div>
+                        <span className="text-xs">{getPromoTypeLabel(promoCode.type)}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{getDiscountDisplay(promoCode)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
+                    <TableCell className="py-2 px-3 text-xs">{getDiscountDisplay(promoCode)}</TableCell>
+                    <TableCell className="py-2 px-3">
+                      <div className="text-xs">
                         {promoCode.usage_count}
                         {promoCode.usage_limit && ` / ${promoCode.usage_limit}`}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2 px-3 text-xs">
                       {promoCode.valid_until 
                         ? format(new Date(promoCode.valid_until), 'MMM dd, yyyy')
                         : 'No expiry'
                       }
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={promoCode.is_active ? 'default' : 'secondary'}>
+                    <TableCell className="py-2 px-3">
+                      <Badge variant={promoCode.is_active ? 'default' : 'secondary'} className="text-xs">
                         {promoCode.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                    <TableCell className="py-2 px-3 text-right">
+                      <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0"
                           onClick={() => handleEdit(promoCode)}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         <Switch 
                           checked={promoCode.is_active}
                           onCheckedChange={() => handleToggleActive(promoCode.id, promoCode.is_active)}
+                          className="scale-75"
                         />
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                           onClick={() => handleDelete(promoCode.id)}
-                          className="text-destructive hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </TableCell>

@@ -85,10 +85,30 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   }, [isOpen]);
 
   const getStatus = (points: number) => {
-    if (points >= 85) return { name: 'Diamond', gradient: 'linear-gradient(to bottom right, var(--mantine-color-cyan-2), var(--mantine-color-blue-3), var(--mantine-color-purple-3))', icon: '💎' };
-    if (points >= 76) return { name: 'Platinum', gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-3), var(--mantine-color-gray-1), var(--mantine-color-gray-3))', icon: '⚪' };
-    if (points >= 65) return { name: 'Gold', gradient: 'linear-gradient(to bottom right, var(--mantine-color-yellow-3), var(--mantine-color-yellow-2), var(--mantine-color-yellow-4))', icon: '🥇' };
-    return { name: 'Silver', gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-4), var(--mantine-color-gray-3), var(--mantine-color-gray-5))', icon: '🥈' };
+    if (points >= 85) return { 
+      name: 'Diamond', 
+      gradient: 'linear-gradient(to bottom right, var(--mantine-color-cyan-2), var(--mantine-color-blue-3), var(--mantine-color-purple-3))', 
+      glowGradient: 'linear-gradient(to bottom, rgba(37, 99, 235, 0.4), rgba(96, 165, 250, 0.2), rgba(191, 219, 254, 0.1), transparent)',
+      icon: '💎' 
+    };
+    if (points >= 76) return { 
+      name: 'Platinum', 
+      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-3), var(--mantine-color-gray-1), var(--mantine-color-gray-3))', 
+      glowGradient: 'linear-gradient(to bottom, rgba(156, 163, 175, 0.3), rgba(209, 213, 219, 0.2), transparent)',
+      icon: '⚪' 
+    };
+    if (points >= 65) return { 
+      name: 'Gold', 
+      gradient: 'linear-gradient(to bottom right, var(--mantine-color-yellow-3), var(--mantine-color-yellow-2), var(--mantine-color-yellow-4))', 
+      glowGradient: 'linear-gradient(to bottom, rgba(234, 179, 8, 0.3), rgba(250, 204, 21, 0.2), transparent)',
+      icon: '🥇' 
+    };
+    return { 
+      name: 'Silver', 
+      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-4), var(--mantine-color-gray-3), var(--mantine-color-gray-5))', 
+      glowGradient: 'linear-gradient(to bottom, rgba(107, 114, 128, 0.3), rgba(156, 163, 175, 0.2), transparent)',
+      icon: '🥈' 
+    };
   };
 
   const status = getStatus(driverPoints);
@@ -97,7 +117,6 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     { icon: IconHome, label: 'Home', path: 'home' },
     { icon: IconCalendar, label: 'Schedule', path: 'schedule' },
     { icon: IconCurrencyDollar, label: 'Earnings', path: 'earnings' },
-    { icon: IconMessageCircle, label: 'Chat', path: 'messages' },
     { icon: IconUser, label: 'Account', path: 'account' },
     { icon: IconStar, label: 'Ratings', path: 'ratings' },
     { icon: IconTrendingUp, label: 'Promos', path: 'promos' }
@@ -149,11 +168,34 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
         transition: 'transform 0.3s',
       }}
     >
+      {/* Top Glow Effect - Matches Feeder Level */}
+      {isOpen && (
+        <Box
+          pos="absolute"
+          top={0}
+          left={0}
+          right={0}
+          h={300}
+          style={{
+            background: status.glowGradient,
+            pointerEvents: 'none',
+            zIndex: 1,
+            transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            opacity: isOpen ? 1 : 0,
+          }}
+        />
+      )}
+      
       {/* Overlay */}
       <Box 
         pos="absolute" 
         inset={0} 
-        style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} 
+        style={{ 
+          backgroundColor: 'rgba(0,0,0,0.52)', 
+          backdropFilter: 'blur(8px)',
+          transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: isOpen ? 1 : 0,
+        }} 
         onClick={onClose}
       />
       
@@ -164,8 +206,15 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
         top={0}
         h="100%"
         w={320}
-        shadow="xl"
-        style={{ overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        radius={0}
+        style={{ 
+          overflowY: 'auto', 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none', 
+          borderRadius: 0,
+          boxShadow: '2px 0 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
         bg="white"
       >
         <style>{`
@@ -178,7 +227,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
         <Box
           pos="relative"
           p="xl"
-          style={{ background: status.gradient, overflow: 'hidden' }}
+          style={{ background: status.gradient, overflow: 'hidden', paddingTop: 'calc(1.5rem + 50px)' }}
         >
           {/* Sparkle effects for Diamond */}
           {status.name === 'Diamond' && (
@@ -192,73 +241,151 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
           {/* Close Button */}
           <ActionIcon
             pos="absolute"
-            top={16}
+            top={66}
             right={16}
             variant="light"
             color="gray"
             size="lg"
             radius="xl"
             onClick={onClose}
-            style={{ backgroundColor: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}
+            style={{ 
+              backgroundColor: 'rgba(255,255,255,0.35)', 
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.35)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
           >
-            <IconX size={24} />
+            <IconX size={22} strokeWidth={2.5} />
           </ActionIcon>
 
           {/* Driver Info */}
-          <Box pos="relative" mt="xl">
-            <Title order={2} fw={900} c="dark" mb="md">{driverName}</Title>
+          <Box pos="relative" mt="xl" style={{ textAlign: 'center' }}>
+            <Title 
+              order={2} 
+              fw={900} 
+              c="dark" 
+              mb="md" 
+              style={{ 
+                textAlign: 'center',
+                fontSize: '28px',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+              }}
+            >
+              {driverName}
+            </Title>
             
             {/* Status Badge with Icon */}
             <Badge
               size="lg"
               variant="light"
               mb="md"
-              style={{ backgroundColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(4px)', border: '2px solid rgba(255,255,255,0.6)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.45)', 
+                backdropFilter: 'blur(12px)',
+                border: '1.5px solid rgba(255,255,255,0.7)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                display: 'inline-flex',
+                padding: '8px 16px',
+                transition: 'all 0.2s ease',
+              }}
             >
               <Group gap="xs">
-                <Text size="xl">{status.icon}</Text>
-                <Text fw={900} c="dark">{status.name} Feeder</Text>
+                <Text size="xl" style={{ lineHeight: 1 }}>{status.icon}</Text>
+                <Text fw={800} c="dark" size="sm" style={{ letterSpacing: '0.02em' }}>{status.name} Feeder</Text>
               </Group>
             </Badge>
 
             {/* Stats Row */}
-            <Paper p="md" radius="lg" style={{ backgroundColor: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.5)' }}>
-              <Group justify="space-between" gap={0}>
-                <Stack gap={4} align="center" style={{ flex: 1 }}>
-                  <Group gap={4} justify="center">
-                    <IconStar size={16} fill="var(--mantine-color-yellow-6)" color="var(--mantine-color-yellow-6)" />
-                    <Text size="2xl" fw={900} c="dark">{driverRating.toFixed(2)}</Text>
-                  </Group>
-                  <Text size="xs" c="dark" fw={600}>Rating</Text>
-                </Stack>
-                <Divider orientation="vertical" h={48} style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
-                <Stack gap={4} align="center" style={{ flex: 1 }}>
-                  <Text size="2xl" fw={900} c="dark">{deliveries}</Text>
-                  <Text size="xs" c="dark" fw={600}>deliveries</Text>
-                </Stack>
-                <Divider orientation="vertical" h={48} style={{ borderColor: 'rgba(255,255,255,0.5)' }} />
-                <Stack gap={4} align="center" style={{ flex: 1 }}>
-                  <Text size="2xl" fw={900} c="dark">{perfection}%</Text>
-                  <Text size="xs" c="dark" fw={600}>perfect</Text>
-                </Stack>
-              </Group>
+            <Paper 
+              p="md" 
+              radius="lg" 
+              shadow="none" 
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.35)', 
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.6)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                margin: '0 auto',
+                maxWidth: '100%',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Stack gap={4}>
+                <Group justify="space-between" gap="xs" align="baseline">
+                  <Box style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
+                    <IconStar 
+                      size={20} 
+                      fill="var(--mantine-color-yellow-6)" 
+                      color="var(--mantine-color-yellow-6)" 
+                      style={{ flexShrink: 0, alignSelf: 'baseline', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }} 
+                    />
+                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{driverRating.toFixed(2)}</Text>
+                  </Box>
+                  <Divider orientation="vertical" h={40} style={{ borderColor: 'rgba(255,255,255,0.6)', borderWidth: '1px' }} />
+                  <Box style={{ flex: 1, textAlign: 'center' }}>
+                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{deliveries}</Text>
+                  </Box>
+                  <Divider orientation="vertical" h={40} style={{ borderColor: 'rgba(255,255,255,0.6)', borderWidth: '1px' }} />
+                  <Box style={{ flex: 1, textAlign: 'center' }}>
+                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{perfection}%</Text>
+                  </Box>
+                </Group>
+                <Group justify="space-between" gap="xs" align="center">
+                  <Box style={{ flex: 1, textAlign: 'center' }}>
+                    <Text size="xs" c="dark" fw={600}>Rating</Text>
+                  </Box>
+                  <Box style={{ width: '1px' }} />
+                  <Box style={{ flex: 1, textAlign: 'center' }}>
+                    <Text size="xs" c="dark" fw={600}>Deliveries</Text>
+                  </Box>
+                  <Box style={{ width: '1px' }} />
+                  <Box style={{ flex: 1, textAlign: 'center' }}>
+                    <Text size="xs" c="dark" fw={600}>Perfect</Text>
+                  </Box>
+                </Group>
+              </Stack>
             </Paper>
           </Box>
         </Box>
 
         {/* New Driver Badge */}
         {driverStatus && (
-          <Box px="xl" style={{ marginTop: -16, position: 'relative', zIndex: 10 }}>
+          <Box px="xl" style={{ marginTop: -16, position: 'relative', zIndex: 10, textAlign: 'center' }}>
             <Paper
               p="md"
               radius="lg"
-              style={{ background: 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-red-6))', boxShadow: '0 10px 15px rgba(0,0,0,0.2)' }}
+              style={{ 
+                background: 'linear-gradient(135deg, var(--mantine-color-orange-5), var(--mantine-color-red-6))', 
+                boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3), 0 4px 8px rgba(0,0,0,0.1)',
+                display: 'inline-block',
+                width: '100%',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+              }}
             >
-              <Group gap="md">
-                <ThemeIcon size="lg" radius="xl" style={{ backgroundColor: 'rgba(255,255,255,0.3)' }}>
-                  <IconFlame size={20} color="white" />
+              <Group gap="md" justify="center">
+                <ThemeIcon 
+                  size="lg" 
+                  radius="xl" 
+                  style={{ 
+                    backgroundColor: 'rgba(255,255,255,0.25)',
+                    backdropFilter: 'blur(4px)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <IconFlame size={20} color="white" strokeWidth={2.5} />
                 </ThemeIcon>
-                <Text c="white" fw={900} size="sm">{driverStatus}</Text>
+                <Text c="white" fw={800} size="sm" style={{ letterSpacing: '0.05em' }}>{driverStatus}</Text>
               </Group>
             </Paper>
           </Box>
@@ -271,7 +398,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
             const IconComponent = item.icon;
             const isMessagesItem = item.path === 'messages';
             return (
-              <Button
+                <Button
                 key={idx}
                 onClick={() => handleMenuClick(item.path)}
                 variant={isActive ? 'filled' : 'subtle'}
@@ -283,8 +410,11 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
                     size="lg"
                     radius="md"
                     color={isActive ? 'white' : 'orange'}
-                    variant={isActive ? 'light' : 'light'}
-                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : 'var(--mantine-color-orange-1)' }}
+                    variant="transparent"
+                    style={{ 
+                      backgroundColor: 'transparent',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
                   >
                     {isMessagesItem ? (
                       <img 
@@ -293,25 +423,48 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
                         style={{ 
                           width: '24px', 
                           height: '24px',
-                          filter: isActive ? 'brightness(0) invert(1)' : 'none'
+                          filter: isActive ? 'brightness(0) invert(1)' : 'none',
+                          transition: 'filter 0.2s ease',
                         }} 
                       />
                     ) : (
-                      <IconComponent size={24} color={isActive ? 'white' : 'var(--mantine-color-orange-6)'} />
+                      <IconComponent 
+                        size={24} 
+                        color={isActive ? 'white' : 'var(--mantine-color-orange-6)'}
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
                     )}
                   </ThemeIcon>
                 }
                 size="lg"
                 style={{
                   background: isActive 
-                    ? 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-red-6))' 
+                    ? 'linear-gradient(135deg, var(--mantine-color-orange-5), var(--mantine-color-red-6))' 
                     : undefined,
                   color: isActive ? 'white' : 'var(--mantine-color-gray-7)',
-                  boxShadow: isActive ? '0 4px 6px rgba(0,0,0,0.1)' : undefined,
-                  transform: isActive ? 'scale(1.05)' : undefined,
+                  boxShadow: isActive 
+                    ? '0 4px 12px rgba(251, 146, 60, 0.25), 0 2px 4px rgba(0,0,0,0.1)' 
+                    : 'none',
+                  transform: isActive ? 'translateX(4px)' : 'translateX(0)',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  border: isActive ? 'none' : '1px solid transparent',
+                  fontWeight: isActive ? 700 : 600,
+                  letterSpacing: '0.01em',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'rgba(251, 146, 60, 0.08)';
+                    e.currentTarget.style.transform = 'translateX(2px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = '';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }
                 }}
               >
-                <Text fw={700} size="lg">{item.label}</Text>
+                <Text fw={isActive ? 700 : 600} size="lg" style={{ letterSpacing: '0.01em' }}>{item.label}</Text>
               </Button>
             );
           })}
@@ -326,14 +479,39 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
             fullWidth
             justify="flex-start"
             leftSection={
-              <ThemeIcon size="lg" radius="md" color="red" variant="light">
-                <IconLogout size={24} color="var(--mantine-color-red-6)" />
+              <ThemeIcon 
+                size="lg" 
+                radius="md" 
+                color="red" 
+                variant="transparent" 
+                style={{ 
+                  backgroundColor: 'transparent',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <IconLogout size={24} color="var(--mantine-color-red-6)" strokeWidth={2} />
               </ThemeIcon>
             }
             size="lg"
-            style={{ border: '2px solid var(--mantine-color-red-2)' }}
+            style={{ 
+              border: '1.5px solid var(--mantine-color-red-2)',
+              backgroundColor: 'rgba(239, 68, 68, 0.04)',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+              e.currentTarget.style.borderColor = 'var(--mantine-color-red-3)';
+              e.currentTarget.style.transform = 'translateX(2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.04)';
+              e.currentTarget.style.borderColor = 'var(--mantine-color-red-2)';
+              e.currentTarget.style.transform = 'translateX(0)';
+            }}
           >
-            <Text fw={700} size="lg" c="red.6">Logout</Text>
+            <Text fw={600} size="lg" c="red.6" style={{ letterSpacing: '0.01em' }}>Logout</Text>
           </Button>
         </Box>
 

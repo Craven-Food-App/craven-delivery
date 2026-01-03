@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,45 +99,46 @@ const CustomerSegmentation: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Customer Segmentation</h2>
-          <p className="text-gray-600 mt-1">Create targeted customer groups for personalized marketing</p>
+          <h2 className="text-lg font-semibold text-gray-900">Customer Segmentation</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Create targeted customer groups for personalized marketing</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)} className="bg-orange-600 hover:bg-orange-700">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowCreateForm(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+          <Plus className="h-3 w-3 mr-1.5" />
           Create Segment
         </Button>
       </div>
 
-      {/* Create Segment Form */}
+      {/* Create Segment Form - Compact */}
       {showCreateForm && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Create New Segment</h3>
-            <Button variant="ghost" size="sm" onClick={() => setShowCreateForm(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Create New Segment</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowCreateForm(false)} className="h-6 w-6 p-0">
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 space-y-3">
             <div>
-              <Label htmlFor="segmentName">Segment Name *</Label>
+              <Label htmlFor="segmentName" className="text-xs">Segment Name *</Label>
               <Input
                 id="segmentName"
                 value={newSegment.name}
                 onChange={(e) => setNewSegment(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., High-Value Customers in NYC"
-                className="mt-1"
+                className="mt-1 h-8 text-xs"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               {/* City Filter */}
               <div>
-                <Label>City</Label>
+                <Label className="text-xs">City</Label>
                 <Input
                   placeholder="Enter cities (comma-separated)"
                   onChange={(e) => {
@@ -147,13 +148,13 @@ const CustomerSegmentation: React.FC = () => {
                       criteria: { ...prev.criteria, city: cities }
                     }));
                   }}
-                  className="mt-1"
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
 
               {/* Loyalty Tier */}
               <div>
-                <Label>Loyalty Tier</Label>
+                <Label className="text-xs">Loyalty Tier</Label>
                 <Select
                   onValueChange={(value) => {
                     setNewSegment(prev => ({
@@ -162,7 +163,7 @@ const CustomerSegmentation: React.FC = () => {
                     }));
                   }}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Select tier" />
                   </SelectTrigger>
                   <SelectContent>
@@ -176,7 +177,7 @@ const CustomerSegmentation: React.FC = () => {
 
               {/* Order Frequency */}
               <div>
-                <Label>Min Orders</Label>
+                <Label className="text-xs">Min Orders</Label>
                 <Input
                   type="number"
                   placeholder="Minimum orders"
@@ -187,13 +188,13 @@ const CustomerSegmentation: React.FC = () => {
                       criteria: { ...prev.criteria, orderFrequency: { min } }
                     }));
                   }}
-                  className="mt-1"
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
 
               {/* Total Spent */}
               <div>
-                <Label>Min Total Spent ($)</Label>
+                <Label className="text-xs">Min Total Spent ($)</Label>
                 <Input
                   type="number"
                   placeholder="Minimum spend"
@@ -204,13 +205,13 @@ const CustomerSegmentation: React.FC = () => {
                       criteria: { ...prev.criteria, totalSpent: { min } }
                     }));
                   }}
-                  className="mt-1"
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
 
               {/* Last Order */}
               <div>
-                <Label>Last Order (days ago, max)</Label>
+                <Label className="text-xs">Last Order (days ago, max)</Label>
                 <Input
                   type="number"
                   placeholder="e.g., 30"
@@ -221,13 +222,13 @@ const CustomerSegmentation: React.FC = () => {
                       criteria: { ...prev.criteria, lastOrderDays: max ? { max } : undefined }
                     }));
                   }}
-                  className="mt-1"
+                  className="mt-1 h-8 text-xs"
                 />
               </div>
 
               {/* Has Referrals */}
               <div>
-                <Label>Has Referrals</Label>
+                <Label className="text-xs">Has Referrals</Label>
                 <Select
                   onValueChange={(value) => {
                     setNewSegment(prev => ({
@@ -236,7 +237,7 @@ const CustomerSegmentation: React.FC = () => {
                     }));
                   }}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className="mt-1 h-8 text-xs">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
@@ -248,80 +249,83 @@ const CustomerSegmentation: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleCreateSegment} className="bg-orange-600 hover:bg-orange-700">
-                <Save className="h-4 w-4 mr-2" />
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleCreateSegment} size="sm" className="flex-1 h-8 text-xs bg-orange-500 hover:bg-orange-600">
+                <Save className="h-3 w-3 mr-1.5" />
                 Create Segment
               </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)} size="sm" className="h-8 text-xs">
                 Cancel
               </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
 
-      {/* Segments List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {segments.length === 0 && !loading && (
-          <Card className="p-6 col-span-full text-center">
-            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No segments yet</h3>
-            <p className="text-gray-600 mb-4">Create your first customer segment to start targeted marketing</p>
-            <Button onClick={() => setShowCreateForm(true)} className="bg-orange-600 hover:bg-orange-700">
-              <Plus className="h-4 w-4 mr-2" />
+      {/* Segments List - Compact Grid */}
+      {segments.length === 0 && !loading ? (
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-8 text-center">
+            <Users className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">No segments yet</h3>
+            <p className="text-xs text-gray-600 mb-3">Create your first customer segment to start targeted marketing</p>
+            <Button onClick={() => setShowCreateForm(true)} size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+              <Plus className="h-3 w-3 mr-1.5" />
               Create Segment
             </Button>
-          </Card>
-        )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {segments.map((segment) => (
+            <Card key={segment.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                    <h3 className="font-semibold text-sm text-gray-900">{segment.name}</h3>
+                  </div>
+                </div>
 
-        {segments.map((segment) => (
-          <Card key={segment.id} className="p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold text-gray-900">{segment.name}</h3>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Customers</span>
+                    <span className="text-lg font-semibold text-gray-900">{segment.customerCount.toLocaleString()}</span>
+                  </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Customers</span>
-                <span className="text-lg font-bold text-gray-900">{segment.customerCount.toLocaleString()}</span>
-              </div>
+                  <div className="flex flex-wrap gap-1">
+                    {segment.criteria.city && segment.criteria.city.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Cities: {segment.criteria.city.length}</Badge>
+                    )}
+                    {segment.criteria.loyaltyTier && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">Tier: {segment.criteria.loyaltyTier.join(', ')}</Badge>
+                    )}
+                    {segment.criteria.orderFrequency && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">{segment.criteria.orderFrequency.min}+ orders</Badge>
+                    )}
+                    {segment.criteria.totalSpent && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">${segment.criteria.totalSpent.min}+ spent</Badge>
+                    )}
+                  </div>
 
-              <div className="flex flex-wrap gap-2">
-                {segment.criteria.city && segment.criteria.city.length > 0 && (
-                  <Badge variant="secondary">Cities: {segment.criteria.city.length}</Badge>
-                )}
-                {segment.criteria.loyaltyTier && (
-                  <Badge variant="secondary">Tier: {segment.criteria.loyaltyTier.join(', ')}</Badge>
-                )}
-                {segment.criteria.orderFrequency && (
-                  <Badge variant="secondary">{segment.criteria.orderFrequency.min}+ orders</Badge>
-                )}
-                {segment.criteria.totalSpent && (
-                  <Badge variant="secondary">${segment.criteria.totalSpent.min}+ spent</Badge>
-                )}
-              </div>
-
-              <div className="pt-2 flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Filter className="h-4 w-4 mr-1" />
-                  Edit
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  Analyze
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+                  <div className="pt-1.5 flex gap-1.5 border-t border-gray-100">
+                    <Button variant="outline" size="sm" className="flex-1 h-6 px-2 text-[10px]">
+                      <Filter className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 h-6 px-2 text-[10px]">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Analyze
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default CustomerSegmentation;
-

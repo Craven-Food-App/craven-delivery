@@ -41,6 +41,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { KpiCard } from '@/components/tpi/KpiCard';
+import { PageHeader } from '@/components/tpi/PageHeader';
 
 interface AdvancedKPI {
   title: string;
@@ -846,40 +848,34 @@ export const EnhancedCTODashboard: React.FC = () => {
   }
 
   return (
-    <Stack gap="lg" p={isMobile ? 16 : 24}>
-      {/* Header */}
-      <Group justify="space-between" wrap="wrap">
-        <Box>
-          <Title order={2} mb={4}>CTO Command Center</Title>
-          <Text c="dimmed" size="sm">
-            Real-time technology intelligence with predictive analytics and anomaly detection
-          </Text>
-        </Box>
-        <Group gap="xs" wrap="wrap">
-          <Button
-            leftSection={<IconFileText size={16} />}
-            onClick={generateDailyReport}
-            loading={generatingReport}
-            variant="filled"
-          >
-            Generate Daily Report
-          </Button>
-          <Button
-            leftSection={<IconFileText size={16} />}
-            onClick={() => setReportModalVisible(true)}
-            disabled={!dailyReport}
-            variant="outline"
-          >
-            View/Edit Report
-          </Button>
-          <Badge color="green" variant="light" leftSection={<IconShield size={12} />}>
-            Systems Operational
-          </Badge>
-          <Text size="xs" c="dimmed">
-            Updated {new Date().toLocaleTimeString()}
-          </Text>
-        </Group>
-      </Group>
+    <Stack gap="lg">
+      <PageHeader
+        title="CTO Command Center"
+        description="Real-time technology intelligence with predictive analytics and anomaly detection"
+        actions={
+          <>
+            <Button
+              leftSection={<IconFileText size={16} />}
+              onClick={generateDailyReport}
+              loading={generatingReport}
+              variant="filled"
+            >
+              Generate Daily Report
+            </Button>
+            <Button
+              leftSection={<IconFileText size={16} />}
+              onClick={() => setReportModalVisible(true)}
+              disabled={!dailyReport}
+              variant="outline"
+            >
+              View/Edit Report
+            </Button>
+            <Badge color="green" variant="light" leftSection={<IconShield size={12} />}>
+              Systems Operational
+            </Badge>
+          </>
+        }
+      />
 
       {/* Predictive Insights & Anomalies */}
       {(predictiveInsights.length > 0 || anomalies.length > 0) && (
@@ -940,69 +936,48 @@ export const EnhancedCTODashboard: React.FC = () => {
         </Grid>
       )}
 
-      {/* Advanced KPI Grid */}
+      {/* Advanced KPI Grid - Using TPI KpiCard */}
       <Grid gutter="md">
-        {advancedKPIs.map((kpi, idx) => (
-          <Grid.Col key={idx} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed" fw={600}>{kpi.title}</Text>
-                <Tooltip label={kpi.description || kpi.title}>
-                  <ActionIcon variant="subtle" size="sm">
-                    <IconInfoCircle size={14} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-              <Group align="flex-start" gap="xs" mb="xs">
-                <Box
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: `${kpi.color}15`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  color: kpi.color,
+        {advancedKPIs.map((kpi, idx) => {
+          // Extract numeric value for KpiCard
+          const numericValue = typeof kpi.value === 'string' 
+            ? parseFloat(kpi.value.replace(/[^0-9.]/g, '')) 
+            : kpi.value;
+          
+          // Determine format
+          let format: 'number' | 'currency' | 'percentage' | 'duration' = 'number';
+          if (kpi.value.toString().includes('%')) format = 'percentage';
+          if (kpi.value.toString().includes('$')) format = 'currency';
+          if (kpi.value.toString().includes('s') || kpi.value.toString().includes('ms')) format = 'duration';
+
+          return (
+            <Grid.Col key={idx} span={{ base: 12, sm: 6, md: 4, lg: 3 }}>
+              <KpiCard
+                label={kpi.title}
+                value={numericValue}
+                format={format}
+                icon={kpi.icon}
+                trend={
+                  kpi.change !== 0
+                    ? {
+                        value: Math.abs(kpi.change),
+                        direction: kpi.trend,
+                        period: kpi.changeUnit,
+                      }
+                    : undefined
+                }
+                onClick={() => {
+                  // Navigate to relevant section based on KPI
+                  if (kpi.title.includes('Uptime')) {
+                    navigate('/cto/infrastructure');
+                  } else if (kpi.title.includes('Incident')) {
+                    navigate('/cto/incidents');
+                  }
                 }}
-              >
-                {React.createElement(kpi.icon as any, { size: 20 })}
-              </Box>
-                <Box style={{ flex: 1 }}>
-                  <Text size="xl" fw={700} c={getStatusColor(kpi.status)}>
-                    {kpi.value}
-                  </Text>
-                  {kpi.change !== 0 && (
-                    <Group gap={4} mt={4}>
-                      {kpi.trend === 'up' ? (
-                        <IconTrendingUp size={14} color="#10b981" />
-                      ) : kpi.trend === 'down' ? (
-                        <IconTrendingDown size={14} color="#ef4444" />
-                      ) : null}
-                      <Text size="xs" c={kpi.trend === 'up' ? 'green' : kpi.trend === 'down' ? 'red' : 'dimmed'}>
-                        {kpi.change > 0 ? '+' : ''}{kpi.change.toFixed(1)}% {kpi.changeUnit}
-                      </Text>
-                    </Group>
-                  )}
-                </Box>
-              </Group>
-              {kpi.benchmark && (
-                <Text size="xs" c="dimmed" mt="xs">
-                  {kpi.benchmark}
-                </Text>
-              )}
-              <Badge
-                color={getStatusColor(kpi.status)}
-                variant="light"
-                size="sm"
-                mt="xs"
-                style={{ textTransform: 'capitalize' }}
-              >
-                {kpi.status}
-              </Badge>
-            </Card>
-          </Grid.Col>
-        ))}
+              />
+            </Grid.Col>
+          );
+        })}
       </Grid>
 
       {/* Performance Charts */}

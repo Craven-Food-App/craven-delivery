@@ -4,11 +4,18 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, TrendingUp, PieChart, Calendar, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface BudgetData {
   totalBudget: number;
@@ -48,7 +55,6 @@ const BudgetingSpendTracking: React.FC = () => {
         ? startOfMonth(new Date())
         : subDays(new Date(), 30);
 
-      // Get campaign spend
       const { data: campaigns } = await supabase
         .from('marketing_campaigns')
         .select('spend_to_date, channel')
@@ -91,116 +97,123 @@ const BudgetingSpendTracking: React.FC = () => {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Budgeting & Spend Tracking</h2>
-          <p className="text-gray-600 mt-1">Monitor marketing budget allocation and ROI</p>
+          <h2 className="text-lg font-semibold text-gray-900">Budgeting & Spend Tracking</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Monitor marketing budget allocation and ROI</p>
         </div>
         <div className="flex gap-2">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="month">This Month</option>
-            <option value="quarter">This Quarter</option>
-            <option value="year">This Year</option>
-          </select>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="h-7 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="quarter">This Quarter</SelectItem>
+              <SelectItem value="year">This Year</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs">
+            <Download className="h-3 w-3 mr-1.5" />
             Export
           </Button>
         </div>
       </div>
 
-      {/* Budget Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm text-gray-600">Total Budget</p>
-              <p className="text-2xl font-bold">${budgetData.totalBudget.toLocaleString()}</p>
+      {/* Compact Budget Overview */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Total Budget</p>
+              <DollarSign className="h-3 w-3 text-blue-600" />
             </div>
-            <DollarSign className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">${budgetData.totalBudget.toLocaleString()}</p>
+          </CardContent>
         </Card>
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm text-gray-600">Spent</p>
-              <p className="text-2xl font-bold text-orange-600">${budgetData.spent.toLocaleString()}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Spent</p>
+              <TrendingUp className="h-3 w-3 text-orange-600" />
             </div>
-            <TrendingUp className="h-8 w-8 text-orange-500" />
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-            <div
-              className="bg-orange-600 h-2 rounded-full transition-all"
-              style={{ width: `${Math.min(spendPercentage, 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-1">{spendPercentage.toFixed(1)}% used</p>
+            <p className="text-xl font-semibold text-orange-600 leading-tight">${budgetData.spent.toLocaleString()}</p>
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+              <div
+                className="bg-orange-600 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min(spendPercentage, 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-500 mt-0.5">{spendPercentage.toFixed(1)}% used</p>
+          </CardContent>
         </Card>
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Remaining</p>
-              <p className="text-2xl font-bold text-green-600">${budgetData.remaining.toLocaleString()}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Remaining</p>
+              <Calendar className="h-3 w-3 text-green-600" />
             </div>
-            <Calendar className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-green-600 leading-tight">${budgetData.remaining.toLocaleString()}</p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Channel Breakdown */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Spend by Channel</h3>
-        <div className="space-y-4">
+      {/* Channel Breakdown - Compact */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">Spend by Channel</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 space-y-2">
           {Object.entries(budgetData.byChannel).map(([channel, spend]) => {
             const percentage = budgetData.spent > 0 ? (spend / budgetData.spent) * 100 : 0;
             return (
               <div key={channel}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700 capitalize">{channel}</span>
-                  <span className="text-sm text-gray-600">${spend.toLocaleString()} ({percentage.toFixed(1)}%)</span>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-medium text-gray-700 capitalize">{channel}</span>
+                  <span className="text-xs text-gray-600">${spend.toLocaleString()} ({percentage.toFixed(1)}%)</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div
-                    className="bg-orange-600 h-2 rounded-full"
+                    className="bg-orange-600 h-1.5 rounded-full"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
               </div>
             );
           })}
-        </div>
+        </CardContent>
       </Card>
 
-      {/* ROI Analysis */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">ROI Analysis</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Cost per Acquisition</p>
-            <p className="text-2xl font-bold mt-1">
-              ${budgetData.spent > 0 ? (budgetData.spent / 100).toFixed(2) : '0.00'}
-            </p>
+      {/* ROI Analysis - Compact */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">ROI Analysis</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2.5 bg-gray-50 rounded-md">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-1">Cost per Acquisition</p>
+              <p className="text-lg font-semibold text-gray-900">
+                ${budgetData.spent > 0 ? (budgetData.spent / 100).toFixed(2) : '0.00'}
+              </p>
+            </div>
+            <div className="p-2.5 bg-gray-50 rounded-md">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-1">Revenue Generated</p>
+              <p className="text-lg font-semibold text-green-600">$0.00</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">(Requires attribution)</p>
+            </div>
+            <div className="p-2.5 bg-gray-50 rounded-md">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-1">ROI</p>
+              <p className="text-lg font-semibold text-gray-900">0%</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">(Calculate from revenue/spend)</p>
+            </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Revenue Generated</p>
-            <p className="text-2xl font-bold text-green-600 mt-1">$0.00</p>
-            <p className="text-xs text-gray-500">(Requires campaign attribution)</p>
-          </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">ROI</p>
-            <p className="text-2xl font-bold mt-1">0%</p>
-            <p className="text-xs text-gray-500">(Calculate from revenue/spend)</p>
-          </div>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );
 };
 
 export default BudgetingSpendTracking;
-

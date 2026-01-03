@@ -149,16 +149,16 @@ export function ReferralVideoManager() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card>
-        <CardHeader>
-          <CardTitle>Upload Referral Video</CardTitle>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Upload Referral Video</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 space-y-3">
           <div>
-            <Label>Referral Type</Label>
+            <Label className="text-xs">Referral Type</Label>
             <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -170,8 +170,9 @@ export function ReferralVideoManager() {
           </div>
 
           <div>
-            <Label>Video File *</Label>
+            <Label className="text-xs">Video File *</Label>
             <Input 
+              className="h-8 text-sm"
               type="file" 
               accept="video/*" 
               onChange={(e) => setVideoFile(e.target.files?.[0] || null)} 
@@ -180,8 +181,9 @@ export function ReferralVideoManager() {
           </div>
 
           <div>
-            <Label>Thumbnail (Optional)</Label>
+            <Label className="text-xs">Thumbnail (Optional)</Label>
             <Input 
+              className="h-8 text-sm"
               type="file" 
               accept="image/*" 
               onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)} 
@@ -190,8 +192,9 @@ export function ReferralVideoManager() {
           </div>
 
           <div>
-            <Label>Title</Label>
+            <Label className="text-xs">Title</Label>
             <Input 
+              className="h-8 text-sm"
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
               placeholder="Earn $400 Per Driver" 
@@ -199,21 +202,23 @@ export function ReferralVideoManager() {
           </div>
 
           <div>
-            <Label>Description</Label>
+            <Label className="text-xs">Description</Label>
             <Textarea 
+              className="text-sm min-h-[60px]"
               value={description} 
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Video description..."
-              rows={3}
+              rows={2}
             />
           </div>
 
           <Button 
             onClick={handleUpload} 
             disabled={!videoFile || uploading}
-            className="w-full"
+            size="sm"
+            className="w-full h-8 text-xs"
           >
-            <Upload className="w-4 h-4 mr-2" />
+            <Upload className="w-3 h-3 mr-1.5" />
             {uploading ? 'Uploading...' : 'Upload Video'}
           </Button>
         </CardContent>
@@ -221,26 +226,26 @@ export function ReferralVideoManager() {
 
       {/* Existing Videos */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Video className="w-5 h-5" />
+        <CardHeader className="p-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Video className="w-4 h-4" />
             Current Videos ({selectedType})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           {loading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Loading videos...</p>
+            <div className="text-center py-6">
+              <p className="text-xs text-muted-foreground">Loading videos...</p>
             </div>
           ) : videos.length === 0 ? (
-            <div className="text-center py-8">
-              <Video className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500">No videos uploaded yet</p>
+            <div className="text-center py-6">
+              <Video className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+              <p className="text-xs text-muted-foreground">No videos uploaded yet</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {videos.map((video) => (
-                <div key={video.id} className="border rounded-lg p-4 space-y-3">
+                <div key={video.id} className="border rounded-lg p-3 space-y-2">
                   <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
                     <video
                       src={video.video_url}
@@ -250,33 +255,34 @@ export function ReferralVideoManager() {
                   </div>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-semibold mb-1">{video.title || 'Untitled'}</h4>
+                      <h4 className="text-sm font-semibold mb-1">{video.title || 'Untitled'}</h4>
                       {video.description && (
-                        <p className="text-sm text-gray-600 mb-2">{video.description}</p>
+                        <p className="text-xs text-muted-foreground mb-1.5">{video.description}</p>
                       )}
                       <div className="flex items-center gap-2">
-                        <Badge variant={video.is_active ? 'default' : 'secondary'}>
+                        <Badge variant={video.is_active ? 'default' : 'secondary'} className="text-xs">
                           {video.is_active ? 'Active' : 'Inactive'}
                         </Badge>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {new Date(video.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex gap-1.5 ml-3">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-7 text-xs"
                         onClick={() => handleToggleActive(video.id, video.is_active)}
                       >
                         {video.is_active ? (
                           <>
-                            <Pause className="w-4 h-4 mr-1" />
+                            <Pause className="w-3 h-3 mr-1" />
                             Deactivate
                           </>
                         ) : (
                           <>
-                            <Play className="w-4 h-4 mr-1" />
+                            <Play className="w-3 h-3 mr-1" />
                             Activate
                           </>
                         )}
@@ -284,10 +290,10 @@ export function ReferralVideoManager() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
                         onClick={() => handleDelete(video.id)}
-                        className="text-red-600 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>

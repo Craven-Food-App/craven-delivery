@@ -36,10 +36,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, LayoutDashboard, Tag, Mail, Bell, Users, TrendingUp, BarChart, Gift, UserPlus, Award, 
   Megaphone, MessageSquare, Building2, Truck, DollarSign, FolderOpen, Zap, Plug, Shield, Settings, 
-  Sparkles, Filter, PieChart, Image as ImageIcon, FileText
+  Sparkles, Filter, PieChart, Image as ImageIcon, FileText, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import cravenLogo from "@/assets/craven-logo.png";
 
 const MarketingPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -260,26 +261,30 @@ const MarketingPortal: React.FC = () => {
         return <ICADocumentManager />;
       case 'referral-program':
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Referral Program Management</h2>
-                <p className="text-muted-foreground">Manage referral settings, video content, and program configuration</p>
+                <h2 className="text-lg font-semibold text-gray-900">Referral Program Management</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Manage referral settings, video content, and program configuration</p>
               </div>
             </div>
             <Tabs defaultValue="program" className="w-full">
-              <TabsList>
-                <TabsTrigger value="program">Program</TabsTrigger>
-                <TabsTrigger value="video">Video Content</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-              <TabsContent value="program" className="mt-6">
+              <div className="border-b border-gray-200 bg-[#fafbfc]">
+                <div className="px-3 py-2">
+                  <TabsList className="bg-transparent h-8 p-0">
+                    <TabsTrigger value="program" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Program</TabsTrigger>
+                    <TabsTrigger value="video" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Video Content</TabsTrigger>
+                    <TabsTrigger value="settings" className="h-7 px-3 text-xs font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
+                  </TabsList>
+                </div>
+              </div>
+              <TabsContent value="program" className="m-0 p-3">
                 <ReferralProgram userType="customer" />
               </TabsContent>
-              <TabsContent value="video" className="mt-6">
+              <TabsContent value="video" className="m-0 p-3">
                 <ReferralVideoManager />
               </TabsContent>
-              <TabsContent value="settings" className="mt-6">
+              <TabsContent value="settings" className="m-0 p-3">
                 <ReferralSettingsManager />
               </TabsContent>
             </Tabs>
@@ -287,11 +292,13 @@ const MarketingPortal: React.FC = () => {
         );
       case 'loyalty-program':
         return (
-          <div className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Loyalty Program</h2>
-              {userId && <LoyaltyDashboard userId={userId} />}
-              {!userId && <p className="text-gray-600">Loading...</p>}
+          <div className="space-y-3">
+            <Card className="border border-gray-200 shadow-sm">
+              <div className="p-3">
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Loyalty Program</h2>
+                {userId && <LoyaltyDashboard userId={userId} />}
+                {!userId && <p className="text-xs text-gray-600">Loading...</p>}
+              </div>
             </Card>
           </div>
         );
@@ -317,7 +324,7 @@ const MarketingPortal: React.FC = () => {
         return <ToolsIntegrations />;
       case 'settings':
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <MarketingSettings />
             <AboutUsStatsToggle />
           </div>
@@ -333,9 +340,11 @@ const MarketingPortal: React.FC = () => {
 
       default:
         return (
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Marketing Portal</h2>
-            <p className="text-gray-600">Navigate using the menu to access marketing features.</p>
+          <Card className="border border-gray-200 shadow-sm">
+            <div className="p-3">
+              <h2 className="text-sm font-semibold text-gray-900 mb-2">Marketing Portal</h2>
+              <p className="text-xs text-gray-600">Navigate using the menu to access marketing features.</p>
+            </div>
           </Card>
         );
     }
@@ -343,80 +352,86 @@ const MarketingPortal: React.FC = () => {
 
   return (
     <MarketingAccessGuard>
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex h-screen">
-          {/* Sidebar */}
-          <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/hub')}
-                  className="p-0"
-                  title="Back to Hub"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Hub
-                </Button>
-                <h1 className="text-lg font-bold">Marketing Portal</h1>
-              </div>
+      <div className="flex h-screen w-full bg-[#f8f9fa]">
+        {/* Compact Enterprise Sidebar */}
+        <aside className="w-56 border-r border-gray-200 bg-white flex flex-col shadow-sm">
+          {/* Header */}
+          <div className="px-3 py-2.5 border-b border-gray-200 bg-[#fafbfc]">
+            <div className="flex items-center gap-2 mb-2">
+              <img src={cravenLogo} alt="Crave'n" className="h-5" />
+              <span className="font-semibold text-sm text-gray-900">Marketing Portal</span>
             </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/hub')}
+              className="w-full justify-start h-7 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2"
+            >
+              <ArrowLeft className="h-3 w-3 mr-1.5" />
+              Back to Hub
+            </Button>
+          </div>
 
-            <ScrollArea className="flex-1">
-              <div className="p-4 space-y-2">
-                {navSections.map((section) => {
-                  const Icon = section.icon;
-                  return (
-                    <div key={section.id} className="space-y-1">
-                      <button
-                        onClick={() => toggleSection(section.id)}
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          <span>{section.title}</span>
-                        </div>
-                      </button>
-                      {expandedSection === section.id && (
-                        <div className="ml-6 space-y-1">
-                          {section.items.map((item) => {
-                            const ItemIcon = item.icon;
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => setActiveTab(item.id)}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                                  activeTab === item.id
-                                    ? 'bg-orange-100 text-orange-700 font-medium'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                }`}
-                              >
-                                <ItemIcon className="h-4 w-4" />
-                                <span>{item.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+          {/* Navigation */}
+          <ScrollArea className="flex-1">
+            <div className="py-2 px-2">
+              {navSections.map((section) => {
+                const Icon = section.icon;
+                const isExpanded = expandedSection === section.id;
+                return (
+                  <div key={section.id} className="mb-0.5">
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{section.title}</span>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 text-gray-400" />
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex-1 overflow-auto">
-            <div className="p-6">
-              {renderContent()}
+                    </button>
+                    {isExpanded && (
+                      <div className="ml-4 mt-0.5 space-y-0.5">
+                        {section.items.map((item) => {
+                          const ItemIcon = item.icon;
+                          const isActive = activeTab === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => setActiveTab(item.id)}
+                              className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+                                isActive
+                                  ? 'bg-[#e8f0fe] text-[#1a73e8] font-medium'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                              }`}
+                            >
+                              <ItemIcon className="h-3 w-3" />
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+          </ScrollArea>
+        </aside>
+
+        {/* Main Content Area - Compact */}
+        <main className="flex-1 overflow-auto bg-[#f8f9fa]">
+          <div className="h-full p-4">
+            {renderContent()}
           </div>
-        </div>
+        </main>
       </div>
     </MarketingAccessGuard>
   );
 };
 
 export default MarketingPortal;
-

@@ -4,11 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Plug, Check, ExternalLink, Settings } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Integration {
   id: string;
@@ -105,103 +104,110 @@ const ToolsIntegrations: React.FC = () => {
   }, {} as Record<string, Integration[]>);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Tools & Integrations</h2>
-        <p className="text-gray-600 mt-1">Connect external services to enhance marketing capabilities</p>
+    <div className="space-y-3">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Tools & Integrations</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Connect external services to enhance marketing capabilities</p>
+        </div>
       </div>
 
-      {/* Connected Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Connected</p>
-              <p className="text-2xl font-bold text-green-600">
-                {integrations.filter(i => i.status === 'connected').length}
-              </p>
+      {/* Compact Status Cards */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Connected</p>
+              <Check className="h-3 w-3 text-green-600" />
             </div>
-            <Check className="h-8 w-8 text-green-500" />
-          </div>
+            <p className="text-xl font-semibold text-green-600 leading-tight">
+              {integrations.filter(i => i.status === 'connected').length}
+            </p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Available</p>
-              <p className="text-2xl font-bold">{integrations.length}</p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Available</p>
+              <Plug className="h-3 w-3 text-blue-600" />
             </div>
-            <Plug className="h-8 w-8 text-blue-500" />
-          </div>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{integrations.length}</p>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Disconnected</p>
-              <p className="text-2xl font-bold text-gray-600">
-                {integrations.filter(i => i.status === 'disconnected').length}
-              </p>
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Disconnected</p>
+              <Plug className="h-3 w-3 text-gray-400" />
             </div>
-            <Plug className="h-8 w-8 text-gray-400" />
-          </div>
+            <p className="text-xl font-semibold text-gray-600 leading-tight">
+              {integrations.filter(i => i.status === 'disconnected').length}
+            </p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Integrations by Category */}
+      {/* Integrations by Category - Compact */}
       {Object.entries(groupedIntegrations).map(([category, items]) => (
-        <Card key={category} className="p-6">
-          <h3 className="text-lg font-semibold mb-4">{category}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((integration) => (
-              <div
-                key={integration.id}
-                className="p-4 border border-gray-200 rounded-lg hover:border-orange-300 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{integration.icon}</div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{integration.name}</h4>
-                      <p className="text-xs text-gray-500">{integration.description}</p>
+        <Card key={category} className="border border-gray-200 shadow-sm">
+          <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+            <CardTitle className="text-sm font-semibold">{category}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {items.map((integration) => (
+                <div
+                  key={integration.id}
+                  className="p-2.5 border border-gray-200 rounded-md hover:border-orange-300 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="text-lg flex-shrink-0">{integration.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-xs text-gray-900 truncate">{integration.name}</h4>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{integration.description}</p>
+                      </div>
                     </div>
+                    <Badge className={`text-[10px] px-1.5 py-0.5 font-medium border flex-shrink-0 ${
+                      integration.status === 'connected' ? 'bg-green-50 text-green-700 border-green-200' :
+                      integration.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                      'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}>
+                      {integration.status}
+                    </Badge>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    integration.status === 'connected' ? 'bg-green-100 text-green-700' :
-                    integration.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {integration.status}
-                  </span>
-                </div>
-                {integration.status === 'connected' && integration.lastSync && (
-                  <p className="text-xs text-gray-500 mb-2">
-                    Last synced: {new Date(integration.lastSync).toLocaleString()}
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  {integration.status === 'connected' ? (
-                    <>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Settings className="h-4 w-4 mr-1" />
-                        Configure
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-orange-600 hover:bg-orange-700"
-                      onClick={() => handleConnect(integration.id)}
-                    >
-                      Connect
-                    </Button>
+                  {integration.status === 'connected' && integration.lastSync && (
+                    <p className="text-[10px] text-gray-500 mb-1.5">
+                      Last synced: {new Date(integration.lastSync).toLocaleDateString()}
+                    </p>
                   )}
+                  <div className="flex gap-1.5">
+                    {integration.status === 'connected' ? (
+                      <>
+                        <Button variant="outline" size="sm" className="flex-1 h-6 px-1.5 text-[10px]">
+                          <Settings className="h-3 w-3 mr-1" />
+                          Config
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1 h-6 px-1.5 text-[10px]">
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          View
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="flex-1 h-6 px-1.5 text-[10px] bg-orange-500 hover:bg-orange-600"
+                        onClick={() => handleConnect(integration.id)}
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       ))}
     </div>
@@ -209,4 +215,3 @@ const ToolsIntegrations: React.FC = () => {
 };
 
 export default ToolsIntegrations;
-

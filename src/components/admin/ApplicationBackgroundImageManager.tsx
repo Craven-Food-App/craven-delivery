@@ -223,21 +223,21 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card>
-        <CardHeader>
-          <CardTitle>Application Background Image</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Application Background Image</CardTitle>
+          <CardDescription className="text-xs">
             Set the background image displayed on the "Apply to Drive with Crave'n" application page (/driver-onboarding/apply)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-3 space-y-3">
           {/* Upload Section */}
-          <div className="space-y-2">
-            <Label>Background Image</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Background Image</Label>
             
             {!imagePreview ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -251,16 +251,16 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
                   <div className="flex flex-col items-center justify-center">
                     {uploadingImage ? (
                       <>
-                        <Loader2 className="h-10 w-10 animate-spin text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600">Uploading...</p>
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400 mb-1.5" />
+                        <p className="text-xs text-gray-600">Uploading...</p>
                       </>
                     ) : (
                       <>
-                        <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                        <p className="text-sm font-medium text-gray-700">
+                        <Upload className="h-6 w-6 text-gray-400 mb-1.5" />
+                        <p className="text-xs font-medium text-gray-700">
                           Click to upload or drag and drop
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-0.5">
                           PNG, JPG, WEBP up to 10MB
                         </p>
                       </>
@@ -273,7 +273,7 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
                 <img 
                   src={imagePreview} 
                   alt="Application Background Preview" 
-                  className="w-full h-64 object-cover rounded-md border"
+                  className="w-full h-40 object-cover rounded-md border"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
@@ -282,19 +282,20 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
                   type="button"
                   variant="destructive"
                   size="sm"
-                  className="absolute top-2 right-2"
+                  className="absolute top-1.5 right-1.5 h-6 w-6 p-0"
                   onClick={handleRemoveImage}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             )}
             
             {/* URL Input as Alternative */}
-            <div className="mt-2">
+            <div className="mt-1.5">
               <p className="text-xs text-gray-500 mb-1">Or enter image URL:</p>
               <Input
                 id="application_background_image_url"
+                className="h-8 text-sm"
                 type="url"
                 value={backgroundImageUrl}
                 onChange={(e) => {
@@ -311,8 +312,8 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
           </div>
 
           {/* Preview Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
+            <p className="text-xs text-blue-800">
               <strong>Note:</strong> This image will be used as the full-page background on the application page. 
               If no image is set, a default orange gradient will be displayed. 
               Recommended dimensions: 1920x1080px or similar landscape orientation for best display.
@@ -323,11 +324,12 @@ export const ApplicationBackgroundImageManager: React.FC = () => {
           <Button 
             onClick={handleSave} 
             disabled={uploadingImage || loading}
-            className="w-full"
+            size="sm"
+            className="w-full h-8 text-xs"
           >
             {uploadingImage || loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
                 {uploadingImage ? 'Uploading...' : 'Saving...'}
               </>
             ) : (

@@ -111,21 +111,21 @@ export function ReferralSettingsManager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Card>
-        <CardHeader>
+        <CardHeader className="p-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="w-4 h-4" />
                 Referral Program Settings
               </CardTitle>
-              <CardDescription className="mt-1">
+              <CardDescription className="text-xs mt-0.5">
                 Configure referral bonuses and requirements for each user type
               </CardDescription>
             </div>
             <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="h-8 text-sm w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -136,15 +136,16 @@ export function ReferralSettingsManager() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-3 space-y-3">
           {/* Basic Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Basic Settings</h3>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">Basic Settings</h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Referrer Bonus Amount ($)</Label>
+                <Label className="text-xs">Referrer Bonus Amount ($)</Label>
                 <Input
+                  className="h-8 text-sm"
                   type="number"
                   step="0.01"
                   value={(settings.referrer_bonus_amount / 100).toFixed(2)}
@@ -156,8 +157,9 @@ export function ReferralSettingsManager() {
               </div>
 
               <div>
-                <Label>Referred Bonus Amount ($)</Label>
+                <Label className="text-xs">Referred Bonus Amount ($)</Label>
                 <Input
+                  className="h-8 text-sm"
                   type="number"
                   step="0.01"
                   value={(settings.referred_bonus_amount / 100).toFixed(2)}
@@ -171,8 +173,8 @@ export function ReferralSettingsManager() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Program Active</Label>
-                <p className="text-sm text-gray-500">Enable or disable this referral program</p>
+                <Label className="text-xs">Program Active</Label>
+                <p className="text-xs text-muted-foreground">Enable or disable this referral program</p>
               </div>
               <Switch
                 checked={settings.is_active}
@@ -183,16 +185,17 @@ export function ReferralSettingsManager() {
 
           {/* Driver-Specific Milestone Settings */}
           {selectedType === 'driver' && (
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
+            <div className="space-y-3 border-t pt-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
                 Milestone Settings
               </h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Milestone 1 Amount ($)</Label>
+                  <Label className="text-xs">Milestone 1 Amount ($)</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     step="0.01"
                     value={((settings.milestone_1_amount_cents || 10000) / 100).toFixed(2)}
@@ -204,8 +207,9 @@ export function ReferralSettingsManager() {
                 </div>
 
                 <div>
-                  <Label>Milestone 1 Delivery Count</Label>
+                  <Label className="text-xs">Milestone 1 Delivery Count</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     value={settings.milestone_1_delivery_count || 1}
                     onChange={(e) => setSettings({
@@ -216,8 +220,9 @@ export function ReferralSettingsManager() {
                 </div>
 
                 <div>
-                  <Label>Milestone 2 Amount ($)</Label>
+                  <Label className="text-xs">Milestone 2 Amount ($)</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     step="0.01"
                     value={((settings.milestone_2_amount_cents || 30000) / 100).toFixed(2)}
@@ -229,8 +234,9 @@ export function ReferralSettingsManager() {
                 </div>
 
                 <div>
-                  <Label>Milestone 2 Delivery Count</Label>
+                  <Label className="text-xs">Milestone 2 Delivery Count</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     value={settings.milestone_2_delivery_count || 20}
                     onChange={(e) => setSettings({
@@ -245,16 +251,17 @@ export function ReferralSettingsManager() {
 
           {/* Driver-Specific Requirements */}
           {selectedType === 'driver' && (
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
+            <div className="space-y-3 border-t pt-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
                 Requirements
               </h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Required Minimum Rating</Label>
+                  <Label className="text-xs">Required Minimum Rating</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     step="0.1"
                     min="0"
@@ -268,8 +275,9 @@ export function ReferralSettingsManager() {
                 </div>
 
                 <div>
-                  <Label>Required Days Active</Label>
+                  <Label className="text-xs">Required Days Active</Label>
                   <Input
+                    className="h-8 text-sm"
                     type="number"
                     value={settings.required_days_active || 7}
                     onChange={(e) => setSettings({
@@ -280,11 +288,11 @@ export function ReferralSettingsManager() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Require Background Check</Label>
-                    <p className="text-sm text-gray-500">Referred driver must pass background check</p>
+                    <Label className="text-xs">Require Background Check</Label>
+                    <p className="text-xs text-muted-foreground">Referred driver must pass background check</p>
                   </div>
                   <Switch
                     checked={settings.require_background_check || false}
@@ -294,8 +302,8 @@ export function ReferralSettingsManager() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Require Documents</Label>
-                    <p className="text-sm text-gray-500">Referred driver must upload all required documents</p>
+                    <Label className="text-xs">Require Documents</Label>
+                    <p className="text-xs text-muted-foreground">Referred driver must upload all required documents</p>
                   </div>
                   <Switch
                     checked={settings.require_documents || false}
@@ -308,18 +316,18 @@ export function ReferralSettingsManager() {
 
           {/* Customer/Restaurant Requirements */}
           {(selectedType === 'customer' || selectedType === 'restaurant') && (
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="text-lg font-semibold">Requirements</h3>
-              <div className="text-sm text-gray-600">
+            <div className="space-y-3 border-t pt-3">
+              <h3 className="text-sm font-semibold">Requirements</h3>
+              <div className="text-xs text-muted-foreground">
                 <p>Requirements are stored in the requirements JSONB field.</p>
-                <p className="mt-2">For customers: min_orders, min_amount</p>
+                <p className="mt-1.5">For customers: min_orders, min_amount</p>
                 <p>For restaurants: min_orders, min_revenue</p>
               </div>
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button onClick={handleSave} disabled={saving}>
+          <div className="flex justify-end pt-2 border-t">
+            <Button onClick={handleSave} disabled={saving} size="sm" className="h-8 text-xs">
               {saving ? 'Saving...' : 'Save Settings'}
             </Button>
           </div>
@@ -328,11 +336,11 @@ export function ReferralSettingsManager() {
 
       {/* Summary Card */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle>Current Configuration</CardTitle>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Current Configuration</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
+        <CardContent className="p-3">
+          <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className="text-gray-600">Referrer Bonus:</span>
               <span className="font-semibold">${(settings.referrer_bonus_amount / 100).toFixed(2)}</span>
@@ -359,9 +367,9 @@ export function ReferralSettingsManager() {
                 </div>
               </>
             )}
-            <div className="flex justify-between pt-2 border-t">
-              <span className="text-gray-600">Status:</span>
-              <Badge variant={settings.is_active ? 'default' : 'secondary'}>
+            <div className="flex justify-between pt-1.5 border-t">
+              <span className="text-muted-foreground">Status:</span>
+              <Badge variant={settings.is_active ? 'default' : 'secondary'} className="text-xs">
                 {settings.is_active ? 'Active' : 'Inactive'}
               </Badge>
             </div>

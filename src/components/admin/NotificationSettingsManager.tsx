@@ -220,81 +220,81 @@ export const NotificationSettingsManager: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Bell className="h-8 w-8 animate-pulse text-orange-500" />
+      <div className="flex items-center justify-center py-8">
+        <Bell className="h-6 w-6 animate-pulse text-gray-400" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Notification Settings</h2>
-          <p className="text-muted-foreground">Manage driver notification sounds and preferences</p>
+          <h2 className="text-lg font-semibold text-gray-900">Notification Settings</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Manage driver notification sounds</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600">
+              <Plus className="h-3 w-3 mr-1.5" />
               Upload Sound
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Upload Notification Sound</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base">Upload Notification Sound</DialogTitle>
+              <DialogDescription className="text-xs">
                 Add a new audio file for driver notifications
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-3 mt-4">
               <div>
-                <Label htmlFor="sound-name">Sound Name</Label>
+                <Label htmlFor="sound-name" className="text-xs">Sound Name</Label>
                 <Input 
                   id="sound-name"
                   placeholder="e.g., Alert Tone 1"
                   value={newSoundName} 
-                  onChange={e => setNewSoundName(e.target.value)} 
+                  onChange={e => setNewSoundName(e.target.value)}
+                  className="h-8 text-xs mt-1"
                 />
               </div>
 
               <div>
-                <Label htmlFor="sound-file">Audio File</Label>
+                <Label htmlFor="sound-file" className="text-xs">Audio File</Label>
                 <div className="mt-1 flex items-center gap-2">
-                  <div className="flex-1">
-                    <Input 
-                      id="sound-file"
-                      type="file" 
-                      accept="audio/*" 
-                      onChange={e => setNewSoundFile(e.target.files?.[0] || null)}
-                    />
-                  </div>
+                  <Input 
+                    id="sound-file"
+                    type="file" 
+                    accept="audio/*" 
+                    onChange={e => setNewSoundFile(e.target.files?.[0] || null)}
+                    className="h-8 text-xs"
+                  />
                   {newSoundFile && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Music className="h-3 w-3" />
-                      {newSoundFile.name.substring(0, 20)}...
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                      <Music className="h-2.5 w-2.5 mr-1" />
+                      {newSoundFile.name.substring(0, 15)}...
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Supported formats: MP3, WAV, M4A, OGG
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Supported: MP3, WAV, M4A, OGG
                 </p>
               </div>
 
               <Button 
                 onClick={addSound} 
-                className="bg-orange-500 hover:bg-orange-600 w-full"
+                className="bg-orange-500 hover:bg-orange-600 w-full h-8 text-xs"
                 disabled={uploading}
               >
                 {uploading ? (
                   <>
-                    <Upload className="h-4 w-4 mr-2 animate-pulse" />
+                    <Upload className="h-3 w-3 mr-1.5 animate-pulse" />
                     Uploading...
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-3 w-3 mr-1.5" />
                     Upload Sound
                   </>
                 )}
@@ -304,118 +304,98 @@ export const NotificationSettingsManager: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Volume2 className="h-4 w-4 text-orange-500" />
-              Total Sounds
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sounds.length}</div>
-            <p className="text-xs text-muted-foreground">Available notification sounds</p>
+      {/* Compact Stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1">Total Sounds</p>
+            <p className="text-xl font-semibold text-gray-900 leading-tight">{sounds.length}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              Default Sound
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold truncate">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1">Default Sound</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">
               {sounds.find(s => s.is_default)?.name || 'None'}
-            </div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Bell className="h-4 w-4 text-blue-500" />
-              Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Badge className="bg-green-100 text-green-800">
-              <CheckCircle className="h-3 w-3 mr-1" />
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-3">
+            <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wide mb-1">Status</p>
+            <Badge className="bg-green-50 text-green-700 border border-green-200 text-[10px] px-1.5 py-0.5 mt-1">
+              <CheckCircle className="h-2.5 w-2.5 mr-1" />
               Active
             </Badge>
-            <p className="text-xs text-muted-foreground mt-2">Notifications enabled</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Notification Sounds List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Sounds</CardTitle>
-          <CardDescription>
-            Manage audio files used for driver order notifications
-          </CardDescription>
+      {/* Notification Sounds List - Compact */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">Notification Sounds</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3">
           {sounds.length === 0 ? (
-            <div className="text-center py-12">
-              <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">No notification sounds uploaded yet</p>
+            <div className="text-center py-8">
+              <Music className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-xs text-gray-500 mb-3">No notification sounds uploaded yet</p>
               <Button 
                 onClick={() => setIsDialogOpen(true)}
-                className="bg-orange-500 hover:bg-orange-600"
+                size="sm"
+                className="h-7 px-2.5 text-xs bg-orange-500 hover:bg-orange-600"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Upload Your First Sound
+                <Plus className="h-3 w-3 mr-1.5" />
+                Upload First Sound
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {sounds.map(sound => (
                 <div
                   key={sound.id}
-                  className="border rounded-lg p-4 hover:border-orange-200 transition-colors"
+                  className="border border-gray-200 rounded-md p-2.5 hover:border-orange-200 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                        <Volume2 className="h-6 w-6 text-orange-600" />
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <Volume2 className="h-4 w-4 text-orange-600" />
                       </div>
                       
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold">{sound.name}</h4>
+                          <h4 className="font-semibold text-sm text-gray-900 truncate">{sound.name}</h4>
                           {sound.is_default && (
-                            <Badge className="bg-orange-100 text-orange-800">
-                              <CheckCircle className="h-3 w-3 mr-1" />
+                            <Badge className="bg-orange-50 text-orange-700 border border-orange-200 text-[10px] px-1.5 py-0.5">
+                              <CheckCircle className="h-2.5 w-2.5 mr-1" />
                               Default
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-[10px] text-gray-500 truncate">
                           {sound.file.split('/').pop()}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <Button
                         onClick={() => playPreview(sound)}
                         variant="outline"
                         size="sm"
-                        className="hover:bg-orange-50"
+                        className="h-7 px-2 text-xs hover:bg-orange-50"
                       >
                         {playingId === sound.id ? (
                           <>
-                            <Pause className="h-4 w-4 mr-2" />
+                            <Pause className="h-3 w-3 mr-1" />
                             Stop
                           </>
                         ) : (
                           <>
-                            <Play className="h-4 w-4 mr-2" />
+                            <Play className="h-3 w-3 mr-1" />
                             Preview
                           </>
                         )}
@@ -426,17 +406,17 @@ export const NotificationSettingsManager: React.FC = () => {
                           <Button
                             onClick={() => setDefault(sound.id)}
                             size="sm"
-                            className="bg-orange-500 hover:bg-orange-600"
+                            className="h-7 px-2 text-xs bg-orange-500 hover:bg-orange-600"
                           >
-                            Set as Default
+                            Set Default
                           </Button>
                           <Button
                             onClick={() => deleteSound(sound.id)}
                             variant="outline"
                             size="sm"
-                            className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            className="h-7 px-2 text-xs hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </>
                       )}
@@ -449,79 +429,70 @@ export const NotificationSettingsManager: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Additional Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
-          <CardDescription>Configure how notifications are delivered to drivers</CardDescription>
+      {/* Notification Preferences - Compact */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="px-3 py-2 border-b border-gray-200 bg-[#fafbfc]">
+          <CardTitle className="text-sm font-semibold">Notification Preferences</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="text-base font-medium">Enable Sound Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Play sound when new orders are available
-              </p>
+        <CardContent className="p-3 space-y-3">
+          <div className="flex items-center justify-between py-1.5">
+            <div>
+              <Label className="text-xs font-medium">Enable Sound Notifications</Label>
+              <p className="text-[10px] text-gray-500 mt-0.5">Play sound when new orders are available</p>
             </div>
             <Switch defaultChecked />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="text-base font-medium">Push Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Send push notifications to driver mobile apps
-              </p>
+          <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+            <div>
+              <Label className="text-xs font-medium">Push Notifications</Label>
+              <p className="text-[10px] text-gray-500 mt-0.5">Send push notifications to driver mobile apps</p>
             </div>
             <Switch defaultChecked />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="text-base font-medium">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Send email alerts for important updates
-              </p>
+          <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+            <div>
+              <Label className="text-xs font-medium">Email Notifications</Label>
+              <p className="text-[10px] text-gray-500 mt-0.5">Send email alerts for important updates</p>
             </div>
             <Switch />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="text-base font-medium">SMS Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Send text messages for critical alerts
-              </p>
+          <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+            <div>
+              <Label className="text-xs font-medium">SMS Notifications</Label>
+              <p className="text-[10px] text-gray-500 mt-0.5">Send text messages for critical alerts</p>
             </div>
             <Switch />
           </div>
         </CardContent>
       </Card>
 
-      {/* Sound Guidelines */}
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Settings className="h-4 w-4" />
+      {/* Best Practices - Compact */}
+      <Card className="border border-gray-200 shadow-sm bg-gray-50">
+        <CardHeader className="px-3 py-2 border-b border-gray-200">
+          <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+            <Settings className="h-3 w-3" />
             Best Practices
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+        <CardContent className="p-3">
+          <ul className="space-y-1.5 text-[10px] text-gray-600">
+            <li className="flex items-start gap-1.5">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
               <span>Keep notification sounds between 2-5 seconds for optimal user experience</span>
             </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+            <li className="flex items-start gap-1.5">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
               <span>Use clear, distinct sounds that are easy to hear in noisy environments</span>
             </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+            <li className="flex items-start gap-1.5">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
               <span>Test sounds on actual devices before setting as default</span>
             </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+            <li className="flex items-start gap-1.5">
+              <CheckCircle className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
               <span>File size should be under 500KB for fast loading</span>
             </li>
           </ul>

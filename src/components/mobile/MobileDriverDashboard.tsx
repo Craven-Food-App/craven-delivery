@@ -821,7 +821,7 @@ export const MobileDriverDashboard: React.FC = () => {
     }
   }, [driverState, selectedVehicle, earningMode, currentCity, endTime]);
 
-  // Listen for schedule status changes to sync CRAVE NOW button
+  // Listen for schedule status changes to sync START FEEDING button
   useEffect(() => {
     const handleStatusChange = (event: CustomEvent) => {
       const { status } = event.detail;
@@ -1345,7 +1345,7 @@ export const MobileDriverDashboard: React.FC = () => {
             {/* Content Container */}
             <div className="flex flex-col justify-end h-full px-4 space-y-4 pointer-events-auto" style={{ paddingBottom: '100px' }}>
 
-              {/* Popular Times Chart with CRAVE NOW Button */}
+              {/* Popular Times Chart with START FEEDING Button */}
               <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-border/10 overflow-hidden">
                 {/* Main Action Button - Centered at top */}
                 <div className="flex justify-center mb-4">
@@ -1354,7 +1354,7 @@ export const MobileDriverDashboard: React.FC = () => {
                     disabled={isGoingOnline}
                     className="w-full h-12 text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isGoingOnline ? 'GOING ONLINE...' : 'CRAVE NOW'}
+                    {isGoingOnline ? 'GOING ONLINE...' : 'START FEEDING'}
                   </Button>
                 </div>
                 

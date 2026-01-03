@@ -1,29 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Stack,
   Group,
-  Title,
   Button,
-  Modal,
   TextInput,
   Select,
   Grid,
-  ActionIcon,
-  Tooltip,
+  Tabs,
+  Card,
+  Text,
 } from '@mantine/core';
-import { IconPlus, IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconDatabase } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useEmbeddedToast';
-import { MantineTable } from '@/components/cfo/MantineTable';
 import { modals } from '@mantine/modals';
 import { useForm } from '@mantine/form';
-import { Text } from '@mantine/core';
+import { PageHeader } from '@/components/tpi/PageHeader';
+import { DataTable, ColumnDef } from '@/components/tpi/DataTable';
+import { DetailDrawer } from '@/components/tpi/DetailDrawer';
+import { FilterBar, Filter } from '@/components/tpi/FilterBar';
+import { StatusBadge } from '@/components/tpi/StatusBadge';
+import { EmptyState } from '@/components/tpi/EmptyState';
+import { ErrorState } from '@/components/tpi/ErrorState';
 
 export const AssetManagement: React.FC = () => {
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalOpened, setModalOpened] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortColumn, setSortColumn] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [activeFilters, setActiveFilters] = useState<Filter[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const toast = useToast();
 
   const form = useForm({
@@ -42,17 +54,39 @@ export const AssetManagement: React.FC = () => {
 
   const fetchAssets = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('it_assets')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .select('*', { count: 'exact' });
+
+      // Apply filters
+      activeFilters.forEach((filter) => {
+        if (filter.value) {
+          if (filter.type === 'text') {
+            query = query.ilike(filter.id, `%${filter.value}%`);
+          } else if (filter.type === 'select') {
+            query = query.eq(filter.id, filter.value);
+          }
+        }
+      });
+
+      // Apply sorting
+      query = query.order(sortColumn, { ascending: sortDirection === 'asc' });
+
+      // Apply pagination
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error: fetchError, count } = await query;
       
-      if (error) throw error;
+      if (fetchError) throw fetchError;
       setAssets(data || []);
-    } catch (error: any) {
-      console.error('Error fetching assets:', error);
+      setTotalCount(count || 0);
+    } catch (err: any) {
+      console.error('Error fetching assets:', err);
+      setError(err.message || 'Failed to load assets');
       toast.error('Failed to load assets', 'Error');
     } finally {
       setLoading(false);
@@ -62,13 +96,21 @@ export const AssetManagement: React.FC = () => {
   const handleCreate = () => {
     setEditingAsset(null);
     form.reset();
-    setModalOpened(true);
+    setSelectedAsset(null);
+    setDrawerOpen(true);
+  };
+
+  const handleRowClick = (row: any) => {
+    setSelectedAsset(row.id);
+    setEditingAsset(null);
+    setDrawerOpen(true);
   };
 
   const handleEdit = (record: any) => {
     setEditingAsset(record);
     form.setValues(record);
-    setModalOpened(true);
+    setSelectedAsset(record.id);
+    setDrawerOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -105,7 +147,9 @@ export const AssetManagement: React.FC = () => {
         if (error) throw error;
         toast.success('Asset created successfully', 'Success');
       }
-      setModalOpened(false);
+      setDrawerOpen(false);
+      setEditingAsset(null);
+      setSelectedAsset(null);
       form.reset();
       fetchAssets();
     } catch (error: any) {
@@ -114,104 +158,347 @@ export const AssetManagement: React.FC = () => {
     }
   };
 
+  const getStatusStatus = (status: string): 'success' | 'warning' | 'error' | 'info' | 'neutral' => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'inactive': return 'warning';
+      case 'retired': return 'neutral';
+      default: return 'neutral';
+    }
+  };
+
+  const availableFilters: Filter[] = useMemo(() => [
+    {
+      id: 'asset_name',
+      type: 'text',
+      label: 'Asset Name',
+      value: activeFilters.find((f) => f.id === 'asset_name')?.value || '',
+    },
+    {
+      id: 'asset_type',
+      type: 'select',
+      label: 'Type',
+      value: activeFilters.find((f) => f.id === 'asset_type')?.value || '',
+      options: [
+        { label: 'Hardware', value: 'hardware' },
+        { label: 'Software', value: 'software' },
+        { label: 'Server', value: 'server' },
+        { label: 'Network', value: 'network' },
+        { label: 'Mobile', value: 'mobile' },
+      ],
+    },
+    {
+      id: 'status',
+      type: 'select',
+      label: 'Status',
+      value: activeFilters.find((f) => f.id === 'status')?.value || '',
+      options: [
+        { label: 'Active', value: 'active' },
+        { label: 'Inactive', value: 'inactive' },
+        { label: 'Retired', value: 'retired' },
+      ],
+    },
+  ], [activeFilters]);
+
+  const columns: ColumnDef<any>[] = useMemo(() => [
+    {
+      id: 'asset_name',
+      header: 'Asset Name',
+      accessor: (row) => row.asset_name,
+      sortable: true,
+    },
+    {
+      id: 'asset_type',
+      header: 'Type',
+      accessor: (row) => row.asset_type,
+      sortable: true,
+      width: 120,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessor: (row) => row.status,
+      sortable: true,
+      render: (value) => (
+        <StatusBadge
+          status={getStatusStatus(value)}
+          label={value.charAt(0).toUpperCase() + value.slice(1)}
+          size="sm"
+        />
+      ),
+      width: 120,
+    },
+    {
+      id: 'purchase_date',
+      header: 'Purchase Date',
+      accessor: (row) => row.purchase_date,
+      sortable: true,
+      render: (value) => value ? new Date(value).toLocaleDateString() : '-',
+      width: 150,
+    },
+    {
+      id: 'warranty_expiry',
+      header: 'Warranty Expires',
+      accessor: (row) => row.warranty_expiry,
+      sortable: true,
+      render: (value) => value ? new Date(value).toLocaleDateString() : '-',
+      width: 150,
+    },
+  ], []);
+
+  const selectedAssetData = useMemo(() => {
+    return assets.find((asset) => asset.id === selectedAsset);
+  }, [assets, selectedAsset]);
+
+  useEffect(() => {
+    fetchAssets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, sortColumn, sortDirection, activeFilters]);
+
+  const handleExport = (format: 'csv' | 'pdf') => {
+    toast.success(`Exporting assets as ${format.toUpperCase()}...`, 'Export');
+  };
+
+  if (error && !loading) {
+    return (
+      <ErrorState
+        message={error}
+        retry={{
+          label: 'Retry',
+          onRetry: fetchAssets,
+        }}
+      />
+    );
+  }
+
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={4}>IT Assets</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
-          Add Asset
-        </Button>
-      </Group>
-
-      <MantineTable
-        data={assets}
-        loading={loading}
-        rowKey="id"
-        columns={[
-          { title: 'Asset Name', dataIndex: 'asset_name' },
-          { title: 'Type', dataIndex: 'asset_type' },
-          { title: 'Status', dataIndex: 'status' },
-          { title: 'Purchase Date', dataIndex: 'purchase_date' },
-          { title: 'Warranty Expires', dataIndex: 'warranty_expiry' },
-          {
-            title: 'Actions',
-            dataIndex: 'actions',
-            render: (_: any, record: any) => (
-              <Group gap="xs">
-                <Tooltip label="Edit">
-                  <ActionIcon variant="subtle" color="blue" onClick={() => handleEdit(record)}>
-                    <IconEdit size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Delete">
-                  <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(record.id)}>
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            ),
-          },
-        ]}
+      <PageHeader
+        title="IT Asset Management"
+        description="Track and manage IT assets, hardware, and software"
+        actions={
+          <Button leftSection={<IconPlus size={16} />} onClick={handleCreate}>
+            Add Asset
+          </Button>
+        }
       />
 
-      <Modal
-        opened={modalOpened}
-        onClose={() => setModalOpened(false)}
-        title={editingAsset ? 'Edit Asset' : 'Add Asset'}
-      >
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack gap="md">
-            <TextInput
-              label="Asset Name"
-              placeholder="MacBook Pro 16"
-              required
-              {...form.getInputProps('asset_name')}
-            />
-            <Select
-              label="Type"
-              required
-              data={[
-                { value: 'hardware', label: 'Hardware' },
-                { value: 'software', label: 'Software' },
-                { value: 'server', label: 'Server' },
-                { value: 'network', label: 'Network' },
-                { value: 'mobile', label: 'Mobile' },
-              ]}
-              {...form.getInputProps('asset_type')}
-            />
-            <Select
-              label="Status"
-              required
-              data={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
-                { value: 'retired', label: 'Retired' },
-              ]}
-              {...form.getInputProps('status')}
-            />
-            <Grid>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="Purchase Date"
-                  type="date"
-                  {...form.getInputProps('purchase_date')}
-                />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="Warranty Expires"
-                  type="date"
-                  {...form.getInputProps('warranty_expiry')}
-                />
-              </Grid.Col>
-            </Grid>
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setModalOpened(false)}>Cancel</Button>
-              <Button type="submit">Save</Button>
+      <FilterBar
+        filters={availableFilters}
+        activeFilters={activeFilters}
+        onFilterChange={setActiveFilters}
+      />
+
+      <DataTable
+        data={assets}
+        columns={columns}
+        loading={loading}
+        pagination={{
+          page: currentPage,
+          pageSize: pageSize,
+          total: totalCount,
+          onPageChange: setCurrentPage,
+          onPageSizeChange: setPageSize,
+        }}
+        sorting={{
+          column: sortColumn,
+          direction: sortDirection,
+          onSort: (col, dir) => {
+            setSortColumn(col);
+            setSortDirection(dir);
+          },
+        }}
+        onRowClick={handleRowClick}
+        exportable
+        onExport={handleExport}
+        emptyState={
+          <EmptyState
+            icon={IconDatabase}
+            title="No assets found"
+            description="Get started by adding your first IT asset."
+            action={{
+              label: 'Add Asset',
+              onClick: handleCreate,
+            }}
+          />
+        }
+        getRowId={(row) => row.id}
+      />
+
+      <DetailDrawer
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setSelectedAsset(null);
+          setEditingAsset(null);
+        }}
+        title={editingAsset ? 'Edit Asset' : selectedAssetData ? `Asset: ${selectedAssetData.asset_name}` : 'New Asset'}
+        entityId={selectedAsset || undefined}
+        width={700}
+        footer={
+          editingAsset ? (
+            <Group justify="flex-end" gap="sm">
+              <Button variant="subtle" onClick={() => {
+                setEditingAsset(null);
+                setDrawerOpen(false);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={() => form.onSubmit(handleSubmit)()}>
+                Save Changes
+              </Button>
             </Group>
-          </Stack>
-        </form>
-      </Modal>
+          ) : selectedAssetData ? (
+            <Group justify="flex-end" gap="sm">
+              <Button variant="subtle" onClick={() => handleDelete(selectedAssetData.id)}>
+                Delete
+              </Button>
+              <Button onClick={() => handleEdit(selectedAssetData)}>
+                Edit
+              </Button>
+            </Group>
+          ) : null
+        }
+      >
+        {editingAsset ? (
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Stack gap="md">
+              <TextInput
+                label="Asset Name"
+                placeholder="MacBook Pro 16"
+                required
+                {...form.getInputProps('asset_name')}
+              />
+              <Select
+                label="Type"
+                required
+                data={[
+                  { value: 'hardware', label: 'Hardware' },
+                  { value: 'software', label: 'Software' },
+                  { value: 'server', label: 'Server' },
+                  { value: 'network', label: 'Network' },
+                  { value: 'mobile', label: 'Mobile' },
+                ]}
+                {...form.getInputProps('asset_type')}
+              />
+              <Select
+                label="Status"
+                required
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'retired', label: 'Retired' },
+                ]}
+                {...form.getInputProps('status')}
+              />
+              <Grid>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Purchase Date"
+                    type="date"
+                    {...form.getInputProps('purchase_date')}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Warranty Expires"
+                    type="date"
+                    {...form.getInputProps('warranty_expiry')}
+                  />
+                </Grid.Col>
+              </Grid>
+            </Stack>
+          </form>
+        ) : selectedAssetData ? (
+          <Tabs defaultValue="overview">
+            <Tabs.List>
+              <Tabs.Tab value="overview">Overview</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="overview" pt="md">
+              <Card padding="md" withBorder>
+                <Stack gap="sm">
+                  <div>
+                    <Text size="xs" c="dimmed" fw={500}>Asset Name</Text>
+                    <Text fw={500}>{selectedAssetData.asset_name}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={500}>Type</Text>
+                    <Text>{selectedAssetData.asset_type}</Text>
+                  </div>
+                  <div>
+                    <Text size="xs" c="dimmed" fw={500}>Status</Text>
+                    <StatusBadge
+                      status={getStatusStatus(selectedAssetData.status)}
+                      label={selectedAssetData.status.charAt(0).toUpperCase() + selectedAssetData.status.slice(1)}
+                    />
+                  </div>
+                  {selectedAssetData.purchase_date && (
+                    <div>
+                      <Text size="xs" c="dimmed" fw={500}>Purchase Date</Text>
+                      <Text>{new Date(selectedAssetData.purchase_date).toLocaleDateString()}</Text>
+                    </div>
+                  )}
+                  {selectedAssetData.warranty_expiry && (
+                    <div>
+                      <Text size="xs" c="dimmed" fw={500}>Warranty Expires</Text>
+                      <Text>{new Date(selectedAssetData.warranty_expiry).toLocaleDateString()}</Text>
+                    </div>
+                  )}
+                </Stack>
+              </Card>
+            </Tabs.Panel>
+          </Tabs>
+        ) : (
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Stack gap="md">
+              <TextInput
+                label="Asset Name"
+                placeholder="MacBook Pro 16"
+                required
+                {...form.getInputProps('asset_name')}
+              />
+              <Select
+                label="Type"
+                required
+                data={[
+                  { value: 'hardware', label: 'Hardware' },
+                  { value: 'software', label: 'Software' },
+                  { value: 'server', label: 'Server' },
+                  { value: 'network', label: 'Network' },
+                  { value: 'mobile', label: 'Mobile' },
+                ]}
+                {...form.getInputProps('asset_type')}
+              />
+              <Select
+                label="Status"
+                required
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'retired', label: 'Retired' },
+                ]}
+                {...form.getInputProps('status')}
+              />
+              <Grid>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Purchase Date"
+                    type="date"
+                    {...form.getInputProps('purchase_date')}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Warranty Expires"
+                    type="date"
+                    {...form.getInputProps('warranty_expiry')}
+                  />
+                </Grid.Col>
+              </Grid>
+            </Stack>
+          </form>
+        )}
+      </DetailDrawer>
     </Stack>
   );
 };

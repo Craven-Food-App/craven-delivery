@@ -18,6 +18,11 @@ import { DEFAULT_EMPLOYEE_PACKET } from '@/config/hiringPacket';
 import { isCLevelPosition, getExecRoleFromPosition, isCFOPosition, getPortalsForPosition } from '@/utils/roleUtils';
 import { logPersonnelAction } from '@/utils/auditLogger';
 import { RoleSyncVerification } from './RoleSyncVerification';
+import {
+  getRequiredSteps,
+  createWorkflowSteps,
+  createBoardResolutionForRemoval,
+} from '@/utils/exitWorkflowUtils';
 import dayjs from 'dayjs';
 
 const { Search } = Input;
@@ -75,6 +80,8 @@ export const PersonnelManager: React.FC = () => {
   const [editingAppointment, setEditingAppointment] = useState<any | null>(null);
   const [isAppointmentModalVisible, setIsAppointmentModalVisible] = useState(false);
   const [appointmentForm] = Form.useForm();
+  const [isExecutiveRemovalModalVisible, setIsExecutiveRemovalModalVisible] = useState(false);
+  const [executiveRemovalForm] = Form.useForm();
 
   useEffect(() => {
     fetchEmployees();
@@ -999,7 +1006,61 @@ export const PersonnelManager: React.FC = () => {
   const handleTerminate = async (employee: Employee) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
+      const isExecutive = isCLevelPosition(employee.position);
+
+      // For executives, redirect to exit workflow (requires Board approval)
+      if (isExecutive) {
+        Modal.confirm({
+          title: 'Executive Removal Required',
+          width: 600,
+          content: (
+            <div>
+              <p>
+                <strong>{employee.first_name} {employee.last_name}</strong> is a C-Suite executive.
+              </p>
+              <p>
+                Executive removals require Board approval and must go through the formal Exit Workflow process.
+              </p>
+              <p>
+                Would you like to initiate the Executive Removal Process?
+              </p>
+            </div>
+          ),
+          okText: 'Initiate Removal Process',
+          cancelText: 'Cancel',
+          onOk: async () => {
+            // Navigate to Company Portal Governance Admin for executive removal
+            window.location.href = '/company/governance-admin?tab=exit-workflows';
+            message.info('Redirecting to Governance Admin → Exit Workflows to initiate executive removal process.');
+          },
+        });
+        return;
+      }
+
+      // For regular employees, offer choice: quick termination or full workflow
+      Modal.confirm({
+        title: 'Terminate Employee',
+        width: 600,
+        content: (
+          <div>
+            <p>
+              Terminate <strong>{employee.first_name} {employee.last_name}</strong>?
+            </p>
+            <p style={{ marginTop: 16 }}>
+              Choose an option:
+            </p>
+            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+              <li><strong>Quick Termination:</strong> Immediate termination with basic logging</li>
+              <li><strong>Full Workflow:</strong> Complete exit process with access revocation, asset return, and final settlement</li>
+            </ul>
+          </div>
+        ),
+        okText: 'Quick Termination',
+        cancelText: 'Cancel',
+        onOk: async () => {
+          // Quick termination (existing behavior)
       const oldValues = {
         employment_status: employee.employment_status,
         termination_date: employee.termination_date,
@@ -1010,7 +1071,7 @@ export const PersonnelManager: React.FC = () => {
         .update({
           employment_status: 'terminated',
           termination_date: new Date().toISOString(),
-          terminated_by: user?.id,
+              terminated_by: user.id,
         })
         .eq('id', employee.id);
 
@@ -1022,11 +1083,11 @@ export const PersonnelManager: React.FC = () => {
           employee_id: employee.id,
           action_type: 'terminated',
           effective_date: new Date().toISOString(),
-          performed_by: user?.id,
+              performed_by: user.id,
         }
       ]);
 
-      // Log audit trail (trigger will also log, but this adds explicit context)
+          // Log audit trail
       await logPersonnelAction(
         'terminate',
         employee.id,
@@ -1044,6 +1105,11 @@ export const PersonnelManager: React.FC = () => {
 
       message.success(`${employee.first_name} ${employee.last_name} has been terminated`);
       fetchEmployees();
+        },
+      });
+
+      // Also show option for full workflow
+      // User can access Exit Workflow Manager separately for full process
     } catch (error: any) {
       console.error('Error terminating employee:', error);
       message.error(error.message || 'Failed to terminate employee');
@@ -2282,6 +2348,153 @@ export const PersonnelManager: React.FC = () => {
               </Button>
               <Button type="primary" htmlType="submit">
                 Update Appointment
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Executive Removal Modal */}
+      <Modal
+        title={`Executive Removal - ${selectedEmployee?.first_name} ${selectedEmployee?.last_name}`}
+        open={isExecutiveRemovalModalVisible}
+        onCancel={() => {
+          setIsExecutiveRemovalModalVisible(false);
+          setSelectedEmployee(null);
+          executiveRemovalForm.resetFields();
+        }}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={executiveRemovalForm}
+          layout="vertical"
+          onFinish={async (values) => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) throw new Error('User not authenticated');
+
+              if (!selectedEmployee) throw new Error('No employee selected');
+
+              // Create workflow
+              const { data: workflow, error: workflowError } = await supabase
+                .from('exit_workflows')
+                .insert({
+                  employee_id: selectedEmployee.id,
+                  workflow_type: 'executive_removal',
+                  termination_type: values.termination_type,
+                  status: 'board_approval_pending',
+                  effective_date: values.effective_date.format('YYYY-MM-DD'),
+                  termination_reason: values.termination_reason,
+                  grounds_for_cause: values.grounds_for_cause || [],
+                  initiated_by: user.id,
+                  steps_required: getRequiredSteps('executive_removal', true),
+                })
+                .select()
+                .single();
+
+              if (workflowError) throw workflowError;
+
+              // Create workflow steps
+              const steps = getRequiredSteps('executive_removal', true);
+              await createWorkflowSteps(workflow.id, steps);
+
+              // Create Board resolution
+              const resolutionId = await createBoardResolutionForRemoval(
+                workflow.id,
+                selectedEmployee.id,
+                `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
+                selectedEmployee.position,
+                values.termination_type,
+                values.grounds_for_cause,
+                values.termination_reason
+              );
+
+              if (!resolutionId) {
+                message.warning('Workflow created but Board resolution creation failed. Please create manually.');
+              }
+
+              message.success('Executive removal workflow initiated. Board approval required.');
+              setIsExecutiveRemovalModalVisible(false);
+              setSelectedEmployee(null);
+              executiveRemovalForm.resetFields();
+              fetchEmployees();
+            } catch (error: any) {
+              message.error(error.message || 'Failed to initiate executive removal');
+              console.error(error);
+            }
+          }}
+          initialValues={{
+            termination_type: 'without_cause',
+            effective_date: dayjs(),
+          }}
+        >
+          <Alert
+            message="Board Approval Required"
+            description="This executive removal requires Board approval. A Board resolution will be created for voting."
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+
+          <Form.Item
+            name="termination_type"
+            label="Termination Type"
+            rules={[{ required: true }]}
+          >
+            <Select>
+              <Option value="for_cause">For Cause</Option>
+              <Option value="without_cause">Without Cause</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="effective_date"
+            label="Effective Date"
+            rules={[{ required: true }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+
+          <Form.Item
+            name="termination_reason"
+            label="Termination Reason"
+            rules={[{ required: true }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter reason for executive removal..." />
+          </Form.Item>
+
+          <Form.Item
+            name="grounds_for_cause"
+            label="Grounds for Cause (if applicable)"
+            dependencies={['termination_type']}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select grounds"
+              disabled={executiveRemovalForm.getFieldValue('termination_type') !== 'for_cause'}
+            >
+              <Option value="financial_misconduct">Financial Misconduct</Option>
+              <Option value="security_violation">Security Violation</Option>
+              <Option value="ethical_violation">Ethical Violation</Option>
+              <Option value="performance_failure">Performance Failure</Option>
+              <Option value="material_breach">Material Breach</Option>
+              <Option value="insubordination">Insubordination</Option>
+              <Option value="criminal_conduct">Criminal Conduct</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button onClick={() => {
+                setIsExecutiveRemovalModalVisible(false);
+                setSelectedEmployee(null);
+                executiveRemovalForm.resetFields();
+              }}>
+                Cancel
+              </Button>
+              <Button type="primary" htmlType="submit" danger>
+                Initiate Executive Removal
               </Button>
             </Space>
           </Form.Item>
