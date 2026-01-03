@@ -57,7 +57,8 @@ const DriverAuth = () => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await handlePostLoginRouting(session.user.id);
+        // Navigate immediately - let dashboard handle routing
+        navigate('/mobile');
       }
     };
     checkAuth();
@@ -65,8 +66,12 @@ const DriverAuth = () => {
 
   const handlePostLoginRouting = async (userId: string) => {
     try {
-      // Fetch application data
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const queryPromise = supabase
         .from('craver_applications')
         .select(`
           status,
@@ -104,6 +109,13 @@ const DriverAuth = () => {
         .limit(1)
         .maybeSingle<ApplicationRecord>();
 
+      const result = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]);
+
+      const { data, error } = result;
+
       if (error) {
         throw error;
       }
@@ -127,6 +139,15 @@ const DriverAuth = () => {
         return;
       }
 
+      // Application is approved - check onboarding status first
+      // Primary check: If onboarding not complete, redirect to newest onboarding flow
+      if (!application.onboarding_completed_at) {
+        navigate('/enhanced-onboarding');
+        return;
+      }
+
+      // Onboarding is complete - check if they need to complete required info
+      // (This is a fallback for edge cases where onboarding is marked complete but info is missing)
       const requiredStrings: Array<keyof ApplicationRecord> = [
         'date_of_birth',
         'street_address',
@@ -179,49 +200,68 @@ const DriverAuth = () => {
         return;
       }
 
-      // If onboarding not complete, go to onboarding
-      if (!application.onboarding_completed_at) {
-        navigate('/enhanced-onboarding');
-        return;
-      }
-
-      // All done, go to mobile dashboard
+      // All checks passed - onboarding complete and all info collected, proceed to dashboard
       navigate('/mobile');
     } catch (error) {
       console.error('Error checking application status:', error);
-      navigate('/feeder');
+      toast({
+        title: "Error",
+        description: "Could not load your application status. Redirecting...",
+        variant: "destructive",
+      });
+      // Fallback: navigate to feeder hub on error
+      setTimeout(() => navigate('/feeder'), 2000);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔐 [DriverAuth] Sign-in clicked, email:', email);
+    
+    if (!email || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
+      console.log('🔐 [DriverAuth] Calling supabase.auth.signInWithPassword...');
+      
       const { error, data } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
+      console.log('🔐 [DriverAuth] Auth result:', { error: error?.message, hasUser: !!data?.user });
+
       if (error) throw error;
 
-      // Use the new routing logic
       if (data.user) {
-        await handlePostLoginRouting(data.user.id);
+        console.log('✅ [DriverAuth] Login successful, navigating to /mobile');
+        setLoading(false);
+        
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in to your driver account.",
+        });
+        
+        // Force navigation with window.location for reliability
+        window.location.href = '/mobile';
       }
-
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in to your driver account.",
-      });
     } catch (error: any) {
+      console.error('❌ [DriverAuth] Login error:', error);
+      setLoading(false);
       toast({
         title: "Sign In Failed",
-        description: error.message,
+        description: error.message || "An error occurred during sign in.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 

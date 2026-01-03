@@ -18,8 +18,9 @@ import { initSentry } from '@/integrations/sentry';
 // Initialize Sentry before React renders
 initSentry();
 
-// Suppress known harmless console warnings
+// Suppress known harmless console warnings and errors
 const originalWarn = console.warn;
+const originalError = console.error;
 console.warn = (...args: any[]) => {
   const message = args.join(' ');
   // Suppress LockManager warnings from Supabase (known browser compatibility issue)
@@ -30,7 +31,20 @@ console.warn = (...args: any[]) => {
   if (message.includes('CacheStorage') || message.includes('Failed to open cache')) {
     return;
   }
+  // Suppress Service Worker invalid state warnings (non-critical)
+  if (message.includes('Service Worker') && message.includes('invalid state')) {
+    return;
+  }
   originalWarn.apply(console, args);
+};
+// Also suppress service worker errors
+console.error = (...args: any[]) => {
+  const message = args.join(' ');
+  // Suppress Service Worker InvalidStateError (non-critical, happens during navigation)
+  if (message.includes('Service Worker') && (message.includes('InvalidStateError') || message.includes('invalid state'))) {
+    return; // Silently ignore
+  }
+  originalError.apply(console, args);
 };
 
 const theme: MantineThemeOverride = createTheme({
@@ -94,9 +108,31 @@ createRoot(document.getElementById("root")!).render(
 
 // Register Service Worker for Web Push notifications and PWA support
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(registration => {
+  // Wait for document to be ready and check if already registered
+  const registerServiceWorker = async () => {
+    try {
+      // Check if service worker is already registered
+      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+      if (existingRegistrations.length > 0) {
+        console.log('✅ Service Worker already registered');
+        return;
+      }
+
+      // Check if document is in a valid state
+      if (document.readyState === 'loading' || document.readyState === 'uninitialized') {
+        // Wait for document to be ready
+        await new Promise(resolve => {
+          if (document.readyState === 'complete') {
+            resolve(undefined);
+          } else {
+            window.addEventListener('load', resolve, { once: true });
+          }
+        });
+      }
+
+      // Only register if document is ready
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         console.log('✅ Service Worker registered:', registration.scope);
         
         // Check for updates every hour
@@ -114,7 +150,6 @@ if ('serviceWorker' in navigator) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 console.log('🔄 New service worker available - refresh to update');
-                // Optionally show a notification to user about update
               }
             });
           }
@@ -124,22 +159,46 @@ if ('serviceWorker' in navigator) {
         if ('PushManager' in window) {
           console.log('✅ Push Manager available');
         }
-      })
-      .catch(err => {
-        // Only log if it's not a cache storage error (which can happen in private browsing)
-        if (!err.message?.includes('CacheStorage') && !err.message?.includes('Unexpected internal error')) {
-          console.error('❌ Service Worker registration failed:', err);
-        } else {
-          console.warn('⚠️ Service Worker registration skipped (cache storage unavailable):', err.message);
-        }
-      });
-
-    // Listen for messages from service worker
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'push_notification_received') {
-        console.log('📬 Push notification received:', event.data.data);
-        // Handle notification in app if needed
       }
-    });
+    } catch (err: any) {
+      // Handle specific error types - all are non-critical
+      const errorName = err?.name || '';
+      const errorMessage = err?.message || '';
+      
+      if (
+        errorName === 'InvalidStateError' || 
+        errorMessage.includes('invalid state') ||
+        errorMessage.includes('InvalidStateError')
+      ) {
+        // Document is in invalid state - this can happen during navigation or in iframes
+        // This is non-critical, suppress completely
+        return; // Silently ignore
+      } else if (errorMessage.includes('CacheStorage') || errorMessage.includes('Unexpected internal error')) {
+        // Cache storage unavailable (private browsing, etc.) - suppress
+        return; // Silently ignore
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('404')) {
+        // Service worker file doesn't exist - this is expected in development
+        return; // Silently ignore
+      } else {
+        // Other errors - only log in development
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ Service Worker registration failed (non-critical):', errorMessage || err);
+        }
+      }
+    }
+  };
+
+  // Register when page loads
+  if (document.readyState === 'complete') {
+    registerServiceWorker();
+  } else {
+    window.addEventListener('load', registerServiceWorker, { once: true });
+  }
+
+  // Listen for messages from service worker
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'push_notification_received') {
+      console.log('📬 Push notification received:', event.data.data);
+    }
   });
 }

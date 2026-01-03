@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Box,
   Stack,
@@ -21,18 +21,24 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
 }) => {
   const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
+  const hasCheckedSession = useRef(false);
   
-  console.log('MobileDriverWelcomeScreen rendered');
-  console.log('Image source:', mobileDriverWelcomeImage);
+  const handleStartFeedingRef = useRef(onStartFeeding);
+  useEffect(() => {
+    handleStartFeedingRef.current = onStartFeeding;
+  }, [onStartFeeding]);
 
   useEffect(() => {
+    // Only check session once
+    if (hasCheckedSession.current) return;
+    hasCheckedSession.current = true;
+
     const checkExistingSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          console.log('Session exists, redirecting to dashboard');
-          if (onStartFeeding) {
-            onStartFeeding();
+          if (handleStartFeedingRef.current) {
+            handleStartFeedingRef.current();
           } else {
             navigate('/mobile');
           }
@@ -42,30 +48,24 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
       }
     };
     
-    const timeoutId = setTimeout(() => {
-      console.log('Session check timeout - proceeding with welcome screen');
-    }, 1000);
-    
-    checkExistingSession().finally(() => clearTimeout(timeoutId));
+    checkExistingSession();
+  }, [navigate]);
+
+  const handleFeedNow = useCallback(() => {
+    setShowLogin(true);
   }, []);
 
-  const handleFeedNow = () => {
-    console.log('FEED NOW clicked, showing login screen');
-    setShowLogin(true);
-  };
-
-  const handleLoginSuccess = () => {
-    console.log('Login successful, proceeding to dashboard');
+  const handleLoginSuccess = useCallback(() => {
     setShowLogin(false);
     // MobileFeederLogin already handles routing (onboarding check, etc.)
     // This callback is only called if user should go to dashboard
-    if (onStartFeeding) {
-      onStartFeeding();
+    if (handleStartFeedingRef.current) {
+      handleStartFeedingRef.current();
     } else {
       // Refresh the page to ensure proper state
       window.location.href = '/mobile';
     }
-  };
+  }, []);
 
   return (
     <Box pos="fixed" top={0} left={0} right={0} bottom={0} w="100%" h="100%" bg="white">
@@ -80,7 +80,6 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
         w="100%"
         h="100%"
         style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
-        onLoad={() => console.log('Mobile driver welcome image loaded successfully')}
         onError={(e) => {
           console.error('Mobile driver welcome image failed to load:', e);
           e.currentTarget.style.display = 'none';

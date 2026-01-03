@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SCHMUCKERS_REMOTE_OUTREACH_SCRIPT.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="schmuckers-%E2%80%93-remote-outreach-script">Schmucker's – Remote Outreach Script</h1>
+<p><strong>Delivered by:</strong> Justin Sweet (Finance / Strategy, Crave'n)<br>
+<strong>Channel:</strong> Phone or Video Call<br>
+<strong>Document Version:</strong> 1.0<br>
+<strong>Date:</strong> 2025</p>
+<hr>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This document outlines the remote outreach script for engaging Schmucker's regarding delivery platform commission reduction opportunities. The approach emphasizes financial value, risk mitigation, and operational simplicity.</p>
+<hr>
+<h2 id="opening-script">Opening Script</h2>
+<h3 id="credible-disarming-introduction">Credible, Disarming Introduction</h3>
+<blockquote>
+<p>&quot;Hi, this is Justin Sweet with Crave'n. I'm calling from New York, so I'll be respectful of your time and keep this tight. I work on the financial and partner strategy side for Crave'n, and I wanted to connect with whoever oversees delivery and third-party platform decisions for Schmucker's.&quot;</p>
+</blockquote>
+<p><strong>Note:</strong> If transferred or contact confirmed, proceed to Core Pitch.</p>
+<hr>
+<h2 id="core-pitch">Core Pitch</h2>
+<h3 id="financial-value-proposition">Financial Value Proposition</h3>
+<blockquote>
+<p>&quot;The reason for the call is straightforward. We work with high-volume local restaurants to materially reduce third-party delivery commission leakage without changing how they operate.</p>
+<p>Schmucker's is a well-known Toledo operator with strong dine-in volume. Based on local diner benchmarks, you're likely in the range of two million dollars annually, with roughly twenty percent flowing through delivery platforms.</p>
+<p>At the industry-standard thirty percent commission, that equates to approximately one hundred twenty thousand dollars per year in platform fees on delivery alone.</p>
+<p>Crave'n operates at a flat fifteen percent. On the same order volume, same menu pricing, same kitchen flow, that's roughly sixty thousand dollars annually retained by the restaurant — about five thousand dollars per month.&quot;</p>
+</blockquote>
+<p><strong>Action:</strong> Pause. Let the math work.</p>
+<hr>
+<h2 id="value-differentiation">Value Differentiation</h2>
+<h3 id="authority-positioning">Authority Positioning</h3>
+<blockquote>
+<p>&quot;We're not positioning ourselves as another national app. Crave'n is built specifically to support local operators by removing algorithmic pressure, forced discounting, and long-term exclusivity. This is a margin-protection model, not a marketing experiment.&quot;</p>
+</blockquote>
+<hr>
+<h2 id="risk-mitigation">Risk Mitigation</h2>
+<h3 id="close-lever">Close Lever</h3>
+<blockquote>
+<p>&quot;We structure this as a thirty-day, non-exclusive pilot. Flat fifteen percent. If it doesn't perform financially or operationally, there's no obligation to continue.&quot;</p>
+</blockquote>
+<hr>
+<h2 id="call-to-action">Call to Action</h2>
+<h3 id="remote-friendly-close">Remote-Friendly Close</h3>
+<blockquote>
+<p>&quot;What I'd recommend is a brief fifteen-minute call where I can walk you through a Schmucker's-specific financial breakdown and answer questions. If it doesn't pencil out, we part ways professionally.</p>
+<p>Would a short call later this week or early next week work better on your end?&quot;</p>
+</blockquote>
+<hr>
+<h2 id="alternative-scripts">Alternative Scripts</h2>
+<h3 id="ultra-short-version">Ultra-Short Version</h3>
+<p><strong>Use when:</strong> Contact is time-constrained or requests brevity.</p>
+<blockquote>
+<p>&quot;Understood — one sentence version: we reduce delivery commissions from thirty percent to fifteen percent and put roughly five thousand dollars a month back into Schmucker's, with no contract. If that's worth a fifteen-minute review, I'm happy to walk through the numbers.&quot;</p>
+</blockquote>
+<hr>
+<h2 id="written-communication-templates">Written Communication Templates</h2>
+<h3 id="email--linkedin-template">Email / LinkedIn Template</h3>
+<p><strong>From:</strong> Justin Sweet<br>
+<strong>Subject:</strong> Reducing Schmucker's delivery commissions by ~50%</p>
+<hr>
+<p><strong>Email Body:</strong></p>
+<blockquote>
+<p>Hello [Name],</p>
+<p>I'm Justin Sweet, part of the finance and strategy team at Crave'n. We work with high-volume local restaurants to reduce third-party delivery commissions while keeping operations unchanged.</p>
+<p>For diner-style operators like Schmucker's, moving from ~30% to 15% commission typically retains approximately $60,000 annually on existing delivery volume.</p>
+<p>We offer a short, non-exclusive pilot with no long-term commitment. If helpful, I'd be glad to walk through a Schmucker's-specific financial breakdown on a brief call.</p>
+<p>Best regards,<br>
+Justin Sweet<br>
+Crave'n</p>
+</blockquote>
+<hr>
+<h2 id="internal-guidance">Internal Guidance</h2>
+<h3 id="key-principles-do-not-say-aloud">Key Principles (Do Not Say Aloud)</h3>
+<ul>
+<li><strong>Lead with numbers</strong>, not geography</li>
+<li>Being in New York adds perceived <strong>financial seniority</strong>, not distance</li>
+<li>Avoid &quot;startup language&quot; entirely</li>
+<li>Let silence do the work after the commission math</li>
+</ul>
+<h3 id="communication-best-practices">Communication Best Practices</h3>
+<ol>
+<li><strong>Financial Focus:</strong> Always lead with concrete financial impact</li>
+<li><strong>Authority Positioning:</strong> Leverage New York location as credibility signal</li>
+<li><strong>Language Discipline:</strong> Maintain enterprise tone; avoid startup terminology</li>
+<li><strong>Strategic Pauses:</strong> Use silence strategically after presenting financial data</li>
+<li><strong>Risk Removal:</strong> Emphasize non-exclusive, no-obligation structure</li>
+</ol>
+<hr>
+<h2 id="financial-summary">Financial Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Current (30% Commission)</th>
+<th>Proposed (15% Commission)</th>
+<th>Annual Savings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Annual Delivery Volume</td>
+<td>$400,000</td>
+<td>$400,000</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Platform Fees</td>
+<td>$120,000</td>
+<td>$60,000</td>
+<td><strong>$60,000</strong></td>
+</tr>
+<tr>
+<td>Monthly Savings</td>
+<td>$10,000</td>
+<td>$5,000</td>
+<td><strong>$5,000</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Assumptions:</strong></p>
+<ul>
+<li>Annual revenue: ~$2,000,000</li>
+<li>Delivery mix: ~20% of total revenue</li>
+<li>Industry standard commission: 30%</li>
+<li>Crave'n commission: 15%</li>
+</ul>
+<hr>
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li><strong>Initial Contact:</strong> Use opening script to identify decision-maker</li>
+<li><strong>Value Presentation:</strong> Deliver core pitch with financial breakdown</li>
+<li><strong>Objection Handling:</strong> Address concerns using risk mitigation framework</li>
+<li><strong>Close:</strong> Schedule 15-minute follow-up call</li>
+<li><strong>Follow-Up:</strong> Send email template if call is not immediately possible</li>
+</ol>
+<hr>
+<h2 id="document-control">Document Control</h2>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Author</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2025</td>
+<td>Justin Sweet</td>
+<td>Initial document creation</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>Confidential – Internal Use Only</strong></p>
+
+</body>
+</html>

@@ -469,7 +469,7 @@ export const MobileDriverDashboard: React.FC = () => {
   } = useNotificationSettings();
   const { showNotification, notifications: iosNotifications, dismissNotification } = useIOSNotifications();
 
-  const handleStartFeeding = async () => {
+  const handleStartFeeding = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -494,9 +494,9 @@ export const MobileDriverDashboard: React.FC = () => {
           return;
         }
 
-        // Onboarding complete - hide welcome screen and check session persistence
+        // Onboarding complete - hide welcome screen
         setShowWelcomeScreen(false);
-        await checkSessionPersistence();
+        // Note: checkSessionPersistence will be called separately after component mounts
       } else {
         // No session - welcome screen will handle showing the login
         // Keep welcome screen visible
@@ -505,7 +505,7 @@ export const MobileDriverDashboard: React.FC = () => {
       console.error('handleStartFeeding: Error checking session:', error);
       // On error, keep welcome screen visible
     }
-  };
+  }, []);
 
   // Setup real-time listener for order assignments (broadcast + DB changes)
   const setupRealtimeListener = (userId: string) => {
@@ -632,17 +632,14 @@ export const MobileDriverDashboard: React.FC = () => {
       
       try {
         await checkOnboardingAndSession();
+        // If checkOnboardingAndSession sets showWelcomeScreen to false, don't override it
       } catch (error) {
         console.error('MobileDriverDashboard: Error during initialization:', error);
-        // Continue anyway - don't block the user
-      } finally {
-        // Ensure loading screen shows for at least 2.5 seconds for smooth UX
-        loadingTimer = setTimeout(() => {
-          if (isMounted) {
-            setIsLoading(false);
-            setShowWelcomeScreen(true);
-          }
-        }, 2500);
+        // On error, show welcome screen
+        if (isMounted) {
+          setIsLoading(false);
+          setShowWelcomeScreen(true);
+        }
       }
     };
 
@@ -665,14 +662,31 @@ export const MobileDriverDashboard: React.FC = () => {
         return;
       }
 
-      // Check application and onboarding status
-      const { data: application } = await supabase
+      // Check application and onboarding status with timeout
+      const queryPromise = supabase
         .from('craver_applications')
         .select('onboarding_completed_at, status')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Onboarding check timeout')), 10000)
+      );
+
+      const result = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as { data: any, error: any };
+
+      const { data: application, error } = result;
+
+      if (error) {
+        console.warn('⚠️ Could not check onboarding status:', error.message);
+        // Continue - don't block user if query fails
+        return;
+      }
 
       if (!application) {
         // No application - show welcome screen with login (they can apply)
@@ -681,14 +695,21 @@ export const MobileDriverDashboard: React.FC = () => {
 
       // If application exists but onboarding not complete, redirect to enhanced onboarding
       if (!application.onboarding_completed_at) {
+        console.log('📚 Onboarding not complete, redirecting to enhanced-onboarding');
         window.location.href = '/enhanced-onboarding';
         return;
       }
 
-      // If onboarding is complete, the welcome screen will show after loading
-      // Then check session persistence after welcome screen is dismissed
+      // User is logged in and onboarded - skip welcome screen and go straight to dashboard
+      console.log('✅ User is logged in and onboarded - showing dashboard');
+      setShowWelcomeScreen(false);
+      setIsLoading(false);
+      
+      // Check session persistence for returning drivers
+      await checkSessionPersistence();
     } catch (error) {
-      console.error('Error checking onboarding:', error);
+      console.warn('⚠️ Error checking onboarding (non-critical):', error);
+      // Continue - don't block user if check fails
     }
   };
   const checkSessionPersistence = async () => {
