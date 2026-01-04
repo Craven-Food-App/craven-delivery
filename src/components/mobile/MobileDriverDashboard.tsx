@@ -104,6 +104,9 @@ export const MobileDriverDashboard: React.FC = () => {
   const [currentCity, setCurrentCity] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   
+  // Session earnings - accumulates as deliveries are completed
+  const [sessionEarnings, setSessionEarnings] = useState<number>(0);
+  
   // Persistent session management
   const [sessionData, setSessionData] = useState<any>(null);
   const [isSessionRestored, setIsSessionRestored] = useState(false);
@@ -1084,6 +1087,7 @@ export const MobileDriverDashboard: React.FC = () => {
       setDriverState('offline');
       setOnlineTime(0);
       setEndTime(null); // Clear end time
+      setSessionEarnings(0); // Reset session earnings when ending feed
     } catch (error) {
       console.error('Error going offline:', error);
     }
@@ -1449,7 +1453,7 @@ export const MobileDriverDashboard: React.FC = () => {
               </div>
             </div>
             {/* Orange footer bar */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '60px' }} />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '48px' }} />
           </>}
 
         {/* ONLINE SEARCHING STATE */}
@@ -1459,8 +1463,8 @@ export const MobileDriverDashboard: React.FC = () => {
               
             </div>
 
-            {/* Pause Button - Top Right - Level with menu button */}
-            <div className="absolute z-20 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)', right: 'calc(16px + 50px)' }}>
+            {/* Pause Button - Top Right - Level with menu button - LOCKED POSITION */}
+            <div className="fixed z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)', right: '66px' }}>
               <Button onClick={handlePause} variant="ghost" size="sm" className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-lg hover:bg-white">
                 <Pause className="h-5 w-5 text-gray-700" />
               </Button>
@@ -1504,32 +1508,42 @@ export const MobileDriverDashboard: React.FC = () => {
               <NearbyRestaurantCards 
                 driverLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null} 
               />
-            </div>
-
+                </div>
+                
             {/* Orange footer bar - same as main dashboard */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '60px' }} />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '48px' }} />
           </>}
 
         {/* PAUSED STATE - DoorDash Style */}
         {activeTab === 'home' && driverState === 'online_paused' && (
           <div className="fixed inset-0 bg-white z-50" style={{ pointerEvents: 'auto' }}>
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 safe-area-top">
-              <div></div> {/* Empty div for spacing */}
-               <h1 className="text-xl font-bold text-gray-900">Feeding Paused</h1>
+            {/* Header - Level with hamburger menu */}
+            <div className="flex items-center justify-between px-4 safe-area-top" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
+              {/* Hamburger menu button */}
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
+              >
+                <Menu className="h-5 w-5 text-gray-700" />
+              </button>
+              
+              {/* Title */}
+              <h1 className="text-xl font-bold text-gray-900">Feeding Paused</h1>
+              
+              {/* Orange buttons */}
               <div className="flex items-center space-x-3">
                 <button 
                   onClick={handleAddTime}
-                  className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+                  className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"
                 >
-                  <span className="text-xs text-white font-bold">+</span>
+                  <span className="text-lg text-white font-bold">+</span>
                 </button>
                 <button 
                   onClick={handleContactSupport}
-                  className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+                  className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"
                 >
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                   </svg>
                 </button>
@@ -1604,6 +1618,10 @@ export const MobileDriverDashboard: React.FC = () => {
               }],
               isTestOrder: activeDelivery.isTestOrder || false // Only true if explicitly marked as test
             }} onCompleteDelivery={async () => {
+            // Add delivery earnings to session total
+            const deliveryPayout = (activeDelivery.payout_cents || 0) / 100; // Convert cents to dollars
+            setSessionEarnings(prev => prev + deliveryPayout);
+            
             // Record final driver earnings
             try {
               const {
@@ -1687,7 +1705,7 @@ export const MobileDriverDashboard: React.FC = () => {
           setIsViewingHomeWhileFeeding(true);
           setIsActiveFeedingMenuOpen(false);
         }}
-        currentEarnings={0}
+        currentEarnings={sessionEarnings}
         isPaused={driverState === 'online_paused'}
       />
 

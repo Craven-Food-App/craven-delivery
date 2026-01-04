@@ -649,8 +649,8 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
   return (
     <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-pink-6))', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" className="safe-area-top">
+      {/* Header - Level with hamburger menu */}
+      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {
@@ -699,11 +699,11 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
               }}
             >
               <RingProgress
-                size={80}
-                thickness={8}
+                size={130}
+                thickness={10}
                 sections={timeToNextShift ? [{ value: progressPercentage, color: 'white' }] : []}
                 label={
-                  <Text c="white" size="9px" fw={700} ta="center" style={{ lineHeight: 1.2 }}>
+                  <Text c="white" size="12px" fw={700} ta="center" style={{ lineHeight: 1.2 }}>
                     NEXT<br/>SHIFT
                   </Text>
                 }
@@ -823,13 +823,13 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
       </Box>
 
       {/* Scrollable Content Area */}
-      <Box style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }} px="xl">
+      <Box style={{ flex: 1, overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
         {viewMode === 'schedule' && (
-          <Stack gap="md">
+          <Stack gap={0}>
             {selectedDayShifts.length > 0 ? (
               selectedDayShifts.map((shift, index) => (
-                <Paper key={shift.id || index} p="md" radius="xl" bg="orange.0" shadow="md">
-                  <Group justify="space-between" align="flex-start">
+                <Paper key={shift.id || index} p="md" radius={0} style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5e5' }}>
+                  <Group justify="space-between" align="flex-start" px="md">
                     <Box style={{ flex: 1 }}>
                       <Text c="dark" fw={700} size="lg" mb="xs">{shift.time}</Text>
                       <Group gap="xs">
@@ -853,7 +853,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                 </Paper>
               ))
             ) : (
-              <Paper p="md" radius="xl" bg="orange.0" shadow="md">
+              <Paper p="md" radius={0} style={{ backgroundColor: '#ffffff' }}>
                 <Text c="orange.8" fw={600} ta="center">No shifts scheduled for this day</Text>
               </Paper>
             )}
@@ -861,11 +861,11 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
         )}
 
         {viewMode === 'available' && (
-          <Stack gap="md">
+          <Stack gap={0}>
             {getAvailableShifts.length > 0 ? (
               getAvailableShifts.map((shift, index) => (
-                <Paper key={index} p="md" radius="xl" bg="orange.0" shadow="md">
-                  <Group justify="space-between">
+                <Paper key={index} p="md" radius={0} style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5e5' }}>
+                  <Group justify="space-between" px="md">
                     <Box style={{ flex: 1 }}>
                       <Text c="dark" fw={700} size="lg" mb="xs">
                         {shift.displayStart} – {shift.displayEnd}
@@ -888,7 +888,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                 </Paper>
               ))
             ) : (
-              <Paper p="md" radius="xl" bg="orange.0" shadow="md">
+              <Paper p="md" radius={0} style={{ backgroundColor: '#ffffff' }}>
                 <Text c="orange.8" fw={600} ta="center">No available shifts for this day</Text>
               </Paper>
             )}
@@ -896,11 +896,11 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
         )}
 
         {viewMode === 'scheduled' && (
-          <Stack gap="md">
+          <Stack gap={0}>
             {selectedDayShifts.length > 0 ? (
               selectedDayShifts.map((shift, index) => (
-                <Paper key={shift.id || index} p="md" radius="xl" bg="orange.0" shadow="md">
-                  <Group justify="space-between" align="flex-start">
+                <Paper key={shift.id || index} p="md" radius={0} style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e5e5e5' }}>
+                  <Group justify="space-between" align="flex-start" px="md">
                     <Box style={{ flex: 1 }}>
                       <Text c="dark" fw={700} size="lg" mb="xs">{shift.time}</Text>
                       <Group gap="xs">
@@ -924,7 +924,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                 </Paper>
               ))
             ) : (
-              <Paper p="md" radius="xl" bg="orange.0" shadow="md">
+              <Paper p="md" radius={0} style={{ backgroundColor: '#ffffff' }}>
                 <Text c="orange.8" fw={600} ta="center">No shifts scheduled for this day</Text>
               </Paper>
             )}

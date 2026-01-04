@@ -3,6 +3,7 @@ import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage,
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import {
   Box,
   Stack,
@@ -500,6 +501,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const handleConfirmArrivalAtCustomer = async () => {
     setStatus(DRIVER_STATUS.AT_CUSTOMER);
     await updateOrderStatus('at_customer');
+    
+    // Read delivery instructions out loud if enabled
+    if (currentOrder.customer?.special_instructions) {
+      speakDeliveryInstructions(currentOrder.customer.special_instructions);
+    }
   };
   
   const handleStartDeliveryVerification = () => {

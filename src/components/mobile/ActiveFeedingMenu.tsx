@@ -1,6 +1,39 @@
-import React from 'react';
-import { X, MessageSquare, Pause, ChevronRight, Home, Settings, BookOpen, Shield } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, MessageSquare, Pause, ChevronRight, Home, Settings, Volume2, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+
+// Key for localStorage
+const READ_INSTRUCTIONS_KEY = 'feeder_read_instructions_out_loud';
+
+// Text-to-speech utility for reading delivery instructions
+export const speakDeliveryInstructions = (instructions: string) => {
+  // Check if the setting is enabled
+  const isEnabled = localStorage.getItem(READ_INSTRUCTIONS_KEY) === 'true';
+  if (!isEnabled || !instructions) return;
+
+  // Check if speech synthesis is available
+  if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(instructions);
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    // Try to use a natural-sounding voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) 
+      || voices.find(v => v.lang.startsWith('en-US'))
+      || voices[0];
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  }
+};
 
 interface ActiveFeedingMenuProps {
   isOpen: boolean;
@@ -21,7 +54,16 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
   currentEarnings = 0,
   isPaused = false,
 }) => {
-  const [readInstructions, setReadInstructions] = React.useState(true);
+  // Load saved preference from localStorage
+  const [readInstructions, setReadInstructions] = React.useState(() => {
+    const saved = localStorage.getItem(READ_INSTRUCTIONS_KEY);
+    return saved !== null ? saved === 'true' : true; // Default to true
+  });
+
+  // Save preference when it changes
+  useEffect(() => {
+    localStorage.setItem(READ_INSTRUCTIONS_KEY, String(readInstructions));
+  }, [readInstructions]);
 
   if (!isOpen) return null;
 
@@ -50,16 +92,16 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
         >
           <div className="flex items-center gap-3">
             <Pause className="w-6 h-6 text-gray-700" />
-            <span className="text-base text-gray-900">{isPaused ? 'Resume orders' : 'Pause orders'}</span>
+            <span className={`text-base ${isPaused ? 'text-green-600' : 'text-red-500'}`}>{isPaused ? 'Resume Feeding' : 'Take a Break'}</span>
           </div>
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </button>
 
-        {/* Earnings Section */}
+        {/* Money Section */}
         <div className="py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Earnings</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Money</h2>
           <div className="flex items-center justify-between">
-            <span className="text-base text-gray-700">This feed</span>
+            <span className="text-base text-gray-700">So Far You've Earned</span>
             <span className="text-base font-semibold text-gray-900">${currentEarnings.toFixed(2)}</span>
           </div>
         </div>
@@ -68,9 +110,9 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
         <div className="py-4 border-b border-gray-100">
           <button 
             onClick={onEndFeeding}
-            className="w-full py-4 bg-gray-100 rounded-full text-center"
+            className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full text-center shadow-lg"
           >
-            <span className="text-base font-semibold text-gray-900">End Feed</span>
+            <span className="text-base font-semibold text-white">End Feed</span>
           </button>
         </div>
 
@@ -107,8 +149,8 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
           {/* Read instructions on arrival */}
           <div className="w-full flex items-center justify-between py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <BookOpen className="w-5 h-5 text-gray-700" />
-              <span className="text-base text-gray-900">Read instructions on arrival</span>
+              <Volume2 className="w-5 h-5 text-gray-700" />
+              <span className="text-base text-gray-900">Read instructions out loud</span>
             </div>
             <Switch 
               checked={readInstructions} 
