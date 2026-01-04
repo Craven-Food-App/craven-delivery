@@ -112,32 +112,32 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
             setOnboardingComplete(false);
           }
           saveCachedState(false, false, '');
-          return;
-        }
+        return;
+      }
 
         if (isMountedRef.current) {
-          setUser(user);
+      setUser(user);
         }
 
         // Step 3: Check if user has full access (Torrance/CEO)
-        if (hasFullAccess(user.email)) {
+      if (hasFullAccess(user.email)) {
           if (isMountedRef.current) {
             setAccessState('granted');
-            setOnboardingComplete(true);
+        setOnboardingComplete(true);
           }
           saveCachedState(true, true, user.id);
-          return;
-        }
+        return;
+      }
 
         // Step 4: Check owner account
-        if (user.email === 'craven@usa.com') {
+      if (user.email === 'craven@usa.com') {
           if (isMountedRef.current) {
             setAccessState('granted');
-            setOnboardingComplete(true);
+        setOnboardingComplete(true);
           }
           saveCachedState(true, true, user.id);
-          return;
-        }
+        return;
+      }
 
         // Step 5: Validate driver application status (with timeout)
         if (isMountedRef.current) {
@@ -145,9 +145,9 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
         }
 
         const queryPromise = supabase
-          .from('craver_applications')
-          .select('status, onboarding_completed_at')
-          .eq('user_id', user.id)
+        .from('craver_applications')
+        .select('status, onboarding_completed_at')
+        .eq('user_id', user.id)
           .in('status', ['approved', 'active', 'pending_review'])
           .maybeSingle();
 
@@ -202,17 +202,17 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
 
         if (isMountedRef.current) {
           setAccessState(hasAccess ? 'granted' : 'denied');
-          setOnboardingComplete(completed);
+      setOnboardingComplete(completed);
         }
 
         saveCachedState(hasAccess, completed, user.id);
 
         // Step 7: Redirect if approved but onboarding not complete
         if (status === 'approved' && !completed) {
-          startTransition(() => {
-            navigate('/enhanced-onboarding');
-          });
-        }
+        startTransition(() => {
+          navigate('/enhanced-onboarding');
+        });
+      }
       } catch (error) {
         console.error('[AccessGuard] Unexpected error:', error);
         

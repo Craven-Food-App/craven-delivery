@@ -327,43 +327,67 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       <div ref={mapContainer} className="w-full h-full" style={{ pointerEvents: 'auto' }} />
 
       {isMapReady && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Try to get location from multiple sources
-            let lat: number | null = null;
-            let lng: number | null = null;
-            
-            if (location) {
-              lat = location.latitude;
-              lng = location.longitude;
-            } else if (driverLocation) {
-              lat = driverLocation[0];
-              lng = driverLocation[1];
-            } else if (marker.current) {
-              // Fallback: get current marker position
-              const currentPos = marker.current.getLngLat();
-              lat = currentPos.lat;
-              lng = currentPos.lng;
-            }
-            
-            if (lat !== null && lng !== null && map.current && marker.current) {
-              const currentHeading = location?.heading;
-              applyDriverLocation(lat, lng, true, currentHeading);
-            }
-          }}
-          className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
-          style={{ top: '50%', right: '16px', transform: 'translateY(-50%)', pointerEvents: 'auto' }}
-          aria-label="Recenter on driver location"
-          type="button"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 text-gray-700">
-            <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
+        <>
+          {/* Recenter button - right side */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Try to get location from multiple sources
+              let lat: number | null = null;
+              let lng: number | null = null;
+              
+              if (location) {
+                lat = location.latitude;
+                lng = location.longitude;
+              } else if (driverLocation) {
+                lat = driverLocation[0];
+                lng = driverLocation[1];
+              } else if (marker.current) {
+                // Fallback: get current marker position
+                const currentPos = marker.current.getLngLat();
+                lat = currentPos.lat;
+                lng = currentPos.lng;
+              }
+              
+              if (lat !== null && lng !== null && map.current && marker.current) {
+                const currentHeading = location?.heading;
+                applyDriverLocation(lat, lng, true, currentHeading);
+              }
+            }}
+            className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
+            style={{ top: 'calc(50% + 20px)', right: '11px', transform: 'translateY(-50%)', pointerEvents: 'auto' }}
+            aria-label="Recenter on driver location"
+            type="button"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 text-gray-700">
+              <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          
+          {/* Schedule button - left side (opposite to attribution) */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // TODO: Open schedule modal for future feeding times
+              console.log('Schedule future feeding times');
+            }}
+            className="absolute z-[100] w-10 h-10 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 350px)', left: '16px', pointerEvents: 'auto' }}
+            aria-label="Schedule future feeding times"
+            type="button"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-gray-700">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </button>
+        </>
       )}
 
       {!isMapReady && (

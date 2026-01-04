@@ -316,18 +316,18 @@ export const LiveDriverTesting = () => {
       // Step 3: Send broadcasts in parallel
       const broadcastPromises = [
         driverChannel.send({
-          type: 'broadcast',
-          event: 'order_assignment',
-          payload: notificationPayload,
+        type: 'broadcast',
+        event: 'order_assignment',
+        payload: notificationPayload,
         }),
         userChannel.send({
-          type: 'broadcast',
-          event: 'push_notification',
-          payload: {
-            title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
-            message: `Test pickup - this is a test order`,
-            data: notificationPayload
-          }
+        type: 'broadcast',
+        event: 'push_notification',
+        payload: {
+          title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
+          message: `Test pickup - this is a test order`,
+          data: notificationPayload
+        }
         })
       ];
 
@@ -335,20 +335,20 @@ export const LiveDriverTesting = () => {
       const notificationPromises = [
         // Insert notification record
         supabase.from('order_notifications').insert({
-          user_id: selectedDriver,
-          order_id: (notificationPayload as any).order_id,
-          title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
-          message: `Test pickup - this is a test order`,
-          notification_type: 'order_assignment'
+        user_id: selectedDriver,
+        order_id: (notificationPayload as any).order_id,
+        title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
+        message: `Test pickup - this is a test order`,
+        notification_type: 'order_assignment'
         }),
         // Send push notification (fire and forget - don't block)
         supabase.functions.invoke('send-push-notification', {
-          body: {
-            userId: selectedDriver,
-            title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
-            message: 'Test pickup - this is a test order',
-            data: notificationPayload
-          }
+        body: {
+          userId: selectedDriver,
+          title: `Test Order: ${restaurant.name || 'Test Restaurant'}`,
+          message: 'Test pickup - this is a test order',
+          data: notificationPayload
+        }
         }).catch(err => {
           console.warn('send-push-notification failed:', (err as any)?.message || err);
         })

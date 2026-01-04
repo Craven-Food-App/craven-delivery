@@ -245,11 +245,11 @@ const DriverAuth = () => {
       if (data.user) {
         console.log('✅ [DriverAuth] Login successful, navigating to /mobile');
         setLoading(false);
-        
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in to your driver account.",
-        });
+
+      toast({
+        title: "Welcome back!",
+        description: "Successfully signed in to your driver account.",
+      });
         
         // Force navigation with window.location for reliability
         window.location.href = '/mobile';

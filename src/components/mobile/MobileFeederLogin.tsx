@@ -50,9 +50,17 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     // Prevent double submission
     if (loading || hasNavigated) return;
     
+    // Get values from DOM as fallback (in case React state wasn't updated)
+    const emailInput = document.getElementById('login-input') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+    
+    const emailValue = email.trim() || emailInput?.value?.trim() || '';
+    const passwordValue = password || passwordInput?.value || '';
+    const phoneValue = phone.replace(/\D/g, '');
+    
     // Validate inputs
-    const loginValue = loginMethod === 'email' ? email.trim() : phone.replace(/\D/g, '');
-    if (!loginValue || !password) {
+    const loginValue = loginMethod === 'email' ? emailValue : phoneValue;
+    if (!loginValue || !passwordValue) {
       toast({
         title: "Missing Information",
         description: loginMethod === 'email' 
@@ -70,19 +78,18 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       let authResult;
       
       if (loginMethod === 'email') {
-        console.log('📧 Signing in with email:', email.trim());
+        console.log('📧 Signing in with email:', emailValue);
         authResult = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
+          email: emailValue,
+          password: passwordValue,
         });
       } else {
         // For phone login, convert formatted phone to E.164 format
-        const cleanedPhone = phone.replace(/\D/g, '');
-        const e164Phone = `+1${cleanedPhone}`; // Assuming US numbers
+        const e164Phone = `+1${phoneValue}`; // Assuming US numbers
         console.log('📱 Signing in with phone:', e164Phone);
         authResult = await supabase.auth.signInWithPassword({
           phone: e164Phone,
-          password,
+          password: passwordValue,
         });
       }
 
@@ -255,13 +262,11 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
 
           {/* Sign In Button */}
           <Button
-            type="submit"
+            type="button"
             disabled={loading}
             onClick={(e) => {
-              // Fallback: if form submit doesn't work, handle click directly
-              if (!loading && !hasNavigated) {
-                handleSignIn(e as any);
-              }
+              e.preventDefault();
+              handleSignIn(e as any);
             }}
             className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
           >
@@ -350,6 +355,9 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
           Your account will be created when you submit your application
         </p>
       </div>
+
+      {/* Android Bottom Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black z-50" style={{ height: '48px' }} />
     </div>
   );
 };

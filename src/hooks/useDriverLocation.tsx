@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface LocationData {
   latitude: number;
@@ -73,7 +72,6 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
   const startTracking = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by this browser');
-      toast.error('GPS location not supported');
       return;
     }
 
@@ -83,7 +81,6 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
         console.log('Geolocation permission status:', result.state);
         if (result.state === 'denied') {
           setError('GPS permission denied. Please enable location access in your browser settings.');
-          toast.error('GPS permission denied - check browser settings');
           return;
         }
         startLocationTracking();
@@ -149,10 +146,7 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
           }
           
           setError(errorMessage);
-          if (!isBlockingUI.current) {
-            toast.error(errorMessage);
-            isBlockingUI.current = true;
-          }
+          isBlockingUI.current = true;
           setIsTracking(false);
           return;
         }
@@ -195,17 +189,11 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
         // For critical errors, stop tracking to prevent UI blocking
         if (err.code === err.PERMISSION_DENIED) {
           setError('GPS permission denied. Please allow location access.');
-          if (!isBlockingUI.current) {
-            toast.error('GPS permission denied');
-            isBlockingUI.current = true;
-          }
+          isBlockingUI.current = true;
           setIsTracking(false);
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           setError('GPS position unavailable. Check your device settings.');
-          if (!isBlockingUI.current) {
-            toast.error('GPS unavailable');
-            isBlockingUI.current = true;
-          }
+          isBlockingUI.current = true;
           setIsTracking(false);
         }
       },

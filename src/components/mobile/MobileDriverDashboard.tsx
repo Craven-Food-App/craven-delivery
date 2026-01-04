@@ -28,6 +28,9 @@ import { getRatingColor, getRatingTier, formatRating, getTrendIcon, getTrendColo
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import FeederSidebarMenu from './FeederSidebarMenu';
 import CravenFillCountdownFlow from '@/components/CravenFillCountdownFlow';
+import NearbyRestaurantCards from './NearbyRestaurantCards';
+import ActiveFeedingMenu from './ActiveFeedingMenu';
+import GetBackToFeedingCard from './GetBackToFeedingCard';
 // Production readiness imports
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
@@ -309,6 +312,8 @@ export const MobileDriverDashboard: React.FC = () => {
   }, [driverState, pauseStartTime]);
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isActiveFeedingMenuOpen, setIsActiveFeedingMenuOpen] = useState(false);
+  const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
@@ -636,10 +641,10 @@ export const MobileDriverDashboard: React.FC = () => {
       } catch (error) {
         console.error('MobileDriverDashboard: Error during initialization:', error);
         // On error, show welcome screen
-        if (isMounted) {
-          setIsLoading(false);
-          setShowWelcomeScreen(true);
-        }
+          if (isMounted) {
+            setIsLoading(false);
+            setShowWelcomeScreen(true);
+          }
       }
     };
 
@@ -1256,7 +1261,15 @@ export const MobileDriverDashboard: React.FC = () => {
       {activeTab === 'home' && driverState !== 'on_delivery' && (
         <div className="fixed left-4 z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}>
           <button
-            onClick={() => setIsMenuOpen(true)}
+            onClick={() => {
+              // Open ActiveFeedingMenu ONLY when on secondary feeding dashboard (not viewing home)
+              // When viewing home while feeding, show regular menu
+              if ((driverState === 'online_searching' || driverState === 'online_paused') && !isViewingHomeWhileFeeding) {
+                setIsActiveFeedingMenuOpen(true);
+              } else {
+                setIsMenuOpen(true);
+              }
+            }}
             className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
           >
             <Menu className="h-5 w-5 text-gray-700" />
@@ -1361,13 +1374,25 @@ export const MobileDriverDashboard: React.FC = () => {
           </div>
         )}
         
-        {/* OFFLINE STATE */}
-        {activeTab === 'home' && driverState === 'offline' && <>
+        {/* VIEWING HOME WHILE ACTIVELY FEEDING - Shows Get Back to Feeding Card */}
+        {activeTab === 'home' && isViewingHomeWhileFeeding && (driverState === 'online_searching' || driverState === 'online_paused') && <>
             {/* Content Container */}
             <div className="flex flex-col justify-end h-full px-4 space-y-4 pointer-events-auto" style={{ paddingBottom: '100px' }}>
+              <GetBackToFeedingCard 
+                onContinueFeeding={() => {
+                  setIsViewingHomeWhileFeeding(false);
+                }}
+              />
+            </div>
+          </>}
+
+        {/* OFFLINE STATE */}
+        {activeTab === 'home' && driverState === 'offline' && !isViewingHomeWhileFeeding && <>
+            {/* Content Container */}
+            <div className="flex flex-col justify-end h-full space-y-4 pointer-events-auto" style={{ paddingBottom: '60px' }}>
 
               {/* Popular Times Chart with START FEEDING Button */}
-              <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-border/10 overflow-hidden">
+              <div className="bg-card/95 backdrop-blur-sm p-4 shadow-sm border-t border-border/10 overflow-hidden">
                 {/* Main Action Button - Centered at top */}
                 <div className="flex justify-center mb-4">
                   <Button 
@@ -1387,7 +1412,7 @@ export const MobileDriverDashboard: React.FC = () => {
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
                 
-                <div className="flex items-end h-20 gap-0.5 overflow-hidden">
+                <div className="flex items-end gap-0.5 overflow-hidden" style={{ height: '105px' }}>
                   {[
                     { time: '6a', value: 90, showLabel: true },   // Early morning peak
                     { time: '7a', value: 95, showLabel: false },  // Early morning peak
@@ -1423,25 +1448,27 @@ export const MobileDriverDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* Orange footer bar */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '60px' }} />
           </>}
 
         {/* ONLINE SEARCHING STATE */}
-        {activeTab === 'home' && driverState === 'online_searching' && <>
+        {activeTab === 'home' && driverState === 'online_searching' && !isViewingHomeWhileFeeding && <>
             {/* Change Zone Button - Top Left */}
             <div className="absolute left-4 z-20 pointer-events-auto py-0 my-[525px] mx-0 px-0" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 16px)' }}>
               
             </div>
 
-            {/* Pause Button - Top Right */}
-            <div className="absolute right-7 z-20 pointer-events-auto px-0 mx-[28px]" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 16px)' }}>
-              <Button onClick={handlePause} variant="ghost" size="sm" className="bg-card/80 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-sm hover:bg-card/90 mx-[41px]">
-                <Pause className="h-4 w-4" />
+            {/* Pause Button - Top Right - Level with menu button */}
+            <div className="absolute z-20 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)', right: 'calc(16px + 50px)' }}>
+              <Button onClick={handlePause} variant="ghost" size="sm" className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-lg hover:bg-white">
+                <Pause className="h-5 w-5 text-gray-700" />
               </Button>
             </div>
 
             {/* Get Offers Until Section - Top */}
-            {/* Bottom Content - Still Searching + Popular Times */}
-            <div className="absolute bottom-[100px] left-4 right-4 z-20 space-y-3 pointer-events-auto">
+            {/* Bottom Content - Still Searching + Restaurant Cards */}
+            <div className="absolute bottom-[80px] left-4 right-4 z-20 space-y-3 pointer-events-auto">
               {/* Still Searching Section with Get offers until */}
               <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-border/20 overflow-hidden">
                 <div className="flex items-center justify-between">
@@ -1473,52 +1500,14 @@ export const MobileDriverDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Popular Times Chart */}
-              <div className="bg-card/95 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-border/10 overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">Popular offer times: Today</h3>
-                    <p className="text-xs text-muted-foreground">Explore additional days to drive this week.</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-                
-                <div className="flex items-end h-20 gap-0.5 overflow-hidden">
-                  {[
-                    { time: '6a', value: 90, showLabel: true },   // Early morning peak
-                    { time: '7a', value: 95, showLabel: false },  // Early morning peak
-                    { time: '8a', value: 85, showLabel: false },  // Early morning peak
-                    { time: '9a', value: 80, showLabel: true },   // Early morning peak
-                    { time: '10a', value: 60, showLabel: false },
-                    { time: '11a', value: 55, showLabel: false },
-                    { time: '12p', value: 90, showLabel: true },  // Lunch peak
-                    { time: '1p', value: 95, showLabel: false },   // Lunch peak
-                    { time: '2p', value: 85, showLabel: false },   // Lunch peak
-                    { time: '3p', value: 70, showLabel: true },
-                    { time: '4p', value: 30, showLabel: false },  // Low time
-                    { time: '5p', value: 25, showLabel: false },   // Low time
-                    { time: '6p', value: 35, showLabel: true },   // Low time
-                    { time: '7p', value: 50, showLabel: false },
-                    { time: '8p', value: 60, showLabel: false },
-                    { time: '9p', value: 70, showLabel: true },
-                    { time: '10p', value: 75, showLabel: false },
-                    { time: '11p', value: 85, showLabel: false }  // Night peak
-                  ].map((data, index) => (
-                    <div key={data.time} className="flex flex-col items-center justify-end flex-1 min-w-0">
-                      <div className="w-full mb-1" style={{ height: `${(data.value / 95) * 64}px`, minHeight: '2px' }}>
-                        <div className={`w-full h-full rounded-t-sm transition-all duration-300 ${index === getCurrentTimeIndex() ? 'bg-red-500' : 'bg-orange-500'}`} />
-                      </div>
-                      <span className="text-xs text-muted-foreground font-medium whitespace-nowrap" style={{ 
-                        visibility: data.showLabel ? 'visible' : 'hidden',
-                        height: '16px'
-                      }}>
-                        {data.time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Nearby Restaurant Cards */}
+              <NearbyRestaurantCards 
+                driverLocation={location ? { latitude: location.latitude, longitude: location.longitude } : null} 
+              />
             </div>
+
+            {/* Orange footer bar - same as main dashboard */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '60px' }} />
           </>}
 
         {/* PAUSED STATE - DoorDash Style */}
@@ -1587,10 +1576,8 @@ export const MobileDriverDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Home Indicator */}
-            <div className="flex justify-center pb-2">
-              <div className="w-32 h-1 bg-black rounded-full"></div>
-            </div>
+            {/* Android Bottom Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-black" style={{ height: '48px' }} />
           </div>
         )}
 
@@ -1672,12 +1659,36 @@ export const MobileDriverDashboard: React.FC = () => {
 
 
 
-      {/* Side Menu Overlay */}
+      {/* Side Menu Overlay - Regular menu for when not actively feeding */}
       <FeederSidebarMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         activeTab={activeTab}
         onNavigate={(path) => handleMenuNavigation(path)}
+      />
+
+      {/* Active Feeding Menu - Shows when actively feeding */}
+      <ActiveFeedingMenu
+        isOpen={isActiveFeedingMenuOpen}
+        onClose={() => setIsActiveFeedingMenuOpen(false)}
+        onPauseOrders={() => {
+          if (driverState === 'online_paused') {
+            setDriverState('online_searching');
+          } else {
+            setDriverState('online_paused');
+          }
+        }}
+        onEndFeeding={() => {
+          handleGoOffline();
+          setIsActiveFeedingMenuOpen(false);
+          setIsViewingHomeWhileFeeding(false);
+        }}
+        onGoHome={() => {
+          setIsViewingHomeWhileFeeding(true);
+          setIsActiveFeedingMenuOpen(false);
+        }}
+        currentEarnings={0}
+        isPaused={driverState === 'online_paused'}
       />
 
     </div>

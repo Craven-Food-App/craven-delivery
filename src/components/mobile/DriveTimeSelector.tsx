@@ -29,11 +29,9 @@ const generateTimeOptions = () => {
   let nextMinute = 0;
   
   if (currentMinutes > 30) {
-    // If past 30 minutes, go to next hour
     nextHour += 1;
     nextMinute = 0;
   } else if (currentMinutes > 0) {
-    // If past 0 minutes but before 30, go to 30 minutes
     nextMinute = 30;
   }
   
@@ -42,7 +40,6 @@ const generateTimeOptions = () => {
     const timeSlot = new Date(now);
     timeSlot.setHours(nextHour, nextMinute, 0, 0);
     
-    // Calculate minutes from now
     const minutesFromNow = Math.round((timeSlot.getTime() - now.getTime()) / (1000 * 60));
     
     const timeString = timeSlot.toLocaleTimeString([], { 
@@ -57,7 +54,6 @@ const generateTimeOptions = () => {
       endTime: timeSlot
     });
     
-    // Move to next 30-minute slot
     nextMinute += 30;
     if (nextMinute >= 60) {
       nextMinute = 0;
@@ -71,89 +67,134 @@ const generateTimeOptions = () => {
   return options;
 };
 
+// Pre-initialize audio context for zero-latency playback
+let audioContext: AudioContext | null = null;
+let clickBuffer: AudioBuffer | null = null;
+
+const initAudio = () => {
+  if (audioContext) return;
+  try {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Create a short click sound buffer (mechanical click)
+    const sampleRate = audioContext.sampleRate;
+    const duration = 0.008; // 8ms - very short click
+    const bufferSize = Math.floor(sampleRate * duration);
+    clickBuffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+    const channelData = clickBuffer.getChannelData(0);
+    
+    // Generate a sharp click waveform
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / bufferSize;
+      // Sharp attack, quick decay - mimics mechanical click
+      const envelope = Math.exp(-t * 40);
+      // Mix of noise and low frequency thump for realistic click
+      const noise = (Math.random() * 2 - 1) * 0.3;
+      const thump = Math.sin(t * Math.PI * 8) * 0.7;
+      channelData[i] = (noise + thump) * envelope;
+    }
+  } catch (e) {
+    // Audio not supported
+  }
+};
+
+const playClickSound = () => {
+  if (!audioContext || !clickBuffer) {
+    initAudio();
+    if (!audioContext || !clickBuffer) return;
+  }
+  
+  // Resume context if suspended (required for some browsers)
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  
+  const source = audioContext.createBufferSource();
+  const gainNode = audioContext.createGain();
+  
+  source.buffer = clickBuffer;
+  gainNode.gain.value = 0.4;
+  
+  source.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  source.start(0);
+};
+
 export const DriveTimeSelector: React.FC<DriveTimeSelectorProps> = ({ open, onClose, onSelect }) => {
   const [timeOptions] = useState(() => generateTimeOptions());
-  const [selectedIndex, setSelectedIndex] = useState(7); // Default to about 4 hours out
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const itemHeight = 56; // Height of each item in pixels
+  const [selectedIndex, setSelectedIndex] = useState(7);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemHeight = 56;
+  
+  // Touch tracking
+  const touchStartY = useRef<number>(0);
+  const touchStartIndex = useRef<number>(0);
+  const isDragging = useRef<boolean>(false);
+  const lastSoundIndex = useRef<number>(7);
 
+  // Scroll to selected index
+  const scrollToIndex = useCallback((index: number, smooth = true) => {
+    if (containerRef.current) {
+      const containerHeight = containerRef.current.offsetHeight;
+      const targetScrollTop = index * itemHeight - (containerHeight / 2) + (itemHeight / 2);
+      containerRef.current.scrollTo({ 
+        top: targetScrollTop, 
+        behavior: smooth ? 'smooth' : 'instant' 
+      });
+    }
+  }, [itemHeight]);
+
+  // Initialize scroll position and audio when opening
   useEffect(() => {
-    if (open && scrollRef.current) {
-      // Scroll to selected item when opening
-      setTimeout(() => {
-        if (scrollRef.current) {
-          const scrollTop = selectedIndex * itemHeight - (scrollRef.current.offsetHeight / 2) + (itemHeight / 2);
-          scrollRef.current.scrollTo({ top: scrollTop, behavior: 'instant' });
-        }
-      }, 100);
-    }
-  }, [open, selectedIndex, itemHeight]);
-
-  const updateSelectedIndex = useCallback(() => {
-    if (!scrollRef.current) return;
-    
-    const scrollTop = scrollRef.current.scrollTop;
-    const containerHeight = scrollRef.current.offsetHeight;
-    const centerPosition = scrollTop + containerHeight / 2;
-    
-    // More accurate calculation with bounds checking
-    const calculatedIndex = Math.max(0, Math.min(
-      Math.round(centerPosition / itemHeight),
-      timeOptions.length - 1
-    ));
-    
-    if (calculatedIndex !== selectedIndex) {
-      setSelectedIndex(calculatedIndex);
-    }
-  }, [itemHeight, selectedIndex, timeOptions.length]);
-
-  const handleScroll = useCallback(() => {
-    // Cancel any pending RAF
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-    }
-    
-    // Use RAF for smooth updates
-    rafRef.current = requestAnimationFrame(() => {
-      updateSelectedIndex();
-    });
-
-    // Clear existing timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-
-    // Snap to nearest item after scrolling stops
-    scrollTimeoutRef.current = setTimeout(() => {
-      if (scrollRef.current) {
-        const scrollTop = scrollRef.current.scrollTop;
-        const containerHeight = scrollRef.current.offsetHeight;
-        const centerPosition = scrollTop + containerHeight / 2;
-        const targetIndex = Math.max(0, Math.min(
-          Math.round(centerPosition / itemHeight),
-          timeOptions.length - 1
-        ));
-        
-        const targetScrollTop = targetIndex * itemHeight - (containerHeight / 2) + (itemHeight / 2);
-        scrollRef.current.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-        setSelectedIndex(targetIndex);
+    if (open) {
+      // Pre-initialize audio for zero latency
+      initAudio();
+      
+      if (containerRef.current) {
+        setTimeout(() => {
+          scrollToIndex(selectedIndex, false);
+        }, 100);
       }
-    }, 150);
-  }, [itemHeight, timeOptions.length, updateSelectedIndex]);
+    }
+  }, [open, selectedIndex, scrollToIndex]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartIndex.current = selectedIndex;
+    isDragging.current = true;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current) return;
+    
+    const deltaY = touchStartY.current - e.touches[0].clientY;
+    const indexDelta = Math.round(deltaY / itemHeight);
+    const newIndex = Math.max(0, Math.min(timeOptions.length - 1, touchStartIndex.current + indexDelta));
+    
+    if (newIndex !== selectedIndex) {
+      // Play click sound when moving to a new item
+      if (newIndex !== lastSoundIndex.current) {
+        playClickSound();
+        lastSoundIndex.current = newIndex;
       }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, []);
+      setSelectedIndex(newIndex);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    // Snap to the selected index
+    scrollToIndex(selectedIndex);
+  };
+
+  const handleItemClick = (index: number) => {
+    if (index !== selectedIndex) {
+      playClickSound();
+      lastSoundIndex.current = index;
+    }
+    setSelectedIndex(index);
+    scrollToIndex(index);
+  };
 
   const handleSelect = () => {
     onSelect(timeOptions[selectedIndex].minutes);
@@ -169,43 +210,45 @@ export const DriveTimeSelector: React.FC<DriveTimeSelectorProps> = ({ open, onCl
           </DrawerHeader>
           
           <div className="relative h-64 overflow-hidden">
-            {/* Scrollable time options */}
+            {/* Scrollable container with touch handling */}
             <div
-              ref={scrollRef}
-              className="h-full overflow-y-auto scrollbar-hide scroll-smooth"
-              onScroll={handleScroll}
+              ref={containerRef}
+              className="h-full overflow-y-auto scrollbar-hide relative"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{ 
                 paddingTop: '104px', 
                 paddingBottom: '104px',
-                scrollSnapType: 'y mandatory',
-                WebkitOverflowScrolling: 'touch'
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
               }}
             >
               {timeOptions.map((option, index) => {
+                const isSelected = index === selectedIndex;
                 const distance = Math.abs(index - selectedIndex);
-                const opacity = Math.max(0.3, 1 - (distance * 0.2));
-                const scale = Math.max(0.85, 1 - (distance * 0.05));
+                const opacity = Math.max(0.3, 1 - (distance * 0.25));
                 
                 return (
                   <div
                     key={option.minutes}
-                    className={`h-14 flex items-center justify-center text-lg font-medium transition-all duration-200 ${
-                      index === selectedIndex 
-                        ? 'text-orange-600 font-bold' 
-                        : 'text-muted-foreground'
+                    onClick={() => handleItemClick(index)}
+                    className={`h-14 mx-4 flex items-center justify-center text-lg font-medium cursor-pointer transition-all duration-150 rounded-lg ${
+                      isSelected 
+                        ? 'text-orange-600 font-bold text-xl bg-orange-50 border border-orange-200' 
+                        : 'text-gray-500'
                     }`}
-                    style={{
-                      scrollSnapAlign: 'center',
-                      scrollSnapStop: 'always',
-                      opacity,
-                      transform: `scale(${scale})`
-                    }}
+                    style={{ opacity: isSelected ? 1 : opacity }}
                   >
                     {option.label}
                   </div>
                 );
               })}
             </div>
+
+            {/* Fade overlays */}
+            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-white to-transparent pointer-events-none z-20" />
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-20" />
           </div>
           
           <DrawerFooter>

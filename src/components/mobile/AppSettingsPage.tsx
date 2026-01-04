@@ -216,6 +216,19 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
           </Box>
         </Card>
       </Stack>
+
+      {/* Android Bottom Bar */}
+      <Box 
+        style={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          height: '48px', 
+          backgroundColor: '#000',
+          zIndex: 1000 
+        }} 
+      />
     </Box>
   );
 };

@@ -899,10 +899,42 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   if (status === DRIVER_STATUS.COMPLETE) {
-    return renderComplete();
+    return (
+      <>
+        {renderComplete()}
+        {/* Android Bottom Bar */}
+        <Box 
+          style={{ 
+            position: 'fixed', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            height: '48px', 
+            backgroundColor: '#000',
+            zIndex: 1000 
+          }} 
+        />
+      </>
+    );
   }
   
-  return renderActiveFlow();
+  return (
+    <>
+      {renderActiveFlow()}
+      {/* Android Bottom Bar */}
+      <Box 
+        style={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          height: '48px', 
+          backgroundColor: '#000',
+          zIndex: 1000 
+        }} 
+      />
+    </>
+  );
 }
 
 export default CravenDeliveryFlow;
