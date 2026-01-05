@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, ArrowLeft, Mail, Phone } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import cravenLogo from '@/assets/craven-logo.png';
 
 interface MobileFeederLoginProps {
@@ -13,35 +13,15 @@ interface MobileFeederLoginProps {
   onLoginSuccess?: () => void;
 }
 
-type LoginMethod = 'email' | 'phone';
-
 const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSuccess }) => {
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-
-  // Format phone number as user types
-  const handlePhoneChange = (value: string) => {
-    // Remove all non-numeric characters
-    const cleaned = value.replace(/\D/g, '');
-    
-    // Format: (XXX) XXX-XXXX
-    let formatted = cleaned;
-    if (cleaned.length >= 6) {
-      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-    } else if (cleaned.length >= 3) {
-      formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-    }
-    
-    setPhone(formatted);
-  };
 
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -52,20 +32,14 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     
     // Get values from DOM as fallback (in case React state wasn't updated)
     const emailInput = document.getElementById('login-input') as HTMLInputElement;
-    const passwordInput = document.getElementById('password') as HTMLInputElement;
     
     const emailValue = email.trim() || emailInput?.value?.trim() || '';
-    const passwordValue = password || passwordInput?.value || '';
-    const phoneValue = phone.replace(/\D/g, '');
     
     // Validate inputs
-    const loginValue = loginMethod === 'email' ? emailValue : phoneValue;
-    if (!loginValue || !passwordValue) {
+    if (!emailValue) {
       toast({
         title: "Missing Information",
-        description: loginMethod === 'email' 
-          ? "Please enter your email and password."
-          : "Please enter your phone number and password.",
+        description: "Please enter your email address.",
         variant: "destructive",
       });
       return;
@@ -75,60 +49,43 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
 
     try {
       console.log('🔐 Starting sign-in process...');
-      let authResult;
+      console.log('📧 Sending 6-digit code to email:', emailValue);
       
-      if (loginMethod === 'email') {
-        console.log('📧 Signing in with email:', emailValue);
-        authResult = await supabase.auth.signInWithPassword({
-          email: emailValue,
-          password: passwordValue,
-        });
-      } else {
-        // For phone login, convert formatted phone to E.164 format
-        const e164Phone = `+1${phoneValue}`; // Assuming US numbers
-        console.log('📱 Signing in with phone:', e164Phone);
-        authResult = await supabase.auth.signInWithPassword({
-          phone: e164Phone,
-          password: passwordValue,
-        });
+      // Use Supabase's native OTP - this sends a 6-digit code to email
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailValue,
+        options: {
+          shouldCreateUser: false, // Only allow existing users to login
+        },
+      });
+
+      if (error) {
+        console.error('❌ OTP error:', error);
+        if (error.message?.includes('Signups not allowed')) {
+          throw new Error('No account found with this email address.');
+        }
+        throw error;
       }
 
-      if (authResult.error) {
-        console.error('❌ Auth error:', authResult.error);
-        throw authResult.error;
-      }
-
-      console.log('✅ Authentication successful, user:', authResult.data.user?.id);
-
-      if (authResult.data.user) {
-        // Mark as navigated to prevent any re-runs
-        setHasNavigated(true);
-        setLoading(false);
-        
-        // Show success toast
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in to your Feeder account.",
-        });
-        
-        // Force navigation with window.location for reliability
-        console.log('🚀 Navigating to /mobile...');
-        window.location.href = '/mobile';
-      }
+      console.log('✅ Verification code sent successfully');
+      setLoading(false);
+      setCodeSent(true);
+      
+      // Show success toast
+      toast({
+        title: "Code sent!",
+        description: "Check your email for a 6-digit verification code.",
+      });
     } catch (error: any) {
       console.error('❌ Login error:', error);
       setLoading(false);
       
       // Provide user-friendly error messages
-      let errorMessage = "Please check your credentials and try again.";
-      if (error.message?.includes('Invalid login credentials') || error.message?.includes('Invalid credentials')) {
-        errorMessage = "The email or password you entered is incorrect. Please try again.";
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = "Please check your email and confirm your account before signing in.";
-      } else if (error.message?.includes('Too many requests')) {
+      let errorMessage = "Failed to send verification code. Please try again.";
+      if (error.message?.includes('Too many requests')) {
         errorMessage = "Too many login attempts. Please wait a moment and try again.";
-      } else if (error.message?.includes('missing email or phone')) {
-        errorMessage = "Please enter your email address.";
+      } else if (error.message?.includes('User not found')) {
+        errorMessage = "No account found with this email. Please check your email address.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -141,14 +98,113 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     }
   };
 
-  const handleApplyRedirect = () => {
-    navigate('/driver-onboarding/apply');
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (verifying || hasNavigated) return;
+    
+    const codeValue = verificationCode.trim().replace(/\D/g, ''); // Remove non-digits
+    
+    if (codeValue.length !== 6) {
+      toast({
+        title: "Invalid Code",
+        description: "Please enter the 6-digit code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setVerifying(true);
+
+    try {
+      console.log('🔐 Verifying code...');
+      
+      // Use Supabase's native OTP verification
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: codeValue,
+        type: 'email',
+      });
+
+      if (error) {
+        console.error('❌ Verification error:', error);
+        throw error;
+      }
+
+      if (!data?.user) {
+        throw new Error('Verification failed. Please try again.');
+      }
+
+      console.log('✅ Verification successful, user:', data.user.id);
+
+      // User is now signed in - navigate to dashboard
+      setHasNavigated(true);
+      setVerifying(false);
+      
+      toast({
+        title: "Welcome back!",
+        description: "Successfully signed in to your Feeder account.",
+      });
+      
+      console.log('🚀 Navigating to /mobile...');
+      window.location.href = '/mobile';
+    } catch (error: any) {
+      console.error('❌ Verification error:', error);
+      setVerifying(false);
+      
+      let errorMessage = "Invalid verification code. Please try again.";
+      if (error.message?.includes('expired')) {
+        errorMessage = "This code has expired. Please request a new one.";
+      } else if (error.message?.includes('Invalid token')) {
+        errorMessage = "Invalid code. Please check and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Verification Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleResendCode = async () => {
+    setCodeSent(false);
+    setVerificationCode('');
+    setLoading(true);
+    
+    try {
+      const emailValue = email.trim();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailValue,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
+
+      if (error) throw error;
+
+      setCodeSent(true);
+      setLoading(false);
+      toast({
+        title: "Code resent!",
+        description: "A new 6-digit code has been sent to your email.",
+      });
+    } catch (error: any) {
+      setLoading(false);
+      toast({
+        title: "Failed to resend code",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-white overflow-y-auto z-50" style={{ paddingTop: 'calc(env(safe-area-inset-top, 100px) + 70px)' }}>
+    <div className="fixed inset-0 w-full h-full bg-white overflow-y-auto z-50">
       {/* Header with back button */}
-      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 0, paddingTop: 'env(safe-area-inset-top, 80px)', minHeight: 'calc(env(safe-area-inset-top, 80px) + 80px)' }}>
+      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 0, paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}>
         <div className="flex items-center justify-between p-4">
           <button
             onClick={onBack || (() => navigate(-1))}
@@ -165,49 +221,24 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       {/* Login Form */}
       <div className="px-6 py-8 max-w-md mx-auto" style={{ marginTop: '-10px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 48px))` }}>
         {/* Welcome Section */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome Back, Feeder!
-          </h1>
+        <div className="text-left mb-8">
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Are you ready to Feed?
+          </h3>
           <p className="text-gray-600">
             Sign in to start earning and delivering happiness
           </p>
         </div>
 
-        {/* Login Method Toggle */}
-        <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
-          <button
-            onClick={() => setLoginMethod('email')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium transition-all ${
-              loginMethod === 'email'
-                ? 'bg-white text-orange-500 shadow-sm'
-                : 'text-gray-600'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            Email
-          </button>
-          <button
-            onClick={() => setLoginMethod('phone')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium transition-all ${
-              loginMethod === 'phone'
-                ? 'bg-white text-orange-500 shadow-sm'
-                : 'text-gray-600'
-            }`}
-          >
-            <Phone className="w-4 h-4" />
-            Phone
-          </button>
-        </div>
 
         {/* Login Form */}
-        <form onSubmit={handleSignIn} className="space-y-5">
-          {/* Email or Phone Input */}
-          <div className="space-y-2">
-            <Label htmlFor="login-input" className="text-gray-700 font-medium">
-              {loginMethod === 'email' ? 'Email Address' : 'Phone Number'}
-            </Label>
-            {loginMethod === 'email' ? (
+        {!codeSent ? (
+          <form onSubmit={handleSignIn} className="space-y-5">
+            {/* Email Input */}
+            <div className="space-y-2">
+              <Label htmlFor="login-input" className="text-gray-700 font-medium">
+                Email Address
+              </Label>
               <Input
                 id="login-input"
                 type="email"
@@ -216,144 +247,81 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-12 text-base"
+                disabled={loading}
               />
-            ) : (
-              <Input
-                id="login-input"
-                type="tel"
-                placeholder="(555) 123-4567"
-                value={phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                maxLength={14}
-                required
-                className="h-12 text-base"
-              />
-            )}
-          </div>
-
-          {/* Password Input */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-gray-700 font-medium">
-              Password
-            </Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-12 text-base pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
             </div>
-          </div>
 
-          {/* Sign In Button */}
-          <Button
-            type="button"
-            disabled={loading}
-            onClick={(e) => {
-              e.preventDefault();
-              handleSignIn(e as any);
-            }}
-            className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Signing In...
-              </div>
-            ) : (
-              'Sign In'
-            )}
-          </Button>
+            {/* Sign In Button */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Sending Code...
+                </div>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyCode} className="space-y-5">
+            {/* Verification Code Input */}
+            <div className="space-y-2">
+              <Label htmlFor="verification-code" className="text-gray-700 font-medium">
+                Enter 6-Digit Code
+              </Label>
+              <Input
+                id="verification-code"
+                type="text"
+                inputMode="numeric"
+                placeholder="000000"
+                value={verificationCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setVerificationCode(value);
+                }}
+                required
+                className="h-12 text-base text-center text-2xl font-bold tracking-widest"
+                disabled={verifying}
+                autoFocus
+              />
+              <p className="text-sm text-gray-500 text-center">
+                We sent a 6-digit code to <span className="font-semibold">{email}</span>
+              </p>
+            </div>
 
-          {/* Forgot Password */}
-          <button
-            type="button"
-            className="w-full text-center text-sm text-gray-600 hover:text-orange-500 underline"
-            onClick={async () => {
-              if (!email && loginMethod === 'email') {
-                toast({
-                  title: "Email Required",
-                  description: "Please enter your email address first.",
-                  variant: "destructive",
-                });
-                return;
-              }
-              
-              if (loginMethod === 'phone') {
-                toast({
-                  title: "Email Required",
-                  description: "Please switch to email login to reset your password.",
-                  variant: "destructive",
-                });
-                return;
-              }
+            {/* Verify Button */}
+            <Button
+              type="submit"
+              disabled={verifying || verificationCode.length !== 6}
+              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {verifying ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Verifying...
+                </div>
+              ) : (
+                'Verify Code'
+              )}
+            </Button>
 
-              try {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                  redirectTo: `${window.location.origin}/mobile?reset=true`,
-                });
+            {/* Resend Code */}
+            <button
+              type="button"
+              onClick={handleResendCode}
+              disabled={loading}
+              className="w-full text-center text-sm text-gray-600 hover:text-orange-500 underline disabled:opacity-50"
+            >
+              Didn't receive the code? Resend
+            </button>
+          </form>
+        )}
 
-                if (error) throw error;
-
-                toast({
-                  title: "Password Reset Email Sent",
-                  description: "Please check your email for instructions to reset your password.",
-                });
-              } catch (error: any) {
-                console.error('Password reset error:', error);
-                toast({
-                  title: "Error",
-                  description: error.message || "Failed to send password reset email. Please try again.",
-                  variant: "destructive",
-                });
-              }
-            }}
-          >
-            Forgot your password?
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500 font-medium">
-              New to Crave'n?
-            </span>
-          </div>
-        </div>
-
-        {/* Apply Button */}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleApplyRedirect}
-          className="w-full h-12 border-2 border-orange-500 text-orange-500 hover:bg-orange-50 text-lg font-semibold rounded-lg"
-        >
-          Apply to Become a Feeder
-        </Button>
-
-        {/* Info Text */}
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Your account will be created when you submit your application
-        </p>
       </div>
 
       {/* Android Bottom Bar */}

@@ -77,7 +77,7 @@ const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) =
         top={0}
         bg="white"
         style={{ zIndex: 10, borderBottom: '1px solid var(--mantine-color-gray-2)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
-        className="safe-area-top"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <Group px="xl" py="md" justify="space-between" align="center">
           <ActionIcon onClick={onBack} variant="subtle" color="dark">

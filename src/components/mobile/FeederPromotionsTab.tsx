@@ -210,7 +210,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
   return (
     <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-orange-5))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" className="safe-area-top">
+      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {

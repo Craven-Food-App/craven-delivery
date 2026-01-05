@@ -315,7 +315,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     return (
       <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom right, var(--mantine-color-purple-0), var(--mantine-color-blue-0), var(--mantine-color-pink-0))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
         {/* Header */}
-        <Group px="xl" pb="md" justify="space-between" align="center" className="safe-area-top">
+        <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
             <IconArrowLeft size={24} />
           </ActionIcon>
@@ -604,7 +604,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         px="xl"
         pb="xl"
         style={{ background: status.gradient, overflow: 'hidden' }}
-        className="safe-area-top"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         {/* Diamond sparkle effect */}
         <Box pos="absolute" inset={0} style={{ opacity: 0.3 }}>

@@ -101,12 +101,11 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
       {/* Header */}
       <Group
         bg="white"
-        style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+        style={{ borderBottom: '1px solid var(--mantine-color-gray-2)', paddingTop: 'env(safe-area-inset-top, 0px)' }}
         px="xl"
         py="md"
         justify="space-between"
         align="center"
-        className="safe-area-top"
       >
         <ActionIcon onClick={onBack} variant="subtle" color="dark">
           <IconArrowLeft size={24} />

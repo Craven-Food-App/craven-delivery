@@ -157,7 +157,7 @@ export function DriverPreferencesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b shadow-sm safe-area-top">
+      <div className="sticky top-0 z-10 bg-white border-b shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="p-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Preferences</h1>

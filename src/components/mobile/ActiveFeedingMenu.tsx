@@ -68,9 +68,9 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white safe-area-top">
+    <div className="fixed inset-0 z-[100] bg-white" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <button onClick={onClose} className="p-2 -ml-2">
           <X className="w-6 h-6 text-gray-900" />
         </button>

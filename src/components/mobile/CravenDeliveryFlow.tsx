@@ -205,7 +205,7 @@ const MapHeader: React.FC<MapHeaderProps> = ({ title, status, locationIcon, dist
   return (
     <Box
       p="md"
-      className="safe-area-top"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       style={{
         background: 'linear-gradient(to bottom right, var(--mantine-color-orange-6), var(--mantine-color-red-6))',
         color: 'white',
