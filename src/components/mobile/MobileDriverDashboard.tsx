@@ -347,6 +347,22 @@ export const MobileDriverDashboard: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Listen for switchTab custom events (for in-app navigation without page reload)
+  useEffect(() => {
+    const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
+      const { tab, section } = event.detail;
+      if (['schedule', 'earnings', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
+        setActiveTab(tab as any);
+        // Update URL without causing reload
+        const newUrl = section ? `/mobile?tab=${tab}&section=${section}` : `/mobile?tab=${tab}`;
+        window.history.pushState({}, '', newUrl);
+      }
+    };
+
+    window.addEventListener('switchTab', handleSwitchTab as EventListener);
+    return () => window.removeEventListener('switchTab', handleSwitchTab as EventListener);
+  }, []);
+
   // Fetch driver rating data
   useEffect(() => {
     const fetchDriverRating = async () => {

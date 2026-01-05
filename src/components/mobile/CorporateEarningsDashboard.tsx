@@ -28,6 +28,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
   const [weeklyData, setWeeklyData] = useState<Array<{ payments: number; tips: number }>>([]);
   const [availableOrder, setAvailableOrder] = useState<any>(null);
   const [cravingLevel, setCravingLevel] = useState(70); // Percentage for craving meter
+  const [isEarningsExpanded, setIsEarningsExpanded] = useState(true); // Collapsible state
   const { isDiamond } = useDriverTier();
   const { points: diamondPoints } = useDiamondPoints();
 
@@ -196,8 +197,8 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
 
   return (
     <div className="h-screen w-full bg-gradient-to-b from-red-600 via-orange-600 to-orange-500 overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0 safe-area-top">
+      {/* Header - Level with hamburger menu */}
+      <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <button 
           onClick={() => {
             if (onOpenMenu) {
@@ -367,8 +368,14 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
           
           {/* Action Buttons - Side by Side */}
           <div className="flex gap-2 mb-4">
-            <button className="flex-1 bg-white rounded-full py-2 px-4 font-bold text-red-700 text-xs shadow-lg">
-              Go Online
+            <button 
+              onClick={() => {
+                // Dispatch event to switch tab without full page reload
+                window.dispatchEvent(new CustomEvent('switchTab', { detail: { tab: 'account', section: 'card' } }));
+              }}
+              className="flex-1 bg-white rounded-full py-2 px-4 font-bold text-red-700 text-xs shadow-lg"
+            >
+              Manage Card
             </button>
             <button className="flex-1 bg-white rounded-full py-2 px-4 font-bold text-red-700 text-xs shadow-lg">
               Payout Req
@@ -377,24 +384,104 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
         </div>
       </div>
 
-      {/* DIAMOND EXCLUSIVE ORDERS - UP FOR GRABS */}
-      <Box px="md" mb="md">
-        <Group justify="apart" mb="xs">
-          <Text fw={700} size="sm" c="white" style={{ letterSpacing: '0.05em' }}>
-            UP FOR GRABS
-          </Text>
-          {isDiamond && (
-            <DiamondPointsBadge points={diamondPoints} tier="Diamond" />
-          )}
-        </Group>
-        <Box
-          style={{
-            backgroundColor: 'hsl(14, 90%, 53%)', // Craven orange primary color
-            borderRadius: '8px',
-            padding: '16px',
-            minHeight: 200,
-          }}
+      {/* COLLAPSIBLE EARNINGS SECTION */}
+      <div className="px-5 mb-3">
+        {/* Collapse/Expand Header */}
+        <button 
+          onClick={() => setIsEarningsExpanded(!isEarningsExpanded)}
+          className="w-full flex items-center justify-between mb-2"
         >
+          <h3 className="text-white text-sm font-bold tracking-wide">EARNINGS SNAPSHOT</h3>
+          <svg 
+            className={`w-5 h-5 text-white transition-transform duration-300 ${isEarningsExpanded ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {/* Collapsible Content */}
+        <div 
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isEarningsExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
+        >
+          {/* EARNINGS SNAPSHOT Card */}
+          <div className="bg-orange-50 rounded-2xl p-4 shadow-xl mb-4">
+            <h4 
+              className="font-black text-gray-900 mb-0.5 whitespace-nowrap overflow-hidden"
+              style={{ 
+                fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
+                lineHeight: '1.2'
+              }}
+            >
+              ${earnings.today.toFixed(2)}
+            </h4>
+            <p className="text-orange-800 text-xs font-semibold">Today</p>
+          </div>
+
+          {/* TODAY'S FEED FLOW */}
+          <h3 className="text-white text-sm font-bold mb-2 tracking-wide">Today's FEED FLOW</h3>
+          <div className="grid grid-cols-3 gap-0 text-center">
+            <div className="border-r border-white/30 py-2">
+              <p 
+                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                style={{ 
+                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  lineHeight: '1.2'
+                }}
+              >
+                {earnings.todayDeliveries}
+              </p>
+              <p className="text-white text-[10px] font-semibold">Delivered</p>
+            </div>
+            <div className="border-r border-white/30 py-2">
+              <p 
+                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                style={{ 
+                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  lineHeight: '1.2'
+                }}
+              >
+                {earnings.todayAcceptance}%
+              </p>
+              <p className="text-white text-[10px] font-semibold">Acceptance</p>
+            </div>
+            <div className="py-2">
+              <p 
+                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                style={{ 
+                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  lineHeight: '1.2'
+                }}
+              >
+                ${earnings.todayTips.toFixed(2)}
+              </p>
+              <p className="text-white text-[10px] font-semibold">Tips</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* DIAMOND EXCLUSIVE ORDERS - UP FOR GRABS - White background section */}
+      <Box style={{ backgroundColor: '#ffffff', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))', marginTop: '16px' }}>
+        <Box px="md" pt="md">
+          <Group justify="apart" mb="xs">
+            <Text fw={700} size="sm" c="gray.8" style={{ letterSpacing: '0.05em' }}>
+              UP FOR GRABS
+            </Text>
+            {isDiamond && (
+              <DiamondPointsBadge points={diamondPoints} tier="Diamond" />
+            )}
+          </Group>
+          <Box
+            style={{
+              backgroundColor: 'hsl(14, 90%, 53%)', // Craven orange primary color
+              borderRadius: '8px',
+              padding: '16px',
+              minHeight: 200,
+            }}
+          >
           <ExclusiveOrdersFeed
             onClaim={async (orderId: string, type: string) => {
               try {
@@ -440,68 +527,9 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               }
             }}
           />
+          </Box>
         </Box>
       </Box>
-
-      {/* EARNINGS SNAPSHOT */}
-      <div className="px-5 mb-3">
-        <h3 className="text-white text-sm font-bold mb-2 tracking-wide">EARNINGS SNAPSHOT</h3>
-        <div className="bg-orange-50 rounded-2xl p-4 shadow-xl">
-          <h4 
-            className="font-black text-gray-900 mb-0.5 whitespace-nowrap overflow-hidden"
-            style={{ 
-              fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
-              lineHeight: '1.2'
-            }}
-          >
-            ${earnings.today.toFixed(2)}
-          </h4>
-          <p className="text-orange-800 text-xs font-semibold">Today</p>
-        </div>
-      </div>
-
-      {/* TODAY'S FEED FLOW */}
-      <div className="px-5" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-        <h3 className="text-white text-sm font-bold mb-2 tracking-wide">Today's FEED FLOW</h3>
-        <div className="grid grid-cols-3 gap-0 text-center">
-          <div className="border-r border-white/30 py-2">
-            <p 
-              className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
-              style={{ 
-                fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
-                lineHeight: '1.2'
-              }}
-            >
-              {earnings.todayDeliveries}
-            </p>
-            <p className="text-white text-[10px] font-semibold">Delivered</p>
-          </div>
-          <div className="border-r border-white/30 py-2">
-            <p 
-              className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
-              style={{ 
-                fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
-                lineHeight: '1.2'
-              }}
-            >
-              {earnings.todayAcceptance}%
-            </p>
-            <p className="text-white text-[10px] font-semibold">Acceptance</p>
-          </div>
-          <div className="py-2">
-            <p 
-              className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
-              style={{ 
-                fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
-                lineHeight: '1.2'
-              }}
-            >
-              ${earnings.todayTips.toFixed(2)}
-            </p>
-            <p className="text-white text-[10px] font-semibold">Tips</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

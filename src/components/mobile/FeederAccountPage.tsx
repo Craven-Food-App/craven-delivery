@@ -60,6 +60,24 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
   const [isCardLocked, setIsCardLocked] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security'>('main');
+
+  // Check URL params and listen for navigation events to auto-open card page
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('section') === 'card') {
+      setShowCardPage(true);
+    }
+
+    // Listen for switchTab events with section=card
+    const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
+      if (event.detail.section === 'card') {
+        setShowCardPage(true);
+      }
+    };
+
+    window.addEventListener('switchTab', handleSwitchTab as EventListener);
+    return () => window.removeEventListener('switchTab', handleSwitchTab as EventListener);
+  }, []);
   
   // Driver stats - will be fetched from database
   const [driverPoints, setDriverPoints] = useState(0);
