@@ -252,25 +252,45 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
 
       {/* ON FIRE Section */}
       <div className="px-5 mb-3">
-        <div className="relative overflow-hidden">
+        <div className="relative" style={{ overflow: 'visible' }}>
           {/* Large ON FIRE Text */}
           <div className="relative mb-2 flex items-center gap-3">
+            {/* Fixed-dimension wrapper: base text defines size, flames overflow upward */}
             <div 
+              className="relative inline-block"
               style={{ 
                 height: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start'
+                overflow: 'visible' // Allow flames to overflow upward
               }}
             >
+              {/* Base text (no fire) - always visible, defines container size */}
               <img 
-                src={(cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? onFireOnfireTextImage : onfireTextImage}
+                src={onfireTextImage}
                 alt="ON FIRE" 
-                className="object-contain"
                 style={{ 
-                  maxHeight: '100%',
+                  height: '100%',
                   width: 'auto',
-                  maxWidth: '100%'
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                  display: 'block'
+                }}
+              />
+              {/* Fire overlay - same width as base, flames overflow upward */}
+              <img 
+                src={onFireOnfireTextImage}
+                alt="ON FIRE" 
+                style={{ 
+                  position: 'absolute',
+                  left: 0,
+                  bottom: 0,
+                  height: '100%',
+                  width: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'left bottom',
+                  pointerEvents: 'none',
+                  zIndex: 2,
+                  opacity: (cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? 1 : 0,
+                  transition: 'opacity 250ms ease-in-out'
                 }}
               />
             </div>

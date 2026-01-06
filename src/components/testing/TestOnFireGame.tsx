@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface OnlineDriver {
-  driver_id: string;
+  driver_profile_id: string; // driver_profiles.id
+  user_id: string; // auth.users.id (from driver_profiles.user_id)
   email: string;
   name?: string;
 }
@@ -41,33 +42,42 @@ export const TestOnFireGame: React.FC = () => {
     setLoadingDrivers(true);
     try {
       // Get online driver sessions
-      const { data: sessions, error } = await supabase
+      const { data: sessions, error: sessionsError } = await supabase
         .from('driver_sessions')
         .select('driver_id')
         .eq('is_online', true);
 
-      if (error) throw error;
+      if (sessionsError) throw sessionsError;
 
       if (!sessions || sessions.length === 0) {
         setOnlineDrivers([]);
         return;
       }
 
-      // Get driver profile info for display
-      const driverIds = sessions.map(s => s.driver_id);
-      const { data: profiles } = await supabase
+      // Get driver_profiles to map driver_id (profile.id) to user_id
+      const driverProfileIds = sessions.map(s => s.driver_id);
+      const { data: profiles, error: profilesError } = await supabase
         .from('driver_profiles')
-        .select('user_id')
-        .in('user_id', driverIds);
+        .select('id, user_id')
+        .in('id', driverProfileIds);
 
-      // Build driver list with available info
-      const driverMap = new Map(profiles?.map(p => [p.user_id, true]) || []);
-      
+      if (profilesError) throw profilesError;
+
+      // Build a map of driver_profile.id -> user_id
+      const profileMap = new Map(profiles?.map(p => [p.id, p.user_id]) || []);
+
+      // Build driver list with user_id from driver_profiles
       setOnlineDrivers(
-        sessions.map(s => ({
-          driver_id: s.driver_id,
-          email: s.driver_id.slice(0, 8) + '...' + s.driver_id.slice(-4)
-        }))
+        sessions
+          .filter(s => profileMap.has(s.driver_id))
+          .map(s => {
+            const userId = profileMap.get(s.driver_id)!;
+            return {
+              driver_profile_id: s.driver_id,
+              user_id: userId,
+              email: userId.slice(0, 8) + '...' + userId.slice(-4)
+            };
+          })
       );
     } catch (error) {
       console.error('Error fetching online drivers:', error);
@@ -77,25 +87,25 @@ export const TestOnFireGame: React.FC = () => {
     }
   };
 
-  const sendFireToDriver = async (driverId: string) => {
-    setSendingFire(driverId);
+  const sendFireToDriver = async (userId: string) => {
+    setSendingFire(userId);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Set wheel to ON FIRE (2000 points = 100%)
-      const { error } = await supabase
-        .from('craving_wheel_progress')
-        .upsert({
-          user_id: driverId,
-          date: today,
-          current_points: 2000,
-          max_points: 2000,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,date'
-        });
+      // Use RPC function to bypass RLS for testing
+      // userId is the auth.users.id from driver_profiles.user_id
+      const { error } = await supabase.rpc('admin_update_craving_progress', {
+        p_user_id: userId,
+        p_current_points: 2000,
+        p_max_points: 2000,
+        p_date: new Date().toISOString().split('T')[0]
+      });
 
-      if (error) throw error;
+      if (error) {
+        // Check if function doesn't exist
+        if (error.code === '42883' || error.message?.includes('function') || error.message?.includes('does not exist')) {
+          throw new Error('RPC function admin_update_craving_progress not found. Please run the SQL migration in Supabase SQL Editor.');
+        }
+        throw error;
+      }
 
       toast.success(`🔥 ON FIRE sent to driver! They should see it on their earnings page.`);
       
@@ -103,7 +113,8 @@ export const TestOnFireGame: React.FC = () => {
       setTimeout(() => fetchOnlineDrivers(), 1000);
     } catch (error: any) {
       console.error('Error sending fire:', error);
-      toast.error(`Failed to send fire: ${error.message}`);
+      const errorMessage = error.message || 'Unknown error';
+      toast.error(`Failed to send fire: ${errorMessage}`);
     } finally {
       setSendingFire(null);
     }
@@ -238,22 +249,22 @@ export const TestOnFireGame: React.FC = () => {
               <div className="space-y-2">
                 {onlineDrivers.map((driver) => (
                   <div
-                    key={driver.driver_id}
+                    key={driver.user_id}
                     className="flex items-center justify-between p-3 border rounded-lg"
                   >
                     <div>
                       <p className="text-sm font-medium">{driver.email}</p>
                       <p className="text-xs text-muted-foreground">
-                        ID: {driver.driver_id.slice(0, 8)}...
+                        User ID: {driver.user_id.slice(0, 8)}...
                       </p>
                     </div>
                     <Button
-                      onClick={() => sendFireToDriver(driver.driver_id)}
-                      disabled={sendingFire === driver.driver_id}
+                      onClick={() => sendFireToDriver(driver.user_id)}
+                      disabled={sendingFire === driver.user_id}
                       size="sm"
                       variant="destructive"
                     >
-                      {sendingFire === driver.driver_id ? 'Sending...' : '🔥 Send ON FIRE'}
+                      {sendingFire === driver.user_id ? 'Sending...' : '🔥 Send ON FIRE'}
                     </Button>
                   </div>
                 ))}
