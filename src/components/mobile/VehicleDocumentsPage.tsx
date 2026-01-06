@@ -76,8 +76,12 @@ const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) =
         pos="sticky"
         top={0}
         bg="white"
-        style={{ zIndex: 10, borderBottom: '1px solid var(--mantine-color-gray-2)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        style={{ 
+          zIndex: 10, 
+          borderBottom: '1px solid var(--mantine-color-gray-2)', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
+        }}
       >
         <Group px="xl" py="md" justify="space-between" align="center">
           <ActionIcon onClick={onBack} variant="subtle" color="dark">

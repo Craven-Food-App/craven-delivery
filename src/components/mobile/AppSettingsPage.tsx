@@ -15,6 +15,7 @@ import {
   Select,
   ThemeIcon,
   Divider,
+  Paper,
 } from '@mantine/core';
 
 type AppSettingsPageProps = {
@@ -99,20 +100,25 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
   return (
     <Box h="100vh" w="100%" bg="gray.0" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group
+      <Paper
+        pos="sticky"
+        top={0}
         bg="white"
-        style={{ borderBottom: '1px solid var(--mantine-color-gray-2)', paddingTop: 'env(safe-area-inset-top, 0px)' }}
-        px="xl"
-        py="md"
-        justify="space-between"
-        align="center"
+        style={{ 
+          zIndex: 10, 
+          borderBottom: '1px solid var(--mantine-color-gray-2)', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
+        }}
       >
-        <ActionIcon onClick={onBack} variant="subtle" color="dark">
-          <IconArrowLeft size={24} />
-        </ActionIcon>
-        <Title order={3} fw={700} c="dark">App Settings</Title>
-        <Box w={24} />
-      </Group>
+        <Group px="xl" py="md" justify="space-between" align="center">
+          <ActionIcon onClick={onBack} variant="subtle" color="dark">
+            <IconArrowLeft size={24} />
+          </ActionIcon>
+          <Title order={3} fw={700} c="dark">App Settings</Title>
+          <Box w={24} />
+        </Group>
+      </Paper>
 
       <Stack gap="md" p="xl">
         {/* Notifications */}

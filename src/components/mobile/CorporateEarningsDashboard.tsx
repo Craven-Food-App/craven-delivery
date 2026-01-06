@@ -196,7 +196,10 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
   };
 
   return (
-    <div className="h-screen w-full bg-gradient-to-b from-red-600 via-orange-600 to-orange-500 overflow-y-auto" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <div className="h-screen w-full overflow-y-auto" style={{ 
+      background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
+      paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
+    }}>
       {/* Header - Level with hamburger menu */}
       <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <button 
@@ -421,43 +424,43 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
           </div>
 
           {/* TODAY'S FEED FLOW */}
-          <h3 className="text-white text-sm font-bold mb-2 tracking-wide">Today's FEED FLOW</h3>
+          <h3 className="text-black text-sm font-bold mb-2 tracking-wide">Today's FEED FLOW</h3>
           <div className="grid grid-cols-3 gap-0 text-center">
-            <div className="border-r border-white/30 py-2">
+            <div className="border-r border-gray-300 py-2">
               <p 
-                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
                 style={{ 
-                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
                   lineHeight: '1.2'
                 }}
               >
                 {earnings.todayDeliveries}
               </p>
-              <p className="text-white text-[10px] font-semibold">Delivered</p>
+              <p className="text-black text-[10px] font-semibold">Delivered</p>
             </div>
-            <div className="border-r border-white/30 py-2">
+            <div className="border-r border-gray-300 py-2">
               <p 
-                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
                 style={{ 
-                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
                   lineHeight: '1.2'
                 }}
               >
                 {earnings.todayAcceptance}%
               </p>
-              <p className="text-white text-[10px] font-semibold">Acceptance</p>
+              <p className="text-black text-[10px] font-semibold">Acceptance</p>
             </div>
             <div className="py-2">
               <p 
-                className="font-black text-white mb-0.5 whitespace-nowrap overflow-hidden"
+                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
                 style={{ 
-                  fontSize: 'clamp(1rem, 3.5vw, 1.875rem)',
+                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
                   lineHeight: '1.2'
                 }}
               >
                 ${earnings.todayTips.toFixed(2)}
               </p>
-              <p className="text-white text-[10px] font-semibold">Tips</p>
+              <p className="text-black text-[10px] font-semibold">Tips</p>
             </div>
           </div>
         </div>

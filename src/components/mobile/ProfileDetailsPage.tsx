@@ -8,7 +8,6 @@ import {
   Text,
   Button,
   Group,
-  Card,
   Title,
   ActionIcon,
   TextInput,
@@ -16,6 +15,7 @@ import {
   ThemeIcon,
   Paper,
   Grid,
+  Divider,
 } from '@mantine/core';
 
 type ProfileDetailsPageProps = {
@@ -253,14 +253,18 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
   }
 
   return (
-    <Box h="100vh" w="100%" bg="gray.0" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" bg="white" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
       <Paper
         pos="sticky"
         top={0}
         bg="white"
-        style={{ zIndex: 10, borderBottom: '1px solid var(--mantine-color-gray-2)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        style={{ 
+          zIndex: 10, 
+          borderBottom: '1px solid var(--mantine-color-gray-2)', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
+        }}
       >
         <Group px="xl" py="md" justify="space-between" align="center">
           <ActionIcon onClick={onBack} variant="subtle" color="dark">
@@ -279,137 +283,143 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
         </Group>
       </Paper>
 
-      {/* Form */}
-      <Stack gap="md" p="xl">
-        <Card shadow="sm" radius="lg" withBorder>
-          <Card.Section p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-            <Group gap="md" mb="md">
-              <ThemeIcon size="xl" radius="lg" color="blue" variant="light">
-                <IconUser size={24} />
-              </ThemeIcon>
-              <Box>
-                <Title order={4} fw={700} c="dark">Personal Information</Title>
-                <Text size="sm" c="dimmed">Update your personal details</Text>
-              </Box>
-            </Group>
-          </Card.Section>
-          <Card.Section p="md">
-            <Stack gap="md">
-              <Grid gutter="md">
-                <Grid.Col span={6}>
-                  <TextInput
-                    label="First Name"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    placeholder="First name"
-                  />
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <TextInput
-                    label="Last Name"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    placeholder="Last name"
-                  />
-                </Grid.Col>
-              </Grid>
+      {/* Form - Full Page, No Cards */}
+      <Stack gap="xl" p="xl">
+        {/* Feeder ID Section */}
+        <Box>
+          <Text size="sm" fw={600} c="dimmed" mb="xs">Feeder ID</Text>
+          <Text size="lg" fw={700} c="dark" style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+            {user?.id ? user.id.substring(0, 8) : 'Loading...'}
+          </Text>
+        </Box>
 
-              <TextInput
-                label={
-                  <Group gap="xs">
-                    <IconMail size={16} />
-                    <Text>Email</Text>
-                  </Group>
-                }
-                type="email"
-                value={formData.email}
-                disabled
-                styles={{
-                  input: {
-                    backgroundColor: 'var(--mantine-color-gray-0)',
-                    color: 'var(--mantine-color-gray-5)',
-                  },
-                }}
-              />
-              <Text size="xs" c="dimmed">Email cannot be changed</Text>
+        <Divider />
 
-              <TextInput
-                label={
-                  <Group gap="xs">
-                    <IconPhone size={16} />
-                    <Text>Phone Number</Text>
-                  </Group>
-                }
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="(555) 123-4567"
-              />
+        {/* Personal Information Section */}
+        <Box>
+          <Group gap="md" mb="md">
+            <ThemeIcon size="xl" radius="lg" color="blue" variant="light">
+              <IconUser size={24} />
+            </ThemeIcon>
+            <Box>
+              <Title order={4} fw={700} c="dark">Personal Information</Title>
+              <Text size="sm" c="dimmed">Update your personal details</Text>
+            </Box>
+          </Group>
+          <Stack gap="md">
+            <Grid gutter="md">
+              <Grid.Col span={6}>
+                <TextInput
+                  label="First Name"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="First name"
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <TextInput
+                  label="Last Name"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Last name"
+                />
+              </Grid.Col>
+            </Grid>
 
-              <TextInput
-                label={
-                  <Group gap="xs">
-                    <IconCalendar size={16} />
-                    <Text>Date of Birth</Text>
-                  </Group>
-                }
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-              />
-            </Stack>
-          </Card.Section>
-        </Card>
+            <TextInput
+              label={
+                <Group gap="xs">
+                  <IconMail size={16} />
+                  <Text>Email</Text>
+                </Group>
+              }
+              type="email"
+              value={formData.email}
+              disabled
+              styles={{
+                input: {
+                  backgroundColor: 'var(--mantine-color-gray-0)',
+                  color: 'var(--mantine-color-gray-5)',
+                },
+              }}
+            />
+            <Text size="xs" c="dimmed">Email cannot be changed</Text>
 
-        <Card shadow="sm" radius="lg" withBorder>
-          <Card.Section p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-            <Group gap="md" mb="md">
-              <ThemeIcon size="xl" radius="lg" color="green" variant="light">
-                <IconMapPin size={24} />
-              </ThemeIcon>
-              <Box>
-                <Title order={4} fw={700} c="dark">Address</Title>
-                <Text size="sm" c="dimmed">Your current address</Text>
-              </Box>
-            </Group>
-          </Card.Section>
-          <Card.Section p="md">
-            <Stack gap="md">
-              <TextInput
-                label="Street Address"
-                value={formData.streetAddress}
-                onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
-                placeholder="123 Main St"
-              />
+            <TextInput
+              label={
+                <Group gap="xs">
+                  <IconPhone size={16} />
+                  <Text>Phone Number</Text>
+                </Group>
+              }
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="(555) 123-4567"
+            />
 
-              <Grid gutter="md">
-                <Grid.Col span={6}>
-                  <TextInput
-                    label="City"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="City"
-                  />
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <TextInput
-                    label="State"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="State"
-                  />
-                </Grid.Col>
-              </Grid>
+            <TextInput
+              label={
+                <Group gap="xs">
+                  <IconCalendar size={16} />
+                  <Text>Date of Birth</Text>
+                </Group>
+              }
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+            />
+          </Stack>
+        </Box>
 
-              <TextInput
-                label="Zip Code"
-                value={formData.zipCode}
-                onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                placeholder="12345"
-              />
-            </Stack>
-          </Card.Section>
-        </Card>
+        <Divider />
+
+        {/* Address Section */}
+        <Box>
+          <Group gap="md" mb="md">
+            <ThemeIcon size="xl" radius="lg" color="green" variant="light">
+              <IconMapPin size={24} />
+            </ThemeIcon>
+            <Box>
+              <Title order={4} fw={700} c="dark">Address</Title>
+              <Text size="sm" c="dimmed">Your current address</Text>
+            </Box>
+          </Group>
+          <Stack gap="md">
+            <TextInput
+              label="Street Address"
+              value={formData.streetAddress}
+              onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+              placeholder="123 Main St"
+            />
+
+            <Grid gutter="md">
+              <Grid.Col span={6}>
+                <TextInput
+                  label="City"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="City"
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <TextInput
+                  label="State"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  placeholder="State"
+                />
+              </Grid.Col>
+            </Grid>
+
+            <TextInput
+              label="Zip Code"
+              value={formData.zipCode}
+              onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+              placeholder="12345"
+            />
+          </Stack>
+        </Box>
       </Stack>
 
       {/* Android Bottom Bar */}
