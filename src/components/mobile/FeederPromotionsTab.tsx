@@ -201,16 +201,16 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-orange-5))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="white" />
+      <Box h="100vh" w="100%" style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-orange-5))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {
@@ -224,17 +224,17 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
             }
           }}
           variant="subtle"
-          color="white"
+          color="dark"
         >
           <IconMenu2 size={24} />
         </ActionIcon>
-        <Title order={1} c="orange.3" fw={700} style={{ letterSpacing: '0.05em' }}>PROMOS</Title>
+        <Title order={1} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>PROMOS</Title>
         <ActionIcon
           onClick={() => {
             window.location.href = '/mobile?tab=messages';
           }}
           variant="subtle"
-          color="white"
+          color="dark"
         >
           <img src="/app-chat.png" alt="Messages" style={{ width: '28px', height: '28px' }} />
         </ActionIcon>
@@ -254,8 +254,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
           size="md"
           styles={{
             root: {
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(4px)',
+              backgroundColor: 'var(--mantine-color-gray-2)',
               padding: '4px',
             },
             indicator: {
@@ -263,7 +262,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
               color: 'var(--mantine-color-red-7)',
             },
             label: {
-              color: 'white',
+              color: 'var(--mantine-color-dark-7)',
               fontWeight: 700,
             },
           }}
@@ -275,8 +274,8 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
         {activeTab === 'promos' && (
           <Stack gap="md">
             <Group gap="xs" mb="md">
-              <IconFlame size={20} color="var(--mantine-color-yellow-3)" />
-              <Title order={3} c="white" fw={700} style={{ letterSpacing: '0.05em' }}>ACTIVE NOW</Title>
+              <IconFlame size={20} color="var(--mantine-color-orange-6)" />
+              <Title order={3} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>ACTIVE NOW</Title>
             </Group>
             
             {promotions.length > 0 ? promotions.map((promo, idx) => (
@@ -370,8 +369,8 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
         {activeTab === 'challenges' && (
           <Stack gap="md">
             <Group gap="xs" mb="md">
-              <IconTarget size={20} color="var(--mantine-color-yellow-3)" />
-              <Title order={3} c="white" fw={700} style={{ letterSpacing: '0.05em' }}>YOUR CHALLENGES</Title>
+              <IconTarget size={20} color="var(--mantine-color-orange-6)" />
+              <Title order={3} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>YOUR CHALLENGES</Title>
             </Group>
 
             {challenges.length > 0 ? challenges.map((challenge) => {

@@ -27,6 +27,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
+  const navigationControlAdded = useRef<boolean>(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
@@ -186,17 +187,31 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           style: MAPBOX_CONFIG.style,
           center: initialCenter,
           zoom: MAPBOX_CONFIG.zoom,
+          attributionControl: false, // Disable the default attribution (i) button
         });
 
         map.current.on('load', () => {
           setIsMapReady(true);
           if (map.current) {
-            try {
-              const ctrl = new (window as any).mapboxgl.NavigationControl({ visualizePitch: true });
-              map.current.addControl(ctrl, 'top-right');
-            } catch (error) {
-              console.error('Failed to add navigation control', error);
+            // Add navigation control only once
+            if (!navigationControlAdded.current) {
+              try {
+                // Remove any existing navigation controls first
+                const existingControls = map.current.getContainer().querySelectorAll('.mapboxgl-ctrl-group');
+                existingControls.forEach((ctrl: any) => {
+                  if (ctrl.closest('.mapboxgl-ctrl-top-right')) {
+                    ctrl.remove();
+                  }
+                });
+                
+                const ctrl = new (window as any).mapboxgl.NavigationControl({ visualizePitch: true });
+                map.current.addControl(ctrl, 'top-right');
+                navigationControlAdded.current = true;
+              } catch (error) {
+                console.error('Failed to add navigation control', error);
+              }
             }
+            
             // Wait for style to be fully loaded before adding zones
             if (map.current.isStyleLoaded()) {
               updateZoneLayers(zones);
@@ -261,6 +276,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       if (map.current) {
         map.current.remove();
         map.current = null;
+        navigationControlAdded.current = false;
       }
     };
   }, []); // Only run once on mount

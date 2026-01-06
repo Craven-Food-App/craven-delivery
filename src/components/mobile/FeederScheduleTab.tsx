@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { IconMenu2, IconMapPin, IconPencil, IconX, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,8 +15,8 @@ import {
   Modal,
   TextInput,
   Grid,
-  RingProgress,
 } from '@mantine/core';
+import { NextShiftCountdown } from '@/components/driver/NextShiftCountdown';
 
 type FeederScheduleTabProps = {
   onOpenMenu?: () => void;
@@ -35,6 +35,7 @@ type ScheduleRecord = {
 type SurgeZone = {
   id: string;
   zone_name: string;
+  city?: string;
   surge_multiplier: number;
 };
 
@@ -48,11 +49,15 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
   const [surgeZones, setSurgeZones] = useState<SurgeZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeToNextShift, setTimeToNextShift] = useState<{ hours: number; minutes: number } | null>(null);
+  const [nextShiftDateTime, setNextShiftDateTime] = useState<Date | null>(null);
+  const [nextShiftScheduledAt, setNextShiftScheduledAt] = useState<Date | null>(null);
+  const prevShiftTimeRef = useRef<number | null>(null);
   const [viewMode, setViewMode] = useState<'schedule' | 'available' | 'scheduled'>('available');
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ zone: string; city: string; startTime: string; endTime: string; displayStart: string; displayEnd: string } | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState('09:00');
   const [selectedEndTime, setSelectedEndTime] = useState('17:00');
+  const [userCity, setUserCity] = useState<string>('');
 
   const weekDays = useMemo(() => {
     const days = [];
@@ -100,11 +105,28 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
       }
       
       const fetchedSchedules = data || [];
-      setSchedules(fetchedSchedules);
-      
-      if (fetchedSchedules.length === 0) {
-        setTimeToNextShift(null);
+      console.log('📅 [Schedule] Fetched schedules:', fetchedSchedules.length);
+      if (fetchedSchedules.length > 0) {
+        console.log('📅 [Schedule] Schedule details:', fetchedSchedules.map(s => ({
+          id: s.id,
+          day_of_week: s.day_of_week,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          is_active: s.is_active,
+          is_recurring: s.is_recurring
+        })));
       }
+      
+      // Immediately clear countdown if no schedules
+      if (fetchedSchedules.length === 0) {
+        console.log('📅 [Schedule] No schedules found, clearing countdown immediately');
+        setTimeToNextShift(null);
+        setNextShiftDateTime(null);
+        setNextShiftScheduledAt(null);
+        prevShiftTimeRef.current = null;
+      }
+      
+      setSchedules(fetchedSchedules);
     } catch (error) {
       console.error('Error fetching schedules:', error);
       notifications.show({
@@ -115,123 +137,215 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
     }
   }, []);
 
+  const fetchUserCity = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Try to get city from drivers table first
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('city')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+
+      if (driverData?.city) {
+        setUserCity(driverData.city);
+        return;
+      }
+
+      // Fallback: try to get from driver_profiles or use geolocation
+      // For now, we'll use a generic fallback if no city is found
+      setUserCity('');
+    } catch (error) {
+      console.error('Error fetching user city:', error);
+      setUserCity('');
+    }
+  }, []);
+
   const fetchSurgeZones = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('driver_surge_zones')
-        .select('id, zone_name, surge_multiplier')
+        .select('id, zone_name, city, surge_multiplier')
         .eq('is_active', true)
         .order('surge_multiplier', { ascending: false })
-        .limit(1);
+        .limit(10);
 
       if (error) throw error;
-      setSurgeZones(data || []);
+      
+      // Ensure city has a default value - use user's city if available
+      const zonesWithCity = (data || []).map(zone => ({
+        ...zone,
+        city: zone.city || userCity || '' // Use zone city, then user city, then empty
+      }));
+      
+      setSurgeZones(zonesWithCity);
     } catch (error) {
       console.error('Error fetching surge zones:', error);
     }
-  }, []);
+  }, [userCity]);
 
   useEffect(() => {
     if (loading) {
       return;
     }
 
+    // Strict check: if no schedules or empty array, clear everything
     if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
       setTimeToNextShift(null);
+      setNextShiftDateTime(null);
+      setNextShiftScheduledAt(null);
+      prevShiftTimeRef.current = null;
       return;
     }
 
+    // Double-check: filter for active schedules only
     const activeSchedules = schedules.filter(s => s && s.is_active === true);
     if (activeSchedules.length === 0) {
       setTimeToNextShift(null);
+      setNextShiftDateTime(null);
+      setNextShiftScheduledAt(null);
+      prevShiftTimeRef.current = null;
       return;
     }
 
     const calculateTimeToNextShift = () => {
-      if (!schedules || schedules.length === 0 || activeSchedules.length === 0) {
+      // Strict validation: ensure we have valid active schedules
+      if (!schedules || !Array.isArray(schedules) || schedules.length === 0 || activeSchedules.length === 0) {
         setTimeToNextShift(null);
+        setNextShiftDateTime(null);
+        setNextShiftScheduledAt(null);
+        prevShiftTimeRef.current = null;
         return;
       }
 
+      // Get CURRENT time from feeder's device (precise to the millisecond)
       const now = new Date();
-      const currentDay = now.getDay();
-      const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowMs = now.getTime();
 
-      const parseTime = (timeStr: string): { hour: number; minute: number } => {
+      const parseTime = (timeStr: string): { hour: number; minute: number; second: number } => {
         const parts = timeStr.split(':');
         return {
           hour: parseInt(parts[0], 10),
-          minute: parseInt(parts[1] || '0', 10)
+          minute: parseInt(parts[1] || '0', 10),
+          second: parseInt(parts[2] || '0', 10)
         };
       };
 
       let nextShiftDateTime: Date | null = null;
       let minDiffMs = Infinity;
 
+      // Look ahead 14 days for the next shift
       for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+        // Create a new date for this day offset
         const checkDate = new Date(now);
         checkDate.setDate(now.getDate() + dayOffset);
-        checkDate.setHours(0, 0, 0, 0);
-        const checkDay = checkDate.getDay();
+        checkDate.setHours(0, 0, 0, 0); // Reset to midnight
+        const checkDay = checkDate.getDay(); // 0-6 (Sun-Sat)
         
+        // Find all shifts scheduled for this day of the week
         const dayShifts = activeSchedules
           .filter(s => s.day_of_week === checkDay)
           .sort((a, b) => a.start_time.localeCompare(b.start_time));
         
         for (const shift of dayShifts) {
-          const { hour: startHour, minute: startMin } = parseTime(shift.start_time);
+          const { hour: startHour, minute: startMin, second: startSec } = parseTime(shift.start_time);
+          
+          // Create precise shift time with year, month, day, hour, minute, second
           const shiftDateTime = new Date(checkDate);
-          shiftDateTime.setHours(startHour, startMin, 0, 0);
+          shiftDateTime.setHours(startHour, startMin, startSec, 0);
+          const shiftMs = shiftDateTime.getTime();
           
-          const diffMs = shiftDateTime.getTime() - now.getTime();
+          // Calculate PRECISE time difference from NOW
+          const diffMs = shiftMs - nowMs;
           
+          // Only consider future shifts
           if (diffMs > 0 && diffMs < minDiffMs) {
+            console.log('📅 [Schedule] Found potential shift:', {
+              dayOfWeek: checkDay,
+              dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][checkDay],
+              shiftTime: shiftDateTime.toISOString(),
+              shiftTimeLocal: shiftDateTime.toLocaleString(),
+              currentTime: now.toISOString(),
+              currentTimeLocal: now.toLocaleString(),
+              startTime: shift.start_time,
+              endTime: shift.end_time,
+              diffMs,
+              diffHours: Math.floor(diffMs / (1000 * 60 * 60)),
+              diffMinutes: Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)),
+              scheduleId: shift.id
+            });
             minDiffMs = diffMs;
             nextShiftDateTime = shiftDateTime;
           }
         }
       }
+      
 
-      if (!nextShiftDateTime && activeSchedules.length > 0) {
-        const sortedSchedules = [...activeSchedules].sort((a, b) => {
-          if (a.day_of_week !== b.day_of_week) {
-            return a.day_of_week - b.day_of_week;
-          }
-          return a.start_time.localeCompare(b.start_time);
+      // Removed fallback logic - if we checked 14 days and found nothing, there are no future shifts
+      // The fallback was creating false positives when no shifts exist
+
+      // Only proceed if we found a valid future shift
+      if (nextShiftDateTime) {
+        // Recalculate from current time for precision
+        const currentNow = new Date();
+        const diffMs = nextShiftDateTime.getTime() - currentNow.getTime();
+        
+        console.log('📅 [Schedule] Selected next shift:', {
+          shiftTime: nextShiftDateTime.toISOString(),
+          shiftTimeLocal: nextShiftDateTime.toLocaleString(),
+          currentTime: currentNow.toISOString(),
+          currentTimeLocal: currentNow.toLocaleString(),
+          diffMs,
+          diffHours: Math.floor(diffMs / (1000 * 60 * 60)),
+          diffMinutes: Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)),
+          activeSchedulesCount: activeSchedules.length
         });
         
-        if (sortedSchedules.length > 0) {
-          const earliestShift = sortedSchedules[0];
-          const { hour: startHour, minute: startMin } = parseTime(earliestShift.start_time);
-          nextShiftDateTime = new Date(now);
-          
-          let daysUntil = (earliestShift.day_of_week - currentDay + 7) % 7;
-          if (daysUntil === 0) {
-            const shiftTimeMinutes = startHour * 60 + startMin;
-            if (shiftTimeMinutes <= currentTimeMinutes) {
-              daysUntil = 7;
-            }
-          }
-          
-          nextShiftDateTime.setDate(now.getDate() + daysUntil);
-          nextShiftDateTime.setHours(startHour, startMin, 0, 0);
-        }
-      }
-
-      if (nextShiftDateTime) {
-        const diffMs = nextShiftDateTime.getTime() - now.getTime();
-        
-        if (diffMs > 0) {
-          const totalMinutes = Math.floor(diffMs / (1000 * 60));
+        // Ensure the shift is actually in the future (at least 1 minute away)
+        if (diffMs > 60000) { // More than 1 minute in the future
+          // Calculate precise time remaining
+          const totalSeconds = Math.floor(diffMs / 1000);
+          const totalMinutes = Math.floor(totalSeconds / 60);
           const diffHours = Math.floor(totalMinutes / 60);
           const diffMinutes = totalMinutes % 60;
           
+          console.log('✅ [Schedule] Setting countdown:', {
+            hours: diffHours,
+            minutes: diffMinutes,
+            totalSeconds
+          });
+          
           setTimeToNextShift({ hours: diffHours, minutes: diffMinutes });
+          
+          // Check if this is a different shift than before
+          const currentShiftTime = nextShiftDateTime.getTime();
+          const isNewShift = prevShiftTimeRef.current === null || 
+            prevShiftTimeRef.current !== currentShiftTime;
+          
+          if (isNewShift) {
+            console.log('📅 [Schedule] New shift detected, setting scheduledAt');
+            setNextShiftScheduledAt(new Date());
+            prevShiftTimeRef.current = currentShiftTime;
+          }
+          
+          setNextShiftDateTime(nextShiftDateTime);
         } else {
+          // Shift is in the past or too close, clear everything
+          console.log('⚠️ [Schedule] Shift is in past or too close, clearing');
           setTimeToNextShift(null);
+          setNextShiftDateTime(null);
+          setNextShiftScheduledAt(null);
+          prevShiftTimeRef.current = null;
         }
       } else {
+        // No shift found, clear everything
+        console.log('📅 [Schedule] No future shift found after checking 14 days, clearing countdown');
         setTimeToNextShift(null);
+        setNextShiftDateTime(null);
+        setNextShiftScheduledAt(null);
+        prevShiftTimeRef.current = null;
       }
     };
 
@@ -247,8 +361,10 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchSchedules(), fetchSurgeZones()]).finally(() => {
-      setLoading(false);
+    fetchUserCity().then(() => {
+      Promise.all([fetchSchedules(), fetchSurgeZones()]).finally(() => {
+        setLoading(false);
+      });
     });
 
     const handleScheduleUpdate = () => {
@@ -259,7 +375,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
     return () => {
       window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
     };
-  }, [fetchSchedules, fetchSurgeZones]);
+  }, [fetchSchedules, fetchSurgeZones, fetchUserCity]);
 
   useEffect(() => {
     if (!loading && (!schedules || schedules.length === 0)) {
@@ -284,16 +400,66 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
           return `${displayHour}:${minutes} ${ampm}`;
         };
 
-        const location = surgeZones.length > 0 ? surgeZones[0].zone_name : 'Downtown';
+        const zone = surgeZones.length > 0 ? surgeZones[0] : null;
+        const location = zone?.zone_name || 'Downtown';
+        const city = zone?.city || userCity || ''; // Use zone city, then user city
 
         return {
           time: `${formatTime(shift.start_time)} – ${formatTime(shift.end_time)}`,
           location: location,
+          city: city,
           id: shift.id,
           scheduleRecord: shift
         };
       })
       .sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  const handleClearAllSchedules = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        notifications.show({
+          title: 'Please sign in',
+          message: '',
+          color: 'red',
+        });
+        return;
+      }
+
+      console.log('🗑️ [Schedule] Clearing all schedules for user:', user.id);
+
+      const { error } = await supabase
+        .from('driver_schedules')
+        .delete()
+        .eq('driver_id', user.id);
+
+      if (error) throw error;
+
+      console.log('✅ [Schedule] All schedules cleared');
+      
+      // Immediately clear state
+      setSchedules([]);
+      setTimeToNextShift(null);
+      setNextShiftDateTime(null);
+      setNextShiftScheduledAt(null);
+      prevShiftTimeRef.current = null;
+
+      notifications.show({
+        title: 'All schedules cleared',
+        message: '',
+        color: 'green',
+      });
+
+      await fetchSchedules();
+    } catch (error) {
+      console.error('❌ [Schedule] Error clearing schedules:', error);
+      notifications.show({
+        title: 'Failed to clear schedules',
+        message: '',
+        color: 'red',
+      });
+    }
   };
 
   const handleDeleteShift = async (shiftId: string) => {
@@ -383,84 +549,66 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
     }
   };
 
-  const timeSlots = useMemo(() => {
-    const slots = [];
-    for (let hour = 0; hour < 24; hour++) {
-      const startHour = hour.toString().padStart(2, '0');
-      const endHour = ((hour + 1) % 24).toString().padStart(2, '0');
-      const formatTime = (h: string) => {
-        const hNum = parseInt(h);
-        const ampm = hNum >= 12 ? 'PM' : 'AM';
-        const displayHour = hNum % 12 || 12;
-        return `${displayHour}:00 ${ampm}`;
-      };
-      slots.push({
-        start: `${startHour}:00`,
-        end: `${endHour}:00`,
-        displayStart: formatTime(startHour),
-        displayEnd: formatTime(endHour)
-      });
-    }
-    return slots;
-  }, []);
+  // DoorDash-style predefined shift slots (3-hour blocks aligned to meal times)
+  const SHIFT_SLOTS = useMemo(() => [
+    { id: 'slot-0', startTime: '06:00', endTime: '09:00', displayStart: '6:00 AM', displayEnd: '9:00 AM' },
+    { id: 'slot-1', startTime: '09:00', endTime: '12:00', displayStart: '9:00 AM', displayEnd: '12:00 PM' },
+    { id: 'slot-2', startTime: '10:00', endTime: '13:00', displayStart: '10:00 AM', displayEnd: '1:00 PM' },
+    { id: 'slot-3', startTime: '12:00', endTime: '15:00', displayStart: '12:00 PM', displayEnd: '3:00 PM' },
+    { id: 'slot-4', startTime: '14:00', endTime: '17:00', displayStart: '2:00 PM', displayEnd: '5:00 PM' },
+    { id: 'slot-5', startTime: '15:00', endTime: '18:00', displayStart: '3:00 PM', displayEnd: '6:00 PM' },
+    { id: 'slot-6', startTime: '17:30', endTime: '20:00', displayStart: '5:30 PM', displayEnd: '8:00 PM' },
+    { id: 'slot-7', startTime: '18:00', endTime: '21:00', displayStart: '6:00 PM', displayEnd: '9:00 PM' },
+    { id: 'slot-8', startTime: '20:30', endTime: '23:00', displayStart: '8:30 PM', displayEnd: '11:00 PM' },
+    { id: 'slot-9', startTime: '21:00', endTime: '24:00', displayStart: '9:00 PM', displayEnd: '12:00 AM' }
+  ], []);
+
+  const timeSlots = SHIFT_SLOTS;
 
   const getAvailableShifts = useMemo(() => {
     const selectedDayOfWeek = weekDays[activeDay]?.dayOfWeek || today.getDay();
     const availableShifts = [];
     
-    surgeZones.forEach(zone => {
-      timeSlots.forEach(slot => {
-        const conflicts = schedules.some(s => {
-          if (s.day_of_week !== selectedDayOfWeek || !s.is_active) return false;
-          const [sStartHour] = s.start_time.split(':').map(Number);
-          const [sEndHour] = s.end_time.split(':').map(Number);
-          const [slotStartHour] = slot.start.split(':').map(Number);
-          const [slotEndHour] = slot.end.split(':').map(Number);
-          
-          return (slotStartHour >= sStartHour && slotStartHour < sEndHour) ||
-                 (slotEndHour > sStartHour && slotEndHour <= sEndHour) ||
-                 (slotStartHour <= sStartHour && slotEndHour >= sEndHour);
-        });
+    // Get primary zone (first/highest priority surge zone) or use fallback
+    const primaryZone = surgeZones.length > 0 ? surgeZones[0] : null;
+    const defaultZone = primaryZone?.zone_name || 'Downtown';
+    const defaultCity = primaryZone?.city || userCity || '';
+    
+    // Check each predefined slot for conflicts
+    timeSlots.forEach(slot => {
+      const conflicts = schedules.some(s => {
+        if (s.day_of_week !== selectedDayOfWeek || !s.is_active) return false;
         
-        if (!conflicts) {
-          availableShifts.push({
-            zone: zone.zone_name,
-            startTime: slot.start,
-            endTime: slot.end,
-            displayStart: slot.displayStart,
-            displayEnd: slot.displayEnd
-          });
-        }
+        // Normalize times for comparison
+        const [sStartHour, sStartMin] = s.start_time.split(':').map(Number);
+        const [sEndHour, sEndMin] = s.end_time.split(':').map(Number);
+        const [slotStartHour, slotStartMin] = slot.startTime.split(':').map(Number);
+        const [slotEndHour, slotEndMin] = slot.endTime.split(':').map(Number);
+        
+        const sStartMinutes = sStartHour * 60 + (sStartMin || 0);
+        const sEndMinutes = sEndHour * 60 + (sEndMin || 0);
+        const slotStartMinutes = slotStartHour * 60 + (slotStartMin || 0);
+        const slotEndMinutes = slotEndHour * 60 + (slotEndMin || 0);
+        
+        // Check for overlap
+        return (slotStartMinutes < sEndMinutes && slotEndMinutes > sStartMinutes);
       });
+      
+      if (!conflicts) {
+        availableShifts.push({
+          zone: defaultZone,
+          city: defaultCity,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          displayStart: slot.displayStart,
+          displayEnd: slot.displayEnd,
+          slotId: slot.id
+        });
+      }
     });
     
-    if (availableShifts.length === 0) {
-      timeSlots.forEach(slot => {
-        const conflicts = schedules.some(s => {
-          if (s.day_of_week !== selectedDayOfWeek || !s.is_active) return false;
-          const [sStartHour] = s.start_time.split(':').map(Number);
-          const [sEndHour] = s.end_time.split(':').map(Number);
-          const [slotStartHour] = slot.start.split(':').map(Number);
-          const [slotEndHour] = slot.end.split(':').map(Number);
-          return (slotStartHour >= sStartHour && slotStartHour < sEndHour) ||
-                 (slotEndHour > sStartHour && slotEndHour <= sEndHour) ||
-                 (slotStartHour <= sStartHour && slotEndHour >= sEndHour);
-        });
-        
-        if (!conflicts) {
-          availableShifts.push({
-            zone: 'Downtown',
-            startTime: slot.start,
-            endTime: slot.end,
-            displayStart: slot.displayStart,
-            displayEnd: slot.displayEnd
-          });
-        }
-      });
-    }
-    
     return availableShifts;
-  }, [surgeZones, timeSlots, schedules, activeDay, weekDays, today]);
+  }, [surgeZones, timeSlots, schedules, activeDay, weekDays, today, userCity]);
 
   const handleAvailable = () => {
     setViewMode('available');
@@ -470,7 +618,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
     setViewMode('scheduled');
   };
 
-  const handleEditTimeSlot = (slot: { zone: string; city: string; startTime: string; endTime: string; displayStart: string; displayEnd: string }) => {
+  const handleEditTimeSlot = (slot: { zone: string; city: string; startTime: string; endTime: string; displayStart: string; displayEnd: string; slotId?: string }) => {
     setSelectedSlot(slot);
     setSelectedStartTime(slot.startTime);
     setSelectedEndTime(slot.endTime);
@@ -528,13 +676,26 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
   };
 
   const formatTimeRemaining = () => {
+    // Strict check: if no schedules or no active schedules, show no shifts
     const activeSchedules = schedules.filter(s => s && s.is_active === true);
-    if (!schedules || schedules.length === 0 || activeSchedules.length === 0) {
-      return 'No upcoming shifts';
+    if (!schedules || !Array.isArray(schedules) || schedules.length === 0 || activeSchedules.length === 0) {
+      // Also clear state if it exists but schedules are empty
+      if (timeToNextShift) {
+        setTimeToNextShift(null);
+        setNextShiftDateTime(null);
+        setNextShiftScheduledAt(null);
+        prevShiftTimeRef.current = null;
+      }
+      return (
+        <Text c="white" size="sm" opacity={0.8}>No Shift Scheduled</Text>
+      );
     }
     
+    // If timeToNextShift is null, show no shifts
     if (!timeToNextShift) {
-      return 'No upcoming shifts';
+      return (
+        <Text c="white" size="sm" opacity={0.8}>No Shift Scheduled</Text>
+      );
     }
     
     const { hours, minutes } = timeToNextShift;
@@ -543,28 +704,33 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
       const days = Math.floor(hours / 24);
       const remainingHours = hours % 24;
       if (remainingHours === 0) {
-        return `${days}d remaining`;
+        return (
+          <Text c="white" style={{ fontSize: '2.5rem' }} fw={900}>
+            {days}<Text span style={{ fontSize: '1.75rem' }} fw={700}>d</Text>
+          </Text>
+        );
       }
-      return `${days}d ${remainingHours}h remaining`;
+      return (
+        <Text c="white" style={{ fontSize: '2.5rem' }} fw={900}>
+          {days}<Text span style={{ fontSize: '1.75rem' }} fw={700}>d</Text> {remainingHours}<Text span style={{ fontSize: '1.75rem' }} fw={700}>h</Text>
+        </Text>
+      );
     }
     
     if (hours === 0) {
-      return `${minutes}m remaining`;
+      return (
+        <Text c="white" style={{ fontSize: '2.25rem' }} fw={900}>
+          {minutes}<Text span style={{ fontSize: '1.5rem' }} fw={700}>m</Text>
+        </Text>
+      );
     }
-    return `${hours}h ${minutes}m remaining`;
+    return (
+      <Text c="white" style={{ fontSize: '2.5rem' }} fw={900}>
+        {hours}<Text span style={{ fontSize: '1.75rem' }} fw={700}>h</Text> {minutes}<Text span style={{ fontSize: '1.5rem' }} fw={700}>m</Text>
+      </Text>
+    );
   };
 
-  const progressPercentage = useMemo(() => {
-    if (!timeToNextShift) return 0;
-    
-    const totalMinutes = timeToNextShift.hours * 60 + timeToNextShift.minutes;
-    // Calculate progress: 0% when 24 hours away, 100% when shift starts (0 minutes away)
-    // More intuitive: as time decreases, progress increases
-    const maxMinutes = 24 * 60; // 24 hours in minutes
-    const progress = Math.min(100, Math.max(0, ((maxMinutes - totalMinutes) / maxMinutes) * 100));
-    
-    return Math.round(progress);
-  }, [timeToNextShift]);
 
   const handleNextShiftClick = () => {
     // Find the next shift and scroll to it or highlight it
@@ -641,14 +807,25 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-pink-6))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="white" />
+      <Box h="100vh" w="100%" style={{ 
+        background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-pink-6))', display: 'flex', flexDirection: 'column' }}>
+    <Box h="100vh" w="100%" style={{ 
+      background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
+      display: 'flex', 
+      flexDirection: 'column',
+      overflowY: 'auto',
+      paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))'
+    }}>
       {/* Header - Level with hamburger menu */}
       <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <ActionIcon
@@ -682,7 +859,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
       {/* Container */}
       <Box px="xl">
-        {/* Next Shift Row */}
+        {/* Next Shift Row - Always show, with fallback when no shift */}
         <Box mb="md">
           <Group gap="md" mb="md">
             <Box
@@ -698,65 +875,115 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <RingProgress
-                size={130}
-                thickness={10}
-                sections={timeToNextShift ? [{ value: progressPercentage, color: 'white' }] : []}
-                label={
-                  <Text c="white" size="12px" fw={700} ta="center" style={{ lineHeight: 1.2 }}>
-                    NEXT<br/>SHIFT
-                  </Text>
+              {(() => {
+                // Only show countdown if we have valid future shift data
+                const activeSchedules = schedules.filter(s => s && s.is_active === true);
+                const hasValidShift = schedules && Array.isArray(schedules) && schedules.length > 0 && 
+                                     activeSchedules.length > 0 && 
+                                     timeToNextShift && 
+                                     nextShiftDateTime && 
+                                     nextShiftScheduledAt;
+                
+                // Double-check: ensure the shift is actually in the future
+                if (hasValidShift) {
+                  const now = new Date();
+                  const shiftTime = new Date(nextShiftDateTime);
+                  if (shiftTime.getTime() <= now.getTime()) {
+                    // Shift is in the past, show fallback
+                    return (
+                      <Box style={{ width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text c="white" size="12px" fw={700} ta="center" style={{ lineHeight: 1.2 }}>
+                          NEXT<br/>SHIFT
+                        </Text>
+                      </Box>
+                    );
+                  }
+                  
+                  // Valid future shift - show countdown
+                  return (
+                    <NextShiftCountdown
+                      nextShiftTime={nextShiftDateTime}
+                      scheduledAt={nextShiftScheduledAt}
+                    />
+                  );
                 }
-                styles={{
-                  curve: {
-                    stroke: 'rgba(255,255,255,0.3)',
-                  },
-                }}
-              />
+                
+                // No valid shift - show fallback
+                return (
+                  <Box style={{ width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text c="white" size="12px" fw={700} ta="center" style={{ lineHeight: 1.2 }}>
+                      NEXT<br/>SHIFT
+                    </Text>
+                  </Box>
+                );
+              })()}
             </Box>
             <Box style={{ flex: 1 }}>
               <Text c="white" size="lg" fw={600}>Time To Next Shift</Text>
-              <Text c="white" size="sm" opacity={0.8}>{formatTimeRemaining()}</Text>
+              {formatTimeRemaining()}
             </Box>
           </Group>
-          
-          <Group gap="xs">
-            <Button
-              onClick={handleAvailable}
-              flex={1}
-              color="white"
-              c="red.7"
-              size="sm"
-              radius="xl"
-              fw={700}
-            >
-              Available
-            </Button>
-            <Button
-              onClick={handleScheduled}
-              flex={1}
-              color="white"
-              c="red.7"
-              size="sm"
-              radius="xl"
-              fw={700}
-            >
-              Scheduled
-            </Button>
-          </Group>
         </Box>
+        
+        <Group gap="xs">
+          <Button
+            onClick={handleAvailable}
+            flex={1}
+            color="white"
+            c="red.7"
+            size="sm"
+            radius="xl"
+            fw={700}
+          >
+            Available
+          </Button>
+          <Button
+            onClick={handleScheduled}
+            flex={1}
+            color="white"
+            c="red.7"
+            size="sm"
+            radius="xl"
+            fw={700}
+          >
+            Scheduled
+          </Button>
+          {schedules.length > 0 && (
+            <Button
+              onClick={handleClearAllSchedules}
+              color="red"
+              size="sm"
+              radius="xl"
+              fw={700}
+            >
+              Clear All
+            </Button>
+          )}
+        </Group>
 
         {/* Zone Banner */}
         <Paper p="sm" radius="xl" bg="orange.0" mb="xl" shadow="md">
           <Text c="red.8" fw={700} size="md" ta="center">🔥 High Demand Zone: {highDemandZone.name}</Text>
         </Paper>
 
-        {/* Week Strip */}
-        <Group gap="xs" mb="xl" justify="space-between" wrap="nowrap" style={{ width: '100%' }}>
+        {/* Week Strip - Cool Compact Design */}
+        <Box 
+          mb="xl" 
+          px="xs"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '6px',
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'hidden'
+          }}
+        >
           {weekDays.map((item, index) => {
             const isToday = item.fullDate.toDateString() === today.toDateString();
+            const isSelected = activeDay === index;
             return (
-              <Button
+              <Box
                 key={index}
                 onClick={() => {
                   setActiveDay(index);
@@ -766,31 +993,89 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                     setViewMode('schedule');
                   }
                 }}
-                variant={activeDay === index ? 'filled' : 'light'}
-                color={activeDay === index ? 'red.9' : 'transparent'}
-                c="white"
-                radius="md"
                 style={{
-                  flex: 1,
-                  maxWidth: 'calc((100% - 24px) / 7)',
-                  height: '48px',
-                  padding: '4px 2px',
-                  transform: activeDay === index ? 'scale(1.05)' : 'scale(1)',
-                  backgroundColor: activeDay === index 
-                    ? 'var(--mantine-color-red-9)' 
-                    : 'rgba(255, 255, 255, 0.25)',
-                  border: activeDay === index ? 'none' : '1px solid rgba(255, 255, 255, 0.3)',
-                  borderRadius: '8px',
+                  aspectRatio: '1',
+                  minHeight: '64px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  transform: isSelected ? 'scale(1.08) translateY(-2px)' : 'scale(1)',
+                  background: isSelected
+                    ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+                    : 'rgba(255, 255, 255, 0.15)',
+                  border: isSelected 
+                    ? '2px solid rgba(255, 255, 255, 0.4)' 
+                    : '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: isSelected
+                    ? '0 4px 12px rgba(220, 38, 38, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1)'
+                    : '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  backdropFilter: 'blur(8px)',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
-                <Stack gap={2} align="center" justify="center" style={{ height: '100%', width: '100%' }}>
-                  <Text size="xs" fw={700} c="white" style={{ lineHeight: 1, opacity: 0.95, fontSize: '9px', letterSpacing: '0.3px' }}>{item.day}</Text>
-                  <Text size="lg" fw={900} c="white" style={{ lineHeight: 1, fontSize: '16px' }}>{item.date}</Text>
-                </Stack>
-              </Button>
+                {/* Subtle glow effect for selected */}
+                {isSelected && (
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: '-50%',
+                      left: '-50%',
+                      width: '200%',
+                      height: '200%',
+                      background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)',
+                      pointerEvents: 'none'
+                    }}
+                  />
+                )}
+                <Text 
+                  size="xs" 
+                  fw={700} 
+                  c="white" 
+                  style={{ 
+                    lineHeight: 1, 
+                    fontSize: '10px', 
+                    letterSpacing: '0.5px',
+                    opacity: isSelected ? 1 : 0.9,
+                    marginBottom: '2px'
+                  }}
+                >
+                  {item.day}
+                </Text>
+                <Text 
+                  size="lg" 
+                  fw={900} 
+                  c="white" 
+                  style={{ 
+                    lineHeight: 1, 
+                    fontSize: isSelected ? '20px' : '18px',
+                    textShadow: isSelected ? '0 1px 2px rgba(0, 0, 0, 0.2)' : 'none'
+                  }}
+                >
+                  {item.date}
+                </Text>
+                {/* Today indicator dot */}
+                {isToday && !isSelected && (
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      bottom: '4px',
+                      width: '4px',
+                      height: '4px',
+                      borderRadius: '50%',
+                      background: 'white',
+                      opacity: 0.8
+                    }}
+                  />
+                )}
+              </Box>
             );
           })}
-        </Group>
+        </Box>
 
         {/* Section Title */}
         {viewMode === 'schedule' && (
@@ -801,10 +1086,10 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
         {viewMode === 'available' && (
           <Group justify="space-between" mb="md">
-            <Title order={3} c="white" fw={700}>
+            <Title order={3} c="black" fw={700}>
               Available Shifts - {weekDays[activeDay]?.day}
             </Title>
-            <Button variant="subtle" color="white" onClick={() => setViewMode('schedule')} size="sm">
+            <Button variant="subtle" color="dark" onClick={() => setViewMode('schedule')} size="sm" c="black">
               Back
             </Button>
           </Group>
@@ -812,10 +1097,10 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
         {viewMode === 'scheduled' && (
           <Group justify="space-between" mb="md">
-            <Title order={3} c="white" fw={700}>
+            <Title order={3} c="black" fw={700}>
               Scheduled Shifts - {weekDays[activeDay]?.day}
             </Title>
-            <Button variant="subtle" color="white" onClick={() => setViewMode('schedule')} size="sm">
+            <Button variant="subtle" color="dark" onClick={() => setViewMode('schedule')} size="sm" c="black">
               Back
             </Button>
           </Group>
@@ -834,7 +1119,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                       <Text c="dark" fw={700} size="lg" mb="xs">{shift.time}</Text>
                       <Group gap="xs">
                         <IconMapPin size={16} color="var(--mantine-color-orange-6)" />
-                        <Text c="orange.8" fw={600}>{shift.location}</Text>
+                        <Text c="orange.8" fw={600}>{shift.location}{shift.city ? `, ${shift.city}` : ''}</Text>
                       </Group>
                     </Box>
                     <ActionIcon
@@ -872,7 +1157,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                       </Text>
                       <Group gap="xs">
                         <IconMapPin size={16} color="var(--mantine-color-orange-6)" />
-                        <Text c="orange.8" fw={600}>{shift.zone}</Text>
+                        <Text c="orange.8" fw={600}>{shift.zone}{shift.city ? `, ${shift.city}` : ''}</Text>
                       </Group>
                     </Box>
                     <ActionIcon
@@ -905,7 +1190,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
                       <Text c="dark" fw={700} size="lg" mb="xs">{shift.time}</Text>
                       <Group gap="xs">
                         <IconMapPin size={16} color="var(--mantine-color-orange-6)" />
-                        <Text c="orange.8" fw={600}>{shift.location}</Text>
+                        <Text c="orange.8" fw={600}>{shift.location}{shift.city ? `, ${shift.city}` : ''}</Text>
                       </Group>
                     </Box>
                     <ActionIcon
@@ -948,7 +1233,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
             <Box>
               <Text size="sm" c="dimmed" mb="xs">Zone: <Text component="span" fw={600} c="dark">{selectedSlot.zone}</Text></Text>
               <Text size="sm" c="dimmed" mb="xs">City: <Text component="span" fw={600} c="dark">{selectedSlot.city}</Text></Text>
-              <Text size="sm" c="dimmed">Available: {selectedSlot.displayStart} – {selectedSlot.displayEnd}</Text>
+              <Text size="sm" c="dimmed" mb="md">Time Slot: {selectedSlot.displayStart} – {selectedSlot.displayEnd}</Text>
             </Box>
 
             <TextInput
@@ -956,6 +1241,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
               type="time"
               value={selectedStartTime}
               onChange={(e) => setSelectedStartTime(e.target.value)}
+              description="Predefined 3-hour shift slot"
             />
 
             <TextInput
@@ -963,6 +1249,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
               type="time"
               value={selectedEndTime}
               onChange={(e) => setSelectedEndTime(e.target.value)}
+              description="Predefined 3-hour shift slot"
             />
 
             <Group gap="md" mt="md">

@@ -623,8 +623,11 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
       <Paper
         px="xl"
         pb="xl"
-        style={{ background: status.gradient, overflow: 'hidden' }}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        style={{ 
+          background: status.gradient, 
+          overflow: 'hidden',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
+        }}
       >
         {/* Diamond sparkle effect */}
         <Box pos="absolute" inset={0} style={{ opacity: 0.3 }}>

@@ -359,10 +359,10 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
                   <Box style={{ flex: 1, textAlign: 'center' }}>
                     <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{perfection}%</Text>
                   </Box>
-                </Group>
+                  </Group>
                 <Group justify="space-between" gap="xs" align="center">
                   <Box style={{ flex: 1, textAlign: 'center' }}>
-                    <Text size="xs" c="dark" fw={600}>Rating</Text>
+                  <Text size="xs" c="dark" fw={600}>Rating</Text>
                   </Box>
                   <Box style={{ width: '1px' }} />
                   <Box style={{ flex: 1, textAlign: 'center' }}>
@@ -373,7 +373,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
                     <Text size="xs" c="dark" fw={600}>Perfect</Text>
                   </Box>
                 </Group>
-              </Stack>
+                </Stack>
             </Paper>
           </Box>
         </Box>
@@ -418,7 +418,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
             const IconComponent = item.icon;
             const isMessagesItem = item.path === 'messages';
             return (
-                <Button
+              <Button
                 key={idx}
                 onClick={() => handleMenuClick(item.path)}
                 variant={isActive ? 'filled' : 'subtle'}

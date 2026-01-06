@@ -207,16 +207,16 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-orange-5))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="white" />
+      <Box h="100vh" w="100%" style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom, var(--mantine-color-red-6), var(--mantine-color-orange-6), var(--mantine-color-orange-5))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {
@@ -230,17 +230,17 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
             }
           }}
           variant="subtle"
-          color="white"
+          color="dark"
         >
           <IconMenu2 size={24} />
         </ActionIcon>
-        <Title order={1} c="orange.3" fw={700} style={{ letterSpacing: '0.05em' }}>RATINGS</Title>
+        <Title order={1} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>RATINGS</Title>
         <ActionIcon
           onClick={() => {
             window.location.href = '/mobile?tab=messages';
           }}
           variant="subtle"
-          color="white"
+          color="dark"
         >
           <img src="/app-chat.png" alt="Messages" style={{ width: '28px', height: '28px' }} />
         </ActionIcon>
@@ -294,7 +294,7 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
 
       {/* Performance Stats */}
       <Box px="xl" mb="xl">
-        <Title order={3} c="white" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>PERFORMANCE PULSE</Title>
+        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>PERFORMANCE PULSE</Title>
         <Grid gutter="md">
           {[
             { icon: IconClock, label: 'On Time', value: stats.onTime, color: 'blue' },
@@ -323,7 +323,7 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
 
       {/* Rating Breakdown */}
       <Box px="xl" mb="xl">
-        <Title order={3} c="white" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RATING BREAKDOWN</Title>
+        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RATING BREAKDOWN</Title>
         <Paper p="lg" radius="xl" bg="orange.0" shadow="md">
           {ratingBreakdown.length > 0 ? (
             <Stack gap="md">
@@ -370,8 +370,8 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
                 key={filter}
                 onClick={() => setSelectedFilter(filterKey)}
                 variant={isSelected ? 'filled' : 'light'}
-                color={isSelected ? 'white' : 'transparent'}
-                c={isSelected ? 'red.7' : 'white'}
+                color={isSelected ? 'orange' : 'gray'}
+                c={isSelected ? 'white' : 'dark.7'}
                 size="sm"
                 radius="xl"
                 fw={700}
@@ -386,7 +386,7 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
 
       {/* Recent Reviews */}
       <Box px="xl" pb="xl">
-        <Title order={3} c="white" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RECENT REVIEWS</Title>
+        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RECENT REVIEWS</Title>
         {recentReviews.length > 0 ? (
           <Stack gap="md">
             {recentReviews.map((review, idx) => (
