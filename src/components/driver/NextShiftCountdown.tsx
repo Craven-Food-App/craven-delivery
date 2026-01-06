@@ -94,14 +94,14 @@ export const NextShiftCountdown: React.FC<NextShiftCountdownProps> = ({
           cy={center}
           r={radius}
           fill="none"
-          stroke="#FF6B35"
+          stroke="#FFFFFF"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           style={{
             transition: 'stroke-dashoffset 1s linear',
-            filter: 'drop-shadow(0 0 8px rgba(255, 107, 53, 0.6))',
+            filter: 'drop-shadow(0 0 12px rgba(255, 107, 53, 1)) drop-shadow(0 0 20px rgba(255, 107, 53, 0.8))',
           }}
         />
       </svg>
