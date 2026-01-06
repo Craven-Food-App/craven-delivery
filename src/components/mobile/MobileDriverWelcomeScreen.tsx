@@ -50,7 +50,7 @@ const MobileDriverWelcomeScreen: React.FC<MobileDriverWelcomeScreenProps> = ({
     
     checkExistingSession();
   }, [navigate]);
-
+    
   const handleFeedNow = useCallback(() => {
     setShowLogin(true);
   }, []);

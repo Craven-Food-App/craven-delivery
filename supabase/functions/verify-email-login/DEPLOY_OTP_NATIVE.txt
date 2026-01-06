@@ -1,0 +1,139 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map((o) => o.trim());
+  }
+  return [
+    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
+    "https://cravenusa.com",
+    "https://www.cravenusa.com",
+    "https://feeder.cravenusa.com",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+  ];
+};
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
+  };
+};
+
+serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+    );
+
+    const { email, code } = await req.json();
+    console.log("[verify-email-login] Received request - email:", email, "code:", code ? "provided" : "not provided");
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Email is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If no code provided, SEND the OTP code
+    if (!code) {
+      console.log("[verify-email-login] No code provided, sending OTP...");
+      
+      const { data, error } = await supabaseAdmin.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false, // Don't create user, only existing users can login
+        }
+      });
+      
+      if (error) {
+        console.error("[verify-email-login] Error sending OTP:", error);
+        return new Response(
+          JSON.stringify({ error: error.message || "Failed to send verification code" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log("[verify-email-login] OTP code sent successfully");
+      return new Response(
+        JSON.stringify({ 
+          message: "Code sent to email",
+          success: true 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If code provided, VERIFY the OTP code
+    console.log("[verify-email-login] Code provided, verifying OTP...");
+    
+    const { data, error } = await supabaseAdmin.auth.verifyOtp({
+      email: email,
+      token: code,
+      type: "email"
+    });
+
+    if (error) {
+      console.error("[verify-email-login] OTP verification error:", error);
+      return new Response(
+        JSON.stringify({ error: error.message || "Invalid verification code" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!data.session || !data.user) {
+      console.error("[verify-email-login] No session or user returned");
+      return new Response(
+        JSON.stringify({ error: "Verification succeeded but no session created" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("[verify-email-login] OTP verified successfully, user:", data.user.id);
+
+    return new Response(
+      JSON.stringify({ 
+        verified: true,
+        user: {
+          id: data.user.id,
+          email: data.user.email
+        },
+        session: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at
+        },
+        message: "Successfully verified"
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("[verify-email-login] Unhandled error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to verify code";
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
+
+
+

@@ -38,7 +38,7 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       });
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -46,8 +46,8 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: identifier,
-        password,
-      });
+          password,
+        });
 
       if (error) {
         console.error('❌ Auth error:', error);
@@ -59,8 +59,8 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       }
 
       console.log('✅ Signed in! User ID:', data.session.user.id);
-      setLoading(false);
-      
+          setLoading(false);
+
       toast({
         title: "Welcome back!",
         description: "Successfully signed in to your Feeder account.",
@@ -118,35 +118,35 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
           </TabsList>
           
           <TabsContent value="email">
-            <form onSubmit={handleSignIn} className="space-y-5">
-              <div className="space-y-2">
+        <form onSubmit={handleSignIn} className="space-y-5">
+          <div className="space-y-2">
                 <Label htmlFor="login-email" className="text-gray-700 font-medium">
                   Email Address
-                </Label>
-                <Input
+            </Label>
+              <Input
                   id="login-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12 text-base"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12 text-base"
                   disabled={loading}
                 />
-              </div>
-              <div className="space-y-2">
+          </div>
+          <div className="space-y-2">
                 <Label htmlFor="login-password-email" className="text-gray-700 font-medium">
-                  Password
-                </Label>
-                <Input
+              Password
+            </Label>
+              <Input
                   id="login-password-email"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                   className="h-12 text-base"
                   disabled={loading}
-                />
+              />
               </div>
               <Button
                 type="submit"
@@ -181,7 +181,7 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
                   className="h-12 text-base"
                   disabled={loading}
                 />
-              </div>
+            </div>
               <div className="space-y-2">
                 <Label htmlFor="login-password-phone" className="text-gray-700 font-medium">
                   Password
@@ -195,22 +195,22 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
                   className="h-12 text-base"
                   disabled={loading}
                 />
+          </div>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing In...
               </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing In...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-            </form>
+            ) : (
+              'Sign In'
+            )}
+          </Button>
+        </form>
           </TabsContent>
         </Tabs>
       </div>

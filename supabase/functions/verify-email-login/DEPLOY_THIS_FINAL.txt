@@ -1,10 +1,13 @@
+// EXACT SAME PATTERN AS verify-phone-code STEP 2
+// Verifies 6-digit code and signs in the user
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const getAllowedOrigins = (): string[] => {
   const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
   if (envOrigins) {
-    return envOrigins.split(",").map((o) => o.trim());
+    return envOrigins.split(",").map(o => o.trim());
   }
   return [
     "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
@@ -39,12 +42,11 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
     const { email, code } = await req.json();
-    console.log("[verify-email-login] Received request for email:", email, "code:", code);
 
     if (!email || !code) {
       return new Response(
@@ -53,12 +55,10 @@ serve(async (req) => {
       );
     }
 
-    // Verify the code from phone_verifications table
-    let verification = null;
-    let findError = null;
-    
-    // Try with step = 2 filter first
-    const resultWithStep = await supabase
+    console.log(`[verify-email-login] Verifying code for ${email}`);
+
+    // Find the verification record (step 2 = 6-digit code)
+    let { data: verification, error: findError } = await supabase
       .from("phone_verifications")
       .select("*")
       .eq("email", email)
@@ -69,14 +69,9 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
-    
-    verification = resultWithStep.data;
-    findError = resultWithStep.error;
-
-    console.log("[verify-email-login] Step 2 query result:", { found: !!verification, errorCode: findError?.code });
 
     // If step column doesn't exist, retry without it
-    if (findError && (findError.code === "42703" || (findError.message && findError.message.includes("step")))) {
+    if (findError && (findError.message?.includes("step") || findError.code === "42703" || findError.code === "PGRST116")) {
       console.log("[verify-email-login] Step column not found, querying without step filter");
       const retryResult = await supabase
         .from("phone_verifications")
@@ -93,90 +88,82 @@ serve(async (req) => {
       findError = retryResult.error;
     }
 
-    // PGRST116 means no rows found
     if (!verification) {
-      console.log("[verify-email-login] No valid verification found, errorCode:", findError?.code);
+      console.log("[verify-email-login] No valid verification found");
       return new Response(
-        JSON.stringify({ verified: false, error: "Invalid or expired verification code. Please enter the 6-digit code from your email." }),
+        JSON.stringify({ 
+          verified: false, 
+          error: "Invalid or expired verification code. Please enter the 6-digit code from your email." 
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("[verify-email-login] Found verification record:", verification.id);
 
-    // Mark verification as used
-    await supabase.from("phone_verifications").update({ verified: true }).eq("id", verification.id);
+    // Mark as verified
+    await supabase
+      .from("phone_verifications")
+      .update({ verified: true })
+      .eq("id", verification.id);
 
-    // Determine redirect URL - prioritize production, fallback to origin if localhost
-    let redirectUrl = "https://cravenusa.com/mobile"; // Default to production
-    
-    if (origin && origin.includes("localhost")) {
-      // For localhost, use the origin
-      redirectUrl = origin + "/mobile";
-    } else if (origin && (origin.includes("cravenusa.com") || origin.includes("feeder.cravenusa.com"))) {
-      // For production domains, use the origin
-      redirectUrl = origin + "/mobile";
-    }
-    // Otherwise use the default production URL
-    
-    console.log("[verify-email-login] Generating sign-in link for:", email, "redirect:", redirectUrl);
-    
-    const linkResult = await supabase.auth.admin.generateLink({
+    // Generate magic link for this user
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: email,
-      options: { 
-        redirectTo: redirectUrl,
-      },
     });
 
-    if (linkResult.error) {
-      console.error("[verify-email-login] Error generating sign-in link:", linkResult.error);
+    if (linkError) {
+      console.error("[verify-email-login] Error generating link:", linkError);
       
-      // Check if user doesn't exist
-      if (linkResult.error.message && (linkResult.error.message.includes("User not found") || linkResult.error.message.includes("user not found"))) {
+      if (linkError.message?.includes("User not found") || linkError.message?.includes("user not found")) {
         return new Response(
           JSON.stringify({ error: "No account found with this email. Please apply to become a feeder first." }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
-      return new Response(
-        JSON.stringify({ error: "Failed to create session. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw linkError;
     }
 
-    // Extract the action_link from the response
-    const actionLink = linkResult.data?.properties?.action_link;
-    const userId = linkResult.data?.user?.id || "unknown";
-    
+    // Extract token from the action link
+    const actionLink = linkData?.properties?.action_link;
+    console.log("[verify-email-login] Generated action link");
+
     if (!actionLink) {
-      console.error("[verify-email-login] No action_link in linkData:", JSON.stringify(linkResult.data));
-      return new Response(
-        JSON.stringify({ error: "Failed to generate sign-in link. Please try again." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Failed to generate sign-in link");
     }
 
-    console.log("[verify-email-login] Successfully generated sign-in link for user:", userId);
-    console.log("[verify-email-login] Action link:", actionLink);
+    // Extract token from URL
+    let token = null;
+    try {
+      const url = new URL(actionLink);
+      token = url.searchParams.get("token");
+    } catch (e) {
+      console.error("[verify-email-login] Error parsing action link:", e);
+    }
 
+    if (!token) {
+      throw new Error("Failed to extract token from sign-in link");
+    }
+
+    console.log("[verify-email-login] Successfully verified, returning token");
+
+    // Return the token for the frontend to use
     return new Response(
       JSON.stringify({ 
-        verified: true, 
-        signInLink: actionLink, 
-        redirectUrl: redirectUrl,
-        user: { id: userId, email: email }, 
-        message: "Code verified successfully. Signing you in..." 
+        verified: true,
+        token: token,
+        email: email,
+        message: "Code verified! Signing you in..." 
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    console.error("[verify-email-login] Unhandled error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to verify code";
+  } catch (error: any) {
+    console.error("[verify-email-login] Error:", error);
     return new Response(
-      JSON.stringify({ verified: false, error: errorMessage }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ verified: false, error: error.message || "Verification failed" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

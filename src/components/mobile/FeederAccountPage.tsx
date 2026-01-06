@@ -516,37 +516,37 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           }}
         >
           {/* Card Controls - Full Page, No Cards, Stretch End to End */}
-          <Stack gap="md" px={0} mb="xl">
+          <Stack gap="xs" px={0} mb="xl">
             {/* Toggle Card Details */}
             <Box px="xl">
-              <Group justify="space-between" p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="md">
-                  <ThemeIcon size="lg" radius="md" color="blue" variant="light">
-                    {showCardDetails ? <IconEye size={20} /> : <IconEyeOff size={20} />}
+              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
+                <Group gap="sm">
+                  <ThemeIcon size="md" radius="md" color="blue" variant="light">
+                    {showCardDetails ? <IconEye size={18} /> : <IconEyeOff size={18} />}
                   </ThemeIcon>
                   <Box>
-                    <Text fw={700} c="dark">Show Card Details</Text>
+                    <Text fw={700} c="dark" size="sm">Show Card Details</Text>
                     <Text size="xs" c="dimmed">View number, expiry, CVV</Text>
                   </Box>
                 </Group>
                 <Switch
                   checked={showCardDetails}
                   onChange={(e) => setShowCardDetails(e.currentTarget.checked)}
-                  color="blue"
-                  size="lg"
+                  color="orange"
+                  size="md"
                 />
               </Group>
             </Box>
 
             {/* Lock Card */}
             <Box px="xl">
-              <Group justify="space-between" p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="md">
-                  <ThemeIcon size="lg" radius="md" color={isCardLocked ? "red" : "green"} variant="light">
-                    {isCardLocked ? <IconLock size={20} /> : <IconLockOpen size={20} />}
+              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
+                <Group gap="sm">
+                  <ThemeIcon size="md" radius="md" color={isCardLocked ? "red" : "green"} variant="light">
+                    {isCardLocked ? <IconLock size={18} /> : <IconLockOpen size={18} />}
                   </ThemeIcon>
                   <Box>
-                    <Text fw={700} c="dark">{isCardLocked ? "Card Locked" : "Lock Card"}</Text>
+                    <Text fw={700} c="dark" size="sm">{isCardLocked ? "Card Locked" : "Lock Card"}</Text>
                     <Text size="xs" c="dimmed">
                       {isCardLocked ? "Transactions blocked" : "Block all transactions"}
                     </Text>
@@ -555,8 +555,8 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                 <Switch
                   checked={isCardLocked}
                   onChange={(e) => setIsCardLocked(e.currentTarget.checked)}
-                  color={isCardLocked ? "red" : "gray"}
-                  size="lg"
+                  color="orange"
+                  size="md"
                 />
               </Group>
             </Box>
@@ -568,16 +568,16 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                 fullWidth
                 justify="space-between"
                 leftSection={
-                  <ThemeIcon size="lg" radius="md" color="purple" variant="light">
-                    <IconKey size={20} />
+                  <ThemeIcon size="md" radius="md" color="purple" variant="light">
+                    <IconKey size={18} />
                   </ThemeIcon>
                 }
-                rightSection={<IconChevronRight size={20} color="var(--mantine-color-gray-4)" />}
+                rightSection={<IconChevronRight size={18} color="var(--mantine-color-gray-4)" />}
                 onClick={() => setShowPinDialog(true)}
-                style={{ height: 'auto', padding: '12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+                style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
               >
                 <Box>
-                  <Text fw={700} c="dark">Change Card PIN</Text>
+                  <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
                   <Text size="xs" c="dimmed">Set or update your PIN</Text>
                 </Box>
               </Button>
@@ -730,14 +730,14 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom right, var(--mantine-color-orange-0), var(--mantine-color-red-0), var(--mantine-color-pink-0))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box h="100vh" w="100%" style={{ background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom right, var(--mantine-color-orange-0), var(--mantine-color-red-0), var(--mantine-color-pink-0))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" style={{ background: '#ffffff', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Diamond Header */}
       <Paper
         px="xl"
@@ -843,7 +843,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
       </Paper>
 
       {/* Menu Items */}
-      <Stack gap="md" px="xl" py="xl">
+      <Stack gap={0} px={0} py="md">
         {menuItems.map((item, idx) => {
           const colors = getMenuItemColors(item.color);
           const IconComponent = item.icon;
@@ -851,31 +851,38 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
             <Button
               key={idx}
               onClick={item.action || (() => {})}
-              variant="light"
+              variant="subtle"
               fullWidth
-              justify="space-between"
+              justify="flex-start"
               leftSection={
-                <ThemeIcon size="lg" radius="md" color={colors.bg} variant="light">
-                  <IconComponent size={24} />
+                <ThemeIcon size="md" radius="md" color={colors.bg} variant="light">
+                  <IconComponent size={20} />
                 </ThemeIcon>
               }
               rightSection={
-                <Group gap="xs">
+                <Group gap="xs" style={{ marginLeft: 'auto' }}>
                   {item.badge && (
-                    <Badge color="green" variant="light" size="lg" fw={700}>
+                    <Badge color="green" variant="light" size="md" fw={700}>
                       {item.badge}
                     </Badge>
                   )}
-                  <IconChevronRight size={20} color="var(--mantine-color-gray-4)" />
+                  <IconChevronRight size={18} color="var(--mantine-color-gray-4)" />
                 </Group>
               }
-              size="lg"
-              radius="lg"
-              style={{ height: 'auto', padding: '16px' }}
+              size="md"
+              radius={0}
+              style={{ 
+                height: 'auto', 
+                padding: '10px 16px',
+                backgroundColor: '#ffffff',
+                borderTop: idx > 0 ? '1px solid var(--mantine-color-gray-2)' : 'none',
+                borderBottom: '1px solid var(--mantine-color-gray-2)',
+                borderRadius: 0
+              }}
             >
-              <Box style={{ flex: 1, textAlign: 'left' }}>
-                <Text fw={700} c="dark" size="lg">{item.label}</Text>
-                <Text size="sm" c="dimmed">{item.desc}</Text>
+              <Box style={{ flex: 1, textAlign: 'left', width: '100%' }}>
+                <Text fw={700} c="dark" size="sm" style={{ textAlign: 'left' }}>{item.label}</Text>
+                <Text size="xs" c="dimmed" style={{ textAlign: 'left' }}>{item.desc}</Text>
               </Box>
             </Button>
           );
@@ -883,24 +890,31 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
 
         {/* Sign Out Button */}
         <Button
-          variant="light"
+          variant="subtle"
           color="red"
           fullWidth
-          justify="space-between"
+          justify="flex-start"
           leftSection={
-            <ThemeIcon size="lg" radius="md" color="red" variant="light">
-              <IconLogout size={24} />
+            <ThemeIcon size="md" radius="md" color="red" variant="light">
+              <IconLogout size={20} />
             </ThemeIcon>
           }
-          rightSection={<IconChevronRight size={20} color="var(--mantine-color-red-4)" />}
+          rightSection={<IconChevronRight size={18} color="var(--mantine-color-red-4)" style={{ marginLeft: 'auto' }} />}
           onClick={handleSignOut}
-          size="lg"
-          radius="lg"
-          style={{ height: 'auto', padding: '16px', border: '2px solid var(--mantine-color-red-2)' }}
+          size="md"
+          radius={0}
+          style={{ 
+            height: 'auto', 
+            padding: '10px 16px',
+            backgroundColor: '#ffffff',
+            borderTop: '1px solid var(--mantine-color-gray-2)',
+            borderBottom: '1px solid var(--mantine-color-gray-2)',
+            borderRadius: 0
+          }}
         >
-          <Box style={{ flex: 1, textAlign: 'left' }}>
-            <Text fw={700} c="red.6" size="lg">Sign Out</Text>
-            <Text size="sm" c="red.5">Log out of your account</Text>
+          <Box style={{ flex: 1, textAlign: 'left', width: '100%' }}>
+            <Text fw={700} c="red.6" size="sm" style={{ textAlign: 'left' }}>Sign Out</Text>
+            <Text size="xs" c="red.5" style={{ textAlign: 'left' }}>Log out of your account</Text>
           </Box>
         </Button>
       </Stack>
