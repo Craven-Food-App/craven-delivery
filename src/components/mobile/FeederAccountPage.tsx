@@ -128,10 +128,30 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         .eq('user_id', user.id)
         .single();
 
-      // Get user metadata
-      const fullName = user.user_metadata?.full_name || 
-                      user.email?.split('@')[0] || 'Driver';
-      setDriverName(fullName);
+      // Get full name from craver_applications table first, then fallback to user metadata
+      const { data: application } = await supabase
+        .from('craver_applications')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      let fullName = '';
+      if (application?.first_name || application?.last_name) {
+        fullName = [application.first_name, application.last_name].filter(Boolean).join(' ');
+      } else if (user.user_metadata?.full_name) {
+        fullName = user.user_metadata.full_name;
+      } else if (user.user_metadata?.first_name || user.user_metadata?.last_name) {
+        fullName = [user.user_metadata.first_name, user.user_metadata.last_name].filter(Boolean).join(' ');
+      } else if (user.email) {
+        const emailName = user.email.split('@')[0];
+        fullName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+      }
+      
+      if (fullName) {
+        setDriverName(fullName);
+      }
 
       // Set driver stats
       if (driverProfile) {

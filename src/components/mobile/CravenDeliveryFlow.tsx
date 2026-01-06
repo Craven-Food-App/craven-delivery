@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
@@ -338,7 +339,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         phone: orderDetails?.customer_phone || '(555) 555-5555',
       },
       customer: {
-        name: orderDetails?.customer_name || 'Customer',
+        name: formatCustomerNameForDriver(orderDetails?.customer_name) || 'Customer',
         address: formatAddress(orderDetails?.dropoff_address) || '456 Oak Ave',
         deliveryNotes: orderDetails?.delivery_notes || 'Ring doorbell',
         phone: orderDetails?.customer_phone || '(555) 555-1234',

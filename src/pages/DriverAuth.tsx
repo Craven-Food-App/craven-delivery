@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Truck, Car } from "lucide-react";
@@ -43,11 +44,11 @@ interface ApplicationRecord {
 }
 
 const DriverAuth = () => {
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
   const [showBackgroundCheckStatus, setShowBackgroundCheckStatus] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -216,118 +217,36 @@ const DriverAuth = () => {
     }
   };
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('🔐 [DriverAuth] Send code clicked, email:', email);
-    
-    if (!email.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
 
     try {
-      console.log('🔐 [DriverAuth] Sending 6-digit verification code...');
-      
-      // Use the new email verification function (sends 6-digit code directly, skips step 1)
-      const { data, error } = await supabase.functions.invoke("send-email-verification-code", {
-        body: {
-          email: email.trim(),
-        },
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email: loginMethod === "email" ? email : phone,
+        password,
       });
 
-      if (error) {
-        console.error('❌ [DriverAuth] Function error:', error);
-        throw new Error(error.message || "Failed to send verification code.");
-      }
+      if (error) throw error;
 
-      if (data?.error) {
-        console.error('❌ [DriverAuth] OTP send error:', data.error);
-        throw new Error(data.error);
-      }
-
-      console.log('✅ [DriverAuth] Verification code sent successfully');
-      setLoading(false);
-      setCodeSent(true);
+      console.log('✅ [DriverAuth] Signed in! User ID:', data.session.user.id);
       
       toast({
-        title: "Code sent!",
-        description: "Check your email for a 6-digit verification code.",
+        title: "Welcome back!",
+        description: "Successfully signed in to your driver account.",
       });
+
+      // Handle post-login routing
+      await handlePostLoginRouting(data.session.user.id);
     } catch (error: any) {
-      console.error('❌ [DriverAuth] Send code error:', error);
+      console.error('❌ [DriverAuth] Sign in error:', error);
+      toast({
+        title: "Sign In Failed",
+        description: error.message || "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-      toast({
-        title: "Failed to send code",
-        description: error.message || "Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (verificationCode.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter the 6-digit code.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setVerifying(true);
-
-    try {
-      console.log('🔐 [DriverAuth] Verifying 6-digit code...');
-      
-      // Verify the 6-digit code and get sign-in link
-      const { data, error } = await supabase.functions.invoke("verify-email-login", {
-        body: {
-          email: email.trim(),
-          code: verificationCode,
-        },
-      });
-
-      if (error) {
-        console.error('❌ [DriverAuth] Function error:', error);
-        throw new Error(error.message || "Failed to verify code.");
-      }
-
-      if (data?.error) {
-        console.error('❌ [DriverAuth] Verification error:', data.error);
-        throw new Error(data.error);
-      }
-
-      if (data?.verified && data?.signInLink) {
-        console.log('✅ [DriverAuth] Code verified, signing in user...');
-        setVerifying(false);
-        
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in to your driver account.",
-        });
-        
-        console.log('🚀 [DriverAuth] Navigating to sign-in link...');
-        window.location.href = data.signInLink;
-      } else {
-        throw new Error(data?.error || "Invalid verification code.");
-      }
-    } catch (error: any) {
-      console.error('❌ [DriverAuth] Verification error:', error);
-      setVerifying(false);
-      toast({
-        title: "Verification Failed",
-        description: error.message || "Please check the code and try again.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -359,73 +278,98 @@ const DriverAuth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {!codeSent ? (
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="driver@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loading}
-                >
-                  {loading ? "Sending Code..." : "Send Verification Code"}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="text-center mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Enter the 6-digit code sent to
-                  </p>
-                  <p className="font-semibold">{email}</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="verification-code">Verification Code</Label>
-                  <Input
-                    id="verification-code"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    placeholder="------"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="text-center text-2xl tracking-widest font-mono"
-                    required
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={verifying}
-                >
-                  {verifying ? "Verifying..." : "Verify Code"}
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => {
-                    setCodeSent(false);
-                    setVerificationCode('');
-                  }}
-                >
-                  Use different email
-                </Button>
-              </form>
-            )}
+            <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as "email" | "phone")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="phone">Phone</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="email">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="driver@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
+                    {loading ? "Signing In..." : "Sign In"}
+                  </Button>
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground"
+                      onClick={() => navigate('/forgot-password')}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="phone">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-phone">Phone Number</Label>
+                    <Input
+                      id="signin-phone"
+                      type="tel"
+                      placeholder="+1 (555) 000-0000"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password-phone">Password</Label>
+                    <Input
+                      id="signin-password-phone"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loading}
+                  >
+                    {loading ? "Signing In..." : "Sign In"}
+                  </Button>
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground"
+                      onClick={() => navigate('/forgot-password')}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+            </Tabs>
               
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">

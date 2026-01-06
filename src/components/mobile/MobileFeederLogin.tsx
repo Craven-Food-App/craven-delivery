@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -14,32 +15,25 @@ interface MobileFeederLoginProps {
 }
 
 const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSuccess }) => {
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [hasNavigated, setHasNavigated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Prevent double submission
-    if (loading || hasNavigated) return;
+    if (loading) return;
     
-    // Get values from DOM as fallback (in case React state wasn't updated)
-    const emailInput = document.getElementById('login-input') as HTMLInputElement;
+    const identifier = loginMethod === "email" ? email.trim() : phone.trim();
     
-    const emailValue = email.trim() || emailInput?.value?.trim() || '';
-    
-    // Validate inputs
-    if (!emailValue) {
+    if (!identifier || !password) {
       toast({
         title: "Missing Information",
-        description: "Please enter your email address.",
+        description: `Please enter your ${loginMethod} and password.`,
         variant: "destructive",
       });
       return;
@@ -48,185 +42,40 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     setLoading(true);
 
     try {
-      console.log('🔐 Starting sign-in process...');
-      console.log('📧 Sending 6-digit code to email:', emailValue);
+      console.log(`🔐 Signing in with ${loginMethod}:`, identifier);
       
-      // Use the same email verification function as DriverAuth (sends 6-digit code directly)
-      const { data, error } = await supabase.functions.invoke("send-email-verification-code", {
-        body: {
-          email: emailValue,
-        },
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: identifier,
+        password,
       });
 
       if (error) {
-        console.error('❌ Function error:', error);
-        throw new Error(error.message || "Failed to send verification code.");
+        console.error('❌ Auth error:', error);
+        throw new Error(error.message || "Invalid credentials.");
       }
 
-      if (data?.error) {
-        console.error('❌ OTP send error:', data.error);
-        throw new Error(data.error);
+      if (!data?.session) {
+        throw new Error("Sign-in succeeded but no session was created.");
       }
 
-      console.log('✅ Verification code sent successfully');
+      console.log('✅ Signed in! User ID:', data.session.user.id);
       setLoading(false);
-      setCodeSent(true);
       
-      // Show success toast
       toast({
-        title: "Code sent!",
-        description: "Check your email for a 6-digit verification code.",
+        title: "Welcome back!",
+        description: "Successfully signed in to your Feeder account.",
       });
-    } catch (error: any) {
-      console.error('❌ Login error:', error);
-      setLoading(false);
       
-      // Provide user-friendly error messages
-      let errorMessage = "Failed to send verification code. Please try again.";
-      if (error.message?.includes('Too many requests')) {
-        errorMessage = "Too many login attempts. Please wait a moment and try again.";
-      } else if (error.message?.includes('User not found')) {
-        errorMessage = "No account found with this email. Please check your email address.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      // Navigate to dashboard
+      console.log('🚀 Navigating to /mobile...');
+      window.location.href = '/mobile';
+    } catch (error: any) {
+      console.error('❌ Error:', error);
+      setLoading(false);
       
       toast({
         title: "Sign In Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (verifying || hasNavigated) return;
-    
-    const codeValue = verificationCode.trim().replace(/\D/g, ''); // Remove non-digits
-    
-    if (codeValue.length !== 6) {
-      toast({
-        title: "Invalid Code",
-        description: "Please enter the 6-digit code.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setVerifying(true);
-
-    try {
-      console.log('🔐 Verifying code...');
-      
-      // Use the same verify function as DriverAuth
-      const { data, error } = await supabase.functions.invoke("verify-email-login", {
-        body: {
-          email: email.trim(),
-          code: codeValue,
-        },
-      });
-
-      if (error) {
-        console.error('❌ Function error:', error);
-        throw new Error(error.message || "Failed to verify code.");
-      }
-
-      if (data?.error) {
-        console.error('❌ Verification error:', data.error);
-        throw new Error(data.error);
-      }
-
-      if (data?.verified && data?.signInLink) {
-        console.log('✅ Verification successful, signing in...');
-        console.log('🔗 Sign-in link:', data.signInLink);
-        setHasNavigated(true);
-        setVerifying(false);
-        
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in to your Feeder account.",
-        });
-        
-        console.log('🚀 Navigating to sign-in link...');
-        
-        // Try to extract token from magic link URL if it's a Supabase auth URL
-        try {
-          const url = new URL(data.signInLink);
-          const token = url.searchParams.get('token') || url.searchParams.get('access_token');
-          
-          if (token) {
-            // If we have a token, we can sign in directly
-            console.log('🔑 Found token in magic link, signing in directly...');
-            const { error: signInError } = await supabase.auth.setSession({
-              access_token: token,
-              refresh_token: '', // Will be set by Supabase
-            });
-            
-            if (!signInError) {
-              console.log('✅ Signed in successfully, navigating to /mobile');
-              navigate('/mobile', { replace: true });
-              return;
-            }
-          }
-        } catch (e) {
-          console.log('⚠️ Could not parse magic link URL, using direct navigation');
-        }
-        
-        // Fallback: navigate to magic link
-        window.location.href = data.signInLink;
-      } else {
-        throw new Error(data?.error || "Invalid verification code.");
-      }
-    } catch (error: any) {
-      console.error('❌ Verification error:', error);
-      setVerifying(false);
-      
-      let errorMessage = "Invalid verification code. Please try again.";
-      if (error.message?.includes('expired')) {
-        errorMessage = "This code has expired. Please request a new one.";
-      } else if (error.message?.includes('Invalid token')) {
-        errorMessage = "Invalid code. Please check and try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        title: "Verification Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleResendCode = async () => {
-    setCodeSent(false);
-    setVerificationCode('');
-    setLoading(true);
-    
-    try {
-      const emailValue = email.trim();
-      const { data, error } = await supabase.functions.invoke("send-email-verification-code", {
-        body: {
-          email: emailValue,
-        },
-      });
-
-      if (error) throw new Error(error.message || "Failed to resend code.");
-      if (data?.error) throw new Error(data.error);
-
-      setCodeSent(true);
-      setLoading(false);
-      toast({
-        title: "Code resent!",
-        description: "A new 6-digit code has been sent to your email.",
-      });
-    } catch (error: any) {
-      setLoading(false);
-      toast({
-        title: "Failed to resend code",
-        description: error.message || "Please try again.",
+        description: error.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -245,7 +94,7 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
             <span className="font-medium">Back</span>
           </button>
           <img src={cravenLogo} alt="Crave'n" className="h-8" />
-          <div className="w-16"></div> {/* Spacer for centering */}
+          <div className="w-16"></div>
         </div>
       </div>
 
@@ -261,98 +110,109 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
           </p>
         </div>
 
-
-        {/* Login Form */}
-        {!codeSent ? (
-          <form onSubmit={handleSignIn} className="space-y-5">
-            {/* Email Input */}
-            <div className="space-y-2">
-              <Label htmlFor="login-input" className="text-gray-700 font-medium">
-                Email Address
-              </Label>
-              <Input
-                id="login-input"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12 text-base"
+        {/* Login Form with Tabs */}
+        <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as "email" | "phone")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="phone">Phone</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="email">
+            <form onSubmit={handleSignIn} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="login-email" className="text-gray-700 font-medium">
+                  Email Address
+                </Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-12 text-base"
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password-email" className="text-gray-700 font-medium">
+                  Password
+                </Label>
+                <Input
+                  id="login-password-email"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-12 text-base"
+                  disabled={loading}
+                />
+              </div>
+              <Button
+                type="submit"
                 disabled={loading}
-              />
-            </div>
-
-            {/* Sign In Button */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Sending Code...
-                </div>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyCode} className="space-y-5">
-            {/* Verification Code Input */}
-            <div className="space-y-2">
-              <Label htmlFor="verification-code" className="text-gray-700 font-medium">
-                Enter 6-Digit Code
-              </Label>
-              <Input
-                id="verification-code"
-                type="text"
-                inputMode="numeric"
-                placeholder="000000"
-                value={verificationCode}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setVerificationCode(value);
-                }}
-                required
-                className="h-12 text-base text-center text-2xl font-bold tracking-widest"
-                disabled={verifying}
-                autoFocus
-              />
-              <p className="text-sm text-gray-500 text-center">
-                We sent a 6-digit code to <span className="font-semibold">{email}</span>
-              </p>
-            </div>
-
-            {/* Verify Button */}
-            <Button
-              type="submit"
-              disabled={verifying || verificationCode.length !== 6}
-              className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-            >
-              {verifying ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Verifying...
-                </div>
-              ) : (
-                'Verify Code'
-              )}
-            </Button>
-
-            {/* Resend Code */}
-            <button
-              type="button"
-              onClick={handleResendCode}
-              disabled={loading}
-              className="w-full text-center text-sm text-gray-600 hover:text-orange-500 underline disabled:opacity-50"
-            >
-              Didn't receive the code? Resend
-            </button>
-          </form>
-        )}
-
+                className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing In...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="phone">
+            <form onSubmit={handleSignIn} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="login-phone" className="text-gray-700 font-medium">
+                  Phone Number
+                </Label>
+                <Input
+                  id="login-phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="h-12 text-base"
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password-phone" className="text-gray-700 font-medium">
+                  Password
+                </Label>
+                <Input
+                  id="login-password-phone"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-12 text-base"
+                  disabled={loading}
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white text-lg font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing In...
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Android Bottom Bar */}
@@ -362,4 +222,3 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
 };
 
 export default MobileFeederLogin;
-

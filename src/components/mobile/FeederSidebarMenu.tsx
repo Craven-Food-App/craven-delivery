@@ -28,7 +28,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   activeTab = 'home',
   onNavigate
 }) => {
-  const [driverName, setDriverName] = React.useState('Torrance S');
+  const [driverName, setDriverName] = React.useState('');
   const [driverRating, setDriverRating] = React.useState(5.00);
   const [deliveries, setDeliveries] = React.useState(0);
   const [perfection, setPerfection] = React.useState(100);
@@ -59,10 +59,30 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
           setDriverPoints(points);
         }
 
-        // Fetch user metadata for name
+        // Fetch user metadata and profile for full name
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser?.user_metadata?.full_name) {
+        
+        // Try to get full name from craver_applications table first
+        const { data: application } = await supabase
+          .from('craver_applications')
+          .select('first_name, last_name')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (application?.first_name || application?.last_name) {
+          const fullName = [application.first_name, application.last_name].filter(Boolean).join(' ');
+          if (fullName) {
+            setDriverName(fullName);
+          }
+        } else if (authUser?.user_metadata?.full_name) {
           setDriverName(authUser.user_metadata.full_name);
+        } else if (authUser?.user_metadata?.first_name || authUser?.user_metadata?.last_name) {
+          const fullName = [authUser.user_metadata.first_name, authUser.user_metadata.last_name].filter(Boolean).join(' ');
+          if (fullName) {
+            setDriverName(fullName);
+          }
         } else if (authUser?.email) {
           const emailName = authUser.email.split('@')[0];
           setDriverName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
