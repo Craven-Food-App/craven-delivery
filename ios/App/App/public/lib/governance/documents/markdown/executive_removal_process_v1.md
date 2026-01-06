@@ -1,0 +1,543 @@
+# Crave'n Executive Removal Process
+
+**Document Key:** executive_removal_process_v1
+
+**Classification:** Corporate Governance Policy
+
+**Applies To:** All C-Suite Executives (CEO, CFO, CTO, COO, CXO, CMO, CHRO, CCO, CLO, President, Vice Presidents)
+
+**Approved By:** Board of Directors
+
+**Effective Date:** {{effective_date}}
+
+---
+
+## 1. Purpose And Scope
+
+This document defines the formal process for removing C-Suite executives from their positions at Crave'n. It ensures compliance with corporate bylaws, protects company interests, maintains proper governance, and provides clear procedures for both "for cause" and "without cause" terminations.
+
+This process applies to all officers as defined in Article V of the Corporate Bylaws, including but not limited to: Chief Executive Officer, Chief Financial Officer, Chief Technology Officer, Chief Operating Officer, Chief Experience Officer, and other executive officers appointed by the Board.
+
+---
+
+## 2. Legal Authority
+
+**Bylaws Section 5.3 - Removal:**
+- Any officer may be removed, either with or without cause, by the Board at any time
+- Removal does not create contractual rights unless otherwise specified in an employment agreement
+- The appointment of an officer does not of itself create contractual rights
+
+**Board Authority:**
+- Removal requires action by the Board of Directors
+- Board may act by majority vote at a meeting or by written consent
+- CEO may not unilaterally remove other C-Suite executives without Board approval
+
+---
+
+## 3. Grounds For Removal
+
+### 3.1 Removal For Cause
+
+Immediate termination may occur for the following reasons:
+
+**Financial Misconduct:**
+- Misrepresentation of financial data
+- Fraud or embezzlement
+- Intentional manipulation of financial records
+- Violation of financial controls or policies
+- Material breach of fiduciary duties
+
+**Technology/Security Violations:**
+- Misrepresentation of technology data
+- Security violations that compromise company systems
+- Unauthorized access or disclosure of confidential information
+- Intentional sabotage or destruction of company assets
+
+**Ethical And Compliance Violations:**
+- Non-compliance with ethical standards
+- Violation of company code of conduct
+- Harassment, discrimination, or hostile work environment
+- Conflict of interest that materially harms the company
+- Violation of regulatory requirements
+
+**Performance Failures:**
+- Gross negligence in performance of duties
+- Material breach of employment agreement
+- Failure to meet critical performance objectives after written warning
+- Insubordination or refusal to follow lawful Board directives
+
+**Other Material Breaches:**
+- Violation of non-compete or confidentiality agreements
+- Criminal conduct related to company business
+- Actions that materially damage company reputation or operations
+
+### 3.2 Removal Without Cause
+
+The Board may remove an executive without cause at any time, subject to:
+- Terms of any employment agreement
+- Severance provisions
+- Equity vesting agreements
+- Notice period requirements (if any)
+
+Common reasons for removal without cause include:
+- Strategic realignment
+- Performance below expectations (not rising to "for cause")
+- Organizational restructuring
+- Change in company direction
+- Mutual separation
+
+---
+
+## 4. Removal Process
+
+### 4.1 Initiation Phase
+
+**Step 1: Identification of Need**
+- CEO, Board member, or designated officer identifies need for removal
+- Document specific grounds (for cause) or business rationale (without cause)
+- Gather supporting evidence and documentation
+
+**Step 2: Legal Consultation**
+- Consult with corporate counsel regarding:
+  - Validity of grounds (if for cause)
+  - Employment agreement terms
+  - Severance obligations
+  - Notice requirements
+  - Potential legal exposure
+  - Public disclosure requirements
+
+**Step 3: Board Notification**
+- CEO or initiating Board member notifies Board Chair
+- Provide written summary of grounds/rationale
+- Schedule Board meeting or prepare written consent
+
+### 4.2 Board Action Phase
+
+**Step 4: Board Meeting Or Written Consent**
+- Board meeting called with proper notice (or written consent if permitted)
+- Quorum must be present (majority of directors)
+- Executive may be invited to present their case (Board discretion)
+
+**Step 5: Board Deliberation**
+- Board reviews grounds/rationale
+- Reviews employment agreement terms
+- Considers legal counsel recommendations
+- Evaluates business impact and succession planning
+
+**Step 6: Board Vote**
+- Motion to remove executive
+- Vote by majority of directors present (or consenting in writing)
+- Board resolution adopted documenting:
+  - Decision to remove
+  - Effective date of removal
+  - Grounds (if for cause) or rationale (if without cause)
+  - Any severance or transition terms
+
+**Step 7: Resolution Documentation**
+- Board resolution recorded in corporate minutes
+- Resolution stored in `board_resolutions` table
+- Status set to "ADOPTED" or "EXECUTED"
+- All actions logged to `governance_log`
+
+### 4.3 Notification Phase
+
+**Step 8: Written Notice**
+- Executive provided written notice of removal
+- Notice includes:
+  - Effective date of termination
+  - Grounds (if for cause) or statement of removal without cause
+  - Reference to Board resolution
+  - Information regarding final compensation
+  - Severance terms (if applicable)
+  - Benefits continuation information
+  - Return of company property requirements
+  - Ongoing obligations (non-compete, confidentiality)
+
+**Step 9: Transition Planning**
+- Identify interim leadership (if needed)
+- Assign responsibilities to other executives
+- Document knowledge transfer requirements
+- Establish communication plan for stakeholders
+
+### 4.4 System Updates Phase
+
+**Step 10: Employment Status Update**
+- Update `employees` table:
+  - `employment_status` → "terminated"
+  - `termination_date` → effective date
+  - `terminated_by` → user_id of Board Secretary or CEO
+- Log action to `employee_history` table
+
+**Step 11: Executive Record Cleanup**
+- Database triggers automatically handle:
+  - Removal from `exec_users` table (if no historical references)
+  - Removal of "executive" role from `user_roles`
+  - Update of `executive_appointments` status
+- Manual review required for:
+  - Board member status (if executive was also a director)
+  - Officer status in `corporate_officers` table
+  - Executive documents archiving
+
+**Step 12: Access Revocation**
+- IT Administrator revokes system access:
+  - Email account (forward to designated recipient for 30 days, then disable)
+  - Financial systems access (immediate)
+  - Code repositories and development systems
+  - Project management tools
+  - Design and collaboration tools
+  - VPN and network access
+  - Building access (end of last day)
+- Document all access revocations
+
+**Step 13: Document And Asset Return**
+- Executive returns:
+  - Company equipment (laptops, phones, devices)
+  - Access cards and keys
+  - Company credit cards
+  - Confidential documents and materials
+  - Any other company property
+- Document receipt of returned items
+
+### 4.5 Final Settlement Phase
+
+**Step 14: Final Compensation**
+- Calculate final compensation:
+  - Accrued salary through termination date
+  - Unused PTO (if applicable)
+  - Severance payment (if applicable per employment agreement)
+  - Pro-rated bonus (if applicable)
+- Process final payroll
+- Provide final pay stub and tax documents
+
+**Step 15: Equity And Benefits**
+- Review equity agreements:
+  - Accelerated vesting (if for cause with specific provisions)
+  - Standard vesting continuation (if without cause)
+  - Exercise period for vested options
+- Benefits termination:
+  - Health insurance (COBRA notice provided)
+  - Retirement plan information
+  - Life insurance and other benefits
+- Provide equity statement and exercise instructions
+
+**Step 16: Ongoing Obligations**
+- Confirm understanding of:
+  - Non-compete obligations (if applicable)
+  - Non-solicitation obligations
+  - Confidentiality and NDA requirements
+  - Return of confidential information
+- Document acknowledgment of ongoing obligations
+
+### 4.6 Communication Phase
+
+**Step 17: Internal Communication**
+- Notify executive team
+- Notify direct reports (if applicable)
+- Update organizational charts
+- Communicate to relevant departments
+- Maintain confidentiality where appropriate
+
+**Step 18: External Communication (If Required)**
+- Determine if public disclosure required:
+  - SEC filing (if applicable)
+  - Press release (if material)
+  - Investor notification
+  - Customer/partner notification (if material)
+- Coordinate with legal and communications teams
+
+---
+
+## 5. Special Considerations
+
+### 5.1 CEO Removal
+
+**Additional Requirements:**
+- Board must act with heightened scrutiny
+- May require supermajority vote (check bylaws)
+- Immediate succession plan required
+- Public disclosure likely required
+- Investor notification mandatory
+- May trigger change-in-control provisions
+
+**Process:**
+- Board Chair or Lead Independent Director initiates
+- Full Board deliberation required
+- May require special Board meeting
+- Successor identified before or immediately after removal
+
+### 5.2 Removal During Investigation
+
+**Process:**
+- Executive may be placed on administrative leave
+- Access suspended pending investigation
+- Board may vote to remove based on preliminary findings
+- Full investigation continues post-removal
+- Final determination may affect severance terms
+
+### 5.3 Resignation Versus Removal
+
+**Executive Resignation:**
+- Executive may resign voluntarily
+- Resignation letter required
+- Effective date specified
+- May negotiate exit terms
+- Still subject to transition requirements
+
+**Constructive Termination:**
+- Executive may claim constructive termination
+- Legal review required
+- May trigger severance obligations
+- Document all circumstances
+
+---
+
+## 6. Timeline And Deadlines
+
+### 6.1 For Cause Removal
+
+**Immediate Actions (Day 0):**
+- Board meeting or written consent
+- Written notice to executive
+- Access revocation (immediate for financial/systems)
+- Employment status update
+
+**Within 24 Hours:**
+- Asset return initiated
+- Transition planning communicated
+- Internal notifications
+
+**Within 7 Days:**
+- Final compensation processed
+- Benefits information provided
+- Document return completed
+- System cleanup finalized
+
+### 6.2 Without Cause Removal
+
+**Notice Period (If Applicable):**
+- Employment agreement may specify notice period
+- Executive may work through notice period or be paid in lieu
+- Access may be limited during notice period
+
+**Transition Period:**
+- Knowledge transfer (if executive cooperates)
+- Responsibility handoff
+- Documentation completion
+
+**Final Settlement:**
+- Within 30 days: Final compensation and benefits information
+- Equity statements and exercise instructions
+- All obligations documented
+
+---
+
+## 7. Documentation Requirements
+
+### 7.1 Required Documents
+
+- Board resolution (removal decision)
+- Written notice to executive
+- Employment agreement review
+- Severance agreement (if applicable)
+- Release agreement (if applicable)
+- Final pay calculation
+- Benefits termination notice
+- COBRA notice (if applicable)
+- Equity statement
+- Asset return receipt
+- Access revocation log
+- System update records
+- Governance log entries
+
+### 7.2 Record Retention
+
+- All documents retained per corporate record retention policy
+- Board minutes permanently retained
+- Employment records retained per legal requirements
+- Financial records retained per accounting standards
+- Governance logs maintained in `governance_log` table
+
+---
+
+## 8. Roles And Responsibilities
+
+### 8.1 Board Of Directors
+
+- Authority to remove executives
+- Vote on removal resolution
+- Approve severance terms (if applicable)
+- Oversee succession planning
+- Ensure compliance with bylaws
+
+### 8.2 Chief Executive Officer
+
+- May initiate removal of other executives (subject to Board approval)
+- Coordinate transition planning
+- Communicate with stakeholders
+- Ensure process compliance
+
+### 8.3 Corporate Secretary
+
+- Document Board actions
+- Maintain corporate records
+- Coordinate notice delivery
+- Update governance systems
+- Log all actions
+
+### 8.4 Legal Counsel
+
+- Review grounds for removal
+- Advise on legal risks
+- Draft agreements (if needed)
+- Ensure compliance
+
+### 8.5 Human Resources
+
+- Process termination paperwork
+- Calculate final compensation
+- Handle benefits termination
+- Coordinate asset return
+- Maintain employee records
+
+### 8.6 IT Administrator
+
+- Revoke system access
+- Forward email (if applicable)
+- Document access changes
+- Secure company data
+
+### 8.7 Finance Department
+
+- Process final payroll
+- Handle severance payments
+- Update equity records
+- Provide final statements
+
+---
+
+## 9. Compliance And Risk Management
+
+### 9.1 Legal Compliance
+
+- Comply with employment laws
+- Honor employment agreement terms
+- Follow corporate bylaws
+- Meet notice requirements
+- Comply with regulatory disclosures
+
+### 9.2 Risk Mitigation
+
+- Document all actions thoroughly
+- Maintain confidentiality where required
+- Protect company interests
+- Minimize legal exposure
+- Preserve company reputation
+
+### 9.3 Audit Trail
+
+- All actions logged to `governance_log`
+- Board resolutions recorded
+- System changes documented
+- Financial transactions tracked
+- Communication records maintained
+
+---
+
+## 10. Amendment And Review
+
+This process shall be reviewed:
+- Annually by the Board
+- Upon material changes to employment agreements
+- Upon changes to corporate bylaws
+- As required by legal or regulatory changes
+
+Amendments require Board approval.
+
+---
+
+## 11. Acknowledgment
+
+**Board Chair Name:** _______________________
+
+**Board Chair Signature:** ___________________
+
+**Date:** ____ / ____ / ______
+
+**Corporate Secretary Name:** _______________
+
+**Corporate Secretary Signature:** ___________
+
+**Date:** ____ / ____ / ______
+
+---
+
+## Appendix A: Quick Reference Checklist
+
+### Initiation
+- [ ] Grounds/rationale documented
+- [ ] Legal counsel consulted
+- [ ] Board notified
+
+### Board Action
+- [ ] Board meeting scheduled or written consent prepared
+- [ ] Board resolution drafted
+- [ ] Board vote completed
+- [ ] Resolution recorded
+
+### Notification
+- [ ] Written notice prepared
+- [ ] Notice delivered to executive
+- [ ] Transition plan developed
+
+### System Updates
+- [ ] Employment status updated
+- [ ] Executive records cleaned up
+- [ ] Access revoked
+- [ ] Assets returned
+
+### Final Settlement
+- [ ] Final compensation calculated
+- [ ] Benefits information provided
+- [ ] Equity handled
+- [ ] Ongoing obligations confirmed
+
+### Documentation
+- [ ] All documents collected
+- [ ] Records updated
+- [ ] Governance log entries made
+- [ ] Files archived
+
+---
+
+## Appendix B: Database Tables Affected
+
+- `employees` (employment_status, termination_date, terminated_by)
+- `employee_history` (termination action logged)
+- `exec_users` (removed via trigger if no historical references)
+- `user_roles` (executive role removed)
+- `executive_appointments` (status updated)
+- `corporate_officers` (officer status updated)
+- `board_members` (if executive was also a director)
+- `board_resolutions` (removal resolution recorded)
+- `governance_log` (all actions logged)
+- `executive_documents` (archived)
+- `executive_signatures` (preserved for historical record)
+
+---
+
+**Document Version:** 1.0  
+**Classification:** Corporate Governance Policy  
+**Review Frequency:** Annual  
+**Next Review Date:** {{next_review_date}}
+
+
+
+
+
+
+
+
+
+
+
+

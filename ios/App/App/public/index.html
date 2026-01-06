@@ -8,20 +8,20 @@
     <meta name="mobile-web-app-capable" content="yes" />
     
     <!-- Favicon and App Icons -->
-    <link rel="icon" href="/craven-logo.png" type="image/png">
+    <link rel="icon" href="./craven-logo.png" type="image/png">
     
     <!-- iOS App Icons - Multiple Sizes for Better Quality -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/craven-logo.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/craven-logo.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/craven-logo.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/craven-logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./craven-logo.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="./craven-logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./craven-logo.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="./craven-logo.png">
     
     <!-- iOS Splash Screens for Different Devices -->
-    <link rel="apple-touch-startup-image" href="/craven-logo.png" 
+    <link rel="apple-touch-startup-image" href="./craven-logo.png" 
           media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/craven-logo.png" 
+    <link rel="apple-touch-startup-image" href="./craven-logo.png" 
           media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
-    <link rel="apple-touch-startup-image" href="/craven-logo.png"
+    <link rel="apple-touch-startup-image" href="./craven-logo.png"
           media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
     
     <meta name="apple-mobile-web-app-title" content="Crave'n">
@@ -29,7 +29,7 @@
     <meta name="theme-color" content="#FF6B35">
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     
     <title>Crave'N - Food Delivery from Local Restaurants | Order Now</title>
     <meta name="description" content="Order food delivery from your favorite local restaurants with Crave'N. Fast delivery, real-time tracking, and the best selection. Download the app or order online now!" />
@@ -54,6 +54,11 @@
     <meta name="twitter:title" content="Crave'N - Your Favorite Food, Delivered Fast" />
     <meta name="twitter:description" content="Order from the best restaurants and get your favorite meals delivered fast." />
     <meta name="twitter:image" content="https://craven.app/craven-logo.png" />
+    
+    <!-- Google Fonts for Signature Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Allura&family=Satisfy&family=Kalam:wght@300;400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Mapbox Search JS -->
     <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.3.0/web.js"></script>
@@ -113,17 +118,30 @@
     
     <!-- Detect mobile driver route and add loading class -->
     <script>
-      // Add loading class only for mobile driver route
-      if (window.location.pathname.includes('/mobile') && window.innerWidth <= 768) {
-        document.body.classList.add('mobile-driver-loading');
-        
-        // Remove loading class once React loads
-        window.addEventListener('DOMContentLoaded', function() {
-          setTimeout(function() {
-            document.body.classList.remove('mobile-driver-loading');
-          }, 100);
-        });
-      }
+      // Add loading class only for mobile driver route (supports hash routing for Capacitor)
+      (function() {
+        var isMobilePath = (window.location.pathname + window.location.hash).includes('/mobile');
+        if (isMobilePath && window.innerWidth <= 768) {
+          // Wait for body to exist before accessing classList
+          function addLoadingClass() {
+            if (document.body) {
+              document.body.classList.add('mobile-driver-loading');
+              // Remove loading class once React loads
+              window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                  if (document.body) {
+                    document.body.classList.remove('mobile-driver-loading');
+                  }
+                }, 100);
+              });
+            } else {
+              // Retry if body doesn't exist yet
+              setTimeout(addLoadingClass, 10);
+            }
+          }
+          addLoadingClass();
+        }
+      })();
     </script>
 
     <!-- Swap iOS app icon/title for Feeder only on /mobile -->
@@ -157,28 +175,34 @@
       }
     </style>
 
-    <script type="module" crossorigin src="/assets/index-CTikd0YW.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DYsE9MTE.css">
+    <script type="module" crossorigin src="./assets/index-GxiEldis.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-PTZU5LoE.css">
   </head>
 
   <body>
     <script>
       // Detect PWA mode and add classes immediately (runs after body exists)
       (function () {
-        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator && window.navigator.standalone === true);
-        var isMobileRoute = window.location.pathname.startsWith('/mobile');
-        
-        console.log('PWA Detection:', { isStandalone, isMobileRoute });
-        
-        if (isStandalone) {
-          document.body.classList.add('pwa-standalone');
-          console.log('Added pwa-standalone class');
+        function addPWAClasses() {
+          if (!document.body) {
+            // Retry if body doesn't exist yet
+            setTimeout(addPWAClasses, 10);
+            return;
+          }
+          
+          var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator && window.navigator.standalone === true);
+          var pathAndHash = window.location.pathname + window.location.hash;
+          var isMobileRoute = pathAndHash.includes('/mobile');
+          
+          if (isStandalone) {
+            document.body.classList.add('pwa-standalone');
+          }
+          
+          if (isStandalone && isMobileRoute) {
+            document.body.classList.add('mobile-page');
+          }
         }
-        
-        if (isStandalone && isMobileRoute) {
-          document.body.classList.add('mobile-page');
-          console.log('Added mobile-page class');
-        }
+        addPWAClasses();
       })();
     </script>
     <div id="root"></div>

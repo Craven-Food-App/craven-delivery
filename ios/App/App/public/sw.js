@@ -8,23 +8,78 @@ const STATIC_CACHE = [
   '/manifest.json'
 ];
 
+// Helper function to safely check if cache storage is available
+function isCacheStorageAvailable() {
+  try {
+    return typeof caches !== 'undefined';
+  } catch (e) {
+    return false;
+  }
+}
+
+// Helper function to safely open cache
+async function safeCacheOpen(cacheName) {
+  if (!isCacheStorageAvailable()) {
+    return null;
+  }
+  try {
+    return await caches.open(cacheName);
+  } catch (err) {
+    // If cache fails, return null to indicate caching is disabled
+    // Don't log warnings - this is expected in private browsing or when storage is disabled
+    return null;
+  }
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_CACHE))
-      .then(() => self.skipWaiting())
+    (async () => {
+      try {
+        const cache = await safeCacheOpen(CACHE_NAME);
+        if (cache) {
+          try {
+            await cache.addAll(STATIC_CACHE);
+          } catch (err) {
+            // Silently ignore cache failures - caching is optional
+          }
+        }
+      } catch (err) {
+        // Silently ignore cache initialization failures
+      }
+      // Always skip waiting, even if cache fails
+      self.skipWaiting();
+    })()
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+    (async () => {
+      try {
+        if (isCacheStorageAvailable()) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+              cacheNames
+                .filter((name) => name !== CACHE_NAME)
+                .map((name) => 
+                  caches.delete(name).catch((err) => {
+                    // Silently ignore cache deletion failures
+                    return Promise.resolve();
+                  })
+                )
+            );
+          } catch (cacheError) {
+            // CacheStorage operations can fail in private browsing or when storage is disabled
+            // Silently continue - caching is optional
+          }
+        }
+      } catch (err) {
+        // Silently ignore all cache-related errors
+      }
+      // Always claim clients, even if cache cleanup fails
+      self.clients.claim();
+    })()
   );
 });
 
@@ -37,24 +92,62 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.startsWith('chrome-extension://')) return;
   
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone and cache successful responses
-        if (response.status === 200) {
+    (async () => {
+      try {
+        // Try network first
+        const response = await fetch(event.request);
+        
+        // Try to cache successful responses (but don't fail if caching fails)
+        if (response.status === 200 && isCacheStorageAvailable()) {
           const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
+          safeCacheOpen(CACHE_NAME)
+            .then((cache) => {
+              if (cache) {
+                cache.put(event.request, responseClone).catch(() => {
+                  // Silently fail - caching is optional
+                });
+              }
+            })
+            .catch(() => {
+              // Cache failed - that's okay, continue without caching
+            });
+        }
+        
+        return response;
+      } catch (networkError) {
+        // Network failed, try cache
+        if (!isCacheStorageAvailable()) {
+          return new Response('Offline - Cache unavailable', { 
+            status: 503, 
+            statusText: 'Service Unavailable' 
           });
         }
-        return response;
-      })
-      .catch(() => {
-        // Fallback to cache if network fails
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            return cachedResponse || caches.match(OFFLINE_URL);
+        
+        try {
+          const cachedResponse = await caches.match(event.request);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          
+          // Try offline page
+          const offlinePage = await caches.match(OFFLINE_URL);
+          if (offlinePage) {
+            return offlinePage;
+          }
+          
+          return new Response('Offline', { 
+            status: 503, 
+            statusText: 'Service Unavailable' 
           });
-      })
+        } catch (cacheError) {
+          // Silently handle cache match failures
+          return new Response('Offline', { 
+            status: 503, 
+            statusText: 'Service Unavailable' 
+          });
+        }
+      }
+    })()
   );
 });
 
@@ -174,7 +267,11 @@ self.addEventListener('notificationclick', (event) => {
       } catch (error) {
         console.error('Error handling notification click:', error);
         // Fallback - just open the app
-        await self.clients.openWindow('/');
+        try {
+          await self.clients.openWindow('/');
+        } catch (e) {
+          console.error('Failed to open window:', e);
+        }
       }
     })()
   );

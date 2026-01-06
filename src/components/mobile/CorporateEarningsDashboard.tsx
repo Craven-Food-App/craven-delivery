@@ -237,19 +237,18 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
       <div className="px-5 mb-3">
         <div className="relative overflow-hidden">
           {/* Large ON FIRE Text */}
-          <div className="relative mb-2">
+          <div className="relative mb-2 flex items-center gap-3">
             <h2 className="text-4xl font-black text-orange-400 leading-none tracking-tighter" style={{
               textShadow: '0 2px 0 rgba(0,0,0,0.1)',
               WebkitTextStroke: '1px rgba(255,255,255,0.1)'
             }}>
               ON FIRE
             </h2>
+            <p className="text-white text-sm font-semibold whitespace-nowrap">
+              {cravingLevel > 70 ? 'Cravings spike active!' : 'Normal activity'}
+            </p>
             <div className="absolute top-1 right-3 w-12 h-16 bg-gradient-to-b from-red-400 to-transparent rounded-full blur-2xl opacity-60"></div>
           </div>
-          
-          <p className="text-white text-sm font-semibold mb-4">
-            {cravingLevel > 70 ? 'Cravings spike active!' : 'Normal activity'}
-          </p>
           
           {/* Craving Circle, Graphs, and Buttons */}
           <div className="flex items-start gap-3 mb-4">

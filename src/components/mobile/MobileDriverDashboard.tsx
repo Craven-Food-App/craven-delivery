@@ -24,6 +24,10 @@ import CorporateEarningsDashboard from './CorporateEarningsDashboard';
 import FeederAccountPage from './FeederAccountPage';
 import FeederRatingsTab from './FeederRatingsTab';
 import CravenAppComm from './CravenAppComm';
+import { OnFireDashboard } from '@/components/driver/OnFireDashboard';
+import { SafetySettings } from '@/components/settings/SafetySettings';
+import { useCravingWheel } from '@/hooks/useCravingWheel';
+import { speedDetectionService } from '@/services/speedDetectionService';
 import { getRatingColor, getRatingTier, formatRating, getTrendIcon, getTrendColor } from '@/utils/ratingHelpers';
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import FeederSidebarMenu from './FeederSidebarMenu';
@@ -323,6 +327,11 @@ export const MobileDriverDashboard: React.FC = () => {
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
   const [ratingTrend, setRatingTrend] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]); // Add notifications state
+  const [showOnFireSettings, setShowOnFireSettings] = useState(false);
+  const [gameSettings, setGameSettings] = useState({
+    onFireGameEnabled: false,
+    speedDetectionEnabled: false,
+  });
   
   // Get location and speed data
   const {
@@ -388,6 +397,29 @@ export const MobileDriverDashboard: React.FC = () => {
     };
 
     fetchDriverRating();
+  }, []);
+
+  // Load ON FIRE game settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) return;
+
+      const { data } = await supabase
+        .from('driver_settings')
+        .select('*')
+        .eq('user_id', session.session.user.id)
+        .maybeSingle();
+
+      if (data) {
+        setGameSettings({
+          onFireGameEnabled: data.on_fire_game_enabled,
+          speedDetectionEnabled: data.speed_detection_enabled,
+        });
+      }
+    };
+
+    loadSettings();
   }, []);
   
   // Logout handler
@@ -492,6 +524,8 @@ export const MobileDriverDashboard: React.FC = () => {
     playNotification
   } = useNotificationSettings();
   const { showNotification, notifications: iosNotifications, dismissNotification } = useIOSNotifications();
+  const { state: cravingState, startSpeedMonitoring } = useCravingWheel(user?.id || '');
+  const { state: cravingState, addDeliveryPoints, updateAcceptanceRate, startSpeedMonitoring } = useCravingWheel(user?.id || '');
 
   const handleStartFeeding = useCallback(async () => {
     try {
@@ -677,6 +711,21 @@ export const MobileDriverDashboard: React.FC = () => {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // Start/stop ON FIRE speed monitoring based on driver online state
+  useEffect(() => {
+    if (!user?.id) return;
+
+    if (cravingState.gameEnabled && (driverState === 'online_searching' || driverState === 'on_delivery')) {
+      startSpeedMonitoring();
+    } else {
+      speedDetectionService.stopMonitoring();
+    }
+
+    return () => {
+      speedDetectionService.stopMonitoring();
+    };
+  }, [driverState, cravingState.gameEnabled, user?.id, startSpeedMonitoring]);
 
   const checkOnboardingAndSession = async () => {
     try {
@@ -1327,14 +1376,13 @@ export const MobileDriverDashboard: React.FC = () => {
         )}
         
         {activeTab === 'earnings' && (
-          <div className="fixed inset-0 z-20 overflow-hidden">
-            <CorporateEarningsDashboard 
-              onOpenMenu={() => setIsMenuOpen(true)}
-              onOpenNotifications={() => {
-                setActiveTab('notifications');
-                navigate('/mobile?tab=notifications');
-              }}
-            />
+          <div className="fixed inset-0 z-20 overflow-hidden bg-background">
+            <div className="h-full overflow-y-auto">
+              <OnFireDashboard 
+                userId={user?.id || ''} 
+                onOpenSettings={() => setShowOnFireSettings(true)}
+              />
+            </div>
           </div>
         )}
         
@@ -1638,13 +1686,15 @@ export const MobileDriverDashboard: React.FC = () => {
             const deliveryPayout = (activeDelivery.payout_cents || 0) / 100; // Convert cents to dollars
             setSessionEarnings(prev => prev + deliveryPayout);
             
-            // Record final driver earnings
+            // Record final driver earnings (ON FIRE game points handled in edge function)
             try {
               const {
                 data: {
                   user
                 }
               } = await supabase.auth.getUser();
+
+              // Finalize delivery in backend
               await supabase.functions.invoke('finalize-delivery', {
                 body: {
                   orderId: activeDelivery.order_id,
@@ -1724,6 +1774,32 @@ export const MobileDriverDashboard: React.FC = () => {
         currentEarnings={sessionEarnings}
         isPaused={driverState === 'online_paused'}
       />
+
+      {/* ON FIRE Safety Settings Modal */}
+      {showOnFireSettings && user && (
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold">Safety Settings</h2>
+                <button
+                  onClick={() => setShowOnFireSettings(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  ✕
+                </button>
+              </div>
+              <SafetySettings
+                userId={user.id}
+                currentSettings={gameSettings}
+                onSettingsUpdate={() => {
+                  setShowOnFireSettings(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
     )}

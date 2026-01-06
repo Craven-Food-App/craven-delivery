@@ -21,6 +21,7 @@ import {
   IconKey,
   IconPlus,
   IconMinus,
+  IconFlame,
 } from "@tabler/icons-react";
 import feederCardBackground from "@/assets/feeder-card-background.png";
 import feederCardImage from "@/assets/feeder-card-image.png";
@@ -30,6 +31,7 @@ import ProfileDetailsPage from "./ProfileDetailsPage";
 import VehicleDocumentsPage from "./VehicleDocumentsPage";
 import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
+import { SafetySettings } from "@/components/settings/SafetySettings";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -87,6 +89,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
   const [driverRating, setDriverRating] = useState(0);
   const [totalDeliveries, setTotalDeliveries] = useState(0);
   const [memberSince, setMemberSince] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [showSafetySettings, setShowSafetySettings] = useState(false);
+  const [gameSettings, setGameSettings] = useState({
+    onFireGameEnabled: false,
+    speedDetectionEnabled: false,
+  });
   // Feeder Card data
   const [cardBalance, setCardBalance] = useState(0);
   const [cardNumber] = useState('5399283309390129'); // Store without spaces
@@ -122,6 +130,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
 
       // Fetch driver profile
       const { data: driverProfile } = await supabase
@@ -211,6 +220,20 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           type: 'credit' as const,
         }));
         setTransactions(formattedTransactions);
+      }
+
+      // Load ON FIRE driver settings
+      const { data: driverSettings } = await supabase
+        .from('driver_settings')
+        .select('on_fire_game_enabled, speed_detection_enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (driverSettings) {
+        setGameSettings({
+          onFireGameEnabled: driverSettings.on_fire_game_enabled || false,
+          speedDetectionEnabled: driverSettings.speed_detection_enabled || false,
+        });
       }
     } catch (error) {
       console.error('Error fetching driver data:', error);
@@ -842,6 +865,41 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         </Paper>
       </Paper>
 
+      {/* ON FIRE Game Card */}
+      <Box px="xl" py="md">
+        <Card withBorder shadow="sm" radius="lg">
+          <Group justify="space-between" align="flex-start">
+            <Group gap="sm">
+              <ThemeIcon size="lg" radius="xl" color="orange" variant="light">
+                <IconFlame size={20} />
+              </ThemeIcon>
+              <Box>
+                <Text fw={700} size="sm">ON FIRE Game</Text>
+                <Text size="xs" c="dimmed">
+                  Gamified delivery with safety‑first speed monitoring and bonuses.
+                </Text>
+              </Box>
+            </Group>
+            <Badge
+              color={gameSettings.onFireGameEnabled ? "green" : "gray"}
+              variant="light"
+              size="sm"
+            >
+              {gameSettings.onFireGameEnabled ? "Active" : "Off"}
+            </Badge>
+          </Group>
+          <Button
+            mt="md"
+            fullWidth
+            size="sm"
+            color="orange"
+            onClick={() => setShowSafetySettings(true)}
+          >
+            Configure Safety & Game Mode
+          </Button>
+        </Card>
+      </Box>
+
       {/* Menu Items */}
       <Stack gap={0} px={0} py="md">
         {menuItems.map((item, idx) => {
@@ -933,6 +991,51 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           zIndex: 1000 
         }} 
       />
+      
+      {/* ON FIRE Safety Settings Modal */}
+      {showSafetySettings && userId && (
+        <Box
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <Box
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 16,
+              maxWidth: 640,
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <Group justify="space-between" align="center" px="md" py="sm" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
+              <Text fw={700} size="lg">Safety Settings</Text>
+              <ActionIcon
+                variant="subtle"
+                onClick={() => setShowSafetySettings(false)}
+              >
+                <IconX size={18} />
+              </ActionIcon>
+            </Group>
+            <SafetySettings
+              userId={userId}
+              currentSettings={gameSettings}
+              onSettingsUpdate={() => {
+                setShowSafetySettings(false);
+                fetchDriverData();
+              }}
+            />
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { useNativeNotification } from "@/hooks/useNativeNotification";
 import { Truck, Car } from "lucide-react";
 import { WelcomeConfetti } from "@/components/driver/WelcomeConfetti";
 import { BackgroundCheckStatus } from "@/components/driver/BackgroundCheckStatus";
@@ -53,7 +53,7 @@ const DriverAuth = () => {
   const [showBackgroundCheckStatus, setShowBackgroundCheckStatus] = useState(false);
   const [firstName, setFirstName] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { showNotification } = useNativeNotification();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -207,11 +207,11 @@ const DriverAuth = () => {
       navigate('/mobile');
     } catch (error) {
       console.error('Error checking application status:', error);
-      toast({
-        title: "Error",
-        description: "Could not load your application status. Redirecting...",
-        variant: "destructive",
-      });
+      showNotification(
+        "Error",
+        "Could not load your application status. Redirecting...",
+        "error"
+      );
       // Fallback: navigate to feeder hub on error
       setTimeout(() => navigate('/feeder'), 2000);
     }
@@ -231,20 +231,21 @@ const DriverAuth = () => {
 
       console.log('✅ [DriverAuth] Signed in! User ID:', data.session.user.id);
 
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in to your driver account.",
-      });
+      showNotification(
+        "Welcome back!",
+        "Successfully signed in to your driver account.",
+        "success"
+      );
 
       // Handle post-login routing
       await handlePostLoginRouting(data.session.user.id);
     } catch (error: any) {
       console.error('❌ [DriverAuth] Sign in error:', error);
-      toast({
-        title: "Sign In Failed",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      showNotification(
+        "Sign In Failed",
+        error.message || "Please check your credentials and try again.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }

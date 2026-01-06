@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useNativeNotification } from '@/hooks/useNativeNotification';
 import { ArrowLeft } from 'lucide-react';
 import cravenLogo from '@/assets/craven-logo.png';
 
@@ -21,7 +21,7 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { showNotification } = useNativeNotification();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,11 +31,11 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     const identifier = loginMethod === "email" ? email.trim() : phone.trim();
     
     if (!identifier || !password) {
-      toast({
-        title: "Missing Information",
-        description: `Please enter your ${loginMethod} and password.`,
-        variant: "destructive",
-      });
+      showNotification(
+        "Missing Information",
+        `Please enter your ${loginMethod} and password.`,
+        "error"
+      );
       return;
     }
 
@@ -61,10 +61,11 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       console.log('✅ Signed in! User ID:', data.session.user.id);
           setLoading(false);
 
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in to your Feeder account.",
-      });
+      showNotification(
+        "Welcome back!",
+        "Successfully signed in to your Feeder account.",
+        "success"
+      );
       
       // Navigate to dashboard
       console.log('🚀 Navigating to /mobile...');
@@ -73,11 +74,11 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       console.error('❌ Error:', error);
       setLoading(false);
       
-      toast({
-        title: "Sign In Failed",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      showNotification(
+        "Sign In Failed",
+        error.message || "Please check your credentials and try again.",
+        "error"
+      );
     }
   };
 
