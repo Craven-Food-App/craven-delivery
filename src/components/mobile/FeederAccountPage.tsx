@@ -22,6 +22,8 @@ import {
   IconPlus,
   IconMinus,
 } from "@tabler/icons-react";
+import feederCardBackground from "@/assets/feeder-card-background.png";
+import feederCardImage from "@/assets/feeder-card-image.png";
 import { notifications } from "@mantine/notifications";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileDetailsPage from "./ProfileDetailsPage";
@@ -85,8 +87,8 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
   const [driverRating, setDriverRating] = useState(0);
   const [totalDeliveries, setTotalDeliveries] = useState(0);
   const [memberSince, setMemberSince] = useState('');
-  // Feeder Card placeholder data
-  const [cardBalance] = useState(3573.21);
+  // Feeder Card data
+  const [cardBalance, setCardBalance] = useState(0);
   const [cardNumber] = useState('5399283309390129'); // Store without spaces
   const [expiryDate] = useState('12/28');
   const [cvv] = useState('847');
@@ -172,19 +174,40 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         setMemberSince(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
       }
 
-      // Fetch earnings for transaction history only (card balance is placeholder)
+      // Fetch earnings for transaction history and calculate wallet balance
       const { data: earnings } = await supabase
         .from('driver_earnings')
         .select('*')
         .eq('driver_id', user.id)
         .order('earned_at', { ascending: false });
 
+      // Calculate total earnings (sum of total_cents converted to dollars)
+      const totalEarnings = earnings?.reduce((sum, earning) => {
+        return sum + ((earning.total_cents || 0) / 100);
+      }, 0) || 0;
+
+      // Fetch completed payouts
+      const { data: payouts } = await supabase
+        .from('driver_payouts')
+        .select('amount')
+        .eq('driver_id', user.id)
+        .in('status', ['completed', 'sent']);
+
+      // Calculate total payouts (amount is already in dollars)
+      const totalPayouts = payouts?.reduce((sum, payout) => {
+        return sum + (payout.amount || 0);
+      }, 0) || 0;
+
+      // Wallet balance = Total Earnings - Total Payouts
+      const walletBalance = totalEarnings - totalPayouts;
+      setCardBalance(Math.max(0, walletBalance)); // Ensure balance is never negative
+
       if (earnings) {
         // Format transactions
         const formattedTransactions = earnings.slice(0, 10).map((earning: any) => ({
-          date: new Date(earning.earned_at || earning.paid_out_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          description: 'Daily Earnings Deposit',
-          amount: ((earning.base_pay_cents || 0) + (earning.tip_cents || 0)) / 100,
+          date: new Date(earning.earned_at || earning.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          description: 'Delivery Earnings',
+          amount: (earning.total_cents || 0) / 100,
           type: 'credit' as const,
         }));
         setTransactions(formattedTransactions);
@@ -333,99 +356,170 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
   // If card page is open, show that instead
   if (showCardPage) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'linear-gradient(to bottom right, var(--mantine-color-purple-0), var(--mantine-color-blue-0), var(--mantine-color-pink-0))', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-        {/* Header */}
-        <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-          <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
-            <IconArrowLeft size={24} />
-          </ActionIcon>
-          <Title order={2} fw={700} c="dark">Feeder Card</Title>
-          <Box w={24} />
-        </Group>
+      <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+        {/* Header - White Background */}
+        <Paper
+          pos="sticky"
+          top={0}
+          bg="white"
+          style={{ 
+            zIndex: 10,
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)',
+            borderBottom: '1px solid var(--mantine-color-gray-2)'
+          }}
+        >
+          <Group px="xl" pb="md" justify="space-between" align="center">
+            <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
+              <IconArrowLeft size={24} />
+            </ActionIcon>
+            <Title order={2} fw={700} c="dark">Feeder Card</Title>
+            <Box w={24} />
+          </Group>
+        </Paper>
 
-        {/* Card Display */}
-        <Box px="xl" mb="xl" style={{ display: 'flex', justifyContent: 'center' }}>
-          <Paper
-            p="xl"
-            radius="xl"
-            shadow="xl"
-            pos="relative"
-            style={{ 
-              background: 'linear-gradient(to bottom right, var(--mantine-color-orange-5), var(--mantine-color-red-5), var(--mantine-color-pink-6))',
-              aspectRatio: "1.586 / 1",
-              width: "100%",
-              maxWidth: "340px",
-              overflow: 'hidden',
+        {/* Orange Carbon Fiber Background */}
+        <Box 
+          pos="relative" 
+          style={{ 
+            backgroundImage: `url(${feederCardBackground})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            minHeight: '280px',
+            padding: '2rem 1rem',
+            marginBottom: '2rem',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Depth of field blur effect */}
+          <Box
+            pos="absolute"
+            inset={0}
+            style={{
+              background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.15) 100%)',
+              filter: 'blur(1px)',
+              pointerEvents: 'none'
             }}
-          >
-            {/* Card shine effect */}
-            <Box pos="absolute" top={0} right={0} w={160} h={160} bg="white" style={{ borderRadius: '50%', opacity: 0.1, filter: 'blur(48px)' }} />
+          />
+          
+          {/* Card Display */}
+          <Box style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+            <Box
+              pos="relative"
+              style={{ 
+                backgroundImage: `url(${feederCardImage})`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                aspectRatio: "1.586 / 1",
+                width: "100%",
+                maxWidth: "420px",
+                overflow: 'hidden',
+                borderRadius: '16px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(255, 107, 53, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                padding: '2rem',
+                imageRendering: 'high-quality',
+                WebkitImageRendering: 'high-quality'
+              }}
+            >
+              <Stack justify="space-between" h="100%" gap="xs" style={{ position: 'relative', zIndex: 2 }}>
+                {/* Top Section - Balance */}
+                <Box>
+                  <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={4}>Available Balance</Text>
+                  <Title order={2} c="white" fw={900} style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>${cardBalance.toFixed(2)}</Title>
+                </Box>
 
-            <Stack justify="space-between" h="100%" gap="xs">
-              {/* Top Section - Balance */}
-              <Box>
-                <Text size="xs" c="orange.1" mb={4}>Available Balance</Text>
-                <Title order={2} c="white" fw={900}>${cardBalance.toFixed(2)}</Title>
-              </Box>
-
-              {/* Middle Section - Card Number */}
-              <Box style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                marginTop: '-10px',
-                width: '100%',
-                overflow: 'hidden'
-              }}>
-                <Text 
-                  size="lg" 
-                  c="white" 
-                  ff="monospace" 
-                  style={{ 
-                    letterSpacing: '0.15em',
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    fontVariantNumeric: 'tabular-nums',
-                    fontFeatureSettings: '"tnum"',
-                    width: '100%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: '1.2'
-                  }}
-                >
-                  {formatCardNumber(cardNumber, showCardDetails)}
-                </Text>
-              </Box>
-
-              {/* Bottom Section - Expiry, CVV, Name, Brand */}
-              <Group justify="space-between" align="flex-end" style={{ marginTop: '-30px' }}>
-                <Box style={{ flex: 1, minWidth: 0 }}>
-                  <Group gap="md" mb={4}>
-                    <Box>
-                      <Text size="xs" c="orange.1" mb={2}>EXP</Text>
-                      <Text size="xs" c="white" ff="monospace">{showCardDetails ? expiryDate : "**/**"}</Text>
-                    </Box>
-                    <Box>
-                      <Text size="xs" c="orange.1" mb={2}>CVV</Text>
-                      <Text size="xs" c="white" ff="monospace">{showCardDetails ? cvv : "***"}</Text>
-                    </Box>
-                  </Group>
-                  <Text size="xs" fw={700} c="white" style={{ letterSpacing: '0.1em', textTransform: 'uppercase' }} lineClamp={1}>
-                    {driverName}
+                {/* Middle Section - Card Number */}
+                <Box style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  marginTop: '-20px',
+                  width: '100%',
+                  overflow: 'hidden'
+                }}>
+                  <Text 
+                    c="white" 
+                    ff="monospace" 
+                    fw={900}
+                    style={{ 
+                      fontSize: 'clamp(1rem, 4vw, 1.25rem)',
+                      letterSpacing: '0.15em',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontFeatureSettings: '"tnum"',
+                      width: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      lineHeight: '1.3',
+                      textShadow: `
+                        -1px -1px 0 rgba(255, 255, 255, 0.4),
+                        0 -1px 0 rgba(255, 255, 255, 0.5),
+                        1px -1px 0 rgba(255, 255, 255, 0.3),
+                        -1px 0 0 rgba(255, 255, 255, 0.3),
+                        0 0 0 rgba(255, 255, 255, 0.4),
+                        1px 0 0 rgba(255, 255, 255, 0.3),
+                        -1px 1px 0 rgba(0, 0, 0, 0.2),
+                        0 1px 0 rgba(0, 0, 0, 0.3),
+                        1px 1px 0 rgba(0, 0, 0, 0.2),
+                        0 2px 2px rgba(0, 0, 0, 0.3),
+                        0 3px 3px rgba(0, 0, 0, 0.2),
+                        0 4px 4px rgba(0, 0, 0, 0.1),
+                        inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.2)
+                      `,
+                      filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5))',
+                      transform: 'perspective(1000px) translateZ(2px)',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
+                      textRendering: 'optimizeLegibility'
+                    }}
+                  >
+                    {formatCardNumber(cardNumber, showCardDetails)}
                   </Text>
                 </Box>
-                <Text size="sm" fw={900} c="white" ml="md">FEEDER</Text>
-              </Group>
-            </Stack>
-          </Paper>
+
+                {/* Bottom Section - Expiry, CVV, Name, Brand */}
+                <Group justify="space-between" align="flex-end" style={{ marginTop: '-30px' }}>
+                  <Box style={{ flex: 1, minWidth: 0 }}>
+                    <Group gap="md" mb={4}>
+                      <Box>
+                        <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={2}>EXP</Text>
+                        <Text size="xs" c="white" ff="monospace" fw={600} style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>{showCardDetails ? expiryDate : "**/**"}</Text>
+                      </Box>
+                      <Box>
+                        <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={2}>CVV</Text>
+                        <Text size="xs" c="white" ff="monospace" fw={600} style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>{showCardDetails ? cvv : "***"}</Text>
+                      </Box>
+                    </Group>
+                    <Text size="xs" fw={700} c="white" style={{ letterSpacing: '0.1em', textTransform: 'uppercase', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }} lineClamp={1}>
+                      {driverName}
+                    </Text>
+                  </Box>
+                </Group>
+              </Stack>
+            </Box>
+          </Box>
         </Box>
 
-        {/* Card Controls */}
-        <Stack gap="md" px="xl" mb="xl">
-          <Card shadow="lg" radius="lg" p="md">
-            <Stack gap="md">
-              {/* Toggle Card Details */}
-              <Group justify="space-between" p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
+        {/* White Background Section for Controls */}
+        <Box 
+          style={{ 
+            backgroundColor: 'white',
+            paddingTop: '1rem',
+            paddingBottom: '1rem',
+            marginTop: '-2rem',
+            position: 'relative',
+            zIndex: 2
+          }}
+        >
+          {/* Card Controls - Full Page, No Cards, Stretch End to End */}
+          <Stack gap="md" px={0} mb="xl">
+            {/* Toggle Card Details */}
+            <Box px="xl">
+              <Group justify="space-between" p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
                 <Group gap="md">
                   <ThemeIcon size="lg" radius="md" color="blue" variant="light">
                     {showCardDetails ? <IconEye size={20} /> : <IconEyeOff size={20} />}
@@ -442,9 +536,11 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                   size="lg"
                 />
               </Group>
+            </Box>
 
-              {/* Lock Card */}
-              <Group justify="space-between" p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
+            {/* Lock Card */}
+            <Box px="xl">
+              <Group justify="space-between" p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
                 <Group gap="md">
                   <ThemeIcon size="lg" radius="md" color={isCardLocked ? "red" : "green"} variant="light">
                     {isCardLocked ? <IconLock size={20} /> : <IconLockOpen size={20} />}
@@ -463,8 +559,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                   size="lg"
                 />
               </Group>
+            </Box>
 
-              {/* Change PIN */}
+            {/* Change PIN */}
+            <Box px="xl">
               <Button
                 variant="subtle"
                 fullWidth
@@ -476,16 +574,16 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                 }
                 rightSection={<IconChevronRight size={20} color="var(--mantine-color-gray-4)" />}
                 onClick={() => setShowPinDialog(true)}
-                style={{ height: 'auto', padding: '12px' }}
+                style={{ height: 'auto', padding: '12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
               >
                 <Box>
                   <Text fw={700} c="dark">Change Card PIN</Text>
                   <Text size="xs" c="dimmed">Set or update your PIN</Text>
                 </Box>
               </Button>
-            </Stack>
-          </Card>
-        </Stack>
+            </Box>
+          </Stack>
+        </Box>
 
         {/* PIN Dialog */}
         <Modal
@@ -574,37 +672,58 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           </Stack>
         </Modal>
 
-        {/* Transactions List */}
-        <Stack gap="md" px="xl" pb="xl">
-          <Title order={3} fw={700} c="dark">Transaction History</Title>
+        {/* Transactions List - Compact, No Separation */}
+        <Box px="xl" pb="xl" style={{ backgroundColor: 'white' }}>
+          <Title order={3} fw={700} c="dark" mb="md">Transaction History</Title>
           {transactions.length === 0 ? (
-            <Card shadow="sm" radius="lg" p="xl" style={{ textAlign: 'center' }}>
+            <Box p="xl" style={{ textAlign: 'center' }}>
               <Text c="dimmed">No transactions yet</Text>
               <Text size="sm" c="dimmed" mt="xs">Your earnings will appear here</Text>
-            </Card>
+            </Box>
           ) : (
-            <Stack gap="md">
+            <Box style={{ border: '1px solid var(--mantine-color-gray-2)', borderRadius: '8px', overflow: 'hidden' }}>
               {transactions.map((txn, idx) => (
-                <Card key={idx} shadow="sm" radius="lg" p="md">
-                  <Group justify="space-between">
-                    <Group gap="md">
-                      <ThemeIcon size="lg" radius="md" color={txn.type === "credit" ? "green" : "red"} variant="light">
-                        {txn.type === "credit" ? <IconPlus size={20} /> : <IconMinus size={20} />}
+                <Box 
+                  key={idx} 
+                  p="sm" 
+                  style={{ 
+                    backgroundColor: 'white',
+                    borderBottom: idx < transactions.length - 1 ? '1px solid var(--mantine-color-gray-2)' : 'none',
+                    minHeight: '60px'
+                  }}
+                >
+                  <Group justify="space-between" gap="sm">
+                    <Group gap="sm">
+                      <ThemeIcon size="md" radius="md" color={txn.type === "credit" ? "green" : "red"} variant="light">
+                        {txn.type === "credit" ? <IconPlus size={16} /> : <IconMinus size={16} />}
                       </ThemeIcon>
                       <Box>
-                        <Text fw={700} c="dark">{txn.description}</Text>
-                        <Text size="sm" c="dimmed">{txn.date}</Text>
+                        <Text fw={600} c="dark" size="sm">{txn.description}</Text>
+                        <Text size="xs" c="dimmed">{txn.date}</Text>
                       </Box>
                     </Group>
-                    <Text size="xl" fw={900} c={txn.type === "credit" ? "green.6" : "red.6"}>
+                    <Text size="lg" fw={700} c={txn.type === "credit" ? "green.6" : "red.6"}>
                       {txn.type === "credit" ? "+" : "-"}${Math.abs(txn.amount).toFixed(2)}
                     </Text>
                   </Group>
-                </Card>
+                </Box>
               ))}
-            </Stack>
+            </Box>
           )}
-        </Stack>
+        </Box>
+
+        {/* White Bottom Bar - Same height as orange/black bars */}
+        <Box 
+          style={{ 
+            position: 'fixed', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            height: '48px', 
+            backgroundColor: 'white',
+            zIndex: 1000 
+          }} 
+        />
       </Box>
     );
   }
