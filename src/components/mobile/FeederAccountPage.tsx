@@ -22,6 +22,7 @@ import {
   IconPlus,
   IconMinus,
   IconFlame,
+  IconX,
 } from "@tabler/icons-react";
 import feederCardBackground from "@/assets/feeder-card-background.png";
 import feederCardImage from "@/assets/feeder-card-image.png";

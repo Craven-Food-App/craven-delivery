@@ -10,7 +10,7 @@ import { CravingWheel } from '@/components/driver/CravingWheel';
 import { FlamingText } from '@/components/ui/FlamingText';
 import { useCravingWheel } from '@/hooks/useCravingWheel';
 import onfireTextImage from '@/assets/onfire-text.png';
-import onFireOnfireTextImage from '@/assets/on-fire-onfire-text.png';
+import onfire2ndStateImage from '@/assets/onfire2ndstate.png';
 
 type CorporateEarningsDashboardProps = {
   onOpenMenu?: () => void;
@@ -217,8 +217,15 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
       background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
-      {/* Header - Level with hamburger menu */}
-      <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
+      {/* Header - Level with hamburger menu - Fixed on top with high z-index */}
+      <div 
+        className="px-5 pb-3 flex items-center justify-between flex-shrink-0 fixed top-0 left-0 right-0"
+        style={{ 
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)',
+          zIndex: 1000,
+          pointerEvents: 'auto'
+        }}
+      >
         <button 
           onClick={() => {
             if (onOpenMenu) {
@@ -227,7 +234,8 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Menu coming soon.');
             }
           }}
-          className="text-white text-lg"
+          className="text-white text-lg relative z-10"
+          style={{ pointerEvents: 'auto' }}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -242,55 +250,40 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Notifications coming soon.');
             }
           }}
-          className="text-white"
+          className="text-white relative z-10"
+          style={{ pointerEvents: 'auto' }}
         >
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
           </svg>
         </button>
       </div>
+      
+      {/* Spacer to account for fixed header */}
+      <div style={{ height: 'calc(env(safe-area-inset-top, 0px) + 43px + 0.75rem)' }} />
 
       {/* ON FIRE Section */}
       <div className="px-5 mb-3">
-        <div className="relative" style={{ overflow: 'visible' }}>
+        <div className="relative overflow-hidden">
           {/* Large ON FIRE Text */}
           <div className="relative mb-2 flex items-center gap-3">
-            {/* Fixed-dimension wrapper: base text defines size, flames overflow upward */}
             <div 
-              className="relative inline-block"
+              className="relative"
               style={{ 
-                height: '2rem',
-                overflow: 'visible' // Allow flames to overflow upward
+                height: 'auto',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'flex-start'
               }}
             >
-              {/* Base text (no fire) - always visible, defines container size */}
               <img 
-                src={onfireTextImage}
+                src={(cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? onfire2ndStateImage : onfireTextImage}
                 alt="ON FIRE" 
+                className="object-contain"
                 style={{ 
-                  height: '100%',
+                  height: (cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? '4.75rem' : '3.5rem',
                   width: 'auto',
-                  pointerEvents: 'none',
-                  zIndex: 1,
                   display: 'block'
-                }}
-              />
-              {/* Fire overlay - same width as base, flames overflow upward */}
-              <img 
-                src={onFireOnfireTextImage}
-                alt="ON FIRE" 
-                style={{ 
-                  position: 'absolute',
-                  left: 0,
-                  bottom: 0,
-                  height: '100%',
-                  width: '100%',
-                  objectFit: 'contain',
-                  objectPosition: 'left bottom',
-                  pointerEvents: 'none',
-                  zIndex: 2,
-                  opacity: (cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? 1 : 0,
-                  transition: 'opacity 250ms ease-in-out'
                 }}
               />
             </div>

@@ -31,9 +31,11 @@ export const CravingWheel: React.FC<CravingWheelProps> = ({
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = -circumference * (progress / 100);
+  // When on fire at 100%, show full ring (strokeDashoffset = 0)
+  const strokeDashoffset = (isOnFire && progress >= 100) ? 0 : -circumference * (progress / 100);
 
-  const getWheelColor = (prog: number) => {
+  const getWheelColor = (prog: number, onFire: boolean) => {
+    if (onFire && prog >= 100) return "#ffeb3b"; // Yellow when on fire at 100%
     if (prog >= 80) return "#ff5722";
     if (prog >= 60) return "#ff9800";
     if (prog >= 40) return "#ffc107";
@@ -62,14 +64,14 @@ export const CravingWheel: React.FC<CravingWheelProps> = ({
           cy={center}
           r={radius}
           fill="none"
-          stroke={getWheelColor(progress)}
+          stroke={getWheelColor(progress, isOnFire)}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           style={{
             transition: 'stroke-dashoffset 0.5s ease, stroke 0.5s ease',
-            filter: `drop-shadow(0 0 10px ${getWheelColor(progress)}80)`,
+            filter: `drop-shadow(0 0 10px ${getWheelColor(progress, isOnFire)}80)`,
           }}
         />
       </svg>
