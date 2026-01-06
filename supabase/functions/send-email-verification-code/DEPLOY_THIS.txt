@@ -1,0 +1,122 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@4.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map((o) => o.trim());
+  }
+  return [
+    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
+    "https://cravenusa.com",
+    "https://www.cravenusa.com",
+    "https://feeder.cravenusa.com",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+  ];
+};
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
+  };
+};
+
+serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+  
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") || "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+    );
+
+    const { email } = await req.json();
+
+    console.log("[send-email-verification-code] Received request for email:", email);
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ error: "Email is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const sixDigitCode = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("[send-email-verification-code] Generated code for", email);
+
+    const now = new Date().toISOString();
+    await supabase.from("phone_verifications").delete().eq("email", email);
+    await supabase.from("phone_verifications").delete().lt("expires_at", now);
+
+    const insertData = {
+      phone: "0000000000",
+      email: email,
+      code: sixDigitCode,
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      step: 2,
+    };
+
+    let insertResult = await supabase.from("phone_verifications").insert(insertData);
+
+    if (insertResult.error && (insertResult.error.message?.includes("step") || insertResult.error.code === "42703")) {
+      console.log("[send-email-verification-code] Step column not found, inserting without step field");
+      insertResult = await supabase.from("phone_verifications").insert({
+        phone: "0000000000",
+        email: email,
+        code: sixDigitCode,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      });
+    }
+
+    if (insertResult.error) {
+      console.error("[send-email-verification-code] Database insert error:", insertResult.error);
+      throw new Error("Failed to create verification record");
+    }
+
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+
+    const emailHtml = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"></head><body style=\"margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color: #f5f5f5; padding: 40px 0;\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);\"><tr><td style=\"background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;\"><h1 style=\"margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;\">Your Sign-In Code</h1></td></tr><tr><td style=\"padding: 40px;\"><p style=\"margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;\">Enter this verification code to sign in to your Feeder account.</p><div style=\"background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 30px; margin: 30px 0; border-radius: 4px; text-align: center;\"><p style=\"margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: 600;\">Your 6-digit verification code:</p><div style=\"background-color: #ffffff; border: 2px solid #ff6b00; border-radius: 8px; padding: 20px; margin: 15px 0; display: inline-block;\"><p style=\"margin: 0; color: #ff6b00; font-size: 48px; font-weight: bold; letter-spacing: 8px; font-family: 'Courier New', monospace; line-height: 1.2;\">" + sixDigitCode + "</p></div></div><p style=\"margin: 20px 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;\">Return to the sign-in page and enter this 6-digit code to complete your login.</p><p style=\"margin: 30px 0 0 0; color: #898989; font-size: 12px; line-height: 1.6;\">This code expires in 10 minutes. If you didn't request this, please ignore this email.</p></td></tr><tr><td style=\"background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;\"><p style=\"margin: 0; color: #898989; font-size: 12px;\">&copy; " + new Date().getFullYear() + " Crave'N. All rights reserved.</p></td></tr></table></td></tr></table></body></html>";
+
+    const emailResponse = await resend.emails.send({
+      from: fromEmail,
+      to: [email],
+      subject: "Your Sign-In Code: " + sixDigitCode + " - Crave'N",
+      html: emailHtml,
+    });
+
+    console.log("[send-email-verification-code] Email sent to", email, emailResponse);
+
+    if (emailResponse.error) {
+      throw new Error("Failed to send email: " + JSON.stringify(emailResponse.error));
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Verification code sent. Please check your email and enter the 6-digit code.", step: 2 }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  } catch (error) {
+    console.error("[send-email-verification-code] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to send verification email";
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+});
+

@@ -51,20 +51,21 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       console.log('🔐 Starting sign-in process...');
       console.log('📧 Sending 6-digit code to email:', emailValue);
       
-      // Use Supabase's native OTP - this sends a 6-digit code to email
-      const { error } = await supabase.auth.signInWithOtp({
-        email: emailValue,
-        options: {
-          shouldCreateUser: false, // Only allow existing users to login
+      // Use the same email verification function as DriverAuth (sends 6-digit code directly)
+      const { data, error } = await supabase.functions.invoke("send-email-verification-code", {
+        body: {
+          email: emailValue,
         },
       });
 
       if (error) {
-        console.error('❌ OTP error:', error);
-        if (error.message?.includes('Signups not allowed')) {
-          throw new Error('No account found with this email address.');
-        }
-        throw error;
+        console.error('❌ Function error:', error);
+        throw new Error(error.message || "Failed to send verification code.");
+      }
+
+      if (data?.error) {
+        console.error('❌ OTP send error:', data.error);
+        throw new Error(data.error);
       }
 
       console.log('✅ Verification code sent successfully');
@@ -119,35 +120,65 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     try {
       console.log('🔐 Verifying code...');
       
-      // Use Supabase's native OTP verification
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: codeValue,
-        type: 'email',
+      // Use the same verify function as DriverAuth
+      const { data, error } = await supabase.functions.invoke("verify-email-login", {
+        body: {
+          email: email.trim(),
+          code: codeValue,
+        },
       });
 
       if (error) {
-        console.error('❌ Verification error:', error);
-        throw error;
+        console.error('❌ Function error:', error);
+        throw new Error(error.message || "Failed to verify code.");
       }
 
-      if (!data?.user) {
-        throw new Error('Verification failed. Please try again.');
+      if (data?.error) {
+        console.error('❌ Verification error:', data.error);
+        throw new Error(data.error);
       }
 
-      console.log('✅ Verification successful, user:', data.user.id);
-
-      // User is now signed in - navigate to dashboard
-      setHasNavigated(true);
-      setVerifying(false);
-      
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in to your Feeder account.",
-      });
-      
-      console.log('🚀 Navigating to /mobile...');
-      window.location.href = '/mobile';
+      if (data?.verified && data?.signInLink) {
+        console.log('✅ Verification successful, signing in...');
+        console.log('🔗 Sign-in link:', data.signInLink);
+        setHasNavigated(true);
+        setVerifying(false);
+        
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in to your Feeder account.",
+        });
+        
+        console.log('🚀 Navigating to sign-in link...');
+        
+        // Try to extract token from magic link URL if it's a Supabase auth URL
+        try {
+          const url = new URL(data.signInLink);
+          const token = url.searchParams.get('token') || url.searchParams.get('access_token');
+          
+          if (token) {
+            // If we have a token, we can sign in directly
+            console.log('🔑 Found token in magic link, signing in directly...');
+            const { error: signInError } = await supabase.auth.setSession({
+              access_token: token,
+              refresh_token: '', // Will be set by Supabase
+            });
+            
+            if (!signInError) {
+              console.log('✅ Signed in successfully, navigating to /mobile');
+              navigate('/mobile', { replace: true });
+              return;
+            }
+          }
+        } catch (e) {
+          console.log('⚠️ Could not parse magic link URL, using direct navigation');
+        }
+        
+        // Fallback: navigate to magic link
+        window.location.href = data.signInLink;
+      } else {
+        throw new Error(data?.error || "Invalid verification code.");
+      }
     } catch (error: any) {
       console.error('❌ Verification error:', error);
       setVerifying(false);
@@ -176,14 +207,14 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
     
     try {
       const emailValue = email.trim();
-      const { error } = await supabase.auth.signInWithOtp({
-        email: emailValue,
-        options: {
-          shouldCreateUser: false,
+      const { data, error } = await supabase.functions.invoke("send-email-verification-code", {
+        body: {
+          email: emailValue,
         },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Failed to resend code.");
+      if (data?.error) throw new Error(data.error);
 
       setCodeSent(true);
       setLoading(false);
