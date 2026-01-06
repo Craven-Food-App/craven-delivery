@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FlamingText } from '@/components/ui/FlamingText';
 import { CravingWheel } from '@/components/driver/CravingWheel';
 import { NextShiftCountdown } from '@/components/driver/NextShiftCountdown';
@@ -27,6 +27,7 @@ export const TestOnFireGame: React.FC = () => {
   const [onlineDrivers, setOnlineDrivers] = useState<OnlineDriver[]>([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [sendingFire, setSendingFire] = useState<string | null>(null);
+  const activeFireTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const now = new Date();
   const scheduledAt = new Date(now.getTime());
@@ -90,6 +91,13 @@ export const TestOnFireGame: React.FC = () => {
   const sendFireToDriver = async (userId: string) => {
     setSendingFire(userId);
     try {
+      // Clear any existing timer for this driver
+      const existingTimer = activeFireTimersRef.current.get(userId);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        activeFireTimersRef.current.delete(userId);
+      }
+
       // Use RPC function to bypass RLS for testing
       // userId is the auth.users.id from driver_profiles.user_id
       const { error } = await supabase.rpc('admin_update_craving_progress', {
@@ -107,7 +115,34 @@ export const TestOnFireGame: React.FC = () => {
         throw error;
       }
 
-      toast.success(`🔥 ON FIRE sent to driver! They should see it on their earnings page.`);
+      toast.success(`🔥 ON FIRE sent to driver! Will auto-reset in 60 seconds.`);
+      
+      // Set up 60-second timeout to reset the fire state
+      const timer = setTimeout(async () => {
+        try {
+          // Reset points back to 0 (or a normal state)
+          await supabase.rpc('admin_update_craving_progress', {
+            p_user_id: userId,
+            p_current_points: 0,
+            p_max_points: 2000,
+            p_date: new Date().toISOString().split('T')[0]
+          });
+          
+          toast.info(`🔥 ON FIRE test ended for driver. Points reset.`);
+          
+          // Clean up timer
+          activeFireTimersRef.current.delete(userId);
+          
+          // Refresh driver list
+          fetchOnlineDrivers();
+        } catch (error: any) {
+          console.error('Error resetting fire state:', error);
+          toast.error('Failed to reset fire state automatically');
+        }
+      }, 60000); // 60 seconds
+
+      // Store the timer
+      activeFireTimersRef.current.set(userId, timer);
       
       // Refresh driver list
       setTimeout(() => fetchOnlineDrivers(), 1000);
@@ -119,6 +154,14 @@ export const TestOnFireGame: React.FC = () => {
       setSendingFire(null);
     }
   };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      activeFireTimersRef.current.forEach(timer => clearTimeout(timer));
+      activeFireTimersRef.current.clear();
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
