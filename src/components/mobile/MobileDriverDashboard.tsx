@@ -24,7 +24,6 @@ import CorporateEarningsDashboard from './CorporateEarningsDashboard';
 import FeederAccountPage from './FeederAccountPage';
 import FeederRatingsTab from './FeederRatingsTab';
 import CravenAppComm from './CravenAppComm';
-import { OnFireDashboard } from '@/components/driver/OnFireDashboard';
 import { SafetySettings } from '@/components/settings/SafetySettings';
 import { useCravingWheel } from '@/hooks/useCravingWheel';
 import { speedDetectionService } from '@/services/speedDetectionService';
@@ -1377,9 +1376,9 @@ export const MobileDriverDashboard: React.FC = () => {
         {activeTab === 'earnings' && (
           <div className="fixed inset-0 z-20 overflow-hidden bg-background">
             <div className="h-full overflow-y-auto">
-              <OnFireDashboard 
-                userId={user?.id || ''} 
-                onOpenSettings={() => setShowOnFireSettings(true)}
+              <CorporateEarningsDashboard 
+                onOpenMenu={() => setShowSidebar(true)}
+                onOpenNotifications={() => setActiveTab('notifications')}
               />
             </div>
           </div>

@@ -6,6 +6,11 @@ import { ExclusiveOrdersFeed } from '@/components/diamond-orders/ExclusiveOrders
 import { DiamondPointsBadge } from '@/components/diamond-orders/DiamondPointsBadge';
 import { useDriverTier } from '@/hooks/diamond-orders/useDriverTier';
 import { useDiamondPoints } from '@/hooks/diamond-orders/useDiamondPoints';
+import { CravingWheel } from '@/components/driver/CravingWheel';
+import { FlamingText } from '@/components/ui/FlamingText';
+import { useCravingWheel } from '@/hooks/useCravingWheel';
+import onfireTextImage from '@/assets/onfire-text.png';
+import onFireOnfireTextImage from '@/assets/on-fire-onfire-text.png';
 
 type CorporateEarningsDashboardProps = {
   onOpenMenu?: () => void;
@@ -29,8 +34,20 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
   const [availableOrder, setAvailableOrder] = useState<any>(null);
   const [cravingLevel, setCravingLevel] = useState(70); // Percentage for craving meter
   const [isEarningsExpanded, setIsEarningsExpanded] = useState(true); // Collapsible state
+  const [userId, setUserId] = useState<string>('');
   const { isDiamond } = useDriverTier();
   const { points: diamondPoints } = useDiamondPoints();
+  
+  // Get ON FIRE game state
+  const { state: cravingState } = useCravingWheel(userId);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    getUser();
+  }, []);
 
   useEffect(() => {
     fetchEarningsData();
@@ -238,12 +255,25 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
         <div className="relative overflow-hidden">
           {/* Large ON FIRE Text */}
           <div className="relative mb-2 flex items-center gap-3">
-            <h2 className="text-4xl font-black text-orange-400 leading-none tracking-tighter" style={{
-              textShadow: '0 2px 0 rgba(0,0,0,0.1)',
-              WebkitTextStroke: '1px rgba(255,255,255,0.1)'
-            }}>
-              ON FIRE
-            </h2>
+            <div 
+              style={{ 
+                height: '2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start'
+              }}
+            >
+              <img 
+                src={(cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? onFireOnfireTextImage : onfireTextImage}
+                alt="ON FIRE" 
+                className="object-contain"
+                style={{ 
+                  maxHeight: '100%',
+                  width: 'auto',
+                  maxWidth: '100%'
+                }}
+              />
+            </div>
             <p className="text-white text-sm font-semibold whitespace-nowrap">
               {cravingLevel > 70 ? 'Cravings spike active!' : 'Normal activity'}
             </p>
@@ -252,31 +282,13 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
           
           {/* Craving Circle, Graphs, and Buttons */}
           <div className="flex items-start gap-3 mb-4">
-            {/* Circular Progress */}
-            <div className="relative w-28 h-28 flex-shrink-0">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="56" cy="56" r="50" fill="none" stroke="rgba(139, 0, 0, 0.3)" strokeWidth="12"/>
-                <circle 
-                  cx="56" 
-                  cy="56" 
-                  r="50" 
-                  fill="none" 
-                  stroke="url(#gradient)" 
-                  strokeWidth="12" 
-                  strokeDasharray="314" 
-                  strokeDashoffset={314 - (314 * cravingLevel / 100)} 
-                  strokeLinecap="round"
-                />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FCD34D" />
-                    <stop offset="100%" stopColor="#F59E0B" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">CRAVING</span>
-              </div>
+            {/* Craving Wheel */}
+            <div className="flex-shrink-0">
+              <CravingWheel
+                currentPoints={cravingState.currentPoints}
+                maxPoints={cravingState.maxPoints}
+                isOnFire={cravingState.currentPoints / cravingState.maxPoints >= 1.0}
+              />
             </div>
             
             {/* Earnings Graph - Two bars per day */}
