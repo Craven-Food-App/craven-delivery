@@ -217,15 +217,8 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
       background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
-      {/* Header - Level with hamburger menu - Fixed on top with high z-index */}
-      <div 
-        className="px-5 pb-3 flex items-center justify-between flex-shrink-0 fixed top-0 left-0 right-0"
-        style={{ 
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)',
-          zIndex: 1000,
-          pointerEvents: 'auto'
-        }}
-      >
+      {/* Header - Level with hamburger menu */}
+      <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
         <button 
           onClick={() => {
             if (onOpenMenu) {
@@ -234,8 +227,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Menu coming soon.');
             }
           }}
-          className="text-white text-lg relative z-10"
-          style={{ pointerEvents: 'auto' }}
+          className="text-white text-lg"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -250,17 +242,13 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Notifications coming soon.');
             }
           }}
-          className="text-white relative z-10"
-          style={{ pointerEvents: 'auto' }}
+          className="text-white"
         >
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
           </svg>
         </button>
       </div>
-      
-      {/* Spacer to account for fixed header */}
-      <div style={{ height: 'calc(env(safe-area-inset-top, 0px) + 43px + 0.75rem)' }} />
 
       {/* ON FIRE Section */}
       <div className="px-5 mb-3">

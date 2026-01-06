@@ -1377,7 +1377,7 @@ export const MobileDriverDashboard: React.FC = () => {
           <div className="fixed inset-0 z-20 overflow-hidden bg-background">
             <div className="h-full overflow-y-auto">
               <CorporateEarningsDashboard 
-                onOpenMenu={() => setShowSidebar(true)}
+                onOpenMenu={() => setIsMenuOpen(true)}
                 onOpenNotifications={() => setActiveTab('notifications')}
               />
             </div>
