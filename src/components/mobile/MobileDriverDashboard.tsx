@@ -524,7 +524,6 @@ export const MobileDriverDashboard: React.FC = () => {
     playNotification
   } = useNotificationSettings();
   const { showNotification, notifications: iosNotifications, dismissNotification } = useIOSNotifications();
-  const { state: cravingState, startSpeedMonitoring } = useCravingWheel(user?.id || '');
   const { state: cravingState, addDeliveryPoints, updateAcceptanceRate, startSpeedMonitoring } = useCravingWheel(user?.id || '');
 
   const handleStartFeeding = useCallback(async () => {
