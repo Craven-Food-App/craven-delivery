@@ -46,8 +46,8 @@ const MobileFeederLogin: React.FC<MobileFeederLoginProps> = ({ onBack, onLoginSu
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: identifier,
-          password,
-        });
+        password: password.trim(),
+      });
 
       if (error) {
         console.error('❌ Auth error:', error);

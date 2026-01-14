@@ -22,6 +22,10 @@ export const useAutoLogout = (portalType: string, onSaveDraft?: () => DraftData 
   const warningShownRef = useRef<boolean>(false);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const activityListenersRef = useRef<(() => void)[]>([]);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUpdateRef = useRef<number>(0);
+  const pendingUpdateRef = useRef<boolean>(false);
+  const consecutiveErrorsRef = useRef<number>(0);
 
   // Save draft to localStorage
   const saveDraft = useCallback(() => {
@@ -97,25 +101,81 @@ export const useAutoLogout = (portalType: string, onSaveDraft?: () => DraftData 
     }
   }, [saveDraft, portalType, navigate]);
 
-  // Update last activity timestamp
+  // Update last activity timestamp with debouncing and error handling
   const updateActivity = useCallback(() => {
     lastActivityRef.current = Date.now();
     warningShownRef.current = false;
     
-    // Update session activity in database
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from('user_sessions')
-          .update({ last_activity_at: new Date().toISOString() })
-          .eq('user_id', user.id)
-          .eq('portal_type', portalType)
-          .eq('is_active', true)
-          .then(() => {
-            // Silently handle errors
-          });
+    // Clear any pending update
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+      updateTimeoutRef.current = null;
+    }
+    
+    // Debounce: Only update database at most once every 5 seconds
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateRef.current;
+    const DEBOUNCE_INTERVAL = 5000; // 5 seconds
+    
+    // If too many consecutive errors, stop trying for a while
+    if (consecutiveErrorsRef.current >= 3) {
+      // Reset error count after 30 seconds
+      if (timeSinceLastUpdate > 30000) {
+        consecutiveErrorsRef.current = 0;
+      } else {
+        return; // Skip update if we have too many errors
       }
-    });
+    }
+    
+    // Schedule update if enough time has passed
+    if (timeSinceLastUpdate >= DEBOUNCE_INTERVAL && !pendingUpdateRef.current) {
+      updateTimeoutRef.current = setTimeout(async () => {
+        if (pendingUpdateRef.current) return; // Already updating
+        
+        pendingUpdateRef.current = true;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { error } = await supabase
+              .from('user_sessions')
+              .update({ last_activity_at: new Date().toISOString() })
+              .eq('user_id', user.id)
+              .eq('portal_type', portalType)
+              .eq('is_active', true);
+            
+            if (error) {
+              // Check if it's a connection error
+              if (error.message?.includes('Failed to fetch') || 
+                  error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                  error.message?.includes('NetworkError')) {
+                consecutiveErrorsRef.current += 1;
+                // Don't log connection errors to avoid spam
+                return;
+              }
+              // Log other errors
+              console.error('Error updating session activity:', error);
+              consecutiveErrorsRef.current += 1;
+            } else {
+              // Success - reset error count
+              consecutiveErrorsRef.current = 0;
+              lastUpdateRef.current = Date.now();
+            }
+          }
+        } catch (error: any) {
+          // Handle connection errors silently
+          if (error?.message?.includes('Failed to fetch') || 
+              error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+              error?.message?.includes('NetworkError')) {
+            consecutiveErrorsRef.current += 1;
+            return;
+          }
+          console.error('Error updating session activity:', error);
+          consecutiveErrorsRef.current += 1;
+        } finally {
+          pendingUpdateRef.current = false;
+        }
+      }, 100); // Small delay to batch rapid events
+    }
   }, [portalType]);
 
   // Check for inactivity
@@ -158,6 +218,10 @@ export const useAutoLogout = (portalType: string, onSaveDraft?: () => DraftData 
     return () => {
       activityListenersRef.current.forEach(cleanup => cleanup());
       activityListenersRef.current = [];
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
     };
   }, [updateActivity]);
 

@@ -35,6 +35,15 @@ export const useExclusiveOrders = (isDiamond: boolean) => {
 
       const now = new Date().toISOString();
       
+      // Check if user is a test user
+      const { data: settings } = await supabase
+        .from('driver_settings')
+        .select('is_test_user')
+        .eq('user_id', user.id)
+        .single();
+      
+      const isTestUser = settings?.is_test_user || false;
+      
       // Build query - fetch all exclusive orders first
       let query = supabase
         .from('orders')
@@ -44,7 +53,8 @@ export const useExclusiveOrders = (isDiamond: boolean) => {
           order_assignments!left(id, status)
         `)
         .neq('exclusive_type', 'none')
-        .in('order_status', ['pending', 'confirmed', 'preparing', 'ready']);
+        .in('order_status', ['pending', 'confirmed', 'preparing', 'ready'])
+        .eq('is_test', isTestUser); // Filter by test status
 
       const { data, error } = await query.order('created_at', { ascending: false });
 

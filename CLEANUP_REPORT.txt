@@ -1,0 +1,2378 @@
+
+================================================================================
+FILE: \src\__tests__\MobileDriverDashboard.test.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\AccessGuard.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 7
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\CravenFillCountdownFlow.tsx
+  console.log: 2
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\DailyEarningsTracker.tsx
+  console.log: 4
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\DriverTrackingModal.tsx
+  console.log: 1
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\LeafletMap.tsx
+  console.log: 8
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\Map.tsx
+  console.log: 4
+  console.error: 2
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\OrderTrackingBox.tsx
+  console.log: 3
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\ReferralProgram.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\RestaurantGrid.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\account\AccountSection.tsx
+  console.log: 3
+  console.error: 21
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\address\AddressManager.tsx
+  console.log: 3
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\admin\AuditLogs.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\CustomerManagement.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\DisputeResolution.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\DriverSupportDashboard.tsx
+  console.log: 3
+  console.error: 9
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\admin\LiveDashboard.tsx
+  console.log: 9
+  console.error: 8
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 10
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\OrderManagement.tsx
+  console.log: 1
+  console.error: 9
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\RefundManagement.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\SupportTickets.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\ZoneDrawingMap.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\EnhancedRestaurantOnboarding.tsx
+  console.log: 5
+  console.error: 10
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 1
+  TS suppressions: 0
+  TODOs:
+    Line 401: // TODO: Implement chat functionality
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\analytics\AnalyticsDashboard.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 1
+  TODOs:
+    Line 228: // TODO: Implement CSV export
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\components\ActivityLog.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\components\BulkActionBar.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\components\TeamAssignment.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\utils\activityLogger.ts
+  console.log: 0
+  console.error: 2
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\verification\DocumentVerificationPanel.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\restaurant-onboarding\views\KanbanView.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\FeatureToggleManager.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\ApplicationReview.tsx
+  console.log: 1
+  console.error: 8
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\admin\UserAccountManager.tsx
+  console.log: 1
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\admin\InvestorIntakeManager.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 122: // TODO: Send approval email notification
+
+================================================================================
+FILE: \src\components\chat\ChatInterface.tsx
+  console.log: 6
+  console.error: 7
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\common\AddressAutocomplete.tsx
+  console.log: 35
+  console.error: 1
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 10
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\customer\CustomerDashboard.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\driver\DriverAccountSection.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\driver\SignatureCanvas.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\merchant\MerchantLandingPage.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 6
+  TODO/FIXME: 0
+  Commented blocks: 8
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\AccountSection_old_backup.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\mobile\DeliveryPanel.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\DriverPromosPage.tsx
+  console.log: 0
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\mobile\EnhancedActiveDeliveryFlow.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\IOSPushNotifications.tsx
+  console.log: 1
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\LoadingScreen.tsx
+  console.log: 2
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\OrderMapPreview.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 10
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\OrderVerificationScreen.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\mobile\PushNotificationSetup.tsx
+  console.log: 8
+  console.error: 10
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\RatingsSection.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\mobile\ScheduleSection_old_backup.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\mobile\TestCompletionModal.tsx
+  console.log: 2
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\MobileMapbox.tsx
+  console.log: 1
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 5
+  TS suppressions: 0
+  TODOs:
+    Line 391: // TODO: Open schedule modal for future feeding times
+
+================================================================================
+FILE: \src\components\mobile\FeederScheduleTab.tsx
+  console.log: 11
+  console.error: 8
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 4
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\OrderAssignmentModal.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\VehicleDocumentsPage.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 38: // TODO: Driver table structure needs update - using placeholder data
+
+================================================================================
+FILE: \src\components\mobile\MobileFeederLogin.tsx
+  console.log: 3
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\CravenAppComm.tsx
+  console.log: 0
+  console.error: 7
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 5
+
+================================================================================
+FILE: \src\components\mobile\TestMobileScreen.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\CorporateEarningsDashboard.tsx
+  console.log: 4
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\FeederAccountPage.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\mobile\MobileDriverDashboard.tsx
+  console.log: 3
+  console.error: 25
+  console.warn: 3
+  TODO/FIXME: 1
+  Commented blocks: 12
+  TS suppressions: 1
+  TODOs:
+    Line 1235: // TODO: Implement customer service chat functionality
+
+================================================================================
+FILE: \src\components\notifications\PushNotificationManager.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\onboarding\VehiclePhotosUpload.tsx
+  console.log: 1
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\onboarding\EnhancedOnboardingDashboard.tsx
+  console.log: 7
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\BasicStoreManagement.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\CartSidebar.tsx
+  console.log: 5
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\restaurant\MenuImport.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\restaurant\MenuItemModal.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\restaurant\NewOrderAlert.tsx
+  console.log: 4
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\OrderNotificationSystem.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\SimpleStoreManagement.tsx
+  console.log: 5
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\StoreManagement.tsx
+  console.log: 5
+  console.error: 8
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\RequestDeliveryDashboard.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\financials\TransactionsDashboard.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\insights\ReportsDashboard.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\menu\MenuManagerDashboard.tsx
+  console.log: 6
+  console.error: 4
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\settings\StoreSettingsDashboard.tsx
+  console.log: 5
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\dashboard\settings\MoovOnboardingCard.tsx
+  console.log: 4
+  console.error: 5
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\onboarding\utils\authHelper.ts
+  console.log: 1
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 4
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\ModernPOS.tsx
+  console.log: 2
+  console.error: 7
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\RestaurantCustomerOrderManagement.tsx
+  console.log: 4
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\RestaurantOrderManagement.tsx
+  console.log: 6
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\restaurant\RestaurantMenuPage.tsx
+  console.log: 3
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 4
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\testing\LiveDriverTesting.tsx
+  console.log: 17
+  console.error: 5
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 16
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\ceo\AuditTrail.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\MeetingScheduler.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\ReportsViewer.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\StrategicPlanning.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\CompanyMetrics.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\EquityDashboard.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\StrategicMindMap.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\RoleSyncVerification.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\CreateAuthAccounts.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\PersonnelManager.tsx
+  console.log: 0
+  console.error: 18
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 11
+  TS suppressions: 3
+
+================================================================================
+FILE: \src\components\ceo\ActiveUsersMonitor.tsx
+  console.log: 5
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\ceo\QuickActions.tsx
+  console.log: 0
+  console.error: 7
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\EmergencyControls.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\FinancialApprovals.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\ceo\CodeChangeQueue.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\BoardMeetings.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 2
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 32: // TODO: Implement once board_meetings table is created
+    Line 38: // TODO: Implement once board_meetings table is created
+
+================================================================================
+FILE: \src\components\board\FinancialDashboard.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\PersonnelOverview.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\StrategicOverview.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\CapTableView.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\board\EquityGrantForm.tsx
+  console.log: 2
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\board\ExecutiveDirectory.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\ArticlesOfIncorporationGenerator.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\GenerateOfficerDocuments.tsx
+  console.log: 11
+  console.error: 12
+  console.warn: 11
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\board\OfficerAppointmentWorkflow.tsx
+  console.log: 4
+  console.error: 8
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 10
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\board\ExecutiveComms.tsx
+  console.log: 1
+  console.error: 9
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\messaging\MessageCenter.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\executive\ExecutiveNotifications.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\executive\ExecutiveInboxIMessage.tsx
+  console.log: 20
+  console.error: 18
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 17
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\executive\ExecutiveSigningFlow.tsx
+  console.log: 3
+  console.error: 3
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\DocumentPreview.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\SignaturePad.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\DocumentDashboard.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\PerformanceManagement.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\CompensationManagement.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\CompensationView.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\TimePtoView.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 7
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\AnalyticsView.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\ComplianceView.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\EmployeeRelationsView.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\SystemAdminView.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\PersonnelManagementView.tsx
+  console.log: 0
+  console.error: 7
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\PositionManagement.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\PermissionsManagement.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\DocumentGenerator.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\EquityManagement.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\DocumentGeneratorView.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\ExecutiveDocumentSignatureTagger.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 11
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\InternCandidateManagement.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\ExitWorkflowManager.tsx
+  console.log: 37
+  console.error: 11
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 4
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\exit\ExitWorkflowDetailModal.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\exit\FinalSettlementStep.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\exit\AccessRevocationStep.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\exit\AssetReturnStep.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\hr\talent-lens\ImportModal.tsx
+  console.log: 2
+  console.error: 1
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\hr\talent-lens\ResumeParser.ts
+  console.log: 16
+  console.error: 3
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 12
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\cfo\EnhancedCFODashboard.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 3
+
+================================================================================
+FILE: \src\components\cfo\AdvancedTreasuryManagement.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 4
+  TS suppressions: 11
+
+================================================================================
+FILE: \src\components\cfo\EnhancedTaxPlanning.tsx
+  console.log: 1
+  console.error: 12
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\marketing\VideoGenerator.tsx
+  console.log: 4
+  console.error: 7
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\cxo\training\CxoTrainingHome.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 2
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 57: lessonsCount: 0, // TODO: Load from lessons
+    Line 58: completedLessonsCount: 0, // TODO: Calculate from progress
+
+================================================================================
+FILE: \src\components\cto\TeamResourceManagement.tsx
+  console.log: 0
+  console.error: 9
+  console.warn: 5
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 3
+
+================================================================================
+FILE: \src\components\cto\CTODailyWorkflow.tsx
+  console.log: 0
+  console.error: 10
+  console.warn: 6
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 3
+
+================================================================================
+FILE: \src\components\cto\IncidentsDashboard.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\cto\EnhancedCTODashboard.tsx
+  console.log: 0
+  console.error: 9
+  console.warn: 1
+  TODO/FIXME: 1
+  Commented blocks: 5
+  TS suppressions: 0
+  TODOs:
+    Line 516: // TODO: If monthly trends are needed, create it_infrastructure_history table
+
+================================================================================
+FILE: \src\components\cto\MorningTechnicalReview.tsx
+  console.log: 3
+  console.error: 8
+  console.warn: 12
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\cto\AssetManagement.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\components\cto\CTOOnboardingGovernance.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\DriverApplicationWizard.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 1
+  TODO/FIXME: 1
+  Commented blocks: 2
+  TS suppressions: 0
+  TODOs:
+    Line 258: position: 1, // TODO: Implement proper waitlist position calculation
+
+================================================================================
+FILE: \src\components\diamond-orders\ExclusiveOrdersFeed.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\finance\TaxManagementView.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\finance\FinancialReportsDashboard.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 12
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\finance\BankingTreasuryView.tsx
+  console.log: 2
+  console.error: 14
+  console.warn: 7
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\governance\VotingWidget.tsx
+  console.log: 1
+  console.error: 8
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\components\investor\InvestorAccessGuard.tsx
+  console.log: 8
+  console.error: 2
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\config\environment.ts
+  console.log: 1
+  console.error: 1
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useApplicationState.ts
+  console.log: 10
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useDriverLocation.tsx
+  console.log: 4
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useNotificationSettings.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useOfflineStorage.ts
+  console.log: 1
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\usePerformanceMonitoring.ts
+  console.log: 3
+  console.error: 0
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useRestaurantSelector.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useFeatureFlag.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\hooks\diamond-orders\useDriverTier.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\diamond-orders\useExclusiveOrders.ts
+  console.log: 3
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useActivityTracking.ts
+  console.log: 0
+  console.error: 8
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\hooks\useFinance.ts
+  console.log: 0
+  console.error: 2
+  console.warn: 6
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\hooks\useAnalytics.ts
+  console.log: 1
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useExecAuth.ts
+  console.log: 9
+  console.error: 1
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\hooks\useAutoLogout.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useNativeNotification.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\hooks\useCravingWheel.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\integrations\sentry.ts
+  console.log: 2
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\lib\governance\flows.ts
+  console.log: 1
+  console.error: 13
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\lib\governance\StatusManager.ts
+  console.log: 5
+  console.error: 15
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\lib\authGuard.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\lib\cxo\repositories\trainingRepository.ts
+  console.log: 0
+  console.error: 13
+  console.warn: 5
+  TODO/FIXME: 0
+  Commented blocks: 16
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\lib\cto\repositories\ctoTrainingRepository.ts
+  console.log: 0
+  console.error: 13
+  console.warn: 5
+  TODO/FIXME: 0
+  Commented blocks: 16
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\DriverAuth.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\PaymentSuccess.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\RequestDelivery.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\TrackOrder.tsx
+  console.log: 1
+  console.error: 9
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\driverOnboarding\steps\BasicInfoStep.tsx
+  console.log: 4
+  console.error: 8
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\driverOnboarding\steps\AppDownloadStep.tsx
+  console.log: 5
+  console.error: 6
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\driverOnboarding\PostWaitlistOnboarding.tsx
+  console.log: 0
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\FeederHub.tsx
+  console.log: 9
+  console.error: 8
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\ExecutiveSignature.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\Checkout.tsx
+  console.log: 4
+  console.error: 11
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\marketing\AdCreationModal.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 154: : null; // TODO: Add date picker for scheduled campaigns
+
+================================================================================
+FILE: \src\pages\marketing\CustomerSegmentation.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 3
+  Commented blocks: 1
+  TS suppressions: 0
+  TODOs:
+    Line 55: // TODO: Create customer_segments table in database
+    Line 72: // TODO: Implement full filtering logic based on criteria
+    Line 95: // TODO: Save to database
+
+================================================================================
+FILE: \src\pages\marketing\EmailCampaignManager.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 3
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 63: // TODO: Create email_campaigns table
+    Line 104: // TODO: Save to database
+    Line 111: // TODO: Integrate with send-customer-welcome-email or create send-email-campaig
+
+================================================================================
+FILE: \src\pages\marketing\PushNotificationManager.tsx
+  console.log: 0
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 3
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 62: // TODO: Create push_campaigns table
+    Line 104: // TODO: Save to database
+    Line 123: // TODO: Get users from segment
+
+================================================================================
+FILE: \src\pages\marketing\ToolsIntegrations.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 94: // TODO: Implement OAuth flow or API key setup
+
+================================================================================
+FILE: \src\pages\marketing\MarketingSettings.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 52: // TODO: Save to database
+
+================================================================================
+FILE: \src\pages\marketing\ExperimentalFeatures.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 1
+  TS suppressions: 0
+  TODOs:
+    Line 21: // TODO: Integrate with AI API (OpenAI, Claude, etc.)
+
+================================================================================
+FILE: \src\pages\AboutUs.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\ExecutiveDocumentPortal.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\COOPortal.tsx
+  console.log: 0
+  console.error: 10
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\HRPortal.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\ExecutiveResetPassword.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\ExecutiveProfile.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\Auth.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\MerchantPortal.tsx
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\RestaurantAuth.tsx
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\CFOPortal.tsx
+  console.log: 0
+  console.error: 16
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\pages\EnterpriseFinancePortal.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\MainHub.tsx
+  console.log: 23
+  console.error: 15
+  console.warn: 4
+  TODO/FIXME: 0
+  Commented blocks: 23
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\DepartmentHub.tsx
+  console.log: 1
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\ExecutiveAccountability.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\admin\ResendWaitlistEmail.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\PitchDeck.tsx
+  console.log: 0
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 2
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 370: // TODO: Implement question submission with backend
+    Line 383: // TODO: Implement call request with backend
+
+================================================================================
+FILE: \src\pages\InvestorReady.tsx
+  console.log: 0
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 4
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 213: // TODO: Implement shortlist functionality with backend
+    Line 224: // TODO: Implement interest functionality with backend
+    Line 236: // TODO: Implement question submission with backend
+    Line 249: // TODO: Implement call request with backend
+
+================================================================================
+FILE: \src\pages\legacy\InvestorAccess.tsx
+  console.log: 1
+  console.error: 4
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\EngineeringWorkspace.tsx
+  console.log: 4
+  console.error: 5
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 1
+  TS suppressions: 0
+  TODOs:
+    Line 268: // TODO: Open create ticket modal
+
+================================================================================
+FILE: \src\pages\PlatformInfrastructureHub.tsx
+  console.log: 2
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\ProductCommandCenter.tsx
+  console.log: 2
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\QualityReleasePortal.tsx
+  console.log: 3
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\InternalITOperations.tsx
+  console.log: 3
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\pages\CTOPortal.tsx
+  console.log: 2
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\services\applicationService_MINIMAL.ts
+  console.log: 2
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\services\compensation\driverPayEngine.ts
+  console.log: 0
+  console.error: 5
+  console.warn: 1
+  TODO/FIXME: 1
+  Commented blocks: 2
+  TS suppressions: 0
+  TODOs:
+    Line 123: const penaltyCents = 0; // TODO: Calculate based on violations
+
+================================================================================
+FILE: \src\services\speedDetectionService.ts
+  console.log: 3
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 1
+  Commented blocks: 0
+  TS suppressions: 0
+  TODOs:
+    Line 117: // TODO: Integrate with Mapbox or other API for real speed limits
+
+================================================================================
+FILE: \src\utils\WebScrapingService.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\testHelpers.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\utils\seedEmailTemplatesFromCode.ts
+  console.log: 4
+  console.error: 4
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\fixTemplatePlaceholders.ts
+  console.log: 1
+  console.error: 2
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 9
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\foundersTable.ts
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\seedTemplatesFromCode.ts
+  console.log: 5
+  console.error: 4
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\templateUtils.ts
+  console.log: 0
+  console.error: 2
+  console.warn: 9
+  TODO/FIXME: 0
+  Commented blocks: 8
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\fortune500DocumentFlow.ts
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 9
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\BackgroundRemovalService.ts
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\validation.ts
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 36
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\cravemoreAnalytics.ts
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\formSchemas.ts
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 18
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\utils\exitWorkflowUtils.ts
+  console.log: 11
+  console.error: 11
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 8
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\components\CompanySidebar.tsx
+  console.log: 2
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 2
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\ResolutionList.tsx
+  console.log: 14
+  console.error: 6
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 8
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\CapTableOverview.tsx
+  console.log: 21
+  console.error: 6
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 7
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\EquityGrantForm.tsx
+  console.log: 4
+  console.error: 3
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\AppointmentList.tsx
+  console.log: 5
+  console.error: 11
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\ResolutionVotingDashboard.tsx
+  console.log: 25
+  console.error: 8
+  console.warn: 5
+  TODO/FIXME: 0
+  Commented blocks: 6
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\portals\company\governance-admin\EquityGrantsList.tsx
+  console.log: 23
+  console.error: 10
+  console.warn: 7
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\governance-admin\wizards\shared\useAutoAdvance.ts
+  console.log: 1
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\board\BoardResolutionDetail.tsx
+  console.log: 0
+  console.error: 6
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\portals\company\executives\MyAppointment.tsx
+  console.log: 12
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\executives\EquityDashboard.tsx
+  console.log: 8
+  console.error: 5
+  console.warn: 8
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\portals\company\executives\VestingProgress.tsx
+  console.log: 0
+  console.error: 1
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\portals\company\executives\MyDocuments.tsx
+  console.log: 23
+  console.error: 13
+  console.warn: 3
+  TODO/FIXME: 0
+  Commented blocks: 3
+  TS suppressions: 2
+
+================================================================================
+FILE: \src\portals\company\sop\SOPManagement.tsx
+  console.log: 12
+  console.error: 4
+  console.warn: 1
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\company\sop\sopContent.ts
+  console.log: 2
+  console.error: 2
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 1
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\intern\training\InternTraining.tsx
+  console.log: 0
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 12
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\portals\intern\training\CertificateGenerator.tsx
+  console.log: 1
+  console.error: 0
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0
+
+================================================================================
+FILE: \src\main.tsx
+  console.log: 5
+  console.error: 0
+  console.warn: 2
+  TODO/FIXME: 0
+  Commented blocks: 5
+  TS suppressions: 1
+
+================================================================================
+FILE: \src\plugins\BackgroundLocation.ts
+  console.log: 2
+  console.error: 3
+  console.warn: 0
+  TODO/FIXME: 0
+  Commented blocks: 0
+  TS suppressions: 0

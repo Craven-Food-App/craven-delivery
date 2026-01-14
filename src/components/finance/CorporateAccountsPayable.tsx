@@ -73,6 +73,7 @@ interface Invoice {
   days_overdue: number;
   payment_terms: string;
   created_at: string;
+  notes?: string;
 }
 
 interface APMetrics {
@@ -115,6 +116,10 @@ export const CorporateAccountsPayable: React.FC = () => {
   const [departments, setDepartments] = useState<any[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [canManage, setCanManage] = useState(false);
+  const [submittingInvoice, setSubmittingInvoice] = useState(false);
+  const [approvingInvoice, setApprovingInvoice] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [emailReceivedCount, setEmailReceivedCount] = useState(0);
 
   useEffect(() => {
     fetchInvoices();
@@ -137,7 +142,7 @@ export const CorporateAccountsPayable: React.FC = () => {
           department:departments(name),
           expense_category:expense_categories(name)
         `)
-        .order('invoice_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1000);
 
       if (error) {
@@ -171,13 +176,21 @@ export const CorporateAccountsPayable: React.FC = () => {
           department: inv.department?.name || 'Unassigned',
           expense_category: inv.expense_category?.name || 'Uncategorized',
           days_overdue: daysOverdue,
-          payment_terms: inv.payment_terms || 'Net 30',
+          payment_terms: (inv.notes?.match(/Payment Terms:\s*(.+)/)?.[1]) || 'Net 30',
           created_at: inv.created_at,
         };
       });
 
       setInvoices(processedInvoices);
       calculateMetrics(processedInvoices);
+      
+      // Count invoices received via email (check notes field from raw data)
+      const emailReceived = (data || []).filter((inv: any) => {
+        const notes = inv.notes || '';
+        return notes.includes('Received via email') || 
+               notes.includes('invoices@cravenusa.com');
+      }).length;
+      setEmailReceivedCount(emailReceived);
     } catch (error: any) {
       console.error('Error fetching invoices:', error);
       message.error('Failed to load Accounts Payable data');
@@ -320,26 +333,36 @@ export const CorporateAccountsPayable: React.FC = () => {
   };
 
   const handleCreateOrUpdateInvoice = async (values: any) => {
+    setSubmittingInvoice(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        message.error('You must be logged in to create invoices');
-        return;
+        const error = new Error('You must be logged in to create invoices');
+        message.error(error.message);
+        throw error;
       }
 
-      const invoiceData = {
+      const amount = Number(values.amount) || 0;
+      const taxAmount = Number(values.tax_amount) || 0;
+      const totalAmount = amount + taxAmount;
+
+      const invoiceData: any = {
         vendor_name: values.vendor_name,
         vendor_email: values.vendor_email,
         invoice_date: values.invoice_date.format('YYYY-MM-DD'),
         due_date: values.due_date.format('YYYY-MM-DD'),
-        amount: values.amount,
-        tax_amount: values.tax_amount || 0,
-        payment_terms: values.payment_terms || 'Net 30',
+        amount: amount,
+        tax_amount: taxAmount,
         department_id: values.department_id,
         expense_category_id: values.expense_category_id,
         status: 'pending',
         updated_at: new Date().toISOString(),
       };
+
+      // Store payment_terms in notes if provided
+      if (values.payment_terms) {
+        invoiceData.notes = `Payment Terms: ${values.payment_terms}`;
+      }
 
       if (editingInvoice) {
         // Update existing invoice
@@ -348,36 +371,83 @@ export const CorporateAccountsPayable: React.FC = () => {
           .update(invoiceData)
           .eq('id', editingInvoice.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating invoice:', error);
+          message.error(error.message || 'Failed to update invoice');
+          throw error;
+        }
         message.success('Invoice updated successfully');
       } else {
-        // Generate invoice number
+        // Generate invoice number using timestamp (much faster than counting)
+        // Format: INV-YYYY-XXXXXX where XXXXXX is based on timestamp to ensure uniqueness
         const year = new Date().getFullYear();
-        const { count } = await supabase
-          .from('invoices')
-          .select('*', { count: 'exact', head: true })
-          .like('invoice_number', `INV-${year}-%`);
+        const timestamp = Date.now();
+        // Use last 6 digits of timestamp (milliseconds ensure uniqueness within the year)
+        const sequencePart = timestamp.toString().slice(-6).padStart(6, '0');
+        const invoiceNumber = `INV-${year}-${sequencePart}`;
 
-        const invoiceNumber = `INV-${year}-${String((count || 0) + 1).padStart(6, '0')}`;
-
-        const { error } = await supabase
+        const { data: newInvoice, error } = await supabase
           .from('invoices')
           .insert({
             ...invoiceData,
             invoice_number: invoiceNumber,
-          });
+          })
+          .select(`
+            *,
+            department:departments(name),
+            expense_category:expense_categories(name)
+          `)
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating invoice:', error);
+          message.error(error.message || 'Failed to create invoice');
+          throw error;
+        }
+
+        // Optimistically add the new invoice to the list instead of refetching all
+        if (newInvoice) {
+          const dueDate = dayjs(newInvoice.due_date || newInvoice.invoice_date);
+          const today = dayjs();
+          const daysOverdue = dueDate.isBefore(today) ? today.diff(dueDate, 'days') : 0;
+
+          const processedInvoice: Invoice = {
+            id: newInvoice.id,
+            invoice_number: newInvoice.invoice_number || `INV-${newInvoice.id.substring(0, 8).toUpperCase()}`,
+            vendor_name: newInvoice.vendor_name || 'Unknown Vendor',
+            vendor_email: newInvoice.vendor_email || '',
+            invoice_date: newInvoice.invoice_date,
+            due_date: newInvoice.due_date || newInvoice.invoice_date,
+            amount: Number(newInvoice.amount || 0),
+            tax_amount: Number(newInvoice.tax_amount || 0),
+            total_amount: Number(newInvoice.total_amount || newInvoice.amount || 0),
+            status: newInvoice.status || 'pending',
+            payment_status: newInvoice.payment_status || newInvoice.status || 'unpaid',
+            department: (newInvoice.department as any)?.name || 'Unassigned',
+            expense_category: (newInvoice.expense_category as any)?.name || 'Uncategorized',
+            days_overdue: daysOverdue,
+            payment_terms: (newInvoice.notes?.match(/Payment Terms:\s*(.+)/)?.[1]) || 'Net 30',
+            created_at: newInvoice.created_at,
+          };
+
+          // Add to the beginning of the list
+          setInvoices(prev => [processedInvoice, ...prev]);
+          calculateMetrics([processedInvoice, ...invoices]);
+        }
+
         message.success('Invoice created successfully');
       }
 
       setInvoiceModalVisible(false);
       setEditingInvoice(null);
       invoiceForm.resetFields();
-      fetchInvoices();
-    } catch (error: any) {
-      console.error('Error saving invoice:', error);
-      message.error(error?.message || 'Failed to save invoice');
+      
+      // Only refetch if editing (to get updated data), otherwise we already added it optimistically
+      if (editingInvoice) {
+        fetchInvoices();
+      }
+    } finally {
+      setSubmittingInvoice(false);
     }
   };
 
@@ -398,19 +468,26 @@ export const CorporateAccountsPayable: React.FC = () => {
   };
 
   const handleProcessPayment = async (values: any) => {
-    if (!selectedInvoice) return;
+    if (!selectedInvoice) {
+      const error = new Error('No invoice selected');
+      message.error(error.message);
+      throw error;
+    }
 
+    setProcessingPayment(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        message.error('You must be logged in to process payments');
-        return;
+        const error = new Error('You must be logged in to process payments');
+        message.error(error.message);
+        throw error;
       }
 
       const { error } = await supabase
         .from('invoices')
         .update({
           status: 'paid',
+          payment_status: 'paid',
           payment_date: values.payment_date.format('YYYY-MM-DD'),
           payment_method: values.payment_method,
           payment_reference: values.payment_reference,
@@ -419,26 +496,57 @@ export const CorporateAccountsPayable: React.FC = () => {
         })
         .eq('id', selectedInvoice.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error processing payment:', error);
+        message.error(error.message || 'Failed to process payment');
+        throw error;
+      }
+
+      // Optimistically update the invoice in the list
+      setInvoices(prev => prev.map(inv => 
+        inv.id === selectedInvoice.id 
+          ? { ...inv, status: 'paid', payment_status: 'paid' }
+          : inv
+      ));
+
       message.success('Payment processed successfully');
       setPaymentModalVisible(false);
       paymentForm.resetFields();
       setSelectedInvoice(null);
+      
+      // Refresh to get updated data
       fetchInvoices();
     } catch (error: any) {
       console.error('Error processing payment:', error);
       message.error(error?.message || 'Failed to process payment');
+      throw error; // Re-throw so modal knows it failed
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
   const handleApproveInvoice = async (values: any) => {
-    if (!selectedInvoice) return;
+    if (!selectedInvoice) {
+      const error = new Error('No invoice selected');
+      message.error(error.message);
+      throw error;
+    }
 
+    setApprovingInvoice(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        message.error('You must be logged in to approve invoices');
-        return;
+        const error = new Error('You must be logged in to approve invoices');
+        message.error(error.message);
+        throw error;
+      }
+
+      // Merge notes if both exist
+      let notes = '';
+      if (values.notes) {
+        notes = values.notes;
+      } else if (selectedInvoice.notes) {
+        notes = selectedInvoice.notes;
       }
 
       const { error } = await supabase
@@ -447,20 +555,37 @@ export const CorporateAccountsPayable: React.FC = () => {
           status: 'approved',
           approved_by: user.id,
           approved_at: new Date().toISOString(),
-          notes: values.notes || selectedInvoice.payment_terms,
+          notes: notes,
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedInvoice.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error approving invoice:', error);
+        message.error(error.message || 'Failed to approve invoice');
+        throw error;
+      }
+
+      // Optimistically update the invoice in the list
+      setInvoices(prev => prev.map(inv => 
+        inv.id === selectedInvoice.id 
+          ? { ...inv, status: 'approved' }
+          : inv
+      ));
+
       message.success('Invoice approved successfully');
       setApprovalModalVisible(false);
       approvalForm.resetFields();
       setSelectedInvoice(null);
+      
+      // Refresh to get updated data
       fetchInvoices();
     } catch (error: any) {
       console.error('Error approving invoice:', error);
       message.error(error?.message || 'Failed to approve invoice');
+      throw error; // Re-throw so modal knows it failed
+    } finally {
+      setApprovingInvoice(false);
     }
   };
 
@@ -508,6 +633,18 @@ export const CorporateAccountsPayable: React.FC = () => {
       key: 'vendor_name',
       width: 200,
       ellipsis: true,
+      render: (text: string, record: Invoice) => (
+        <Space>
+          <Text>{text}</Text>
+          {record.notes?.includes('Received via email') && (
+            <Tooltip title="Received via email from invoices@cravenusa.com">
+              <Tag color="blue" icon={<UploadOutlined />} style={{ margin: 0 }}>
+                Email
+              </Tag>
+            </Tooltip>
+          )}
+        </Space>
+      ),
     },
     {
       title: 'Invoice Date',
@@ -655,7 +792,7 @@ export const CorporateAccountsPayable: React.FC = () => {
                       due_date: dayjs(record.due_date),
                       amount: record.amount,
                       tax_amount: record.tax_amount,
-                      payment_terms: record.payment_terms,
+                      payment_terms: (record.payment_terms || 'Net 30'),
                     });
                     setInvoiceModalVisible(true);
                   }}
@@ -809,6 +946,27 @@ export const CorporateAccountsPayable: React.FC = () => {
           type="info"
           closable
           style={{ marginBottom: 24 }}
+        />
+      )}
+
+      {/* Email Received Alert */}
+      {emailReceivedCount > 0 && (
+        <Alert
+          message={`${emailReceivedCount} New Invoice${emailReceivedCount > 1 ? 's' : ''} Received via Email`}
+          description={`${emailReceivedCount} invoice${emailReceivedCount > 1 ? 's have' : ' has'} been automatically added from invoices@cravenusa.com. Please review and approve.`}
+          type="info"
+          icon={<FileTextOutlined />}
+          showIcon
+          closable
+          style={{ marginBottom: 24 }}
+          action={
+            <Button size="small" type="primary" onClick={() => {
+              setSearchText('Received via email');
+              setActiveTab('pending');
+            }}>
+              View Email Invoices
+            </Button>
+          }
         />
       )}
 
@@ -1418,8 +1576,30 @@ export const CorporateAccountsPayable: React.FC = () => {
           setEditingInvoice(null);
           invoiceForm.resetFields();
         }}
-        onOk={() => invoiceForm.submit()}
+        onOk={async () => {
+          try {
+            const values = await invoiceForm.validateFields();
+            await handleCreateOrUpdateInvoice(values);
+            // If successful, the function will close the modal and reset the form
+          } catch (error: any) {
+            // If it's a validation error (errorFields), Ant Design shows it automatically
+            // and we don't need to do anything - just prevent modal from closing
+            if (error?.errorFields) {
+              // Validation errors are shown by Ant Design, just prevent modal close
+              return Promise.reject(error);
+            }
+            // For other errors, they're already shown by handleCreateOrUpdateInvoice
+            // Re-throw to prevent modal from closing
+            return Promise.reject(error);
+          }
+        }}
         width={800}
+        okButtonProps={{ 
+          htmlType: 'button',
+          loading: submittingInvoice,
+          disabled: submittingInvoice
+        }}
+        okText={submittingInvoice ? 'Processing...' : 'OK'}
       >
         <Form
           form={invoiceForm}
@@ -1547,8 +1727,27 @@ export const CorporateAccountsPayable: React.FC = () => {
           paymentForm.resetFields();
           setSelectedInvoice(null);
         }}
-        onOk={() => paymentForm.submit()}
+        onOk={async () => {
+          try {
+            const values = await paymentForm.validateFields();
+            await handleProcessPayment(values);
+            // If successful, the function will close the modal and reset the form
+          } catch (error: any) {
+            // If it's a validation error (errorFields), Ant Design shows it automatically
+            if (error?.errorFields) {
+              return Promise.reject(error);
+            }
+            // For other errors, they're already shown by handleProcessPayment
+            return Promise.reject(error);
+          }
+        }}
         width={600}
+        okButtonProps={{ 
+          htmlType: 'button',
+          loading: processingPayment,
+          disabled: processingPayment
+        }}
+        okText={processingPayment ? 'Processing...' : 'OK'}
       >
         {selectedInvoice && (
           <Form
@@ -1614,8 +1813,28 @@ export const CorporateAccountsPayable: React.FC = () => {
           approvalForm.resetFields();
           setSelectedInvoice(null);
         }}
-        onOk={() => approvalForm.submit()}
+        onOk={async () => {
+          try {
+            // Notes field is optional, so we can submit without validation
+            const values = await approvalForm.validateFields();
+            await handleApproveInvoice(values);
+            // If successful, the function will close the modal and reset the form
+          } catch (error: any) {
+            // If it's a validation error (errorFields), Ant Design shows it automatically
+            if (error?.errorFields) {
+              return Promise.reject(error);
+            }
+            // For other errors, they're already shown by handleApproveInvoice
+            return Promise.reject(error);
+          }
+        }}
         width={600}
+        okButtonProps={{ 
+          htmlType: 'button',
+          loading: approvingInvoice,
+          disabled: approvingInvoice
+        }}
+        okText={approvingInvoice ? 'Approving...' : 'OK'}
       >
         {selectedInvoice && (
           <Form

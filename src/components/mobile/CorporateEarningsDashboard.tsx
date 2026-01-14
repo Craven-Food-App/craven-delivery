@@ -149,6 +149,15 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
       const acceptedAssignments = assignments?.filter(a => a.status === 'accepted').length || 0;
       const acceptanceRate = totalAssignments > 0 ? Math.round((acceptedAssignments / totalAssignments) * 100) : 100;
 
+      // Check if user is a test user
+      const { data: settings } = await supabase
+        .from('driver_settings')
+        .select('is_test_user')
+        .eq('user_id', user.id)
+        .single();
+      
+      const isTestUser = settings?.is_test_user || false;
+
       // Keep legacy available order fetch for fallback
       const { data: allOrders } = await supabase
         .from('orders')
@@ -162,6 +171,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
         `)
         .in('order_status', ['pending', 'confirmed', 'preparing', 'ready'])
         .eq('exclusive_type', 'none')
+        .eq('is_test', isTestUser) // Filter by test status
         .order('created_at', { ascending: false })
         .limit(1);
 

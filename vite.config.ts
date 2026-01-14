@@ -66,6 +66,12 @@ export default defineConfig(({ mode }) => {
         clientPort: 8080,
         protocol: 'ws',
         host: 'localhost',
+        // Make HMR more resilient to connection issues
+        reconnect: true,
+      },
+      // Suppress WebSocket connection errors in console
+      watch: {
+        ignored: ['**/node_modules/**', '**/.git/**'],
       },
       proxy: {
         '/api': {

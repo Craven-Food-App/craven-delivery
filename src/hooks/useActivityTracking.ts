@@ -138,6 +138,9 @@ export const useActivityTracking = (portalType: string) => {
     // Initial track
     trackActivity();
 
+    // Track consecutive errors to prevent spam
+    let consecutiveErrors = 0;
+    
     // Update activity every 30 seconds to keep session active
     const interval = setInterval(async () => {
       if (mounted && sessionIdRef.current) {
@@ -150,12 +153,46 @@ export const useActivityTracking = (portalType: string) => {
             })
             .eq('id', sessionIdRef.current);
           
-          if (error && error.code !== 'PGRST116') {
-            console.error('Error updating session activity:', error);
+          if (error) {
+            // Check if it's a connection error
+            if (error.message?.includes('Failed to fetch') || 
+                error.message?.includes('ERR_CONNECTION_CLOSED') ||
+                error.message?.includes('NetworkError')) {
+              consecutiveErrors += 1;
+              // Stop trying after 3 consecutive connection errors
+              if (consecutiveErrors >= 3) {
+                clearInterval(interval);
+                return;
+              }
+              return; // Don't log connection errors
+            }
+            
+            if (error.code !== 'PGRST116') {
+              console.error('Error updating session activity:', error);
+              consecutiveErrors += 1;
+            } else {
+              consecutiveErrors = 0; // Reset on expected errors
+            }
+          } else {
+            consecutiveErrors = 0; // Reset on success
           }
         } catch (error: any) {
+          // Handle connection errors silently
+          if (error?.message?.includes('Failed to fetch') || 
+              error?.message?.includes('ERR_CONNECTION_CLOSED') ||
+              error?.message?.includes('NetworkError')) {
+            consecutiveErrors += 1;
+            if (consecutiveErrors >= 3) {
+              clearInterval(interval);
+            }
+            return;
+          }
+          
           if (error?.code !== 'PGRST116') {
             console.error('Error updating session activity:', error);
+            consecutiveErrors += 1;
+          } else {
+            consecutiveErrors = 0;
           }
         }
       }

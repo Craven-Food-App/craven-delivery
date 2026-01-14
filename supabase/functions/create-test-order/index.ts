@@ -147,6 +147,7 @@ serve(async (req) => {
         restaurant_id: restaurant.id,
         customer_id: callerId,
         driver_id: driverId,
+        is_test: true,
         order_status: "confirmed",
         total_cents: 2599,
         subtotal_cents: 2299,

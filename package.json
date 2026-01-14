@@ -39,6 +39,7 @@
     "postinstall": "cap sync",
     "load:pre-incorporation-template": "tsx scripts/load-pre-incorporation-template.ts",
     "reset-exec-password": "tsx scripts/reset-executive-password.ts",
+    "cleanup:report": "tsx scripts/cleanup-codebase.ts",
     "git:push": "pwsh -File git-push.ps1",
     "push": "pwsh -File git-push.ps1"
   },
