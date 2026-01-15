@@ -1087,7 +1087,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 
                 {/* Show order items when arrived at restaurant */}
                 {status === DRIVER_STATUS.AT_STORE && (
-                  <Card bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-2)' }} withBorder p="sm">
+                  <Card bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-2)', flexShrink: 0 }} withBorder p="sm">
                     <Title order={5} fw={600} c="orange.7" mb="sm">
                       Order Items {orderItems.length > 0 ? `(${orderItems.length})` : ''}
                     </Title>
@@ -1095,10 +1095,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       <>
                         <Box
                           style={{
-                            maxHeight: orderItems.length > 4 ? '200px' : 'none',
-                            overflowY: orderItems.length > 4 ? 'auto' : 'visible',
+                            maxHeight: orderItems.length >= 3 ? '160px' : 'none',
+                            overflowY: orderItems.length >= 3 ? 'auto' : 'visible',
                             overflowX: 'hidden',
-                            paddingRight: orderItems.length > 4 ? '8px' : '0',
+                            paddingRight: orderItems.length >= 3 ? '8px' : '0',
                           }}
                         >
                           <Stack gap="xs" align="stretch">
