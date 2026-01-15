@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Layout, Typography, Row, Col, Statistic, Tabs, Table, Badge, Card, Button, Space, Divider, Modal, Form, Input, InputNumber, Select, message, Popconfirm, Spin } from 'antd';
-import { DashboardOutlined, CarOutlined, ShopOutlined, FileProtectOutlined, AlertOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, MailOutlined, FileTextOutlined } from '@ant-design/icons';
+import { DashboardOutlined, CarOutlined, ShopOutlined, FileProtectOutlined, AlertOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, MailOutlined, FileTextOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -12,6 +12,7 @@ import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMe
 // Lazy load heavy components
 const BusinessEmailSystem = lazy(() => import('@/components/executive/BusinessEmailSystem'));
 const ExecutiveWordProcessor = lazy(() => import('@/components/executive/ExecutiveWordProcessor'));
+const PurchaseOrderManagement = lazy(() => import('@/components/coo/PurchaseOrderManagement').then(m => ({ default: m.PurchaseOrderManagement })));
 
 const { Header, Content } = Layout;
 const { TabPane } = Tabs;
@@ -152,6 +153,9 @@ export default function COOPortal() {
           </TabPane>
           <TabPane tab={<><ShopOutlined /> Partners & Vendors</>} key="partners">
             <PartnerManagement />
+          </TabPane>
+          <TabPane tab={<><ShoppingCartOutlined /> Purchase Orders</>} key="purchase-orders">
+            <PurchaseOrderManagement />
           </TabPane>
           <TabPane tab={<><FileProtectOutlined /> Compliance</>} key="compliance">
             <ComplianceDashboard />

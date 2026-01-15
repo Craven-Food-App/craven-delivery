@@ -121,6 +121,7 @@ const CfoEvaluationGatePanel = React.lazy(() => import('@/components/cfo/CfoEval
 const CorporateGeneralLedger = React.lazy(() => import('@/components/finance/CorporateGeneralLedger').then(m => ({ default: m.CorporateGeneralLedger })));
 const CorporateAccountsPayable = React.lazy(() => import('@/components/finance/CorporateAccountsPayable').then(m => ({ default: m.CorporateAccountsPayable })));
 const CorporateAccountsReceivable = React.lazy(() => import('@/components/finance/CorporateAccountsReceivable').then(m => ({ default: m.CorporateAccountsReceivable })));
+const VendorManagement = React.lazy(() => import('@/components/finance/VendorManagement').then(m => ({ default: m.VendorManagement })));
 const FinancialReportsDashboard = React.lazy(() => import('@/components/finance/FinancialReportsDashboard').then(m => ({ default: m.FinancialReportsDashboard })));
 const BudgetManagement = React.lazy(() => import('@/components/finance/BudgetManagement').then(m => ({ default: m.BudgetManagement })));
 const FinanceAuditComponent = React.lazy(() => import('@/components/finance/audit/FinanceAuditComponent').then(m => ({ default: m.FinanceAuditComponent })));
@@ -784,6 +785,7 @@ function CFOPortalContent() {
     { id: 'general-ledger', label: 'General Ledger' },
     { id: 'ap', label: 'Accounts Payable' },
     { id: 'ar', label: 'Accounts Receivable' },
+    { id: 'vendors', label: 'Vendor Management' },
     // Banking & Treasury
     { id: 'treasury', label: 'Treasury & Banking' },
     { id: 'transactions', label: 'Review Transactions', badge: transactions.length > 0 ? transactions.length : undefined },
@@ -858,6 +860,8 @@ function CFOPortalContent() {
         return <CorporateAccountsPayable />;
       case 'ar':
         return <CorporateAccountsReceivable />;
+      case 'vendors':
+        return <VendorManagement />;
       
       // Banking & Treasury (consolidated)
       case 'treasury':

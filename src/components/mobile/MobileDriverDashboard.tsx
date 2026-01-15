@@ -57,6 +57,17 @@ interface OrderAssignment {
   expires_at: string;
   estimated_time: number;
   isTestOrder?: boolean; // Add test order flag
+  customer_name?: string; // Customer name
+  subtotal_cents?: number; // Order subtotal
+  tip_cents?: number; // Tip amount
+  items?: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price_cents: number;
+    special_instructions?: string;
+    image_url?: string;
+  }>; // Order items
 }
 export const MobileDriverDashboard: React.FC = () => {
   // Production readiness hooks
@@ -574,12 +585,16 @@ export const MobileDriverDashboard: React.FC = () => {
         restaurant_name: payload.payload.restaurant_name,
         pickup_address: payload.payload.pickup_address,
         dropoff_address: payload.payload.dropoff_address,
-        payout_cents: payload.payload.payout_cents,
+        payout_cents: payload.payload.payout_cents || payload.payload.payout_cents,
         distance_km: payload.payload.distance_km,
         distance_mi: payload.payload.distance_mi,
         expires_at: payload.payload.expires_at,
         estimated_time: payload.payload.estimated_time,
-        isTestOrder: payload.payload.isTestOrder // Add test order flag
+        isTestOrder: payload.payload.isTestOrder, // Add test order flag
+        items: payload.payload.items || [], // Include order items from payload
+        customer_name: payload.payload.customer_name, // Include customer name
+        subtotal_cents: payload.payload.subtotal_cents, // Include subtotal
+        tip_cents: payload.payload.tip_cents, // Include tip
       });
       setShowOrderModal(true);
 
@@ -1465,6 +1480,7 @@ export const MobileDriverDashboard: React.FC = () => {
                     onClick={handleGoOnline} 
                     disabled={isGoingOnline}
                     className="w-full h-12 text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="start-feeding-button"
                   >
                     {isGoingOnline ? 'GOING ONLINE...' : 'START FEEDING'}
                   </Button>
@@ -1716,7 +1732,65 @@ export const MobileDriverDashboard: React.FC = () => {
       <OrderAssignmentModal isOpen={showOrderModal} onClose={() => {
         setShowOrderModal(false);
         setCurrentOrderAssignment(null);
-      }} assignment={currentOrderAssignment} onAccept={assignment => {
+      }} assignment={currentOrderAssignment} onAccept={async (assignment) => {
+        // Fetch order details including items when accepting
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            subtotal_cents,
+            customer_name,
+            customer_id,
+            customer_phone,
+            delivery_notes
+          `)
+          .eq('id', assignment.order_id)
+          .maybeSingle();
+
+        // If customer_name is not in order, try to fetch from user_profiles
+        let resolvedCustomerName = orderData?.customer_name;
+        if (!resolvedCustomerName && orderData?.customer_id) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('user_id', orderData.customer_id)
+            .maybeSingle();
+          
+          if (profile?.full_name) {
+            resolvedCustomerName = profile.full_name;
+          }
+        }
+
+        // Fetch order items
+        const { data: orderItemsData } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            quantity,
+            price_cents,
+            special_instructions,
+            menu_items (
+              name,
+              image_url
+            )
+          `)
+          .eq('order_id', assignment.order_id);
+
+        // Format items for activeDelivery
+        const formattedItems = (orderItemsData || []).map((item: any) => ({
+          id: item.id,
+          name: item.menu_items?.name || 'Menu Item',
+          quantity: item.quantity,
+          price_cents: item.price_cents,
+          special_instructions: item.special_instructions,
+          image_url: item.menu_items?.image_url,
+        }));
+
+        // Use items from assignment payload if available, otherwise use fetched items
+        const itemsToUse = assignment.items && assignment.items.length > 0 
+          ? assignment.items 
+          : formattedItems;
+
         setActiveDelivery({
           ...assignment,
           order_id: assignment.order_id,
@@ -1726,7 +1800,13 @@ export const MobileDriverDashboard: React.FC = () => {
           dropoff_address: assignment.dropoff_address,
           payout_cents: assignment.payout_cents,
           distance_mi: assignment.distance_mi,
-          isTestOrder: assignment.isTestOrder // Pass through test order flag
+          isTestOrder: assignment.isTestOrder, // Pass through test order flag
+          items: itemsToUse, // Include order items
+          subtotal_cents: orderData?.subtotal_cents || (assignment as any).subtotal_cents || assignment.payout_cents || 0,
+          tip_cents: orderData?.tip_cents || (assignment as any).tip_cents || 0,
+          customer_name: resolvedCustomerName || orderData?.customer_name || (assignment as any).customer_name,
+          customer_phone: orderData?.customer_phone,
+          delivery_notes: orderData?.delivery_notes,
         });
         setDriverState('on_delivery');
         setShowOrderModal(false);

@@ -17,6 +17,9 @@ import {
   ActionIcon,
   ThemeIcon,
   Divider,
+  Checkbox,
+  Image,
+  Avatar,
 } from '@mantine/core';
 
 // ===== TYPES =====
@@ -206,7 +209,6 @@ const MapHeader: React.FC<MapHeaderProps> = ({ title, status, locationIcon, dist
   return (
     <Box
       p="md"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       style={{
         background: 'linear-gradient(to bottom right, var(--mantine-color-orange-6), var(--mantine-color-red-6))',
         color: 'white',
@@ -217,6 +219,7 @@ const MapHeader: React.FC<MapHeaderProps> = ({ title, status, locationIcon, dist
         position: 'relative',
         zIndex: 40,
         opacity: 0.8,
+        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
       }}
     >
       <Group justify="space-between" mb="xl">
@@ -263,39 +266,49 @@ interface DetailCardProps {
   linkHref?: string;
 }
 
-const DetailCard: React.FC<DetailCardProps> = ({ title, content, icon, actionButton, linkHref }) => (
-  <Card mb="md" withBorder>
-    <Group align="flex-start" gap="md">
-      <ThemeIcon size="xl" radius="xl" color="orange" variant="light">
-        {icon}
-      </ThemeIcon>
-      <Box style={{ flex: 1, minWidth: 0 }}>
-        <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb={4} style={{ letterSpacing: '0.05em' }}>
-          {title}
-        </Text>
-        {linkHref ? (
-          <Text
-            component="a"
-            href={linkHref}
-            size="sm"
-            fw={500}
-            c="blue"
-            style={{ textDecoration: 'none' }}
-            lineClamp={1}
-            onClick={(e) => { e.preventDefault(); }}
-          >
-            {content}
-          </Text>
+const DetailCard: React.FC<DetailCardProps> = ({ title, content, icon, actionButton, linkHref }) => {
+  // Check if icon is an Avatar component (restaurant logo)
+  const isAvatarElement = React.isValidElement(icon) && 
+    (icon.type === Avatar || (icon.props && icon.props.src));
+  
+  return (
+    <Card mb="sm" withBorder p="sm" style={{ borderRadius: '8px' }}>
+      <Group align="flex-start" gap="sm">
+        {isAvatarElement ? (
+          <Box style={{ flexShrink: 0 }}>{icon}</Box>
         ) : (
-          <Text size="sm" fw={500} c="dark" style={{ wordBreak: 'break-word' }}>
-            {content}
-          </Text>
+          <ThemeIcon size="lg" radius="md" color="orange" variant="light" style={{ flexShrink: 0 }}>
+            {icon}
+          </ThemeIcon>
         )}
-      </Box>
-      {actionButton && <Box>{actionButton}</Box>}
-    </Group>
-  </Card>
-);
+        <Box style={{ flex: 1, minWidth: 0 }}>
+          <Text size="xs" fw={600} c="dimmed" tt="uppercase" mb={4} style={{ letterSpacing: '0.05em' }}>
+            {title}
+          </Text>
+          {linkHref ? (
+            <Text
+              component="a"
+              href={linkHref}
+              size="sm"
+              fw={500}
+              c="blue"
+              style={{ textDecoration: 'none' }}
+              lineClamp={1}
+              onClick={(e) => { e.preventDefault(); }}
+            >
+              {content}
+            </Text>
+          ) : (
+            <Text size="sm" fw={500} c="dark" style={{ wordBreak: 'break-word', lineHeight: 1.4 }}>
+              {content}
+            </Text>
+          )}
+        </Box>
+        {actionButton && <Box style={{ flexShrink: 0 }}>{actionButton}</Box>}
+      </Group>
+    </Card>
+  );
+};
 
 // ===== MAIN COMPONENT =====
 
@@ -305,7 +318,62 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   onProgressChange,
   onCameraStateChange 
 }) => {
-  // Early validation
+  // All hooks must be called before any early returns
+  const [status, setStatus] = useState(DRIVER_STATUS.TO_STORE);
+  const [pickupCode, setPickupCode] = useState<string | null>(null);
+  const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
+  const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
+  const [showCamera, setShowCamera] = useState(false);
+  const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState<string | null>(null);
+  const [showTransition, setShowTransition] = useState(false);
+  const [transitionMessage, setTransitionMessage] = useState('');
+  const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
+  const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(true);
+
+  // Set order start time when component mounts (order is accepted)
+  useEffect(() => {
+    if (!orderStartTime && orderDetails) {
+      setOrderStartTime(new Date());
+    }
+  }, [orderDetails, orderStartTime]);
+
+  // Animate total earnings counter - must be before any early returns
+  useEffect(() => {
+    if (status === DRIVER_STATUS.COMPLETE && orderDetails) {
+      // Reset animation state
+      setAnimatedTotal(0);
+      setIsAnimating(true);
+      
+      const totalEarned = orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25);
+      const duration = 2000; // 2 seconds
+      const steps = 60;
+      const increment = totalEarned / steps;
+      const stepDuration = duration / steps;
+      
+      let currentStep = 0;
+      const interval = setInterval(() => {
+        currentStep++;
+        const newValue = Math.min(increment * currentStep, totalEarned);
+        setAnimatedTotal(newValue);
+        
+        if (currentStep >= steps) {
+          setAnimatedTotal(totalEarned);
+          setIsAnimating(false);
+          clearInterval(interval);
+        }
+      }, stepDuration);
+      
+      return () => clearInterval(interval);
+    }
+  }, [status, orderDetails]);
+
+  // Early validation - must come after all hooks
   if (!orderDetails) {
     return (
       <Stack flex={1} align="center" justify="center" p="xl">
@@ -315,16 +383,46 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     );
   }
 
-  const [status, setStatus] = useState(DRIVER_STATUS.TO_STORE);
-  const [pickupCode, setPickupCode] = useState<string | null>(null);
-  const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
-  const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
-  const [showCamera, setShowCamera] = useState(false);
-  const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
-
   const isTestOrder = orderDetails.isTestOrder || false;
 
+  // Fetch customer name from order if not provided
+  useEffect(() => {
+    if (orderDetails.order_id && !orderDetails.customer_name && !isTestOrder) {
+      const fetchCustomerName = async () => {
+        try {
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('customer_name, customer_id')
+            .eq('id', orderDetails.order_id)
+            .maybeSingle();
+          
+          if (orderData?.customer_name) {
+            setCustomerName(orderData.customer_name);
+          } else if (orderData?.customer_id) {
+            // Try to get from user_profiles
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('full_name')
+              .eq('user_id', orderData.customer_id)
+              .maybeSingle();
+            
+            if (profile?.full_name) {
+              setCustomerName(profile.full_name);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching customer name:', error);
+        }
+      };
+      
+      fetchCustomerName();
+    } else if (orderDetails.customer_name) {
+      setCustomerName(orderDetails.customer_name);
+    }
+  }, [orderDetails.order_id, orderDetails.customer_name, isTestOrder]);
+
   const currentOrder = useMemo(() => {
+    const resolvedCustomerName = customerName || orderDetails?.customer_name;
     return {
       id: orderDetails?.id || orderDetails?.order_id || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
       pay: orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25),
@@ -339,34 +437,127 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         phone: orderDetails?.customer_phone || '(555) 555-5555',
       },
       customer: {
-        name: formatCustomerNameForDriver(orderDetails?.customer_name) || 'Customer',
+        name: formatCustomerNameForDriver(resolvedCustomerName),
         address: formatAddress(orderDetails?.dropoff_address) || '456 Oak Ave',
         deliveryNotes: orderDetails?.delivery_notes || 'Ring doorbell',
         phone: orderDetails?.customer_phone || '(555) 555-1234',
       },
       items: orderDetails?.items || [],
     };
-  }, [orderDetails, pickupCode]);
+  }, [orderDetails, pickupCode, customerName]);
 
   useEffect(() => {
     if (isTestOrder || !orderDetails.order_id) return;
     
-    const fetchPickupCode = async () => {
+    const fetchOrderData = async () => {
       try {
-        const { data } = await supabase
+        const { data: orderData } = await supabase
           .from('orders')
-          .select('pickup_code')
+          .select('pickup_code, restaurant_id')
           .eq('id', orderDetails.order_id)
           .maybeSingle();
-        if (data?.pickup_code) {
-          setPickupCode(data.pickup_code);
+        
+        if (orderData?.pickup_code) {
+          setPickupCode(orderData.pickup_code);
+        }
+        
+        if (orderData?.restaurant_id) {
+          setRestaurantId(orderData.restaurant_id);
+          
+          // Fetch restaurant logo
+          const { data: restaurant } = await supabase
+            .from('restaurants')
+            .select('image_url, logo_url')
+            .eq('id', orderData.restaurant_id)
+            .maybeSingle();
+          
+          if (restaurant?.logo_url) {
+            setRestaurantLogo(restaurant.logo_url);
+          } else if (restaurant?.image_url) {
+            setRestaurantLogo(restaurant.image_url);
+          }
         }
       } catch (error) {
-        console.error('Error fetching pickup code:', error);
+        console.error('Error fetching order data:', error);
       }
     };
-    fetchPickupCode();
+    fetchOrderData();
   }, [orderDetails.order_id, isTestOrder]);
+
+  // Load items from orderDetails immediately
+  useEffect(() => {
+    if (orderDetails.items && orderDetails.items.length > 0) {
+      const formattedFromDetails = orderDetails.items.map((item: any, idx: number) => ({
+        id: item.id || `item-${idx}`,
+        name: item.name || item.menu_items?.name || 'Order Item',
+        quantity: item.quantity || item.qty || 1,
+        price_cents: item.price_cents || 0,
+        special_instructions: item.special_instructions,
+        image_url: item.image_url || item.menu_items?.image_url,
+      }));
+      setOrderItems(formattedFromDetails);
+    }
+  }, [orderDetails.items]);
+
+  // Fetch from database when driver arrives at restaurant (for more complete data)
+  useEffect(() => {
+    if (status === DRIVER_STATUS.AT_STORE && orderDetails.order_id && !isTestOrder) {
+      const fetchOrderItems = async () => {
+        try {
+          const { data: items, error } = await supabase
+            .from('order_items')
+            .select(`
+              id,
+              quantity,
+              price_cents,
+              special_instructions,
+              menu_items (
+                name,
+                image_url
+              )
+            `)
+            .eq('order_id', orderDetails.order_id);
+          
+          if (error) {
+            console.warn('Error fetching order items from DB:', error);
+            // Keep existing items from orderDetails
+            return;
+          }
+          
+          if (items && items.length > 0) {
+            const formattedItems = items.map((item: any) => ({
+              id: item.id,
+              name: item.menu_items?.name || 'Unknown Item',
+              quantity: item.quantity,
+              price_cents: item.price_cents,
+              special_instructions: item.special_instructions,
+              image_url: item.menu_items?.image_url,
+            }));
+            setOrderItems(formattedItems);
+          }
+        } catch (error) {
+          console.error('Error fetching order items:', error);
+          // Keep existing items from orderDetails if fetch fails
+        }
+      };
+      
+      fetchOrderItems();
+    }
+  }, [status, orderDetails.order_id, isTestOrder]);
+
+  const handleItemCheck = (itemId: string) => {
+    setCheckedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const allItemsChecked = orderItems.length > 0 && checkedItems.size === orderItems.length;
 
   const updateOrderStatus = async (newStatus: string) => {
     if (isTestOrder || !orderDetails.order_id) return;
@@ -492,11 +683,27 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const uploadedUrl = await uploadPhoto(photoUrl, 'pickup');
     if (uploadedUrl) {
       setPickupPhotoUrl(uploadedUrl);
-      setStatus(DRIVER_STATUS.TO_CUSTOMER);
-      await updateOrderStatus('picked_up');
+      setShowCamera(false);
+      onCameraStateChange?.(false);
+      
+      // Show transition animation
+      setTransitionMessage('Pickup confirmed! Starting delivery to customer...');
+      setShowTransition(true);
+      
+      // Wait for animation, then transition to next step
+      setTimeout(async () => {
+        setStatus(DRIVER_STATUS.TO_CUSTOMER);
+        await updateOrderStatus('picked_up');
+        
+        // Hide transition after a brief moment to show the new state
+        setTimeout(() => {
+          setShowTransition(false);
+        }, 800);
+      }, 2500);
+    } else {
+      setShowCamera(false);
+      onCameraStateChange?.(false);
     }
-    setShowCamera(false);
-    onCameraStateChange?.(false);
   };
   
   const handleConfirmArrivalAtCustomer = async () => {
@@ -608,6 +815,137 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     );
   }
 
+  // Transition animation overlay
+  if (showTransition) {
+    return (
+      <Box
+        pos="fixed"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        style={{
+          zIndex: 100,
+          backgroundColor: '#000000',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+        <Stack align="center" gap="xl">
+          {/* Animated checkmark circle */}
+          <Box
+            style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              border: '4px solid #22c55e',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              animation: 'scaleIn 0.5s ease-out, pulse 1.5s ease-in-out 0.5s infinite',
+            }}
+          >
+            <IconCheck 
+              size={64} 
+              color="#22c55e"
+              style={{
+                animation: 'checkmark 0.5s ease-out 0.3s both',
+              }}
+            />
+          </Box>
+          
+          {/* Message */}
+          <Text
+            size="xl"
+            fw={600}
+            c="white"
+            style={{
+              textAlign: 'center',
+              letterSpacing: '0.02em',
+              animation: 'fadeInUp 0.6s ease-out 0.4s both',
+            }}
+          >
+            {transitionMessage}
+          </Text>
+          
+          {/* Loading indicator */}
+          <Box
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid rgba(255, 255, 255, 0.2)',
+              borderTop: '3px solid white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginTop: '16px',
+            }}
+          />
+        </Stack>
+        
+        {/* CSS Animations */}
+        <style>{`
+          @keyframes scaleIn {
+            from {
+              transform: scale(0);
+              opacity: 0;
+            }
+            to {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+            50% {
+              transform: scale(1.05);
+              box-shadow: 0 0 0 20px rgba(34, 197, 94, 0);
+            }
+          }
+          
+          @keyframes checkmark {
+            from {
+              transform: scale(0) rotate(45deg);
+              opacity: 0;
+            }
+            to {
+              transform: scale(1) rotate(0deg);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+      </Box>
+    );
+  }
+
   const renderActiveFlow = () => {
     const payAmount = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const isToStore = currentFlow?.isPickup ?? true;
@@ -622,8 +960,24 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
 
     return (
-      <Stack flex={1} style={{ fontFamily: 'sans-serif' }}>
-        <Box h="40%" w="100%" pos="relative" style={{ flexShrink: 0 }}>
+      <Stack 
+        flex={1} 
+        style={{ 
+          fontFamily: 'sans-serif',
+        }} 
+        data-testid="delivery-flow" 
+        gap={0}
+      >
+        {/* Full-screen map section */}
+        <Box 
+          h={status === DRIVER_STATUS.TO_CUSTOMER ? "calc(45% + 50px)" : "45%"} 
+          w="100%" 
+          pos="relative" 
+          style={{ 
+            flexShrink: 0,
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+          }}
+        >
           <SimulatedMapView isToStore={isToStore} /> 
           <MapHeader
             title={currentFlow.title}
@@ -633,27 +987,64 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             pay={payAmount}
           />
         </Box>
-        <Box h={24} />
 
-        <Box flex={1} px="md" pb="md" style={{ overflowY: 'auto', backgroundColor: 'white', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', marginTop: -24 }}>
-          <Stack gap="md" pt="xl" align="stretch">
-            <Group justify="space-between" align="center">
-              <Title order={2} fw={700} c="dark">
-                Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
-              </Title>
-              {isTestOrder && (
-                <Badge color="orange" variant="outline">
-                  Test Order
-                </Badge>
-              )}
-            </Group>
+        {/* Content section - more compact */}
+        <Box 
+          flex={1} 
+          px="sm" 
+          pb="sm" 
+          style={{ 
+            overflowY: 'auto', 
+            backgroundColor: 'white', 
+            borderTopLeftRadius: '20px', 
+            borderTopRightRadius: '20px', 
+            marginTop: -16,
+            paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          <Stack gap="sm" pt="md" align="stretch">
+            {/* Customer name and order number - show customer name during pickup and delivery */}
+            {currentFlow.isPickup || status === DRIVER_STATUS.TO_CUSTOMER || status === DRIVER_STATUS.AT_CUSTOMER ? (
+              <Stack gap={4} style={{ marginTop: '20px' }}>
+                <Text size="sm" fw={600} c="dimmed" style={{ letterSpacing: '0.02em' }}>
+                  {currentOrder.customer.name}
+                </Text>
+                <Group justify="space-between" align="center">
+                  <Title order={2} fw={700} c="dark" style={{ lineHeight: 1.2 }}>
+                    Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
+                  </Title>
+                  {isTestOrder && (
+                    <Badge color="orange" variant="outline">
+                      Test Order
+                    </Badge>
+                  )}
+                </Group>
+              </Stack>
+            ) : (
+              <Group justify="space-between" align="center" style={{ marginTop: '20px' }}>
+                <Title order={2} fw={700} c="dark">
+                  Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
+                </Title>
+                {isTestOrder && (
+                  <Badge color="orange" variant="outline">
+                    Test Order
+                  </Badge>
+                )}
+              </Group>
+            )}
         
             {currentFlow.isPickup ? (
               <>
                 <DetailCard 
                   title="PICKUP ADDRESS"
                   content={currentOrder.store.address}
-                  icon={<IconMapPin size={20} />}
+                  icon={
+                    restaurantLogo ? (
+                      <Avatar src={restaurantLogo} size={32} radius="sm" />
+                    ) : (
+                      <IconMapPin size={20} />
+                    )
+                  }
                   actionButton={
                     <Button 
                       variant="outline"
@@ -689,35 +1080,87 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   />
                 )}
                 
-                {currentOrder.items && currentOrder.items.length > 0 && (
-                  <Card bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-2)' }} withBorder>
-                    <Card.Section p="md" pb="xs">
-                      <Title order={4} fw={600} c="orange.7">
-                        Items ({currentOrder.items.length})
-                      </Title>
-                    </Card.Section>
-                    <Card.Section px="md" pb="md">
-                      <Stack gap="xs" align="stretch">
-                        {currentOrder.items.map((item: any, index: number) => (
-                          <Group key={index} justify="space-between" align="center" py={4} style={{ borderBottom: index < currentOrder.items.length - 1 ? '1px solid var(--mantine-color-orange-1)' : 'none' }}>
-                            <Text size="sm" c="dark">{item.name}</Text>
-                            <Badge color="gray">
-                              x{item.qty || item.quantity}
-                            </Badge>
-                          </Group>
-                        ))}
-                      </Stack>
-                    </Card.Section>
+                {/* Show order items when arrived at restaurant */}
+                {status === DRIVER_STATUS.AT_STORE && (
+                  <Card bg="orange.0" style={{ borderColor: 'var(--mantine-color-orange-2)' }} withBorder p="sm">
+                    <Title order={5} fw={600} c="orange.7" mb="sm">
+                      Order Items {orderItems.length > 0 ? `(${orderItems.length})` : ''}
+                    </Title>
+                    {orderItems.length > 0 ? (
+                      <>
+                        <Box
+                          style={{
+                            maxHeight: orderItems.length > 4 ? '200px' : 'none',
+                            overflowY: orderItems.length > 4 ? 'auto' : 'visible',
+                            overflowX: 'hidden',
+                            paddingRight: orderItems.length > 4 ? '8px' : '0',
+                          }}
+                        >
+                          <Stack gap="xs" align="stretch">
+                            {orderItems.map((item) => {
+                              const isChecked = checkedItems.has(item.id);
+                              return (
+                                <Group 
+                                  key={item.id} 
+                                  justify="space-between" 
+                                  align="center" 
+                                  p="xs"
+                                  style={{ 
+                                    backgroundColor: isChecked ? 'var(--mantine-color-orange-1)' : 'transparent',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onClick={() => handleItemCheck(item.id)}
+                                >
+                                  <Group gap="xs" style={{ flex: 1 }}>
+                                    <Checkbox
+                                      checked={isChecked}
+                                      onChange={() => handleItemCheck(item.id)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      size="sm"
+                                      color="orange"
+                                    />
+                                    <Box style={{ flex: 1 }}>
+                                      <Text size="sm" fw={isChecked ? 600 : 500} c="dark" style={{ textDecoration: isChecked ? 'line-through' : 'none' }}>
+                                        {item.name}
+                                      </Text>
+                                      {item.special_instructions && (
+                                        <Text size="xs" c="dimmed" mt={2}>
+                                          {item.special_instructions}
+                                        </Text>
+                                      )}
+                                    </Box>
+                                  </Group>
+                                  <Badge color="gray" size="sm">
+                                    x{item.quantity}
+                                  </Badge>
+                                </Group>
+                              );
+                            })}
+                          </Stack>
+                        </Box>
+                        {allItemsChecked && (
+                          <Text size="xs" c="green.7" fw={500} mt={4} ta="center" style={{ lineHeight: 1.2 }}>
+                            ✓ All items confirmed
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      <Text size="sm" c="dimmed" ta="center" py="md">
+                        Loading order items...
+                      </Text>
+                    )}
                   </Card>
                 )}
 
-                <Card mt="md" withBorder>
-                  <Group justify="space-between" align="center" p="md">
+                <Card withBorder p="sm">
+                  <Group justify="space-between" align="center">
                     <Group gap={4}>
                       <IconCurrencyDollar size={16} color="var(--mantine-color-green-6)" />
                       <Text size="sm" fw={500} c="dimmed">Estimated Pay</Text>
                     </Group>
-                    <Text size="2xl" fw={700} c="green.7" style={{ lineHeight: 'none' }}>
+                    <Text size="xl" fw={700} c="green.7" style={{ lineHeight: 'none' }}>
                       ${typeof payAmount === 'number' ? payAmount.toFixed(2) : String(payAmount || '0.00')}
                     </Text>
                   </Group>
@@ -726,10 +1169,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 {status === DRIVER_STATUS.TO_STORE && (
                   <Button 
                     onClick={handleConfirmArrivalAtStore}
-                    size="lg"
+                    size="md"
                     fullWidth
-                    mt="md"
                     color="gray"
+                    data-testid="arrived-at-restaurant-button"
+                    style={{ borderRadius: '8px' }}
                   >
                     Arrived at Craven Kitchen
                   </Button>
@@ -738,12 +1182,16 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 {status === DRIVER_STATUS.AT_STORE && (
                   <Button 
                     onClick={handleStartPickupVerification}
-                    size="lg"
+                    size="md"
                     fullWidth
-                    mt="md"
-                    color="gray"
+                    color="orange"
+                    disabled={!allItemsChecked && orderItems.length > 0}
+                    data-testid="verify-pickup-button"
+                    style={{ borderRadius: '8px' }}
                   >
-                    Order Ready? Start Hand-off Check
+                    {allItemsChecked || orderItems.length === 0 
+                      ? 'Order Ready? Start Hand-off Check' 
+                      : `Confirm ${orderItems.length - checkedItems.size} item(s) first`}
                   </Button>
                 )}
               </>
@@ -807,6 +1255,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                     fullWidth
                     mt="md"
                     color="gray"
+                    data-testid="arrived-at-customer-button"
                   >
                     Arrived at Customer's Location
                   </Button>
@@ -819,6 +1268,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                     fullWidth
                     mt="md"
                     color="gray"
+                    data-testid="complete-delivery-button"
                   >
                     Drop-off & Complete Delivery
                   </Button>
@@ -832,6 +1282,24 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   const renderComplete = () => {
+    const totalEarned = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
+    const tipAmount = (orderDetails?.tip_cents || 0) / 100;
+    const orderId = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+    const totalMiles = currentOrder.totalDistance || 0;
+    
+    // Calculate elapsed time
+    let elapsedTime = '0 min';
+    if (orderStartTime) {
+      const elapsed = Math.floor((Date.now() - orderStartTime.getTime()) / 1000 / 60);
+      if (elapsed < 60) {
+        elapsedTime = `${elapsed} min`;
+      } else {
+        const hours = Math.floor(elapsed / 60);
+        const minutes = elapsed % 60;
+        elapsedTime = minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+      }
+    }
+
     return (
       <Box
         style={{
@@ -841,64 +1309,154 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           right: 0,
           bottom: 0,
           zIndex: 9999,
-          background: 'linear-gradient(to bottom right, var(--mantine-color-orange-6), var(--mantine-color-red-6))',
+          backgroundColor: '#ffffff',
           overflowY: 'auto',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <Stack
           align="center"
-          justify="center"
-          p="xl"
+          justify="flex-start"
+          p="md"
+          gap="md"
           style={{
             minHeight: '100vh',
-            textAlign: 'center',
-            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2rem)',
+            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
             paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
           }}
         >
-          <ThemeIcon size={80} radius="xl" color="green" style={{ border: '4px solid white', opacity: 0.8 }}>
-            <IconCheck size={40} />
-          </ThemeIcon>
-          <Title order={1} fw={700} c="white" mb="md">Delivery Complete!</Title>
-          <Text c="white" opacity={0.9} mb={4} fw={500} size="lg">Great job! You earned:</Text>
-          <Text size="5xl" fw={700} c="white" mb="xl" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-            ${typeof currentOrder.pay === 'number' ? currentOrder.pay.toFixed(2) : parseFloat(String(currentOrder.pay || 0)).toFixed(2)}
-          </Text>
+          {/* Success Icon */}
+          <Box mt="sm">
+            <Box
+              style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                backgroundColor: '#22c55e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                boxShadow: '0 8px 24px rgba(34, 197, 94, 0.3)',
+              }}
+            >
+              <IconCheck size={56} color="white" strokeWidth={3} />
+            </Box>
+          </Box>
 
-          <Card w="100%" maw={400} mb="xl" withBorder bg="white" p="lg" style={{ width: '90%', maxWidth: '400px' }}>
-            <Text size="sm" fw={600} c="dimmed" tt="uppercase" mb="lg" ta="center" style={{ letterSpacing: '0.05em' }}>
+          {/* Title */}
+          <Title order={2} fw={700} c="dark" mb={0} style={{ letterSpacing: '0.01em' }}>
+            Delivery Complete
+          </Title>
+
+          {/* Animated Total Earned */}
+          <Box mt="xs" mb="sm">
+            <Text 
+              size="xs" 
+              fw={500} 
+              c="dimmed" 
+              mb={2}
+              style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}
+            >
+              Total Earned
+            </Text>
+            <Text
+              fw={800}
+              c={isAnimating ? 'dark' : '#22c55e'}
+              style={{
+                fontSize: '100px',
+                lineHeight: '1',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                letterSpacing: '-0.02em',
+                transition: 'color 0.3s ease',
+              }}
+            >
+              ${isAnimating ? animatedTotal.toFixed(2) : totalEarned.toFixed(2)}
+            </Text>
+          </Box>
+
+          {/* Order Summary Card */}
+          <Card 
+            w="100%" 
+            maw={420} 
+            withBorder 
+            bg="white" 
+            p="lg" 
+            style={{ 
+              borderRadius: '12px',
+              borderColor: '#e5e7eb',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <Text 
+              size="sm" 
+              fw={600} 
+              c="dimmed" 
+              tt="uppercase" 
+              mb="sm" 
+              ta="left"
+              style={{ letterSpacing: '0.05em' }}
+            >
               Order Summary
             </Text>
-            <Stack gap="lg" align="stretch">
-              <Group justify="space-between" align="center" wrap="nowrap" gap="md">
-                <Text size="sm" fw={500} c="dimmed" style={{ flexShrink: 0, minWidth: '100px' }}>
-                  Order ID:
+            <Stack gap="sm" align="stretch">
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Order ID
                 </Text>
-                <Text size="sm" fw={600} c="dark" style={{ textAlign: 'right', flex: 1 }}>
-                  {currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
+                <Text size="sm" fw={600} c="dark" style={{ fontFamily: 'monospace' }}>
+                  {orderId}
                 </Text>
               </Group>
-              <Group justify="space-between" align="center" wrap="nowrap" gap="md">
-                <Text size="sm" fw={500} c="dimmed" style={{ flexShrink: 0, minWidth: '100px' }}>
-                  Total Distance:
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Total Miles
                 </Text>
-                <Text size="sm" fw={600} c="dark" style={{ textAlign: 'right', flex: 1 }}>
-                  {currentOrder.totalDistance.toFixed(1)} mi
+                <Text size="sm" fw={600} c="dark">
+                  {totalMiles.toFixed(1)} mi
+                </Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Total Time
+                </Text>
+                <Text size="sm" fw={600} c="dark">
+                  {elapsedTime}
+                </Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Total Tip
+                </Text>
+                <Text size="sm" fw={600} c="dark">
+                  ${tipAmount.toFixed(2)}
                 </Text>
               </Group>
             </Stack>
           </Card>
 
+          {/* Resume Feeding Button */}
           <Button
             onClick={onCompleteDelivery}
             size="lg"
-            color="gray"
             fullWidth
-            maw="sm"
+            maw={420}
             h={56}
-            style={{ fontSize: '18px', fontWeight: 600 }}
+            style={{
+              backgroundColor: '#374151',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              borderRadius: '12px',
+              border: 'none',
+            }}
           >
-            Continue Accepting Orders
+            Resume Feeding
           </Button>
         </Stack>
       </Box>
@@ -916,9 +1474,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             bottom: 0, 
             left: 0, 
             right: 0, 
-            height: '48px', 
+            height: 'calc(48px + env(safe-area-inset-bottom, 0px))', 
             backgroundColor: '#000',
-            zIndex: 1000 
+            zIndex: 1000,
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }} 
         />
       </>
@@ -935,9 +1494,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           bottom: 0, 
           left: 0, 
           right: 0, 
-          height: '48px', 
+          height: 'calc(48px + env(safe-area-inset-bottom, 0px))', 
           backgroundColor: '#000',
-          zIndex: 1000 
+          zIndex: 1000,
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }} 
       />
     </>

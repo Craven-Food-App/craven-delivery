@@ -115,6 +115,7 @@ export const CorporateAccountsPayable: React.FC = () => {
   const [approvalForm] = Form.useForm();
   const [departments, setDepartments] = useState<any[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
   const [approvingInvoice, setApprovingInvoice] = useState(false);
@@ -125,7 +126,22 @@ export const CorporateAccountsPayable: React.FC = () => {
     fetchInvoices();
     fetchDepartments();
     fetchExpenseCategories();
+    fetchVendors();
     checkAccess();
+    
+    // Check if opened from Purchase Order
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromPO = urlParams.get('from_po');
+    if (fromPO) {
+      try {
+        const poData = JSON.parse(decodeURIComponent(fromPO));
+        handleCreateFromPO(poData);
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } catch (error) {
+        console.error('Error parsing PO data:', error);
+      }
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -275,6 +291,21 @@ export const CorporateAccountsPayable: React.FC = () => {
     }
   };
 
+  const fetchVendors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('partner_vendors')
+        .select('id, vendor_name, contact_email, payment_terms')
+        .eq('status', 'active')
+        .order('vendor_name');
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setVendors(data || []);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
+
   const calculateMetrics = (data: Invoice[]) => {
     const unpaid = data.filter(inv => inv.payment_status !== 'paid' && inv.status !== 'cancelled');
     const overdue = unpaid.filter(inv => inv.days_overdue > 0);
@@ -332,6 +363,49 @@ export const CorporateAccountsPayable: React.FC = () => {
     setPagination(prev => ({ ...prev, total: filtered.length }));
   };
 
+  const handleCreateFromPO = async (poData: any) => {
+    try {
+      // Fetch PO details
+      const { data: po, error: poError } = await supabase
+        .from('purchase_orders')
+        .select(`
+          *,
+          vendor:partner_vendors(vendor_name, contact_email, payment_terms)
+        `)
+        .eq('id', poData.po_id)
+        .single();
+
+      if (poError || !po) {
+        message.error('Purchase order not found');
+        return;
+      }
+
+      // Pre-fill invoice form
+      setEditingInvoice(null);
+      invoiceForm.setFieldsValue({
+        vendor_id: po.vendor_id,
+        vendor_name: po.vendor?.vendor_name || '',
+        vendor_email: po.vendor?.contact_email || '',
+        amount: po.total_amount,
+        tax_amount: 0,
+        payment_terms: po.vendor?.payment_terms || 'Net 30',
+        notes: `Created from Purchase Order: ${po.po_number}`,
+        invoice_date: dayjs(),
+        due_date: dayjs().add(30, 'days'),
+      });
+
+      // Store PO reference for linking
+      (invoiceForm as any)._poId = po.id;
+      (invoiceForm as any)._poNumber = po.po_number;
+
+      setInvoiceModalVisible(true);
+      message.info(`Pre-filled invoice from PO ${po.po_number}`);
+    } catch (error: any) {
+      console.error('Error creating invoice from PO:', error);
+      message.error('Failed to load purchase order data');
+    }
+  };
+
   const handleCreateOrUpdateInvoice = async (values: any) => {
     setSubmittingInvoice(true);
     try {
@@ -347,6 +421,7 @@ export const CorporateAccountsPayable: React.FC = () => {
       const totalAmount = amount + taxAmount;
 
       const invoiceData: any = {
+        vendor_id: values.vendor_id || null,
         vendor_name: values.vendor_name,
         vendor_email: values.vendor_email,
         invoice_date: values.invoice_date.format('YYYY-MM-DD'),
@@ -378,6 +453,14 @@ export const CorporateAccountsPayable: React.FC = () => {
         }
         message.success('Invoice updated successfully');
       } else {
+        // Check if this invoice is linked to a PO
+        const poId = (invoiceForm as any)._poId;
+        if (poId) {
+          invoiceData.purchase_order_id = poId;
+          const poNumber = (invoiceForm as any)._poNumber || '';
+          invoiceData.notes = `${invoiceData.notes || ''}\nLinked to PO: ${poNumber}`.trim();
+        }
+
         // Generate invoice number using timestamp (much faster than counting)
         // Format: INV-YYYY-XXXXXX where XXXXXX is based on timestamp to ensure uniqueness
         const year = new Date().getFullYear();
@@ -433,6 +516,16 @@ export const CorporateAccountsPayable: React.FC = () => {
           // Add to the beginning of the list
           setInvoices(prev => [processedInvoice, ...prev]);
           calculateMetrics([processedInvoice, ...invoices]);
+
+          // Link PO to invoice if applicable
+          const poId = (invoiceForm as any)._poId;
+          if (poId) {
+            await supabase
+              .from('purchase_orders')
+              .update({ invoice_id: newInvoice.id, status: 'received' })
+              .eq('id', poId)
+              .catch(err => console.error('Error linking PO to invoice:', err));
+          }
         }
 
         message.success('Invoice created successfully');
@@ -786,6 +879,7 @@ export const CorporateAccountsPayable: React.FC = () => {
                     }
                     setEditingInvoice(record);
                     invoiceForm.setFieldsValue({
+                      vendor_id: record.vendor_id || undefined,
                       vendor_name: record.vendor_name,
                       vendor_email: record.vendor_email,
                       invoice_date: dayjs(record.invoice_date),
@@ -1609,20 +1703,65 @@ export const CorporateAccountsPayable: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="vendor_name"
-                label="Vendor Name"
-                rules={[{ required: true, message: 'Please enter vendor name' }]}
+                name="vendor_id"
+                label="Vendor"
+                rules={[{ required: true, message: 'Please select vendor' }]}
               >
-                <Input placeholder="Vendor name" />
+                <Select
+                  placeholder="Select vendor"
+                  showSearch
+                  optionFilterProp="children"
+                  allowClear
+                  onChange={(value) => {
+                    if (value) {
+                      const vendor = vendors.find(v => v.id === value);
+                      if (vendor) {
+                        invoiceForm.setFieldsValue({
+                          vendor_name: vendor.vendor_name,
+                          vendor_email: vendor.contact_email || '',
+                          payment_terms: vendor.payment_terms || 'Net 30',
+                        });
+                      }
+                    } else {
+                      invoiceForm.setFieldsValue({
+                        vendor_name: '',
+                        vendor_email: '',
+                      });
+                    }
+                  }}
+                >
+                  {vendors.map(vendor => (
+                    <Option key={vendor.id} value={vendor.id}>
+                      {vendor.vendor_name}
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                name="vendor_email"
-                label="Vendor Email"
-                rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+                name="vendor_name"
+                label="Vendor Name (Auto-filled)"
               >
-                <Input placeholder="vendor@example.com" />
+                <Input placeholder="Auto-filled from vendor selection" disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="vendor_email"
+                label="Vendor Email (Auto-filled)"
+              >
+                <Input placeholder="Auto-filled from vendor selection" disabled />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="payment_terms"
+                label="Payment Terms (Auto-filled)"
+              >
+                <Input placeholder="Auto-filled from vendor selection" disabled />
               </Form.Item>
             </Col>
           </Row>

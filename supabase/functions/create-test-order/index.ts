@@ -110,11 +110,11 @@ serve(async (req) => {
     // Get real customer profile data
     const { data: customerProfile } = await service
       .from("user_profiles")
-      .select("full_name, phone")
+      .select("full_name, phone, email")
       .eq("user_id", callerId)
-      .single();
+      .maybeSingle();
 
-    // Get real delivery address for customer or use restaurant location as fallback
+    // Get real delivery address for customer
     const { data: deliveryAddresses } = await service
       .from("delivery_addresses")
       .select("*")
@@ -122,23 +122,106 @@ serve(async (req) => {
       .order("is_default", { ascending: false })
       .limit(1);
 
-    const delivery_address = deliveryAddresses?.[0] 
-      ? {
-          street: deliveryAddresses[0].street_address,
-          city: deliveryAddresses[0].city,
-          state: deliveryAddresses[0].state,
-          zip: deliveryAddresses[0].zip_code,
-          latitude: restaurant.latitude || 40.7128,
-          longitude: restaurant.longitude || -74.0060,
-        }
-      : {
-          street: restaurant.address || "123 Test Street",
-          city: restaurant.city || "Test City",
-          state: restaurant.state || "TS",
-          zip: restaurant.zip_code || "12345",
-          latitude: restaurant.latitude || 40.7128,
-          longitude: restaurant.longitude || -74.0060,
+    // Use real customer address if available, otherwise create realistic address near restaurant
+    let delivery_address: any;
+    if (deliveryAddresses?.[0]) {
+      const addr = deliveryAddresses[0];
+      delivery_address = {
+        name: customerProfile?.full_name || "Customer",
+        street: addr.street_address,
+        city: addr.city,
+        state: addr.state,
+        zip: addr.zip_code,
+        zip_code: addr.zip_code,
+        apt_suite: addr.apt_suite || null,
+        latitude: addr.latitude || (restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.1 : 40.7128),
+        longitude: addr.longitude || (restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.1 : -74.0060),
+        address: `${addr.street_address}${addr.apt_suite ? `, ${addr.apt_suite}` : ''}, ${addr.city}, ${addr.state} ${addr.zip_code}`,
+      };
+    } else {
+      // Create realistic address near restaurant
+      const streetNumbers = ["123", "456", "789", "234", "567", "890"];
+      const streetNames = ["Main St", "Oak Ave", "Elm St", "Park Ave", "Maple Dr", "Cedar Ln"];
+      const randomStreet = `${streetNumbers[Math.floor(Math.random() * streetNumbers.length)]} ${streetNames[Math.floor(Math.random() * streetNames.length)]}`;
+      
+      delivery_address = {
+        name: customerProfile?.full_name || "Customer",
+        street: randomStreet,
+        city: restaurant.city || "Test City",
+        state: restaurant.state || "TS",
+        zip: restaurant.zip_code || "12345",
+        zip_code: restaurant.zip_code || "12345",
+        apt_suite: null,
+        latitude: restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.1 : 40.7128,
+        longitude: restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.1 : -74.0060,
+        address: `${randomStreet}, ${restaurant.city || "Test City"}, ${restaurant.state || "TS"} ${restaurant.zip_code || "12345"}`,
+      };
+    }
+
+    // Fetch menu items from restaurant to create realistic order items
+    const { data: menuItems, error: menuItemsErr } = await service
+      .from("menu_items")
+      .select("id, name, price_cents, description")
+      .eq("restaurant_id", restaurant.id)
+      .eq("is_available", true)
+      .limit(10); // Get up to 10 items to have more variety
+
+    let orderItems: any[] = [];
+    let subtotalCents = 0;
+
+    // Create realistic order items from menu items
+    if (menuItems && menuItems.length > 0) {
+      // Randomly select 2-4 items for a more realistic order
+      const numItems = Math.min(Math.floor(Math.random() * 3) + 2, menuItems.length);
+      
+      // Shuffle and select random items
+      const shuffled = [...menuItems].sort(() => Math.random() - 0.5);
+      const selectedItems = shuffled.slice(0, numItems);
+      
+      orderItems = selectedItems.map((item: any) => {
+        // More realistic quantities: 1-3, with 1 being most common
+        const quantityOptions = [1, 1, 1, 2, 2, 3]; // Weighted towards 1
+        const quantity = quantityOptions[Math.floor(Math.random() * quantityOptions.length)];
+        const itemTotal = item.price_cents * quantity;
+        subtotalCents += itemTotal;
+        
+        // Occasionally add special instructions (20% chance)
+        const specialInstructions = Math.random() > 0.8 
+          ? ["No onions", "Extra sauce", "Well done", "Light on spices"][Math.floor(Math.random() * 4)]
+          : null;
+        
+        return {
+          menu_item_id: item.id,
+          quantity: quantity,
+          price_cents: item.price_cents,
+          special_instructions: specialInstructions,
         };
+      });
+    } else {
+      // Fallback: create realistic test items if no menu items exist
+      const fallbackItems = [
+        { name: "Burger", price: 1299 },
+        { name: "Fries", price: 599 },
+        { name: "Drink", price: 299 },
+      ];
+      const numItems = Math.floor(Math.random() * 2) + 2; // 2-3 items
+      const selected = fallbackItems.slice(0, numItems);
+      
+      orderItems = selected.map((item) => {
+        const quantity = Math.floor(Math.random() * 2) + 1;
+        subtotalCents += item.price * quantity;
+        return {
+          menu_item_id: null,
+          quantity: quantity,
+          price_cents: item.price,
+          special_instructions: null,
+        };
+      });
+    }
+
+    const taxCents = Math.round(subtotalCents * 0.08); // 8% tax
+    const tipCents = Math.round(subtotalCents * 0.15); // 15% tip
+    const totalCents = subtotalCents + taxCents + tipCents;
 
     // Create order as confirmed and assigned to selected driver
     const { data: order, error: orderErr } = await service
@@ -149,21 +232,25 @@ serve(async (req) => {
         driver_id: driverId,
         is_test: true,
         order_status: "confirmed",
-        total_cents: 2599,
-        subtotal_cents: 2299,
-        tax_cents: 200,
-        tip_cents: 100,
+        total_cents: totalCents,
+        subtotal_cents: subtotalCents,
+        tax_cents: taxCents,
+        tip_cents: tipCents,
         delivery_fee_cents: 0,
         delivery_address,
         customer_name: customerProfile?.full_name || "Test Customer",
         customer_phone: customerProfile?.phone || null,
         pickup_address: {
-          street: restaurant.address || "Restaurant Address",
+          name: restaurant.name || "Restaurant",
+          street: restaurant.address || restaurant.street_address || "Restaurant Address",
           city: restaurant.city || "City",
           state: restaurant.state || "ST",
           zip: restaurant.zip_code || "00000",
+          zip_code: restaurant.zip_code || "00000",
           latitude: restaurant.latitude || 40.7128,
           longitude: restaurant.longitude || -74.0060,
+          address: restaurant.address || `${restaurant.street_address || "Restaurant Address"}, ${restaurant.city || "City"}, ${restaurant.state || "ST"} ${restaurant.zip_code || "00000"}`,
+          phone: restaurant.phone || null,
         },
       })
       .select("*")
@@ -175,6 +262,26 @@ serve(async (req) => {
         JSON.stringify({ error: "Failed to create order", details: orderErr.message }),
         { status: 500, headers: jsonHeaders },
       );
+    }
+
+    // Create order items
+    if (orderItems.length > 0) {
+      const orderItemsToInsert = orderItems.map(item => ({
+        order_id: order.id,
+        menu_item_id: item.menu_item_id,
+        quantity: item.quantity,
+        price_cents: item.price_cents,
+        special_instructions: item.special_instructions,
+      }));
+
+      const { error: itemsErr } = await service
+        .from("order_items")
+        .insert(orderItemsToInsert);
+
+      if (itemsErr) {
+        console.warn("Failed to create order items:", itemsErr.message);
+        // Non-fatal - order is created, items just won't be detailed
+      }
     }
 
     const { data: assignment, error: assignErr } = await service
@@ -196,24 +303,63 @@ serve(async (req) => {
       );
     }
 
+    // Fetch order items with menu item names for notification payload
+    const { data: orderItemsWithNames } = await service
+      .from("order_items")
+      .select(`
+        id,
+        quantity,
+        price_cents,
+        special_instructions,
+        menu_items (
+          name
+        )
+      `)
+      .eq("order_id", order.id);
+
+    // Format items for notification payload
+    const formattedItems = (orderItemsWithNames || []).map((item: any) => ({
+      id: item.id,
+      name: item.menu_items?.name || "Menu Item",
+      quantity: item.quantity,
+      price_cents: item.price_cents,
+      special_instructions: item.special_instructions,
+    }));
+
+    // Calculate realistic payout based on order value (typically 15-25% of subtotal)
+    const payoutPercentage = 0.20; // 20% of subtotal
+    const basePayout = Math.round(subtotalCents * payoutPercentage);
+    const payoutCents = Math.max(500, basePayout); // Minimum $5.00
+
     const notificationPayload = {
       type: "order_assignment",
       assignment_id: assignment.id,
       order_id: order.id,
       restaurant_name: restaurant.name || "Test Restaurant",
+      restaurant_id: restaurant.id,
       pickup_address: {
-        street: restaurant.address || "Test Pickup Address",
-        city: restaurant.city || "Test City",
-        state: restaurant.state || "TS",
+        name: restaurant.name || "Restaurant",
+        street: restaurant.address || restaurant.street_address || "Restaurant Address",
+        city: restaurant.city || "City",
+        state: restaurant.state || "ST",
         zip: restaurant.zip_code || "12345",
+        zip_code: restaurant.zip_code || "12345",
+        latitude: restaurant.latitude || 40.7128,
+        longitude: restaurant.longitude || -74.0060,
+        address: restaurant.address || `${restaurant.street_address || "Restaurant Address"}, ${restaurant.city || "City"}, ${restaurant.state || "ST"} ${restaurant.zip_code || "12345"}`,
+        phone: restaurant.phone || null,
       },
       dropoff_address: delivery_address,
-      payout_cents: 500,
+      customer_name: customerProfile?.full_name || "Test Customer",
+      payout_cents: payoutCents,
       distance_km: distanceKm,
       distance_mi: (distanceKm * 0.621371).toFixed(1),
       expires_at: expiresAt,
       estimated_time: estimatedTime,
       isTestOrder: true,
+      items: formattedItems, // Include order items in payload
+      subtotal_cents: subtotalCents,
+      tip_cents: tipCents,
     } as const;
 
     // Best-effort log notification in DB (non-fatal)

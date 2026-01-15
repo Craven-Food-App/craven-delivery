@@ -43,6 +43,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState(false);
   const [lastTap, setLastTap] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -59,6 +60,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
   const startCamera = async () => {
     try {
       setCameraError(false);
+      setIsFocused(false);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
@@ -71,6 +73,14 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        
+        // Simulate focus detection after camera is ready
+        videoRef.current.addEventListener('loadedmetadata', () => {
+          // Wait a moment for camera to stabilize, then show focused state
+          setTimeout(() => {
+            setIsFocused(true);
+          }, 800);
+        });
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -165,28 +175,39 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
       left={0}
       right={0}
       bottom={0}
-      style={{ zIndex: 50, backgroundColor: 'var(--mantine-color-dark-9)', display: 'flex', flexDirection: 'column' }}
+      style={{ zIndex: 50, backgroundColor: '#000000', display: 'flex', flexDirection: 'column' }}
     >
-      <Group
+      <Box
         px="md"
-        py="md"
-        justify="space-between"
-        align="center"
-        style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', color: 'white', flexShrink: 0 }}
+        py="sm"
+        style={{ 
+          backgroundColor: 'rgba(0, 0, 0, 0.85)', 
+          backdropFilter: 'blur(12px)', 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: 'env(safe-area-inset-top, 12px)',
+        }}
       >
-        <Button
+        <ActionIcon
           variant="subtle"
-          size="sm"
-          c="gray.4"
-          style={{ color: 'var(--mantine-color-gray-4)' }}
+          size="lg"
           onClick={onClose}
-          leftSection={<IconRotateClockwise size={16} />}
+          style={{ 
+            color: 'white',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+          }}
         >
-          Go Back
-        </Button>
-        <Text size="lg" fw={700}>{title}</Text>
+          <IconArrowLeft size={20} />
+        </ActionIcon>
+        <Text size="sm" fw={600} c="white" style={{ letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+          {title}
+        </Text>
         <Box w={40} />
-      </Group>
+      </Box>
       
       <Box flex={1} pos="relative" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'black' }}>
         {capturedImage ? (
@@ -199,61 +220,178 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
               h="100%"
               style={{ objectFit: 'contain' }}
             />
-            <Stack
+            <Box
               pos="absolute"
               top={0}
               w="100%"
-              style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+              style={{ 
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+              }}
               p="md"
             >
-              <Text style={{ textAlign: 'center', color: 'var(--mantine-color-orange-3)', fontWeight: 600 }} size="sm">
+              <Text 
+                style={{ 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.95)', 
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  letterSpacing: '0.01em',
+                  lineHeight: 1.4,
+                }}
+              >
                 {description}
               </Text>
-            </Stack>
+            </Box>
           </Box>
         ) : (
           <>
             {cameraError ? (
-              <Stack gap="md" p="md">
-                <Text c="white" size="lg" fw={700} style={{ textAlign: 'center' }}>
-                  Camera Not Available
-                </Text>
-                <Text c="white" opacity={0.8} size="sm" style={{ textAlign: 'center' }}>
-                  {description}
-                </Text>
+              <Stack gap="lg" p="xl" align="center" style={{ maxWidth: '400px' }}>
+                <Box
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }}
+                >
+                  <IconCamera size={32} color="white" opacity={0.6} />
+                </Box>
+                <Stack gap="xs" align="center">
+                  <Text c="white" size="md" fw={600} style={{ textAlign: 'center', letterSpacing: '0.01em' }}>
+                    Camera Unavailable
+                  </Text>
+                  <Text c="white" opacity={0.7} size="sm" style={{ textAlign: 'center', lineHeight: 1.5 }}>
+                    {description}
+                  </Text>
+                </Stack>
                 <Button
                   onClick={capturePhoto}
-                  color="orange"
-                  size="lg"
+                  size="md"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    color: 'white',
+                    fontWeight: 500,
+                    letterSpacing: '0.02em',
+                    marginTop: '8px',
+                  }}
                 >
                   Use Demo Photo
                 </Button>
               </Stack>
             ) : (
-              <Box
-                component="video"
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                w="100%"
-                h="100%"
-                style={{ objectFit: 'cover' }}
-                onClick={handleDoubleTap}
-              />
+              <Box pos="relative" w="100%" h="100%">
+                <Box
+                  component="video"
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  w="100%"
+                  h="100%"
+                  style={{ objectFit: 'cover' }}
+                  onClick={handleDoubleTap}
+                />
+                {/* Square locator overlay */}
+                <Box
+                  pos="absolute"
+                  top="50%"
+                  left="50%"
+                  style={{
+                    transform: 'translate(-50%, -50%)',
+                    width: '280px',
+                    height: '280px',
+                    border: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.6)'}`,
+                    borderRadius: '8px',
+                    pointerEvents: 'none',
+                    transition: 'border-color 0.3s ease',
+                    boxShadow: isFocused 
+                      ? '0 0 0 4px rgba(34, 197, 94, 0.2), 0 0 20px rgba(34, 197, 94, 0.3)' 
+                      : '0 0 0 4px rgba(0, 0, 0, 0.3)',
+                  }}
+                >
+                  {/* Corner indicators */}
+                  <Box
+                    pos="absolute"
+                    top="-2px"
+                    left="-2px"
+                    w="20px"
+                    h="20px"
+                    style={{
+                      borderTop: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderLeft: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderTopLeftRadius: '8px',
+                    }}
+                  />
+                  <Box
+                    pos="absolute"
+                    top="-2px"
+                    right="-2px"
+                    w="20px"
+                    h="20px"
+                    style={{
+                      borderTop: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderRight: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderTopRightRadius: '8px',
+                    }}
+                  />
+                  <Box
+                    pos="absolute"
+                    bottom="-2px"
+                    left="-2px"
+                    w="20px"
+                    h="20px"
+                    style={{
+                      borderBottom: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderLeft: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderBottomLeftRadius: '8px',
+                    }}
+                  />
+                  <Box
+                    pos="absolute"
+                    bottom="-2px"
+                    right="-2px"
+                    w="20px"
+                    h="20px"
+                    style={{
+                      borderBottom: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderRight: `3px solid ${isFocused ? '#22c55e' : 'rgba(255, 255, 255, 0.8)'}`,
+                      borderBottomRightRadius: '8px',
+                    }}
+                  />
+                </Box>
+              </Box>
             )}
             
-            <Stack
+            <Box
               pos="absolute"
               top={0}
               w="100%"
-              style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+              style={{ 
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+              }}
               p="md"
             >
-              <Text style={{ textAlign: 'center', color: 'var(--mantine-color-orange-3)', fontWeight: 600 }} size="sm">
+              <Text 
+                style={{ 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.95)', 
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  letterSpacing: '0.01em',
+                  lineHeight: 1.4,
+                }}
+              >
                 {description}
               </Text>
-            </Stack>
+            </Box>
           </>
         )}
       </Box>
@@ -263,23 +401,43 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
         bottom={0}
         w="100%"
         p="xl"
-        style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', flexShrink: 0 }}
+        style={{ 
+          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          flexShrink: 0,
+          paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+        }}
       >
         {capturedImage ? (
-          <Group gap="md">
+          <Group gap="sm">
             <Button
               onClick={handleRetake}
               variant="outline"
-              color="gray"
-              leftSection={<IconRotateClockwise size={20} />}
+              size="md"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                color: 'white',
+                fontWeight: 500,
+              }}
+              leftSection={<IconRotateClockwise size={18} />}
             >
               Retake
             </Button>
             <Button
               onClick={handleConfirm}
-              color="green"
-              size="lg"
-              leftSection={<IconCheck size={20} />}
+              size="md"
+              style={{
+                backgroundColor: '#22c55e',
+                border: 'none',
+                color: 'white',
+                fontWeight: 600,
+                letterSpacing: '0.02em',
+              }}
+              leftSection={<IconCheck size={18} />}
             >
               Confirm
             </Button>
@@ -288,23 +446,23 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
           <ActionIcon
             onClick={capturePhoto}
             loading={isCapturing}
-            w={80}
-            h={80}
-            bg="white"
+            w={72}
+            h={72}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              border: '4px solid var(--mantine-color-orange-6)', 
+              backgroundColor: 'white',
+              border: '3px solid rgba(255, 255, 255, 0.3)', 
               borderRadius: '50%', 
-              boxShadow: '0 20px 25px rgba(0,0,0,0.3)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 8px rgba(255, 255, 255, 0.1)',
             }}
             title="Capture Photo"
           >
             {isCapturing ? (
               <Loader size="md" color="dark" />
             ) : (
-              <IconCamera size={32} color="var(--mantine-color-dark-9)" />
+              <IconCamera size={28} color="#1a1a1a" />
             )}
           </ActionIcon>
         )}
