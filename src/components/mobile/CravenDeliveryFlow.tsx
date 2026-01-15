@@ -1330,22 +1330,37 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
           }}
         >
-          {/* Success Icon */}
-          <Box mt="sm">
+          {/* Feeder Icon with animated checkmark */}
+          <Box mt="sm" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
+            <img 
+              src="/src/assets/feeder_app_icon.png" 
+              alt="Feeder" 
+              style={{ 
+                width: '120px', 
+                height: '120px', 
+                objectFit: 'contain',
+              }} 
+            />
+            {/* Animated green check overlay - appears when animation completes */}
             <Box
               style={{
-                width: '100px',
-                height: '100px',
+                position: 'absolute',
+                bottom: '-8px',
+                right: '-8px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
                 backgroundColor: '#22c55e',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto',
-                boxShadow: '0 8px 24px rgba(34, 197, 94, 0.3)',
+                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)',
+                opacity: isAnimating ? 0 : 1,
+                transform: isAnimating ? 'scale(0)' : 'scale(1)',
+                transition: 'opacity 0.3s ease, transform 0.3s ease',
               }}
             >
-              <IconCheck size={56} color="white" strokeWidth={3} />
+              <IconCheck size={24} color="white" strokeWidth={3} />
             </Box>
           </Box>
 
@@ -1443,7 +1458,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             </Stack>
           </Card>
 
-          {/* Resume Feeding Button */}
+          {/* Resume Feeding Button - Orange to Red Gradient */}
           <Button
             onClick={onCompleteDelivery}
             size="lg"
@@ -1451,16 +1466,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             maw={420}
             h={56}
             style={{
-              backgroundColor: '#374151',
+              background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
               color: 'white',
               fontSize: '16px',
               fontWeight: 600,
               letterSpacing: '0.02em',
               borderRadius: '12px',
               border: 'none',
+              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
             }}
           >
-            Resume Feeding
+            RESUME FEEDING
           </Button>
         </Stack>
       </Box>
