@@ -333,6 +333,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [showTransition, setShowTransition] = useState(false);
   const [transitionMessage, setTransitionMessage] = useState('');
+  const [transitionType, setTransitionType] = useState<'pickup' | 'arrival'>('pickup');
   const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
@@ -692,6 +693,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       onCameraStateChange?.(false);
       
       // Show transition animation
+      setTransitionType('pickup');
       setTransitionMessage('Pickup confirmed! Starting delivery to customer...');
       setShowTransition(true);
       
@@ -712,13 +714,26 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
   
   const handleConfirmArrivalAtCustomer = async () => {
-    setStatus(DRIVER_STATUS.AT_CUSTOMER);
-    await updateOrderStatus('at_customer');
+    // Show arrival animation
+    setTransitionType('arrival');
+    setTransitionMessage('YOU HAVE ARRIVED');
+    setShowTransition(true);
     
-    // Read delivery instructions out loud if enabled
-    if (currentOrder.customer?.special_instructions) {
-      speakDeliveryInstructions(currentOrder.customer.special_instructions);
-    }
+    // Wait for animation (2.5s drive + 1s beacon), then transition to next step
+    setTimeout(async () => {
+      setStatus(DRIVER_STATUS.AT_CUSTOMER);
+      await updateOrderStatus('at_customer');
+      
+      // Read delivery instructions out loud if enabled
+      if (currentOrder.customer?.special_instructions) {
+        speakDeliveryInstructions(currentOrder.customer.special_instructions);
+      }
+      
+      // Hide transition after a brief moment
+      setTimeout(() => {
+        setShowTransition(false);
+      }, 800);
+    }, 4000);
   };
   
   const handleStartDeliveryVerification = () => {
@@ -841,42 +856,169 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         }}
       >
         <Stack align="center" gap="xl">
-          {/* Animated checkmark circle */}
-          <Box
-            style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              border: '4px solid #22c55e',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-              animation: 'scaleIn 0.5s ease-out, pulse 1.5s ease-in-out 0.5s infinite',
-            }}
-          >
-            <IconCheck 
-              size={64} 
-              color="#22c55e"
+          {/* Animated icon - feeder for arrival, checkmark for pickup */}
+          {transitionType === 'arrival' ? (
+            <Box
               style={{
-                animation: 'checkmark 0.5s ease-out 0.3s both',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                overflow: 'hidden',
               }}
-            />
-          </Box>
+            >
+              {/* SVG squiggly route path */}
+              <svg
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                }}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M 15 8 
+                     Q 85 15, 20 25 
+                     Q -15 32, 80 42 
+                     Q 115 50, 25 58 
+                     Q -10 65, 75 75 
+                     Q 110 82, 50 92"
+                  fill="none"
+                  stroke="#f97316"
+                  strokeWidth="0.8"
+                  strokeDasharray="2 2"
+                  strokeLinecap="round"
+                  style={{
+                    opacity: 0.7,
+                  }}
+                />
+              </svg>
+              
+              {/* Destination pin at end of route */}
+              <Box
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: '8%',
+                  transform: 'translateX(-50%)',
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: '#22c55e',
+                  borderRadius: '50%',
+                  border: '4px solid white',
+                  boxShadow: '0 0 0 4px #22c55e, 0 4px 12px rgba(0,0,0,0.3)',
+                  animation: 'destinationPulse 1s ease-out 2.5s infinite',
+                  zIndex: 5,
+                }}
+              />
+              
+              {/* Feeder icon following the squiggly path */}
+              <Box
+                style={{
+                  position: 'absolute',
+                  left: '15%',
+                  top: '5%',
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'driveSquiggly 2.5s ease-in-out forwards',
+                  zIndex: 10,
+                }}
+              >
+                <img 
+                  src={feederAppIcon} 
+                  alt="Feeder" 
+                  style={{ 
+                    width: '70px', 
+                    height: '70px', 
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))',
+                  }} 
+                />
+              </Box>
+              
+              {/* Beacon rings - appear after feeder arrives */}
+              <Box
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: '8%',
+                  transform: 'translateX(-50%)',
+                  width: '150px',
+                  height: '150px',
+                  opacity: 0,
+                  animation: 'beaconAppear 0.3s ease-out 2.5s forwards',
+                  zIndex: 4,
+                }}
+              >
+                <Box style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '100%', borderRadius: '50%', border: '3px solid rgba(34, 197, 94, 0.6)', animation: 'beaconRing 1.5s ease-out 2.7s infinite' }} />
+                <Box style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '100%', borderRadius: '50%', border: '3px solid rgba(34, 197, 94, 0.4)', animation: 'beaconRing 1.5s ease-out 3s infinite' }} />
+                <Box style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '100%', borderRadius: '50%', border: '3px solid rgba(34, 197, 94, 0.2)', animation: 'beaconRing 1.5s ease-out 3.3s infinite' }} />
+              </Box>
+              
+              {/* "YOU HAVE ARRIVED" text at bottom */}
+              <Text
+                fw={700}
+                c="#22c55e"
+                style={{
+                  position: 'absolute',
+                  bottom: '22%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  textAlign: 'center',
+                  letterSpacing: '0.15em',
+                  fontSize: '24px',
+                  textTransform: 'uppercase',
+                  opacity: 0,
+                  animation: 'fadeInUp 0.5s ease-out 2.6s forwards',
+                  textShadow: '0 0 20px rgba(34, 197, 94, 0.5)',
+                  zIndex: 10,
+                }}
+              >
+                YOU HAVE ARRIVED
+              </Text>
+            </Box>
+          ) : (
+            <Box
+              style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                border: '4px solid #22c55e',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                animation: 'scaleIn 0.5s ease-out, pulse 1.5s ease-in-out 0.5s infinite',
+              }}
+            >
+              <IconCheck 
+                size={64} 
+                color="#22c55e"
+                style={{
+                  animation: 'checkmark 0.5s ease-out 0.3s both',
+                }}
+              />
+            </Box>
+          )}
           
-          {/* Message */}
-          <Text
-            size="xl"
-            fw={600}
-            c="white"
-            style={{
-              textAlign: 'center',
-              letterSpacing: '0.02em',
-              animation: 'fadeInUp 0.6s ease-out 0.4s both',
-            }}
-          >
-            {transitionMessage}
-          </Text>
+          {/* Message - only show for pickup transition, arrival has its own text */}
+          {transitionType !== 'arrival' && (
+            <Text
+              size="xl"
+              fw={700}
+              c="white"
+              style={{
+                textAlign: 'center',
+                letterSpacing: '0.02em',
+                animation: 'fadeInUp 0.6s ease-out 0.4s both',
+              }}
+            >
+              {transitionMessage}
+            </Text>
+          )}
           
           {/* Loading indicator */}
           <Box
@@ -944,6 +1086,100 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             }
             to {
               transform: rotate(360deg);
+            }
+          }
+          @keyframes bounceIn {
+            0% {
+              transform: scale(0);
+              opacity: 0;
+            }
+            50% {
+              transform: scale(1.1);
+            }
+            70% {
+              transform: scale(0.95);
+            }
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+          @keyframes pulseRing {
+            0% {
+              transform: translate(-50%, -50%) scale(1);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.4);
+              opacity: 0;
+            }
+          }
+          @keyframes driveToDestination {
+            0% {
+              left: 5%;
+            }
+            100% {
+              left: calc(92% - 80px);
+            }
+          }
+          @keyframes driveSquiggly {
+            0% {
+              left: 15%;
+              top: 8%;
+            }
+            12% {
+              left: 75%;
+              top: 18%;
+            }
+            25% {
+              left: 20%;
+              top: 28%;
+            }
+            37% {
+              left: 80%;
+              top: 40%;
+            }
+            50% {
+              left: 25%;
+              top: 52%;
+            }
+            62% {
+              left: 75%;
+              top: 64%;
+            }
+            75% {
+              left: 30%;
+              top: 74%;
+            }
+            100% {
+              left: 50%;
+              top: 88%;
+            }
+          }
+          @keyframes destinationPulse {
+            0%, 100% {
+              box-shadow: 0 0 0 3px #22c55e;
+            }
+            50% {
+              box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.5);
+            }
+          }
+          @keyframes beaconAppear {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @keyframes beaconRing {
+            0% {
+              transform: translate(-50%, -50%) scale(0.3);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.5);
+              opacity: 0;
             }
           }
         `}</style>
