@@ -5,6 +5,7 @@ import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
+import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
   Box,
   Stack,
@@ -1333,7 +1334,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           {/* Feeder Icon with animated checkmark */}
           <Box mt="sm" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
             <img 
-              src="/src/assets/feeder_app_icon.png" 
+              src={feederAppIcon} 
               alt="Feeder" 
               style={{ 
                 width: '120px', 
