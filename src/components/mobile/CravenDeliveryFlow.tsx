@@ -344,34 +344,38 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   }, [orderDetails, orderStartTime]);
 
   // Animate total earnings counter - must be before any early returns
+  // Only run once when status changes to COMPLETE
   useEffect(() => {
-    if (status === DRIVER_STATUS.COMPLETE && orderDetails) {
-      // Reset animation state
-      setAnimatedTotal(0);
-      setIsAnimating(true);
+    if (status !== DRIVER_STATUS.COMPLETE || !orderDetails) return;
+    
+    // Calculate total once
+    const totalEarned = orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25);
+    
+    // Reset animation state
+    setAnimatedTotal(0);
+    setIsAnimating(true);
+    
+    const duration = 2000; // 2 seconds
+    const steps = 60;
+    const increment = totalEarned / steps;
+    const stepDuration = duration / steps;
+    
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      currentStep++;
+      const newValue = Math.min(increment * currentStep, totalEarned);
+      setAnimatedTotal(newValue);
       
-      const totalEarned = orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25);
-      const duration = 2000; // 2 seconds
-      const steps = 60;
-      const increment = totalEarned / steps;
-      const stepDuration = duration / steps;
-      
-      let currentStep = 0;
-      const interval = setInterval(() => {
-        currentStep++;
-        const newValue = Math.min(increment * currentStep, totalEarned);
-        setAnimatedTotal(newValue);
-        
-        if (currentStep >= steps) {
-          setAnimatedTotal(totalEarned);
-          setIsAnimating(false);
-          clearInterval(interval);
-        }
-      }, stepDuration);
-      
-      return () => clearInterval(interval);
-    }
-  }, [status, orderDetails]);
+      if (currentStep >= steps) {
+        setAnimatedTotal(totalEarned);
+        setIsAnimating(false);
+        clearInterval(interval);
+      }
+    }, stepDuration);
+    
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   // Early validation - must come after all hooks
   if (!orderDetails) {
