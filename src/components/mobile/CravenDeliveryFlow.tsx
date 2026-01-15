@@ -999,7 +999,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             borderTopLeftRadius: '20px', 
             borderTopRightRadius: '20px', 
             marginTop: -16,
-            paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
           }}
         >
           <Stack gap="sm" pt="md" align="stretch">
