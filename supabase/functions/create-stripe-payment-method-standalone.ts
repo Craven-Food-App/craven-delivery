@@ -244,7 +244,21 @@ serve(async (req) => {
         throw new Error("Payment method is not a card");
       }
 
-      // Update payment method billing details if provided
+      // Attach payment method to customer FIRST (required before updating)
+      console.log("Attaching payment method to customer...");
+      try {
+        await attachPaymentMethodToCustomer(paymentMethodId, customerId);
+        console.log("Payment method attached successfully");
+      } catch (attachError: any) {
+        console.error("Error attaching payment method:", attachError);
+        // Check for specific Stripe errors
+        if (attachError?.code === 'card_declined' || attachError?.message?.includes('does not support')) {
+          throw new Error(`Card declined: ${attachError.message || 'Your card does not support this type of purchase. This may be a prepaid card, gift card, or card with restrictions. Please try a different card.'}`);
+        }
+        throw new Error(`Failed to attach payment method: ${attachError?.message || attachError}`);
+      }
+
+      // Update payment method billing details AFTER attaching (optional)
       if (billingAddress) {
         try {
           await stripe.paymentMethods.update(paymentMethodId, {
@@ -259,20 +273,11 @@ serve(async (req) => {
               },
             },
           });
+          console.log("Payment method billing details updated");
         } catch (updateError: any) {
           console.warn("Failed to update payment method billing details:", updateError);
-          // Non-critical, continue
+          // Non-critical, continue - payment method is already attached
         }
-      }
-
-      // Attach payment method to customer
-      console.log("Attaching payment method to customer...");
-      try {
-        await attachPaymentMethodToCustomer(paymentMethodId, customerId);
-        console.log("Payment method attached successfully");
-      } catch (attachError: any) {
-        console.error("Error attaching payment method:", attachError);
-        throw new Error(`Failed to attach payment method: ${attachError?.message || attachError}`);
       }
 
       return new Response(

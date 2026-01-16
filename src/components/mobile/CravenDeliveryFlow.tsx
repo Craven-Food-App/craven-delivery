@@ -1723,7 +1723,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 <Text size="sm" fw={500} c="dimmed">
                   Total Tip
                 </Text>
-                <Text size="sm" fw={600} c="dark">
+                <Text size="sm" fw={600} c="orange.6">
                   ${tipAmount.toFixed(2)}
                 </Text>
               </Group>

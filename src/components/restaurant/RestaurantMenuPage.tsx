@@ -63,6 +63,7 @@ import {
 } from "@tabler/icons-react";
 import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
+import cravemoreIcon from "@/assets/cravemore-icon.png";
 import { useCart } from '@/contexts/CartContext';
 
 // --- Type Definitions (matching your database) ---
@@ -88,6 +89,7 @@ interface Restaurant {
   is_open?: boolean;
   opens_at?: string;
   closes_at?: string;
+  cravemore_eligible?: boolean | null;
 }
 
 interface MenuCategory {
@@ -117,6 +119,7 @@ interface MenuItem {
   spice_level?: number;
   calories?: number;
   chef_recommended?: boolean;
+  favorites_count?: number;
 }
 
 interface PromoCode {
@@ -138,7 +141,7 @@ interface CartItem extends MenuItem {
 }
 
 // --- Mobile Header Component (DoorDash Style) ---
-const MobileHeader = ({ restaurant, onBack, onShare }: { restaurant: Restaurant | null; onBack: () => void; onShare: () => void }) => (
+const MobileHeader = ({ restaurant, onBack, onShare, onLike, isLiked = false }: { restaurant: Restaurant | null; onBack: () => void; onShare: () => void; onLike: () => void; isLiked?: boolean }) => (
   <Box
     style={{
       display: 'block',
@@ -162,13 +165,27 @@ const MobileHeader = ({ restaurant, onBack, onShare }: { restaurant: Restaurant 
       <Box style={{ flex: 1, textAlign: 'center' }}>
         <Text fw={600} size="sm" truncate>{restaurant?.name || 'Restaurant'}</Text>
       </Box>
+      <Group gap="xs">
       <ActionIcon
         variant="subtle"
         onClick={onShare}
-        style={{ marginRight: '-8px' }}
       >
         <IconShare size={20} style={{ color: 'var(--mantine-color-gray-6)' }} />
       </ActionIcon>
+        <ActionIcon
+          variant="subtle"
+          onClick={onLike}
+          style={{ marginRight: '-8px' }}
+        >
+          <IconHeart 
+            size={20} 
+            style={{ 
+              color: isLiked ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-gray-6)',
+              fill: isLiked ? 'var(--mantine-color-red-6)' : 'none'
+            }} 
+          />
+      </ActionIcon>
+      </Group>
     </Group>
   </Box>
 );
@@ -200,6 +217,8 @@ const RestaurantMenuPage = () => {
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [showCartButton, setShowCartButton] = useState(false);
   const cartButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isRestaurantLiked, setIsRestaurantLiked] = useState(false);
   
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
@@ -216,7 +235,12 @@ const RestaurantMenuPage = () => {
            const [modalQuantity, setModalQuantity] = useState(1);
            const [selectedRecommendedOption, setSelectedRecommendedOption] = useState<number | null>(1);
            const [selectedMenuItem, setSelectedMenuItem] = useState<string | null>(null);
+           const [showSpecialInstructions, setShowSpecialInstructions] = useState(false);
+           const [specialInstructions, setSpecialInstructions] = useState('');
+           const [menuItemModifiers, setMenuItemModifiers] = useState<any[]>([]);
+           const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
            const reviewsScrollRef = useRef<HTMLDivElement>(null);
+           const modalScrollRef = useRef<HTMLDivElement>(null);
 
     // Reviews scroll functions
     const scrollReviewsLeft = () => {
@@ -498,12 +522,30 @@ const RestaurantMenuPage = () => {
         .eq('restaurant_id', id)
         .eq('is_available', true);
 
+      // Fetch favorites count for all menu items at once
+      const menuItemIds = (menuData || []).map((item: any) => item.id);
+      let favoritesCountMap: Record<string, number> = {};
+      
+      if (menuItemIds.length > 0) {
+        const { data: favoritesData } = await supabase
+          .from('menu_item_favorites')
+          .select('menu_item_id')
+          .in('menu_item_id', menuItemIds);
+        
+        // Count favorites per menu item
+        favoritesCountMap = (favoritesData || []).reduce((acc: Record<string, number>, fav: any) => {
+          acc[fav.menu_item_id] = (acc[fav.menu_item_id] || 0) + 1;
+          return acc;
+        }, {});
+      }
+
       setMenuItems(
         (menuData || []).map((item: any) => ({
           ...item,
           spice_level: item.spice_level !== undefined && item.spice_level !== null
             ? Number(item.spice_level)
-            : undefined
+            : undefined,
+          favorites_count: favoritesCountMap[item.id] || 0
         }))
       );
       
@@ -529,6 +571,34 @@ const RestaurantMenuPage = () => {
     }
   };
 
+  // Check if restaurant is liked
+  useEffect(() => {
+    const checkIfLiked = async () => {
+      if (!restaurant || !id) return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('customer_favorites')
+          .select('id')
+          .eq('customer_id', user.id)
+          .eq('restaurant_id', restaurant.id)
+          .single();
+
+        setIsRestaurantLiked(!!data);
+      } catch (error) {
+        // Not liked or error - set to false
+        setIsRestaurantLiked(false);
+      }
+    };
+
+    if (restaurant) {
+      checkIfLiked();
+    }
+  }, [restaurant, id]);
+
     // Scroll observer for active section highlighting
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -542,7 +612,16 @@ const RestaurantMenuPage = () => {
             threshold: 0.1
         });
 
-        const sections = ['featured', 'most-ordered', 'reviews', ...categories.map(c => c.id)];
+        const sections = [
+            'featured', 
+            'most-ordered', 
+            'reviews',
+            'reviews-mobile',
+            'frequently-ordered', 
+            'frequently-ordered-mobile',
+            ...categories.map(c => c.id),
+            ...categories.map(c => `${c.id}-mobile`)
+        ];
         sections.forEach(sectionId => {
             const el = document.getElementById(sectionId);
             if (el) observer.observe(el);
@@ -572,11 +651,26 @@ const RestaurantMenuPage = () => {
     }, []);
 
     const scrollToSection = useCallback((sectionId: string) => {
-        const section = document.getElementById(sectionId);
+        // Try to find the section by ID (desktop) or ID-mobile (mobile)
+        let section = document.getElementById(sectionId);
+        if (!section) {
+            // Try mobile version
+            section = document.getElementById(`${sectionId}-mobile`);
+        }
+        if (!section) {
+            // Try desktop version if we were looking for mobile
+            if (sectionId.endsWith('-mobile')) {
+                section = document.getElementById(sectionId.replace('-mobile', ''));
+            }
+        }
+        
         if (section) {
             const offset = tabsRef.current ? tabsRef.current.offsetHeight + 16 : 100;
+            const elementPosition = section.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+            
             window.scrollTo({
-                top: section.offsetTop - offset,
+                top: offsetPosition,
                 behavior: 'smooth'
             });
         }
@@ -601,6 +695,7 @@ const RestaurantMenuPage = () => {
       modifiers: [],
       special_instructions: undefined,
       restaurant_id: restaurant.id,
+      image_url: item.image_url,
     };
 
     await addToCartContext(cartItem, restaurant.id);
@@ -629,17 +724,32 @@ const RestaurantMenuPage = () => {
                setModalQuantity(1);
                setSelectedRecommendedOption(1);
                setSelectedMenuItem(null);
+               setShowSpecialInstructions(false);
+               setSpecialInstructions('');
+               setMenuItemModifiers([]);
+               setSelectedModifiers([]);
            }, []);
 
            const addToCartFromModal = useCallback(async () => {
                if (selectedItem && restaurant?.id) {
+                   // Get selected modifier details
+                   const selectedModifierDetails = selectedModifiers.map(modifierId => {
+                       const modifier = menuItemModifiers.find(m => m.id === modifierId);
+                       return modifier ? {
+                           id: modifier.id,
+                           name: modifier.name,
+                           price_cents: modifier.price_cents,
+                           modifier_type: modifier.modifier_type,
+                       } : null;
+                   }).filter(Boolean);
+
                    const cartItem = {
                        id: selectedItem.id,
                        name: selectedItem.name,
                        price_cents: selectedItem.price_cents,
                        quantity: modalQuantity,
-                       modifiers: [],
-                       special_instructions: undefined,
+                       modifiers: selectedModifierDetails,
+                       special_instructions: specialInstructions || undefined,
                        restaurant_id: restaurant.id,
                    };
 
@@ -668,14 +778,31 @@ const RestaurantMenuPage = () => {
   }, []);
 
     // Get items by category or filter
-    const featuredItems = menuItems.filter(item => item.is_featured);
+    // Featured Items: Sort by favorites_count (most liked) and take top 10
+    const featuredItems = menuItems
+        .sort((a, b) => (b.favorites_count || 0) - (a.favorites_count || 0))
+        .slice(0, 10);
     const mostOrderedItems = menuItems
         .filter(item => item.order_count && item.order_count > 0)
         .sort((a, b) => (b.order_count || 0) - (a.order_count || 0))
         .slice(0, 8);
+    
+    // Frequently Ordered: Use mostOrderedItems if available, otherwise use first 8 menu items
+    const frequentlyOrderedItems = mostOrderedItems.length > 0 
+        ? mostOrderedItems 
+        : menuItems.slice(0, 8);
+
+    // Filter menu items based on search query
+    const filteredMenuItems = searchQuery.trim() 
+        ? menuItems.filter(item => 
+            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : menuItems;
 
     const getItemsByCategory = (categoryId: string) => {
-        return menuItems.filter(item => item.category_id === categoryId);
+        const items = searchQuery.trim() ? filteredMenuItems : menuItems;
+        return items.filter(item => item.category_id === categoryId);
     };
 
     const formatPrice = (cents: number) => {
@@ -686,12 +813,12 @@ const RestaurantMenuPage = () => {
     const sidebarLinks = [
         { id: 'featured', label: 'Featured Items', href: '#featured' },
         { id: 'most-ordered', label: 'Most Ordered', href: '#most-ordered' },
+        { id: 'frequently-ordered', label: 'Frequently Ordered', href: '#frequently-ordered' },
         ...categories.map(cat => ({
             id: cat.id,
             label: cat.name,
             href: `#${cat.id}`
-        })),
-        { id: 'reviews', label: 'Reviews', href: '#reviews' }
+        }))
     ];
 
     // --- UI Components ---
@@ -700,11 +827,8 @@ const RestaurantMenuPage = () => {
         const reviews = item.order_count || Math.floor(Math.random() * 200) + 50;
 
         return (
-            <Card
-                p={0}
-                withBorder
-                shadow="md"
-                style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+            <Box
+                style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden', backgroundColor: 'white' }}
                 onClick={() => openItemModal(item)}
             >
                 <Box style={{ height: '128px', overflow: 'hidden' }}>
@@ -737,7 +861,7 @@ const RestaurantMenuPage = () => {
                 >
                     <IconPlus size={14} />
                 </ActionIcon>
-            </Card>
+            </Box>
         );
     };
 
@@ -836,510 +960,346 @@ const RestaurantMenuPage = () => {
         };
 
         return (
-            <Card p="sm" mb="lg" withBorder shadow="md">
-                <Stack gap="md">
+            <Box mb="lg">
+                <Stack gap="xs">
                     {/* Pickup Time Info */}
-                    <Group justify="space-between" align="center">
-                        <Stack gap={0}>
-                            <Text size="lg" fw={700} c="gray.9">{pickupInfo.readyTime} min</Text>
-                            <Text size="sm" c="dimmed">ready for pickup</Text>
-                        </Stack>
-                        <Badge color="green" size="lg">$0 delivery fee</Badge>
+                    <Group justify="space-between" align="center" gap="sm">
+                        <Group gap="xs" align="center">
+                            <Text size="md" fw={700} c="gray.9">{pickupInfo.readyTime} min</Text>
+                            <Text size="xs" c="dimmed">ready for pickup</Text>
+                        </Group>
+                        <Badge color="green" size="sm">$0 DELIVERY FEE</Badge>
                     </Group>
                     
                     {/* Main Content - Address and Map */}
-                    <Group align="stretch" gap="md">
+                    <Group align="stretch" gap="sm">
                         {/* Address and Info - Left Side */}
-                        <Stack justify="space-between" style={{ minWidth: '200px', flex: 1 }}>
-                            <Stack gap="xs">
-                                <Text size="sm" fw={600} c="gray.9">
+                        <Stack gap={2} style={{ minWidth: '180px', flex: 1 }}>
+                            <Text size="xs" fw={500} c="gray.9">
                                     Pick up this order at:
                                 </Text>
-                                <Text size="sm" c="blue.6" td="underline" style={{ cursor: 'pointer' }}>
+                            <Text size="xs" c="blue.6" td="underline" style={{ cursor: 'pointer' }}>
                                     {pickupInfo.address || restaurant.address}
                                 </Text>
-                                <Group gap="xs">
-                                    <IconNavigation size={16} style={{ color: 'var(--mantine-color-gray-6)' }} />
-                                    <Text size="sm" c="dimmed">{pickupInfo.walkDistance} • {pickupInfo.walkTime} min walk</Text>
+                            <Group gap={4} align="center">
+                                <IconNavigation size={12} style={{ color: 'var(--mantine-color-gray-6)' }} />
+                                <Text size="xs" c="dimmed">{pickupInfo.walkDistance} • {pickupInfo.walkTime} min walk</Text>
                                 </Group>
-                            </Stack>
                         </Stack>
 
                         {/* Map Container - Right Side */}
-                        <Box style={{ flex: 1, height: '200px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)', backgroundColor: '#f5f5f5' }}>
+                        <Box style={{ flex: 1, height: '120px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)', backgroundColor: '#f5f5f5' }}>
                             {restaurant.latitude && restaurant.longitude ? (
                                 <Box 
                                     ref={mapContainer} 
-                                    style={{ width: '100%', height: '100%', minHeight: '200px' }}
+                                    style={{ width: '100%', height: '100%', minHeight: '120px' }}
                                 />
                             ) : (
-                                <Stack align="center" justify="center" h="100%">
-                                    <IconMapPin size={32} style={{ color: 'var(--mantine-color-gray-5)' }} />
-                                    <Text size="sm" c="dimmed">Map unavailable</Text>
-                                    <Text size="xs" c="dimmed">{restaurant.address}</Text>
+                                <Stack align="center" justify="center" h="100%" gap={2}>
+                                    <IconMapPin size={20} style={{ color: 'var(--mantine-color-gray-5)' }} />
+                                    <Text size="xs" c="dimmed">Map unavailable</Text>
+                                    <Text size="xs" c="dimmed" lineClamp={1}>{restaurant.address}</Text>
                                 </Stack>
                             )}
                         </Box>
                     </Group>
                 </Stack>
-            </Card>
+            </Box>
         );
     };
 
     const TripleDipperModal = () => {
         if (!showItemModal || !selectedItem) return null;
 
+        // Calculate total price including modifiers
+        const modifierTotal = selectedModifiers.reduce((sum, modifierId) => {
+            const modifier = menuItemModifiers.find(m => m.id === modifierId);
+            return sum + (modifier?.price_cents || 0);
+        }, 0);
+        const totalPrice = ((selectedItem.price_cents + modifierTotal) * modalQuantity) / 100;
+
+        // Group modifiers by modifier_type
+        const modifiersByType = menuItemModifiers.reduce((acc, modifier) => {
+            const type = modifier.modifier_type || 'addon';
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(modifier);
+            return acc;
+        }, {} as Record<string, any[]>);
+
+        // Helper function to render a modifier section
+        const renderModifierSection = (type: string, title: string, maxSelections?: number) => {
+            const modifiers = modifiersByType[type] || [];
+            if (modifiers.length === 0) return null;
+
+            const maxSelect = maxSelections || modifiers[0]?.max_selections || 999;
+            const isRequired = modifiers[0]?.is_required || false;
+            const selectedCount = selectedModifiers.filter(id => 
+                modifiers.some(m => m.id === id)
+            ).length;
+
+            return (
+                <Stack gap="md" mb="lg" key={type}>
+                    <Stack gap="xs">
+                        <Text size="md" fw={600}>{title}</Text>
+                        <Text size="sm" c="dimmed">
+                            {isRequired ? 'Required' : 'Optional'} • {maxSelect === 999 ? 'Choose any' : `Select up to ${maxSelect}`}
+                        </Text>
+                    </Stack>
+                    <Stack gap="xs">
+                        {modifiers.map((modifier) => {
+                            const isSelected = selectedModifiers.includes(modifier.id);
+                            const canSelect = !isSelected && (maxSelect === 999 || selectedCount < maxSelect);
+                            
+                            return (
+                                <Group
+                                    key={modifier.id}
+                                    justify="space-between"
+                                    p="sm"
+                        style={{ 
+                                        cursor: canSelect || isSelected ? 'pointer' : 'not-allowed',
+                                        borderRadius: '4px',
+                                        opacity: canSelect || isSelected ? 1 : 0.5,
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                                        if (isSelected) {
+                                            setSelectedModifiers(selectedModifiers.filter(id => id !== modifier.id));
+                                        } else if (canSelect) {
+                                            setSelectedModifiers([...selectedModifiers, modifier.id]);
+                                        }
+                                    }}
+                                >
+                                    <Group gap="sm">
+                                    <Box
+                                        style={{
+                                                width: '20px',
+                                                height: '20px',
+                                                border: isSelected ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-4)',
+                                                borderRadius: '4px',
+                                                backgroundColor: isSelected ? 'var(--mantine-color-orange-6)' : 'transparent',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                            {isSelected && (
+                                                <IconCircleCheck size={14} style={{ color: 'white' }} />
+                                        )}
+                                    </Box>
+                                        <Text size="sm" fw={500}>{modifier.name}</Text>
+                                </Group>
+                                    {modifier.price_cents > 0 && (
+                                        <Text size="sm" fw={500} c="gray.7">
+                                            +${(modifier.price_cents / 100).toFixed(2)}
+                                </Text>
+                                    )}
+                                </Group>
+                            );
+                        })}
+                            </Stack>
+                </Stack>
+            );
+        };
+
         return (
             <Modal
                 opened={showItemModal}
                 onClose={closeItemModal}
-                size="lg"
-                centered
+                fullScreen
                 styles={{
-                    body: { maxHeight: '80vh', overflowY: 'auto' },
+                    body: { padding: 0 },
+                    content: { height: '100%', maxHeight: '100%' },
                 }}
             >
-                {/* Header */}
-                <Group justify="space-between" align="flex-start" mb="md" pb="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                        <Title order={3} size="lg" fw={700}>{selectedItem.name}</Title>
-                        <Text size="xs" c="dimmed">77% (213)</Text>
-                        <Text size="xs" c="gray.7">Select three appetizers and enjoy! Served with dipping sauces.</Text>
-                    </Stack>
-                    <ActionIcon variant="subtle" color="gray" onClick={closeItemModal}>
-                        <IconX size={20} />
-                    </ActionIcon>
-                </Group>
-            
-                {/* Food Image */}
-                <Box mb="md">
-                    <MantineImage
-                        src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Triple+Dipper'}
-                        alt={selectedItem.name}
-                        style={{ width: '100%', height: '144px', objectFit: 'cover' }}
-                        fit="cover"
-                        radius="md"
-                    />
-                </Box>
-
-                {/* Recommended Options */}
-                <Stack gap="md" mb="md">
-                    <Group justify="space-between" align="center">
-                        <Text size="md" fw={600}>Your recommended options</Text>
-                        <Group gap="xs">
-                            <ActionIcon variant="subtle" color="gray" size="sm">‹</ActionIcon>
-                            <ActionIcon variant="subtle" color="gray" size="sm">›</ActionIcon>
-                        </Group>
-                    </Group>
-
-                    {/* Option #1 (Selected) */}
-                    <Card 
-                        p="md" 
-                        style={{ 
-                            backgroundColor: selectedRecommendedOption === 1 ? 'var(--mantine-color-gray-0)' : 'white',
-                            border: selectedRecommendedOption === 1 ? '2px solid var(--mantine-color-orange-6)' : '1px solid var(--mantine-color-gray-3)',
-                            cursor: 'pointer'
-                        }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedRecommendedOption(1);
-                        }}
-                    >
-                        <Group justify="space-between" align="flex-start">
-                            <Stack gap="xs" style={{ flex: 1 }}>
-                                <Group justify="space-between" align="center">
-                                    <Text size="sm" fw={700}>#1 • Ordered recently by 10+ others</Text>
-                                    <Box
-                                        style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            border: selectedRecommendedOption === 1 ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
-                                            borderRadius: '50%',
-                                            backgroundColor: selectedRecommendedOption === 1 ? 'var(--mantine-color-orange-6)' : 'transparent',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        {selectedRecommendedOption === 1 && (
-                                        <Box
-                                            style={{
-                                                width: '8px',
-                                                height: '8px',
-                                                backgroundColor: 'white',
-                                                borderRadius: '50%',
-                                            }}
-                                        />
-                                        )}
-                                    </Box>
-                                </Group>
-                                <Text size="sm" c="gray.7">
-                                    Big Mouth® Bites • Ranch • Bacon Crumbles • Sauteed Onion • American Cheese • Ranch...
-                                </Text>
-                                <Text size="lg" fw={700}>$16.89</Text>
-                            </Stack>
-                        </Group>
-                    </Card>
-
-                    {/* Option #2 (Partially Visible) */}
-                    <Card 
-                        p="md" 
-                        withBorder
-                        style={{ cursor: 'pointer' }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedRecommendedOption(2);
-                        }}
-                    >
-                        <Group justify="space-between" align="flex-start">
-                            <Stack gap="xs" style={{ flex: 1 }}>
-                                <Group justify="space-between" align="center">
-                                    <Text size="sm" fw={700}>#2 • Ordered recently by others</Text>
-                                    <Box
-                                        style={{
-                                            width: '16px',
-                                            height: '16px',
-                                            border: selectedRecommendedOption === 2 ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
-                                            borderRadius: '50%',
-                                            backgroundColor: selectedRecommendedOption === 2 ? 'var(--mantine-color-orange-6)' : 'transparent',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        {selectedRecommendedOption === 2 && (
-                                            <Box
-                                                style={{
-                                                    width: '8px',
-                                                    height: '8px',
-                                                    backgroundColor: 'white',
-                                            borderRadius: '50%',
-                                        }}
-                                    />
-                                        )}
-                                    </Box>
-                                </Group>
-                                <Text size="sm" c="gray.7">
-                                    Southwestern Eggrolls • Big Mouth® Bites • Ranch...
-                                </Text>
-                                <Text size="lg" fw={700}>$16.89</Text>
-                            </Stack>
-                        </Group>
-                    </Card>
-                </Stack>
-      
-                {/* Tabs */}
-                <Tabs defaultValue="order" mb="md">
-                    <Tabs.List>
-                        <Tabs.Tab value="order">Order</Tabs.Tab>
-                        <Tabs.Tab value="reviews">Reviews (8)</Tabs.Tab>
-                    </Tabs.List>
-
-                    {/* Order Content */}
-                    <Tabs.Panel value="order" pt="md">
-                        <Stack gap="md">
-                            <Stack gap="xs">
-                                <Text size="md" fw={600}>Selection 1</Text>
-                                <Text size="sm" c="dimmed">Required • Select 1</Text>
-                            </Stack>
-                            
-                            <Stack gap="sm">
-                                <Card 
-                                    p="sm" 
-                                    withBorder 
-                                    style={{ 
-                                        cursor: 'pointer',
-                                        border: selectedMenuItem === 'big-mouth-bites' ? '2px solid var(--mantine-color-orange-6)' : undefined
-                                    }}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setSelectedMenuItem('big-mouth-bites');
-                                    }}
-                                >
-                                    <Group justify="space-between">
-                                        <Text size="sm" fw={500}>Big Mouth® Bites</Text>
-                                        <Box
-                                            style={{
-                                                width: '16px',
-                                                height: '16px',
-                                                border: selectedMenuItem === 'big-mouth-bites' ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
-                                                borderRadius: '50%',
-                                                backgroundColor: selectedMenuItem === 'big-mouth-bites' ? 'var(--mantine-color-orange-6)' : 'transparent',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            {selectedMenuItem === 'big-mouth-bites' && (
-                                                <Box
-                                                    style={{
-                                                        width: '8px',
-                                                        height: '8px',
-                                                        backgroundColor: 'white',
-                                                borderRadius: '50%',
-                                            }}
-                                        />
-                                            )}
-                                        </Box>
-                                    </Group>
-                                </Card>
-                                <Card 
-                                    p="sm" 
-                                    withBorder 
-                                    style={{ 
-                                        cursor: 'pointer',
-                                        border: selectedMenuItem === 'southwestern-eggrolls' ? '2px solid var(--mantine-color-orange-6)' : undefined
-                                    }}
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setSelectedMenuItem('southwestern-eggrolls');
-                                    }}
-                                >
-                                    <Group justify="space-between">
-                                        <Text size="sm" fw={500}>Southwestern Eggrolls</Text>
-                                        <Box
-                                            style={{
-                                                width: '16px',
-                                                height: '16px',
-                                                border: selectedMenuItem === 'southwestern-eggrolls' ? '2px solid var(--mantine-color-orange-6)' : '2px solid var(--mantine-color-gray-3)',
-                                                borderRadius: '50%',
-                                                backgroundColor: selectedMenuItem === 'southwestern-eggrolls' ? 'var(--mantine-color-orange-6)' : 'transparent',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            {selectedMenuItem === 'southwestern-eggrolls' && (
-                                                <Box
-                                                    style={{
-                                                        width: '8px',
-                                                        height: '8px',
-                                                        backgroundColor: 'white',
-                                                borderRadius: '50%',
-                                            }}
-                                        />
-                                            )}
-                                        </Box>
-                                    </Group>
-                                </Card>
-                            </Stack>
-                        </Stack>
-                    </Tabs.Panel>
-
-                    {/* Reviews Content */}
-                    <Tabs.Panel value="reviews" pt="md">
-                        <Stack gap="md">
-                            {/* Overall Rating Summary */}
-                            <Card p="md" withBorder>
-                                <Group justify="space-between" align="center">
-                                    <Stack gap="xs">
-                                        <Group gap="xs">
-                                            <Text size="xl" fw={700}>{selectedItem?.rating || 4.5}</Text>
-                                            <IconStar size={20} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                        </Group>
-                                        <Text size="sm" c="dimmed">Based on 8 reviews</Text>
-                                    </Stack>
-                                    <RingProgress
-                                        size={80}
-                                        thickness={8}
-                                        sections={[{ value: ((selectedItem?.rating || 4.5) / 5) * 100, color: 'orange' }]}
-                                        label={
-                                            <Text size="xs" ta="center" fw={700}>
-                                                {((selectedItem?.rating || 4.5) / 5) * 100}%
-                                            </Text>
-                                        }
-                                    />
-                                </Group>
-                            </Card>
-
-                            {/* Review List */}
-                            <Stack gap="md">
-                                {/* Review 1 */}
-                                <Card p="md" withBorder>
-                                    <Stack gap="sm">
-                                        <Group justify="space-between">
-                                            <Group gap="xs">
-                                                <Avatar size="md" radius="xl" color="orange">
-                                                    JD
-                                                </Avatar>
-                                                <Stack gap={0}>
-                                                    <Text size="sm" fw={600}>John D.</Text>
-                                                    <Group gap="xs">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <IconStar 
-                                                                key={star}
-                                                                size={14} 
-                                                                style={{ 
-                                                                    color: 'var(--mantine-color-yellow-5)', 
-                                                                    fill: 'var(--mantine-color-yellow-5)' 
-                                                                }} 
-                                                            />
-                                                        ))}
-                                                    </Group>
-                                                </Stack>
-                                            </Group>
-                                            <Text size="xs" c="dimmed">2 days ago</Text>
-                                        </Group>
-                                        <Text size="sm" c="gray.7">
-                                            Absolutely delicious! The Big Mouth Bites were perfectly crispy and the ranch was amazing. Will definitely order again.
-                                        </Text>
-                                    </Stack>
-                                </Card>
-
-                                {/* Review 2 */}
-                                <Card p="md" withBorder>
-                                    <Stack gap="sm">
-                                        <Group justify="space-between">
-                                            <Group gap="xs">
-                                                <Avatar size="md" radius="xl" color="blue">
-                                                    SM
-                                                </Avatar>
-                                                <Stack gap={0}>
-                                                    <Text size="sm" fw={600}>Sarah M.</Text>
-                                                    <Group gap="xs">
-                                                        {[1, 2, 3, 4].map((star) => (
-                                                            <IconStar 
-                                                                key={star}
-                                                                size={14} 
-                                                                style={{ 
-                                                                    color: 'var(--mantine-color-yellow-5)', 
-                                                                    fill: 'var(--mantine-color-yellow-5)' 
-                                                                }} 
-                                                            />
-                                                        ))}
-                                                        <IconStar 
-                                                            size={14} 
-                                                            style={{ 
-                                                                color: 'var(--mantine-color-gray-3)', 
-                                                                fill: 'transparent' 
-                                                            }} 
-                                                        />
-                                                    </Group>
-                                                </Stack>
-                                            </Group>
-                                            <Text size="xs" c="dimmed">1 week ago</Text>
-                                        </Group>
-                                        <Text size="sm" c="gray.7">
-                                            Great value for money. The combination of flavors is fantastic. Delivery was quick too!
-                                        </Text>
-                                    </Stack>
-                                </Card>
-
-                                {/* Review 3 */}
-                                <Card p="md" withBorder>
-                                    <Stack gap="sm">
-                                        <Group justify="space-between">
-                                            <Group gap="xs">
-                                                <Avatar size="md" radius="xl" color="green">
-                                                    MR
-                                                </Avatar>
-                                                <Stack gap={0}>
-                                                    <Text size="sm" fw={600}>Mike R.</Text>
-                                                    <Group gap="xs">
-                                                        {[1, 2, 3, 4, 5].map((star) => (
-                                                            <IconStar 
-                                                                key={star}
-                                                                size={14} 
-                                                                style={{ 
-                                                                    color: 'var(--mantine-color-yellow-5)', 
-                                                                    fill: 'var(--mantine-color-yellow-5)' 
-                                                                }} 
-                                                            />
-                                                        ))}
-                                                    </Group>
-                                                </Stack>
-                                            </Group>
-                                            <Text size="xs" c="dimmed">2 weeks ago</Text>
-                                        </Group>
-                                        <Text size="sm" c="gray.7">
-                                            One of my favorites on the menu. The portion size is generous and everything is always fresh.
-                                        </Text>
-                                    </Stack>
-                                </Card>
-
-                                {/* Review 4 */}
-                                <Card p="md" withBorder>
-                                    <Stack gap="sm">
-                                        <Group justify="space-between">
-                                            <Group gap="xs">
-                                                <Avatar size="md" radius="xl" color="pink">
-                                                    EW
-                                                </Avatar>
-                                                <Stack gap={0}>
-                                                    <Text size="sm" fw={600}>Emily W.</Text>
-                                                    <Group gap="xs">
-                                                        {[1, 2, 3, 4].map((star) => (
-                                                            <IconStar 
-                                                                key={star}
-                                                                size={14} 
-                                                                style={{ 
-                                                                    color: 'var(--mantine-color-yellow-5)', 
-                                                                    fill: 'var(--mantine-color-yellow-5)' 
-                                                                }} 
-                                                            />
-                                                        ))}
-                                                        <IconStar 
-                                                            size={14} 
-                                                            style={{ 
-                                                                color: 'var(--mantine-color-gray-3)', 
-                                                                fill: 'transparent' 
-                                                            }} 
-                                                        />
-                                                    </Group>
-                                                </Stack>
-                                            </Group>
-                                            <Text size="xs" c="dimmed">3 weeks ago</Text>
-                                        </Group>
-                                        <Text size="sm" c="gray.7">
-                                            Really good appetizer option. Perfect for sharing or as a meal by itself.
-                                        </Text>
-                                    </Stack>
-                                </Card>
-                            </Stack>
-                        </Stack>
-                    </Tabs.Panel>
-                </Tabs>
-
-                {/* Bottom Action Bar */}
-                <Group justify="space-between" p="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)', borderRadius: '8px' }}>
-                    <Group gap="md">
+                <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white' }}>
+                    {/* Food Image with Back Button */}
+                    <Box style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden' }}>
+                        <MantineImage
+                            src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Item'}
+                            alt={selectedItem.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            fit="cover"
+                        />
+                        {/* Back Button Overlay */}
                         <ActionIcon
-                            variant="outline"
+                            variant="filled"
+                            color="white"
+                            onClick={closeItemModal}
+                                    style={{ 
+                                position: 'absolute',
+                                top: '16px',
+                                left: '16px',
+                                                        backgroundColor: 'white',
+                                color: 'var(--mantine-color-gray-9)',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                            }}
+                            size="lg"
+                            radius="xl"
+                        >
+                            <IconChevronLeft size={24} />
+                        </ActionIcon>
+                                        </Box>
+
+                    {/* Scrollable Content */}
+                    <ScrollArea 
+                        style={{ flex: 1 }}
+                        ref={modalScrollRef}
+                    >
+                        <Box p="md" pb="120px">
+                            {/* Dynamically render modifier sections based on modifier_type */}
+                            {Object.entries(modifiersByType).map(([type, modifiers]) => {
+                                // Get display name for modifier type
+                                const typeDisplayNames: Record<string, string> = {
+                                    'side': 'Sides',
+                                    'addon': 'Add-ons',
+                                    'beverage': 'Recommended Beverages',
+                                    'dessert': 'Recommended Desserts',
+                                    'app': 'Recommended Sides And Apps',
+                                    'size': 'Size',
+                                    'preparation': 'Preparation',
+                                    'removal': 'Remove Items',
+                                    'substitution': 'Substitutions',
+                                };
+                                
+                                const displayName = typeDisplayNames[type] || type.charAt(0).toUpperCase() + type.slice(1);
+                                const maxSelections = modifiers[0]?.max_selections;
+                                const isRequired = modifiers[0]?.is_required || false;
+                                
+                                return renderModifierSection(type, displayName, maxSelections);
+                            })}
+
+                            {/* Special Instructions */}
+                            <Box mb="lg">
+                                <Button
+                                    variant="light"
+                                    color="gray"
+                                    fullWidth
+                                    leftSection={<IconMessageCircle size={18} />}
+                                    onClick={() => setShowSpecialInstructions(!showSpecialInstructions)}
+                                                                style={{ 
+                                        backgroundColor: 'var(--mantine-color-gray-0)',
+                                        border: '1px solid var(--mantine-color-gray-3)',
+                                    }}
+                                >
+                                    Special instructions
+                                </Button>
+                                {showSpecialInstructions && (
+                                    <TextInput
+                                        mt="sm"
+                                        placeholder="Add special instructions..."
+                                        value={specialInstructions}
+                                        onChange={(e) => setSpecialInstructions(e.target.value)}
+                                        multiline
+                                        rows={3}
+                                    />
+                                )}
+                            </Box>
+
+                            {/* Quantity Selector */}
+                            <Group justify="center" mb="lg">
+                        <ActionIcon
+                                    variant="light"
                             color="gray"
                             radius="xl"
+                                    type="button"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setModalQuantity(Math.max(1, modalQuantity - 1));
-                            }}
-                        >
-                            <IconMinus size={16} />
+                                        // Find the scroll viewport element
+                                        const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+                                        const scrollPosition = scrollContainer?.scrollTop || 0;
+                                        
+                                        setModalQuantity((prev) => Math.max(1, prev - 1));
+                                        
+                                        // Restore scroll position after render
+                                        requestAnimationFrame(() => {
+                                            if (scrollContainer) {
+                                                scrollContainer.scrollTop = scrollPosition;
+                                            }
+                                        });
+                                    }}
+                                    size="lg"
+                                    style={{
+                                        backgroundColor: 'var(--mantine-color-gray-0)',
+                                        border: '1px solid var(--mantine-color-gray-3)',
+                                    }}
+                                >
+                                    <IconMinus size={18} />
                         </ActionIcon>
-                        <Text size="lg" fw={600}>{modalQuantity}</Text>
+                                <Text size="xl" fw={700} style={{ minWidth: '40px', textAlign: 'center' }}>
+                                    {modalQuantity}
+                                </Text>
                         <ActionIcon
-                            variant="outline"
+                                    variant="light"
                             color="gray"
                             radius="xl"
+                                    type="button"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setModalQuantity(modalQuantity + 1);
-                            }}
-                        >
-                            <IconPlus size={16} />
+                                        // Find the scroll viewport element
+                                        const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
+                                        const scrollPosition = scrollContainer?.scrollTop || 0;
+                                        
+                                        setModalQuantity((prev) => prev + 1);
+                                        
+                                        // Restore scroll position after render
+                                        requestAnimationFrame(() => {
+                                            if (scrollContainer) {
+                                                scrollContainer.scrollTop = scrollPosition;
+                                            }
+                                        });
+                                    }}
+                                    size="lg"
+                                    style={{
+                                        backgroundColor: 'var(--mantine-color-gray-0)',
+                                        border: '1px solid var(--mantine-color-gray-3)',
+                                    }}
+                                >
+                                    <IconPlus size={18} />
                         </ActionIcon>
                     </Group>
+                        </Box>
+                    </ScrollArea>
+
+                    {/* Add to Order Button - Fixed at Bottom */}
+                    <Box
+                        style={{
+                            position: 'sticky',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            backgroundColor: 'white',
+                            borderTop: '1px solid var(--mantine-color-gray-3)',
+                            padding: '16px',
+                            zIndex: 10,
+                        }}
+                    >
                     <Button
+                            fullWidth
+                            size="lg"
                         color="orange"
+                            radius="md"
                         onClick={addToCartFromModal}
-                    >
-                        Add to cart - {formatPrice(selectedItem.price_cents * modalQuantity)}
-                    </Button>
+                            style={{
+                                height: '56px',
+                                fontSize: '16px',
+                                fontWeight: 600,
+                            }}
+                        >
+                            <Group justify="space-between" style={{ width: '100%' }}>
+                                <Group gap="xs">
+                                    <IconShoppingCart size={20} />
+                                    <Text fw={600} size="md">Add to Order</Text>
                 </Group>
+                                <Text fw={700} size="lg">
+                                    ${totalPrice.toFixed(2)}
+                                </Text>
+                            </Group>
+                        </Button>
+                    </Box>
+                </Box>
             </Modal>
         );
     };
@@ -1434,6 +1394,16 @@ const RestaurantMenuPage = () => {
           <Group gap="xs" wrap="nowrap">
             <IconMapPin size={16} style={{ color: 'var(--mantine-color-red-5)' }} />
             <Text size="sm" c="dimmed">{restaurant?.cuisine_type}</Text>
+            {restaurant?.cravemore_eligible && (
+              <>
+                <Text size="sm" c="dimmed">•</Text>
+                <MantineImage
+                  src={cravemoreIcon}
+                  alt="CraveMore"
+                  style={{ width: '16px', height: '16px', objectFit: 'contain' }}
+                />
+              </>
+            )}
           </Group>
           <Group gap="xs" wrap="nowrap">
             <IconTruck size={16} style={{ color: 'var(--mantine-color-green-6)' }} />
@@ -1513,6 +1483,59 @@ const RestaurantMenuPage = () => {
             });
           }
         }}
+        onLike={async () => {
+          if (!restaurant || !id) return;
+          
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              notifications.show({
+                title: "Login Required",
+                message: "Please login to like restaurants",
+                color: "orange",
+              });
+              return;
+            }
+
+            if (isRestaurantLiked) {
+              // Unlike: Remove from favorites
+              const { error } = await supabase
+                .from('customer_favorites')
+                .delete()
+                .eq('customer_id', user.id)
+                .eq('restaurant_id', restaurant.id);
+              
+              if (!error) {
+                setIsRestaurantLiked(false);
+                notifications.show({
+                  title: "Removed from favorites",
+                  message: `${restaurant.name} has been removed from your favorites`,
+                  color: "gray",
+                });
+              }
+            } else {
+              // Like: Add to favorites
+              const { error } = await supabase
+                .from('customer_favorites')
+                .insert({
+                  customer_id: user.id,
+                  restaurant_id: restaurant.id,
+                });
+              
+              if (!error) {
+                setIsRestaurantLiked(true);
+                notifications.show({
+                  title: "Added to favorites",
+                  message: `${restaurant.name} has been added to your favorites`,
+                  color: "green",
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error toggling like:', error);
+          }
+        }}
+        isLiked={isRestaurantLiked}
       />
 
       {/* Desktop Header - Hidden on Mobile */}
@@ -1926,7 +1949,7 @@ const RestaurantMenuPage = () => {
 
         {/* Main Content */}
         <Box style={{ flex: 1, position: 'relative' }}>
-          <Box style={{ backgroundColor: 'var(--mantine-color-gray-0)', minHeight: '100vh' }}>
+          <Box style={{ backgroundColor: 'white', minHeight: '100vh' }}>
             <Box style={{ maxWidth: '1280px', margin: '0 auto' }}>
               {/* --- Mobile Hero Section (DoorDash Style) --- */}
               <Box className="block lg:hidden">
@@ -1940,17 +1963,12 @@ const RestaurantMenuPage = () => {
                   />
                 </Box>
                 
-                {/* Restaurant Info Card - Overlapping (DoorDash signature style) */}
-                <Card
+                {/* Restaurant Info - Directly beneath header image */}
+                <Box
                   p="md"
-                  withBorder
-                  shadow="xl"
                   style={{
                     margin: '0 16px',
-                    marginTop: '-32px',
-                    position: 'relative',
-                    zIndex: 10,
-                    borderRadius: '16px',
+                    paddingTop: '16px',
                   }}
                 >
                   <Group align="flex-start" gap="sm" mb="md">
@@ -1958,7 +1976,7 @@ const RestaurantMenuPage = () => {
                       style={{
                         width: '64px',
                         height: '64px',
-                        borderRadius: '12px',
+                        borderRadius: '50%',
                         overflow: 'hidden',
                         border: '2px solid white',
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
@@ -1982,6 +2000,16 @@ const RestaurantMenuPage = () => {
                         <Text size="sm" c="dimmed">({restaurant.total_reviews || 0}+)</Text>
                         <Text size="sm" c="dimmed">•</Text>
                         <Text size="sm" c="dimmed" truncate>{restaurant.cuisine_type}</Text>
+                        {restaurant.cravemore_eligible && (
+                          <>
+                            <Text size="sm" c="dimmed">•</Text>
+                            <MantineImage
+                              src={cravemoreIcon}
+                              alt="CraveMore"
+                              style={{ width: '16px', height: '16px', objectFit: 'contain' }}
+                            />
+                          </>
+                        )}
                       </Group>
                       <Group gap="xs" wrap="nowrap">
                         <Group gap={4}>
@@ -2018,7 +2046,7 @@ const RestaurantMenuPage = () => {
                       Pickup
                     </Button>
                   </Group>
-                </Card>
+                </Box>
 
                 {/* Pickup Interface - Mobile - Show when pickup is selected */}
                 {deliveryMethod === 'pickup' && (
@@ -2027,8 +2055,8 @@ const RestaurantMenuPage = () => {
                   </Box>
                 )}
 
-                {/* Sticky Category Tabs - Mobile */}
-                <ScrollArea
+                {/* Sticky Category Tabs - Mobile - Navigation Bar Style */}
+                <Box
                   style={{
                     position: 'sticky',
                     top: '48px',
@@ -2036,64 +2064,134 @@ const RestaurantMenuPage = () => {
                     backgroundColor: 'white',
                     borderBottom: '1px solid var(--mantine-color-gray-3)',
                     margin: '0 -16px',
-                    padding: '0 16px',
                   }}
-                  scrollbars="x"
                 >
-                  <Group gap="xs" py="sm" style={{ flexWrap: 'nowrap' }}>
-                    {featuredItems.length > 0 && (
-                      <Button
-                        variant={activeSection === 'featured' ? 'filled' : 'light'}
-                        color={activeSection === 'featured' ? 'dark' : 'gray'}
-                        size="sm"
-                        radius="xl"
-                        onClick={() => scrollToSection('featured')}
-                        style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                  <ScrollArea scrollbars="x" style={{ width: '100%' }}>
+                    <Group gap={0} style={{ flexWrap: 'nowrap', padding: '0 16px' }}>
+                      {/* Search Icon */}
+                      <Box
+                        onClick={() => {
+                          setIsSearchMode(true);
+                          setSearchQuery('');
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          borderBottom: isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
+                          color: isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
+                          fontWeight: isSearchMode ? 600 : 400,
+                          transition: 'all 0.2s',
+                        }}
                       >
-                        ⭐ Featured
-                      </Button>
-                    )}
+                        <IconSearch size={18} />
+                      </Box>
                     {mostOrderedItems.length > 0 && (
-                      <Button
-                        variant={activeSection === 'most-ordered' ? 'filled' : 'light'}
-                        color={activeSection === 'most-ordered' ? 'dark' : 'gray'}
-                        size="sm"
-                        radius="xl"
-                        onClick={() => scrollToSection('most-ordered')}
-                        style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                      <Box
+                        onClick={() => {
+                          setIsSearchMode(false);
+                          setSearchQuery('');
+                          scrollToSection('most-ordered');
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          borderBottom: activeSection === 'most-ordered' && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
+                          color: activeSection === 'most-ordered' && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
+                          fontWeight: activeSection === 'most-ordered' && !isSearchMode ? 600 : 400,
+                          transition: 'all 0.2s',
+                        }}
                       >
-                        🔥 Most Ordered
-                      </Button>
+                        <Text size="sm">🔥 Most Ordered</Text>
+                      </Box>
+                    )}
+                    {frequentlyOrderedItems.length > 0 && (
+                      <Box
+                        onClick={() => {
+                          setIsSearchMode(false);
+                          setSearchQuery('');
+                          scrollToSection('frequently-ordered-mobile');
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          borderBottom: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
+                          color: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
+                          fontWeight: activeSection === 'frequently-ordered-mobile' && !isSearchMode ? 600 : 400,
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Text size="sm">⭐ Frequently Ordered</Text>
+                      </Box>
                     )}
                     {categories.map(category => (
-                      <Button
+                        <Box
                         key={category.id}
-                        variant={activeSection === category.id ? 'filled' : 'light'}
-                        color={activeSection === category.id ? 'dark' : 'gray'}
-                        size="sm"
-                        radius="xl"
-                        onClick={() => scrollToSection(category.id)}
-                        style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-                      >
-                        {category.name}
-                      </Button>
+                          onClick={() => {
+                            setIsSearchMode(false);
+                            setSearchQuery('');
+                            scrollToSection(category.id);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            borderBottom: activeSection === category.id && !isSearchMode ? '2px solid var(--mantine-color-dark-9)' : '2px solid transparent',
+                            color: activeSection === category.id && !isSearchMode ? 'var(--mantine-color-dark-9)' : 'var(--mantine-color-gray-7)',
+                            fontWeight: activeSection === category.id && !isSearchMode ? 600 : 400,
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <Text size="sm">{category.name}</Text>
+                        </Box>
                     ))}
                   </Group>
                 </ScrollArea>
+                </Box>
 
                 {/* Mobile Menu Items - Compact List */}
                 <Stack gap="lg" p="md">
-                  {/* Featured Items - Mobile */}
-                  {featuredItems.length > 0 && (
-                    <Box id="featured-mobile" style={{ scrollMarginTop: '96px' }}>
-                      <Title order={2} size="xl" fw={700} mb="md">Featured Items</Title>
+                  {/* Search Results - Mobile */}
+                  {isSearchMode && (
+                    <Box>
+                      <TextInput
+                        placeholder="Search menu items..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        leftSection={<IconSearch size={16} style={{ color: 'var(--mantine-color-gray-5)' }} />}
+                        rightSection={searchQuery && (
+                          <ActionIcon
+                            onClick={() => {
+                              setSearchQuery('');
+                              setIsSearchMode(false);
+                            }}
+                            variant="subtle"
+                            size="sm"
+                          >
+                            <IconX size={16} />
+                          </ActionIcon>
+                        )}
+                        style={{ width: '100%', marginBottom: 'md' }}
+                        autoFocus
+                      />
+                      {searchQuery.trim() && (
+                        <Box>
+                          <Title order={2} size="xl" fw={700} mb="md">
+                            Search Results {filteredMenuItems.length > 0 && `(${filteredMenuItems.length})`}
+                          </Title>
+                          {filteredMenuItems.length > 0 ? (
                       <Stack gap="sm">
-                        {featuredItems.map(item => (
-                          <Card
+                              {filteredMenuItems.map(item => (
+                                <Box
                             key={item.id}
                             p="sm"
-                            withBorder
-                            style={{ cursor: 'pointer' }}
+                                  style={{ cursor: 'pointer', backgroundColor: 'white' }}
                             onClick={() => openItemModal(item)}
                           >
                             <Group align="flex-start" gap="sm">
@@ -2146,45 +2244,254 @@ const RestaurantMenuPage = () => {
                                 </Box>
                               )}
                             </Group>
-                          </Card>
+                                </Box>
                         ))}
                       </Stack>
+                          ) : (
+                            <Text c="dimmed" ta="center" py="xl">
+                              No items found matching "{searchQuery}"
+                            </Text>
+                          )}
+                        </Box>
+                      )}
                     </Box>
                   )}
 
-                  {/* Most Ordered - Mobile */}
-                  {mostOrderedItems.length > 0 && (
-                    <Box id="most-ordered-mobile" style={{ scrollMarginTop: '96px' }}>
-                      <Title order={2} size="xl" fw={700} mb="md">Most Ordered</Title>
-                      <Stack gap="sm">
-                        {mostOrderedItems.map(item => (
-                          <Card
+                  {/* Featured Items - Mobile */}
+                  {!isSearchMode && menuItems.length > 0 && (
+                    <Box id="featured-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                      <Title order={2} size="xl" fw={700} mb="md">Featured Items</Title>
+                      <ScrollArea scrollbars="x">
+                        <Group gap={4} style={{ flexWrap: 'nowrap' }} pb="md">
+                          {featuredItems.slice(0, 10).map((item, index) => (
+                            <Box
                             key={item.id}
-                            p="sm"
-                            withBorder
-                            style={{ cursor: 'pointer' }}
+                              p={4}
+                              style={{ 
+                                cursor: 'pointer', 
+                                backgroundColor: 'white',
+                                width: 'calc(50% - 2px)',
+                                minWidth: 'calc(50% - 2px)',
+                                flexShrink: 0,
+                              }}
                             onClick={() => openItemModal(item)}
                           >
-                            <Group align="flex-start" gap="sm">
-                              <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                                <Text fw={600} lineClamp={1}>{item.name}</Text>
-                                <Text size="sm" c="dimmed" lineClamp={2} mb="xs">{item.description}</Text>
-                                <Group justify="space-between">
-                                  <Text size="md" fw={700}>{formatPrice(item.price_cents)}</Text>
-                                  <Group gap="xs">
-                                    {item.is_vegetarian && <IconLeaf size={16} style={{ color: 'var(--mantine-color-green-6)' }} />}
-                                    {item.chef_recommended && <IconChefHat size={16} style={{ color: 'var(--mantine-color-orange-6)' }} />}
-                                  </Group>
-                                </Group>
+                              <Stack gap={4}>
+                                {item.image_url && (
+                                  <Box
+                                    style={{
+                                      width: '100%',
+                                      aspectRatio: '1',
+                                      borderRadius: '8px',
+                                      overflow: 'hidden',
+                                      position: 'relative',
+                                    }}
+                                  >
+                                    <MantineImage
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      fit="cover"
+                                      onError={(e) => { e.currentTarget.src = "https://placehold.co/100x100/CCCCCC/666666?text=Item"; }}
+                                    />
+                                    <Badge
+                                      color="orange"
+                                      variant="filled"
+                                      size="sm"
+                                      style={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        left: 4,
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      #{index + 1}
+                                    </Badge>
+                                    <ActionIcon
+                                      color="orange"
+                                      variant="filled"
+                                      size="sm"
+                                      radius="xl"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(item);
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: 4,
+                                        right: 4,
+                                      }}
+                                    >
+                                      <IconPlus size={14} />
+                                    </ActionIcon>
+                                  </Box>
+                                )}
+                                <Text size="sm" fw={600} lineClamp={1}>{item.name}</Text>
+                                <Text size="xs" c="dimmed" lineClamp={1}>{formatPrice(item.price_cents)}</Text>
                               </Stack>
+                            </Box>
+                          ))}
+                        </Group>
+                      </ScrollArea>
+                    </Box>
+                  )}
+
+                  {/* Reviews Section - Mobile */}
+                  {!isSearchMode && (
+                    <Box id="reviews-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                      <Group justify="space-between" align="center" mb="md">
+                        <Stack gap={4}>
+                          <Title order={2} size="xl" fw={700}>Reviews</Title>
+                          <Text size="sm" c="dimmed">3k+ ratings • 80+ public reviews</Text>
+                        </Stack>
+                        <Button variant="subtle" color="orange" size="sm">
+                          Add Review
+                        </Button>
+                      </Group>
+
+                      {/* Overall Rating Card */}
+                      <Card
+                        p="md"
+                        withBorder
+                        shadow="lg"
+                        mb="md"
+                      >
+                        <Stack align="center" gap="sm">
+                          <RingProgress
+                            size={80}
+                            thickness={8}
+                            sections={[{ value: 88, color: 'yellow' }]}
+                            label={
+                              <Stack align="center" gap={2}>
+                                <Text size="xl" fw={700}>4.4</Text>
+                                <IconStar size={14} style={{ color: 'var(--mantine-color-gray-4)' }} />
+                              </Stack>
+                            }
+                          />
+                          <Text size="sm" c="dimmed" ta="center">of 5 stars</Text>
+                        </Stack>
+                      </Card>
+
+                      {/* Individual Review Cards - Horizontal Scroll */}
+                      <ScrollArea scrollbars="x" ref={reviewsScrollRef}>
+                        <Group gap="md" style={{ flexWrap: 'nowrap' }} pb="md">
+                          {/* Review Card 1 */}
+                          <Card
+                            p="md"
+                            withBorder
+                            shadow="lg"
+                            style={{ minWidth: '280px', flexShrink: 0 }}
+                          >
+                            <Group align="flex-start" gap="sm" mb="sm">
+                              <Avatar color="blue" radius="xl">M</Avatar>
+                              <Stack gap={4} style={{ flex: 1 }}>
+                                  <Group gap="xs">
+                                  <Text size="sm" fw={600}>Marcus T</Text>
+                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
+                                  </Group>
+                                <Text size="xs" c="dimmed">Regular Customer • 12 orders</Text>
+                              </Stack>
+                                </Group>
+                            <Group gap="xs" mb="xs">
+                              <Group gap={2}>
+                                {[...Array(5)].map((_, i) => (
+                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                ))}
+                              </Group>
+                              <Text size="xs" c="dimmed">11/15/23</Text>
+                              <Text size="xs" c="dimmed">• Craven order</Text>
+                            </Group>
+                            <Text size="sm" c="gray.7">
+                              This place never disappoints! <Text component="span" fw={600}>Classic Burger</Text> is always fresh and the delivery is super quick. Highly recommend!
+                            </Text>
+                          </Card>
+                          
+                          {/* Review Card 2 */}
+                          <Card
+                            p="md"
+                            withBorder
+                            shadow="lg"
+                            style={{ minWidth: '280px', flexShrink: 0 }}
+                          >
+                            <Group align="flex-start" gap="sm" mb="sm">
+                              <Avatar color="violet" radius="xl">S</Avatar>
+                              <Stack gap={4} style={{ flex: 1 }}>
+                                <Group gap="xs">
+                                  <Text size="sm" fw={600}>Sarah K</Text>
+                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
+                                </Group>
+                                <Text size="xs" c="dimmed">Food Lover • 8 reviews</Text>
+                              </Stack>
+                            </Group>
+                            <Group gap="xs" mb="xs">
+                              <Group gap={2}>
+                                {[...Array(5)].map((_, i) => (
+                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                ))}
+                              </Group>
+                              <Text size="xs" c="dimmed">10/28/23</Text>
+                              <Text size="xs" c="dimmed">• Craven order</Text>
+                            </Group>
+                            <Text size="sm" c="gray.7">
+                              Amazing food! <Text component="span" fw={600}>Chicken Sandwich</Text> was perfectly cooked and the <Text component="span" fw={600}>seasoned fries</Text> were incredible. Will definitely order again!
+                            </Text>
+                          </Card>
+                          
+                          {/* Review Card 3 */}
+                          <Card
+                            p="md"
+                            withBorder
+                            shadow="lg"
+                            style={{ minWidth: '280px', flexShrink: 0 }}
+                          >
+                            <Group align="flex-start" gap="sm" mb="sm">
+                              <Avatar color="orange" radius="xl">D</Avatar>
+                              <Stack gap={4} style={{ flex: 1 }}>
+                                <Group gap="xs">
+                                  <Text size="sm" fw={600}>David M</Text>
+                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
+                                </Group>
+                                <Text size="xs" c="dimmed">New Customer • 3 orders</Text>
+                              </Stack>
+                            </Group>
+                            <Group gap="xs" mb="xs">
+                              <Group gap={2}>
+                                {[...Array(5)].map((_, i) => (
+                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                ))}
+                              </Group>
+                              <Text size="xs" c="dimmed">12/02/23</Text>
+                              <Text size="xs" c="dimmed">• Craven order</Text>
+                            </Group>
+                            <Text size="sm" c="gray.7">
+                              First time ordering and I'm impressed! <Text component="span" fw={600}>Fish Sandwich</Text> was crispy and fresh. The <Text component="span" fw={600}>onion rings</Text> were the perfect side. Great value!
+                            </Text>
+                          </Card>
+                        </Group>
+                      </ScrollArea>
+                    </Box>
+                  )}
+
+                  {/* Frequently Ordered Section - Mobile */}
+                  {!isSearchMode && frequentlyOrderedItems.length > 0 && (
+                    <Box id="frequently-ordered-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
+                      <Title order={2} size="xl" fw={700} mb="md">Frequently Ordered</Title>
+                      <Grid gutter={4}>
+                        {frequentlyOrderedItems.map(item => (
+                          <Grid.Col key={item.id} span={{ base: 6 }}>
+                            <Box
+                              p={4}
+                              style={{ cursor: 'pointer', backgroundColor: 'white' }}
+                              onClick={() => openItemModal(item)}
+                            >
+                              <Stack gap={4}>
                               {item.image_url && (
                                 <Box
                                   style={{
-                                    width: '96px',
-                                    height: '96px',
+                                      width: '100%',
+                                      aspectRatio: '1',
                                     borderRadius: '8px',
                                     overflow: 'hidden',
-                                    flexShrink: 0,
                                     position: 'relative',
                                   }}
                                 >
@@ -2214,15 +2521,18 @@ const RestaurantMenuPage = () => {
                                   </ActionIcon>
                                 </Box>
                               )}
-                            </Group>
-                          </Card>
-                        ))}
+                                <Text size="sm" fw={600} lineClamp={1}>{item.name}</Text>
+                                <Text size="xs" c="dimmed" lineClamp={1}>{formatPrice(item.price_cents)}</Text>
                       </Stack>
+                            </Box>
+                          </Grid.Col>
+                        ))}
+                      </Grid>
                     </Box>
                   )}
 
                   {/* Category Sections - Mobile */}
-                  {categories.map(category => {
+                  {!isSearchMode && categories.map(category => {
                     const items = getItemsByCategory(category.id);
                     if (items.length === 0) return null;
                     
@@ -2231,11 +2541,10 @@ const RestaurantMenuPage = () => {
                         <Title order={2} size="xl" fw={700} mb="md">{category.name}</Title>
                         <Stack gap="sm">
                           {items.map(item => (
-                            <Card
+                            <Box
                               key={item.id}
                               p="sm"
-                              withBorder
-                              style={{ cursor: 'pointer' }}
+                              style={{ cursor: 'pointer', backgroundColor: 'white' }}
                               onClick={() => openItemModal(item)}
                             >
                               <Group align="flex-start" gap="sm">
@@ -2288,12 +2597,27 @@ const RestaurantMenuPage = () => {
                                   </Box>
                                 )}
                               </Group>
-                            </Card>
+                            </Box>
                           ))}
                         </Stack>
                       </Box>
                     );
                   })}
+
+                  {/* Legal Disclaimer - Mobile */}
+                  {!isSearchMode && (
+                    <Box mt="xl" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+                      <Stack gap="xs">
+                        <Text size="sm" fw={600} c="gray.8">Legal Notice</Text>
+                        <Text size="xs" c="dimmed" style={{ lineHeight: 1.6 }}>
+                          All of the prices on this menu are set directly by the Merchant.
+                        </Text>
+                        <Text size="xs" c="dimmed" style={{ lineHeight: 1.6 }}>
+                          Item prices may be different when choosing between Delivery or Pickup
+                        </Text>
+                      </Stack>
+                    </Box>
+                  )}
                 </Stack>
               </Box>
 
@@ -2487,7 +2811,86 @@ const RestaurantMenuPage = () => {
                     <DealsSection />
                   </Box>
 
-                  {/* Reviews Section */}
+                  {/* Featured Items - Desktop */}
+                  {menuItems.length > 0 && (
+                    <Box id="featured" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
+                      <Title order={2} size="2xl" fw={700} c="gray.8" mb="md">Featured Items</Title>
+                      <ScrollArea scrollbars="x">
+                        <Group gap={4} style={{ flexWrap: 'nowrap' }} pb="md">
+                          {featuredItems.slice(0, 10).map((item, index) => (
+                            <Box
+                              key={item.id}
+                              p={4}
+                              style={{ 
+                                cursor: 'pointer', 
+                                backgroundColor: 'white',
+                                width: 'calc(50% - 2px)',
+                                minWidth: 'calc(50% - 2px)',
+                                flexShrink: 0,
+                              }}
+                              onClick={() => openItemModal(item)}
+                            >
+                              <Stack gap={4}>
+                                {item.image_url && (
+                                  <Box
+                                    style={{
+                                      width: '100%',
+                                      aspectRatio: '1',
+                                      borderRadius: '8px',
+                                      overflow: 'hidden',
+                                      position: 'relative',
+                                    }}
+                                  >
+                                    <MantineImage
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      fit="cover"
+                                      onError={(e) => { e.currentTarget.src = "https://placehold.co/100x100/CCCCCC/666666?text=Item"; }}
+                                    />
+                                    <Badge
+                                      color="orange"
+                                      variant="filled"
+                                      size="sm"
+                                      style={{
+                                        position: 'absolute',
+                                        top: 4,
+                                        left: 4,
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      #{index + 1}
+                                    </Badge>
+                                    <ActionIcon
+                                      color="orange"
+                                      variant="filled"
+                                      size="sm"
+                                      radius="xl"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(item);
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: 4,
+                                        right: 4,
+                                      }}
+                                    >
+                                      <IconPlus size={14} />
+                                    </ActionIcon>
+                                  </Box>
+                                )}
+                                <Text size="sm" fw={600} lineClamp={1}>{item.name}</Text>
+                                <Text size="xs" c="dimmed" lineClamp={1}>{formatPrice(item.price_cents)}</Text>
+                              </Stack>
+                            </Box>
+                          ))}
+                        </Group>
+                      </ScrollArea>
+                    </Box>
+                  )}
+
+                  {/* Reviews Section - Desktop */}
                   <Box id="reviews" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
                     <Group justify="space-between" align="center" mb="lg">
                       <Stack gap={4}>
@@ -2644,29 +3047,59 @@ const RestaurantMenuPage = () => {
                     </Group>
                   </Box>
 
-                  {/* Featured Items */}
-                  {featuredItems.length > 0 && (
-                    <Box id="featured" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
-                      <Title order={2} size="2xl" fw={700} c="gray.8" mb="md">Featured Items</Title>
-                      <Grid gutter="sm">
-                        {featuredItems.map(item => (
-                          <Grid.Col key={item.id} span={{ base: 6, sm: 4, md: 3, lg: 2.4, xl: 2 }}>
-                            <MenuItemCard item={item} />
-                          </Grid.Col>
-                        ))}
-                      </Grid>
-                      <Divider mt="lg" />
+                  {/* Frequently Ordered Section - Desktop */}
+                  {frequentlyOrderedItems.length > 0 && (
+                    <Box id="frequently-ordered" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
+                      <Title order={2} size="2xl" fw={700} c="gray.8" mb="md">Frequently Ordered</Title>
+                      <Grid gutter={4}>
+                        {frequentlyOrderedItems.map(item => (
+                          <Grid.Col key={item.id} span={{ base: 6 }}>
+                            <Box
+                              p={4}
+                              style={{ cursor: 'pointer', backgroundColor: 'white' }}
+                              onClick={() => openItemModal(item)}
+                            >
+                              <Stack gap={4}>
+                                {item.image_url && (
+                                  <Box
+                                    style={{
+                                      width: '100%',
+                                      aspectRatio: '1',
+                                      borderRadius: '8px',
+                                      overflow: 'hidden',
+                                      position: 'relative',
+                                    }}
+                                  >
+                                    <MantineImage
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      fit="cover"
+                                      onError={(e) => { e.currentTarget.src = "https://placehold.co/100x100/CCCCCC/666666?text=Item"; }}
+                                    />
+                                    <ActionIcon
+                                      color="orange"
+                                      variant="filled"
+                                      size="sm"
+                                      radius="xl"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(item);
+                                      }}
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: 4,
+                                        right: 4,
+                                      }}
+                                    >
+                                      <IconPlus size={14} />
+                                    </ActionIcon>
                     </Box>
                   )}
-
-                  {/* Most Ordered */}
-                  {mostOrderedItems.length > 0 && (
-                    <Box id="most-ordered" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
-                      <Title order={2} size="2xl" fw={700} c="gray.8" mb="md">Most Ordered</Title>
-                      <Grid gutter="sm">
-                        {mostOrderedItems.map(item => (
-                          <Grid.Col key={item.id} span={{ base: 6, sm: 4, md: 3, lg: 2.4, xl: 2 }}>
-                            <MenuItemCard item={item} />
+                                <Text size="sm" fw={600} lineClamp={1}>{item.name}</Text>
+                                <Text size="xs" c="dimmed" lineClamp={1}>{formatPrice(item.price_cents)}</Text>
+                              </Stack>
+                            </Box>
                           </Grid.Col>
                         ))}
                       </Grid>
@@ -2696,6 +3129,19 @@ const RestaurantMenuPage = () => {
                       </Box>
                     );
                   })}
+
+                  {/* Legal Disclaimer - Desktop */}
+                  <Box mt="xl" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+                    <Stack gap="xs">
+                      <Text size="sm" fw={600} c="gray.8">Legal Notice</Text>
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.6 }}>
+                        All of the prices on this menu are set directly by the Merchant.
+                      </Text>
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.6 }}>
+                        Item prices may be different when choosing between Delivery or Pickup
+                      </Text>
+                    </Stack>
+                  </Box>
                 </Grid.Col>
               </Grid>
             </Box>

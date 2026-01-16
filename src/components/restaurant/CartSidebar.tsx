@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Drawer,
   Button,
@@ -21,7 +21,9 @@ import {
   IconPlus,
   IconTrash,
   IconTruck,
+  IconPlus as IconAddMore,
 } from "@tabler/icons-react";
+import { Image as MantineImage } from "@mantine/core";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerOrderForm } from "./CustomerOrderForm";
 import { PromoCodeInput } from "./PromoCodeInput";
@@ -47,6 +49,7 @@ interface CartItem {
   quantity: number;
   special_instructions?: string;
   modifiers?: SelectedModifier[];
+  image_url?: string;
 }
 
 interface Restaurant {
@@ -93,6 +96,7 @@ export const CartSidebar = ({
 }: CartSidebarProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [menuItemImages, setMenuItemImages] = useState<Record<string, string>>({});
   
   const {
     appliedPromoCode,
@@ -101,6 +105,28 @@ export const CartSidebar = ({
     removePromoCode,
     recordPromoCodeUsage
   } = usePromoCode();
+
+  // Fetch menu item images
+  useEffect(() => {
+    if (cart.length > 0) {
+      const itemIds = cart.map(item => item.id);
+      supabase
+        .from('menu_items')
+        .select('id, image_url')
+        .in('id', itemIds)
+        .then(({ data }) => {
+          if (data) {
+            const imageMap: Record<string, string> = {};
+            data.forEach(item => {
+              if (item.image_url) {
+                imageMap[item.id] = item.image_url;
+              }
+            });
+            setMenuItemImages(imageMap);
+          }
+        });
+    }
+  }, [cart]);
 
   const handleCheckout = () => {
     setShowOrderForm(true);
@@ -288,65 +314,119 @@ export const CartSidebar = ({
       <Stack gap="md" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <ScrollArea style={{ flex: 1 }}>
           <Stack gap="md">
-            {cart.map((item) => (
-              <Box key={item.id}>
-                <Group justify="space-between" align="flex-start" gap="sm">
-                  <Stack gap="xs" style={{ flex: 1 }}>
-                    <Group justify="space-between" align="flex-start">
-                      <Text fw={500}>{item.name}</Text>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        size="sm"
-                        onClick={() => onUpdateQuantity(item.id, 0)}
+            {cart.map((item) => {
+              const modifierTotal = item.modifiers?.reduce((sum, mod) => sum + (mod.price_cents || 0), 0) || 0;
+              const itemTotal = ((item.price_cents + modifierTotal) * item.quantity) / 100;
+              const modifiersText = item.modifiers?.map(m => m.name).join(', ') || '';
+              const itemImage = menuItemImages[item.id] || (item as any).image_url || null;
+              
+              return (
+                <Box key={item.id} pb="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                  <Group align="flex-start" gap="md">
+                    {/* Image with quantity badge */}
+                    <Box style={{ position: 'relative', flexShrink: 0 }}>
+                      <Box
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          backgroundColor: 'var(--mantine-color-gray-1)',
+                        }}
                       >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                    {item.modifiers && item.modifiers.length > 0 && (
-                      <Stack gap="xs">
-                        {item.modifiers.map((modifier) => (
-                          <Group key={modifier.id} justify="space-between" gap="xs">
-                            <Text size="sm" c="dimmed">• {modifier.name}</Text>
-                            {modifier.price_cents > 0 && (
-                              <Text size="sm" c="dimmed">+${(modifier.price_cents / 100).toFixed(2)}</Text>
-                            )}
-                          </Group>
-                        ))}
-                      </Stack>
-                    )}
-                    {item.special_instructions && (
-                      <Text size="sm" c="dimmed">
-                        Note: {item.special_instructions}
-                      </Text>
-                    )}
-                    <Group justify="space-between" align="center" mt="xs">
-                      <Group gap="xs">
+                        {itemImage ? (
+                          <MantineImage
+                            src={itemImage}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            fit="cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://placehold.co/80x80/CCCCCC/666666?text=Item';
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--mantine-color-gray-5)',
+                              fontSize: '10px',
+                            }}
+                          >
+                            No image
+                          </Box>
+                        )}
+                      </Box>
+                      {/* Quantity badge */}
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          backgroundColor: 'black',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '24px',
+                          height: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {item.quantity}×
+                      </Box>
+                    </Box>
+                    
+                    {/* Item details */}
+                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                      <Group justify="space-between" align="flex-start">
+                        <Text fw={600} size="md" style={{ flex: 1 }}>{item.name}</Text>
                         <ActionIcon
-                          variant="outline"
+                          variant="subtle"
+                          color="gray"
                           size="sm"
-                          onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
+                          onClick={() => onUpdateQuantity(item.id, 0)}
                         >
-                          <IconMinus size={14} />
-                        </ActionIcon>
-                        <Text fw={500} style={{ minWidth: '32px', textAlign: 'center' }}>{item.quantity}</Text>
-                        <ActionIcon
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <IconPlus size={14} />
+                          <IconTrash size={18} />
                         </ActionIcon>
                       </Group>
-                      <Text fw={500}>
-                        ${(((item.price_cents + (item.modifiers?.reduce((sum, mod) => sum + mod.price_cents, 0) || 0)) * item.quantity) / 100).toFixed(2)}
-                      </Text>
-                    </Group>
-                  </Stack>
-                </Group>
-              </Box>
-            ))}
+                      {modifiersText && (
+                        <Text size="sm" c="dimmed">{modifiersText}</Text>
+                      )}
+                      <Text fw={700} size="lg">${itemTotal.toFixed(2)}</Text>
+                    </Stack>
+                  </Group>
+                </Box>
+              );
+            })}
+            
+            {/* Add more items button */}
+            <Button
+              variant="light"
+              color="gray"
+              fullWidth
+              leftSection={<IconAddMore size={20} />}
+              onClick={() => {
+                onClose();
+                if (restaurant?.id) {
+                  window.location.href = `/restaurant/${restaurant.id}`;
+                } else {
+                  window.location.href = '/restaurants';
+                }
+              }}
+              style={{
+                backgroundColor: 'var(--mantine-color-gray-1)',
+                border: '1px solid var(--mantine-color-gray-3)',
+                marginTop: '8px',
+              }}
+            >
+              Add more items
+            </Button>
           </Stack>
         </ScrollArea>
 

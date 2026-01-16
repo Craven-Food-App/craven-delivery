@@ -15,6 +15,7 @@ const AccountSettingsDashboard = () => {
   const { restaurant, loading } = useRestaurantData();
   const [autoDescriptions, setAutoDescriptions] = useState(true);
   const [chatEnabled, setChatEnabled] = useState(true);
+  const [cravemoreEligible, setCravemoreEligible] = useState(false);
   const [pickupInstructions, setPickupInstructions] = useState("");
   const [customerPickupInstructions, setCustomerPickupInstructions] = useState("");
   const [pausePin, setPausePin] = useState("");
@@ -31,6 +32,7 @@ const AccountSettingsDashboard = () => {
     const restaurantData = restaurant as any;
     setAutoDescriptions(restaurantData?.auto_descriptions_enabled ?? true);
     setChatEnabled(restaurantData?.chat_enabled ?? true);
+    setCravemoreEligible(restaurantData?.cravemore_eligible ?? false);
     setPickupInstructions(restaurantData?.verification_notes?.pickup_instructions || '');
     setCustomerPickupInstructions(restaurantData?.verification_notes?.customer_pickup_instructions || '');
   };
@@ -44,6 +46,7 @@ const AccountSettingsDashboard = () => {
         .update({
           auto_descriptions_enabled: autoDescriptions,
           chat_enabled: chatEnabled,
+          cravemore_eligible: cravemoreEligible,
           verification_notes: {
             ...existingNotes,
             pickup_instructions: pickupInstructions,
@@ -57,6 +60,26 @@ const AccountSettingsDashboard = () => {
     } catch (error) {
       console.error("Error saving settings:", error);
       toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCravemoreToggle = async (checked: boolean) => {
+    setCravemoreEligible(checked);
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("restaurants")
+        .update({ cravemore_eligible: checked })
+        .eq("id", restaurant?.id);
+
+      if (error) throw error;
+      toast.success(checked ? "CraveMore enabled for your restaurant" : "CraveMore disabled for your restaurant");
+    } catch (error) {
+      console.error("Error updating CraveMore setting:", error);
+      toast.error("Failed to update CraveMore setting");
+      setCravemoreEligible(!checked); // Revert on error
     } finally {
       setSaving(false);
     }
@@ -170,6 +193,23 @@ const AccountSettingsDashboard = () => {
                 onCheckedChange={setAutoDescriptions}
                 disabled={saving}
               />
+            </div>
+
+            <div className="pt-6 border-t">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Offer CraveMore to customers</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enable CraveMore for your restaurant. When enabled, customers will see the CraveMore logo next to your cuisine type, indicating they can use their CraveMore membership benefits when ordering from you.{" "}
+                    <a href="#" className="text-primary underline">Learn more</a>
+                  </p>
+                </div>
+                <Switch 
+                  checked={cravemoreEligible} 
+                  onCheckedChange={handleCravemoreToggle}
+                  disabled={saving}
+                />
+              </div>
             </div>
 
             <div className="pt-6 border-t">

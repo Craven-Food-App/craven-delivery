@@ -26,17 +26,33 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const getRedirectPath = () => {
+    const getRedirectPath = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get('redirect');
-      return redirect || '/restaurants';
+      if (redirect) return redirect;
+      
+      // Check if user is a restaurant owner
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: restaurant } = await supabase
+          .from('restaurants')
+          .select('id')
+          .eq('owner_id', user.id)
+          .single();
+        
+        if (restaurant) {
+          return '/merchant-portal';
+        }
+      }
+      
+      return '/restaurants';
     };
 
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        const redirectPath = getRedirectPath();
+        const redirectPath = await getRedirectPath();
         window.location.href = redirectPath;
       }
     };
@@ -44,14 +60,14 @@ const Auth: React.FC = () => {
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user);
           toast({
             title: "Welcome!",
             description: "You've been signed in successfully.",
           });
-          const redirectPath = getRedirectPath();
+          const redirectPath = await getRedirectPath();
           setTimeout(() => {
             window.location.href = redirectPath;
           }, 500);

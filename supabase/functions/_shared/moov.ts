@@ -244,8 +244,15 @@ export async function createCardPaymentMethod(params: {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Unknown error" }));
-    throw new Error(`Moov card creation failed: ${error.message || response.statusText}`);
+    let errorMessage = "Unknown error";
+    try {
+      const error = await response.json();
+      errorMessage = error.message || error.error?.message || JSON.stringify(error) || response.statusText;
+    } catch {
+      errorMessage = response.statusText || "Failed to create payment method";
+    }
+    console.error("Moov API error:", errorMessage, "Status:", response.status);
+    throw new Error(`Moov card creation failed: ${errorMessage}`);
   }
 
   return await response.json();

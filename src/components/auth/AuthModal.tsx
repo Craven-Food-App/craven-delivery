@@ -93,9 +93,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
         });
         
         // Redirect based on user type
-        setTimeout(() => {
+        setTimeout(async () => {
           if (activeTab === 'restaurant') {
-            window.location.href = '/restaurant/dashboard';
+            // Check if user has a restaurant to redirect to merchant portal
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              const { data: restaurant } = await supabase
+                .from('restaurants')
+                .select('id')
+                .eq('owner_id', user.id)
+                .single();
+              
+              if (restaurant) {
+                window.location.href = '/merchant-portal';
+              } else {
+                window.location.href = '/restaurant/register';
+              }
+            } else {
+              window.location.href = '/restaurant/register';
+            }
           } else if (activeTab === 'driver') {
             window.location.href = '/mobile';
           } else {
@@ -117,10 +133,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
     }
   };
 
-  const getRedirectPath = () => {
+  const getRedirectPath = async () => {
     switch (activeTab) {
       case 'restaurant':
-        return '/restaurant/dashboard';
+        // Check if user has a restaurant
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: restaurant } = await supabase
+            .from('restaurants')
+            .select('id')
+            .eq('owner_id', user.id)
+            .single();
+          
+          return restaurant ? '/merchant-portal' : '/restaurant/register';
+        }
+        return '/restaurant/register';
       case 'driver':
         return '/mobile';
       default:

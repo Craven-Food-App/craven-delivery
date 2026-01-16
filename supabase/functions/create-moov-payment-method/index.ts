@@ -43,6 +43,36 @@ serve(async (req) => {
     const { type, card, ach } = await req.json();
 
     if (type === 'card' && card) {
+      // Validate required fields
+      if (!card.number || !card.expMonth || !card.expYear || !card.cvv || !card.holderName) {
+        return new Response(
+          JSON.stringify({ error: "Missing required card fields" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
+
+      // Validate billing address
+      const billingAddress = {
+        addressLine1: card.billingAddress?.addressLine1 || "",
+        city: card.billingAddress?.city || "",
+        stateOrProvince: card.billingAddress?.state || "",
+        postalCode: card.billingZip || card.billingAddress?.postalCode || "",
+        country: "US",
+      };
+
+      if (!billingAddress.addressLine1 || !billingAddress.city || !billingAddress.stateOrProvince || !billingAddress.postalCode) {
+        return new Response(
+          JSON.stringify({ error: "Missing required billing address fields" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
+
       // Create card payment method
       const result = await createCardPaymentMethod({
         cardNumber: card.number,
@@ -50,13 +80,7 @@ serve(async (req) => {
         expirationYear: card.expYear,
         cvv: card.cvv,
         holderName: card.holderName,
-        billingAddress: {
-          addressLine1: card.billingAddress?.addressLine1 || "",
-          city: card.billingAddress?.city || "",
-          stateOrProvince: card.billingAddress?.state || "",
-          postalCode: card.billingZip || card.billingAddress?.postalCode || "",
-          country: "US",
-        },
+        billingAddress: billingAddress,
       });
 
       return new Response(
@@ -109,8 +133,13 @@ serve(async (req) => {
     }
   } catch (error: any) {
     console.error("Error creating Moov payment method:", error);
+    const errorMessage = error?.message || error?.toString() || "Failed to create payment method";
+    console.error("Error details:", JSON.stringify(error, null, 2));
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to create payment method" }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error?.stack || error?.cause || null
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

@@ -30,7 +30,7 @@ const CategorySection = () => {
     },
     {
       name: "Pizza",
-      image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=200&h=200&fit=crop",
+      image: "https://placehold.co/200x200/FF6B35/ffffff?text=Pizza",
       color: "from-yellow-500 to-red-500",
       isComingSoon: false
     },

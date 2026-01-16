@@ -11,6 +11,7 @@ interface CartItem {
   modifiers?: any[];
   special_instructions?: string;
   restaurant_id?: string;
+  image_url?: string;
 }
 
 interface CartContextType {

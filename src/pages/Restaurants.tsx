@@ -158,18 +158,16 @@ const RestaurantCard = ({
   const navigate = useNavigate();
   
   return (
-    <Card
+    <Box
       style={{ 
         minWidth: '280px', 
         cursor: 'pointer',
         transition: 'all 0.3s',
-        border: '1px solid #e5e7eb'
       }}
-      shadow="md"
-      radius="md"
       onClick={() => navigate(`/restaurant/${restaurant.id}/menu`)}
     >
-    <Box style={{ position: 'relative', height: '160px', backgroundColor: '#f5f5f5', overflow: 'hidden' }}>
+      {/* Image with rounded corners */}
+      <Box style={{ position: 'relative', height: '200px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
       <MantineImage
         src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
         alt={restaurant.name}
@@ -178,60 +176,52 @@ const RestaurantCard = ({
           e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
         }}
       />
-
-      <Box style={{ position: 'absolute', top: 12, right: 12 }}>
-        <ActionIcon
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleLike(restaurant.id);
-          }}
-          variant="filled"
-          color="white"
-          size="md"
-          radius="xl"
-          style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(4px)'
-          }}
-        >
-          <IconHeart 
-            size={16} 
-            style={{ 
-              color: likedItems.has(restaurant.id) ? '#b91c1c' : '#737373',
-              fill: likedItems.has(restaurant.id) ? '#b91c1c' : 'none'
-            }} 
-          />
-        </ActionIcon>
       </Box>
 
-      <Box style={{ position: 'absolute', bottom: 12, left: 12 }}>
-        <RatingPill rating={restaurant.rating || 4.5} />
-      </Box>
-
-      {restaurant.time && (
-        <Box style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: 'white', padding: '4px 12px', borderRadius: '9999px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Group gap={4}>
-            <IconClock size={16} style={{ color: '#737373' }} />
-            <Text size="sm" fw={600} c="gray.8">{restaurant.time}</Text>
-          </Group>
-        </Box>
-      )}
-    </Box>
-
-    <Stack gap="xs" p="md">
-      <Text size="lg" fw={800} c="gray.9" lineClamp={1}>
+      {/* Restaurant name in bold */}
+      <Text size="lg" fw={700} c="gray.9" lineClamp={1} mb="xs">
         {restaurant.name}
       </Text>
-      <Group gap="xs">
-        <Text size="sm" c="gray.6">{restaurant.distance || '0.5 mi'}</Text>
+
+      {/* Star rating * Mile distance * Delivery time */}
+      <Group gap={4} mb="xs">
+          <Group gap={4}>
+          <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
+          <Text size="sm" fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
+          </Group>
         <Text size="sm" c="gray.4">•</Text>
-        <Text size="sm" c="gray.6">{restaurant.reviews || '0'} reviews</Text>
+        <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
+        <Text size="sm" c="gray.4">•</Text>
+        <Text size="sm" c="gray.7">{restaurant.time || '20 min'}</Text>
       </Group>
-      {restaurant.promo && (
-        <Text size="sm" fw={600} c="red.7" mt="xs">{restaurant.promo}</Text>
+
+      {/* Restaurant promo */}
+      {restaurant.restaurantPromo && (
+        <Text size="sm" c="gray.8" mb="xs" lineClamp={1}>
+          {restaurant.restaurantPromo}
+        </Text>
       )}
-    </Stack>
-  </Card>
+
+      {/* Discount promo * Sponsored */}
+      <Group gap={4}>
+        {restaurant.discountPromo && (
+          <>
+            <Text size="sm" fw={600} c="red.7" lineClamp={1}>
+              {restaurant.discountPromo}
+      </Text>
+            {restaurant.isSponsored && (
+              <>
+        <Text size="sm" c="gray.4">•</Text>
+                <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
+              </>
+            )}
+          </>
+        )}
+        {!restaurant.discountPromo && restaurant.isSponsored && (
+          <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
+      )}
+      </Group>
+    </Box>
   );
 };
 
@@ -572,7 +562,23 @@ const Restaurants = () => {
 
   // Restaurant data - transform from database
   const getRestaurantData = () => {
-    const fastest = weeklyDeals.slice(0, 3).map((r) => ({
+    const fastest = weeklyDeals.slice(0, 3).map((r) => {
+      // Format restaurant promo (e.g., "$0 delivery fee, first order")
+      const deliveryFeeCents = r.delivery_fee_cents || 0;
+      const restaurantPromo = deliveryFeeCents === 0 
+        ? "$0 delivery fee, first order"
+        : r.promotion_description || null;
+
+      // Format discount promo
+      let discountPromo = null;
+      if (r.promotion_discount_percentage) {
+        discountPromo = `${r.promotion_discount_percentage}% off`;
+      } else if (r.promotion_discount_amount_cents) {
+        const discountAmount = (r.promotion_discount_amount_cents / 100).toFixed(2);
+        discountPromo = `$${discountAmount} off`;
+      }
+
+      return {
       id: r.id,
       name: r.name,
       image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
@@ -580,10 +586,29 @@ const Restaurants = () => {
       reviews: "1.2K",
       distance: "0.8 mi",
       time: `${r.min_delivery_time || 20} min`,
-      promo: r.promotion_title || "Premium Selection Partner"
-    }));
+        restaurantPromo: restaurantPromo,
+        discountPromo: discountPromo,
+        isSponsored: r.is_promoted || false
+      };
+    });
 
-    const premium = weeklyDeals.slice(3, 5).map((r) => ({
+    const premium = weeklyDeals.slice(3, 5).map((r) => {
+      // Format restaurant promo (e.g., "$0 delivery fee, first order")
+      const deliveryFeeCents = r.delivery_fee_cents || 0;
+      const restaurantPromo = deliveryFeeCents === 0 
+        ? "$0 delivery fee, first order"
+        : r.promotion_description || null;
+
+      // Format discount promo
+      let discountPromo = null;
+      if (r.promotion_discount_percentage) {
+        discountPromo = `${r.promotion_discount_percentage}% off`;
+      } else if (r.promotion_discount_amount_cents) {
+        const discountAmount = (r.promotion_discount_amount_cents / 100).toFixed(2);
+        discountPromo = `$${discountAmount} off`;
+      }
+
+      return {
       id: r.id,
       name: r.name,
       image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
@@ -591,8 +616,12 @@ const Restaurants = () => {
       reviews: "800",
       distance: "2.1 mi",
       time: `${r.min_delivery_time || 30} min`,
+        restaurantPromo: restaurantPromo,
+        discountPromo: discountPromo,
+        isSponsored: r.is_promoted || false,
       featured: true
-    }));
+      };
+    });
 
     return { fastest, premium };
   };
@@ -1358,7 +1387,7 @@ const Restaurants = () => {
                   },
                   {
                     name: "Domino's",
-                    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
+                    image: "https://placehold.co/300x200/FF6B35/ffffff?text=Domino%27s",
                     rating: 4.4,
                     reviews: "50+",
                     distance: "1.9 mi",

@@ -46,7 +46,7 @@ const RestaurantAuth: React.FC = () => {
           .single();
         
         if (restaurant) {
-          navigate('/restaurant/dashboard');
+          navigate('/merchant-portal');
         } else {
           navigate('/restaurant/register');
         }
@@ -75,7 +75,7 @@ const RestaurantAuth: React.FC = () => {
               .single();
             
             if (restaurant) {
-              navigate('/restaurant/dashboard');
+              navigate('/merchant-portal');
             } else {
               navigate('/restaurant/register');
             }
