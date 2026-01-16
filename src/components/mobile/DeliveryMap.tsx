@@ -7,16 +7,23 @@ interface DeliveryMapProps {
   dropoffAddress?: any;
   showRoute?: boolean;
   className?: string;
+  editable?: boolean;
+  onLocationChange?: (lng: number, lat: number) => void;
+  customPinIcon?: string;
 }
 
 export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   pickupAddress,
   dropoffAddress,
   showRoute = false,
-  className = ''
+  className = '',
+  editable = false,
+  onLocationChange,
+  customPinIcon
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
+  const marker = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,27 +134,61 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           style: 'mapbox://styles/mapbox/streets-v12',
           center: center,
           zoom: 13,
-          interactive: false
+          interactive: editable || showRoute // Make interactive if editable or showing route
         });
 
         map.current.on('load', async () => {
-          // Add current location marker (blue)
-          new mapboxgl.Marker({ color: '#3b82f6' })
-            .setLngLat(currentLocation)
-            .addTo(map.current);
-
-          // Add pickup marker (red)
-          if (pickupCoords) {
-            new mapboxgl.Marker({ color: '#ef4444' })
-              .setLngLat(pickupCoords)
-              .addTo(map.current);
-          }
-
-          // Add dropoff marker (green)
-          if (dropoffCoords) {
-            new mapboxgl.Marker({ color: '#22c55e' })
+          // If we have a custom pin icon and dropoff coordinates, use it for the dropoff marker
+          if (dropoffCoords && customPinIcon) {
+            // Create custom marker element
+            const el = document.createElement('div');
+            el.className = 'custom-delivery-pin';
+            el.style.cssText = `
+              width: 40px;
+              height: 40px;
+              background-image: url('${customPinIcon}');
+              background-size: contain;
+              background-repeat: no-repeat;
+              background-position: center;
+              cursor: ${editable ? 'move' : 'pointer'};
+            `;
+            
+            marker.current = new mapboxgl.Marker({
+              element: el,
+              draggable: editable,
+              anchor: 'bottom'
+            })
               .setLngLat(dropoffCoords)
               .addTo(map.current);
+
+            // Handle drag end to update location
+            if (editable && onLocationChange) {
+              marker.current.on('dragend', () => {
+                const lngLat = marker.current.getLngLat();
+                onLocationChange(lngLat.lng, lngLat.lat);
+              });
+            }
+          } else {
+            // Add current location marker (blue) - only if not editable
+            if (!editable) {
+              new mapboxgl.Marker({ color: '#3b82f6' })
+                .setLngLat(currentLocation)
+                .addTo(map.current);
+            }
+
+            // Add pickup marker (red)
+            if (pickupCoords) {
+              new mapboxgl.Marker({ color: '#ef4444' })
+                .setLngLat(pickupCoords)
+                .addTo(map.current);
+            }
+
+            // Add dropoff marker (green) - only if not editable (editable uses custom pin)
+            if (dropoffCoords && !editable) {
+              new mapboxgl.Marker({ color: '#22c55e' })
+                .setLngLat(dropoffCoords)
+                .addTo(map.current);
+            }
           }
 
           // Draw route if requested and we have coordinates
@@ -199,11 +240,17 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           } else {
             // Just fit to markers
             const bounds = new mapboxgl.LngLatBounds();
-            bounds.extend(currentLocation);
+            if (!editable) bounds.extend(currentLocation);
             if (pickupCoords) bounds.extend(pickupCoords);
             if (dropoffCoords) bounds.extend(dropoffCoords);
             
-            map.current.fitBounds(bounds, { padding: 50 });
+            if (bounds.isEmpty()) {
+              // If no bounds, just center on dropoff or current location
+              map.current.setCenter(editable && dropoffCoords ? dropoffCoords : center);
+              map.current.setZoom(15);
+            } else {
+              map.current.fitBounds(bounds, { padding: 50 });
+            }
           }
 
           setIsLoading(false);

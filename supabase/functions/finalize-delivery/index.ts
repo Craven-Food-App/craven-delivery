@@ -66,11 +66,11 @@ serve(async (req) => {
     const percentage = Number(setting?.percentage ?? 70);
 
     const subtotal = Number(order.subtotal_cents ?? 0);
-    const tip = Number(order.tip_cents ?? 0);
+    const tip = Number(order.tip_cents ?? 0); // 100% of customer's selected tip goes to Feeder
 
     // Calculate earnings
     const basePay = Math.round((percentage / 100) * subtotal);
-    const total = basePay + tip;
+    const total = basePay + tip; // Tip is added in full - no deductions
 
     // Insert driver_earnings record (idempotent-ish: avoid duplicates for same order)
     // Try delete existing then insert to keep it simple

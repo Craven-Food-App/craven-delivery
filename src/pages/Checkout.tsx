@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { DeliveryMap } from '@/components/mobile/DeliveryMap';
+import feederNavIcon from '@/assets/feeder_nav_button_compressed.png';
 
 // Initialize Stripe - only if publishable key is available
 let stripePromise: Promise<any> | null = null;
@@ -32,6 +34,132 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
     {children}
   </div>
 );
+
+// Add Address Form Component
+const AddAddressForm: React.FC<{
+  onSave: (address: any) => Promise<void>;
+  onCancel: () => void;
+}> = ({ onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    label: '',
+    street_address: '',
+    apt_suite: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    is_default: false
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.street_address || !formData.city || !formData.state || !formData.zip_code) {
+      return;
+    }
+    await onSave(formData);
+  };
+
+  return (
+    <div className="space-y-4 overflow-y-auto max-h-[65vh] pb-4">
+      <button
+        onClick={onCancel}
+        className="flex items-center gap-2 text-sm text-gray-600 mb-2"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Label</label>
+          <input
+            type="text"
+            placeholder="Home, Work, etc."
+            value={formData.label}
+            onChange={(e) => setFormData({...formData, label: e.target.value})}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+          <input
+            type="text"
+            placeholder="123 Main St"
+            value={formData.street_address}
+            onChange={(e) => setFormData({...formData, street_address: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Apt/Suite (Optional)</label>
+          <input
+            type="text"
+            placeholder="Apt 4B"
+            value={formData.apt_suite}
+            onChange={(e) => setFormData({...formData, apt_suite: e.target.value})}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+            <input
+              type="text"
+              placeholder="Toledo"
+              value={formData.city}
+              onChange={(e) => setFormData({...formData, city: e.target.value})}
+              required
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <input
+              type="text"
+              placeholder="OH"
+              value={formData.state}
+              onChange={(e) => setFormData({...formData, state: e.target.value})}
+              required
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+          <input
+            type="text"
+            placeholder="43615"
+            value={formData.zip_code}
+            onChange={(e) => setFormData({...formData, zip_code: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="set-default"
+            checked={formData.is_default}
+            onChange={(e) => setFormData({...formData, is_default: e.target.checked})}
+            className="w-4 h-4"
+          />
+          <label htmlFor="set-default" className="text-sm text-gray-700">Set as default address</label>
+        </div>
+        <div className="pt-4 border-t">
+          <button
+            type="submit"
+            disabled={!formData.street_address || !formData.city || !formData.state || !formData.zip_code}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3 text-sm font-semibold"
+          >
+            Save Address
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 // Card Form Component using Stripe Elements
 const CardForm: React.FC<{
@@ -170,7 +298,7 @@ const CardForm: React.FC<{
         <button
           type="submit"
           disabled={isSubmitting || !customerAddress || !holderName.trim() || !billingZip || billingZip.length < 5}
-          className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3.5 text-base font-semibold"
+          className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3.5 text-base font-semibold"
         >
           {isSubmitting ? 'Adding Card...' : 'Add Card'}
         </button>
@@ -209,6 +337,41 @@ const Checkout: React.FC = () => {
   const [customerAddress, setCustomerAddress] = useState<any>(null);
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [showDealsModal, setShowDealsModal] = useState(false);
+  const [availableDeals, setAvailableDeals] = useState<any[]>([]);
+  const [appliedDeal, setAppliedDeal] = useState<any>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [showAddAddressForm, setShowAddAddressForm] = useState(false);
+  const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [savedPhoneNumbers, setSavedPhoneNumbers] = useState<string[]>([]);
+  const [showAddPhoneForm, setShowAddPhoneForm] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftInfo, setGiftInfo] = useState<{
+    isGift: boolean;
+    recipientName: string;
+    recipientPhone: string;
+    recipientAddress: string;
+    recipientCity: string;
+    recipientState: string;
+    recipientZip: string;
+    giftMessage: string;
+  }>({
+    isGift: false,
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    recipientCity: '',
+    recipientState: '',
+    recipientZip: '',
+    giftMessage: ''
+  });
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState<string>('');
+  const [selectedScheduleTime, setSelectedScheduleTime] = useState<string>('');
+  const [isAdjustingPin, setIsAdjustingPin] = useState(false);
+  const [pinLocation, setPinLocation] = useState<{ lng: number; lat: number } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -223,6 +386,7 @@ const Checkout: React.FC = () => {
     tipType: 'percentage',
     tipPercent: 15,
     deliveryMethod: 'delivery',
+    deliverySpeed: 'standard', // 'express', 'standard', 'scheduled'
     leaveAtDoor: false,
     schedule: 'ASAP'
   });
@@ -332,7 +496,7 @@ const Checkout: React.FC = () => {
     }
   }, [cart]);
 
-  // Load customer profile and address data (for order creation, not displayed)
+  // Load customer profile, address data, and payment methods
   useEffect(() => {
     const loadCustomerData = async () => {
       try {
@@ -353,6 +517,33 @@ const Checkout: React.FC = () => {
           .eq('user_id', user.id)
           .eq('is_default', true)
           .single();
+
+        // Load payment methods (both Stripe and Moov)
+        const { data: paymentMethods, error: pmError } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (!pmError && paymentMethods && paymentMethods.length > 0) {
+          setHasPaymentMethods(true);
+          // Auto-select the default payment method or the first one
+          const defaultMethod = paymentMethods.find((m: any) => m.is_default) || paymentMethods[0];
+          if (defaultMethod) {
+            setSelectedPaymentMethod({
+              id: defaultMethod.id,
+              type: (defaultMethod as any).type || 'card',
+              stripe_payment_method_id: (defaultMethod as any).stripe_payment_method_id,
+              moov_payment_method_id: (defaultMethod as any).moov_payment_method_id,
+              brand: defaultMethod.brand,
+              last4: defaultMethod.last4,
+              is_default: defaultMethod.is_default
+            });
+          }
+        } else {
+          setHasPaymentMethods(false);
+        }
 
         // Extract delivery preferences from profile
         const prefs = profile?.preferences || {};
@@ -389,7 +580,76 @@ const Checkout: React.FC = () => {
     };
 
     loadCustomerData();
+    loadCustomerDeals();
   }, []);
+
+  // Load saved delivery addresses
+  useEffect(() => {
+    const loadSavedAddresses = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('delivery_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false });
+
+        if (error) throw error;
+        if (data) {
+          setSavedAddresses(data);
+        }
+      } catch (error) {
+        console.error('Error loading saved addresses:', error);
+      }
+    };
+
+    loadSavedAddresses();
+  }, []);
+
+  // Load customer deals/perks
+  const loadCustomerDeals = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const deals: any[] = [];
+
+      // Fetch referral bonuses that can be used
+      const { data: referralBonuses } = await supabase
+        .from('referral_bonuses')
+        .select('*, referrals(*)')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (referralBonuses) {
+        referralBonuses.forEach((bonus: any) => {
+          deals.push({
+            id: bonus.id,
+            type: 'referral_bonus',
+            title: 'Referral Bonus',
+            description: `Earned from referral program`,
+            discount_amount_cents: bonus.amount,
+            discount_type: 'fixed_amount',
+            expires_at: null,
+            source: 'referral'
+          });
+        });
+      }
+
+      // You can add more deal sources here:
+      // - Promo codes earned through loyalty
+      // - Subscription benefits
+      // - Special promotions
+      // - etc.
+
+      setAvailableDeals(deals);
+    } catch (error) {
+      console.error('Error loading customer deals:', error);
+    }
+  };
 
   // Fetch suggested menu items from the restaurant
   useEffect(() => {
@@ -532,9 +792,15 @@ const Checkout: React.FC = () => {
     [subtotal, promoDiscount]
   );
 
+  // Express delivery fee ($2.99 = 299 cents)
+  const expressFee = useMemo(
+    () => formData.deliverySpeed === 'express' ? 299 : 0,
+    [formData.deliverySpeed]
+  );
+
   const tax = useMemo(
-    () => Math.round((subtotalAfterPromo + deliveryFee) * 0.08), // 8% tax
-    [subtotalAfterPromo, deliveryFee]
+    () => Math.round((subtotalAfterPromo + deliveryFee + expressFee) * 0.08), // 8% tax
+    [subtotalAfterPromo, deliveryFee, expressFee]
   );
   const tipAmount = formData.tipType === 'percentage' 
     ? Math.round(subtotal * (formData.tipPercent / 100))
@@ -552,11 +818,11 @@ const Checkout: React.FC = () => {
 
     if (!percent) return 0;
 
-    const base = subtotalAfterPromo + deliveryFee + tax + tipAmount;
+    const base = subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount;
     return Math.round(base * (percent / 100));
-  }, [processingFeePercentCard, processingFeePercentAch, subtotalAfterPromo, deliveryFee, tax, tipAmount]);
+  }, [processingFeePercentCard, processingFeePercentAch, subtotalAfterPromo, deliveryFee, expressFee, tax, tipAmount]);
 
-  const total = subtotalAfterPromo + deliveryFee + tax + tipAmount + processingFeeCents;
+  const total = subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount + processingFeeCents;
 
   const handleAddressSelect = (address: any) => {
     setFormData({
@@ -568,6 +834,21 @@ const Checkout: React.FC = () => {
       state: address.state || '',
       zip: address.zip || ''
     });
+  };
+
+  // Format phone number for display
+  const formatPhoneNumber = (phone: string): string => {
+    if (!phone) return '';
+    // Remove all non-digits
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Format as (XXX) XXX-XXXX
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    
+    // Return as-is if not 10 digits
+    return phone;
   };
 
   const handlePromoApplied = (discount: number, promo: any) => {
@@ -636,7 +917,7 @@ const Checkout: React.FC = () => {
             subtotal_cents: subtotal,
             delivery_fee_cents: formData.deliveryMethod === 'delivery' ? deliveryFee : 0,
             tax_cents: tax,
-            tip_cents: tipAmount,
+            tip_cents: tipAmount, // 100% of this tip amount goes directly to the Feeder
             total_cents: total,
             order_status: 'pending',
             customer_name: formData.name,
@@ -783,8 +1064,454 @@ const Checkout: React.FC = () => {
     }
   };
 
+  // Show delivery details view if payment method exists
+  const showDeliveryDetailsView = hasPaymentMethods && selectedPaymentMethod;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
+      {showDeliveryDetailsView ? (
+        <div className="max-w-md mx-auto">
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 -ml-2"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div className="flex-1">
+                <p className="text-xs text-gray-500">Checkout</p>
+                <h1 className="text-lg font-bold text-gray-900">{restaurant?.name || 'Restaurant'}</h1>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Details Section */}
+          <div className="px-4 py-6">
+            <h2 className="text-2xl font-bold mb-6">Delivery details</h2>
+
+            {/* Map View */}
+            <div className="mb-6">
+              <DeliveryMap
+                dropoffAddress={customerAddress || (formData.address ? {
+                  street_address: formData.address,
+                  city: formData.city,
+                  state: formData.state,
+                  zip_code: formData.zip
+                } : undefined)}
+                className="w-full h-48 rounded-lg overflow-hidden mb-2"
+                editable={isAdjustingPin}
+                customPinIcon={feederNavIcon}
+                onLocationChange={async (lng, lat) => {
+                  setPinLocation({ lng, lat });
+                  // Reverse geocode to get address
+                  try {
+                    const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
+                    if (tokenData?.token) {
+                      const response = await fetch(
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${tokenData.token}&limit=1`
+                      );
+                      const data = await response.json();
+                      if (data.features && data.features.length > 0) {
+                        const feature = data.features[0];
+                        const context = feature.context || [];
+                        const street = feature.text || '';
+                        const city = context.find((c: any) => c.id.startsWith('place'))?.text || '';
+                        const state = context.find((c: any) => c.id.startsWith('region'))?.text || '';
+                        const zip = context.find((c: any) => c.id.startsWith('postcode'))?.text || '';
+                        
+                        // Update form data with new address
+                        setFormData({
+                          ...formData,
+                          address: feature.properties?.address || street,
+                          city: city,
+                          state: state,
+                          zip: zip
+                        });
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Reverse geocoding error:', error);
+                  }
+                }}
+              />
+              <button 
+                onClick={() => setIsAdjustingPin(!isAdjustingPin)}
+                className="w-full bg-white border border-gray-200 hover:border-orange-500 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
+              >
+                {isAdjustingPin ? 'Done adjusting' : 'Adjust pin'}
+              </button>
+            </div>
+
+            {/* Delivery Time */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">Delivery Time</span>
+                <span className="text-sm text-gray-600">20-35 min</span>
+              </div>
+              
+              <div className="space-y-2">
+                {/* Express */}
+                <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  formData.deliverySpeed === 'express' 
+                    ? 'border-2 border-black bg-gray-50' 
+                    : 'border border-gray-200 hover:border-orange-500'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="deliverySpeed" 
+                    value="express" 
+                    checked={formData.deliverySpeed === 'express'}
+                    onChange={(e) => setFormData({...formData, deliverySpeed: e.target.value})}
+                    className="w-4 h-4" 
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">Express</span>
+                      <span className="text-sm text-red-500">+ $2.99</span>
+                    </div>
+                    <div className="text-xs text-gray-500">15-30 min</div>
+                    <div className="text-xs text-red-500 mt-0.5">Direct to you</div>
+                  </div>
+                </label>
+
+                {/* Standard */}
+                <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  formData.deliverySpeed === 'standard' 
+                    ? 'border-2 border-black bg-gray-50' 
+                    : 'border border-gray-200 hover:border-orange-500'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="deliverySpeed" 
+                    value="standard" 
+                    checked={formData.deliverySpeed === 'standard'}
+                    onChange={(e) => setFormData({...formData, deliverySpeed: e.target.value})}
+                    className="w-4 h-4" 
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-sm">Standard</span>
+                    <div className="text-xs text-gray-500">20-35 min</div>
+                  </div>
+                </label>
+
+                {/* Scheduled */}
+                <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  formData.deliverySpeed === 'scheduled' 
+                    ? 'border-2 border-black bg-gray-50' 
+                    : 'border border-gray-200 hover:border-orange-500'
+                }`}>
+                  <input 
+                    type="radio" 
+                    name="deliverySpeed" 
+                    value="scheduled" 
+                    checked={formData.deliverySpeed === 'scheduled'}
+                    onChange={(e) => {
+                      if (e.target.value === 'scheduled') {
+                        setShowScheduleModal(true);
+                      } else {
+                        setFormData({...formData, deliverySpeed: e.target.value});
+                      }
+                    }}
+                    className="w-4 h-4" 
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium text-sm">Scheduled</span>
+                    <div className="text-xs text-gray-500">
+                      {selectedScheduleDate && selectedScheduleTime 
+                        ? `${new Date(selectedScheduleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${selectedScheduleTime}`
+                        : 'Choose time'
+                      }
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Delivery Address */}
+            <div className="mb-4">
+              <button
+                onClick={() => setShowAddressModal(true)}
+                className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-sm text-gray-900">
+                    {formData.address || customerAddress?.street_address || 'Add delivery address'}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formData.city && formData.state && formData.zip 
+                      ? `${formData.city}, ${formData.state} ${formData.zip}`
+                      : customerAddress 
+                        ? `${customerAddress.city}, ${customerAddress.state} ${customerAddress.zip_code}`
+                        : 'Tap to select address'
+                    }
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Delivery Instructions */}
+            <div className="mb-4">
+              <button
+                onClick={() => setShowInstructionsModal(true)}
+                className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-sm text-gray-900">
+                    {formData.instructions || 'Add instructions'}
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Contact Number */}
+            <div className="mb-4">
+              <button
+                onClick={() => setShowPhoneModal(true)}
+                className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-sm text-gray-900">
+                    {formData.phone ? formatPhoneNumber(formData.phone) : 'Add phone number'}
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Gift Option */}
+            <div className="mb-6">
+              <button
+                onClick={() => setShowGiftModal(true)}
+                className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                  giftInfo.isGift
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-orange-500 hover:border-orange-600 bg-orange-50'
+                }`}
+              >
+                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                </svg>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-sm text-orange-500">
+                    {giftInfo.isGift ? `Gift to ${giftInfo.recipientName || 'Recipient'}` : 'Gift It'}
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Cart Summary Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="font-semibold text-gray-900">Cart Summary</span>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </div>
+              <div className="text-sm text-gray-600 mb-3">
+                {restaurant?.name || 'Restaurant'} • {cart.length} {cart.length === 1 ? 'item' : 'items'}
+              </div>
+              
+              {/* Cart Items */}
+              <div className="space-y-3">
+                {cart.map((item, i) => {
+                  const modifierTotal = item.modifiers?.reduce((sum: number, mod: any) => sum + (mod.price_cents || 0), 0) || 0;
+                  const itemTotal = ((item.price_cents + modifierTotal) * item.quantity) / 100;
+                  const modifiersText = item.modifiers?.map((m: any) => m.name).join(', ') || '';
+                  
+                  return (
+                    <div key={i} className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {item.quantity} x {item.name}
+                        </div>
+                        {modifiersText && (
+                          <div className="text-xs text-gray-600 mt-0.5">{modifiersText}</div>
+                        )}
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        ${itemTotal.toFixed(2)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Summary Section */}
+            <div className="mb-6 space-y-3">
+              {/* Deals */}
+              <button 
+                onClick={() => setShowDealsModal(true)}
+                className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-900">Deals</span>
+                  {availableDeals.length > 0 && (
+                    <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">
+                      {availableDeals.length}
+                    </span>
+                  )}
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Subtotal */}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-medium text-gray-900">${(subtotal / 100).toFixed(2)}</span>
+              </div>
+
+              {/* Delivery Fee */}
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Delivery Fee</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="font-medium text-gray-900">
+                  {cravemoreEligible ? '$0.00' : `$${(deliveryFee / 100).toFixed(2)}`}
+                </span>
+              </div>
+
+              {/* Express Delivery Fee */}
+              {expressFee > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Express Delivery</span>
+                  <span className="font-medium text-gray-900">
+                    ${(expressFee / 100).toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {/* Fees & Estimated Tax */}
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Fees & Estimated Tax</span>
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="font-medium text-gray-900">
+                  ${((tax + processingFeeCents) / 100).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Feeder Tip Section */}
+            <div className="mb-6">
+              <div className="flex items-center gap-1 mb-3">
+                <span className="text-sm font-semibold text-gray-900">Feeder Tip</span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              
+              {/* Tip Amount Buttons */}
+              <div className="flex items-center gap-2 mb-2">
+                {[550, 600, 650].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => {
+                      setFormData({...formData, tip: amount, tipType: 'fixed'});
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      formData.tip === amount && formData.tipType === 'fixed'
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                  >
+                    ${(amount / 100).toFixed(2)}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    const customAmount = prompt("Enter custom tip amount:");
+                    if (customAmount) {
+                      setFormData({...formData, tip: Math.round(parseFloat(customAmount) * 100), tipType: 'fixed'});
+                    }
+                  }}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    formData.tipType === 'fixed' && ![550, 600, 650].includes(formData.tip)
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  Other
+                </button>
+                <div className="text-sm font-semibold text-gray-900 ml-2">
+                  ${(tipAmount / 100).toFixed(2)}
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-500">100% of the tip goes to your Feeder.</p>
+            </div>
+
+            {/* Total Section */}
+            <div className="mb-6 pb-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <span className="text-base font-semibold text-gray-900">Total</span>
+                <div className="text-right">
+                  {promoDiscount > 0 && (
+                    <div className="text-sm text-gray-400 line-through mb-1">
+                      ${((subtotal + deliveryFee + tax + tipAmount + processingFeeCents) / 100).toFixed(2)}
+                    </div>
+                  )}
+                  <div className="text-xl font-bold text-red-500">
+                    ${(total / 100).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Place Order Button */}
+            <button
+              onClick={processOrder}
+              disabled={isProcessing}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-4 text-base font-semibold mb-6"
+            >
+              {isProcessing ? 'Processing...' : 'Place order'}
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-6">Checkout</h1>
 
@@ -994,12 +1721,47 @@ const Checkout: React.FC = () => {
               </Section>
             )}
 
-            {hasPaymentMethods && (
+            {/* Payment method section - only show if payment methods exist */}
+            {hasPaymentMethods && selectedPaymentMethod && (
               <Section title="Payment">
-                <PaymentMethodSelector 
-                  onPaymentMethodSelect={setSelectedPaymentMethod}
-                  onPaymentMethodsLoaded={setHasPaymentMethods}
-                />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                    <CreditCard className="h-5 w-5 text-gray-600" />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm text-gray-900">
+                        {selectedPaymentMethod.type === 'card' 
+                          ? `${selectedPaymentMethod.brand || 'Card'} •••• ${selectedPaymentMethod.last4}`
+                          : `Bank Account •••• ${selectedPaymentMethod.last4}`
+                        }
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {selectedPaymentMethod.is_default ? 'Default payment method' : 'Payment method'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                    >
+                      Change
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    You won't be charged until the order is accepted.
+                  </div>
+                </div>
+              </Section>
+            )}
+            
+            {/* Show payment method selector button if no payment methods exist */}
+            {!hasPaymentMethods && (
+              <Section title="Payment">
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-gray-600 hover:text-orange-500"
+                >
+                  <IconPlus size={20} />
+                  <span className="font-medium">Add Payment Method</span>
+                </button>
               </Section>
             )}
           </div>
@@ -1024,7 +1786,7 @@ const Checkout: React.FC = () => {
                     <PromoCodeInput subtotal={subtotal} onPromoApplied={handlePromoApplied} />
                     {/* Tip selector */}
                     <div>
-                      <div className="text-sm font-medium mb-2">Tip your driver</div>
+                      <div className="text-sm font-medium mb-2">Tip your Feeder</div>
                       <div className="flex gap-2 flex-wrap">
                         {["$0","10%","15%","20%","Custom"].map((t, i) => (
                           <button 
@@ -1120,8 +1882,9 @@ const Checkout: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Payment Method Selection Modal */}
+      {/* Payment Method Selection Modal - shown in both views */}
       <Sheet open={showPaymentModal} onOpenChange={(open) => {
         setShowPaymentModal(open);
         if (!open) {
@@ -1295,32 +2058,76 @@ const Checkout: React.FC = () => {
                         const { data: stripeData, error: stripeError } = await supabase.functions.invoke('create-stripe-payment-method', {
                           body: {
                             paymentMethodId: paymentMethodId,
-                            billingAddress: {
-                              addressLine1: customerAddress.street_address || formData.address || '',
-                              city: customerAddress.city || formData.city || '',
-                              state: customerAddress.state || formData.state || '',
+                              billingAddress: {
+                                addressLine1: customerAddress.street_address || formData.address || '',
+                                city: customerAddress.city || formData.city || '',
+                                state: customerAddress.state || formData.state || '',
                               postalCode: customerAddress.zip_code || '',
-                              country: 'US'
+                                country: 'US'
                             }
                           }
                         });
 
-                        // Check for error
+                        // Check for error - extract actual error message
                         if (stripeError || (stripeData && (stripeData as any).error)) {
                           console.error('Stripe error details:', stripeError);
                           console.error('Stripe data (may contain error):', stripeData);
                           
                           let errorMessage = 'Failed to create payment method';
+                          let extractedError: Error | null = null;
+                          
+                          // Try to get error from response body - this is the most reliable source
+                          const errorContext = (stripeError as any)?.context;
+                          if (errorContext) {
+                            // Try response.text() if it's a Response object (most reliable)
+                            if (errorContext instanceof Response || errorContext.text) {
+                              try {
+                                const text = await errorContext.clone().text();
+                                const parsed = JSON.parse(text);
+                                if (parsed.error) {
+                                  errorMessage = parsed.error;
+                                  extractedError = new Error(errorMessage);
+                                  console.error('✅ Extracted error from response:', errorMessage);
+                                }
+                              } catch (e) {
+                                // Ignore parsing errors
+                              }
+                            }
+                            
+                            // Try to read the response body if we didn't get it from text()
+                            if (!extractedError && errorContext.body) {
+                              try {
+                                const bodyText = typeof errorContext.body === 'string' 
+                                  ? errorContext.body 
+                                  : JSON.stringify(errorContext.body);
+                                const parsed = JSON.parse(bodyText);
+                                if (parsed.error) {
+                                  errorMessage = parsed.error;
+                                  extractedError = new Error(errorMessage);
+                                  console.error('✅ Extracted error from body:', errorMessage);
+                                }
+                              } catch (e) {
+                                // Ignore parsing errors
+                              }
+                            }
+                          }
+                          
+                          // If we extracted an error, use it immediately
+                          if (extractedError) {
+                            throw extractedError;
+                          }
+                          
+                          // Fallback to error data
                           if (stripeData && typeof stripeData === 'object' && (stripeData as any).error) {
                             errorMessage = (stripeData as any).error || (stripeData as any).message || errorMessage;
                           } else if ((stripeError as any)?.data) {
                             const errorData = (stripeError as any).data;
                             if (typeof errorData === 'object') {
-                              errorMessage = errorData.error || errorData.message || errorMessage;
+                              errorMessage = errorData.error || errorData.message || errorData.details || errorMessage;
                             } else if (typeof errorData === 'string') {
                               try {
                                 const parsed = JSON.parse(errorData);
-                                errorMessage = parsed.error || parsed.message || errorData;
+                                errorMessage = parsed.error || parsed.message || parsed.details || errorData;
                               } catch {
                                 errorMessage = errorData || errorMessage;
                               }
@@ -1329,6 +2136,7 @@ const Checkout: React.FC = () => {
                             errorMessage = stripeError.message;
                           }
                           
+                          console.error('Final extracted error message:', errorMessage);
                           throw new Error(errorMessage);
                         }
 
@@ -1337,17 +2145,20 @@ const Checkout: React.FC = () => {
                         }
 
                         // Save to payment_methods table
+                        // Note: token is required by schema but we use stripe_payment_method_id for Stripe
+                        // Run migration 20260116000002_make_payment_methods_token_nullable.sql to make token nullable
                         const { data: savedMethod, error: saveError } = await supabase
                           .from('payment_methods')
                           .insert({
                             user_id: user.id,
                             type: 'card',
                             provider: 'stripe',
+                            token: stripeData.paymentMethodID, // Use payment method ID as token for now (legacy field)
                             stripe_payment_method_id: stripeData.paymentMethodID,
                             last4: stripeData.last4 || '****',
                             brand: stripeData.brand || 'card',
                             is_default: !hasPaymentMethods
-                          })
+                          } as any)
                           .select()
                           .single();
 
@@ -1374,6 +2185,8 @@ const Checkout: React.FC = () => {
                           title: "Success",
                           description: "Card added successfully"
                         });
+                        
+                        // Automatically proceed - payment method is now selected and delivery details are visible
                       } catch (error: any) {
                         console.error('Error adding card:', error);
                         let errorMessage = "Failed to add card. Please try again.";
@@ -1418,8 +2231,8 @@ const Checkout: React.FC = () => {
                       className="w-full border border-gray-300 text-gray-700 rounded-lg py-3.5 text-base font-semibold hover:bg-gray-50"
                     >
                       Back
-                    </button>
-                  </div>
+                  </button>
+                </div>
                 )
               )}
 
@@ -1510,6 +2323,906 @@ const Checkout: React.FC = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Deals Modal */}
+      <Sheet open={showDealsModal} onOpenChange={setShowDealsModal}>
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Your Deals & Perks</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Apply your earned rewards and perks to this order
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-3 overflow-y-auto max-h-[60vh] pb-4">
+            {availableDeals.length === 0 ? (
+              <div className="text-center py-8">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <p className="text-gray-500 text-sm">No deals available</p>
+                <p className="text-gray-400 text-xs mt-1">Earn perks by referring friends, completing orders, and more!</p>
+              </div>
+            ) : (
+              availableDeals.map((deal) => (
+                <div
+                  key={deal.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    appliedDeal?.id === deal.id
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-gray-200 hover:border-orange-300'
+                  }`}
+                  onClick={() => {
+                    if (appliedDeal?.id === deal.id) {
+                      setAppliedDeal(null);
+                      setPromoDiscount(0);
+                      setAppliedPromo(null);
+                    } else {
+                      setAppliedDeal(deal);
+                      setPromoDiscount(deal.discount_amount_cents || 0);
+                      setAppliedPromo(deal);
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-gray-900">{deal.title}</h3>
+                        {appliedDeal?.id === deal.id && (
+                          <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">Applied</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{deal.description}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-orange-500">
+                          ${((deal.discount_amount_cents || 0) / 100).toFixed(2)}
+                        </span>
+                        <span className="text-xs text-gray-500">off</span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      {appliedDeal?.id === deal.id ? (
+                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-4 pt-4 border-t">
+            <button
+              onClick={() => setShowDealsModal(false)}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg py-3 text-sm font-semibold"
+            >
+              {appliedDeal ? 'Done' : 'Close'}
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Address Selection Modal */}
+      <Sheet open={showAddressModal} onOpenChange={setShowAddressModal}>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Select Delivery Address</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Choose a saved address or add a new one
+            </SheetDescription>
+          </SheetHeader>
+
+          {!showAddAddressForm ? (
+            <div className="space-y-3 overflow-y-auto max-h-[65vh] pb-4">
+              {savedAddresses.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  <p className="text-gray-500 text-sm mb-2">No saved addresses</p>
+                  <p className="text-gray-400 text-xs">Add an address to get started</p>
+                </div>
+              ) : (
+                savedAddresses.map((addr) => (
+                  <div
+                    key={addr.id}
+                    onClick={() => {
+                      handleAddressSelect({
+                        name: '',
+                        address: addr.street_address,
+                        apt_suite: addr.apt_suite || '',
+                        city: addr.city,
+                        state: addr.state,
+                        zip: addr.zip_code,
+                      });
+                      setCustomerAddress(addr);
+                      setShowAddressModal(false);
+                    }}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                      customerAddress?.id === addr.id
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <svg className="w-5 h-5 text-gray-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm text-gray-900">{addr.label || 'Home'}</p>
+                            {addr.is_default && (
+                              <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">Default</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-900 font-medium">
+                            {addr.street_address}
+                            {addr.apt_suite && `, ${addr.apt_suite}`}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {addr.city}, {addr.state} {addr.zip_code}
+                          </p>
+                        </div>
+                      </div>
+                      {customerAddress?.id === addr.id && (
+                        <div className="ml-4">
+                          <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Add New Address Button */}
+              <button
+                onClick={() => setShowAddAddressForm(true)}
+                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-center"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Add New Address</span>
+                </div>
+              </button>
+            </div>
+          ) : (
+            <AddAddressForm
+              onSave={async (newAddress) => {
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                    return;
+                  }
+
+                  // If setting as default, unset other defaults first
+                  if (newAddress.is_default) {
+                    await supabase
+                      .from('delivery_addresses')
+                      .update({ is_default: false })
+                      .eq('user_id', user.id);
+                  }
+
+                  // Save new address
+                  const { data: savedAddress, error } = await supabase
+                    .from('delivery_addresses')
+                    .insert({
+                      user_id: user.id,
+                      label: newAddress.label || 'Home',
+                      street_address: newAddress.street_address,
+                      apt_suite: newAddress.apt_suite || null,
+                      city: newAddress.city,
+                      state: newAddress.state,
+                      zip_code: newAddress.zip_code,
+                      is_default: newAddress.is_default || false
+                    })
+                    .select()
+                    .single();
+
+                  if (error) throw error;
+
+                  // Reload addresses and select the new one
+                  const { data: updatedAddresses } = await supabase
+                    .from('delivery_addresses')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('is_default', { ascending: false });
+                  
+                  if (updatedAddresses) {
+                    setSavedAddresses(updatedAddresses);
+                  }
+
+                  handleAddressSelect({
+                    name: '',
+                    address: savedAddress.street_address,
+                    apt_suite: savedAddress.apt_suite || '',
+                    city: savedAddress.city,
+                    state: savedAddress.state,
+                    zip: savedAddress.zip_code,
+                  });
+                  setCustomerAddress(savedAddress);
+                  setShowAddAddressForm(false);
+                  setShowAddressModal(false);
+                  toast({ title: "Success", description: "Address added successfully" });
+                } catch (error: any) {
+                  console.error('Error saving address:', error);
+                  toast({ title: "Error", description: error.message || "Failed to save address", variant: "destructive" });
+                }
+              }}
+              onCancel={() => setShowAddAddressForm(false)}
+            />
+          )}
+
+          {!showAddAddressForm && (
+            <div className="mt-4 pt-4 border-t">
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg py-3 text-sm font-semibold"
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Delivery Instructions Modal */}
+      <Sheet open={showInstructionsModal} onOpenChange={setShowInstructionsModal}>
+        <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Delivery Instructions</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Add a message for your Feeder to read when they arrive
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-4 pb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message for Feeder
+              </label>
+              <textarea
+                value={formData.instructions || ''}
+                onChange={(e) => setFormData({...formData, instructions: e.target.value})}
+                placeholder="e.g., Please ring the doorbell twice, Leave at the back door, Call when you arrive..."
+                className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm min-h-[120px] resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                maxLength={500}
+              />
+              <div className="text-xs text-gray-500 mt-1 text-right">
+                {(formData.instructions || '').length}/500
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <button
+                onClick={() => setShowInstructionsModal(false)}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg py-3 text-sm font-semibold"
+              >
+                Save Instructions
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Phone Number Selection Modal */}
+      <Sheet open={showPhoneModal} onOpenChange={setShowPhoneModal}>
+        <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Contact Number</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Select a saved number or add a new one
+            </SheetDescription>
+          </SheetHeader>
+
+          {!showAddPhoneForm ? (
+            <div className="space-y-3 overflow-y-auto max-h-[50vh] pb-4">
+              {savedPhoneNumbers.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <p className="text-gray-500 text-sm mb-2">No saved phone numbers</p>
+                  <p className="text-gray-400 text-xs">Add a phone number to get started</p>
+                </div>
+              ) : (
+                savedPhoneNumbers.map((phone, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      setFormData({...formData, phone: phone.replace(/\D/g, '')});
+                      setShowPhoneModal(false);
+                    }}
+                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                      formData.phone === phone.replace(/\D/g, '')
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-gray-900">
+                            {formatPhoneNumber(phone)}
+                          </p>
+                        </div>
+                      </div>
+                      {formData.phone === phone.replace(/\D/g, '') && (
+                        <div className="ml-4">
+                          <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {/* Add New Phone Number Button */}
+              <button
+                onClick={() => setShowAddPhoneForm(true)}
+                className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-center"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Add New Number</span>
+                </div>
+              </button>
+            </div>
+          ) : (
+            <AddPhoneForm
+              onSave={async (phoneNumber) => {
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) {
+                    toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                    return;
+                  }
+
+                  // Update user profile with new phone number
+                  const { error } = await supabase
+                    .from('user_profiles')
+                    .update({ phone: phoneNumber })
+                    .eq('user_id', user.id);
+
+                  if (error) throw error;
+
+                  // Update form data
+                  setFormData({...formData, phone: phoneNumber.replace(/\D/g, '')});
+                  
+                  // Reload saved phone numbers
+                  const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('phone')
+                    .eq('user_id', user.id)
+                    .single();
+
+                  if (profile?.phone) {
+                    setSavedPhoneNumbers([profile.phone]);
+                  }
+                  
+                  setShowAddPhoneForm(false);
+                  setShowPhoneModal(false);
+                  toast({ title: "Success", description: "Phone number saved" });
+                } catch (error: any) {
+                  console.error('Error saving phone number:', error);
+                  toast({ title: "Error", description: error.message || "Failed to save phone number", variant: "destructive" });
+                }
+              }}
+              onCancel={() => setShowAddPhoneForm(false)}
+            />
+          )}
+
+          {!showAddPhoneForm && (
+            <div className="mt-4 pt-4 border-t">
+              <button
+                onClick={() => setShowPhoneModal(false)}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg py-3 text-sm font-semibold"
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Gift It Modal */}
+      <Sheet open={showGiftModal} onOpenChange={setShowGiftModal}>
+        <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Send as a Gift</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Enter recipient details to send this order as a gift
+            </SheetDescription>
+          </SheetHeader>
+
+          <GiftForm
+            giftInfo={giftInfo}
+            onSave={(info) => {
+              setGiftInfo(info);
+              setShowGiftModal(false);
+              toast({ title: "Success", description: "Gift details saved" });
+            }}
+            onCancel={() => {
+              if (!giftInfo.isGift) {
+                setShowGiftModal(false);
+              } else {
+                // Allow canceling gift option
+                setGiftInfo({
+                  isGift: false,
+                  recipientName: '',
+                  recipientPhone: '',
+                  recipientAddress: '',
+                  recipientCity: '',
+                  recipientState: '',
+                  recipientZip: '',
+                  giftMessage: ''
+                });
+                setShowGiftModal(false);
+              }
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Schedule Delivery Modal */}
+      <Sheet open={showScheduleModal} onOpenChange={setShowScheduleModal}>
+        <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-2xl p-4">
+          <div className="flex items-center justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-center text-lg font-semibold">Schedule Delivery</SheetTitle>
+            <SheetDescription className="text-center text-sm text-gray-500">
+              Choose a date and time for your delivery (up to 4 days ahead)
+            </SheetDescription>
+          </SheetHeader>
+
+          <ScheduleDeliveryForm
+            selectedDate={selectedScheduleDate}
+            selectedTime={selectedScheduleTime}
+            onDateChange={setSelectedScheduleDate}
+            onTimeChange={setSelectedScheduleTime}
+            onSave={(date, time) => {
+              setSelectedScheduleDate(date);
+              setSelectedScheduleTime(time);
+              setFormData({
+                ...formData,
+                schedule: `${date} ${time}`,
+                deliverySpeed: 'scheduled'
+              });
+              setShowScheduleModal(false);
+              toast({ title: "Success", description: "Delivery scheduled" });
+            }}
+            onCancel={() => {
+              if (!selectedScheduleDate || !selectedScheduleTime) {
+                // If no schedule was set, revert to standard
+                setFormData({...formData, deliverySpeed: 'standard'});
+              }
+              setShowScheduleModal(false);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+};
+
+// Schedule Delivery Form Component
+const ScheduleDeliveryForm: React.FC<{
+  selectedDate: string;
+  selectedTime: string;
+  onDateChange: (date: string) => void;
+  onTimeChange: (time: string) => void;
+  onSave: (date: string, time: string) => void;
+  onCancel: () => void;
+}> = ({ selectedDate, selectedTime, onDateChange, onTimeChange, onSave, onCancel }) => {
+  const [localDate, setLocalDate] = useState(selectedDate || '');
+  const [localTime, setLocalTime] = useState(selectedTime || '');
+
+  // Generate available dates (today + 4 days)
+  const getAvailableDates = (): string[] => {
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i <= 4; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  // Generate time slots (20-minute intervals, 10 slots starting 1 hour ahead)
+  const getTimeSlots = (selectedDate: string): string[] => {
+    const slots: string[] = [];
+    const now = new Date();
+    const selected = selectedDate ? new Date(selectedDate) : now;
+    const isToday = selectedDate === now.toISOString().split('T')[0];
+
+    // Start time: 1 hour from now if today, otherwise start of day
+    let startTime: Date;
+    if (isToday) {
+      startTime = new Date(now);
+      startTime.setHours(now.getHours() + 1);
+      // Round up to next 20-minute interval
+      const minutes = startTime.getMinutes();
+      const remainder = minutes % 20;
+      if (remainder !== 0) {
+        startTime.setMinutes(minutes + (20 - remainder));
+      }
+      startTime.setSeconds(0);
+      startTime.setMilliseconds(0);
+    } else {
+      startTime = new Date(selected);
+      startTime.setHours(10, 0, 0, 0); // Start at 10 AM for future dates
+    }
+
+    // Generate 10 slots with 20-minute intervals
+    for (let i = 0; i < 10; i++) {
+      const slotTime = new Date(startTime);
+      slotTime.setMinutes(startTime.getMinutes() + (i * 20));
+      
+      // Format as HH:MM AM/PM
+      const hours = slotTime.getHours();
+      const minutes = slotTime.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      slots.push(`${displayHours}:${displayMinutes} ${ampm}`);
+    }
+
+    return slots;
+  };
+
+  const availableDates = getAvailableDates();
+  const timeSlots = localDate ? getTimeSlots(localDate) : [];
+
+  const handleSave = () => {
+    if (localDate && localTime) {
+      onSave(localDate, localTime);
+    }
+  };
+
+  const formatDateDisplay = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+
+    if (dateOnly.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (dateOnly.getTime() === tomorrow.getTime()) {
+      return 'Tomorrow';
+    } else {
+      return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+  };
+
+  return (
+    <div className="space-y-6 overflow-y-auto max-h-[60vh] pb-4">
+      {/* Date Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">Select Date</label>
+        <div className="grid grid-cols-5 gap-2">
+          {availableDates.map((date) => (
+            <button
+              key={date}
+              type="button"
+              onClick={() => {
+                setLocalDate(date);
+                setLocalTime(''); // Reset time when date changes
+                onTimeChange('');
+              }}
+              className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                localDate === date
+                  ? 'border-orange-500 bg-orange-50 text-orange-700'
+                  : 'border-gray-200 hover:border-orange-300 text-gray-700'
+              }`}
+            >
+              <div className="text-xs text-gray-500 mb-1">
+                {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+              <div className="text-xs font-semibold">
+                {formatDateDisplay(date)}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Time Selection */}
+      {localDate && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Select Time</label>
+          <div className="grid grid-cols-2 gap-2">
+            {timeSlots.map((time) => (
+              <button
+                key={time}
+                type="button"
+                onClick={() => {
+                  setLocalTime(time);
+                  onTimeChange(time);
+                }}
+                className={`p-3 border rounded-lg text-sm font-medium transition-colors ${
+                  localTime === time
+                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    : 'border-gray-200 hover:border-orange-300 text-gray-700'
+                }`}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Save Button */}
+      <div className="pt-4 border-t">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!localDate || !localTime}
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3 text-sm font-semibold"
+        >
+          Confirm Schedule
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-full mt-2 text-gray-600 py-2 text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Gift Form Component
+const GiftForm: React.FC<{
+  giftInfo: any;
+  onSave: (info: any) => void;
+  onCancel: () => void;
+}> = ({ giftInfo, onSave, onCancel }) => {
+  const [formData, setFormData] = useState(giftInfo);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ ...formData, isGift: true });
+  };
+
+  return (
+    <div className="space-y-4 overflow-y-auto max-h-[60vh] pb-4">
+      <button
+        onClick={onCancel}
+        className="flex items-center gap-2 text-sm text-gray-600 mb-2"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Name *</label>
+          <input
+            type="text"
+            placeholder="John Doe"
+            value={formData.recipientName}
+            onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Phone *</label>
+          <input
+            type="tel"
+            placeholder="(567) 225-1495"
+            value={formData.recipientPhone}
+            onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
+          <input
+            type="text"
+            placeholder="123 Main St"
+            value={formData.recipientAddress}
+            onChange={(e) => setFormData({...formData, recipientAddress: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+            <input
+              type="text"
+              placeholder="Toledo"
+              value={formData.recipientCity}
+              onChange={(e) => setFormData({...formData, recipientCity: e.target.value})}
+              required
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+            <input
+              type="text"
+              placeholder="OH"
+              value={formData.recipientState}
+              onChange={(e) => setFormData({...formData, recipientState: e.target.value})}
+              required
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code *</label>
+          <input
+            type="text"
+            placeholder="43615"
+            value={formData.recipientZip}
+            onChange={(e) => setFormData({...formData, recipientZip: e.target.value})}
+            required
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Gift Message (Optional)</label>
+          <textarea
+            placeholder="Happy Birthday! Enjoy your meal!"
+            value={formData.giftMessage}
+            onChange={(e) => setFormData({...formData, giftMessage: e.target.value})}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            maxLength={200}
+          />
+          <div className="text-xs text-gray-500 mt-1 text-right">
+            {formData.giftMessage.length}/200
+          </div>
+        </div>
+
+        <div className="pt-4 border-t">
+          <button
+            type="submit"
+            disabled={!formData.recipientName || !formData.recipientPhone || !formData.recipientAddress || !formData.recipientCity || !formData.recipientState || !formData.recipientZip}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3 text-sm font-semibold"
+          >
+            Save Gift Details
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// Add Phone Form Component
+const AddPhoneForm: React.FC<{
+  onSave: (phone: string) => Promise<void>;
+  onCancel: () => void;
+}> = ({ onSave, onCancel }) => {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [error, setError] = useState('');
+
+  const formatPhoneInput = (value: string): string => {
+    // Remove all non-digits
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    
+    // Format as (XXX) XXX-XXXX
+    if (limited.length === 0) return '';
+    if (limited.length <= 3) return `(${limited}`;
+    if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`;
+    return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneInput(e.target.value);
+    setPhoneNumber(formatted);
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    if (cleaned.length !== 10) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    await onSave(cleaned);
+  };
+
+  return (
+    <div className="space-y-4 overflow-y-auto max-h-[50vh] pb-4">
+      <button
+        onClick={onCancel}
+        className="flex items-center gap-2 text-sm text-gray-600 mb-2"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back
+      </button>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <input
+            type="tel"
+            placeholder="(567) 225-1495"
+            value={phoneNumber}
+            onChange={handlePhoneChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            maxLength={14}
+          />
+          {error && (
+            <p className="text-xs text-red-500 mt-1">{error}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">Enter your 10-digit phone number</p>
+        </div>
+
+        <div className="pt-4 border-t">
+          <button
+            type="submit"
+            disabled={phoneNumber.replace(/\D/g, '').length !== 10}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3 text-sm font-semibold"
+          >
+            Save Phone Number
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
