@@ -93,6 +93,15 @@ const Header = () => {
         title: "Signed out successfully",
         description: "You have been logged out of your account."
       });
+
+      // On mobile, redirect to restaurants landing page
+      const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Redirect to restaurants page which will show the landing page for logged-out users
+        setTimeout(() => {
+          window.location.href = '/restaurants';
+        }, 500);
+      }
     } catch (error) {
       console.error("Error signing out:", error);
       toast({

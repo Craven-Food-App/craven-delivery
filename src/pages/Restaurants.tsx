@@ -243,6 +243,7 @@ const Restaurants = () => {
   
   // Mobile app states
   const [showMain, setShowMain] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true); // Add loading state for auth check
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const [cartCount] = useState(3);
   
@@ -654,8 +655,62 @@ const Restaurants = () => {
     }
   };
 
-  // Mobile App Landing Page
-  if (isMobile && !showMain) {
+  // Check if user is logged in - if so, skip landing page (check BEFORE rendering)
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!isMobile) {
+        setCheckingAuth(false);
+        return; // Only check on mobile
+      }
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // User is logged in - skip landing page and show main restaurants view
+          setShowMain(true);
+        } else {
+          // User is logged out - ensure landing page shows
+          setShowMain(false);
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        // On error, assume not logged in and show landing page
+        setShowMain(false);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+
+    // Also listen for auth state changes (e.g., when user logs out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' && isMobile) {
+        // User logged out - show landing page
+        setShowMain(false);
+        setCheckingAuth(false);
+      } else if (event === 'SIGNED_IN' && session?.user && isMobile) {
+        // User logged in - show main view
+        setShowMain(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isMobile]);
+
+  // Show loading state while checking auth (prevents flash of landing page)
+  if (isMobile && checkingAuth) {
+    return (
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader size="lg" color="orange" />
+      </Box>
+    );
+  }
+
+  // Mobile App Landing Page (only show if user is NOT logged in)
+  if (isMobile && !showMain && !checkingAuth) {
     return (
       <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         {/* Hero Section - Light, Premium */}
@@ -713,7 +768,7 @@ const Restaurants = () => {
 
             <Group justify="space-between" mt="lg">
               <Button
-                onClick={() => setShowMain(true)}
+                onClick={() => navigate('/auth?redirect=/restaurants')}
                 variant="subtle"
                 leftSection={<IconUser size={16} />}
                 style={{ color: '#737373', fontWeight: 500 }}

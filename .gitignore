@@ -25,3 +25,16 @@ dist-ssr
 
 # Google API credentials (keep out of version control)
 service_account_credentials.json
+
+# Mobile apps build files (organized in apps/)
+apps/*/android/app/build/
+apps/*/android/.gradle/
+apps/*/android/local.properties
+apps/*/android/.idea/
+apps/*/android/*.iml
+apps/*/ios/App/build/
+apps/*/ios/Pods/
+apps/*/ios/.swiftpm/
+apps/*/ios/DerivedData/
+apps/*/ios/*.xcworkspace/xcuserdata/
+apps/*/ios/*.xcodeproj/xcuserdata/

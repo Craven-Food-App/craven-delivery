@@ -31,20 +31,8 @@ const Auth: React.FC = () => {
       const redirect = urlParams.get('redirect');
       if (redirect) return redirect;
       
-      // Check if user is a restaurant owner
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: restaurant } = await supabase
-          .from('restaurants')
-          .select('id')
-          .eq('owner_id', user.id)
-          .single();
-        
-        if (restaurant) {
-          return '/merchant-portal';
-        }
-      }
-      
+      // This is customer-only auth - always redirect to restaurants
+      // Merchants/drivers should use their own auth pages
       return '/restaurants';
     };
 
@@ -427,7 +415,7 @@ const Auth: React.FC = () => {
             <img src={cravenLogo} alt="Crave'n" className="h-12" />
           </div>
           <CardTitle className="text-2xl font-bold">Welcome to Crave'n</CardTitle>
-          <CardDescription>Sign in to your account or create a new one</CardDescription>
+          <CardDescription>Sign in to your customer account or create a new one</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">

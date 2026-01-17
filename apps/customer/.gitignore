@@ -1,0 +1,19 @@
+# Android build files
+android/app/build/
+android/.gradle/
+android/local.properties
+android/.idea/
+android/*.iml
+
+# iOS build files
+ios/App/build/
+ios/Pods/
+ios/.swiftpm/
+ios/DerivedData/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+
+# OS files
+.DS_Store
+Thumbs.db
+

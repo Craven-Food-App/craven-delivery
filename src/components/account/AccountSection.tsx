@@ -291,7 +291,14 @@ export const AccountSection = () => {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.href = '/auth';
+      
+      // On mobile, redirect to restaurants landing page; otherwise go to auth
+      const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.location.href = '/restaurants';
+      } else {
+        window.location.href = '/auth';
+      }
     } catch (error) {
       toast({
         title: "Error",
