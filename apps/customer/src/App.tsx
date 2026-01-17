@@ -30,6 +30,7 @@ import CraveMoreSuccess from "@/pages/CraveMoreSuccess";
 import CraveMoreAccount from "@/pages/CraveMoreAccount";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
+import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,9 +57,10 @@ function App() {
                 }}
               >
                 <CartProvider>
-                  <InstallAppBanner />
-                  
-                  <Routes>
+                  <SafeAreaProvider>
+                    <InstallAppBanner />
+                    
+                    <Routes>
                     <Route path="/" element={<Navigate to="/restaurants" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/restaurants" element={<Restaurants />} />
@@ -78,6 +80,7 @@ function App() {
                     <Route path="/account/cravemore" element={<CraveMoreAccount />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </SafeAreaProvider>
                 </CartProvider>
               </BrowserRouter>
             </TooltipProvider>

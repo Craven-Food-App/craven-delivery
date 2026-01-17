@@ -24,13 +24,41 @@
     <script src="https://js.stripe.com/v3"></script>
     
     <style>
+      /* Base styles */
+      * {
+        box-sizing: border-box;
+      }
+      
+      html {
+        height: 100%;
+        height: 100dvh;
+        /* Safe area insets handled by SafeAreaProvider component */
+        padding: 0;
+        margin: 0;
+      }
+      
       body {
         margin: 0;
         padding: 0;
+        height: 100%;
+        height: 100dvh;
+        overflow-x: hidden;
+        /* Prevent body from adding extra padding - SafeAreaProvider handles it */
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
       }
+      
       #root {
         min-height: 100vh;
+        min-height: 100dvh;
+        width: 100%;
+        margin: 0;
+        padding: 0;
       }
+      
+      /* Safe area insets are handled by SafeAreaProvider component */
     </style>
   </head>
   <body>

@@ -90,9 +90,155 @@ All colors MUST be HSL.
   touch-action: pan-x pan-y;
 }
 
-/* PWA Safe Area Utilities - Only apply when running as installed PWA */
+/* ============================================
+   CAPACITOR NATIVE APP SAFE AREA HANDLING
+   ============================================ */
+
+/* Safe Area Container - Main wrapper for the app */
+.safe-area-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+/* Top safe area spacer - Status bar, notch, camera cutout */
+.safe-area-top-spacer {
+  height: env(safe-area-inset-top, 0px);
+  min-height: env(safe-area-inset-top, 0px);
+  width: 100%;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* Bottom safe area spacer - Home indicator (iOS), navigation bar (Android) */
+.safe-area-bottom-spacer {
+  height: env(safe-area-inset-bottom, 0px);
+  min-height: env(safe-area-inset-bottom, 0px);
+  width: 100%;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* Main content area - fills remaining space */
+.safe-area-content {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Horizontal safe areas for landscape mode */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* When running in Capacitor native app */
+.capacitor-native {
+  /* Ensure body respects safe areas */
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.capacitor-native #root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+/* Safe Area Utility Classes - For specific elements */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px) !important;
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px) !important;
+}
+
+.safe-area-y {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+.safe-area-x {
+  padding-left: env(safe-area-inset-left, 0px) !important;
+  padding-right: env(safe-area-inset-right, 0px) !important;
+}
+
+.safe-area-all {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  padding-left: env(safe-area-inset-left, 0px) !important;
+  padding-right: env(safe-area-inset-right, 0px) !important;
+}
+
+/* For fixed/absolute positioned elements */
+.safe-fixed {
+  top: calc(env(safe-area-inset-top, 0px) + var(--safe-fixed-offset, 0px)) !important;
+}
+
+.safe-fixed-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--safe-fixed-offset, 0px)) !important;
+}
+
+.safe-fixed-left {
+  left: calc(env(safe-area-inset-left, 0px) + var(--safe-fixed-offset, 0px)) !important;
+}
+
+.safe-fixed-right {
+  right: calc(env(safe-area-inset-right, 0px) + var(--safe-fixed-offset, 0px)) !important;
+}
+
+/* Mapbox controls safe-area handling */
+.capacitor-native .mapboxgl-ctrl-top-right {
+  top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+  right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
+}
+
+.capacitor-native .mapboxgl-ctrl-top-left {
+  top: calc(env(safe-area-inset-top, 0px) + 10px) !important;
+  left: calc(env(safe-area-inset-left, 0px) + 10px) !important;
+}
+
+.capacitor-native .mapboxgl-ctrl-bottom-right {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  right: calc(env(safe-area-inset-right, 0px) + 10px) !important;
+}
+
+.capacitor-native .mapboxgl-ctrl-bottom-left {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+  left: calc(env(safe-area-inset-left, 0px) + 10px) !important;
+}
+
+/* Ensure modals and overlays fill entire screen (including safe areas) */
+.capacitor-native [role="dialog"],
+.capacitor-native .modal,
+.capacitor-native .fixed.inset-0,
+.capacitor-native .modal-overlay {
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* PWA Safe Area Utilities - For backward compatibility */
 .pwa-standalone .safe-area-top {
-  padding-top: env(safe-area-inset-top, 150px) !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
 }
 
 .pwa-standalone .safe-area-bottom {
@@ -122,38 +268,6 @@ All colors MUST be HSL.
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-}
-
-/* For fixed/absolute headers: push them below the status bar */
-.pwa-standalone .safe-fixed {
-  top: calc(env(safe-area-inset-top, 150px) + var(--safe-fixed-offset, 0px)) !important;
-}
-
-.pwa-standalone .safe-fixed-bottom {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--safe-fixed-offset, 0px));
-}
-
-/* Mapbox controls safe-area handling in PWA */
-.pwa-standalone .mapboxgl-ctrl-top-right {
-  top: calc(env(safe-area-inset-top, 150px) + 10px) !important;
-  right: 10px !important;
-}
-
-.pwa-standalone .mapboxgl-ctrl-top-left {
-  top: calc(env(safe-area-inset-top, 150px) + 10px) !important;
-  left: 10px !important;
-}
-
-/* Ensure modals and overlays are NOT affected by safe-area spacing */
-.pwa-standalone [role="dialog"],
-.pwa-standalone .modal,
-.pwa-standalone .fixed.inset-0,
-.pwa-standalone .modal-overlay {
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  padding: 0 !important;
 }
 
 @layer base {
@@ -346,9 +460,9 @@ All colors MUST be HSL.
       -webkit-line-clamp: 2;
     }
 
-    /* Mobile responsive padding */
-    body {
-      padding-bottom: env(safe-area-inset-bottom);
+    /* Mobile responsive padding - only for web, not native */
+    body:not(.capacitor-native) {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
   }
 }
