@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Exhibit C — Capitalization Table</title>
+<style>
+body { font-family:"Times New Roman", serif; line-height:1.35; }
+h1 { text-transform:uppercase; text-align:center; font-size:22px; margin-bottom:12px; }
+h2 { font-size:16px; text-transform:uppercase; margin-top:28px; }
+.table { width:100%; border-collapse:collapse; margin-top:14px; }
+.table th, .table td { border:1px solid #000; padding:8px; vertical-align:top; }
+.bold { font-weight:bold; }
+.center { text-align:center; }
+.spacer { height:28px; }
+.signature-line { border-bottom:1px solid #000; height:24px; margin-top:24px; }
+</style>
+</head>
+
+<body>
+
+<h1>Exhibit C<br/>Capitalization Table</h1>
+<p class="center"><strong>{{company_name}}</strong></p>
+<p class="center">A {{company_state}} Corporation</p>
+
+<p>
+This Capitalization Table ("Cap Table") reflects the authorized, issued, outstanding, and reserved shares of 
+<strong>{{company_name}}</strong> (the "Corporation"), as adopted by the Board of Directors pursuant to DGCL §§102(a)(4), 151, 152–154, and 224.
+</p>
+
+<h2>1. AUTHORIZED CAPITALIZATION</h2>
+<table class="table">
+<tr><th>Description</th><th>Amount</th><th>Par Value</th><th>DGCL Basis</th></tr>
+<tr>
+<td>Authorized Shares</td>
+<td>10,000,000</td>
+<td>$0.0001 per share</td>
+<td>DGCL §102(a)(4)</td>
+</tr>
+<tr>
+<td>Class</td>
+<td>Common Stock</td>
+<td>—</td>
+<td>DGCL §§151–153</td>
+</tr>
+</table>
+
+<h2>2. ISSUED & OUTSTANDING SHARES</h2>
+<table class="table">
+<tr><th>Shareholder</th><th>Shares Issued</th><th>% Ownership</th><th>Consideration</th><th>Notes</th></tr>
+
+<tr>
+<td>Invero Business Trust (Irrevocable Trust)</td>
+<td>6,000,000</td>
+<td>60%</td>
+<td>Founder trust contribution; governance rights</td>
+<td>Majority shareholder</td>
+</tr>
+
+<tr>
+<td>{{founder_name}}</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>Founder intellectual property, labor, and pre-incorporation services</td>
+<td>Founder / Officer / Director</td>
+</tr>
+
+<tr>
+<td><em>Total Issued & Outstanding</em></td>
+<td><strong>8,000,000</strong></td>
+<td><strong>80%</strong></td>
+<td>—</td>
+<td>Fully paid & nonassessable (DGCL §153)</td>
+</tr>
+</table>
+
+<h2>3. UNISSUED SHARES</h2>
+<table class="table">
+<tr><th>Description</th><th>Shares</th><th>% of Total Auth.</th><th>Notes</th></tr>
+
+<tr>
+<td>Equity Incentive Pool (Unissued)</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>Reserved for future grants; requires Board approval</td>
+</tr>
+
+<tr>
+<td><em>Total Unissued</em></td>
+<td><strong>2,000,000</strong></td>
+<td><strong>20%</strong></td>
+<td>—</td>
+</tr>
+</table>
+
+<h2>4. SUMMARY CHART</h2>
+<table class="table">
+<tr><th>Category</th><th>Shares</th><th>% of Authorized</th></tr>
+
+<tr>
+<td><strong>Authorized Shares</strong></td>
+<td>10,000,000</td>
+<td>100%</td>
+</tr>
+
+<tr>
+<td><strong>Issued & Outstanding</strong></td>
+<td>8,000,000</td>
+<td>80%</td>
+</tr>
+
+<tr>
+<td><strong>Unissued (Equity Pool)</strong></td>
+<td>2,000,000</td>
+<td>20%</td>
+</tr>
+</table>
+
+<h2>5. LEGAL STATUS OF SHARES</h2>
+<p>
+Pursuant to DGCL §§152–154, the Board has determined that the consideration received for the issued shares is 
+adequate and that all issued shares are fully paid and nonassessable.  
+All shares shall be recorded in the Corporation's official stock ledger under DGCL §224.
+</p>
+
+<h2>6. CERTIFICATION</h2>
+<p>
+I, <strong>{{officer_name}}</strong>, Secretary of the Corporation, hereby certify that this Capitalization Table is 
+a true, complete, and correct depiction of the capital structure of {{company_name}}, as adopted by the Board on {{cap_table_date}}, and maintained in the Corporation's minute book.
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Secretary:</strong> {{officer_name}}</p>
+
+<!-- Signature Tag -->
+<span data-sig="SECRETARY">{{SIGNATURE_SECRETARY}}</span>
+
+</body>
+</html>
+

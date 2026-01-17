@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Termination for Cause Notice (Executive)</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      line-height: 1.6;
+      color: #000;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #000;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .header p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+    .document-info {
+      margin: 30px 0;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-left: 4px solid #000;
+    }
+    .document-info p {
+      margin: 5px 0;
+    }
+    .section {
+      margin: 25px 0;
+    }
+    .section h2 {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 5px;
+    }
+    .section ul {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .section li {
+      margin: 8px 0;
+    }
+    .signature-block {
+      margin-top: 50px;
+      page-break-inside: avoid;
+    }
+    .signature-block h3 {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      width: 300px;
+      margin: 40px 0 10px 0;
+    }
+    .signature-label {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Termination for Cause Notice (Executive)</h1>
+    <p><strong>Document Key:</strong> etfcn_template</p>
+    <p><strong>Version:</strong> 1.0</p>
+  </div>
+
+  <div class="document-info">
+    <p><strong>TO:</strong> {{executive_name}}, {{executive_title}}</p>
+    <p><strong>FROM:</strong> Board of Directors, Crave'n</p>
+    <p><strong>DATE:</strong> {{date}}</p>
+    <p><strong>SUBJECT:</strong> Termination for Cause</p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 1 — DECISION</h2>
+    <p>
+      The Board has voted to terminate your employment for Cause pursuant to the Executive Employment Agreement and the Corporation's Bylaws.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 2 — BASIS FOR TERMINATION</h2>
+    <p>Your termination is based on:</p>
+    <ul>
+      {{cause_list}}
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 3 — EQUITY TREATMENT</h2>
+    <p>
+      All unvested equity is hereby forfeited. Vested equity will be treated pursuant to corporate policy.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 4 — RETURN OF PROPERTY</h2>
+    <p>
+      You must return all Company property, credentials, and confidential information within 24 hours.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 5 — FINAL NOTICE</h2>
+    <p>
+      This decision is final and non-negotiable.
+    </p>
+  </div>
+
+  <div class="signature-block">
+    <h3>SIGNATURES</h3>
+    
+    <div>
+      <div class="signature-line"></div>
+      <div class="signature-label">Board of Directors, Crave'n</div>
+      <div class="signature-label">{{date}}</div>
+    </div>
+  </div>
+</body>
+</html>
+

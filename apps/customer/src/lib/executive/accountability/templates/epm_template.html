@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Executive Performance Memorandum (EPM)</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      line-height: 1.6;
+      color: #000;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #000;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .header p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+    .memorandum-info {
+      margin: 30px 0;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-left: 4px solid #000;
+    }
+    .memorandum-info p {
+      margin: 5px 0;
+    }
+    .section {
+      margin: 25px 0;
+    }
+    .section h2 {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 5px;
+    }
+    .section ul {
+      margin: 10px 0;
+      padding-left: 25px;
+    }
+    .section li {
+      margin: 8px 0;
+    }
+    .signature-block {
+      margin-top: 50px;
+      page-break-inside: avoid;
+    }
+    .signature-block h3 {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      width: 300px;
+      margin: 40px 0 10px 0;
+    }
+    .signature-label {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Executive Performance Memorandum (EPM)</h1>
+    <p><strong>Document Key:</strong> epm_template</p>
+    <p><strong>Version:</strong> 1.0</p>
+  </div>
+
+  <div class="memorandum-info">
+    <p><strong>MEMORANDUM TO:</strong> {{executive_name}}, {{executive_title}}</p>
+    <p><strong>FROM:</strong> {{issuer_name}}, {{issuer_title}}</p>
+    <p><strong>DATE:</strong> {{date}}</p>
+    <p><strong>SUBJECT:</strong> Executive Performance Concerns</p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 1 — PURPOSE</h2>
+    <p>
+      This Memorandum serves as formal notice that your performance as {{executive_title}} has fallen below the standards required by the Corporation.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 2 — PERFORMANCE FAILURES</h2>
+    <p>The following deficiencies have been observed:</p>
+    <ul>
+      {{failure_list}}
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 3 — REQUIRED ACTIONS</h2>
+    <p>The following corrective actions must occur immediately:</p>
+    <ul>
+      {{corrective_actions}}
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>SECTION 4 — EXPECTATION</h2>
+    <p>
+      Failure to correct these issues may escalate to an Executive Corrective Action Plan (ECAP) or Board-level review.
+    </p>
+  </div>
+
+  <div class="signature-block">
+    <h3>SIGNATURES</h3>
+    
+    <div>
+      <div class="signature-line"></div>
+      <div class="signature-label">{{issuer_name}}</div>
+      <div class="signature-label">{{issuer_title}}</div>
+      <div class="signature-label">{{date}}</div>
+    </div>
+
+    <div style="margin-top: 40px;">
+      <div class="signature-line"></div>
+      <div class="signature-label">{{executive_name}}</div>
+      <div class="signature-label">{{executive_title}}</div>
+      <div class="signature-label">Date: _______________</div>
+    </div>
+  </div>
+</body>
+</html>
+

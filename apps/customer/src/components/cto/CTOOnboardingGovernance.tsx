@@ -1,0 +1,158 @@
+import React, { useState, useEffect } from 'react';
+import { Stack, Title, Text, Alert, Loader, Center } from '@mantine/core';
+import { IconAlertCircle, IconCheck } from '@tabler/icons-react';
+import { supabase } from '@/integrations/supabase/client';
+import { DocumentList } from '@/lib/cto/components/DocumentList';
+import { DocumentViewer } from '@/lib/cto/components/DocumentViewer';
+
+interface Document {
+  key: string;
+  title: string;
+  category: string;
+  isAcknowledged: boolean;
+  acknowledgedAt?: string;
+}
+
+export const CTOOnboardingGovernance: React.FC = () => {
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [viewerOpened, setViewerOpened] = useState(false);
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    setLoading(true);
+    try {
+      const indexResponse = await fetch('/lib/cto/metadata/document_index.json');
+      const indexData = await indexResponse.json();
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setDocuments(indexData.documents.map((doc: any) => ({
+          key: doc.key,
+          title: doc.title,
+          category: doc.category,
+          isAcknowledged: false,
+        })));
+        setLoading(false);
+        return;
+      }
+
+      // Try to fetch acknowledgments, but handle if table doesn't exist
+      let ackMap = new Map();
+      try {
+        const { data: acknowledgments, error } = await supabase
+          .from('cto_acknowledgments')
+          .select('document_key, signed_at')
+          .eq('user_id', user.id);
+
+        if (error) {
+          // Table might not exist yet - ignore 404 errors
+          if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+            // Table doesn't exist, continue without acknowledgments
+            console.log('cto_acknowledgments table not found, continuing without acknowledgments');
+          } else {
+            throw error;
+          }
+        } else if (acknowledgments) {
+          ackMap = new Map(
+            acknowledgments.map((a: any) => [a.document_key, a.signed_at])
+          );
+        }
+      } catch (err: any) {
+        // Table might not exist yet - ignore error silently
+        if (err?.code !== 'PGRST116' && !err?.message?.includes('relation') && !err?.message?.includes('does not exist')) {
+          console.error('Error fetching acknowledgments:', err);
+        }
+      }
+
+      const docsWithStatus = indexData.documents.map((doc: any) => ({
+        key: doc.key,
+        title: doc.title,
+        category: doc.category,
+        isAcknowledged: ackMap.has(doc.key),
+        acknowledgedAt: ackMap.get(doc.key),
+      }));
+
+      setDocuments(docsWithStatus);
+    } catch (error) {
+      console.error('Error loading documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDocumentClick = (documentKey: string) => {
+    setSelectedDocument(documentKey);
+    setViewerOpened(true);
+  };
+
+  const handleViewerClose = () => {
+    setViewerOpened(false);
+    setSelectedDocument(null);
+    loadDocuments();
+  };
+
+  const acknowledgedCount = documents.filter(d => d.isAcknowledged).length;
+  const totalCount = documents.length;
+  const allAcknowledged = acknowledgedCount === totalCount && totalCount > 0;
+
+  if (loading) {
+    return (
+      <Center h={400}>
+        <Loader size="lg" />
+      </Center>
+    );
+  }
+
+  return (
+    <Stack gap="lg">
+      <div>
+        <Title order={2}>CTO Onboarding & Governance</Title>
+        <Text c="dimmed" size="sm">
+          Central hub for CTO role onboarding, governance, policies, workflows, and system access.
+        </Text>
+      </div>
+
+      {allAcknowledged ? (
+        <Alert
+          icon={<IconCheck size={16} />}
+          title="All Documents Acknowledged"
+          color="green"
+        >
+          You have successfully acknowledged all required CTO governance documents. You have full access to the CTO portal.
+        </Alert>
+      ) : (
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          title="Action Required"
+          color="orange"
+        >
+          You must acknowledge all CTO governance documents before gaining full access to operational tools and dashboards.
+          <br />
+          <strong>{acknowledgedCount} of {totalCount} documents acknowledged</strong>
+        </Alert>
+      )}
+
+      <DocumentList
+        documents={documents}
+        onDocumentClick={handleDocumentClick}
+      />
+
+      {selectedDocument && (
+        <DocumentViewer
+          documentKey={selectedDocument}
+          role="cto"
+          opened={viewerOpened}
+          onClose={handleViewerClose}
+        />
+      )}
+    </Stack>
+  );
+};
+
+export default CTOOnboardingGovernance;
+

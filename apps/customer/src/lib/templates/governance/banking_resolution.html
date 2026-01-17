@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Corporate Banking Resolution</title>
+<style>
+body { font-family:"Times New Roman", serif; line-height:1.4; }
+h1 { text-align:center; font-size:22px; text-transform:uppercase; margin-bottom:14px; }
+h2 { font-size:16px; text-transform:uppercase; margin-top:28px; }
+p { margin:10px 0; }
+.table { width:100%; border-collapse:collapse; margin-top:14px; }
+.table th, .table td { border:1px solid #000; padding:8px; vertical-align:top; }
+.signature-line { border-bottom:1px solid #000; height:24px; margin-top:24px; }
+.center { text-align:center; }
+.bold { font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<h1>CORPORATE BANKING RESOLUTION</h1>
+<p class="center"><strong>{{company_name}}</strong></p>
+<p class="center">A {{company_state}} Corporation</p>
+
+<p>
+The undersigned, <strong>{{director_name}}</strong>, being the sole member of the Board of Directors (the "Board") of 
+<strong>{{company_name}}</strong> (the "Corporation"), hereby adopts the following resolutions pursuant to Section 141(f) of the {{company_state}} General Corporation Law ("DGCL").
+</p>
+
+<hr/>
+
+<h2>WHEREAS</h2>
+
+<p>
+WHEREAS, the Corporation requires one or more banking relationships for the deposit, safekeeping, and disbursement of funds and for conducting the financial affairs of the Corporation;
+</p>
+
+<p>
+WHEREAS, the Board has the authority under DGCL §141(a) to manage the business and affairs of the Corporation, including authorization of banking powers;
+</p>
+
+<p>
+WHEREAS, the Board desires to designate certain officers of the Corporation as authorized signatories for all banking matters;
+</p>
+
+<hr/>
+
+<h2>NOW, THEREFORE, BE IT RESOLVED THAT:</h2>
+
+<h2>1. AUTHORIZATION TO OPEN BANK ACCOUNTS</h2>
+<p>
+RESOLVED: That the Chief Executive Officer ("CEO"), <strong>{{officer_name}}</strong>, is hereby authorized to open, maintain, modify, and close one or more bank accounts in the name of the Corporation with any financial institution, including but not limited to:
+</p>
+
+<ul>
+<li>Chase</li>
+<li>Wells Fargo</li>
+<li>Bank of America</li>
+<li>PNC</li>
+<li>Citibank</li>
+<li>Bluevine</li>
+<li>Relay</li>
+<li>Mercury</li>
+<li>or any other FDIC-insured institution</li>
+</ul>
+
+<h2>2. AUTHORIZED SIGNATORY OFFICERS</h2>
+
+<p>
+RESOLVED: That the following officer is designated as an authorized signatory with full authority over all accounts:
+</p>
+
+<table class="table">
+<tr><th>Officer Name</th><th>Titles</th><th>Email</th><th>Authority Level</th></tr>
+
+<tr>
+<td>{{officer_name}}</td>
+<td>
+Chief Executive Officer (CEO)<br/>
+Secretary<br/>
+Treasurer<br/>
+Chief Operating Officer (Acting)
+</td>
+<td>{{officer_email}}</td>
+<td><strong>Full banking authority</strong></td>
+</tr>
+</table>
+
+<h2>3. BANKING POWERS GRANTED</h2>
+<p>
+RESOLVED: That the above-named officer is authorized to exercise the following powers on behalf of the Corporation:
+</p>
+
+<ul>
+<li>Open, maintain, or close any bank account</li>
+<li>Endorse checks, drafts, and other instruments</li>
+<li>Deposit funds into any account of the Corporation</li>
+<li>Withdraw funds and issue checks or payments</li>
+<li>Initiate ACH transfers, wires, and electronic payments</li>
+<li>Obtain debit cards, corporate cards, and payment instruments</li>
+<li>Enter into banking agreements and merchant service arrangements</li>
+<li>Execute account resolutions, signature cards, and certifications</li>
+<li>Authorize online banking access and manage credentials</li>
+<li>Approve or revoke user access to corporate bank accounts</li>
+</ul>
+
+<h2>4. CERTIFICATION TO FINANCIAL INSTITUTIONS</h2>
+
+<p>
+RESOLVED: That any bank may rely on this Resolution until written notice of its amendment or revocation is delivered, and the bank shall not be held liable for actions taken in good faith reliance hereon.
+</p>
+
+<h2>5. RATIFICATION OF PRIOR ACTS</h2>
+<p>
+RESOLVED: That any actions taken by the CEO prior to this Resolution in establishing or maintaining banking relationships are hereby ratified and approved pursuant to DGCL §141(f).
+</p>
+
+<h2>EXECUTION</h2>
+<p>
+IN WITNESS WHEREOF, the undersigned Sole Director has executed this Corporate Banking Resolution as of {{resolution_date}}.
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Sole Director:</strong> {{director_name}}</p>
+<p><small>Email: {{director_email}} | Address: {{director_address}}</small></p>
+
+<!-- Signature Tag -->
+<span data-sig="DIRECTOR">{{SIGNATURE_DIRECTOR}}</span>
+
+<hr/>
+
+<h2>SECRETARY CERTIFICATION</h2>
+
+<p>
+I, <strong>{{officer_name}}</strong>, Secretary of the Corporation, hereby certify that the foregoing is a true, correct, and complete copy of the 
+Corporate Banking Resolution adopted by the Board of Directors, and that said Resolution has not been amended, modified, or rescinded and
+is in full force and effect.
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Secretary:</strong> {{officer_name}}</p>
+
+<!-- Signature Tag -->
+<span data-sig="SECRETARY">{{SIGNATURE_SECRETARY}}</span>
+
+</body>
+</html>
+

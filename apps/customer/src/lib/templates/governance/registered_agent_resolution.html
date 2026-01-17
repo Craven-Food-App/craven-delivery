@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Registered Agent & Registered Office Resolution</title>
+<style>
+body { font-family:"Times New Roman", serif; line-height:1.4; }
+h1 { text-align:center; text-transform:uppercase; font-size:22px; margin-bottom:12px; }
+h2 { font-size:16px; text-transform:uppercase; margin-top:28px; }
+.signature-line { border-bottom:1px solid #000; height:24px; margin-top:24px; }
+.bold { font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<h1>BOARD RESOLUTION<br/>REGISTERED AGENT & REGISTERED OFFICE</h1>
+<p style="text-align:center;"><strong>{{company_name}}</strong></p>
+<p style="text-align:center;">A {{company_state}} Corporation</p>
+
+<p>
+The undersigned, <strong>{{director_name}}</strong>, being the sole member of the Board of Directors (the "Board") of 
+<strong>{{company_name}}</strong> (the "Corporation"), hereby adopts the following resolutions pursuant to Section 141(f) of the {{company_state}} General Corporation Law ("DGCL") and DGCL §132.
+</p>
+
+<hr/>
+
+<h2>WHEREAS</h2>
+<p>
+WHEREAS, DGCL §132 requires every Delaware corporation to maintain a registered agent and registered office in the State of Delaware;
+</p>
+
+<p>
+WHEREAS, the Corporation desires to designate a registered agent and registered office for service of process and official communications;
+</p>
+
+<hr/>
+
+<h2>NOW, THEREFORE, BE IT RESOLVED:</h2>
+
+<h2>1. DESIGNATION OF REGISTERED AGENT</h2>
+<p>
+RESOLVED: That <strong>{{registered_agent_name}}</strong> is hereby designated as the registered agent of the Corporation for service of process and official communications, effective as of {{resolution_date}}.
+</p>
+
+<h2>2. DESIGNATION OF REGISTERED OFFICE</h2>
+<p>
+RESOLVED: That the registered office of the Corporation in the State of {{company_state}} is hereby designated as:
+</p>
+
+<p>
+<strong>{{registered_agent_address}}</strong>
+</p>
+
+<h2>3. AUTHORITY TO CHANGE REGISTERED AGENT</h2>
+<p>
+RESOLVED: That the Secretary of the Corporation is authorized to file any necessary documents with the {{state_filing_office}} to effectuate this designation and to change the registered agent or registered office in the future as may be necessary or desirable.
+</p>
+
+<h2>EXECUTION</h2>
+<p>
+IN WITNESS WHEREOF, the undersigned Sole Director has executed this Registered Agent Resolution as of {{resolution_date}}.
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Sole Director:</strong> {{director_name}}</p>
+<p><small>Email: {{director_email}} | Address: {{director_address}}</small></p>
+
+<!-- Signature Tag -->
+<span data-sig="DIRECTOR">{{SIGNATURE_DIRECTOR}}</span>
+
+</body>
+</html>
+

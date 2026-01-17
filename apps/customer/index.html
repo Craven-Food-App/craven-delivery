@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <link rel="icon" href="/craven-logo.png" type="image/png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/craven-logo.png">
+    <meta name="apple-mobile-web-app-title" content="Crave'n">
+    <meta name="application-name" content="Crave'n">
+    <meta name="theme-color" content="#FF6B35">
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Crave'N - Food Delivery</title>
+    <meta name="description" content="Order food delivery from your favorite local restaurants with Crave'N." />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.3.0/web.js"></script>
+    <script src="https://js.stripe.com/v3"></script>
+    
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+

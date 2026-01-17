@@ -3,12 +3,17 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.craven.delivery.customer',
   appName: "Crave'N Delivery",
-  webDir: '../../dist',
+  webDir: 'dist', // Points to local dist, not shared
   
   android: {
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: true
+  },
+
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true,
   },
 
   plugins: {

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Initial Action of Sole Director</title>
+<style>
+body { font-family:"Times New Roman", serif; line-height:1.35; }
+h1 { text-align:center; text-transform:uppercase; font-size:22px; margin-bottom:12px; }
+h2 { font-size:16px; text-transform:uppercase; margin-top:28px; }
+.table { width:100%; border-collapse:collapse; margin-top:12px; }
+.table th, .table td { border:1px solid #000; padding:8px; vertical-align:top; }
+.signature-line { border-bottom:1px solid #000; height:24px; margin-top:16px; }
+.bold { font-weight:bold; }
+</style>
+</head>
+<body>
+
+<h1>Initial Action of Sole Director<br/>of {{company_name}}</h1>
+<p style="text-align:center;">A {{company_state}} Corporation</p>
+
+<p>
+I, <strong>{{director_name}}</strong>, the sole member of the Board of Directors (the "Board") of 
+<strong>{{company_name}}</strong>, a {{company_state}} corporation (the "Corporation"), hereby adopt the following resolutions by 
+written consent pursuant to Section 141(f) of the {{company_state}} General Corporation Law ("DGCL"), in lieu of an organizational meeting.
+</p>
+
+<hr/>
+
+<h2>WHEREAS</h2>
+<p>The Certificate of Incorporation of the Corporation has been filed with the {{state_filing_office}}, and the Corporation is duly formed under DGCL §106–107;</p>
+<p>WHEREAS, the sole incorporator has executed a Pre-Incorporation Written Consent pursuant to DGCL §108 appointing the undersigned as the initial director;</p>
+<p>WHEREAS, it is necessary and appropriate for the Board to complete the organization of the Corporation, elect officers, authorize the issuance of shares, and adopt certain corporate actions in accordance with DGCL §§141, 142, and 152–154;</p>
+
+<hr/>
+
+<h2>1. ADOPTION OF BYLAWS</h2>
+<p>
+RESOLVED: That the Bylaws presented to the Board and attached hereto as <em>Exhibit A</em> are hereby adopted as the Bylaws of the Corporation pursuant to DGCL §109, and the Secretary of the Corporation is directed to insert the same in the Corporation's minute book.
+</p>
+
+<h2>2. ELECTION OF OFFICERS (DGCL §142)</h2>
+<p>
+RESOLVED: That the following individual is hereby elected to the officer positions set forth below, to serve at the pleasure of the Board and until a successor is duly elected or appointed:
+</p>
+
+<table class="table">
+<tr><th>Officer Name</th><th>Officer Titles</th><th>Email</th></tr>
+<tr>
+<td>{{officer_name}}</td>
+<td>
+Chief Executive Officer (CEO)<br/>
+Secretary<br/>
+Treasurer<br/>
+Chief Operating Officer (Acting)
+</td>
+<td>{{officer_email}}</td>
+</tr>
+</table>
+
+<p>
+RESOLVED FURTHER: That the officers shall have the authority and duties prescribed by the Bylaws and DGCL §142.
+</p>
+
+<h2>3. AUTHORIZATION OF CAPITALIZATION & ISSUANCE OF SHARES (DGCL §§152–154)</h2>
+<p>
+RESOLVED: That the Corporation is authorized to issue Ten Million (10,000,000) shares of Common Stock, par value $0.0001 per share, as set forth in the Certificate of Incorporation.
+</p>
+
+<p>
+RESOLVED FURTHER: That the following issuances are hereby authorized as full and final founding issuances:
+</p>
+
+<table class="table">
+<tr><th>Shareholder</th><th>Shares Issued</th><th>Ownership %</th><th>Consideration</th><th>Notes</th></tr>
+<tr>
+<td>Invero Business Trust (Irrevocable Trust)</td>
+<td>6,000,000</td>
+<td>60%</td>
+<td>Full founder consideration</td>
+<td>Majority shareholder</td>
+</tr>
+<tr>
+<td>{{founder_name}}</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>Founder labor, IP, and services</td>
+<td>Founder and initial director</td>
+</tr>
+<tr>
+<td>Unissued (Equity Pool)</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>N/A</td>
+<td>Reserved for future grants</td>
+</tr>
+</table>
+
+<p>
+RESOLVED FURTHER: That the Board hereby determines that the consideration received for such shares is adequate, that such issuances comply with DGCL §152, and that the shares shall be deemed fully paid and nonassessable pursuant to DGCL §153.
+</p>
+
+<h2>4. BANKING AUTHORITY</h2>
+<p>
+RESOLVED: That the officers of the Corporation are authorized to open and maintain bank accounts in the name of the Corporation, and to execute agreements with financial institutions on behalf of the Corporation.
+</p>
+
+<h2>5. ORGANIZATIONAL ACTIONS</h2>
+<p>
+RESOLVED: That the officers of the Corporation are authorized and directed to undertake all actions necessary to complete the organization of the Corporation, including but not limited to:
+</p>
+<ul>
+<li>Obtaining an Employer Identification Number ("EIN") from the IRS;</li>
+<li>Preparing and issuing stock certificates and maintaining the stock ledger;</li>
+<li>Executing any agreements necessary for the operation of the Corporation;</li>
+<li>Maintaining the corporate minute book and records in accordance with DGCL §224.</li>
+</ul>
+
+<h2>6. RATIFICATION OF PRIOR ACTIONS</h2>
+<p>
+RESOLVED: That any actions taken prior to this consent by the incorporator or the director relating to the formation or organization of the Corporation are hereby ratified, approved, and adopted as corporate acts.
+</p>
+
+<h2>EXECUTION</h2>
+<p>IN WITNESS WHEREOF, the undersigned Sole Director has executed this Initial Action as of {{director_consent_date}}.</p>
+
+<div class="signature-line"></div>
+<p><strong>Sole Director:</strong> {{director_name}}</p>
+<p><small>Email: {{director_email}} | Address: {{director_address}}</small></p>
+
+<!-- Signature Tag -->
+<span data-sig="DIRECTOR">{{SIGNATURE_DIRECTOR}}</span>
+
+</body>
+</html>
+

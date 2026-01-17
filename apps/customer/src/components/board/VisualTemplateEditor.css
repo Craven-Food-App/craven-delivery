@@ -1,0 +1,43 @@
+/* Custom styles for Visual Template Editor */
+
+.ql-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+}
+
+.ql-editor {
+  min-height: 400px;
+}
+
+.ql-toolbar {
+  border-top: 1px solid #d9d9d9;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+  background: #fafafa;
+}
+
+.ql-container {
+  border-bottom: 1px solid #d9d9d9;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+  border-top: none;
+}
+
+/* Highlight placeholders in the editor */
+.ql-editor [data-placeholder] {
+  color: #1890ff;
+  font-weight: 500;
+  background: #e6f7ff;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* Style for placeholder dropdown menu */
+.ant-dropdown-menu {
+  max-height: 500px;
+}
+
+.ant-dropdown-menu-submenu-title {
+  font-weight: 500;
+}
+

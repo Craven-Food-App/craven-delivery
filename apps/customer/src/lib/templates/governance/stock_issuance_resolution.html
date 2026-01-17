@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Stock Issuance Resolution</title>
+<style>
+body { font-family:"Times New Roman", serif; line-height:1.4; }
+h1 { text-align:center; text-transform:uppercase; font-size:22px; margin-bottom:12px; }
+h2 { font-size:16px; text-transform:uppercase; margin-top:28px; }
+.table { width:100%; border-collapse:collapse; margin-top:12px; }
+.table th, .table td { border:1px solid #000; padding:8px; vertical-align:top; }
+.signature-line { border-bottom:1px solid #000; height:24px; margin-top:24px; }
+</style>
+</head>
+
+<body>
+
+<h1>BOARD RESOLUTION<br/>AUTHORIZING ISSUANCE OF SHARES</h1>
+<p style="text-align:center;"><strong>{{company_name}}</strong></p>
+<p style="text-align:center;">A {{company_state}} Corporation</p>
+
+<p>
+The undersigned, <strong>{{director_name}}</strong>, being the sole member of the Board of Directors (the "Board") of 
+<strong>{{company_name}}</strong>, a {{company_state}} corporation (the "Corporation"), hereby adopts the following resolutions pursuant to 
+Section 141(f) of the {{company_state}} General Corporation Law ("DGCL") in lieu of a meeting:
+</p>
+
+<hr/>
+
+<h2>WHEREAS</h2>
+
+<p>WHEREAS, the Certificate of Incorporation of the Corporation authorizes the issuance of Ten Million (10,000,000) shares of Common Stock with a par value of $0.0001 per share pursuant to DGCL §102(a)(4);</p>
+
+<p>WHEREAS, the Board is authorized under DGCL §152 to determine the consideration for which the Corporation's shares shall be issued and to determine that such consideration is adequate, thereby rendering the shares fully paid and nonassessable pursuant to DGCL §153;</p>
+
+<p>WHEREAS, the Corporation desires to issue founding shares to its majority shareholder, <strong>Invero Business Trust (Irrevocable Trust)</strong>, and to its founder, <strong>{{founder_name}}</strong>, and to create an unissued equity pool for future grants;</p>
+
+<hr/>
+
+<h2>NOW, THEREFORE, BE IT RESOLVED:</h2>
+
+<h2>1. AUTHORIZATION OF ISSUANCE OF FOUNDING SHARES</h2>
+
+<p>
+RESOLVED: That the Corporation hereby authorizes the issuance of the following shares of Common Stock, par value $0.0001 per share, as the initial founding issuances:
+</p>
+
+<table class="table">
+<tr><th>Shareholder</th><th>Shares Issued</th><th>Ownership %</th><th>Consideration</th><th>Notes</th></tr>
+
+<tr>
+<td>Invero Business Trust (Irrevocable Trust)</td>
+<td>6,000,000</td>
+<td>60%</td>
+<td>Full and valid founder consideration, including capital contribution, governance oversight, and trust-structured ownership</td>
+<td>Majority shareholder</td>
+</tr>
+
+<tr>
+<td>{{founder_name}}</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>Founder intellectual property, development labor, pre-incorporation services, and post-incorporation leadership</td>
+<td>Founder / Officer / Director</td>
+</tr>
+
+<tr>
+<td>Unissued (Equity Incentive Pool)</td>
+<td>2,000,000</td>
+<td>20%</td>
+<td>N/A</td>
+<td>Reserved for future officers, employees, contractors, or advisors</td>
+</tr>
+
+</table>
+
+<p>
+RESOLVED FURTHER: That the Board hereby determines that the consideration received for the issuance of the foregoing shares is adequate and sufficient pursuant to DGCL §152, and therefore all issued shares shall be deemed fully paid and nonassessable under DGCL §153.
+</p>
+
+<h2>2. AUTHORIZATION TO ISSUE STOCK CERTIFICATES & LEDGER ENTRIES</h2>
+
+<p>
+RESOLVED: That the Secretary of the Corporation is authorized and directed to:
+</p>
+
+<ul>
+<li>issue stock certificates or electronic book-entry statements to the shareholders listed above;</li>
+<li>record such issuances in the Corporation's official stock ledger pursuant to DGCL §224;</li>
+<li>maintain all stock records in a secure, permanent, and non-erasable format;</li>
+<li>and ensure that each certificate or ledger entry reflects the correct number of shares, dates, and issuance authority.</li>
+</ul>
+
+<h2>3. SHAREHOLDER RIGHTS & RESTRICTIONS</h2>
+
+<p>
+RESOLVED: That all shares issued shall be subject to any transfer restrictions, lock-ups, shareholder agreements, or repurchase rights that may be adopted by the Corporation in accordance with DGCL §202.
+</p>
+
+<h2>4. EQUITY INCENTIVE POOL</h2>
+
+<p>
+RESOLVED: That Two Million (2,000,000) shares of Common Stock are hereby reserved as an Equity Incentive Pool, to be issued only upon future Board approval, and such shares shall remain unissued until such time as the Board authorizes their distribution.
+</p>
+
+<h2>5. RATIFICATION OF PRIOR ACTIONS</h2>
+
+<p>
+RESOLVED: That any and all actions taken prior to this Resolution by the Incorporator, Director, or Officers relating to the share structure or capitalization of the Corporation are hereby approved, ratified, and confirmed pursuant to DGCL §204.
+</p>
+
+<h2>EXECUTION</h2>
+<p>
+IN WITNESS WHEREOF, the undersigned Sole Director has executed this Stock Issuance Resolution as of {{resolution_date}}.
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Sole Director:</strong> {{director_name}}</p>
+<p><small>Email: {{director_email}} | Address: {{director_address}}</small></p>
+
+<!-- Signature Tag -->
+<span data-sig="DIRECTOR">{{SIGNATURE_DIRECTOR}}</span>
+
+<hr/>
+
+<h2>SECRETARY CERTIFICATION</h2>
+
+<p>
+I, <strong>{{officer_name}}</strong>, Secretary of the Corporation, hereby certify that the foregoing is a true, complete, and correct Stock Issuance Resolution of the Board of Directors of {{company_name}}, duly adopted pursuant to DGCL §141(f).
+</p>
+
+<div class="signature-line"></div>
+<p><strong>Secretary:</strong> {{officer_name}}</p>
+
+<!-- Signature Tag -->
+<span data-sig="SECRETARY">{{SIGNATURE_SECRETARY}}</span>
+
+</body>
+</html>
+

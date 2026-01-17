@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "documents": [
+    {
+      "key": "cto_charter_craven_v1_f500tech",
+      "title": "CTO Charter",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_governance_framework_v1",
+      "title": "CTO Governance Framework",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_decision_matrix_raci_v1",
+      "title": "CTO Decision Rights Matrix",
+      "category": "Governance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_responsibilities_operating_manual_v1",
+      "title": "CTO Responsibilities Operating Manual",
+      "category": "Operations",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_handbook_craven_f500tech_v1",
+      "title": "CTO Executive Handbook",
+      "category": "Handbook",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_reporting_cadence_v1",
+      "title": "CTO Reporting Cadence",
+      "category": "Cadence",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_compliance_schedule_v1",
+      "title": "CTO Compliance & Regulatory Schedule",
+      "category": "Compliance",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_system_access_governance_v1",
+      "title": "CTO System Access & Data Ownership Map",
+      "category": "Systems",
+      "format": ["html", "markdown", "pdf_text"]
+    },
+    {
+      "key": "cto_acknowledgment_master_v1",
+      "title": "CTO Master Acknowledgment",
+      "category": "Signatures",
+      "format": ["html", "markdown", "pdf_text"]
+    }
+  ]
+}
+

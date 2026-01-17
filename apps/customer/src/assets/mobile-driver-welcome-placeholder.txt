@@ -1,0 +1,10 @@
+PLACEHOLDER FOR MOBILE DRIVER WELCOME IMAGE
+
+Please replace this file with your actual CRAVE'N delivery rider image:
+
+1. Save your CRAVE'N delivery rider image as: mobile-driver-welcome.png
+2. Place it in the src/assets/ folder
+3. The image should show the CRAVE'N delivery person on an orange scooter
+4. Recommended dimensions: 1080x1920 (9:16 aspect ratio for mobile)
+
+The current placeholder will show a fallback gradient background with a scooter emoji until you add your actual image.
