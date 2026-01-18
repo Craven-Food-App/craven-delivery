@@ -258,6 +258,14 @@ const Restaurants = () => {
   const [checkingAuth, setCheckingAuth] = useState(true); // Add loading state for auth check
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   
+  // Login form states
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  
   // New state for enhanced functionality
   const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>('delivery');
   const [showAddressSelector, setShowAddressSelector] = useState(false);
@@ -328,6 +336,130 @@ const Restaurants = () => {
 
   const handleSearch = () => {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Handle login submission - phone or email
+  const handleAddressSubmit = async () => {
+    if (!email.trim()) {
+      notifications.show({
+        title: 'Email Required',
+        message: 'Please enter your email to continue.',
+        color: 'orange',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!password.trim()) {
+      notifications.show({
+        title: 'Password Required',
+        message: 'Please enter your password to continue.',
+        color: 'orange',
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (isSignUp) {
+      if (!fullName.trim()) {
+        notifications.show({
+          title: 'Name Required',
+          message: 'Please enter your full name to continue.',
+          color: 'orange',
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        notifications.show({
+          title: 'Passwords Do Not Match',
+          message: 'Please make sure your passwords match.',
+          color: 'red',
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      if (password.length < 6) {
+        notifications.show({
+          title: 'Password Too Short',
+          message: 'Password must be at least 6 characters.',
+          color: 'red',
+          autoClose: 3000,
+        });
+        return;
+      }
+    }
+
+    setAuthLoading(true);
+
+    try {
+      if (isSignUp) {
+        // Sign up
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/restaurants`,
+            data: {
+              full_name: fullName.trim(),
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          notifications.show({
+            title: 'Account Created!',
+            message: 'Please check your email to verify your account.',
+            color: 'green',
+            autoClose: 5000,
+          });
+          
+          // Reset form
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setFullName('');
+          setIsSignUp(false);
+        }
+      } else {
+        // Sign in
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password,
+        });
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials.');
+          }
+          throw error;
+        }
+
+        if (data.user) {
+          notifications.show({
+            title: 'Welcome back!',
+            message: 'Signing you in...',
+            color: 'green',
+            autoClose: 2000,
+          });
+          
+          // Auth state change will handle navigation
+        }
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: isSignUp ? 'Sign Up Failed' : 'Sign In Failed',
+        message: error.message || `An error occurred during ${isSignUp ? 'sign up' : 'sign in'}`,
+        color: 'red',
+        autoClose: 5000,
+      });
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   // Address selector functionality
@@ -814,6 +946,12 @@ const Restaurants = () => {
       } else if (event === 'SIGNED_IN' && session?.user && isMobile) {
         // User logged in - show main view
         setShowMain(true);
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setFullName('');
+        setIsSignUp(false);
       }
     });
 
@@ -834,87 +972,208 @@ const Restaurants = () => {
   // Mobile App Landing Page (only show if user is NOT logged in)
   if (isMobile && !showMain && !checkingAuth) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        {/* Hero Section - Light, Premium */}
-        <Box style={{ padding: '24px', paddingTop: '64px', paddingBottom: '48px', position: 'relative', overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Hero Image - Promotional Banner */}
-          <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
-            <MantineImage 
-              src={heroImageUrl || heroPromoImage} 
-              alt="Crave'n Delivery Hero" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            {/* Overlay for better text readability */}
-            <Box style={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.4) 100%)',
-              zIndex: 1
-            }} />
-          </Box>
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        {/* Hero Image - Full Background */}
+        <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}>
+          <MantineImage 
+            src={heroImageUrl || heroPromoImage} 
+            alt="Crave'n Delivery Hero" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          {/* Overlay for better text readability */}
+          <Box style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.4) 100%)',
+            zIndex: 1
+          }} />
+        </Box>
 
+        {/* Content Container - On Background */}
+        <Box style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', paddingTop: '64px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
           {/* Logo and Tagline */}
-          <Box style={{ position: 'relative', zIndex: 10 }}>
-            <Title order={1} style={{ fontSize: '72px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
-            <Text size="xl" fw={300} c="white" style={{ maxWidth: '320px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+          <Box style={{ marginBottom: '32px' }}>
+            <Title order={1} style={{ fontSize: '80px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
+            <Text size="sm" fw={300} c="white" style={{ fontSize: '18px', whiteSpace: 'nowrap', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
               Your premium choice for food delivery.
             </Text>
           </Box>
 
-          {/* Action Area */}
-          <Box style={{ position: 'relative', zIndex: 10, paddingTop: '64px' }}>
-            <Text size="sm" c="white" mb="md" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>Enter your corporate or residential address to begin.</Text>
-            <Box style={{ position: 'relative', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(127, 29, 29, 0.25)', border: '1px solid #fee2e2' }}>
-              <IconMapPin size={20} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#b91c1c' }} />
-              <TextInput
-                value={location}
-                onChange={(e) => setLocation(e.currentTarget.value)}
-                placeholder="Enter delivery address"
-                style={{ paddingLeft: '48px', paddingRight: '64px' }}
-                styles={{ input: { border: '2px solid transparent', fontSize: '16px', fontWeight: 500, padding: '16px', borderRadius: '12px' } }}
-              />
-              <ActionIcon
-                onClick={() => setShowMain(true)}
-                color="red"
-                variant="filled"
-                size="lg"
-                radius="md"
-                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', backgroundColor: '#b91c1c', boxShadow: '0 10px 15px -3px rgba(185, 28, 28, 0.5)' }}
-              >
-                <IconChevronRight size={20} />
-              </ActionIcon>
-            </Box>
+          {/* Login Form Area - DoorDash Style - On Background Image */}
+          <Box style={{ flex: 1, marginTop: 'auto', paddingTop: '200px' }}>
+            {/* Welcome Back Title */}
+            <Title order={2} style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px', color: '#ffffff', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              {isSignUp ? 'Create account' : 'Welcome back'}
+            </Title>
+            <Text size="sm" mb="md" style={{ fontSize: '13px', color: '#ffffff', textShadow: '0 1px 3px rgba(0,0,0,0.3)', marginBottom: '16px' }}>
+              {isSignUp ? 'Sign up to get started' : 'Looks like you last logged in with email'}
+            </Text>
 
-            <Group justify="space-between" mt="lg">
-              <Button
-                onClick={() => navigate('/auth?redirect=/restaurants')}
-                variant="subtle"
-                leftSection={<IconUser size={16} />}
-                style={{ color: '#737373', fontWeight: 500 }}
+            {/* Email Input */}
+            <TextInput
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
+              placeholder="Email"
+              type="email"
+              mb="sm"
+              disabled={authLoading}
+              styles={{
+                input: {
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  height: '48px',
+                  backgroundColor: 'white'
+                }
+              }}
+            />
+
+            {/* Full Name Input (Sign Up Only) */}
+            {isSignUp && (
+              <TextInput
+                value={fullName}
+                onChange={(e) => setFullName(e.currentTarget.value)}
+                placeholder="Full name"
+                mb="sm"
+                disabled={authLoading}
+                styles={{
+                  input: {
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    height: '48px',
+                    backgroundColor: 'white'
+                  }
+                }}
+              />
+            )}
+
+            {/* Password Input */}
+            <TextInput
+              value={password}
+              onChange={(e) => setPassword(e.currentTarget.value)}
+              placeholder="Password"
+              type="password"
+              mb="sm"
+              disabled={authLoading}
+              styles={{
+                input: {
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  height: '48px',
+                  backgroundColor: 'white'
+                }
+              }}
+            />
+
+            {/* Confirm Password Input (Sign Up Only) */}
+            {isSignUp && (
+              <TextInput
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                placeholder="Confirm password"
+                type="password"
+                mb="sm"
+                disabled={authLoading}
+                styles={{
+                  input: {
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    height: '48px',
+                    backgroundColor: 'white'
+                  }
+                }}
+              />
+            )}
+
+            {/* Continue Button */}
+            <Button
+              onClick={handleAddressSubmit}
+              fullWidth
+              size="lg"
+              loading={authLoading}
+              disabled={authLoading}
+              style={{
+                background: 'linear-gradient(to right, #ff6b35, #b91c1c)',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '15px',
+                height: '48px',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                border: 'none'
+              }}
+            >
+              {isSignUp ? 'Sign up' : 'Continue'}
+            </Button>
+
+            {/* Toggle Sign In / Sign Up */}
+            <Text
+              size="sm"
+              style={{ 
+                cursor: 'pointer',
+                textAlign: 'center',
+                display: 'block',
+                marginBottom: '16px',
+                fontSize: '13px',
+                color: '#3b82f6',
+                textDecoration: 'underline'
+              }}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setPassword('');
+                setConfirmPassword('');
+                setFullName('');
+              }}
+            >
+              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </Text>
+
+            {/* Terms and Privacy Policy */}
+            <Text
+              size="xs"
+              style={{
+                fontSize: '10px',
+                lineHeight: '1.4',
+                textAlign: 'center',
+                color: '#ffffff',
+                textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                marginBottom: 'env(safe-area-inset-bottom, 0px)'
+              }}
+            >
+              By {isSignUp ? 'creating an account' : 'signing in'}, you agree to Crave'N's{' '}
+              <Text
+                component="a"
+                href="/terms"
+                style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
               >
-                Sign In / Sign Up
-              </Button>
-              <Button
-                onClick={() => setShowMain(true)}
-                variant="subtle"
-                leftSection={<IconNavigation size={16} />}
-                style={{ color: '#b91c1c', fontWeight: 500 }}
+                Terms
+              </Text>
+              , including a waiver of your jury trial right, and{' '}
+              <Text
+                component="a"
+                href="/privacy"
+                style={{ color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer' }}
               >
-                Use My Location
-              </Button>
-            </Group>
+                Privacy Policy
+              </Text>
+              .
+            </Text>
           </Box>
         </Box>
-
-        {/* Footer Links */}
-        <Group justify="center" p="md" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(4px)', borderTop: '1px solid #e5e7eb' }}>
-          <Text size="xs" c="gray.6" component="a" href="#" style={{ textDecoration: 'none', cursor: 'pointer' }}>Deliver</Text>
-          <Text size="xs" c="gray.6" component="a" href="#" style={{ textDecoration: 'none', cursor: 'pointer' }}>Partner</Text>
-          <Text size="xs" c="gray.6" component="a" href="#" style={{ textDecoration: 'none', cursor: 'pointer' }}>Help</Text>
-        </Group>
       </Box>
     );
   }
