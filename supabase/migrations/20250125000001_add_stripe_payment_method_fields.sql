@@ -123,3 +123,12 @@ COMMENT ON COLUMN public.orders.payment_intent_id IS 'Stripe payment intent ID (
 COMMENT ON COLUMN public.orders.payment_status IS 'Payment status: succeeded, pending, failed, etc.';
 COMMENT ON COLUMN public.orders.payment_provider IS 'Payment provider: stripe, moov, etc.';
 
+
+
+
+
+
+
+
+
+

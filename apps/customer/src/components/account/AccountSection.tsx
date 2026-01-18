@@ -719,140 +719,126 @@ export const AccountSection = () => {
           </div>
         </div>
 
-        {/* Account Menu */}
-        <div className="px-4 space-y-1">
+        {/* Account Menu - Full Width Edge-to-Edge */}
+        <div className="bg-white">
           {/* Profile Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={openProfileEdit}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Account Details</p>
-                  <p className="text-sm text-gray-600">Edit your personal information</p>
-                </div>
+          <button 
+            onClick={openProfileEdit}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Account Details</p>
+                <p className="text-sm text-gray-600">Edit your personal information</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Payment Methods */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={openPaymentMethods}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Payment Methods</p>
-                  <p className="text-sm text-gray-600">{paymentMethods.length > 0 ? `${paymentMethods.length} saved` : 'Add payment method'}</p>
-                </div>
+          <button 
+            onClick={openPaymentMethods}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-white" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Payment Methods</p>
+                <p className="text-sm text-gray-600">{paymentMethods.length > 0 ? `${paymentMethods.length} saved` : 'Add payment method'}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Delivery Addresses */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={openDeliveryAddresses}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Delivery Addresses</p>
-                  <p className="text-sm text-gray-600">{addresses.length > 0 ? `${addresses.length} saved` : 'Add delivery address'}</p>
-                </div>
+          <button 
+            onClick={openDeliveryAddresses}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-white" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Delivery Addresses</p>
+                <p className="text-sm text-gray-600">{addresses.length > 0 ? `${addresses.length} saved` : 'Add delivery address'}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Order History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={() => navigate('/customer-dashboard?tab=orders')}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Package className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Order History</p>
-                  <p className="text-sm text-gray-600">{orderHistory.length > 0 ? `${orderHistory.length} orders` : 'No orders yet'}</p>
-                </div>
+          <button 
+            onClick={() => navigate('/order-history')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Package className="w-5 h-5 text-purple-600" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Order History</p>
+                <p className="text-sm text-gray-600">{orderHistory.length > 0 ? `${orderHistory.length} orders` : 'No orders yet'}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Notifications */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={() => toast({ title: "Notifications", description: "Notification preferences feature coming soon!" })}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Notifications</p>
-                  <p className="text-sm text-gray-600">Manage your preferences</p>
-                </div>
+          <button 
+            onClick={() => navigate('/notifications')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Bell className="w-5 h-5 text-yellow-600" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Notifications</p>
+                <p className="text-sm text-gray-600">Manage your preferences</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Help & Support */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={() => toast({ title: "Help & Support", description: "Customer support feature coming soon!" })}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Help & Support</p>
-                  <p className="text-sm text-gray-600">Get help with your orders</p>
-                </div>
+          <button 
+            onClick={() => toast({ title: "Help & Support", description: "Customer support feature coming soon!" })}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <MessageCircle className="w-5 h-5 text-indigo-600" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Help & Support</p>
+                <p className="text-sm text-gray-600">Get help with your orders</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
 
           {/* Sign Out */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <button 
-              onClick={handleSignOut}
-              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-red-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-red-600">Sign Out</p>
-                  <p className="text-sm text-gray-600">Sign out of your account</p>
-                </div>
+          <button 
+            onClick={handleSignOut}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-red-600" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
+              <div className="text-left">
+                <p className="font-semibold text-red-600">Sign Out</p>
+                <p className="text-sm text-gray-600">Sign out of your account</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
 
         {/* Bottom Spacing */}
@@ -961,7 +947,7 @@ export const AccountSection = () => {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => navigate('/customer-dashboard?tab=orders')}
+                onClick={() => navigate('/order-history')}
               >
                 View Orders
               </Button>

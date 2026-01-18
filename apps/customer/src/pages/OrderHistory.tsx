@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import Header from '@/components/Header';
 import {
   Box,
   Card,
@@ -15,6 +16,7 @@ import {
   Progress,
   Avatar,
   Divider,
+  ActionIcon,
 } from '@mantine/core';
 import {
   IconClock,
@@ -26,8 +28,14 @@ import {
   IconMessageCircle,
   IconPackage,
   IconStar,
+  IconHome,
+  IconShoppingCart,
+  IconSearch,
+  IconUser,
+  IconShoppingBag,
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCart } from '@/contexts/CartContext';
 
 interface OrderItem {
   id: string;
@@ -106,26 +114,40 @@ export default function OrderHistory() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { cartCount } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchActiveOrders();
     
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('active-orders')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          fetchActiveOrders();
-        }
-      )
-      .subscribe();
+    // Set up real-time subscription for order updates
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    return () => {
-      channel.unsubscribe();
+      const channel = supabase
+        .channel('order-history-updates')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `customer_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Order update received:', payload);
+            fetchActiveOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
     };
+
+    setupSubscription();
   }, []);
 
   const fetchActiveOrders = async () => {
@@ -136,6 +158,8 @@ export default function OrderHistory() {
         return;
       }
 
+      // Fetch all orders (active and past) for order history
+      // Use orders table which has customer_id
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -149,14 +173,18 @@ export default function OrderHistory() {
             id,
             quantity,
             price_cents,
+            special_instructions,
             menu_items (
-              name
+              id,
+              name,
+              description,
+              image_url
             )
           )
         `)
         .eq('customer_id', user.id)
-        .in('order_status', ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'delivering'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error('Error fetching orders:', error);
@@ -170,71 +198,39 @@ export default function OrderHistory() {
         return;
       }
 
-      // Transform order items to ensure name is properly set
-      const transformedData = (data || []).map((order: any) => ({
-        ...order,
-        order_items: (order.order_items || []).map((item: any) => ({
-          ...item,
-          name: item.menu_items?.name || item.name || 'Unknown Item',
-          price: item.price_cents || item.price || 0,
-        })),
-      }));
-
-      // Fetch driver info for orders that are being delivered
-      const ordersWithDrivers = await Promise.all(
-        transformedData.map(async (order: any) => {
-          if (['picked_up', 'out_for_delivery', 'delivering'].includes(order.order_status)) {
-            try {
-              // First get the assignment
-              const { data: assignment } = await supabase
-                .from('order_assignments')
-                .select('driver_id')
-                .eq('order_id', order.id)
-                .eq('status', 'accepted')
-                .single();
-
-              if (assignment?.driver_id) {
-                // Try to get driver profile and user profile for name
-                const [driverProfileResult, userProfileResult] = await Promise.all([
-                  supabase
-                    .from('driver_profiles')
-                    .select('user_id, rating')
-                    .eq('user_id', assignment.driver_id)
-                    .single()
-                    .then(res => res, () => ({ data: null, error: null })),
-                  supabase
-                    .from('user_profiles')
-                    .select('user_id, full_name')
-                    .eq('user_id', assignment.driver_id)
-                    .single()
-                    .then(res => res, () => ({ data: null, error: null })),
-                ]);
-
-                const driverProfile = driverProfileResult.data;
-                const userProfile = userProfileResult.data;
-                
-                if (driverProfile) {
-                  return {
-                    ...order,
-                    driver: {
-                      id: driverProfile.user_id,
-                      name: userProfile?.full_name || `Driver ${assignment.driver_id.substring(0, 8).toUpperCase()}`,
-                      rating: Number(driverProfile.rating) || 4.9,
-                      distance: 2.3,
-                    },
-                  };
-                }
-              }
-            } catch (error) {
-              // If driver lookup fails, just return order without driver info
-              console.warn('Error fetching driver info:', error);
-            }
+      // Transform orders
+      const transformedData = (data || []).map((order: any) => {
+        // Handle order_items - should be an array from the relationship
+        let orderItems: any[] = [];
+        
+        if (Array.isArray(order.order_items)) {
+          // Array from orders table relationship
+          orderItems = order.order_items;
+        } else if (order.order_items && typeof order.order_items === 'object') {
+          // JSONB field from customer_orders table (fallback)
+          try {
+            orderItems = Array.isArray(order.order_items) 
+              ? order.order_items 
+              : JSON.parse(JSON.stringify(order.order_items));
+          } catch (e) {
+            console.warn('Error parsing order_items:', e);
+            orderItems = [];
           }
-          return order;
-        })
-      );
+        }
 
-      setOrders(ordersWithDrivers as Order[]);
+        return {
+          ...order,
+          order_items: orderItems.map((item: any) => ({
+            ...item,
+            name: item.menu_items?.name || 'Unknown Item',
+            price: item.price_cents || 0,
+            quantity: item.quantity || 1,
+            special_instructions: item.special_instructions || null,
+          })),
+        };
+      });
+
+      setOrders(transformedData as Order[]);
     } catch (error: any) {
       console.error('Error fetching active orders:', error);
       toast({
@@ -309,16 +305,17 @@ export default function OrderHistory() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: '80px' }}>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? '120px' : '80px' }}>
+      <Header />
       <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: '24px' }}>
         <Stack gap="lg">
           {/* Header */}
           <Box>
             <Text fw={900} size="xl" mb="xs" c="#171717">
-              Active Orders
+              Order History
             </Text>
             <Text size="sm" c="#737373">
-              Track your cravings in real-time
+              Your recent orders
             </Text>
           </Box>
 
@@ -327,257 +324,121 @@ export default function OrderHistory() {
             <Card p="xl" style={{ textAlign: 'center' }}>
               <Text size="64px" mb="md" style={{ opacity: 0.3 }}>📦</Text>
               <Text fw={900} size="lg" mb="xs" c="#171717">
-                No Active Orders
+                No Orders Yet
               </Text>
               <Text size="sm" c="#737373" mb="lg">
-                You don't have any orders in progress right now
+                Start ordering to see your order history here
               </Text>
               <Button onClick={() => navigate('/restaurants')} color="#ff7a00" size="md">
                 Start Ordering
               </Button>
             </Card>
           ) : (
-            <Stack gap="md">
+            <Stack gap="sm">
               {orders.map((order) => {
                 const statusConfig = STATUS_CONFIG[order.order_status] || STATUS_CONFIG.pending;
                 const progress = getProgressPercentage(order.order_status);
                 const estimatedTime = getEstimatedTime(order.order_status);
+                const isActive = !['delivered', 'cancelled'].includes(order.order_status);
+                const itemCount = order.order_items?.length || 0;
+                const firstItem = order.order_items?.[0]?.name || 'Items';
 
                 return (
                   <Card
                     key={order.id}
-                    p="lg"
+                    p="md"
+                    onClick={() => handleTrackOrder(order.id)}
                     style={{
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                      position: 'relative',
-                      overflow: 'hidden',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      cursor: 'pointer',
+                      border: isActive ? '2px solid #ff5f1f' : '1px solid #e5e7eb',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                      e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    {/* Top Border */}
-                    <Box
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '4px',
-                        background: statusConfig.gradient,
-                      }}
-                    />
-
-                    <Stack gap="md">
-                      {/* Order Header */}
-                      <Group justify="space-between" align="flex-start">
-                        <Stack gap={4}>
-                          <Text size="xs" fw={600} c="#737373" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Order #{order.order_number || order.id.substring(0, 8).toUpperCase()}
-                          </Text>
-                          <Text fw={900} size="lg" c="#171717">
-                            {order.restaurant?.name}
-                          </Text>
-                        </Stack>
-                        <Badge
-                          size="lg"
-                          style={{
-                            background: statusConfig.gradient,
-                            color: 'white',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          {statusConfig.label}
-                        </Badge>
-                      </Group>
-
-                      {/* Progress Bar */}
-                      <Box>
-                        <Text size="xs" fw={600} c="#525252" mb="xs">
-                          Estimated {order.order_status === 'delivering' || order.order_status === 'out_for_delivery' ? 'Arrival' : 'Ready'}: {estimatedTime}
-                        </Text>
-                        <Progress
-                          value={progress}
-                          size="sm"
-                          radius="md"
-                          color="#ff7a00"
-                          style={{ height: '8px' }}
-                        />
-                      </Box>
-
-                      {/* Driver Section */}
-                      {order.driver && (order.order_status === 'delivering' || order.order_status === 'out_for_delivery' || order.order_status === 'picked_up') && (
-                        <Box
-                          p="md"
-                          style={{
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '12px',
-                            border: '2px solid #e5e7eb',
-                          }}
-                        >
-                          <Group mb="md">
-                            <Avatar
-                              size="md"
-                              radius="xl"
+                    <Stack gap="sm">
+                      {/* Compact Header */}
+                      <Group justify="space-between" align="flex-start" gap="xs">
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Group gap="xs" mb={4}>
+                            <Text size="xs" fw={600} c="#737373" style={{ textTransform: 'uppercase' }}>
+                              #{order.order_number || order.id.substring(0, 8).toUpperCase()}
+                            </Text>
+                            <Badge
+                              size="sm"
                               style={{
-                                background: 'linear-gradient(135deg, #ea580c, #dc2626)',
+                                background: statusConfig.gradient,
                                 color: 'white',
-                                fontWeight: 900,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                fontSize: '10px',
+                                padding: '2px 8px',
                               }}
                             >
-                              {order.driver.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                            </Avatar>
-                            <Stack gap={2} style={{ flex: 1 }}>
-                              <Text fw={700} size="md" c="#171717">
-                                {order.driver.name}
-                              </Text>
-                              <Group gap={4}>
-                                <IconStar size={12} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-                                <Text size="xs" c="#737373">
-                                  {order.driver.rating?.toFixed(1)} • {order.driver.distance?.toFixed(1)} mi away
-                                </Text>
-                              </Group>
-                            </Stack>
+                              {statusConfig.label}
+                            </Badge>
                           </Group>
-                          <Group gap="xs">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ flex: 1, borderColor: '#e5e5e5' }}
-                              onClick={() => handleCallDriver(order.driver!)}
-                              leftSection={<IconPhone size={16} />}
-                            >
-                              Call
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ flex: 1, borderColor: '#e5e5e5' }}
-                              onClick={() => handleMessageDriver(order.driver!)}
-                              leftSection={<IconMessageCircle size={16} />}
-                            >
-                              Message
-                            </Button>
-                          </Group>
-                        </Box>
-                      )}
-
-                      {/* Timeline */}
-                      <Box>
-                        <Stack gap="md">
-                          {TIMELINE_STEPS.map((step) => {
-                            const timelineStatus = getTimelineStatus(order.order_status, step.key);
-                            const StepIcon = step.icon;
-                            
-                            return (
-                              <Group key={step.key} gap="md" align="flex-start">
-                                <Box
-                                  style={{
-                                    width: '28px',
-                                    height: '28px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor:
-                                      timelineStatus === 'completed'
-                                        ? '#10b981'
-                                        : timelineStatus === 'active'
-                                        ? '#ea580c'
-                                        : '#f5f5f5',
-                                    color: timelineStatus === 'pending' ? '#a3a3a3' : 'white',
-                                    position: 'relative',
-                                    zIndex: 1,
-                                  }}
-                                >
-                                  {timelineStatus === 'completed' ? (
-                                    <IconCheck size={16} />
-                                  ) : (
-                                    <StepIcon size={16} />
-                                  )}
-                                </Box>
-                                <Stack gap={2} style={{ flex: 1, paddingTop: '2px' }}>
-                                  <Text
-                                    size="sm"
-                                    fw={700}
-                                    c={timelineStatus === 'pending' ? '#a3a3a3' : '#171717'}
-                                  >
-                                    {step.label}
-                                  </Text>
-                                  <Text size="xs" c="#737373">
-                                    {timelineStatus === 'active' ? 'In progress' : timelineStatus === 'completed' ? 'Completed' : 'Pending'}
-                                  </Text>
-                                </Stack>
-                              </Group>
-                            );
-                          })}
-                        </Stack>
-                      </Box>
-
-                      <Divider />
-
-                      {/* Items */}
-                      <Box>
-                        <Text size="xs" fw={700} c="#171717" mb="md" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Order Items ({order.order_items?.length || 0})
-                        </Text>
-                        <Stack gap="xs">
-                          {order.order_items?.map((item, idx) => (
-                            <Group key={idx} justify="space-between">
-                              <Text size="sm" c="#404040" fw={500}>
-                                {item.name || item.menu_items?.name || 'Unknown Item'}
-                              </Text>
-                              <Text size="sm" c="#737373" fw={600}>
-                                x{item.quantity}
-                              </Text>
-                            </Group>
-                          ))}
-                        </Stack>
-                      </Box>
-
-                      <Divider />
-
-                      {/* Footer */}
-                      <Group justify="space-between" align="center">
-                        <Group gap={4}>
-                          <IconClock size={14} style={{ color: '#737373' }} />
-                          <Text size="xs" c="#737373">
-                            Ordered {formatTimeAgo(order.created_at)}
+                          <Text fw={700} size="sm" c="#171717" style={{ lineHeight: 1.2 }}>
+                            {order.restaurant?.name}
                           </Text>
-                        </Group>
-                        <Text fw={900} size="lg" c="#171717">
+                          <Text size="xs" c="#737373" mt={2}>
+                            {firstItem} {itemCount > 1 ? `+${itemCount - 1} more` : ''}
+                          </Text>
+                        </Box>
+                        <Text fw={700} size="md" c="#171717">
                           ${((order.total_cents || order.total_amount || 0) / 100).toFixed(2)}
                         </Text>
                       </Group>
 
-                      {/* Action Buttons */}
-                      <Group gap="xs">
-                        {(order.order_status === 'delivering' || order.order_status === 'out_for_delivery') && (
+                      {/* Horizontal Progress Bar */}
+                      <Box>
+                        {isActive && (
+                          <Text size="xs" fw={500} c="#525252" mb={4}>
+                            Estimated {order.order_status === 'delivering' || order.order_status === 'out_for_delivery' ? 'Arrival' : 'Ready'}: {estimatedTime}
+                          </Text>
+                        )}
+                        <Progress
+                          value={progress}
+                          size="md"
+                          radius="xl"
+                          color="#ff5f1f"
+                          style={{ 
+                            height: isActive ? '10px' : '6px',
+                            backgroundColor: '#f3f4f6'
+                          }}
+                          animated={isActive}
+                        />
+                      </Box>
+
+                      {/* Footer */}
+                      <Group justify="space-between" align="center">
+                        <Group gap={4}>
+                          <IconClock size={12} style={{ color: '#9ca3af' }} />
+                          <Text size="xs" c="#9ca3af">
+                            {formatTimeAgo(order.created_at)}
+                          </Text>
+                        </Group>
+                        {isActive && (
                           <Button
-                            onClick={() => handleTrackOrder(order.id)}
-                            style={{ flex: 1 }}
-                            color="#ff7a00"
-                            leftSection={<IconMapPin size={16} />}
+                            size="xs"
+                            variant="subtle"
+                            color="orange"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTrackOrder(order.id);
+                            }}
                           >
-                            Track Live
+                            View Details
                           </Button>
                         )}
-                        {order.order_status === 'preparing' && (
-                          <Button
-                            onClick={() => handleCallRestaurant(order.restaurant)}
-                            variant="outline"
-                            style={{ flex: 1 }}
-                            leftSection={<IconPhone size={16} />}
-                          >
-                            Call Restaurant
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          style={{ flex: 1 }}
-                        >
-                          Help
-                        </Button>
                       </Group>
                     </Stack>
                   </Card>
@@ -587,6 +448,183 @@ export default function OrderHistory() {
           )}
         </Stack>
       </Box>
+
+      {/* Bottom Navigation Bar */}
+      <BottomNavigation currentPath="/order-history" />
+
+      {/* Cart Button - Only shows if cart has items */}
+      {cartCount > 0 && <BottomCartButton />}
+
+      {/* Android Navigation Bar White Space */}
+      <AndroidNavBarSpacer />
     </Box>
+  );
+}
+
+// Bottom Navigation Component
+function BottomNavigation({ currentPath }: { currentPath: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path: string) => {
+    if (path === '/account') {
+      // Highlight "Me" for account-related pages
+      return location.pathname === '/account' || 
+             location.pathname.startsWith('/customer-dashboard');
+    }
+    if (path === '/order-history') {
+      // Highlight "Orders" when on order history page
+      return location.pathname === '/order-history';
+    }
+    return location.pathname === path;
+  };
+
+  const navItems = [
+    { icon: IconHome, label: 'Home', path: '/restaurants' },
+    { icon: IconShoppingBag, label: 'Orders', path: '/order-history' },
+    { icon: IconSearch, label: 'Browse', path: '/restaurants' },
+    { icon: IconUser, label: 'Me', path: '/account' },
+  ];
+
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        bottom: 'env(safe-area-inset-bottom, 0px)',
+        left: 0,
+        right: 0,
+        width: '100%',
+        backgroundColor: '#ffffff',
+        borderTop: '1px solid #E5E7EB',
+        paddingTop: '8px',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+        zIndex: 1000,
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)',
+      }}
+    >
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(item.path);
+        return (
+          <ActionIcon
+            key={item.path}
+            variant="subtle"
+            onClick={() => navigate(item.path)}
+            size="lg"
+            style={{
+              color: active ? '#FF6B35' : '#6B7280',
+            }}
+          >
+            <Icon size={28} stroke={active ? 2.5 : 2} />
+          </ActionIcon>
+        );
+      })}
+    </Box>
+  );
+}
+
+// Bottom Cart Button Component
+function BottomCartButton() {
+  const navigate = useNavigate();
+  const { cartCount, getCartTotal, restaurantId } = useCart();
+  const [restaurantName, setRestaurantName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (restaurantId) {
+      supabase
+        .from('restaurants')
+        .select('name')
+        .eq('id', restaurantId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setRestaurantName(data.name);
+          }
+        });
+    }
+  }, [restaurantId]);
+
+  if (cartCount === 0) return null;
+
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        bottom: `calc(64px + env(safe-area-inset-bottom, 0px))`,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1001,
+        padding: '0 16px',
+      }}
+    >
+      <Button
+        fullWidth
+        size="lg"
+        onClick={() => navigate('/checkout')}
+        leftSection={<IconShoppingCart size={20} />}
+        rightSection={
+          <Badge size="lg" variant="filled" color="white" c="#FF6B35" style={{ fontSize: '14px', fontWeight: 600 }}>
+            {cartCount}
+          </Badge>
+        }
+        style={{
+          backgroundColor: '#FF6B35',
+          color: 'white',
+          fontWeight: 600,
+          fontSize: '14px',
+          height: '48px',
+          borderRadius: '8px',
+        }}
+      >
+        <Box style={{ flex: 1, textAlign: 'left' }}>
+          <Text size="xs" c="white" style={{ opacity: 0.9, lineHeight: 1.2 }}>
+            View Cart
+          </Text>
+          {restaurantName && (
+            <Text size="sm" fw={700} c="white" style={{ lineHeight: 1.2 }}>
+              {restaurantName}
+            </Text>
+          )}
+        </Box>
+        <Text size="sm" fw={700} c="white" style={{ marginLeft: 'auto' }}>
+          ${(getCartTotal() / 100).toFixed(2)}
+        </Text>
+      </Button>
+    </Box>
+  );
+}
+
+// Android Navigation Bar White Spacer
+function AndroidNavBarSpacer() {
+  const [isAndroid, setIsAndroid] = useState(false);
+
+  useEffect(() => {
+    const checkAndroid = () => {
+      const platform = (window as any).Capacitor?.getPlatform?.();
+      const isAndroidPlatform = platform === 'android';
+      const isAndroidUA = /Android/i.test(navigator.userAgent);
+      setIsAndroid(isAndroidPlatform || isAndroidUA);
+    };
+    checkAndroid();
+  }, []);
+
+  if (!isAndroid) return null;
+
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        height: 'max(48px, env(safe-area-inset-bottom, 48px))',
+        backgroundColor: '#ffffff',
+        zIndex: 999,
+      }}
+    />
   );
 }

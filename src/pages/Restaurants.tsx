@@ -178,48 +178,46 @@ const RestaurantCard = ({
       />
       </Box>
 
-      {/* Restaurant name in bold */}
-      <Text size="lg" fw={700} c="gray.9" lineClamp={1} mb="xs">
-        {restaurant.name}
-      </Text>
-
-      {/* Star rating * Mile distance * Delivery time */}
-      <Group gap={4} mb="xs">
-          <Group gap={4}>
-          <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-          <Text size="sm" fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
+      {/* Restaurant name and rating info on same line */}
+      <Group justify="space-between" align="center" mb="xs" wrap="nowrap">
+        <Text size="lg" fw={700} c="gray.9" lineClamp={1} style={{ flex: 1, minWidth: 0 }}>
+          {restaurant.name}
+        </Text>
+        {/* Star rating * Mile distance * Delivery time */}
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+          <Group gap={4} wrap="nowrap">
+            <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
+            <Text size="sm" fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
           </Group>
-        <Text size="sm" c="gray.4">•</Text>
-        <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
-        <Text size="sm" c="gray.4">•</Text>
-        <Text size="sm" c="gray.7">{restaurant.time || '20 min'}</Text>
+          <Text size="sm" c="gray.4">•</Text>
+          <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
+          <Text size="sm" c="gray.4">•</Text>
+          <Text size="sm" c="gray.7">{restaurant.time || '20 min'}</Text>
+        </Group>
       </Group>
 
-      {/* Restaurant promo */}
-      {restaurant.restaurantPromo && (
-        <Text size="sm" c="gray.8" mb="xs" lineClamp={1}>
-          {restaurant.restaurantPromo}
-        </Text>
-      )}
-
-      {/* Discount promo * Sponsored */}
-      <Group gap={4}>
-        {restaurant.discountPromo && (
-          <>
+      {/* Promo text and Sponsored on same line */}
+      <Group justify="space-between" align="center" mb="xs" wrap="nowrap">
+        <Box style={{ flex: 1, minWidth: 0 }}>
+          {/* Restaurant promo */}
+          {restaurant.restaurantPromo && (
+            <Text size="sm" c="gray.8" lineClamp={1}>
+              {restaurant.restaurantPromo}
+            </Text>
+          )}
+          {/* Discount promo */}
+          {restaurant.discountPromo && (
             <Text size="sm" fw={600} c="red.7" lineClamp={1}>
               {restaurant.discountPromo}
-      </Text>
-            {restaurant.isSponsored && (
-              <>
-        <Text size="sm" c="gray.4">•</Text>
-                <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
-              </>
-            )}
-          </>
+            </Text>
+          )}
+        </Box>
+        {/* Sponsored - right aligned */}
+        {restaurant.isSponsored && (
+          <Text size="sm" fw={600} c="blue.7" style={{ flexShrink: 0, marginLeft: '8px' }}>
+            Sponsored
+          </Text>
         )}
-        {!restaurant.discountPromo && restaurant.isSponsored && (
-          <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
-      )}
       </Group>
     </Box>
   );
@@ -237,6 +235,8 @@ const Restaurants = () => {
   const [loadingBanners, setLoadingBanners] = useState(true);
   const [heroImageUrl, setHeroImageUrl] = useState<string>('');
   const [loadingHeroImage, setLoadingHeroImage] = useState(true);
+  const [adPlacements, setAdPlacements] = useState<any[]>([]);
+  const [loadingAds, setLoadingAds] = useState(true);
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -441,6 +441,7 @@ const Restaurants = () => {
     fetchNotifications();
     fetchPromotionalBanners();
     fetchHeroImage();
+    fetchAdPlacements();
   }, []);
 
   // Update filter options based on delivery mode
@@ -535,6 +536,38 @@ const Restaurants = () => {
       setPromotionalBanners([]);
     } finally {
       setLoadingBanners(false);
+    }
+  };
+
+  const fetchAdPlacements = async () => {
+    try {
+      setLoadingAds(true);
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('ad_placements')
+        .select('*')
+        .eq('page_path', '/restaurants')
+        .eq('is_active', true)
+        .lte('valid_from', now)
+        .or(`valid_until.is.null,valid_until.gt.${now}`)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        // If table doesn't exist yet, just log and continue
+        if (error.code === 'PGRST205' || error.message?.includes('not found')) {
+          console.log('Ad placements table not found - migration may not be applied yet');
+          setAdPlacements([]);
+        } else {
+          throw error;
+        }
+      } else {
+        setAdPlacements(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching ad placements:', error);
+      setAdPlacements([]);
+    } finally {
+      setLoadingAds(false);
     }
   };
 
@@ -942,6 +975,96 @@ const Restaurants = () => {
                 ))}
               </Group>
             </Box>
+
+            {/* Advertisement Banner - Dynamic */}
+            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {loadingAds ? (
+                <Box
+                  style={{
+                    width: '380px',
+                    height: '200px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Loader size="sm" />
+                </Box>
+              ) : (() => {
+                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
+                return adPlacement ? (
+                    <Box
+                      component="a"
+                      href={adPlacement.click_url || '#'}
+                      target={adPlacement.click_url ? '_blank' : undefined}
+                      rel={adPlacement.click_url ? 'noopener noreferrer' : undefined}
+                      style={{
+                        width: `${adPlacement.width}px`,
+                        height: `${adPlacement.height}px`,
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: adPlacement.click_url ? 'pointer' : 'default',
+                        transition: 'opacity 0.2s',
+                        overflow: 'hidden',
+                        textDecoration: 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (adPlacement.click_url) {
+                          e.currentTarget.style.opacity = '0.9';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                    >
+                      {adPlacement.ad_code ? (
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      ) : adPlacement.image_url ? (
+                        <MantineImage
+                          src={adPlacement.image_url}
+                          alt="Advertisement"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
+                          Advertisement
+                          <br />
+                          {adPlacement.width} × {adPlacement.height}
+                        </Text>
+                      )}
+                    </Box>
+                  ) : (
+                    <Box
+                      style={{
+                        width: '380px',
+                        height: '200px',
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
+                        Advertisement
+                        <br />
+                        380 × 200
+                      </Text>
+                    </Box>
+                  );
+                })()}
+              </Box>
 
             {/* Premium Selections */}
             <Box px="md" py="xl" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>

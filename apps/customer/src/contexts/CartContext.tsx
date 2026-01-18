@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { openConfirmModal } from '@mantine/modals';
+import { safeLocalStorage } from '@/utils/safeStorage';
 
 interface CartItem {
   id: string;
@@ -28,6 +29,9 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'customer_cart';
+const RESTAURANT_STORAGE_KEY = 'customer_cart_restaurant';
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -41,6 +45,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadCart = async () => {
     try {
+      // First, try to load from localStorage (works even when not logged in)
+      const localCartData = safeLocalStorage.getItem(CART_STORAGE_KEY);
+      const localRestaurantId = safeLocalStorage.getItem(RESTAURANT_STORAGE_KEY);
+      
+      if (localCartData) {
+        try {
+          const parsedItems = JSON.parse(localCartData) as CartItem[];
+          if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+            setCartItems(parsedItems);
+            setRestaurantId(localRestaurantId);
+          }
+        } catch (e) {
+          console.error('Error parsing localStorage cart:', e);
+        }
+      }
+
+      // Then try to load from database if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
@@ -67,8 +88,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (persistedCart) {
-        setCartItems(Array.isArray(persistedCart.items) ? persistedCart.items as unknown as CartItem[] : []);
-        setRestaurantId(persistedCart.restaurant_id || null);
+        const dbItems = Array.isArray(persistedCart.items) ? persistedCart.items as unknown as CartItem[] : [];
+        // Prefer database cart if it exists and has items, otherwise keep localStorage cart
+        if (dbItems.length > 0) {
+          setCartItems(dbItems);
+          setRestaurantId(persistedCart.restaurant_id || null);
+          // Sync to localStorage
+          safeLocalStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dbItems));
+          if (persistedCart.restaurant_id) {
+            safeLocalStorage.setItem(RESTAURANT_STORAGE_KEY, persistedCart.restaurant_id);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -78,6 +108,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const saveCart = async (items: CartItem[], restaurantId: string | null) => {
+    // Always save to localStorage first (works even when offline or not logged in)
+    try {
+      safeLocalStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      if (restaurantId) {
+        safeLocalStorage.setItem(RESTAURANT_STORAGE_KEY, restaurantId);
+      } else {
+        safeLocalStorage.removeItem(RESTAURANT_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
+
+    // Also save to database if user is logged in
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -90,31 +133,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           items: items as any,
         });
     } catch (error) {
-      console.error('Error saving cart:', error);
+      console.error('Error saving cart to database:', error);
     }
   };
 
   const addToCart = useCallback(async (item: CartItem, newRestaurantId: string) => {
     // Check if cart has items from a different restaurant
     if (restaurantId && restaurantId !== newRestaurantId && cartItems.length > 0) {
-      // Show confirmation modal
+      // Show confirmation modal with clearer messaging
       openConfirmModal({
-        title: 'Cart Contains Items from Another Restaurant',
+        title: 'Start a New Cart?',
         children: (
-          <div>
-            <p>There are items in your cart from a different restaurant.</p>
-            <p>Are you sure you want to clear your cart and add new items?</p>
+          <div style={{ padding: '1rem 0' }}>
+            <p style={{ marginBottom: '0.5rem' }}>
+              You have items in your cart from a different restaurant.
+            </p>
+            <p style={{ marginBottom: '0.5rem', fontWeight: 500 }}>
+              Would you like to start a new cart and add this item?
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#666' }}>
+              Your current cart will be cleared.
+            </p>
           </div>
         ),
-        labels: { confirm: 'Clear & Add', cancel: 'Cancel' },
-        confirmProps: { color: 'red' },
+        labels: { confirm: 'Start New Cart', cancel: 'Keep Current Cart' },
+        confirmProps: { color: 'orange', variant: 'filled' },
+        cancelProps: { variant: 'outline' },
         onConfirm: async () => {
           setCartItems([item]);
           setRestaurantId(newRestaurantId);
           await saveCart([item], newRestaurantId);
           toast({
-            title: 'Cart Cleared',
-            description: 'Added item from new restaurant',
+            title: 'New Cart Started',
+            description: `${item.name} added to your cart`,
+          });
+        },
+        onCancel: () => {
+          toast({
+            title: 'Cart Unchanged',
+            description: 'Your current cart items have been preserved',
+            variant: 'default',
           });
         },
       });
@@ -173,6 +231,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartItems([]);
     setRestaurantId(null);
     await saveCart([], null);
+    // Also clear localStorage
+    safeLocalStorage.removeItem(CART_STORAGE_KEY);
+    safeLocalStorage.removeItem(RESTAURANT_STORAGE_KEY);
   }, []);
 
   const getCartTotal = useCallback(() => {

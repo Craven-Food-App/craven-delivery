@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" href="/craven-logo.png" type="image/png">
+    
+    <!-- iOS App Icons - Multiple Sizes for Better Quality -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/craven-logo.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/craven-logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/craven-logo.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/craven-logo.png">
+    
+    <!-- iOS Splash Screens for Different Devices -->
+    <link rel="apple-touch-startup-image" href="/craven-logo.png" 
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/craven-logo.png" 
+          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/craven-logo.png"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    
+    <meta name="apple-mobile-web-app-title" content="Crave'n">
+    <meta name="application-name" content="Crave'n">
+    <meta name="theme-color" content="#FF6B35">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <title>Crave'N - Food Delivery from Local Restaurants | Order Now</title>
+    <meta name="description" content="Order food delivery from your favorite local restaurants with Crave'N. Fast delivery, real-time tracking, and the best selection. Download the app or order online now!" />
+    <meta name="keywords" content="food delivery, restaurant delivery, order food online, local restaurants, fast delivery, Crave'N" />
+    <meta name="author" content="Crave'N" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://craven.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://craven.app/" />
+    <meta property="og:title" content="Crave'N - Your Favorite Food, Delivered Fast" />
+    <meta property="og:description" content="Order from the best restaurants and get your favorite meals delivered fast. Browse cuisines, discover new places to eat." />
+    <meta property="og:image" content="https://craven.app/craven-logo.png" />
+    <meta property="og:site_name" content="Crave'N" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://craven.app/" />
+    <meta name="twitter:title" content="Crave'N - Your Favorite Food, Delivered Fast" />
+    <meta name="twitter:description" content="Order from the best restaurants and get your favorite meals delivered fast." />
+    <meta name="twitter:image" content="https://craven.app/craven-logo.png" />
+    
+    <!-- Google Fonts for Signature Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Allura&family=Satisfy&family=Kalam:wght@300;400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Mapbox Search JS -->
+    <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.3.0/web.js"></script>
+    
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Status Bar Styling -->
+    <style>
+      /* Prevent blank screen before React loads */
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Initial loading state for mobile driver app only */
+      @media screen and (max-width: 768px) {
+        body.mobile-driver-loading {
+          background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+          overflow: hidden;
+        }
+        
+        body.mobile-driver-loading #root {
+          background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Show loading spinner before React loads */
+        body.mobile-driver-loading #root::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(255, 255, 255, 0.3);
+          border-top: 3px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          z-index: 9999;
+        }
+        
+        @keyframes spin {
+          0% { transform: translate(-50%, -50%) rotate(0deg); }
+          100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+      }
+    </style>
+    
+    <!-- Detect mobile driver route and add loading class -->
+    <script>
+      // Add loading class only for mobile driver route (supports hash routing for Capacitor)
+      (function() {
+        var isMobilePath = (window.location.pathname + window.location.hash).includes('/mobile');
+        if (isMobilePath && window.innerWidth <= 768) {
+          // Wait for body to exist before accessing classList
+          function addLoadingClass() {
+            if (document.body) {
+              document.body.classList.add('mobile-driver-loading');
+              // Remove loading class once React loads
+              window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                  if (document.body) {
+                    document.body.classList.remove('mobile-driver-loading');
+                  }
+                }, 100);
+              });
+            } else {
+              // Retry if body doesn't exist yet
+              setTimeout(addLoadingClass, 10);
+            }
+          }
+          addLoadingClass();
+        }
+      })();
+    </script>
+
+    <!-- Swap iOS app icon/title for Feeder only on /mobile -->
+    <script>
+      (function() {
+        var isMobileRoute = window.location.pathname.includes('/mobile');
+        if (!isMobileRoute) return;
+
+        // Update apple-mobile-web-app-title for Feeder on mobile route
+        var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (titleMeta) titleMeta.setAttribute('content', "Feeder");
+
+        // Replace apple-touch-icon links to use Feeder icon only on /mobile
+        var links = document.querySelectorAll('link[rel="apple-touch-icon"]');
+        links.forEach(function(link) {
+          link.setAttribute('href', '/feeder_app_icon.png');
+        });
+      })();
+    </script>
+
+    <!-- Safe-area and PWA-only viewport fixes for /mobile -->
+    <style>
+      /* Only affect installed PWA on mobile route via body class (added below) */
+      body.pwa-standalone.mobile-page {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        overscroll-behavior: none;
+      }
+      body.pwa-standalone.mobile-page, body.pwa-standalone.mobile-page #root {
+        height: 100dvh;
+      }
+    </style>
+
+    <script type="module" crossorigin src="/assets/index-CLcR6DS_.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-YmAS8C-U.css">
+  </head>
+
+  <body>
+    <script>
+      // Detect PWA mode and add classes immediately (runs after body exists)
+      (function () {
+        function addPWAClasses() {
+          if (!document.body) {
+            // Retry if body doesn't exist yet
+            setTimeout(addPWAClasses, 10);
+            return;
+          }
+          
+          var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator && window.navigator.standalone === true);
+          var pathAndHash = window.location.pathname + window.location.hash;
+          var isMobileRoute = pathAndHash.includes('/mobile');
+          
+          if (isStandalone) {
+            document.body.classList.add('pwa-standalone');
+          }
+          
+          if (isStandalone && isMobileRoute) {
+            document.body.classList.add('mobile-page');
+          }
+        }
+        addPWAClasses();
+      })();
+    </script>
+    <div id="root"></div>
+  </body>
+</html>

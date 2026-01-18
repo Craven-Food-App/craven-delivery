@@ -75,9 +75,8 @@ const RestaurantGrid = ({
         .eq("is_active", true);
 
       // Filter by cuisine if provided and not 'all'
-      if (cuisineFilter && cuisineFilter !== 'all') {
-        query = query.eq('cuisine_type', cuisineFilter);
-      }
+      // Note: We'll filter in JavaScript for case-insensitive matching
+      // since Supabase eq() is case-sensitive
 
       const { data, error } = await query
         .order("is_promoted", { ascending: false })
@@ -91,6 +90,13 @@ const RestaurantGrid = ({
         max_delivery_time: restaurant.max_delivery_time || 30,
         is_promoted: restaurant.is_promoted || false
       }));
+
+      // Filter by cuisine if provided and not 'all' (case-insensitive)
+      if (cuisineFilter && cuisineFilter !== 'all') {
+        filteredData = filteredData.filter((restaurant: Restaurant) =>
+          restaurant.cuisine_type?.toLowerCase() === cuisineFilter.toLowerCase()
+        );
+      }
 
       // Filter by search query if provided
       if (searchQuery) {
@@ -160,7 +166,13 @@ const RestaurantGrid = ({
 
         {restaurants.length === 0 ? <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">
-              {searchQuery ? `No restaurants found for "${searchQuery}"${deliveryAddress ? ` near ${deliveryAddress}` : ''}` : deliveryAddress ? `No restaurants found within ${deliveryAddress}` : "No restaurants available right now. Be the first to register your restaurant!"}
+              {cuisineFilter && cuisineFilter !== 'all' 
+                ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
+                : searchQuery 
+                  ? `No restaurants found for "${searchQuery}"${deliveryAddress ? ` near ${deliveryAddress}` : ''}` 
+                  : deliveryAddress 
+                    ? `No restaurants found within ${deliveryAddress}` 
+                    : "No restaurants available right now. Be the first to register your restaurant!"}
             </p>
           </div> : <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{

@@ -1,0 +1,176 @@
+<article>
+<header>
+  <h1>Crave'n CTO System Access Governance & Data Ownership Map</h1>
+  <p><strong>Document Key:</strong> cto_system_access_governance_v1</p>
+  <p><strong>Classification:</strong> Systems, Security, Data Governance</p>
+  <p><strong>Effective Date:</strong> {{effective_date}}</p>
+</header>
+<section>
+  <h2>1. Purpose Of This Document</h2>
+  <p>
+    This document outlines the CTO's authority, responsibilities, and obligations related 
+    to technology systems, infrastructure platforms, security tools, and data governance. It 
+    establishes how technology data must be accessed, secured, managed, and audited inside 
+    Crave'n. 
+  </p>
+  <p>
+    It ensures a Fortune 500–level standard for technology data integrity, system access control, 
+    separation of duties, and security compliance.
+  </p>
+</section>
+<section>
+  <h2>2. System Ownership Overview</h2>
+  <p>Crave'n recognizes the following systems as mission-critical technology platforms:</p>
+  <ul>
+    <li><strong>Infrastructure Platforms:</strong> (e.g., AWS, GCP, Azure)</li>
+    <li><strong>Development Tools:</strong> (e.g., GitHub, CI/CD platforms)</li>
+    <li><strong>Security Tools:</strong> (e.g., security monitoring, vulnerability scanners)</li>
+    <li><strong>Technology Analytics Tools:</strong> Internal dashboards, analytics tools</li>
+    <li><strong>Technology Vendor Management:</strong> (e.g., vendor portals, API keys)</li>
+    <li><strong>Technology Documents & Archives:</strong> Supabase storage / technology repository</li>
+  </ul>
+</section>
+<section>
+  <h2>3. Data Source of Truth (Technology)</h2>
+  <ul>
+    <li><strong>Infrastructure Platforms:</strong> Primary source of truth for system infrastructure.</li>
+    <li><strong>Development Tools:</strong> Primary source for code repositories and deployment history.</li>
+    <li><strong>Security Tools:</strong> Primary source for security posture and vulnerability data.</li>
+    <li><strong>Technology Analytics:</strong> Primary source for system performance and technology metrics.</li>
+    <li><strong>Internal Dashboards:</strong> Must reconcile to infrastructure platforms before use.</li>
+  </ul>
+</section>
+<section>
+  <h2>4. CTO System Access Responsibilities</h2>
+  <p>The CTO is fully responsible for:</p>
+  <ul>
+    <li>Approving user access for all technology systems</li>
+    <li>Ensuring permissions reflect separation of duties</li>
+    <li>Maintaining audit logs for all technology actions</li>
+    <li>Monitoring changes to infrastructure and security credentials</li>
+    <li>Ensuring MFA is enforced across systems</li>
+    <li>Quarterly access review with CEO</li>
+  </ul>
+</section>
+<section>
+  <h2>5. CFO System Responsibilities Related to Technology</h2>
+  <ul>
+    <li>Maintaining financial oversight of infrastructure costs</li>
+    <li>Managing technology vendor contract compliance</li>
+    <li>Maintaining cost tracking and budget alignment</li>
+    <li>Implementing financial controls (not technical controls)</li>
+    <li>Monitoring technology spend patterns</li>
+  </ul>
+  <p><strong>Important:</strong> CFO maintains financial oversight, not the technology authority.</p>
+</section>
+<section>
+  <h2>6. Access Level Matrix</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>System</th>
+        <th>CTO</th>
+        <th>CEO</th>
+        <th>CFO</th>
+        <th>COO</th>
+        <th>CXO</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Infrastructure Platforms</td>
+        <td>Full Access</td>
+        <td>View Only</td>
+        <td>View Costs</td>
+        <td>View Only</td>
+        <td>View Only</td>
+      </tr>
+      <tr>
+        <td>Development Tools</td>
+        <td>Full Access</td>
+        <td>View Reports</td>
+        <td>No Access</td>
+        <td>View Only</td>
+        <td>View Only</td>
+      </tr>
+      <tr>
+        <td>Security Tools</td>
+        <td>Full Access</td>
+        <td>View Reports</td>
+        <td>No Access</td>
+        <td>No Access</td>
+        <td>No Access</td>
+      </tr>
+      <tr>
+        <td>Technology Analytics</td>
+        <td>Full</td>
+        <td>Full</td>
+        <td>View</td>
+        <td>View</td>
+        <td>View</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+<section>
+  <h2>7. Separation Of Duties Requirements</h2>
+  <ul>
+    <li>The same person cannot deploy and approve production changes.</li>
+    <li>The same person cannot manage both infrastructure and security systems alone.</li>
+    <li>All infrastructure changes above threshold require CTO + CEO approval.</li>
+  </ul>
+</section>
+<section>
+  <h2>8. Audit Logging & Monitoring Requirements</h2>
+  <ul>
+    <li>All technology systems must have audit logs enabled.</li>
+    <li>Logs must be retained for 7 years.</li>
+    <li>CTO must review logs quarterly.</li>
+    <li>Any unusual activity must be escalated immediately.</li>
+  </ul>
+</section>
+<section>
+  <h2>9. Data Integrity Rules</h2>
+  <ul>
+    <li>All technology data must reconcile to the infrastructure platforms.</li>
+    <li>Dashboards must not use unvalidated or incomplete technology datasets.</li>
+    <li>Manual technology data must have documented sources.</li>
+    <li>Technology forecasts must be version controlled with source files archived.</li>
+  </ul>
+</section>
+<section>
+  <h2>10. Data Ownership Map</h2>
+  <p>The CTO owns:</p>
+  <ul>
+    <li>Technology infrastructure data</li>
+    <li>System performance metrics</li>
+    <li>Security posture data</li>
+    <li>Engineering standards and code quality metrics</li>
+    <li>Technology vendor technical data</li>
+    <li>Technology roadmap and architecture documents</li>
+  </ul>
+  <p>The CFO owns:</p>
+  <ul>
+    <li>Infrastructure cost data</li>
+    <li>Technology vendor financial contracts</li>
+    <li>Technology budget and financial projections</li>
+    <li>Technology spend analysis</li>
+  </ul>
+</section>
+<section>
+  <h2>11. Access Review Cadence</h2>
+  <ul>
+    <li>Monthly — CTO self-review</li>
+    <li>Quarterly — CTO + CFO joint review</li>
+    <li>Annually — CTO + CEO complete organizational access audit</li>
+  </ul>
+</section>
+<section>
+  <h2>12. Acknowledgment</h2>
+  <p>I acknowledge that I have read and understand this governance document.</p>
+  <p><strong>CTO Name:</strong> ____________________________</p>
+  <p><strong>Signature:</strong> _______________________________</p>
+  <p><strong>Date:</strong> ____ / ____ / ______</p>
+</section>
+</article>
+

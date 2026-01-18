@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MarketingAccessGuard } from '@/components/MarketingAccessGuard';
 import { PromoCodeManager } from '@/components/admin/PromoCodeManager';
 import { PromotionalBannerManager } from '@/components/admin/PromotionalBannerManager';
+import { AdPlacementManager } from '@/components/admin/AdPlacementManager';
 import { HeroImageManager } from '@/components/admin/HeroImageManager';
 import { FeederHeroImageManager } from '@/components/admin/FeederHeroImageManager';
 import { PartnerHeroImageManager } from '@/components/admin/PartnerHeroImageManager';
@@ -149,6 +150,7 @@ const MarketingPortal: React.FC = () => {
       items: [
         { id: 'promo-codes', label: 'Promo Codes', icon: Tag },
         { id: 'promotional-banners', label: 'Promotional Banners', icon: ImageIcon },
+        { id: 'ad-placements', label: 'Ad Placements', icon: Megaphone },
         { id: 'hero-image', label: 'Hero Image', icon: ImageIcon },
         { id: 'feeder-hero-image', label: 'Feeder Hero Image', icon: ImageIcon },
         { id: 'partner-hero-image', label: 'Partner Hero Image', icon: ImageIcon },
@@ -247,6 +249,8 @@ const MarketingPortal: React.FC = () => {
         return <PromoCodeManager />;
       case 'promotional-banners':
         return <PromotionalBannerManager />;
+      case 'ad-placements':
+        return <AdPlacementManager />;
       case 'hero-image':
         return <HeroImageManager />;
       case 'feeder-hero-image':

@@ -144,9 +144,12 @@ The implementation automatically detects the platform and applies safe areas onl
 - Safe areas are automatically handled by `contentInset: 'automatic'`
 - Status bar style can be customized via `StatusBar` plugin
 - Home indicator is automatically respected
+- Bottom safe area spacer is transparent (no background needed)
 
 ### Android
 - Edge-to-edge display is enabled by default in Capacitor
 - Navigation bar height varies by device and navigation mode
 - Display cutouts are automatically handled
+- **Bottom safe area spacer has white background** - Provides static white bar for navigation button area
+- The white bar only appears on Android devices, not iOS
 

@@ -1,9 +1,9 @@
 {
-  "name": "@craven/customer",
-  "version": "1.0.0",
-  "private": true,
+    "name": "@craven/customer",
+    "version": "1.0.0",
+    "private": true,
   "type": "module",
-  "scripts": {
+    "scripts": {
     "dev": "vite --config vite.config.ts",
     "build": "vite build --config vite.config.ts",
     "preview": "vite preview --config vite.config.ts",
@@ -12,8 +12,8 @@
     "open:ios": "npx cap open ios",
     "sync:android": "npm run build && npx cap sync android",
     "sync:ios": "npm run build && npx cap sync ios"
-  },
-  "dependencies": {
+    },
+    "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.7",
@@ -38,8 +38,8 @@
     "react-router-dom": "^6.26.2",
     "mapbox-gl": "^3.16.0",
     "@mapbox/mapbox-gl-draw": "^1.5.0"
-  },
-  "devDependencies": {
+    },
+    "devDependencies": {
     "@capacitor/cli": "^7.4.3",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -50,5 +50,5 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.5.3",
     "vite": "^7.1.12"
+    }
   }
-}

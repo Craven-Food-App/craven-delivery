@@ -1,0 +1,1 @@
+import{a2 as n,a3 as r,bi as l}from"./index-CLcR6DS_.js";async function c(){const{data:{user:a}}=await n.auth.getUser(),s=["INTERN","INTERN_MANAGER","INTERN_SPONSOR","INTERN_PROGRAM_ADMIN"];return a?.email&&r(a.email)?s:(await l()).filter(t=>s.includes(t))}function i(a,s){return(Array.isArray(s)?s:[s]).some(t=>a.includes(t))}export{c as f,i as h};

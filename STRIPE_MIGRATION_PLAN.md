@@ -73,3 +73,12 @@ Complete migration from Moov to Stripe and Stripe Connect for:
 - Existing Moov payment methods will need to be re-added by users
 - Driver payment methods will need to be re-configured
 
+
+
+
+
+
+
+
+
+

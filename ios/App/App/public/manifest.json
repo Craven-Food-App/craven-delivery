@@ -1,0 +1,56 @@
+{
+  "name": "Feeder - Crave'N",
+  "short_name": "Feeder",
+  "description": "Become a Feeder - Deliver food, earn on your schedule with great payouts and flexible hours.",
+  "start_url": "/mobile",
+  "display": "standalone",
+  "background_color": "#FF6B35",
+  "theme_color": "#FF6B35",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/feeder_app_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/feeder_app_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "shopping"],
+  "shortcuts": [
+    {
+      "name": "Go Online as Feeder",
+      "short_name": "Go Online",
+      "description": "Start accepting deliveries as a Feeder",
+      "url": "/mobile",
+      "icons": [{ "src": "/feeder_app_icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Feeder Earnings",
+      "short_name": "Earnings",
+      "description": "View your Feeder earnings and payouts",
+      "url": "/mobile",
+      "icons": [{ "src": "/feeder_app_icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Feeder Support",
+      "short_name": "Support",
+      "description": "Get help from Feeder support team",
+      "url": "/mobile",
+      "icons": [{ "src": "/feeder_app_icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/feeder_app_icon.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ]
+}

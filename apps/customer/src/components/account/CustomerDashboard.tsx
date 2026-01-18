@@ -203,52 +203,32 @@ const CustomerDashboard = () => {
     }
   };
 
-  // Mobile Bottom Navigation
-  const MobileBottomNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
-      <div className="flex justify-around items-center h-16 px-2">
-        {[
-          { id: 'home', icon: Home, label: 'Home' },
-          { id: 'orders', icon: Package, label: 'Orders' },
-          { id: 'account', icon: User, label: 'Account' },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          
-          return (
-            <button
-              key={tab.id}
-              onClick={() => navigate(`?tab=${tab.id}`)}
-              className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-                isActive ? 'text-primary' : 'text-gray-500'
-              }`}
-            >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'stroke-[2.5]' : ''}`} />
-              <span className="text-xs font-medium">{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
 
   // Mobile Header
   const MobileHeader = () => (
     <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {activeTab === 'home' ? `Good ${getGreeting()}!` : activeTab === 'orders' ? 'Orders' : 'Account'}
-            </h1>
-            {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserFirstName()}</p>}
+          <div className="flex items-center gap-3 flex-1">
+            {/* X button to exit account - only on account tab, replaces hamburger menu */}
+            {activeTab === 'account' && (
+              <button 
+                onClick={() => {
+                  navigate('/restaurants');
+                }}
+                className="p-2 -ml-2 active:bg-gray-100 rounded-full transition-colors"
+                aria-label="Back to restaurants"
+              >
+                <X className="w-6 h-6 text-gray-900" strokeWidth={2.5} />
+              </button>
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {activeTab === 'home' ? `Good ${getGreeting()}!` : activeTab === 'orders' ? 'Orders' : 'Account'}
+              </h1>
+              {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserFirstName()}</p>}
+            </div>
           </div>
-          <button 
-            onClick={() => setShowMobileNav(!showMobileNav)}
-            className="p-2 -mr-2 active:bg-gray-100 rounded-full transition-colors"
-          >
-            {showMobileNav ? <X className="w-6 h-6 text-gray-900" /> : <Menu className="w-6 h-6 text-gray-900" />}
-          </button>
         </div>
         
         {activeTab === 'home' && (
@@ -807,7 +787,7 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <MobileHeader />
+      <MobileHeader key={showMobileNav ? 'menu-open' : 'menu-closed'} />
       
       {activeTab === 'home' && <MobileHomeTab />}
       {activeTab === 'orders' && <MobileOrdersTab />}
@@ -816,8 +796,6 @@ const CustomerDashboard = () => {
           <AccountSection />
         </div>
       )}
-      
-      <MobileBottomNav />
       
       {/* Mobile Navigation Overlay */}
       {showMobileNav && (
@@ -832,8 +810,9 @@ const CustomerDashboard = () => {
                 <button 
                   onClick={() => setShowMobileNav(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close menu"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-6 h-6 text-gray-900" />
                 </button>
               </div>
               <nav className="space-y-1">

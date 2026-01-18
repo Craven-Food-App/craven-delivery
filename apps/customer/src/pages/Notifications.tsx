@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Text, Title, Button, ScrollArea, Badge, Group, ActionIcon, Divider, Paper } from '@mantine/core';
-import { IconChevronLeft, IconGift, IconTruck, IconX, IconBell, IconCheck } from '@tabler/icons-react';
+import { IconChevronLeft, IconGift, IconTruck, IconX, IconBell, IconCheck, IconHome, IconShoppingBag, IconSearch, IconUser, IconShoppingCart } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useCart } from '@/contexts/CartContext';
 
 dayjs.extend(relativeTime);
 
@@ -953,6 +954,8 @@ const Notifications = () => {
     }
   };
 
+  const { cartCount } = useCart();
+
   return (
     <Box
       style={{
@@ -962,10 +965,11 @@ const Notifications = () => {
         minHeight: '100vh',
         backgroundColor: '#FAFAFA',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        paddingBottom: '80px'
       }}
     >
-      {/* Header */}
+      {/* Page Header */}
       <Paper
         shadow="xs"
         style={{
@@ -1247,8 +1251,147 @@ const Notifications = () => {
           </ScrollArea>
         </Box>
       )}
+
+      {/* Bottom Navigation Bar */}
+      <BottomNavigation currentPath="/notifications" />
+
+      {/* Cart Button - Only shows if cart has items */}
+      {cartCount > 0 && <BottomCartButton />}
     </Box>
   );
 };
+
+// Bottom Navigation Component
+function BottomNavigation({ currentPath }: { currentPath: string }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path: string) => {
+    if (path === '/account') {
+      return location.pathname === '/account' || 
+             location.pathname.startsWith('/customer-dashboard');
+    }
+    if (path === '/order-history') {
+      // Highlight "Orders" when on order history page
+      return location.pathname === '/order-history';
+    }
+    return location.pathname === path;
+  };
+
+  const navItems = [
+    { icon: IconHome, label: 'Home', path: '/restaurants' },
+    { icon: IconShoppingBag, label: 'Orders', path: '/order-history' },
+    { icon: IconSearch, label: 'Browse', path: '/restaurants' },
+    { icon: IconUser, label: 'Me', path: '/account' },
+  ];
+
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        bottom: 'env(safe-area-inset-bottom, 0px)',
+        left: 0,
+        right: 0,
+        width: '100%',
+        backgroundColor: 'transparent',
+        paddingTop: '8px',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+        zIndex: 1000,
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+      }}
+    >
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const active = isActive(item.path);
+        return (
+          <ActionIcon
+            key={item.path}
+            variant="subtle"
+            onClick={() => navigate(item.path)}
+            size="lg"
+            style={{
+              color: active ? '#FF6B35' : '#6B7280',
+            }}
+          >
+            <Icon size={28} stroke={active ? 2.5 : 2} />
+          </ActionIcon>
+        );
+      })}
+    </Box>
+  );
+}
+
+// Bottom Cart Button Component
+function BottomCartButton() {
+  const navigate = useNavigate();
+  const { cartCount, getCartTotal, restaurantId } = useCart();
+  const [restaurantName, setRestaurantName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (restaurantId) {
+      supabase
+        .from('restaurants')
+        .select('name')
+        .eq('id', restaurantId)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setRestaurantName(data.name);
+          }
+        });
+    }
+  }, [restaurantId]);
+
+  if (cartCount === 0) return null;
+
+  return (
+    <Box
+      style={{
+        position: 'fixed',
+        bottom: `calc(64px + env(safe-area-inset-bottom, 0px))`,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1001,
+        padding: '0 16px',
+      }}
+    >
+      <Button
+        fullWidth
+        size="lg"
+        onClick={() => navigate('/checkout')}
+        leftSection={<IconShoppingCart size={20} />}
+        rightSection={
+          <Badge size="lg" variant="filled" color="white" c="#FF6B35" style={{ fontSize: '14px', fontWeight: 600 }}>
+            {cartCount}
+          </Badge>
+        }
+        style={{
+          backgroundColor: '#FF6B35',
+          color: 'white',
+          fontWeight: 600,
+          fontSize: '14px',
+          height: '48px',
+          borderRadius: '8px',
+        }}
+      >
+        <Box style={{ flex: 1, textAlign: 'left' }}>
+          <Text size="xs" c="white" style={{ opacity: 0.9, lineHeight: 1.2 }}>
+            View Cart
+          </Text>
+          {restaurantName && (
+            <Text size="sm" fw={700} c="white" style={{ lineHeight: 1.2 }}>
+              {restaurantName}
+            </Text>
+          )}
+        </Box>
+        <Text size="sm" fw={700} c="white" style={{ marginLeft: 'auto' }}>
+          ${(getCartTotal() / 100).toFixed(2)}
+        </Text>
+      </Button>
+    </Box>
+  );
+}
 
 export default Notifications;

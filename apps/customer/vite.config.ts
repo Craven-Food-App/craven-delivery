@@ -17,16 +17,19 @@ export default defineConfig(({ mode }) => {
     root: __dirname,
     publicDir: path.resolve(__dirname, './public'), // Fixed: use local public folder
     server: {
-      host: "::",
+      host: "0.0.0.0",
       port: 8080,
       strictPort: false,
       open: false,
       cors: true,
       hmr: {
-        port: 8080,
         host: 'localhost',
+        port: 8080,
         protocol: 'ws',
         clientPort: 8080,
+      },
+      watch: {
+        usePolling: false,
       },
     },
     plugins: [react()],

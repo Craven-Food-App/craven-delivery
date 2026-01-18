@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -48,6 +48,17 @@
         padding-bottom: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
+      }
+      
+      /* Ensure NO space below white navigation bar on Android - CRITICAL */
+      body.capacitor-android {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      
+      body.capacitor-android #root {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
       }
       
       #root {

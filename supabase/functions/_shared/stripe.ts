@@ -382,3 +382,12 @@ export async function deletePaymentMethod(paymentMethodId: string): Promise<void
   await stripe.paymentMethods.detach(paymentMethodId);
 }
 
+
+
+
+
+
+
+
+
+

@@ -28,6 +28,9 @@ import Auth from "@/pages/Auth";
 import CraveMore from "@/pages/CraveMore";
 import CraveMoreSuccess from "@/pages/CraveMoreSuccess";
 import CraveMoreAccount from "@/pages/CraveMoreAccount";
+import Notifications from "@/pages/Notifications";
+import CuisineResults from "@/pages/CuisineResults";
+import PromoManagement from "@/pages/admin/PromoManagement";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { SafeAreaProvider } from "@/components/SafeAreaProvider";
@@ -64,6 +67,7 @@ function App() {
                     <Route path="/" element={<Navigate to="/restaurants" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/restaurants" element={<Restaurants />} />
+                    <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
                     <Route path="/favorites" element={<Favorites />} />
                     <Route path="/restaurant/:id" element={<RestaurantDetail />} />
                     <Route path="/restaurant/:id/menu" element={<RestaurantMenuPage />} />
@@ -74,6 +78,8 @@ function App() {
                     <Route path="/order-history" element={<OrderHistory />} />
                     <Route path="/account" element={<CustomerDashboard />} />
                     <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/admin/promo" element={<PromoManagement />} />
                     <Route path="/crave-more" element={<CraveMore />} />
                     <Route path="/cravemore" element={<CraveMore />} />
                     <Route path="/cravemore/success" element={<CraveMoreSuccess />} />

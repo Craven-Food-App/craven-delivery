@@ -391,6 +391,14 @@ const Checkout: React.FC = () => {
     schedule: 'ASAP'
   });
 
+  // Fee-related state - declared early to avoid TDZ issues
+  const [deliveryFee, setDeliveryFee] = useState(300); // Default $3.00
+  const [cravemoreEligible, setCravemoreEligible] = useState(false);
+  const [hasCravemore, setHasCravemore] = useState(false);
+  const [cravemoreAmountNeeded, setCravemoreAmountNeeded] = useState<number | null>(null);
+  const [processingFeePercentCard, setProcessingFeePercentCard] = useState<number | null>(null);
+  const [processingFeePercentAch, setProcessingFeePercentAch] = useState<number | null>(null);
+
   // Load cart from localStorage (from restaurant page) or fallback to CartContext
   useEffect(() => {
     const savedCart = localStorage.getItem('checkout_cart');
@@ -680,13 +688,6 @@ const Checkout: React.FC = () => {
     [cart]
   );
 
-  const [deliveryFee, setDeliveryFee] = useState(300); // Default $3.00
-  const [cravemoreEligible, setCravemoreEligible] = useState(false);
-  const [hasCravemore, setHasCravemore] = useState(false);
-  const [cravemoreAmountNeeded, setCravemoreAmountNeeded] = useState<number | null>(null);
-  const [processingFeePercentCard, setProcessingFeePercentCard] = useState<number | null>(null);
-  const [processingFeePercentAch, setProcessingFeePercentAch] = useState<number | null>(null);
-
   // Check CraveMore membership and calculate fees
   useEffect(() => {
     const checkCravemoreAndCalculateFees = async () => {
@@ -802,9 +803,12 @@ const Checkout: React.FC = () => {
     () => Math.round((subtotalAfterPromo + deliveryFee + expressFee) * 0.08), // 8% tax
     [subtotalAfterPromo, deliveryFee, expressFee]
   );
-  const tipAmount = formData.tipType === 'percentage' 
-    ? Math.round(subtotal * (formData.tipPercent / 100))
-    : formData.tip;
+  const tipAmount = useMemo(
+    () => formData.tipType === 'percentage' 
+      ? Math.round(subtotal * (formData.tipPercent / 100))
+      : formData.tip,
+    [formData.tipType, formData.tipPercent, formData.tip, subtotal]
+  );
 
   // Stripe processing fee is applied to the full customer charge (including tip),
   // using the configured card/ACH percentages from the backend.
@@ -822,7 +826,10 @@ const Checkout: React.FC = () => {
     return Math.round(base * (percent / 100));
   }, [processingFeePercentCard, processingFeePercentAch, subtotalAfterPromo, deliveryFee, expressFee, tax, tipAmount]);
 
-  const total = subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount + processingFeeCents;
+  const total = useMemo(
+    () => subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount + processingFeeCents,
+    [subtotalAfterPromo, deliveryFee, expressFee, tax, tipAmount, processingFeeCents]
+  );
 
   const handleAddressSelect = (address: any) => {
     setFormData({

@@ -13,11 +13,29 @@ interface SafeAreaProviderProps {
  */
 export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
   const [isNative, setIsNative] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
     // Detect if running in Capacitor native app
     const native = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform();
+    
+    // Check for test mode (add ?android-test=true to URL for testing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isTestMode = urlParams.get('android-test') === 'true';
+    
+    // Android detection: Check Capacitor platform or user agent as fallback
+    const isAndroidPlatform = platform === 'android';
+    const isAndroidUA = /Android/i.test(navigator.userAgent);
+    const android = (native && (isAndroidPlatform || isAndroidUA)) || isTestMode;
+    
     setIsNative(native);
+    setIsAndroid(android);
+    
+    // Set test mode attribute for CSS
+    if (isTestMode) {
+      document.body.setAttribute('data-android-test', 'true');
+    }
 
     // Add class to body for CSS targeting
     if (native) {
@@ -26,9 +44,18 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
       document.body.classList.remove('capacitor-native');
     }
 
+    if (android) {
+      document.body.classList.add('capacitor-android');
+      // Debug log (remove in production if needed)
+      console.log('[SafeAreaProvider] Android detected - white navigation bar enabled');
+    } else {
+      document.body.classList.remove('capacitor-android');
+    }
+
     // Cleanup
     return () => {
       document.body.classList.remove('capacitor-native');
+      document.body.classList.remove('capacitor-android');
     };
   }, []);
 
@@ -42,8 +69,13 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
         {children}
       </div>
       
-      {/* Bottom safe area spacer - for home indicator, navigation bar */}
-      <div className="safe-area-bottom-spacer" aria-hidden="true" />
+      {/* Bottom safe area spacer - for home indicator (iOS only) */}
+      {!isAndroid && (
+        <div 
+          className="safe-area-bottom-spacer" 
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 }

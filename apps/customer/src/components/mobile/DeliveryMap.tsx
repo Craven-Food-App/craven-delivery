@@ -114,18 +114,20 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           }
         }
 
-        // Determine map center
+        // Determine map center - prioritize dropoff address (customer's delivery location)
         let center: [number, number] = currentLocation;
-        if (pickupCoords && !dropoffCoords) {
-          center = pickupCoords;
-        } else if (dropoffCoords && !pickupCoords) {
+        let defaultZoom = 13;
+        
+        if (dropoffCoords) {
+          // Default to customer's delivery address, zoomed in
           center = dropoffCoords;
+          defaultZoom = 16; // Zoom in on delivery address
+        } else if (pickupCoords && !dropoffCoords) {
+          center = pickupCoords;
         } else if (pickupCoords && dropoffCoords) {
-          // Center between pickup and dropoff
-          center = [
-            (pickupCoords[0] + dropoffCoords[0]) / 2,
-            (pickupCoords[1] + dropoffCoords[1]) / 2
-          ];
+          // If both exist, prefer dropoff (customer address) but can show both
+          center = dropoffCoords;
+          defaultZoom = 15;
         }
 
         // Initialize map
@@ -133,8 +135,8 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: center,
-          zoom: 13,
-          interactive: editable || showRoute // Make interactive if editable or showing route
+          zoom: defaultZoom,
+          interactive: true // Always interactive to allow pan/zoom
         });
 
         map.current.on('load', async () => {
@@ -168,6 +170,15 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                 onLocationChange(lngLat.lng, lngLat.lat);
               });
             }
+
+            // Allow clicking on map to move pin when editable
+            if (editable && onLocationChange) {
+              map.current.on('click', (e: any) => {
+                const { lng, lat } = e.lngLat;
+                marker.current.setLngLat([lng, lat]);
+                onLocationChange(lng, lat);
+              });
+            }
           } else {
             // Add current location marker (blue) - only if not editable
             if (!editable) {
@@ -176,18 +187,73 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                 .addTo(map.current);
             }
 
-            // Add pickup marker (red)
-            if (pickupCoords) {
+            // Add pickup marker (red) - only if not editable
+            if (pickupCoords && !editable) {
               new mapboxgl.Marker({ color: '#ef4444' })
                 .setLngLat(pickupCoords)
                 .addTo(map.current);
             }
 
-            // Add dropoff marker (green) - only if not editable (editable uses custom pin)
-            if (dropoffCoords && !editable) {
-              new mapboxgl.Marker({ color: '#22c55e' })
-                .setLngLat(dropoffCoords)
-                .addTo(map.current);
+            // Add dropoff marker - make it draggable if editable
+            if (dropoffCoords) {
+              if (editable) {
+                // Create draggable orange pin for editable mode
+                const el = document.createElement('div');
+                el.className = 'editable-delivery-pin';
+                el.style.cssText = `
+                  width: 40px;
+                  height: 40px;
+                  background-color: #ff7a00;
+                  border-radius: 50% 50% 50% 0;
+                  transform: rotate(-45deg);
+                  border: 3px solid white;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                  cursor: move;
+                `;
+                // Add inner circle for better visibility
+                const inner = document.createElement('div');
+                inner.style.cssText = `
+                  width: 20px;
+                  height: 20px;
+                  background-color: white;
+                  border-radius: 50%;
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%) rotate(45deg);
+                `;
+                el.appendChild(inner);
+
+                marker.current = new mapboxgl.Marker({
+                  element: el,
+                  draggable: true,
+                  anchor: 'bottom'
+                })
+                  .setLngLat(dropoffCoords)
+                  .addTo(map.current);
+
+                // Handle drag end to update location
+                if (onLocationChange) {
+                  marker.current.on('dragend', () => {
+                    const lngLat = marker.current.getLngLat();
+                    onLocationChange(lngLat.lng, lngLat.lat);
+                  });
+                }
+
+                // Allow clicking on map to move pin when editable
+                map.current.on('click', (e: any) => {
+                  const { lng, lat } = e.lngLat;
+                  marker.current.setLngLat([lng, lat]);
+                  if (onLocationChange) {
+                    onLocationChange(lng, lat);
+                  }
+                });
+              } else {
+                // Non-editable green marker
+                new mapboxgl.Marker({ color: '#22c55e' })
+                  .setLngLat(dropoffCoords)
+                  .addTo(map.current);
+              }
             }
           }
 
@@ -238,18 +304,23 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               console.error('Route fetch error:', routeErr);
             }
           } else {
-            // Just fit to markers
-            const bounds = new mapboxgl.LngLatBounds();
-            if (!editable) bounds.extend(currentLocation);
-            if (pickupCoords) bounds.extend(pickupCoords);
-            if (dropoffCoords) bounds.extend(dropoffCoords);
-            
-            if (bounds.isEmpty()) {
-              // If no bounds, just center on dropoff or current location
-              map.current.setCenter(editable && dropoffCoords ? dropoffCoords : center);
-              map.current.setZoom(15);
+            // Default view: zoom in on dropoff address (customer's delivery location)
+            if (dropoffCoords) {
+              // Center and zoom in on delivery address
+              map.current.setCenter(dropoffCoords);
+              map.current.setZoom(16); // Zoomed in for precise location
             } else {
-              map.current.fitBounds(bounds, { padding: 50 });
+              // Fallback: fit to available markers
+              const bounds = new mapboxgl.LngLatBounds();
+              if (!editable) bounds.extend(currentLocation);
+              if (pickupCoords) bounds.extend(pickupCoords);
+              
+              if (bounds.isEmpty()) {
+                map.current.setCenter(center);
+                map.current.setZoom(defaultZoom);
+              } else {
+                map.current.fitBounds(bounds, { padding: 50 });
+              }
             }
           }
 
@@ -285,6 +356,31 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
       }
     };
   }, [pickupAddress, dropoffAddress, showRoute]);
+
+  // Handle editable mode changes
+  useEffect(() => {
+    if (!map.current || !marker.current) return;
+
+    // Update marker draggability based on editable prop
+    if (editable) {
+      marker.current.setDraggable(true);
+      // Add click handler to move pin
+      const handleClick = (e: any) => {
+        const { lng, lat } = e.lngLat;
+        marker.current.setLngLat([lng, lat]);
+        if (onLocationChange) {
+          onLocationChange(lng, lat);
+        }
+      };
+      map.current.on('click', handleClick);
+      
+      return () => {
+        map.current?.off('click', handleClick);
+      };
+    } else {
+      marker.current.setDraggable(false);
+    }
+  }, [editable, onLocationChange]);
 
   if (error) {
     return (

@@ -129,3 +129,12 @@ After deploying:
 3. Test the full payment flow
 4. Monitor Edge Function logs for any errors
 
+
+
+
+
+
+
+
+
+

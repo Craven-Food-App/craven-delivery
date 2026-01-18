@@ -17,7 +17,6 @@ import {
   Card, 
   ActionIcon, 
   Image as MantineImage,
-  ScrollArea,
   Menu,
   Drawer,
   Loader,
@@ -89,6 +88,7 @@ import {
   IconPackage
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/contexts/CartContext';
 import cravenLogo from "@/assets/craven-logo.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
 
@@ -127,10 +127,10 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
     />
     <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
       <Box>
-        <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)' }}>
+        <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
           {title}
         </Title>
-        <Text size="sm" c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)' }}>
+        <Text size="sm" c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
           {subtitle}
         </Text>
       </Box>
@@ -166,60 +166,68 @@ const RestaurantCard = ({
       }}
       onClick={() => navigate(`/restaurant/${restaurant.id}/menu`)}
     >
-      {/* Image with rounded corners */}
+      {/* Image with rounded corners and overlay tags */}
       <Box style={{ position: 'relative', height: '200px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
-      <MantineImage
-        src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
-        alt={restaurant.name}
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={(e) => { 
-          e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
-        }}
-      />
+        <MantineImage
+          src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
+          alt={restaurant.name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={(e) => { 
+            e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
+          }}
+        />
+        {/* Overlay tags */}
+        <Box style={{ position: 'absolute', top: '8px', left: '8px', right: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          {restaurant.isSponsored && (
+            <Badge size="sm" style={{ backgroundColor: '#ff5f1f', color: 'white', fontWeight: 600 }}>
+              Promoted
+            </Badge>
+          )}
+          {(restaurant.restaurantPromo?.toLowerCase().includes('free delivery') || restaurant.delivery_fee_cents === 0) && (
+            <Badge size="sm" style={{ backgroundColor: '#10b981', color: 'white', fontWeight: 600 }}>
+              Free Delivery
+            </Badge>
+          )}
+        </Box>
       </Box>
 
-      {/* Restaurant name in bold */}
-      <Text size="lg" fw={700} c="gray.9" lineClamp={1} mb="xs">
-        {restaurant.name}
-      </Text>
-
-      {/* Star rating * Mile distance * Delivery time */}
-      <Group gap={4} mb="xs">
-          <Group gap={4}>
+      {/* Row 1: Star rating (left) and Restaurant name (right) */}
+      <Group justify="space-between" align="center" mb="xs" wrap="nowrap">
+        {/* Star rating on left */}
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
           <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
           <Text size="sm" fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
-          </Group>
-        <Text size="sm" c="gray.4">•</Text>
-        <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
-        <Text size="sm" c="gray.4">•</Text>
-        <Text size="sm" c="gray.7">{restaurant.time || '20 min'}</Text>
+        </Group>
+        {/* Restaurant name on right */}
+        <Text size="lg" fw={700} c="gray.9" lineClamp={1} style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+          {restaurant.name}
+        </Text>
       </Group>
 
-      {/* Restaurant promo */}
-      {restaurant.restaurantPromo && (
-        <Text size="sm" c="gray.8" mb="xs" lineClamp={1}>
-          {restaurant.restaurantPromo}
-        </Text>
-      )}
-
-      {/* Discount promo * Sponsored */}
-      <Group gap={4}>
-        {restaurant.discountPromo && (
-          <>
+      {/* Row 2: Promo text (left) and Distance/time (right) */}
+      <Group justify="space-between" align="center" mb="xs" wrap="nowrap">
+        {/* Promo text on left */}
+        <Box style={{ flex: 1, minWidth: 0 }}>
+          {restaurant.restaurantPromo && (
+            <Text size="sm" c="gray.8" lineClamp={1}>
+              {restaurant.restaurantPromo}
+            </Text>
+          )}
+          {restaurant.discountPromo && (
             <Text size="sm" fw={600} c="red.7" lineClamp={1}>
               {restaurant.discountPromo}
-      </Text>
-            {restaurant.isSponsored && (
-              <>
-        <Text size="sm" c="gray.4">•</Text>
-                <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
-              </>
-            )}
-          </>
-        )}
-        {!restaurant.discountPromo && restaurant.isSponsored && (
-          <Text size="sm" fw={600} c="blue.7">Sponsored</Text>
-      )}
+            </Text>
+          )}
+          {!restaurant.restaurantPromo && !restaurant.discountPromo && restaurant.isSponsored && (
+            <Text size="sm" c="gray.5" style={{ fontWeight: 400 }}>
+              Sponsored
+            </Text>
+          )}
+        </Box>
+        {/* Distance and time on right */}
+        <Text size="sm" c="gray.7" style={{ flexShrink: 0, marginLeft: '8px' }}>
+          - {restaurant.distance || '0.8 mi'} - {restaurant.time || '20 min'}
+        </Text>
       </Group>
     </Box>
   );
@@ -237,15 +245,18 @@ const Restaurants = () => {
   const [loadingBanners, setLoadingBanners] = useState(true);
   const [heroImageUrl, setHeroImageUrl] = useState<string>('');
   const [loadingHeroImage, setLoadingHeroImage] = useState(true);
+  const [adPlacements, setAdPlacements] = useState<any[]>([]);
+  const [loadingAds, setLoadingAds] = useState(true);
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [showMenuIcons, setShowMenuIcons] = useState(false); // Start collapsed
   const [activeCategory, setActiveCategory] = useState('all');
+  const [quickFilter, setQuickFilter] = useState<string | null>(null);
   
   // Mobile app states
   const [showMain, setShowMain] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true); // Add loading state for auth check
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
-  const [cartCount] = useState(3);
   
   // New state for enhanced functionality
   const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>('delivery');
@@ -254,10 +265,37 @@ const Restaurants = () => {
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
-  const [cartItems, setCartItems] = useState<any[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
+  const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
+  
+  // Get cart from context
+  const { cartCount, cartItems: contextCartItems, getCartTotal, removeFromCart: removeFromCartContext } = useCart();
+  
+  // Icon mapping for cuisine types
+  const getCuisineIcon = (cuisine: string) => {
+    const cuisineLower = cuisine.toLowerCase();
+    if (cuisineLower.includes('pizza') || cuisineLower.includes('italian')) return IconToolsKitchen2;
+    if (cuisineLower.includes('chinese') || cuisineLower.includes('asian')) return IconToolsKitchen2;
+    if (cuisineLower.includes('mexican') || cuisineLower.includes('taco')) return IconToolsKitchen2;
+    if (cuisineLower.includes('burger') || cuisineLower.includes('american')) return IconToolsKitchen2;
+    if (cuisineLower.includes('sushi') || cuisineLower.includes('japanese')) return IconToolsKitchen2;
+    if (cuisineLower.includes('indian')) return IconToolsKitchen2;
+    if (cuisineLower.includes('thai')) return IconToolsKitchen2;
+    if (cuisineLower.includes('breakfast') || cuisineLower.includes('brunch')) return IconCoffee;
+    if (cuisineLower.includes('dessert') || cuisineLower.includes('bakery') || cuisineLower.includes('sweet')) return IconSparkles;
+    if (cuisineLower.includes('grocery') || cuisineLower.includes('market')) return IconBuildingStore;
+    if (cuisineLower.includes('seafood')) return IconToolsKitchen2;
+    if (cuisineLower.includes('mediterranean')) return IconToolsKitchen2;
+    if (cuisineLower.includes('bbq') || cuisineLower.includes('barbecue')) return IconFlame;
+    return IconToolsKitchen2; // Default icon
+  };
+  
+  // Filter restaurants based on cuisine filter
+  const filteredWeeklyDeals = quickFilter 
+    ? weeklyDeals.filter((r: any) => r.cuisine_type?.toLowerCase() === quickFilter.toLowerCase())
+    : weeklyDeals;
   
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -359,13 +397,6 @@ const Restaurants = () => {
     });
   };
 
-  const removeFromCart = (itemId: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== itemId));
-  };
-
-  const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price || 0), 0);
-  };
 
   // Filter functionality
   const applyFilters = () => {
@@ -435,12 +466,71 @@ const Restaurants = () => {
     }
   };
 
+  // Common cuisine types - always show these
+  const commonCuisines = [
+    'American',
+    'Italian',
+    'Chinese',
+    'Mexican',
+    'Japanese',
+    'Indian',
+    'Thai',
+    'Mediterranean',
+    'Korean',
+    'Vietnamese',
+    'French',
+    'Greek',
+    'BBQ',
+    'Seafood',
+    'Breakfast',
+    'Dessert',
+    'Pizza',
+    'Burgers',
+    'Sushi',
+    'Steakhouse'
+  ];
+
+  // Fetch available cuisine types (for future use, but always show common cuisines)
+  const fetchAvailableCuisines = async () => {
+    // Always set to common cuisines for now
+    setAvailableCuisines(commonCuisines);
+    
+    // Optional: Also fetch from database to see what's available
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('cuisine_type')
+        .eq('is_active', true)
+        .not('cuisine_type', 'is', null);
+
+      if (!error && data) {
+        // Get unique cuisine types from database
+        const uniqueCuisines = Array.from(
+          new Set(
+            (data || [])
+              .map((r: any) => r.cuisine_type)
+              .filter((c: string | null) => c && c.trim() !== '')
+          )
+        ) as string[];
+        
+        // Merge with common cuisines, prioritizing database cuisines
+        const allCuisines = [...new Set([...uniqueCuisines, ...commonCuisines])].sort();
+        setAvailableCuisines(allCuisines);
+      }
+    } catch (error) {
+      console.error('Error fetching cuisine types:', error);
+      // Keep common cuisines on error
+    }
+  };
+
   // Fetch deals on component mount
   useEffect(() => {
     fetchWeeklyDeals();
     fetchNotifications();
     fetchPromotionalBanners();
     fetchHeroImage();
+    fetchAvailableCuisines();
+    fetchAdPlacements();
   }, []);
 
   // Update filter options based on delivery mode
@@ -535,6 +625,38 @@ const Restaurants = () => {
       setPromotionalBanners([]);
     } finally {
       setLoadingBanners(false);
+    }
+  };
+
+  const fetchAdPlacements = async () => {
+    try {
+      setLoadingAds(true);
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('ad_placements')
+        .select('*')
+        .eq('page_path', '/restaurants')
+        .eq('is_active', true)
+        .lte('valid_from', now)
+        .or(`valid_until.is.null,valid_until.gt.${now}`)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        // If table doesn't exist yet, just log and continue
+        if (error.code === 'PGRST205' || error.message?.includes('not found')) {
+          console.log('Ad placements table not found - migration may not be applied yet');
+          setAdPlacements([]);
+        } else {
+          throw error;
+        }
+      } else {
+        setAdPlacements(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching ad placements:', error);
+      setAdPlacements([]);
+    } finally {
+      setLoadingAds(false);
     }
   };
 
@@ -813,14 +935,13 @@ const Restaurants = () => {
               style={{ padding: '8px', borderRadius: '12px' }}
             >
               <Stack gap={0} align="flex-start">
-                <Text size="xs" c="gray.5" fw={500} style={{ lineHeight: 1 }}>Deliver to</Text>
                 <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
               </Stack>
             </Button>
 
             <Group gap="xs">
               <ActionIcon
-                onClick={() => navigate('/account')}
+                onClick={() => navigate('/notifications')}
                 variant="subtle"
                 size="lg"
                 radius="xl"
@@ -839,6 +960,40 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
+              {/* Cart Icon with Quantity Badge */}
+              {cartCount > 0 && (
+                <ActionIcon
+                  onClick={() => navigate('/checkout')}
+                  variant="subtle"
+                  size="lg"
+                  radius="xl"
+                  style={{ position: 'relative' }}
+                >
+                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      minWidth: '18px',
+                      height: '18px',
+                      backgroundColor: '#ff5f1f',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'white',
+                      lineHeight: 1
+                    }}
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </Box>
+                </ActionIcon>
+              )}
             </Group>
           </Group>
 
@@ -852,7 +1007,7 @@ const Restaurants = () => {
               styles={{ 
                 input: { 
                   paddingLeft: '44px', 
-                  paddingRight: '16px', 
+                  paddingRight: '48px', 
                   paddingTop: '12px', 
                   paddingBottom: '12px', 
                   fontSize: '16px', 
@@ -863,33 +1018,232 @@ const Restaurants = () => {
                 }
               }}
             />
+            {/* Menu Hamburger Icon - Bottom Right */}
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => setShowMenuIcons(!showMenuIcons)}
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                zIndex: 2,
+                backgroundColor: 'transparent',
+                color: '#a3a3a3',
+              }}
+            >
+              <IconMenu2 
+                size={16} 
+              />
+            </ActionIcon>
           </Box>
         </Box>
 
         {/* Scrollable Content */}
         <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fafafa' }}>
           <Box component="main">
-            {/* Quick Filters/Categories */}
-            <Group gap="xs" p="md" style={{ overflowX: 'auto', whiteSpace: 'nowrap', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white' }}>
-              {['Fast Delivery', 'High Rated', 'Breakfast', 'Deals', 'Grocery', 'Dessert'].map((item) => (
-                <Button
-                  key={item}
-                  variant="outline"
-                  size="sm"
-                  radius="xl"
-                  style={{ 
-                    backgroundColor: 'white', 
-                    borderColor: '#e5e7eb',
-                    color: '#404040',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
+            {/* Menu Icons - Dropdown from search bar */}
+            {showMenuIcons && (
+              <Box 
+                p="md" 
+                style={{ 
+                  borderBottom: '1px solid #e5e7eb', 
+                  backgroundColor: 'white',
+                  marginTop: '-8px', // Overlap with search bar shadow area
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                }}
+              >
+                <Box
+                  style={{
+                    width: '100%',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollBehavior: 'smooth'
+                  }}
+                  sx={{
+                    '&::-webkit-scrollbar': {
+                      display: 'none'
+                    }
                   }}
                 >
-                  {item}
-                </Button>
-              ))}
-            </Group>
+                  <Group gap="md" style={{ flexWrap: 'nowrap', width: 'max-content', paddingBottom: '8px' }}>
+                    {navCategories.map((category) => {
+                      const IconComponent = category.icon;
+                      return (
+                        <Box
+                          key={category.id}
+                          onClick={() => {
+                            handleCategoryClick(category.id);
+                          }}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            minWidth: '60px',
+                          }}
+                        >
+                          <Box
+                            style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '12px',
+                              backgroundColor: category.active ? '#ff5f1f' : '#f3f4f6',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            <IconComponent 
+                              size={24} 
+                              style={{ 
+                                color: category.active ? 'white' : '#4b5563',
+                                strokeWidth: 2
+                              }} 
+                            />
+                          </Box>
+                          <Text 
+                            size="xs" 
+                            fw={500} 
+                            c={category.active ? '#ff5f1f' : '#4b5563'}
+                            style={{ 
+                              textAlign: 'center',
+                              lineHeight: 1.2,
+                              maxWidth: '60px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {category.label}
+                          </Text>
+                        </Box>
+                      );
+                    })}
+                  </Group>
+                </Box>
+              </Box>
+            )}
+
+            {/* Cuisine Types - 2 Rows Grid with Horizontal Scroll */}
+            <Box 
+              p="md" 
+              style={{ 
+                borderBottom: '1px solid #e5e7eb', 
+                backgroundColor: 'white',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}
+              sx={{
+                '&::-webkit-scrollbar': {
+                  display: 'none'
+                }
+              }}
+            >
+              {availableCuisines.length > 0 ? (
+                <Box style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {/* Row 1 */}
+                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                        {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                          const IconComponent = getCuisineIcon(cuisine);
+                          const isActive = cuisineFilter === cuisine.toLowerCase();
+                          return (
+                            <Button
+                              key={cuisine}
+                              variant={isActive ? "filled" : "outline"}
+                              size="xs"
+                              radius="md"
+                              onClick={() => {
+                                const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
+                                navigate(`/restaurants/cuisine/${cuisineSlug}`);
+                              }}
+                          leftSection={
+                            <IconComponent 
+                              size={14} 
+                              style={{ 
+                                color: isActive ? 'white' : '#ff5f1f',
+                                strokeWidth: 2.5
+                              }} 
+                            />
+                          }
+                          style={{ 
+                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                            color: isActive ? 'white' : '#404040',
+                            fontWeight: 600,
+                            padding: '6px 12px',
+                            height: 'auto',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'all 0.2s ease',
+                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {cuisine}
+                        </Button>
+                      );
+                    })}
+                  </Box>
+                      {/* Row 2 */}
+                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                        {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                          const IconComponent = getCuisineIcon(cuisine);
+                          const isActive = cuisineFilter === cuisine.toLowerCase();
+                          return (
+                            <Button
+                              key={cuisine}
+                              variant={isActive ? "filled" : "outline"}
+                              size="xs"
+                              radius="md"
+                              onClick={() => {
+                                const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
+                                navigate(`/restaurants/cuisine/${cuisineSlug}`);
+                              }}
+                          leftSection={
+                            <IconComponent 
+                              size={14} 
+                              style={{ 
+                                color: isActive ? 'white' : '#ff5f1f',
+                                strokeWidth: 2.5
+                              }} 
+                            />
+                          }
+                          style={{ 
+                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                            color: isActive ? 'white' : '#404040',
+                            fontWeight: 600,
+                            padding: '6px 12px',
+                            height: 'auto',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'all 0.2s ease',
+                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          {cuisine}
+                        </Button>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ) : (
+                <Text size="sm" c="gray.6" ta="center" py="md">
+                  Loading cuisines...
+                </Text>
+              )}
+            </Box>
 
             {/* Promo Carousel */}
             {loadingBanners ? (
@@ -913,8 +1267,8 @@ const Restaurants = () => {
                     <Carousel.Slide key={banner.id}>
                       <PromoCard 
                         title={banner.title} 
-                        subtitle={banner.subtitle}
-                        image={banner.image_url} 
+                        subtitle={banner.description || banner.subtitle || ''}
+                        image={banner.image_url || ''} 
                       />
                     </Carousel.Slide>
                   ))}
@@ -923,15 +1277,15 @@ const Restaurants = () => {
             ) : null}
 
             {/* Fastest near you */}
-            <Box px="md" py="xl" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Group justify="space-between" mb="md">
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Craven Quick Picks</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={24} />
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', paddingTop: '2px', paddingBottom: '2px' }}>
+              <Group justify="space-between" gap="xs" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
+                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                  <IconChevronRight size={18} />
                 </ActionIcon>
               </Group>
               
-              <Group gap="md" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
+              <Group gap="md" style={{ overflowX: 'auto', paddingTop: '2px', paddingBottom: '2px' }}>
                 {RESTAURANTS_DATA.fastest.map((restaurant) => (
                   <RestaurantCard 
                     key={restaurant.id} 
@@ -943,16 +1297,106 @@ const Restaurants = () => {
               </Group>
             </Box>
 
+            {/* Advertisement Banner - Dynamic */}
+            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {loadingAds ? (
+                <Box
+                  style={{
+                    width: '380px',
+                    height: '200px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Loader size="sm" />
+                </Box>
+              ) : (() => {
+                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
+                return adPlacement ? (
+                    <Box
+                      component="a"
+                      href={adPlacement.click_url || '#'}
+                      target={adPlacement.click_url ? '_blank' : undefined}
+                      rel={adPlacement.click_url ? 'noopener noreferrer' : undefined}
+                      style={{
+                        width: `${adPlacement.width}px`,
+                        height: `${adPlacement.height}px`,
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: adPlacement.click_url ? 'pointer' : 'default',
+                        transition: 'opacity 0.2s',
+                        overflow: 'hidden',
+                        textDecoration: 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (adPlacement.click_url) {
+                          e.currentTarget.style.opacity = '0.9';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                    >
+                      {adPlacement.ad_code ? (
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      ) : adPlacement.image_url ? (
+                        <MantineImage
+                          src={adPlacement.image_url}
+                          alt="Advertisement"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
+                          Advertisement
+                          <br />
+                          {adPlacement.width} × {adPlacement.height}
+                        </Text>
+                      )}
+                    </Box>
+                  ) : (
+                    <Box
+                      style={{
+                        width: '380px',
+                        height: '200px',
+                        backgroundColor: '#f3f4f6',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
+                        Advertisement
+                        <br />
+                        380 × 200
+                      </Text>
+                    </Box>
+                  );
+                })()}
+              </Box>
+
             {/* Premium Selections */}
-            <Box px="md" py="xl" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Group justify="space-between" mb="md">
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Premium Selections</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={24} />
+            <Box px="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', paddingTop: '2px', paddingBottom: '2px' }}>
+              <Group justify="space-between" gap="xs" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1, margin: 0, padding: 0 }}>Premium Selections</Title>
+                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                  <IconChevronRight size={18} />
                 </ActionIcon>
               </Group>
               
-              <Stack gap="md">
+              <Group gap="md" style={{ overflowX: 'auto', paddingTop: '2px', paddingBottom: '2px' }}>
                 {RESTAURANTS_DATA.premium.map((restaurant) => (
                   <RestaurantCard 
                     key={restaurant.id} 
@@ -961,7 +1405,18 @@ const Restaurants = () => {
                     toggleLike={toggleLike} 
                   />
                 ))}
-              </Stack>
+              </Group>
+            </Box>
+
+            {/* All Restaurants Section - Mobile */}
+            <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Box ref={resultsRef}>
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={cuisineFilter}
+                />
+              </Box>
             </Box>
 
             {/* Spacing for Nav */}
@@ -995,7 +1450,7 @@ const Restaurants = () => {
             <Group gap="xs">
               <MantineImage src={cravenLogo} alt="CRAVE'N" style={{ height: '32px' }} />
               <ActionIcon
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={() => navigate('/notifications')}
                 variant="subtle"
                 size="lg"
                 radius="xl"
@@ -1196,7 +1651,7 @@ const Restaurants = () => {
               {/* Notifications */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => navigate('/notifications')}
                   className="relative"
                 >
                   <IconBell className="w-6 h-6 text-gray-600 hover:text-gray-900 transition-colors" />
@@ -1248,9 +1703,9 @@ const Restaurants = () => {
                   className="relative"
                 >
                   <IconShoppingCart className="w-6 h-6 text-gray-600 hover:text-gray-900 transition-colors" />
-                  {cartItems.length > 0 && (
+                  {cartCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {cartItems.length}
+                      {cartCount}
                     </span>
                   )}
                 </button>
@@ -1263,16 +1718,19 @@ const Restaurants = () => {
                         <h3 className="font-semibold text-gray-900">Your Cart</h3>
                         <button className="text-sm text-orange-600">Clear all</button>
                       </div>
-                      {cartItems.length > 0 ? (
+                      {contextCartItems.length > 0 ? (
                         <div className="space-y-3 max-h-64 overflow-y-auto">
-                          {cartItems.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+                          {contextCartItems.map((item, index) => (
+                            <div key={item.id || index} className="flex items-center justify-between p-2 border rounded-lg">
                               <div className="flex-1">
                                 <h4 className="font-medium text-sm text-gray-900">{item.name}</h4>
-                                <p className="text-xs text-gray-600">${item.price?.toFixed(2) || '0.00'}</p>
+                                <p className="text-xs text-gray-600">${((item.price_cents * item.quantity) / 100).toFixed(2)}</p>
+                                {item.quantity > 1 && (
+                                  <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                )}
                               </div>
                               <button 
-                                onClick={() => removeFromCart(item.id)}
+                                onClick={() => removeFromCartContext(item.id)}
                                 className="text-primary hover:text-primary"
                               >
                                 <IconX className="w-4 h-4" />
@@ -1281,9 +1739,15 @@ const Restaurants = () => {
                           ))}
                           <div className="pt-3 border-t">
                             <div className="flex items-center justify-between mb-3">
-                              <span className="font-semibold">Total: ${getCartTotal().toFixed(2)}</span>
+                              <span className="font-semibold">Total: ${(getCartTotal() / 100).toFixed(2)}</span>
                             </div>
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600">
+                            <Button 
+                              className="w-full bg-orange-500 hover:bg-orange-600"
+                              onClick={() => {
+                                setShowCart(false);
+                                navigate('/checkout');
+                              }}
+                            >
                               Checkout
                             </Button>
                           </div>
@@ -1325,7 +1789,22 @@ const Restaurants = () => {
           WebkitOverflowScrolling: 'touch'
         }}
       >
-        <ScrollArea type="scroll" scrollbars="x" style={{ width: '100%' }}>
+        <Box
+          style={{
+            width: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth'
+          }}
+          sx={{
+            '&::-webkit-scrollbar': {
+              display: 'none'
+            }
+          }}
+        >
           <Group gap="xs" p="md" style={{ flexWrap: 'nowrap', width: 'max-content' }}>
             {filterOptions.map((filter) => (
               <Button
@@ -1350,7 +1829,7 @@ const Restaurants = () => {
               </Button>
             ))}
           </Group>
-        </ScrollArea>
+        </Box>
       </Box>
 
       <div className="flex">
@@ -1550,9 +2029,9 @@ const Restaurants = () => {
                     </div>
                   ))}
                 </div>
-              ) : weeklyDeals.length > 0 ? (
+              ) : filteredWeeklyDeals.length > 0 ? (
                 <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4" ref={weeklyDealsScrollRef}>
-                  {weeklyDeals.map((restaurant) => {
+                  {filteredWeeklyDeals.map((restaurant) => {
                     const formatPromotionTitle = () => {
                       if (restaurant.promotion_title) return restaurant.promotion_title;
                       
@@ -1616,7 +2095,22 @@ const Restaurants = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No weekly deals available at the moment.</p>
+                  <p className="text-gray-500">
+                    {quickFilter 
+                      ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
+                      : 'No weekly deals available at the moment.'}
+                  </p>
+                  {quickFilter && (
+                    <button
+                      onClick={() => {
+                        setQuickFilter(null);
+                        setCuisineFilter('all');
+                      }}
+                      className="mt-4 text-primary font-semibold hover:underline"
+                    >
+                      Clear filter
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1668,8 +2162,8 @@ const Restaurants = () => {
         }}
       >
         <Stack gap="md">
-          <Group justify="space-between" mb="lg">
-            <Title order={3} fw={600}>Browse</Title>
+          <Group justify="space-between" mb="sm">
+            <Title order={3} fw={600} style={{ fontSize: '16px', lineHeight: 1.2 }}>Browse</Title>
             <ActionIcon
               onClick={() => setShowMobileNav(false)}
               variant="subtle"

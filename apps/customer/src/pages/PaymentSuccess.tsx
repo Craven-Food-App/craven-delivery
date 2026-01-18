@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/contexts/CartContext';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { clearCart } = useCart();
 
   const sessionId = searchParams.get('session_id');
   const orderId = searchParams.get('order_id');
@@ -51,6 +53,9 @@ const PaymentSuccess = () => {
           if (orderError) throw orderError;
           
           setOrder(orderData);
+          
+          // Clear cart after successful payment
+          clearCart();
           
           toast({
             title: "Payment successful! 🎉",

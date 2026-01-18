@@ -1,21 +1,72 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { MapPin, Clock, Phone, CheckCircle, Truck, Utensils, Navigation } from 'lucide-react';
+import { 
+  Box, 
+  Container, 
+  Paper, 
+  Title, 
+  Text, 
+  Badge, 
+  Group, 
+  Stack, 
+  Divider, 
+  Progress, 
+  Timeline, 
+  Card,
+  Grid,
+  Avatar,
+  ActionIcon,
+  Loader,
+  Alert,
+  Button
+} from '@mantine/core';
+import { 
+  IconMapPin, 
+  IconClock, 
+  IconPhone, 
+  IconCheck, 
+  IconTruck, 
+  IconToolsKitchen2, 
+  IconNavigation,
+  IconChevronLeft,
+  IconUser,
+  IconRoute,
+  IconAlertCircle
+} from '@tabler/icons-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
+const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWZpbXN4NmUwMG0wMmpxNDNkc2lmNWhiIn0._lEfvdpBUJpz-RYDV02ZAA";
+
+interface OrderStatus {
+  status: string;
+  timestamp: string;
+  description: string;
+}
 
 const TrackOrder: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  
   const [order, setOrder] = useState<any>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
-  const [driver, setDriver] = useState<any>(null);
-  const [driverLocation, setDriverLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [feeder, setFeeder] = useState<any>(null);
+  const [feederLocation, setFeederLocation] = useState<{lat: number, lng: number} | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [route, setRoute] = useState<any>(null);
+  
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const feederMarker = useRef<any>(null);
+  const restaurantMarker = useRef<any>(null);
+  const customerMarker = useRef<any>(null);
+  const routeLayer = useRef<any>(null);
 
   useEffect(() => {
     if (orderId) {
@@ -23,24 +74,25 @@ const TrackOrder: React.FC = () => {
     }
   }, [orderId]);
 
-  // Real-time driver location tracking
+  // Real-time feeder location tracking
   useEffect(() => {
-    if (!driver?.user_id) return;
+    if (!feeder?.user_id) return;
 
     const channel = supabase
-      .channel(`driver-location-${driver.user_id}`)
+      .channel(`feeder-location-${feeder.user_id}`)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'driver_profiles',
-        filter: `user_id=eq.${driver.user_id}`
+        filter: `user_id=eq.${feeder.user_id}`
       }, (payload) => {
         const newData = payload.new as any;
         if (newData.current_latitude && newData.current_longitude) {
-          setDriverLocation({
+          setFeederLocation({
             lat: newData.current_latitude,
             lng: newData.current_longitude
           });
+          updateFeederMarker(newData.current_latitude, newData.current_longitude);
         }
       })
       .subscribe();
@@ -48,65 +100,119 @@ const TrackOrder: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [driver?.user_id]);
+  }, [feeder?.user_id]);
 
-  // Send notification to driver
-  const notifyDriver = async (driverId: string, orderId: string) => {
-    try {
-      // Create notification log for when driver checks their app
-      const { error: logError } = await supabase
-        .from('notification_logs')
-        .insert({
-          notification_type: 'order_assigned',
-          title: 'New Order Assigned!',
-          body: `You have been assigned to order #${orderId.slice(0, 8)}`,
-          user_id: driverId,
-          data: { order_id: orderId }
-        } as any);
+  // Real-time order status updates
+  useEffect(() => {
+    if (!orderId) return;
 
-      if (logError) {
-        console.error('Error logging notification:', logError);
-      }
+    const channel = supabase
+      .channel(`order-status-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, (payload) => {
+        const newData = payload.new as any;
+        setOrder((prev: any) => ({ ...prev, ...newData }));
+        
+        // If feeder was just assigned, fetch feeder details
+        if (newData.driver_id && !feeder) {
+          fetchFeederDetails(newData.driver_id);
+        }
+      })
+      .subscribe();
 
-      // Update driver status to show they have a pending order
-      const { error: statusError } = await supabase
-        .from('driver_profiles')
-        .update({ 
-          status: 'busy',
-          is_available: false 
-        })
-        .eq('user_id', driverId);
-
-      if (statusError) {
-        console.error('Error updating driver status:', statusError);
-      }
-
-      console.log('Driver notification logged - they will see it when they open the driver app');
-    } catch (error) {
-      console.error('Error notifying driver:', error);
-    }
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [orderId, feeder]);
 
   // Initialize map
   useEffect(() => {
-    if (!mapLoaded && mapRef.current) {
+    if (!mapLoaded && mapRef.current && (restaurant || order)) {
       initializeMap();
     }
-  }, [mapLoaded]);
+  }, [mapLoaded, restaurant, order]);
 
-  // Update map when driver location changes
+  // Update map when feeder location changes
   useEffect(() => {
-    if (mapInstance.current && driverLocation) {
-      updateDriverMarker();
+    if (mapInstance.current && feederLocation && restaurant) {
+      updateRoute();
     }
-  }, [driverLocation]);
+  }, [feederLocation, restaurant, order]);
+
+  const fetchOrderDetails = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch order with restaurant and delivery address
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          restaurants (
+            id,
+            name,
+            address,
+            city,
+            state,
+            zip_code,
+            phone,
+            latitude,
+            longitude,
+            image_url
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) throw orderError;
+      
+      setOrder(orderData);
+      setRestaurant(orderData.restaurants);
+
+      // Fetch feeder if assigned
+      if (orderData.driver_id) {
+        await fetchFeederDetails(orderData.driver_id);
+      }
+    } catch (error: any) {
+      console.error('Error fetching order:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFeederDetails = async (feederId: string) => {
+    try {
+      const { data: feederData, error: feederError } = await supabase
+        .from('driver_profiles')
+        .select('*')
+        .eq('user_id', feederId)
+        .single();
+
+      if (feederError) throw feederError;
+      
+      setFeeder(feederData);
+      
+      // Set initial feeder location
+      if (feederData?.current_latitude && feederData?.current_longitude) {
+        setFeederLocation({
+          lat: feederData.current_latitude,
+          lng: feederData.current_longitude
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching feeder:', error);
+    }
+  };
 
   const initializeMap = async () => {
     try {
       // Load Mapbox GL JS
       const mapboxgl = (window as any).mapboxgl;
       if (!mapboxgl) {
-        // Load Mapbox script if not already loaded
         const script = document.createElement('script');
         script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
         script.onload = () => {
@@ -127,43 +233,66 @@ const TrackOrder: React.FC = () => {
 
   const createMap = () => {
     const mapboxgl = (window as any).mapboxgl;
-    if (!mapboxgl) return;
+    if (!mapboxgl || !mapRef.current) return;
 
-    // Use a default location if no driver location
-    const center = driverLocation || { lat: 40.7128, lng: -74.0060 }; // NYC default
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+    // Center on restaurant initially, or use default location
+    const center: [number, number] = restaurant?.longitude && restaurant?.latitude
+      ? [restaurant.longitude, restaurant.latitude]
+      : [-83.5555, 41.6639]; // Toledo default
 
     mapInstance.current = new mapboxgl.Map({
       container: mapRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [center.lng, center.lat],
+      center: center,
       zoom: 13,
-      accessToken: 'pk.eyJ1IjoiY3JhdmVuLWRlbGl2ZXJ5IiwiYSI6ImNsdGJ0dGJ0dGJ0dGIifQ.example' // Replace with real token
+      accessToken: MAPBOX_ACCESS_TOKEN
     });
 
     mapInstance.current.on('load', () => {
       setMapLoaded(true);
-      if (driverLocation) {
-        updateDriverMarker();
+      
+      // Add restaurant marker
+      if (restaurant?.latitude && restaurant?.longitude) {
+        addRestaurantMarker(restaurant.latitude, restaurant.longitude);
+      }
+      
+      // Add customer delivery marker
+      if (order?.delivery_address) {
+        const deliveryLat = typeof order.delivery_address === 'object' 
+          ? order.delivery_address.latitude 
+          : null;
+        const deliveryLng = typeof order.delivery_address === 'object'
+          ? order.delivery_address.longitude
+          : null;
+        
+        if (deliveryLat && deliveryLng) {
+          addCustomerMarker(deliveryLat, deliveryLng);
+        }
+      }
+      
+      // Add feeder marker if location available
+      if (feederLocation) {
+        updateFeederMarker(feederLocation.lat, feederLocation.lng);
+      }
+      
+      // Update route if we have all necessary data
+      if (feederLocation && restaurant && order?.delivery_address) {
+        updateRoute();
       }
     });
   };
 
-  const updateDriverMarker = () => {
-    if (!mapInstance.current || !driverLocation) return;
+  const addRestaurantMarker = (lat: number, lng: number) => {
+    if (!mapInstance.current) return;
 
-    // Remove existing marker
-    const existingMarker = document.querySelector('.driver-marker');
-    if (existingMarker) {
-      existingMarker.remove();
-    }
-
-    // Add new marker
-    const marker = document.createElement('div');
-    marker.className = 'driver-marker';
-    marker.style.cssText = `
+    const el = document.createElement('div');
+    el.className = 'restaurant-marker';
+    el.style.cssText = `
       width: 40px;
       height: 40px;
-      background: #f97316;
+      background: #FF6B35;
       border-radius: 50%;
       border: 3px solid white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -171,402 +300,509 @@ const TrackOrder: React.FC = () => {
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 18px;
+      font-size: 20px;
     `;
-    marker.innerHTML = '🚚';
+    el.innerHTML = '🍽️';
 
-    new (window as any).mapboxgl.Marker(marker)
-      .setLngLat([driverLocation.lng, driverLocation.lat])
+    if (restaurantMarker.current) {
+      restaurantMarker.current.remove();
+    }
+
+    restaurantMarker.current = new (window as any).mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .addTo(mapInstance.current);
+  };
+
+  const addCustomerMarker = (lat: number, lng: number) => {
+    if (!mapInstance.current) return;
+
+    const el = document.createElement('div');
+    el.className = 'customer-marker';
+    el.style.cssText = `
+      width: 40px;
+      height: 40px;
+      background: #2563EB;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    `;
+    el.innerHTML = '📍';
+
+    if (customerMarker.current) {
+      customerMarker.current.remove();
+    }
+
+    customerMarker.current = new (window as any).mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .addTo(mapInstance.current);
+  };
+
+  const updateFeederMarker = (lat: number, lng: number) => {
+    if (!mapInstance.current) return;
+
+    const el = document.createElement('div');
+    el.className = 'feeder-marker';
+    el.style.cssText = `
+      width: 48px;
+      height: 48px;
+      background: #10B981;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 12px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      animation: pulse 2s infinite;
+    `;
+    el.innerHTML = '🚚';
+
+    // Add pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.9; }
+      }
+    `;
+    if (!document.head.querySelector('style[data-feeder-pulse]')) {
+      style.setAttribute('data-feeder-pulse', 'true');
+      document.head.appendChild(style);
+    }
+
+    if (feederMarker.current) {
+      feederMarker.current.remove();
+    }
+
+    feederMarker.current = new (window as any).mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
       .addTo(mapInstance.current);
 
-    // Center map on driver
+    // Center map on feeder with smooth animation
     mapInstance.current.flyTo({
-      center: [driverLocation.lng, driverLocation.lat],
-      zoom: 15
+      center: [lng, lat],
+      zoom: 14,
+      duration: 1000
     });
   };
 
-  const createTestDriver = async () => {
-    try {
-      // First, try to find an existing online driver
-      const { data: onlineDrivers, error: driversError } = await supabase
-        .from('driver_profiles')
-        .select('*')
-        .eq('is_available', true)
-        .eq('status', 'online')
-        .limit(1);
-
-      if (driversError) {
-        console.error('Error fetching drivers:', driversError);
-      }
-
-      if (onlineDrivers && onlineDrivers.length > 0) {
-        // Use existing online driver
-        const existingDriver = onlineDrivers[0];
-        
-      // Assign driver to order
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ driver_id: existingDriver.user_id })
-        .eq('id', orderId);
-
-      if (updateError) throw updateError;
-
-      // Send notification to driver
-      await notifyDriver(existingDriver.user_id, orderId);
-
-      setDriver(existingDriver);
-      if (existingDriver.current_latitude && existingDriver.current_longitude) {
-        setDriverLocation({
-          lat: existingDriver.current_latitude,
-          lng: existingDriver.current_longitude
-        });
-      }
-
-      toast({ title: "Success", description: "Assigned existing online driver!" });
-        return;
-      }
-
-      // If no online drivers, create a test one
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({ title: "Error", description: "Please log in to create test driver", variant: "destructive" });
-        return;
-      }
-
-      // Create test driver profile
-      const { data: driverProfile, error: driverError } = await supabase
-        .from('driver_profiles')
-        .upsert({
-          user_id: user.id,
-          vehicle_type: 'car',
-          license_plate: 'TEST123',
-          current_latitude: 40.7128 + (Math.random() - 0.5) * 0.01,
-          current_longitude: -74.0060 + (Math.random() - 0.5) * 0.01,
-          is_available: true,
-          status: 'online'
-        })
-        .select()
-        .single();
-
-      if (driverError) {
-        console.error('Driver creation error:', driverError);
-        throw driverError;
-      }
-
-      // Assign driver to order
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ driver_id: user.id })
-        .eq('id', orderId);
-
-      if (updateError) {
-        console.error('Order update error:', updateError);
-        throw updateError;
-      }
-
-      // Send notification to driver
-      await notifyDriver(user.id, orderId);
-
-      setDriver(driverProfile);
-      setDriverLocation({
-        lat: driverProfile.current_latitude,
-        lng: driverProfile.current_longitude
-      });
-
-      toast({ title: "Success", description: "Test driver created and assigned!" });
-    } catch (error) {
-      console.error('Error creating test driver:', error);
-      toast({ 
-        title: "Error", 
-        description: `Failed to create test driver: ${error.message || 'Unknown error'}`, 
-        variant: "destructive" 
-      });
+  const updateRoute = async () => {
+    if (!mapInstance.current || !feederLocation || !restaurant || !order?.delivery_address) {
+      return;
     }
-  };
 
-  const fetchOrderDetails = async () => {
     try {
-      // Fetch order
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          restaurants (
-            id,
-            name,
-            address,
-            phone,
-            latitude,
-            longitude
-          )
-        `)
-        .eq('id', orderId)
-        .single();
+      const deliveryLat = typeof order.delivery_address === 'object' 
+        ? order.delivery_address.latitude 
+        : null;
+      const deliveryLng = typeof order.delivery_address === 'object'
+        ? order.delivery_address.longitude
+        : null;
 
-      if (orderError) throw orderError;
-      setOrder(orderData);
-      setRestaurant(orderData.restaurants);
+      if (!deliveryLat || !deliveryLng) return;
 
-      // Fetch driver if assigned
-      if (orderData.driver_id) {
-        const { data: driverData } = await supabase
-          .from('driver_profiles')
-          .select('*')
-          .eq('user_id', orderData.driver_id)
-          .single();
-        setDriver(driverData);
+      // Determine route based on order status
+      let startLat: number, startLng: number;
+      
+      if (order.order_status === 'picked_up' || order.order_status === 'in_transit') {
+        // Feeder is going from restaurant to customer
+        startLat = restaurant.latitude;
+        startLng = restaurant.longitude;
+      } else {
+        // Feeder is going to restaurant
+        startLat = feederLocation.lat;
+        startLng = feederLocation.lng;
+      }
+
+      const endLat = deliveryLat;
+      const endLng = deliveryLng;
+
+      // Fetch route from Mapbox Directions API
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${startLng},${startLat};${endLng},${endLat}?` +
+        `access_token=${MAPBOX_ACCESS_TOKEN}&geometries=geojson&overview=full`
+      );
+
+      const data = await response.json();
+      
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const routeGeometry = data.routes[0].geometry;
         
-        // Set initial driver location
-        if (driverData?.current_latitude && driverData?.current_longitude) {
-          setDriverLocation({
-            lat: driverData.current_latitude,
-            lng: driverData.current_longitude
-          });
+        // Remove existing route layer
+        if (mapInstance.current.getLayer('route')) {
+          mapInstance.current.removeLayer('route');
         }
+        if (mapInstance.current.getSource('route')) {
+          mapInstance.current.removeSource('route');
+        }
+
+        // Add route source
+        mapInstance.current.addSource('route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: routeGeometry
+          }
+        });
+
+        // Add route layer
+        mapInstance.current.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#10B981',
+            'line-width': 4,
+            'line-opacity': 0.75
+          }
+        });
+
+        setRoute(data.routes[0]);
       }
     } catch (error) {
-      console.error('Error fetching order:', error);
-      toast({ title: "Error", description: "Could not load order details", variant: "destructive" });
-    } finally {
-      setLoading(false);
+      console.error('Error fetching route:', error);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'confirmed': return 'text-blue-600 bg-blue-100';
-      case 'preparing': return 'text-orange-600 bg-orange-100';
-      case 'ready': return 'text-purple-600 bg-purple-100';
-      case 'picked_up': return 'text-indigo-600 bg-indigo-100';
-      case 'in_transit': return 'text-cyan-600 bg-cyan-100';
-      case 'delivered': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'pending': return 'yellow';
+      case 'confirmed': return 'blue';
+      case 'preparing': return 'orange';
+      case 'ready': return 'purple';
+      case 'picked_up': return 'indigo';
+      case 'in_transit': return 'cyan';
+      case 'delivered': return 'green';
+      default: return 'gray';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return 'Order received';
-      case 'confirmed': return 'Restaurant confirmed';
-      case 'preparing': return 'Preparing your order';
-      case 'ready': return 'Ready for pickup';
-      case 'picked_up': return 'Driver picked up';
-      case 'in_transit': return 'On the way';
+      case 'pending': return 'Order Received';
+      case 'confirmed': return 'Restaurant Confirmed';
+      case 'preparing': return 'Preparing Your Order';
+      case 'ready': return 'Ready for Pickup';
+      case 'picked_up': return 'Feeder Picked Up';
+      case 'in_transit': return 'On the Way';
       case 'delivered': return 'Delivered';
       default: return status;
     }
   };
 
+  const getStatusProgress = (status: string) => {
+    switch (status) {
+      case 'pending': return 10;
+      case 'confirmed': return 20;
+      case 'preparing': return 40;
+      case 'ready': return 60;
+      case 'picked_up': return 75;
+      case 'in_transit': return 90;
+      case 'delivered': return 100;
+      default: return 0;
+    }
+  };
+
+  const getOrderTimeline = (): OrderStatus[] => {
+    if (!order) return [];
+    
+    const timeline: OrderStatus[] = [];
+    const statusOrder = ['pending', 'confirmed', 'preparing', 'ready', 'picked_up', 'in_transit', 'delivered'];
+    const currentIndex = statusOrder.indexOf(order.order_status);
+    
+    statusOrder.forEach((status, index) => {
+      const isActive = index <= currentIndex;
+      timeline.push({
+        status,
+        timestamp: isActive ? order.updated_at : '',
+        description: getStatusText(status)
+      });
+    });
+    
+    return timeline;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading order details...</p>
-        </div>
-      </div>
+      <Box style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Stack align="center" gap="md">
+          <Loader size="lg" color="orange" />
+          <Text c="dimmed">Loading order details...</Text>
+        </Stack>
+      </Box>
     );
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Order not found</h1>
-          <p className="text-gray-600 mb-6">The order you're looking for doesn't exist.</p>
-          <button 
-            onClick={() => navigate('/')}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg"
-          >
-            Go Home
-          </button>
-        </div>
-      </div>
+      <Container size="lg" py="xl">
+        <Paper p="xl" radius="md" withBorder>
+          <Stack align="center" gap="md">
+            <Title order={2}>Order Not Found</Title>
+            <Text c="dimmed">The order you're looking for doesn't exist.</Text>
+            <Button onClick={() => navigate('/restaurants')} leftSection={<IconChevronLeft size={18} />}>
+              Back to Restaurants
+            </Button>
+          </Stack>
+        </Paper>
+      </Container>
     );
   }
 
+  const deliveryAddress = order?.delivery_address 
+    ? (typeof order.delivery_address === 'object'
+      ? order.delivery_address
+      : { address: order.delivery_address, name: '' })
+    : { address: '', name: '' };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <Box style={{ minHeight: '100vh', backgroundColor: '#F8F9FA' }}>
+      <Container size="xl" py="md">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Track Your Order</h1>
-              <p className="text-gray-600">Order #{order.order_number || order.id.slice(0, 8)}</p>
-            </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.order_status)}`}>
+        <Paper p="md" radius="md" shadow="sm" mb="md" withBorder>
+          <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+            <Group gap="xs">
+              <ActionIcon variant="subtle" size="sm" onClick={() => navigate(-1)}>
+                <IconChevronLeft size={18} />
+              </ActionIcon>
+              <div>
+                <Title order={3} style={{ fontSize: '18px', marginBottom: 2 }}>Track Your Order</Title>
+                <Text c="dimmed" size="xs">Order #{order.order_number || order.id.slice(0, 8).toUpperCase()}</Text>
+              </div>
+            </Group>
+            <Badge 
+              size="md" 
+              color={getStatusColor(order.order_status)}
+              variant="light"
+              style={{ fontSize: '12px', padding: '4px 12px' }}
+            >
               {getStatusText(order.order_status)}
-            </div>
-          </div>
-        </div>
+            </Badge>
+          </Group>
+          
+          {/* Progress Bar */}
+          <Progress 
+            value={getStatusProgress(order.order_status)} 
+            color={getStatusColor(order.order_status)}
+            size="sm"
+            radius="xl"
+            mt="sm"
+            animated
+          />
+        </Paper>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Order Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Restaurant Info */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Utensils className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{restaurant?.name}</h3>
-                  <p className="text-sm text-gray-600">{restaurant?.address}</p>
-                  <p className="text-sm text-gray-600">{restaurant?.phone}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <MapPin className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Delivery Address</h3>
-                  <p className="text-sm text-gray-600">
-                    {order.delivery_address?.name}<br />
-                    {order.delivery_address?.address}
-                  </p>
-                  {order.delivery_address?.special_instructions && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Note: {order.delivery_address.special_instructions}
-                    </p>
+        <Grid gutter="md">
+          {/* Main Content */}
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <Stack gap="md">
+              {/* Live Tracking Map */}
+              <Card shadow="sm" padding="md" radius="md" withBorder>
+                <Group justify="space-between" mb="xs">
+                  <Group gap={4}>
+                    <IconRoute size={16} color="#10B981" />
+                    <Title order={5} style={{ fontSize: '14px', fontWeight: 600 }}>Live Tracking</Title>
+                  </Group>
+                  {feederLocation && (
+                    <Badge color="green" variant="light" size="sm" leftSection={<div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981', animation: 'pulse 2s infinite' }} />}>
+                      Live
+                    </Badge>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* Driver Info (if assigned) */}
-            {driver && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Truck className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">Your Driver</h3>
-                    <p className="text-sm text-gray-600">Test Driver</p>
-                    <p className="text-sm text-gray-600">Vehicle: {driver.vehicle_type} • {driver.license_plate}</p>
-                    {driverLocation && (
-                      <p className="text-xs text-green-600 mt-1">📍 Live location tracking active</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 text-sm text-orange-600 mb-1">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span>Assigned</span>
-                    </div>
-                    <p className="text-xs text-gray-500">Driver will see notification in app</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Live Map */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Live Tracking</h3>
-                <div className="flex items-center gap-3">
-                  {driverLocation && (
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>Driver location updating</span>
-                    </div>
+                </Group>
+                
+                <Box style={{ position: 'relative', height: isMobile ? '200px' : '280px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#F3F4F6' }}>
+                  {!mapLoaded && (
+                    <Box style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                      <Stack align="center" gap={4}>
+                        <Loader size="sm" color="orange" />
+                        <Text size="xs" c="dimmed">Loading map...</Text>
+                      </Stack>
+                    </Box>
                   )}
-                  {!driver && (
-                    <button
-                      onClick={createTestDriver}
-                      className="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-md"
+                  <div ref={mapRef} style={{ width: '100%', height: '100%', opacity: mapLoaded ? 1 : 0 }} />
+                </Box>
+
+                {!feeder && (
+                  <Alert icon={<IconAlertCircle size={14} />} color="blue" mt="xs" radius="md" p="xs">
+                    <Text size="xs">Waiting for feeder assignment. Your order will be automatically assigned to an available feeder.</Text>
+                  </Alert>
+                )}
+
+                {feederLocation && route && (
+                  <Group gap={4} mt="xs" c="dimmed">
+                    <IconNavigation size={12} />
+                    <Text size="xs">
+                      ETA: {route.duration ? `${Math.round(route.duration / 60)} min` : 'Calculating...'}
+                    </Text>
+                  </Group>
+                )}
+              </Card>
+
+              {/* Restaurant Info */}
+              {restaurant && (
+                <Card shadow="sm" padding="md" radius="md" withBorder>
+                  <Group gap="sm" align="flex-start">
+                    <Avatar size={40} radius="sm" color="orange" variant="light">
+                      <IconToolsKitchen2 size={20} />
+                    </Avatar>
+                    <Box style={{ flex: 1 }}>
+                      <Title order={5} style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>{restaurant.name || 'Restaurant'}</Title>
+                      {(restaurant.address || restaurant.city) && (
+                        <Group gap={4} mb={2}>
+                          <IconMapPin size={12} color="#6B7280" />
+                          <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
+                            {[restaurant.address, restaurant.city, restaurant.state, restaurant.zip_code].filter(Boolean).join(', ')}
+                          </Text>
+                        </Group>
+                      )}
+                      {restaurant.phone && (
+                        <Group gap={4}>
+                          <IconPhone size={12} color="#6B7280" />
+                          <Text size="xs" c="dimmed">{restaurant.phone}</Text>
+                        </Group>
+                      )}
+                    </Box>
+                  </Group>
+                </Card>
+              )}
+
+              {/* Delivery Address */}
+              {deliveryAddress && (
+                <Card shadow="sm" padding="md" radius="md" withBorder>
+                  <Group gap="sm" align="flex-start">
+                    <Avatar size={40} radius="sm" color="blue" variant="light">
+                      <IconMapPin size={20} />
+                    </Avatar>
+                    <Box style={{ flex: 1 }}>
+                      <Title order={5} style={{ fontSize: '14px', fontWeight: 600, marginBottom: 2 }}>Delivery Address</Title>
+                      {deliveryAddress.name && (
+                        <Text fw={500} size="xs" mb={2}>{deliveryAddress.name}</Text>
+                      )}
+                      <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
+                        {deliveryAddress.address || 'Address not available'}
+                      </Text>
+                      {deliveryAddress.special_instructions && (
+                        <Alert color="gray" mt="xs" radius="md" p="xs">
+                          <Text size="xs">Note: {deliveryAddress.special_instructions}</Text>
+                        </Alert>
+                      )}
+                    </Box>
+                  </Group>
+                </Card>
+              )}
+
+              {/* Feeder Info */}
+              {feeder && (
+                <Card shadow="sm" padding="md" radius="md" withBorder>
+                  <Group gap="sm" align="flex-start">
+                    <Avatar size={40} radius="sm" color="green" variant="light">
+                      <IconTruck size={20} />
+                    </Avatar>
+                    <Box style={{ flex: 1 }}>
+                      <Group justify="space-between" mb={2}>
+                        <Title order={5} style={{ fontSize: '14px', fontWeight: 600 }}>Your Feeder</Title>
+                        <Badge color="green" variant="light" size="xs">Assigned</Badge>
+                      </Group>
+                      <Group gap={4} mb={2}>
+                        <IconUser size={12} color="#6B7280" />
+                        <Text size="xs" c="dimmed">
+                          {feeder.vehicle_type || 'Vehicle'} • {feeder.license_plate || 'N/A'}
+                        </Text>
+                      </Group>
+                      {feederLocation && (
+                        <Text size="xs" c="green" mt={2}>
+                          <IconNavigation size={10} style={{ display: 'inline', marginRight: 2 }} />
+                          Live tracking active
+                        </Text>
+                      )}
+                    </Box>
+                  </Group>
+                </Card>
+              )}
+
+              {/* Order Timeline */}
+              <Card shadow="sm" padding="md" radius="md" withBorder>
+                <Title order={5} style={{ fontSize: '14px', fontWeight: 600, marginBottom: 8 }}>Order Timeline</Title>
+                <Timeline 
+                  active={getOrderTimeline().findIndex(s => s.status === order.order_status)} 
+                  bulletSize={18} 
+                  lineWidth={1.5}
+                  radius="xl"
+                >
+                  {getOrderTimeline().map((item, index) => (
+                    <Timeline.Item
+                      key={item.status}
+                      bullet={<IconCheck size={10} />}
+                      title={<Text size="xs" fw={500}>{item.description}</Text>}
                     >
-                      Assign Driver
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              <div className="relative h-64 bg-gray-100 rounded-lg overflow-hidden">
-                <div ref={mapRef} className="w-full h-full" />
-                {!mapLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">Loading map...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {driverLocation && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-green-700">
-                    <Navigation className="w-4 h-4" />
-                    <span>Driver location: {driverLocation.lat.toFixed(4)}, {driverLocation.lng.toFixed(4)}</span>
-                  </div>
-                </div>
-              )}
-              
-              {!driver && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <Clock className="w-4 h-4" />
-                    <span>No driver assigned. Click "Assign Driver" to find an available driver!</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                      {item.timestamp && (
+                        <Text c="dimmed" size="xs" mt={2}>
+                          {dayjs(item.timestamp).format('MMM D, h:mm A')}
+                        </Text>
+                      )}
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Card>
+            </Stack>
+          </Grid.Col>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Order Summary</h3>
+          {/* Order Summary Sidebar */}
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Card shadow="sm" padding="md" radius="md" withBorder style={{ position: 'sticky', top: 10 }}>
+              <Title order={5} style={{ fontSize: '14px', fontWeight: 600, marginBottom: 12 }}>Order Summary</Title>
               
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${(order.subtotal_cents / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Delivery fee</span>
-                  <span>${(order.delivery_fee_cents / 100).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>${(order.tax_cents / 100).toFixed(2)}</span>
-                </div>
+              <Stack gap={6} mb="sm">
+                <Group justify="space-between">
+                  <Text size="xs" c="dimmed">Subtotal</Text>
+                  <Text size="xs" fw={500}>${((order.subtotal_cents || 0) / 100).toFixed(2)}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="xs" c="dimmed">Delivery fee</Text>
+                  <Text size="xs" fw={500}>${((order.delivery_fee_cents || 0) / 100).toFixed(2)}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="xs" c="dimmed">Tax</Text>
+                  <Text size="xs" fw={500}>${((order.tax_cents || 0) / 100).toFixed(2)}</Text>
+                </Group>
                 {order.tip_cents > 0 && (
-                  <div className="flex justify-between">
-                    <span>Tip</span>
-                    <span>${(order.tip_cents / 100).toFixed(2)}</span>
-                  </div>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">Tip</Text>
+                    <Text size="xs" fw={500}>${((order.tip_cents || 0) / 100).toFixed(2)}</Text>
+                  </Group>
                 )}
-              </div>
+              </Stack>
               
-              <div className="border-t pt-3 mt-4">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>${(order.total_cents / 100).toFixed(2)}</span>
-                </div>
-              </div>
+              <Divider my="sm" />
+              
+              <Group justify="space-between" mb="sm">
+                <Text fw={600} size="sm">Total</Text>
+                <Text fw={700} size="md">${((order.total_cents || 0) / 100).toFixed(2)}</Text>
+              </Group>
 
               {order.estimated_delivery_time && (
-                <div className="mt-4 p-3 bg-orange-50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-orange-700">
-                    <Clock className="w-4 h-4" />
-                    <span>Estimated delivery: {new Date(order.estimated_delivery_time).toLocaleTimeString()}</span>
-                  </div>
-                </div>
+                <Alert color="orange" radius="md" icon={<IconClock size={14} />} p="xs">
+                  <Text size="xs" fw={500}>Estimated delivery</Text>
+                  <Text size="xs" c="dimmed">
+                    {dayjs(order.estimated_delivery_time).format('MMM D, h:mm A')}
+                  </Text>
+                </Alert>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Card>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </Box>
   );
 };
 

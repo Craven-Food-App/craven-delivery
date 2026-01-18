@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Search, User, ShoppingCart, ChevronDown, LogOut, Menu, X, Gift, Store, Building2, Plus, Minus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { MapPin, Search, User, ShoppingCart, ChevronDown, LogOut, Menu, X, Gift, Store, Building2, Plus, Minus, Bell } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import cravenLogo from "@/assets/craven-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ interface User {
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,7 @@ const Header = () => {
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const { toast } = useToast();
   const { isMerchant, merchantLoading } = useMerchantStatus(user?.id || null);
   const restaurantsVisible = useFeatureFlag('feature_restaurants_visible');
@@ -63,6 +65,11 @@ const Header = () => {
   // Check if on merchant subdomain
   const isMerchantSubdomain = typeof window !== 'undefined' && 
     window.location.hostname === 'merchant.cravenusa.com';
+  
+  // Never show header on notifications page
+  if (location.pathname === '/notifications') {
+    return null;
+  }
 
   useEffect(() => {
     // Set up auth state listener
@@ -83,6 +90,34 @@ const Header = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    const fetchUnreadCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('order_notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+
+        if (error) throw error;
+        setUnreadNotificationCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching unread notifications:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    // Poll every 30 seconds for new notifications
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -227,21 +262,38 @@ const Header = () => {
               )}
               
               {user && (
-                <Popover open={isCartOpen} onOpenChange={setIsCartOpen}>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="relative"
-                    >
-                      <ShoppingCart className="h-5 w-5" />
-                      {cartCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                          {cartCount}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
+                <>
+                  {/* Notifications Bell Icon */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => navigate('/notifications')}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                      </span>
+                    )}
+                  </Button>
+
+                  {/* Cart Icon */}
+                  <Popover open={isCartOpen} onOpenChange={setIsCartOpen}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="relative"
+                      >
+                        <ShoppingCart className="h-5 w-5" />
+                        {cartCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
                   <PopoverContent className="w-80 p-0" align="end">
                     <div className="p-4 border-b">
                       <div className="flex items-center justify-between">
@@ -355,6 +407,7 @@ const Header = () => {
                     )}
                   </PopoverContent>
                 </Popover>
+                </>
               )}
               
               {user ? (
@@ -371,6 +424,12 @@ const Header = () => {
                       <Link to="/order-history" className="flex items-center cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         <span>My Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/notifications" className="flex items-center cursor-pointer">
+                        <Bell className="mr-2 h-4 w-4" />
+                        <span>Notifications</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -416,8 +475,41 @@ const Header = () => {
               )}
             </div>
 
-            {/* Mobile Burger Menu */}
+            {/* Mobile Actions */}
             <div className="flex md:hidden items-center space-x-2">
+              {user && (
+                <>
+                  {/* Notifications Bell Icon */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/notifications')}
+                    className="relative text-foreground hover:bg-background"
+                  >
+                    <Bell className="h-6 w-6" />
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                      </span>
+                    )}
+                  </Button>
+
+                  {/* Cart Icon - Always show when user is logged in */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/checkout')}
+                    className="relative text-foreground hover:bg-background"
+                  >
+                    <ShoppingCart className="h-6 w-6" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </span>
+                    )}
+                  </Button>
+                </>
+              )}
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -551,6 +643,16 @@ const Header = () => {
                       <Link to="/order-history" onClick={() => setIsMobileMenuOpen(false)}>
                         <User className="mr-3 h-5 w-5" />
                         My Orders
+                      </Link>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-lg h-12"
+                      asChild
+                    >
+                      <Link to="/notifications" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Bell className="mr-3 h-5 w-5" />
+                        Notifications
                       </Link>
                     </Button>
                     {isMerchant && !merchantLoading && (

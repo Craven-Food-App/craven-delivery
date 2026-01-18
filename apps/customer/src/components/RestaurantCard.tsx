@@ -33,54 +33,52 @@ const RestaurantCard = ({
     <div className="group cursor-pointer" onClick={handleClick}>
       <div className="bg-card rounded-lg shadow-card hover:shadow-hover transition-all duration-300 transform hover:scale-105 overflow-hidden w-full">
         {/* Image */}
-        <div className="relative h-40 sm:h-48 overflow-hidden">
+        <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-lg">
           <img 
             src={image} 
             alt={name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
           
-          {/* Promoted Badge */}
-          {isPromoted && (
-            <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-              Promoted
-            </div>
-          )}
-          
-          {/* Delivery Fee Badge */}
-          {deliveryFee === "Free" && (
-            <div className="absolute top-3 right-3 bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs font-medium">
-              Free Delivery
-            </div>
-          )}
+          {/* Overlay tags */}
+          <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
+            {/* Promoted Badge */}
+            {isPromoted && (
+              <div className="bg-[#ff5f1f] text-white px-2 py-1 rounded text-xs font-semibold">
+                Promoted
+              </div>
+            )}
+            
+            {/* Delivery Fee Badge */}
+            {deliveryFee === "Free" && (
+              <div className="bg-[#10b981] text-white px-2 py-1 rounded text-xs font-semibold">
+                Free Delivery
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
         <div className="p-3 sm:p-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0">
-              {name}
-            </h3>
-            <div className="flex items-center space-x-1 text-xs sm:text-sm flex-shrink-0 ml-2">
-              <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+          {/* Row 1: Star rating (left) and Restaurant name (right) */}
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center space-x-1 text-sm flex-shrink-0">
+              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
               <span className="font-medium">{rating}</span>
             </div>
+            <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0 text-right">
+              {name}
+            </h3>
           </div>
 
-          <p className="text-muted-foreground text-xs sm:text-sm mb-3 line-clamp-1">{cuisine}</p>
-
-          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="flex items-center space-x-1">
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs">{deliveryTime}</span>
-              </div>
-              
-              <div className="flex items-center space-x-1">
-                <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="text-xs">{deliveryFee}</span>
-              </div>
-            </div>
+          {/* Row 2: Promo text (left) and Distance/time (right) */}
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-muted-foreground text-xs sm:text-sm line-clamp-1 flex-1 min-w-0">
+              {deliveryFee === "Free" ? "$0 delivery fee, first order" : (isPromoted ? "Sponsored" : cuisine)}
+            </p>
+            <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 ml-2">
+              - {deliveryTime}
+            </span>
           </div>
         </div>
       </div>

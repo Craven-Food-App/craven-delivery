@@ -141,50 +141,126 @@ interface CartItem extends MenuItem {
 }
 
 // --- Mobile Header Component (DoorDash Style) ---
-const MobileHeader = ({ restaurant, onBack, onShare, onLike, isLiked = false }: { restaurant: Restaurant | null; onBack: () => void; onShare: () => void; onLike: () => void; isLiked?: boolean }) => (
+const MobileHeader = ({ restaurant, onBack, onShare, onLike, isLiked = false, cartCount = 0, onCartClick, isHeaderImageScrolled }: { restaurant: Restaurant | null; onBack: () => void; onShare: () => void; onLike: () => void; isLiked?: boolean; cartCount?: number; onCartClick: () => void; isHeaderImageScrolled?: boolean }) => (
   <Box
     style={{
-      display: 'block',
-      position: 'sticky',
+      position: 'fixed',
       top: 0,
+      left: 0,
+      right: 0,
       zIndex: 50,
-      backgroundColor: 'white',
-      borderBottom: '1px solid var(--mantine-color-gray-3)',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      backgroundColor: isHeaderImageScrolled ? 'white' : 'transparent',
+      overflow: 'visible',
+      padding: isHeaderImageScrolled ? '12px 16px' : '56px 16px 16px 16px',
+      pointerEvents: 'none',
+      transition: 'all 0.3s ease-in-out',
+      boxShadow: isHeaderImageScrolled ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
     }}
     className="lg:hidden"
   >
-    <Group justify="space-between" align="center" p="md" px="lg">
+    <Group 
+      justify="space-between" 
+      align="center" 
+      style={{ 
+        overflow: 'visible',
+        backgroundColor: 'transparent',
+        pointerEvents: 'auto',
+      }}
+    >
+      {/* Back Button - Circular */}
       <ActionIcon
-        variant="subtle"
+        variant="filled"
         onClick={onBack}
-        style={{ marginLeft: '-8px' }}
+        radius="xl"
+        size="lg"
+        style={{
+          backgroundColor: 'white',
+          color: 'var(--mantine-color-gray-9)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        }}
       >
-        <IconChevronLeft size={24} style={{ color: 'var(--mantine-color-gray-9)' }} />
+        <IconChevronLeft size={20} />
       </ActionIcon>
-      <Box style={{ flex: 1, textAlign: 'center' }}>
-        <Text fw={600} size="sm" truncate>{restaurant?.name || 'Restaurant'}</Text>
-      </Box>
-      <Group gap="xs">
-      <ActionIcon
-        variant="subtle"
-        onClick={onShare}
-      >
-        <IconShare size={20} style={{ color: 'var(--mantine-color-gray-6)' }} />
-      </ActionIcon>
+      
+      {/* Right Side Icons */}
+      <Group gap="xs" style={{ overflow: 'visible' }}>
+        {/* Share Button - Circular */}
         <ActionIcon
-          variant="subtle"
+          variant="filled"
+          onClick={onShare}
+          radius="xl"
+          size="lg"
+          style={{
+            backgroundColor: 'white',
+            color: 'var(--mantine-color-gray-6)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <IconShare size={18} />
+        </ActionIcon>
+        
+        {/* Favorites Button - Circular */}
+        <ActionIcon
+          variant="filled"
           onClick={onLike}
-          style={{ marginRight: '-8px' }}
+          radius="xl"
+          size="lg"
+          style={{
+            backgroundColor: 'white',
+            color: isLiked ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-gray-6)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
         >
           <IconHeart 
-            size={20} 
+            size={18}
             style={{ 
-              color: isLiked ? 'var(--mantine-color-red-6)' : 'var(--mantine-color-gray-6)',
               fill: isLiked ? 'var(--mantine-color-red-6)' : 'none'
             }} 
           />
-      </ActionIcon>
+        </ActionIcon>
+        
+        {/* Cart Button - Circular */}
+        <Box style={{ position: 'relative', overflow: 'visible' }}>
+          <ActionIcon
+            variant="filled"
+            onClick={onCartClick}
+            radius="xl"
+            size="lg"
+            style={{
+              backgroundColor: 'white',
+              color: 'var(--mantine-color-gray-6)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          >
+            <IconShoppingCart size={18} />
+          </ActionIcon>
+          {cartCount > 0 && (
+            <Badge
+              size="xs"
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                minWidth: '18px',
+                height: '18px',
+                padding: '0 4px',
+                backgroundColor: '#ff6b35',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 700,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid white',
+                zIndex: 10,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }}
+            >
+              {cartCount > 99 ? '99+' : cartCount}
+            </Badge>
+          )}
+        </Box>
       </Group>
     </Group>
   </Box>
@@ -200,7 +276,7 @@ const RestaurantMenuPage = () => {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [promos, setPromos] = useState<PromoCode[]>([]);
-  const { cartItems, addToCart: addToCartContext, removeFromCart: removeFromCartContext, clearCart } = useCart();
+  const { cartItems, cartCount, addToCart: addToCartContext, removeFromCart: removeFromCartContext, clearCart } = useCart();
   const [loading, setLoading] = useState(true);
 
   // New state for header and side menu
@@ -223,6 +299,10 @@ const RestaurantMenuPage = () => {
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
     const [deliveryMethod, setDeliveryMethod] = useState('delivery' as 'delivery' | 'pickup');
+    const [isDeliveryButtonsScrolled, setIsDeliveryButtonsScrolled] = useState(false);
+    const deliveryButtonsRef = useRef<HTMLDivElement>(null);
+    const [isHeaderImageScrolled, setIsHeaderImageScrolled] = useState(false);
+    const headerImageRef = useRef<HTMLDivElement>(null);
     // Use deliveryMethod for both mobile and desktop - synced state
            const [pickupInfo, setPickupInfo] = useState({
                address: '',
@@ -649,6 +729,37 @@ const RestaurantMenuPage = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Scroll detection for header image - show white background when scrolled past
+    useEffect(() => {
+        const handleHeaderImageScroll = () => {
+            if (headerImageRef.current) {
+                const rect = headerImageRef.current.getBoundingClientRect();
+                // Check if the header image has scrolled past the top (accounting for status bar ~40px)
+                setIsHeaderImageScrolled(rect.bottom < 40);
+            }
+        };
+
+        window.addEventListener('scroll', handleHeaderImageScroll);
+        handleHeaderImageScroll(); // Check initial state
+        return () => window.removeEventListener('scroll', handleHeaderImageScroll);
+    }, []);
+
+    // Scroll detection for delivery/pickup buttons section
+    useEffect(() => {
+        const handleDeliveryButtonsScroll = () => {
+            if (deliveryButtonsRef.current) {
+                const rect = deliveryButtonsRef.current.getBoundingClientRect();
+                // Check if the section has scrolled past the top
+                setIsDeliveryButtonsScrolled(rect.top < 0);
+            }
+        };
+
+        window.addEventListener('scroll', handleDeliveryButtonsScroll);
+        handleDeliveryButtonsScroll(); // Check initial state
+        return () => window.removeEventListener('scroll', handleDeliveryButtonsScroll);
+    }, []);
+
 
     const scrollToSection = useCallback((sectionId: string) => {
         // Try to find the section by ID (desktop) or ID-mobile (mobile)
@@ -1473,6 +1584,7 @@ const RestaurantMenuPage = () => {
       {/* Mobile Header - DoorDash Style */}
       <MobileHeader 
         restaurant={restaurant}
+        isHeaderImageScrolled={isHeaderImageScrolled}
         onBack={() => navigate('/restaurants')}
         onShare={() => {
           if (navigator.share) {
@@ -1536,6 +1648,8 @@ const RestaurantMenuPage = () => {
           }
         }}
         isLiked={isRestaurantLiked}
+        cartCount={cartCount}
+        onCartClick={() => navigate('/checkout')}
       />
 
       {/* Desktop Header - Hidden on Mobile */}
@@ -1954,7 +2068,7 @@ const RestaurantMenuPage = () => {
               {/* --- Mobile Hero Section (DoorDash Style) --- */}
               <Box className="block lg:hidden">
                 {/* Hero Image */}
-                <Box style={{ position: 'relative', height: '192px' }}>
+                <Box ref={headerImageRef} style={{ position: 'relative', height: '250px' }}>
                   <MantineImage
                     src={restaurant.header_image_url || restaurant.image_url || 'https://placehold.co/600x300/A31D24/ffffff?text=Restaurant'}
                     alt={restaurant.name}
@@ -2025,27 +2139,42 @@ const RestaurantMenuPage = () => {
                     </Stack>
                   </Group>
 
-                  {/* Delivery/Pickup Toggle - Mobile */}
-                  <Group grow>
-                    <Button
-                      variant={deliveryMethod === 'delivery' ? 'filled' : 'light'}
-                      color={deliveryMethod === 'delivery' ? 'dark' : 'gray'}
-                      leftSection={<IconTruck size={16} />}
-                      onClick={() => setDeliveryMethod('delivery')}
-                      style={{ flex: 1 }}
-                    >
-                      Delivery
-                    </Button>
-                    <Button
-                      variant={deliveryMethod === 'pickup' ? 'filled' : 'light'}
-                      color={deliveryMethod === 'pickup' ? 'dark' : 'gray'}
-                      leftSection={<IconBuildingStore size={16} />}
-                      onClick={() => setDeliveryMethod('pickup')}
-                      style={{ flex: 1 }}
-                    >
-                      Pickup
-                    </Button>
-                  </Group>
+                  {/* Delivery/Pickup Toggle - Mobile - Sticky with background on scroll */}
+                  <Box
+                    ref={deliveryButtonsRef}
+                    style={{
+                      position: 'sticky',
+                      top: '48px',
+                      zIndex: 35,
+                      backgroundColor: isDeliveryButtonsScrolled ? 'white' : 'transparent',
+                      margin: isDeliveryButtonsScrolled ? '0 -16px' : '0',
+                      padding: isDeliveryButtonsScrolled ? '12px 16px' : '0',
+                      borderBottom: isDeliveryButtonsScrolled ? '1px solid #e5e7eb' : 'none',
+                      boxShadow: isDeliveryButtonsScrolled ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    <Group grow>
+                      <Button
+                        variant={deliveryMethod === 'delivery' ? 'filled' : 'light'}
+                        color={deliveryMethod === 'delivery' ? 'dark' : 'gray'}
+                        leftSection={<IconTruck size={16} />}
+                        onClick={() => setDeliveryMethod('delivery')}
+                        style={{ flex: 1 }}
+                      >
+                        Delivery
+                      </Button>
+                      <Button
+                        variant={deliveryMethod === 'pickup' ? 'filled' : 'light'}
+                        color={deliveryMethod === 'pickup' ? 'dark' : 'gray'}
+                        leftSection={<IconBuildingStore size={16} />}
+                        onClick={() => setDeliveryMethod('pickup')}
+                        style={{ flex: 1 }}
+                      >
+                        Pickup
+                      </Button>
+                    </Group>
+                  </Box>
                 </Box>
 
                 {/* Pickup Interface - Mobile - Show when pickup is selected */}

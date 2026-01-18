@@ -317,7 +317,7 @@ const Checkout: React.FC = () => {
       console.warn('Stripe failed to initialize - payment methods may not work');
     }
   }, []);
-  const { cartItems: contextCartItems, restaurantId: contextRestaurantId, removeFromCart, addToCart: addToCartContext } = useCart();
+  const { cartItems: contextCartItems, restaurantId: contextRestaurantId, removeFromCart, addToCart: addToCartContext, clearCart } = useCart();
   const [cart, setCart] = useState<any[]>([]);
   const [restaurant, setRestaurant] = useState<any>(null);
   const [menuItemImages, setMenuItemImages] = useState<Record<string, string>>({});
@@ -337,6 +337,9 @@ const Checkout: React.FC = () => {
   const [customerAddress, setCustomerAddress] = useState<any>(null);
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  // First-order promo state
+  const [promoQuote, setPromoQuote] = useState<any>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
   const [showDealsModal, setShowDealsModal] = useState(false);
   const [availableDeals, setAvailableDeals] = useState<any[]>([]);
   const [appliedDeal, setAppliedDeal] = useState<any>(null);
@@ -390,6 +393,14 @@ const Checkout: React.FC = () => {
     leaveAtDoor: false,
     schedule: 'ASAP'
   });
+
+  // Fee-related state - declared early to avoid TDZ issues
+  const [deliveryFee, setDeliveryFee] = useState(300); // Default $3.00
+  const [cravemoreEligible, setCravemoreEligible] = useState(false);
+  const [hasCravemore, setHasCravemore] = useState(false);
+  const [cravemoreAmountNeeded, setCravemoreAmountNeeded] = useState<number | null>(null);
+  const [processingFeePercentCard, setProcessingFeePercentCard] = useState<number | null>(null);
+  const [processingFeePercentAch, setProcessingFeePercentAch] = useState<number | null>(null);
 
   // Load cart from localStorage (from restaurant page) or fallback to CartContext
   useEffect(() => {
@@ -495,6 +506,61 @@ const Checkout: React.FC = () => {
       }
     }
   }, [cart]);
+
+  // Fetch promo quote when cart/subtotal changes
+  useEffect(() => {
+    const fetchPromoQuote = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !restaurant || cart.length === 0) {
+        setPromoQuote(null);
+        return;
+      }
+
+      setPromoLoading(true);
+      try {
+        // Calculate current totals for quote
+        const foodSubtotal = cart.reduce((sum, item) => sum + (item.price_cents * item.quantity), 0);
+        // Use a default delivery fee if not calculated yet
+        const currentDeliveryFee = formData.deliveryMethod === 'delivery' ? (deliveryFee || 300) : 0;
+        // Calculate service fee inline to avoid dependency on processingFeeCents
+        // This matches the logic in processingFeeCents useMemo
+        const percent =
+          typeof processingFeePercentCard === 'number'
+            ? processingFeePercentCard
+            : typeof processingFeePercentAch === 'number'
+              ? processingFeePercentAch
+              : 0;
+        const currentServiceFee = percent > 0 
+          ? Math.round((foodSubtotal + currentDeliveryFee) * (percent / 100))
+          : 0;
+
+        const { data, error } = await supabase.functions.invoke('promo-quote', {
+          body: {
+            food_subtotal_cents: foodSubtotal,
+            delivery_fee_cents: currentDeliveryFee,
+            service_fee_cents: currentServiceFee,
+          },
+        });
+
+        if (error) {
+          console.error('Promo quote error:', error);
+          setPromoQuote(null);
+        } else {
+          setPromoQuote(data);
+        }
+      } catch (err) {
+        console.error('Error fetching promo quote:', err);
+        setPromoQuote(null);
+      } finally {
+        setPromoLoading(false);
+      }
+    };
+
+    // Only fetch if we have the necessary data
+    if (restaurant && cart.length > 0) {
+      fetchPromoQuote();
+    }
+  }, [cart, formData.deliveryMethod, restaurant, deliveryFee, processingFeePercentCard, processingFeePercentAch]);
 
   // Load customer profile, address data, and payment methods
   useEffect(() => {
@@ -680,13 +746,6 @@ const Checkout: React.FC = () => {
     [cart]
   );
 
-  const [deliveryFee, setDeliveryFee] = useState(300); // Default $3.00
-  const [cravemoreEligible, setCravemoreEligible] = useState(false);
-  const [hasCravemore, setHasCravemore] = useState(false);
-  const [cravemoreAmountNeeded, setCravemoreAmountNeeded] = useState<number | null>(null);
-  const [processingFeePercentCard, setProcessingFeePercentCard] = useState<number | null>(null);
-  const [processingFeePercentAch, setProcessingFeePercentAch] = useState<number | null>(null);
-
   // Check CraveMore membership and calculate fees
   useEffect(() => {
     const checkCravemoreAndCalculateFees = async () => {
@@ -802,12 +861,16 @@ const Checkout: React.FC = () => {
     () => Math.round((subtotalAfterPromo + deliveryFee + expressFee) * 0.08), // 8% tax
     [subtotalAfterPromo, deliveryFee, expressFee]
   );
-  const tipAmount = formData.tipType === 'percentage' 
-    ? Math.round(subtotal * (formData.tipPercent / 100))
-    : formData.tip;
+  const tipAmount = useMemo(
+    () => formData.tipType === 'percentage' 
+      ? Math.round(subtotal * (formData.tipPercent / 100))
+      : formData.tip,
+    [formData.tipType, formData.tipPercent, formData.tip, subtotal]
+  );
 
   // Stripe processing fee is applied to the full customer charge (including tip),
   // using the configured card/ACH percentages from the backend.
+  // Declare processingFeeCents early to avoid TDZ issues
   const processingFeeCents = useMemo(() => {
     const percent =
       typeof processingFeePercentCard === 'number'
@@ -818,11 +881,35 @@ const Checkout: React.FC = () => {
 
     if (!percent) return 0;
 
+    // Calculate processing fee on base amount (before promo credits)
     const base = subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount;
     return Math.round(base * (percent / 100));
   }, [processingFeePercentCard, processingFeePercentAch, subtotalAfterPromo, deliveryFee, expressFee, tax, tipAmount]);
 
-  const total = subtotalAfterPromo + deliveryFee + expressFee + tax + tipAmount + processingFeeCents;
+  // Calculate promo credits for preview
+  const promoDeliveryCredit = useMemo(
+    () => promoQuote?.preview?.delivery_credit_cents || 0,
+    [promoQuote]
+  );
+  const promoServiceCredit = useMemo(
+    () => promoQuote?.preview?.service_credit_cents || 0,
+    [promoQuote]
+  );
+  const finalDeliveryFee = useMemo(
+    () => Math.max(0, deliveryFee - promoDeliveryCredit),
+    [deliveryFee, promoDeliveryCredit]
+  );
+
+  // Apply promo credit to service fee (processing fee)
+  const finalServiceFee = useMemo(
+    () => Math.max(0, (processingFeeCents || 0) - promoServiceCredit),
+    [processingFeeCents, promoServiceCredit]
+  );
+  
+  const total = useMemo(
+    () => subtotalAfterPromo + finalDeliveryFee + expressFee + tax + tipAmount + finalServiceFee,
+    [subtotalAfterPromo, finalDeliveryFee, expressFee, tax, tipAmount, finalServiceFee]
+  );
 
   const handleAddressSelect = (address: any) => {
     setFormData({
@@ -888,157 +975,81 @@ const Checkout: React.FC = () => {
     setIsProcessing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // Check if order was already created (coming from CartSidebar)
-      const pendingOrderId = localStorage.getItem('pending_order_id');
-      let newOrder;
-      
-      if (pendingOrderId) {
-        // Order already exists, fetch it
-        const { data: existingOrder, error: fetchError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', pendingOrderId)
-          .single();
-        
-        if (fetchError || !existingOrder) {
-          throw new Error('Pending order not found. Please try again.');
-        }
-        
-        newOrder = existingOrder;
-        console.log('Using existing order from CartSidebar:', newOrder.id);
-      } else {
-        // Create new order
-        const { data: createdOrder, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            customer_id: user?.id || null,
-            restaurant_id: restaurant.id,
-            subtotal_cents: subtotal,
-            delivery_fee_cents: formData.deliveryMethod === 'delivery' ? deliveryFee : 0,
-            tax_cents: tax,
-            tip_cents: tipAmount, // 100% of this tip amount goes directly to the Feeder
-            total_cents: total,
-            order_status: 'pending',
-            customer_name: formData.name,
-            customer_phone: formData.phone,
-            delivery_address: formData.deliveryMethod === 'delivery' ? {
-              name: formData.name,
-              phone: formData.phone,
-              email: formData.email,
-              address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
-              special_instructions: userDeliveryPreferences.instructions || null,
-              apt_suite: formData.aptSuite,
-              leave_at_door: userDeliveryPreferences.leaveAtDoor || false,
-              scheduled_time: 'ASAP'
-            } : null,
-            pickup_address: {
-              name: restaurant.name,
-              address: restaurant.address || 'Restaurant address',
-              lat: restaurant.latitude,
-              lng: restaurant.longitude
-            },
-            estimated_delivery_time: new Date(Date.now() + 45 * 60000).toISOString()
-          })
-          .select()
-          .single();
+      if (!user) {
+        throw new Error('You must be logged in to place an order');
+      }
 
-        if (orderError) {
-          console.error('Order creation error:', orderError);
-          throw new Error(`Failed to create order: ${orderError.message || 'Unknown error'}`);
-        }
-
-        if (!createdOrder || !createdOrder.id) {
-          console.error('Order creation failed - createdOrder:', createdOrder);
-          throw new Error('Order was not created or is missing ID');
-        }
-
-        newOrder = createdOrder;
-        console.log('Order created successfully:', newOrder.id);
-
-        // Create order items
-        const orderItems = cart.map(item => ({
-          order_id: newOrder!.id,
-          menu_item_id: item.id,
+      // Prepare order data for create-order Edge Function
+      // This function handles: promo reserve, order creation, payment, promo redeem
+      const orderData = {
+        restaurant_id: restaurant.id,
+        cart_items: cart.map(item => ({
+          id: item.id,
           quantity: item.quantity,
           price_cents: item.price_cents,
-          special_instructions: item.special_instructions || null
-        }));
-
-        const { error: orderItemsError } = await supabase.from('order_items').insert(orderItems);
-        
-        if (orderItemsError) {
-          console.error('Order items error:', orderItemsError);
-          throw new Error(`Failed to create order items: ${orderItemsError.message}`);
-        }
-      }
-      
-      // Ensure newOrder is defined before proceeding
-      if (!newOrder || !newOrder.id) {
-        throw new Error('Order was not created or is missing ID');
-      }
-
-      // Record promo code usage if applied
-      if (appliedPromo && user) {
-        const { error: promoError } = await supabase.from('promo_code_usage').insert({
-          promo_code_id: appliedPromo.id,
-          user_id: user.id,
-          order_id: newOrder.id,
-          discount_applied_cents: promoDiscount
-        });
-        
-        if (promoError) {
-          console.error('Promo code usage error:', promoError);
-          // Don't throw - this is non-critical
-        }
-      }
-
-      // Create payment with Stripe
-      if (!selectedPaymentMethod) {
-        toast({ title: "Error", description: "Please select a payment method", variant: "destructive" });
-        setIsProcessing(false);
-        return;
-      }
-
-      const paymentBody: any = {
-        orderTotal: total,
-        orderId: newOrder.id,
-        customerInfo: {
+          special_instructions: item.special_instructions || null,
+        })),
+        food_subtotal_cents: subtotal,
+        delivery_fee_cents: formData.deliveryMethod === 'delivery' ? deliveryFee : 0,
+        service_fee_cents: processingFeeCents || 0,
+        tax_cents: tax,
+        tip_cents: tipAmount,
+        delivery_address: formData.deliveryMethod === 'delivery' ? {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
+          special_instructions: userDeliveryPreferences.instructions || null,
+          apt_suite: formData.aptSuite,
+          leave_at_door: userDeliveryPreferences.leaveAtDoor || false,
+          scheduled_time: 'ASAP'
+        } : null,
+        pickup_address: {
+          name: restaurant.name,
+          address: restaurant.address || 'Restaurant address',
+          lat: restaurant.latitude,
+          lng: restaurant.longitude
+        },
+        delivery_method: formData.deliveryMethod,
+        customer_info: {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone
+          phone: formData.phone,
         },
-        paymentMethodId: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id, // Support both during migration
-        paymentMethodType: selectedPaymentMethod.type,
-        provider: 'stripe' // Explicitly set provider
+        payment_method_id: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id,
       };
 
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
-        body: paymentBody
+      // Call create-order Edge Function (handles everything server-side)
+      const { data: orderResult, error: orderError } = await supabase.functions.invoke('create-order', {
+        body: orderData
       });
 
-      if (paymentError) {
-        console.error('Payment error:', paymentError);
-        throw new Error(`Payment creation failed: ${paymentError.message || 'Unknown error'}`);
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw new Error(`Failed to create order: ${orderError.message || 'Unknown error'}`);
       }
 
-      // Stripe processes payments directly - no redirect URL needed
-      if (!paymentData) {
-        console.error('Payment response:', paymentData);
-        throw new Error('Payment processing failed - no response received');
+      if (!orderResult || !orderResult.success) {
+        console.error('Order creation failed:', orderResult);
+        throw new Error(orderResult?.error || 'Order creation failed');
       }
 
       // Check payment status
-      if (paymentData.status === 'succeeded' || paymentData.status === 'pending' || paymentData.status === 'processing') {
-        // Payment successful or pending (ACH payments may be pending)
+      if (orderResult.payment_status === 'succeeded' || orderResult.payment_status === 'pending' || orderResult.payment_status === 'processing') {
+        // Payment successful or pending
+        const promoMessage = orderResult.promo?.applied 
+          ? ` You saved $${(orderResult.promo.credit_cents / 100).toFixed(2)} with your first-order promo!`
+          : '';
+
         toast({
-          title: "Payment Processed",
-          description: paymentData.status === 'succeeded' 
-            ? "Your payment was successful! Order confirmed." 
-            : "Your payment is being processed. Order confirmed.",
+          title: "Order Placed Successfully!",
+          description: orderResult.payment_status === 'succeeded' 
+            ? `Your payment was successful! Order confirmed.${promoMessage}`
+            : `Your payment is being processed. Order confirmed.${promoMessage}`,
         });
 
-        // Clear cart
+        // Clear cart from context and localStorage
+        clearCart();
         localStorage.removeItem('checkout_cart');
         localStorage.removeItem('checkout_restaurant');
         localStorage.removeItem('checkout_delivery_method');
@@ -1046,10 +1057,10 @@ const Checkout: React.FC = () => {
 
         // Redirect to payment success page
         setTimeout(() => {
-          navigate(`/payment-success?order_id=${newOrder.id}&payment_id=${paymentData.payment_id}`);
+          navigate(`/payment-success?order_id=${orderResult.order_id}&payment_id=${orderResult.payment_intent_id}`);
         }, 1500);
       } else {
-        throw new Error(`Payment failed with status: ${paymentData.status}`);
+        throw new Error(`Payment failed with status: ${orderResult.payment_status}`);
       }
       
     } catch (error: any) {
@@ -1854,6 +1865,37 @@ const Checkout: React.FC = () => {
                       </div>
                     )}
                   </div>
+                  {/* First-Order Promo Display */}
+                  {promoQuote?.eligible && promoQuote.preview?.total_credit_cents > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 my-2">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-semibold text-green-800">
+                          First Order Credit (Step {promoQuote.next_step})
+                        </span>
+                        <span className="text-sm font-bold text-green-800">
+                          -${(promoQuote.preview.total_credit_cents / 100).toFixed(2)}
+                        </span>
+                      </div>
+                      {promoQuote.preview.delivery_credit_cents > 0 && (
+                        <div className="text-xs text-green-700">
+                          Delivery: -${(promoQuote.preview.delivery_credit_cents / 100).toFixed(2)}
+                        </div>
+                      )}
+                      {promoQuote.preview.service_credit_cents > 0 && (
+                        <div className="text-xs text-green-700">
+                          Service: -${(promoQuote.preview.service_credit_cents / 100).toFixed(2)}
+                        </div>
+                      )}
+                      <div className="text-xs text-green-600 mt-1">
+                        You've got ${(promoQuote.next_credit_cents / 100).toFixed(2)} credit available
+                      </div>
+                    </div>
+                  )}
+                  {promoQuote?.eligible === false && promoQuote.reason === 'minimum_order_not_met' && (
+                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded my-2">
+                      Add ${((promoQuote.minimum - subtotal) / 100).toFixed(2)} more to unlock your first-order credit
+                    </div>
+                  )}
                   <div className="flex justify-between"><span>Tax</span><span>${(tax / 100).toFixed(2)}</span></div>
                   <div className="flex justify-between"><span>Tip</span><span>${(tipAmount / 100).toFixed(2)}</span></div>
                   {processingFeeCents > 0 && (

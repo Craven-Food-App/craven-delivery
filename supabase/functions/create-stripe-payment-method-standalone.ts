@@ -296,123 +296,123 @@ serve(async (req) => {
     } else {
       // Legacy format support (for backward compatibility)
       const { type, card } = requestBody;
-      
-      if (type === 'card' && card) {
-        // Validate required fields
-        if (!card.number || !card.expMonth || !card.expYear || !card.cvv || !card.holderName) {
-          return new Response(
-            JSON.stringify({ error: "Missing required card fields" }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            }
-          );
-        }
 
-        // Validate billing address
+    if (type === 'card' && card) {
+      // Validate required fields
+      if (!card.number || !card.expMonth || !card.expYear || !card.cvv || !card.holderName) {
+        return new Response(
+          JSON.stringify({ error: "Missing required card fields" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
+
+      // Validate billing address
         const cardBillingAddress = card.billingAddress || {};
         if (!cardBillingAddress.addressLine1 || !cardBillingAddress.city || !cardBillingAddress.state || !cardBillingAddress.postalCode) {
-          return new Response(
-            JSON.stringify({ error: "Missing required billing address fields" }),
-            {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            }
-          );
-        }
+        return new Response(
+          JSON.stringify({ error: "Missing required billing address fields" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
 
-        // Get user email for customer creation
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('full_name, phone')
-          .eq('user_id', user.id)
-          .single();
+      // Get user email for customer creation
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('full_name, phone')
+        .eq('user_id', user.id)
+        .single();
 
-        const userEmail = user.email || '';
-        const userName = card.holderName || profile?.full_name || '';
+      const userEmail = user.email || '';
+      const userName = card.holderName || profile?.full_name || '';
 
-        console.log("Creating Stripe customer for user:", { userEmail, userName, userId: user.id });
+      console.log("Creating Stripe customer for user:", { userEmail, userName, userId: user.id });
 
-        // Create or get Stripe customer
-        let customerId: string;
-        try {
-          customerId = await getOrCreateCustomer({
+      // Create or get Stripe customer
+      let customerId: string;
+      try {
+        customerId = await getOrCreateCustomer({
+          email: userEmail,
+          name: userName,
+          phone: profile?.phone,
+          metadata: {
+            user_id: user.id,
+          },
+        });
+        console.log("Stripe customer ID:", customerId);
+      } catch (customerError: any) {
+        console.error("Error creating/getting Stripe customer:", customerError);
+        throw new Error(`Failed to create Stripe customer: ${customerError?.message || customerError}`);
+      }
+
+      // Create payment method in Stripe
+      console.log("Creating Stripe payment method...");
+      let paymentMethod: { id: string; card: { brand: string; last4: string; expMonth: number; expYear: number } };
+      try {
+        paymentMethod = await createStripePaymentMethod({
+          type: 'card',
+          card: {
+            number: card.number,
+            expMonth: parseInt(card.expMonth),
+            expYear: parseInt(card.expYear),
+            cvv: card.cvv,
+          },
+          billingDetails: {
+            name: card.holderName,
             email: userEmail,
-            name: userName,
             phone: profile?.phone,
-            metadata: {
-              user_id: user.id,
-            },
-          });
-          console.log("Stripe customer ID:", customerId);
-        } catch (customerError: any) {
-          console.error("Error creating/getting Stripe customer:", customerError);
-          throw new Error(`Failed to create Stripe customer: ${customerError?.message || customerError}`);
-        }
-
-        // Create payment method in Stripe
-        console.log("Creating Stripe payment method...");
-        let paymentMethod: { id: string; card: { brand: string; last4: string; expMonth: number; expYear: number } };
-        try {
-          paymentMethod = await createStripePaymentMethod({
-            type: 'card',
-            card: {
-              number: card.number,
-              expMonth: parseInt(card.expMonth),
-              expYear: parseInt(card.expYear),
-              cvv: card.cvv,
-            },
-            billingDetails: {
-              name: card.holderName,
-              email: userEmail,
-              phone: profile?.phone,
-              address: {
+            address: {
                 line1: cardBillingAddress.addressLine1,
                 line2: cardBillingAddress.addressLine2,
                 city: cardBillingAddress.city,
                 state: cardBillingAddress.state,
                 postalCode: cardBillingAddress.postalCode || card.billingZip || '',
                 country: cardBillingAddress.country || 'US',
-              },
             },
-          });
-          console.log("Payment method created:", { id: paymentMethod.id, brand: paymentMethod.card.brand, last4: paymentMethod.card.last4 });
-        } catch (pmError: any) {
-          console.error("Error creating Stripe payment method:", pmError);
-          throw new Error(`Failed to create payment method: ${pmError?.message || pmError}`);
-        }
+          },
+        });
+        console.log("Payment method created:", { id: paymentMethod.id, brand: paymentMethod.card.brand, last4: paymentMethod.card.last4 });
+      } catch (pmError: any) {
+        console.error("Error creating Stripe payment method:", pmError);
+        throw new Error(`Failed to create payment method: ${pmError?.message || pmError}`);
+      }
 
-        // Attach payment method to customer
-        console.log("Attaching payment method to customer...");
-        try {
-          await attachPaymentMethodToCustomer(paymentMethod.id, customerId);
-          console.log("Payment method attached successfully");
-        } catch (attachError: any) {
-          console.error("Error attaching payment method:", attachError);
-          throw new Error(`Failed to attach payment method: ${attachError?.message || attachError}`);
-        }
+      // Attach payment method to customer
+      console.log("Attaching payment method to customer...");
+      try {
+        await attachPaymentMethodToCustomer(paymentMethod.id, customerId);
+        console.log("Payment method attached successfully");
+      } catch (attachError: any) {
+        console.error("Error attaching payment method:", attachError);
+        throw new Error(`Failed to attach payment method: ${attachError?.message || attachError}`);
+      }
 
-        return new Response(
-          JSON.stringify({
-            paymentMethodID: paymentMethod.id,
-            type: 'card',
-            brand: paymentMethod.card.brand,
-            last4: paymentMethod.card.last4,
-            customerId: customerId,
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          }
-        );
-      } else {
-        return new Response(
+      return new Response(
+        JSON.stringify({
+          paymentMethodID: paymentMethod.id,
+          type: 'card',
+          brand: paymentMethod.card.brand,
+          last4: paymentMethod.card.last4,
+          customerId: customerId,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    } else {
+      return new Response(
           JSON.stringify({ error: "Invalid request: must provide either paymentMethodId or type+card" }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
       }
     }
   } catch (error: any) {
