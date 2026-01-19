@@ -568,7 +568,7 @@ const TrackOrder: React.FC = () => {
     : { address: '', name: '' };
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: '#F8F9FA' }}>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       <Container size="xl" py="md">
         {/* Header */}
         <Paper p="md" radius="md" shadow="sm" mb="md" withBorder>
@@ -621,7 +621,7 @@ const TrackOrder: React.FC = () => {
                   )}
                 </Group>
                 
-                <Box style={{ position: 'relative', height: isMobile ? '200px' : '280px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#F3F4F6' }}>
+                <Box style={{ position: 'relative', height: isMobile ? '200px' : '280px', borderRadius: '6px', overflow: 'hidden', backgroundColor: 'white' }}>
                   {!mapLoaded && (
                     <Box style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
                       <Stack align="center" gap={4}>

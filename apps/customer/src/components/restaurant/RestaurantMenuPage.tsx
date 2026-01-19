@@ -374,33 +374,61 @@ const RestaurantMenuPage = () => {
     };
 
     const fetchNotifications = async () => {
-        const mockNotifications = [
-            {
-                id: 1,
-                title: "Order Update",
-                message: "Your order from CMIH Kitchen is being prepared",
-                time: "2 min ago",
-                read: false,
-                type: "order"
-            },
-            {
-                id: 2,
-                title: "New Deal Available",
-                message: "20% off your next order at McDonald's",
-                time: "1 hour ago",
-                read: false,
-                type: "promotion"
-            },
-            {
-                id: 3,
-                title: "Delivery Complete",
-                message: "Your order has been delivered successfully",
-                time: "3 hours ago",
-                read: true,
-                type: "delivery"
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                setNotificationsList([]);
+                return;
             }
-        ];
-        setNotificationsList(mockNotifications);
+
+            // Fetch from order_notifications table
+            const { data: orderNotifs, error: orderError } = await supabase
+                .from('order_notifications')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (orderError) {
+                console.error('Error fetching notifications:', orderError);
+                setNotificationsList([]);
+                return;
+            }
+
+            // Also check notification_logs for promo offers
+            const { data: logNotifs, error: logError } = await supabase
+                .from('notification_logs')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('notification_type', 'promotion')
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            // Combine and format notifications
+            const formattedNotifications = [
+                ...(orderNotifs || []).map(n => ({
+                    id: n.id,
+                    title: n.title,
+                    message: n.message,
+                    time: new Date(n.created_at).toLocaleString(),
+                    read: n.is_read || false,
+                    type: n.notification_type || 'order'
+                })),
+                ...(logNotifs || []).map(n => ({
+                    id: n.id,
+                    title: n.title,
+                    message: n.body,
+                    time: new Date(n.created_at || new Date()).toLocaleString(),
+                    read: n.status === 'clicked',
+                    type: 'promotion'
+                }))
+            ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+            setNotificationsList(formattedNotifications);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            setNotificationsList([]);
+        }
     };
 
     const handleCategoryClick = (categoryId: string) => {
@@ -1099,7 +1127,7 @@ const RestaurantMenuPage = () => {
                         </Stack>
 
                         {/* Map Container - Right Side */}
-                        <Box style={{ flex: 1, height: '120px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)', backgroundColor: '#f5f5f5' }}>
+                        <Box style={{ flex: 1, height: '120px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--mantine-color-gray-3)', backgroundColor: 'white' }}>
                             {restaurant.latitude && restaurant.longitude ? (
                                 <Box 
                                     ref={mapContainer} 

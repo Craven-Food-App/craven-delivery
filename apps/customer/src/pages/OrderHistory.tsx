@@ -63,6 +63,7 @@ interface Order {
   total_amount?: number;
   order_status: string;
   delivery_method: string;
+  driver_id?: string;
   restaurant: {
     id: string;
     name: string;
@@ -250,11 +251,11 @@ export default function OrderHistory() {
     });
   };
 
-  const handleMessageDriver = (driver: Driver) => {
-    toast({
-      title: 'Messaging Driver',
-      description: `Opening chat with ${driver.name}...`,
-    });
+  const handleMessageDriver = (orderId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    navigate(`/customer-support?orderId=${orderId}&type=driver`);
   };
 
   const handleCallRestaurant = (restaurant: { name: string }) => {
@@ -422,7 +423,7 @@ export default function OrderHistory() {
                           color="#ff5f1f"
                           style={{ 
                             height: isActive ? '10px' : '6px',
-                            backgroundColor: '#f3f4f6'
+                            backgroundColor: 'white'
                           }}
                           animated={isActive}
                         />
@@ -437,17 +438,33 @@ export default function OrderHistory() {
                           </Text>
                         </Group>
                         {isActive && (
-                          <Button
-                            size="xs"
-                            variant="subtle"
-                            color="orange"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTrackOrder(order.id);
-                            }}
-                          >
-                            View Details
-                          </Button>
+                          <Group gap="xs">
+                            {order.driver_id && (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="orange"
+                                leftSection={<IconMessageCircle size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMessageDriver(order.id, e);
+                                }}
+                              >
+                                Contact Driver
+                              </Button>
+                            )}
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              color="orange"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrackOrder(order.id);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          </Group>
                         )}
                       </Group>
                     </Stack>

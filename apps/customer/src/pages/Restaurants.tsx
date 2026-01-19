@@ -172,7 +172,7 @@ const RestaurantCard = ({
       onClick={() => navigate(`/restaurant/${restaurant.id}/menu`)}
     >
       {/* Image with rounded corners and overlay tags */}
-      <Box style={{ position: 'relative', height: '200px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
+      <Box style={{ position: 'relative', height: '200px', backgroundColor: 'white', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
         <MantineImage
           src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
           alt={restaurant.name}
@@ -277,6 +277,8 @@ const Restaurants = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
@@ -492,36 +494,101 @@ const Restaurants = () => {
     });
   };
 
+  // Fetch saved delivery addresses
+  const fetchSavedAddresses = async () => {
+    try {
+      setLoadingAddresses(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setSavedAddresses([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('delivery_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedAddresses(data || []);
+    } catch (error) {
+      console.error('Error fetching saved addresses:', error);
+      setSavedAddresses([]);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
+
+  const selectSavedAddress = (address: any) => {
+    const fullAddress = `${address.street_address}, ${address.city}, ${address.state} ${address.zip_code}`;
+    setLocation(fullAddress);
+    setShowAddressSelector(false);
+    notifications.show({
+      title: "Location Updated",
+      message: `Delivery address set to ${address.label || fullAddress}`,
+      color: 'orange',
+    });
+  };
+
   // Notifications functionality
   const fetchNotifications = async () => {
-    // Mock notifications - in real app, this would fetch from database
-    const mockNotifications = [
-      {
-        id: 1,
-        title: "Order Update",
-        message: "Your order from CMIH Kitchen is being prepared",
-        time: "2 min ago",
-        read: false,
-        type: "order"
-      },
-      {
-        id: 2,
-        title: "New Deal Available",
-        message: "20% off your next order at McDonald's",
-        time: "1 hour ago",
-        read: false,
-        type: "promotion"
-      },
-      {
-        id: 3,
-        title: "Delivery Complete",
-        message: "Your order has been delivered successfully",
-        time: "3 hours ago",
-        read: true,
-        type: "delivery"
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setNotificationsList([]);
+        return;
       }
-    ];
-    setNotificationsList(mockNotifications);
+
+      // Fetch from order_notifications table
+      const { data: orderNotifs, error: orderError } = await supabase
+        .from('order_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (orderError) {
+        console.error('Error fetching notifications:', orderError);
+        setNotificationsList([]);
+        return;
+      }
+
+      // Also check notification_logs for promo offers
+      const { data: logNotifs, error: logError } = await supabase
+        .from('notification_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('notification_type', 'promotion')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      // Combine and format notifications
+      const formattedNotifications = [
+        ...(orderNotifs || []).map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          time: new Date(n.created_at).toLocaleString(),
+          read: n.is_read || false,
+          type: n.notification_type || 'order'
+        })),
+        ...(logNotifs || []).map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.body,
+          time: new Date(n.created_at || new Date()).toLocaleString(),
+          read: n.status === 'clicked',
+          type: 'promotion'
+        }))
+      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+      setNotificationsList(formattedNotifications);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotificationsList([]);
+    }
   };
 
   // Cart functionality
@@ -668,7 +735,22 @@ const Restaurants = () => {
     fetchHeroImage();
     fetchAvailableCuisines();
     fetchAdPlacements();
+    fetchSavedAddresses();
   }, []);
+
+  // Fetch addresses when selector opens
+  useEffect(() => {
+    if (showAddressSelector) {
+      fetchSavedAddresses();
+    }
+  }, [showAddressSelector]);
+
+  // Fetch addresses when selector opens
+  useEffect(() => {
+    if (showAddressSelector) {
+      fetchSavedAddresses();
+    }
+  }, [showAddressSelector]);
 
   // Update filter options based on delivery mode
   useEffect(() => {
@@ -968,7 +1050,7 @@ const Restaurants = () => {
   // Show loading state while checking auth (prevents flash of landing page)
   if (isMobile && checkingAuth) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />
       </Box>
     );
@@ -1275,7 +1357,7 @@ const Restaurants = () => {
                   paddingTop: '12px', 
                   paddingBottom: '12px', 
                   fontSize: '16px', 
-                  backgroundColor: '#fafafa', 
+                  backgroundColor: 'white', 
                   border: 'none', 
                   borderRadius: '12px',
                   fontWeight: 500
@@ -1304,7 +1386,7 @@ const Restaurants = () => {
         </Box>
 
         {/* Scrollable Content */}
-        <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fafafa' }}>
+        <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: 'white' }}>
           <Box component="main">
             {/* Menu Icons - Dropdown from search bar */}
             {showMenuIcons && (
@@ -1357,7 +1439,7 @@ const Restaurants = () => {
                               width: '48px',
                               height: '48px',
                               borderRadius: '12px',
-                              backgroundColor: category.active ? '#ff5f1f' : '#f3f4f6',
+                              backgroundColor: category.active ? '#ff5f1f' : 'white',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1509,7 +1591,156 @@ const Restaurants = () => {
               )}
             </Box>
 
-            {/* Promo Carousel */}
+            {/* Fastest near you */}
+            <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
+                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                  <IconChevronRight size={18} />
+                </ActionIcon>
+              </Group>
+              
+              <Group gap="md" style={{ overflowX: 'auto' }}>
+                {RESTAURANTS_DATA.fastest.map((restaurant) => (
+                  <RestaurantCard 
+                    key={restaurant.id} 
+                    restaurant={restaurant} 
+                    likedItems={likedItems} 
+                    toggleLike={toggleLike} 
+                  />
+                ))}
+              </Group>
+            </Box>
+
+            {/* Advertisement Banner - Dynamic */}
+            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {loadingAds ? (
+                <Box
+                  style={{
+                    width: '380px',
+                    height: '200px',
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Loader size="sm" />
+                </Box>
+              ) : (() => {
+                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
+                return adPlacement ? (
+                    <Box
+                      component="a"
+                      href={adPlacement.click_url || '/promotion-details'}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/promotion-details');
+                      }}
+                      style={{
+                        width: `${adPlacement.width}px`,
+                        maxWidth: '100%',
+                        height: `${adPlacement.height}px`,
+                        background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
+                        borderRadius: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        overflow: 'hidden',
+                        textDecoration: 'none',
+                        boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
+                        position: 'relative',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
+                      }}
+                    >
+                      {adPlacement.ad_code ? (
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
+                          style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}
+                        />
+                      ) : adPlacement.image_url ? (
+                        <MantineImage
+                          src={adPlacement.image_url}
+                          alt="Advertisement"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1 }}
+                        />
+                      ) : (
+                        <Box style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                          <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
+                            Advertisement
+                            <br />
+                            {adPlacement.width} × {adPlacement.height}
+                          </Text>
+                        </Box>
+                      )}
+                      {/* Overlay gradient for better text readability */}
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)',
+                          pointerEvents: 'none',
+                          zIndex: 2,
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <Box
+                      component="a"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/promotion-details');
+                      }}
+                      style={{
+                        width: '380px',
+                        maxWidth: '100%',
+                        height: '200px',
+                        background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
+                        borderRadius: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        textDecoration: 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
+                      }}
+                    >
+                      <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
+                        Advertisement
+                        <br />
+                        380 × 200
+                      </Text>
+                    </Box>
+                  );
+                })()}
+              </Box>
+
+            {/* Promotional Banner Carousel */}
             {loadingBanners ? (
               <Box py="xl" px="md">
                 <Group gap="md">
@@ -1541,127 +1772,16 @@ const Restaurants = () => {
               </Box>
             ) : null}
 
-            {/* Fastest near you */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', paddingTop: '2px', paddingBottom: '2px' }}>
-              <Group justify="space-between" gap="xs" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
-                  <IconChevronRight size={18} />
-                </ActionIcon>
-              </Group>
-              
-              <Group gap="md" style={{ overflowX: 'auto', paddingTop: '2px', paddingBottom: '2px' }}>
-                {RESTAURANTS_DATA.fastest.map((restaurant) => (
-                  <RestaurantCard 
-                    key={restaurant.id} 
-                    restaurant={restaurant} 
-                    likedItems={likedItems} 
-                    toggleLike={toggleLike} 
-                  />
-                ))}
-              </Group>
-            </Box>
-
-            {/* Advertisement Banner - Dynamic */}
-            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {loadingAds ? (
-                <Box
-                  style={{
-                    width: '380px',
-                    height: '200px',
-                    backgroundColor: '#f3f4f6',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Loader size="sm" />
-                </Box>
-              ) : (() => {
-                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
-                return adPlacement ? (
-                    <Box
-                      component="a"
-                      href={adPlacement.click_url || '#'}
-                      target={adPlacement.click_url ? '_blank' : undefined}
-                      rel={adPlacement.click_url ? 'noopener noreferrer' : undefined}
-                      style={{
-                        width: `${adPlacement.width}px`,
-                        height: `${adPlacement.height}px`,
-                        backgroundColor: '#f3f4f6',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: adPlacement.click_url ? 'pointer' : 'default',
-                        transition: 'opacity 0.2s',
-                        overflow: 'hidden',
-                        textDecoration: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (adPlacement.click_url) {
-                          e.currentTarget.style.opacity = '0.9';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                    >
-                      {adPlacement.ad_code ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
-                          style={{ width: '100%', height: '100%' }}
-                        />
-                      ) : adPlacement.image_url ? (
-                        <MantineImage
-                          src={adPlacement.image_url}
-                          alt="Advertisement"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
-                          Advertisement
-                          <br />
-                          {adPlacement.width} × {adPlacement.height}
-                        </Text>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box
-                      style={{
-                        width: '380px',
-                        height: '200px',
-                        backgroundColor: '#f3f4f6',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
-                        Advertisement
-                        <br />
-                        380 × 200
-                      </Text>
-                    </Box>
-                  );
-                })()}
-              </Box>
-
             {/* Premium Selections */}
-            <Box px="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', paddingTop: '2px', paddingBottom: '2px' }}>
-              <Group justify="space-between" gap="xs" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1, margin: 0, padding: 0 }}>Premium Selections</Title>
+            <Box px="md" py="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Premium Selections</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
                   <IconChevronRight size={18} />
                 </ActionIcon>
               </Group>
               
-              <Group gap="md" style={{ overflowX: 'auto', paddingTop: '2px', paddingBottom: '2px' }}>
+              <Group gap="md" style={{ overflowX: 'auto' }}>
                 {RESTAURANTS_DATA.premium.map((restaurant) => (
                   <RestaurantCard 
                     key={restaurant.id} 
@@ -1760,7 +1880,7 @@ const Restaurants = () => {
               rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
               style={{ 
                 flex: 1,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: 'white',
                 color: '#111827',
                 fontWeight: 500,
                 justifyContent: 'space-between',
@@ -1784,7 +1904,7 @@ const Restaurants = () => {
               radius="md"
               styles={{
                 root: {
-                  backgroundColor: '#f3f4f6',
+                  backgroundColor: 'white',
                   padding: '2px'
                 },
                 indicator: {
@@ -1807,7 +1927,7 @@ const Restaurants = () => {
             leftSection={<IconSearch size={16} style={{ color: '#9ca3af' }} />}
             styles={{
               input: {
-                backgroundColor: '#f3f4f6',
+                backgroundColor: 'white',
                 border: 'none',
                 fontSize: '14px',
                 paddingTop: '10px',
@@ -1856,10 +1976,62 @@ const Restaurants = () => {
                 
                 {/* Address Selector Dropdown */}
                 {showAddressSelector && (
-                  <div data-dropdown className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div data-dropdown className="absolute top-full left-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 mb-3">Select delivery address</h3>
+                      
+                      {/* Saved Addresses */}
+                      {loadingAddresses ? (
+                        <div className="py-4 text-center">
+                          <Text size="sm" c="dimmed">Loading addresses...</Text>
+                        </div>
+                      ) : savedAddresses.length > 0 ? (
+                        <div className="space-y-2 mb-4">
+                          <Text size="xs" fw={600} c="dimmed" mb="xs" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Saved Addresses
+                          </Text>
+                          {savedAddresses.map((address) => {
+                            const fullAddress = `${address.street_address}, ${address.city}, ${address.state} ${address.zip_code}`;
+                            const isSelected = location.includes(address.street_address) && location.includes(address.city);
+                            return (
+                              <button
+                                key={address.id}
+                                onClick={() => selectSavedAddress(address)}
+                                className={`w-full text-left p-3 border rounded-lg transition-all ${
+                                  isSelected
+                                    ? 'border-orange-500 bg-orange-50'
+                                    : 'border-gray-200 hover:border-orange-300 hover:bg-white'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-sm font-semibold text-gray-900">
+                                        {address.label || 'Home'}
+                                      </span>
+                                      {address.is_default && (
+                                        <span className="text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-medium">
+                                          Default
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-500 leading-relaxed">
+                                      {fullAddress}
+                                    </p>
+                                  </div>
+                                  <IconChevronRight size={16} style={{ color: '#9ca3af', flexShrink: 0, marginTop: '2px' }} />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+
+                      {/* Search for New Address */}
                       <div className="space-y-2">
+                        <Text size="xs" fw={600} c="dimmed" mb="xs" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          {savedAddresses.length > 0 ? 'Search Address' : 'Enter Address'}
+                        </Text>
                         <TextInput
                           placeholder="Search for an address"
                           onChange={(e) => handleAddressSearch(e.target.value)}
@@ -1871,18 +2043,27 @@ const Restaurants = () => {
                               <button
                                 key={index}
                                 onClick={() => selectAddress(address)}
-                                className="w-full text-left p-2 hover:bg-gray-100 rounded-md text-sm"
+                                className="w-full text-left p-2 hover:bg-white rounded-md text-sm"
                               >
                                 {address}
                               </button>
                             ))}
                           </div>
                         )}
-                        <div className="pt-2 border-t">
-                          <button className="text-orange-600 text-sm font-medium">
-                            Add new address
-                          </button>
-                        </div>
+                      </div>
+
+                      {/* Add New Address Button */}
+                      <div className="pt-3 mt-3 border-t">
+                        <button 
+                          onClick={() => {
+                            setShowAddressSelector(false);
+                            navigate('/account/delivery-addresses');
+                          }}
+                          className="w-full flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 text-sm font-medium py-2 px-3 rounded-lg hover:bg-orange-50 transition-colors"
+                        >
+                          <IconPlus size={16} />
+                          Add new address
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1890,7 +2071,7 @@ const Restaurants = () => {
               </div>
 
               {/* Delivery/Pickup Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-white rounded-lg p-1">
                 <button 
                   onClick={() => setDeliveryMode('delivery')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
@@ -1940,7 +2121,7 @@ const Restaurants = () => {
                           <div 
                             key={notification.id}
                             className={`p-3 rounded-lg border ${
-                              notification.read ? 'bg-gray-50' : 'bg-orange-50 border-orange-200'
+                              notification.read ? 'bg-white' : 'bg-orange-50 border-orange-200'
                             }`}
                           >
                             <div className="flex items-start justify-between">
@@ -2084,7 +2265,7 @@ const Restaurants = () => {
                 style={{
                   flexShrink: 0,
                   whiteSpace: 'nowrap',
-                  backgroundColor: activeFilter === filter.id ? '#000000' : '#f3f4f6',
+                  backgroundColor: activeFilter === filter.id ? '#000000' : 'white',
                   color: activeFilter === filter.id ? '#ffffff' : '#374151',
                   fontWeight: 500,
                   fontSize: '14px'
@@ -2099,7 +2280,7 @@ const Restaurants = () => {
 
       <div className="flex">
         {/* Right Side Navigation - Desktop Only */}
-        <div className="hidden lg:block w-64 bg-gray-50 border-r border-gray-200 min-h-screen side-menu-container">
+        <div className="hidden lg:block w-64 bg-white border-r border-gray-200 min-h-screen side-menu-container">
           <div className="p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Browse</h3>
             <nav className="space-y-1">
@@ -2107,7 +2288,7 @@ const Restaurants = () => {
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-gray-600 hover:bg-white hover:text-gray-900"
                 >
                   <category.icon className="w-5 h-5" />
                   <span className="font-medium">{category.label}</span>
@@ -2133,7 +2314,7 @@ const Restaurants = () => {
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
                       activeFilter === filter.id
                         ? 'bg-orange-500 text-white' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-white text-gray-600 hover:bg-white'
                     }`}
                   >
                     {filter.label}
@@ -2153,13 +2334,13 @@ const Restaurants = () => {
                   <div className="flex space-x-1">
                     <button 
                       onClick={scrollFeaturedLeft}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
                     >
                       <IconChevronLeft className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={scrollFeaturedRight}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
                     >
                       <IconChevronRight className="w-4 h-4" />
                     </button>
@@ -2253,7 +2434,7 @@ const Restaurants = () => {
           </div>
 
           {/* Deals for You Section */}
-          <div className="bg-gray-50 py-8">
+          <div className="bg-white py-8">
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Deals for you</h2>
@@ -2262,13 +2443,13 @@ const Restaurants = () => {
                   <div className="flex space-x-1">
                     <button 
                       onClick={scrollWeeklyDealsLeft}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
                     >
                       <IconChevronLeft className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={scrollWeeklyDealsRight}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
                     >
                       <IconChevronRight className="w-4 h-4" />
                     </button>
@@ -2283,13 +2464,13 @@ const Restaurants = () => {
               {loadingDeals ? (
                 <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
                   {[...Array(6)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0 w-64 bg-gray-200 rounded-xl animate-pulse">
-                      <div className="h-48 bg-gray-300"></div>
+                    <div key={index} className="flex-shrink-0 w-64 bg-white rounded-xl animate-pulse">
+                      <div className="h-48 bg-white"></div>
                       <div className="p-3">
-                        <div className="h-3 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded"></div>
+                        <div className="h-3 bg-white rounded mb-1"></div>
+                        <div className="h-2 bg-white rounded mb-1"></div>
+                        <div className="h-2 bg-white rounded mb-1"></div>
+                        <div className="h-2 bg-white rounded"></div>
                       </div>
                     </div>
                   ))}
@@ -2462,7 +2643,7 @@ const Restaurants = () => {
                   styles={{
                     root: {
                       '&:hover': {
-                        backgroundColor: '#f3f4f6',
+                        backgroundColor: 'white',
                         color: '#111827'
                       }
                     }

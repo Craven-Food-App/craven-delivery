@@ -291,7 +291,7 @@ const CardForm: React.FC<{
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-3.5 text-base font-semibold hover:bg-gray-50"
+          className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-3.5 text-base font-semibold hover:bg-white"
         >
           Cancel
         </button>
@@ -1171,7 +1171,7 @@ const Checkout: React.FC = () => {
                 {/* Express */}
                 <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                   formData.deliverySpeed === 'express' 
-                    ? 'border-2 border-black bg-gray-50' 
+                    ? 'border-2 border-black bg-white' 
                     : 'border border-gray-200 hover:border-orange-500'
                 }`}>
                   <input 
@@ -1195,7 +1195,7 @@ const Checkout: React.FC = () => {
                 {/* Standard */}
                 <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                   formData.deliverySpeed === 'standard' 
-                    ? 'border-2 border-black bg-gray-50' 
+                    ? 'border-2 border-black bg-white' 
                     : 'border border-gray-200 hover:border-orange-500'
                 }`}>
                   <input 
@@ -1215,7 +1215,7 @@ const Checkout: React.FC = () => {
                 {/* Scheduled */}
                 <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                   formData.deliverySpeed === 'scheduled' 
-                    ? 'border-2 border-black bg-gray-50' 
+                    ? 'border-2 border-black bg-white' 
                     : 'border border-gray-200 hover:border-orange-500'
                 }`}>
                   <input 
@@ -1466,7 +1466,7 @@ const Checkout: React.FC = () => {
                     className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       formData.tip === amount && formData.tipType === 'fixed'
                         ? 'bg-black text-white'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        : 'bg-white text-gray-900 hover:bg-white'
                     }`}
                   >
                     ${(amount / 100).toFixed(2)}

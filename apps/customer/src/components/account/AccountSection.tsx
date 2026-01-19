@@ -329,7 +329,7 @@ export const AccountSection = () => {
           {/* Profile Section */}
           <button 
             onClick={openProfileEdit}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
@@ -346,7 +346,7 @@ export const AccountSection = () => {
           {/* Payment Methods */}
           <button 
             onClick={openPaymentMethods}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
@@ -363,7 +363,7 @@ export const AccountSection = () => {
           {/* Delivery Addresses */}
           <button 
             onClick={openDeliveryAddresses}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
@@ -380,7 +380,7 @@ export const AccountSection = () => {
           {/* Order History */}
           <button 
             onClick={() => navigate('/order-history')}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -397,7 +397,7 @@ export const AccountSection = () => {
           {/* Notifications */}
           <button 
             onClick={() => navigate('/notifications')}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -414,7 +414,7 @@ export const AccountSection = () => {
           {/* Help & Support */}
           <button 
             onClick={() => navigate('/customer-support')}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-200"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -431,7 +431,7 @@ export const AccountSection = () => {
           {/* Sign Out */}
           <button 
             onClick={handleSignOut}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
