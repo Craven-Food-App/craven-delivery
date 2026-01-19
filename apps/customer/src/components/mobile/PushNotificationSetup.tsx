@@ -155,11 +155,11 @@ export const PushNotificationSetup: React.FC = () => {
       console.error('Error on registration: ' + JSON.stringify(error));
     });
 
-    // Listen for push notifications received
+    // Listen for push notifications received while app is in the foreground.
+    // For native apps (Android/iOS), rely on the OS notification system instead of in-app toasts.
     PushNotifications.addListener('pushNotificationReceived', (notification) => {
       console.log('Push received in foreground: ' + JSON.stringify(notification));
       
-      // Play custom sound if enabled and on iOS
       if (settings.sound) {
         if (Capacitor.getPlatform() === 'ios') {
           playCustomNotificationSound();
@@ -167,12 +167,15 @@ export const PushNotificationSetup: React.FC = () => {
           playNotificationSound();
         }
       }
-      
-      // Show toast notification
-      toast({
-        title: notification.title || 'New Notification',
-        description: notification.body || 'You have a new notification',
-      });
+
+      // For web, we still show a toast. For native Android/iOS,
+      // the real device notification system handles the banner/notification shade.
+      if (!Capacitor.isNativePlatform()) {
+        toast({
+          title: notification.title || 'New Notification',
+          description: notification.body || 'You have a new notification',
+        });
+      }
     });
 
     // Listen for push notification taps (when app is backgrounded/closed)
