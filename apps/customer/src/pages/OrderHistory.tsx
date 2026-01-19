@@ -16,6 +16,7 @@ import {
   Avatar,
   Divider,
   ActionIcon,
+  Paper,
 } from '@mantine/core';
 import {
   IconClock,
@@ -503,27 +504,31 @@ function BottomNavigation({ currentPath }: { currentPath: string }) {
   };
 
   const navItems = [
-    { icon: IconHome, label: 'Home', path: '/restaurants' },
-    { icon: IconShoppingBag, label: 'Orders', path: '/order-history' },
-    { icon: IconSearch, label: 'Browse', path: '/restaurants' },
-    { icon: IconUser, label: 'Me', path: '/account' },
+    { id: 'home', icon: IconHome, label: 'Home', path: '/restaurants' },
+    { id: 'orders', icon: IconShoppingBag, label: 'Orders', path: '/order-history' },
+    { id: 'browse', icon: IconSearch, label: 'Browse', path: '/restaurants' },
+    { id: 'account', icon: IconUser, label: 'Me', path: '/account' },
   ];
 
   return (
     <Box
+      bg="white"
       style={{
         position: 'fixed',
-        bottom: 'env(safe-area-inset-bottom, 0px)',
+        bottom: 'calc(0px + env(safe-area-inset-bottom, 0px))',
         left: 0,
         right: 0,
         width: '100%',
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         paddingTop: '8px',
         paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
-        zIndex: 1000,
+        zIndex: 9999,
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
+        borderTop: '1px solid #e5e7eb',
+        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)',
+        minHeight: '56px',
       }}
     >
       {navItems.map((item) => {
@@ -531,7 +536,7 @@ function BottomNavigation({ currentPath }: { currentPath: string }) {
         const active = isActive(item.path);
         return (
           <ActionIcon
-            key={item.path}
+            key={item.id}
             variant="subtle"
             onClick={() => navigate(item.path)}
             size="lg"
