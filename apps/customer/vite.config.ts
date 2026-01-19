@@ -52,7 +52,8 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       entries: ['index.html'],
-      include: ['react', 'react-dom'], // Add this
+      include: ['react', 'react-dom'],
+      force: true, // Force re-optimization to fix React instance issues
     },
   };
 });

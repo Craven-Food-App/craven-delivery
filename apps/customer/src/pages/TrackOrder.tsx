@@ -569,7 +569,7 @@ const TrackOrder: React.FC = () => {
 
   return (
     <Box style={{ minHeight: '100vh', backgroundColor: 'white' }}>
-      <Container size="xl" py="md">
+      <Container size="xl" py="md" style={{ paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Header */}
         <Paper p="md" radius="md" shadow="sm" mb="md" withBorder>
           <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
@@ -815,7 +815,24 @@ const TrackOrder: React.FC = () => {
             </Card>
           </Grid.Col>
         </Grid>
+        <Box style={{ height: '90px' }} />
       </Container>
+      
+      {/* White Bar at Bottom */}
+      <Box
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          backgroundColor: '#ffffff',
+          height: '56px',
+          zIndex: 1000,
+          borderTop: '1px solid #e5e7eb',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      />
     </Box>
   );
 };

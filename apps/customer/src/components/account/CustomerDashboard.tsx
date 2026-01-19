@@ -67,11 +67,25 @@ const CustomerDashboard = () => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  const getUserFirstName = () => {
+  const getUserDisplayName = () => {
     if (!user) return 'Friend';
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.raw_user_meta_data?.full_name ||
+      (user.user_metadata?.first_name && user.user_metadata?.last_name
+        ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+        : null);
+
+    if (fullName) {
+      const parts = fullName.trim().split(' ');
+      const first = parts[0] || '';
+      const lastInitial = parts.length > 1 ? `${parts[1].charAt(0).toUpperCase()}.` : '';
+      return lastInitial ? `${first} ${lastInitial}` : first;
+    }
+
     if (user.user_metadata?.first_name) return user.user_metadata.first_name;
     if (user.raw_user_meta_data?.first_name) return user.raw_user_meta_data.first_name;
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0];
     if (user.email) return user.email.split('@')[0].split('.')[0];
     return 'Friend';
   };
@@ -226,7 +240,7 @@ const CustomerDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 {activeTab === 'home' ? `Good ${getGreeting()}!` : activeTab === 'orders' ? 'Orders' : 'Account'}
               </h1>
-              {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserFirstName()}</p>}
+              {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserDisplayName()}</p>}
             </div>
           </div>
         </div>

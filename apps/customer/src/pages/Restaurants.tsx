@@ -252,6 +252,8 @@ const Restaurants = () => {
   const [loadingHeroImage, setLoadingHeroImage] = useState(true);
   const [adPlacements, setAdPlacements] = useState<any[]>([]);
   const [loadingAds, setLoadingAds] = useState(true);
+  const [randomizedAds, setRandomizedAds] = useState<any[]>([]);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [showMenuIcons, setShowMenuIcons] = useState(false); // Start collapsed
@@ -259,8 +261,27 @@ const Restaurants = () => {
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
   
   // Mobile app states
-  const [showMain, setShowMain] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // Add loading state for auth check
+  // Check cached auth state first to prevent flash
+  const getCachedAuthState = () => {
+    if (typeof window === 'undefined') return false;
+    const cached = sessionStorage.getItem('craven_auth_state');
+    if (cached) {
+      try {
+        const { isAuthenticated, timestamp } = JSON.parse(cached);
+        // Cache is valid for 5 minutes
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          return isAuthenticated;
+        }
+      } catch (e) {
+        // Invalid cache, ignore
+      }
+    }
+    return null; // No cached state
+  };
+
+  const cachedAuth = getCachedAuthState();
+  const [showMain, setShowMain] = useState(cachedAuth === true);
+  const [checkingAuth, setCheckingAuth] = useState(cachedAuth === null); // Only check if no cache
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   
   // Login form states
@@ -532,6 +553,15 @@ const Restaurants = () => {
     });
   };
 
+  const handleAddressButtonClick = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setShowMain(false);
+      return;
+    }
+    setShowAddressSelector(!showAddressSelector);
+  };
+
   // Notifications functionality
   const fetchNotifications = async () => {
     try {
@@ -726,6 +756,83 @@ const Restaurants = () => {
       // Keep common cuisines on error
     }
   };
+
+  // Randomize ads every hour on the hour
+  const randomizeAds = useCallback(() => {
+    // Combine ad placements and promotional banners
+    const allAds: any[] = [];
+    
+    // Add ad placements
+    const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
+    if (adPlacement) {
+      allAds.push({
+        ...adPlacement,
+        type: 'ad_placement',
+        click_url: adPlacement.click_url || null // Only use link if set in database
+      });
+    }
+    
+    // Add promotional banners
+    promotionalBanners.forEach(banner => {
+      allAds.push({
+        ...banner,
+        type: 'promotional_banner',
+        click_url: banner.action_url || banner.link_url || null, // Only use link if set in database
+        image_url: banner.image_url,
+        width: 380,
+        height: 200
+      });
+    });
+    
+    // Shuffle array using Fisher-Yates algorithm
+    const shuffled = [...allAds];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    setRandomizedAds(shuffled);
+    setCurrentAdIndex(0);
+  }, [adPlacements, promotionalBanners]);
+
+  // Set up hourly randomization
+  useEffect(() => {
+    if (loadingAds || loadingBanners) return;
+    if (adPlacements.length === 0 && promotionalBanners.length === 0) return;
+    
+    // Randomize immediately
+    randomizeAds();
+    
+    // Calculate milliseconds until next hour
+    const now = new Date();
+    const nextHour = new Date(now);
+    nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+    const msUntilNextHour = nextHour.getTime() - now.getTime();
+    
+    // Set timeout for next hour
+    const hourlyTimeout = setTimeout(() => {
+      randomizeAds();
+      // Then set interval for every hour
+      const hourlyInterval = setInterval(() => {
+        randomizeAds();
+      }, 60 * 60 * 1000); // 1 hour in milliseconds
+      
+      return () => clearInterval(hourlyInterval);
+    }, msUntilNextHour);
+    
+    return () => clearTimeout(hourlyTimeout);
+  }, [adPlacements, promotionalBanners, loadingAds, loadingBanners, randomizeAds]);
+
+  // Auto-rotate carousel every 5 seconds
+  useEffect(() => {
+    if (randomizedAds.length <= 1) return;
+    
+    const rotationInterval = setInterval(() => {
+      setCurrentAdIndex((prev) => (prev + 1) % randomizedAds.length);
+    }, 5000); // 5 seconds
+    
+    return () => clearInterval(rotationInterval);
+  }, [randomizedAds.length]);
 
   // Fetch deals on component mount
   useEffect(() => {
@@ -1003,9 +1110,34 @@ const Restaurants = () => {
         setCheckingAuth(false);
         return; // Only check on mobile
       }
+
+      // If we have cached auth state, skip the check
+      if (cachedAuth !== null) {
+        setCheckingAuth(false);
+        return;
+      }
+      
+      // Minimum display time for loading screen (1 second)
+      const minDisplayTime = 1000;
+      const startTime = Date.now();
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+        
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        
+        const isAuthenticated = !!user;
+        
+        // Cache the auth state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('craven_auth_state', JSON.stringify({
+            isAuthenticated,
+            timestamp: Date.now()
+          }));
+        }
+        
         if (user) {
           // User is logged in - skip landing page and show main restaurants view
           setShowMain(true);
@@ -1015,6 +1147,18 @@ const Restaurants = () => {
         }
       } catch (error) {
         console.error('Error checking auth:', error);
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        
+        // Cache failed state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('craven_auth_state', JSON.stringify({
+            isAuthenticated: false,
+            timestamp: Date.now()
+          }));
+        }
+        
         // On error, assume not logged in and show landing page
         setShowMain(false);
       } finally {
@@ -1030,9 +1174,23 @@ const Restaurants = () => {
         // User logged out - show landing page
         setShowMain(false);
         setCheckingAuth(false);
+        // Clear cached auth state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('craven_auth_state', JSON.stringify({
+            isAuthenticated: false,
+            timestamp: Date.now()
+          }));
+        }
       } else if (event === 'SIGNED_IN' && session?.user && isMobile) {
         // User logged in - show main view
         setShowMain(true);
+        // Cache auth state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('craven_auth_state', JSON.stringify({
+            isAuthenticated: true,
+            timestamp: Date.now()
+          }));
+        }
         // Reset form
         setEmail('');
         setPassword('');
@@ -1047,11 +1205,11 @@ const Restaurants = () => {
     };
   }, [isMobile]);
 
-  // Show loading state while checking auth (prevents flash of landing page)
+  // Show simple loader while checking auth (loading screen is handled at app level)
   if (isMobile && checkingAuth) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="orange" />
+      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000000' }}>
+        <Loader color="orange" size="lg" />
       </Box>
     );
   }
@@ -1080,7 +1238,7 @@ const Restaurants = () => {
         </Box>
 
         {/* Content Container - On Background */}
-        <Box style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', paddingTop: '64px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
+        <Box style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '64px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
           {/* Logo and Tagline */}
           <Box style={{ marginBottom: '32px' }}>
             <Title order={1} style={{ fontSize: '80px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
@@ -1268,22 +1426,137 @@ const Restaurants = () => {
   // Mobile App Main Interface
   if (isMobile && showMain) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <Box style={{ 
+        width: '100%', 
+        maxWidth: '430px', 
+        margin: '0 auto', 
+        minHeight: '100vh', 
+        backgroundColor: 'white', 
+        display: 'flex', 
+        flexDirection: 'column',
+        paddingTop: 'env(safe-area-inset-top, 0px)'
+      }}>
         {/* Search & Address Bar (Sticky Header) */}
         <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Button
-              variant="subtle"
-              leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-              rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-              onClick={() => setShowMain(false)}
-              style={{ padding: '8px', borderRadius: '12px' }}
-            >
-              <Stack gap={0} align="flex-start">
-                <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
-              </Stack>
-            </Button>
+            <Box style={{ position: 'relative', flex: 1 }}>
+              <Button
+                variant="subtle"
+                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
+                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
+                onClick={handleAddressButtonClick}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+              >
+                <Stack gap={0} align="flex-start">
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                </Stack>
+              </Button>
+              
+              {/* Address Selector Dropdown - Mobile */}
+              {showAddressSelector && (
+                <Box
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '8px',
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    zIndex: 100,
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}
+                >
+                  <Box p="md">
+                    <Text size="sm" fw={700} mb="md">Select delivery address</Text>
+                    
+                    {/* Saved Addresses */}
+                    {loadingAddresses ? (
+                      <Box py="md" style={{ textAlign: 'center' }}>
+                        <Text size="sm" c="dimmed">Loading addresses...</Text>
+                      </Box>
+                    ) : savedAddresses.length > 0 ? (
+                      <Stack gap="xs" mb="md">
+                        <Text size="xs" fw={600} c="dimmed" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Saved Addresses
+                        </Text>
+                        {savedAddresses.map((address) => {
+                          const fullAddress = `${address.street_address}, ${address.city}, ${address.state} ${address.zip_code}`;
+                          const isSelected = location.includes(address.street_address) && location.includes(address.city);
+                          return (
+                            <Button
+                              key={address.id}
+                              variant={isSelected ? "filled" : "subtle"}
+                              color={isSelected ? "orange" : "gray"}
+                              onClick={() => selectSavedAddress(address)}
+                              style={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                              fullWidth
+                            >
+                              <Stack gap={2} align="flex-start" style={{ width: '100%' }}>
+                                <Group justify="space-between" style={{ width: '100%' }}>
+                                  <Text size="sm" fw={600}>{address.label || 'Home'}</Text>
+                                  {address.is_default && (
+                                    <Badge size="xs" color="orange">Default</Badge>
+                                  )}
+                                </Group>
+                                <Text size="xs" c="dimmed" style={{ textAlign: 'left' }}>
+                                  {fullAddress}
+                                </Text>
+                              </Stack>
+                            </Button>
+                          );
+                        })}
+                      </Stack>
+                    ) : null}
+
+                    {/* Search for New Address */}
+                    <Stack gap="xs" mb="md">
+                      <Text size="xs" fw={600} c="dimmed" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {savedAddresses.length > 0 ? 'Search Address' : 'Enter Address'}
+                      </Text>
+                      <TextInput
+                        placeholder="Search for an address"
+                        onChange={(e) => handleAddressSearch(e.target.value)}
+                      />
+                      {addressSuggestions.length > 0 && (
+                        <Stack gap="xs">
+                          {addressSuggestions.map((address, index) => (
+                            <Button
+                              key={index}
+                              variant="subtle"
+                              onClick={() => selectAddress(address)}
+                              style={{ justifyContent: 'flex-start', textAlign: 'left' }}
+                              fullWidth
+                            >
+                              <Text size="sm">{address}</Text>
+                            </Button>
+                          ))}
+                        </Stack>
+                      )}
+                    </Stack>
+
+                    {/* Add New Address Button */}
+                    <Divider my="sm" />
+                    <Button
+                      variant="subtle"
+                      color="orange"
+                      onClick={() => {
+                        setShowAddressSelector(false);
+                        navigate('/account/delivery-addresses');
+                      }}
+                      leftSection={<IconPlus size={16} />}
+                      fullWidth
+                    >
+                      Add new address
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+            </Box>
 
             <Group gap="xs">
               <ActionIcon
@@ -1386,13 +1659,21 @@ const Restaurants = () => {
         </Box>
 
         {/* Scrollable Content */}
-        <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: 'white' }}>
+        <Box style={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          backgroundColor: 'white',
+          paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
+        }}>
           <Box component="main">
             {/* Menu Icons - Dropdown from search bar */}
             {showMenuIcons && (
               <Box 
                 p="md" 
                 style={{ 
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 100,
                   borderBottom: '1px solid #e5e7eb', 
                   backgroundColor: 'white',
                   marginTop: '-8px', // Overlap with search bar shadow area
@@ -1484,10 +1765,11 @@ const Restaurants = () => {
                 borderBottom: '1px solid #e5e7eb', 
                 backgroundColor: 'white',
                 overflowX: 'auto',
-                overflowY: 'hidden',
+                overflowY: 'visible',
                 WebkitOverflowScrolling: 'touch',
                 scrollbarWidth: 'none',
-                msOverflowStyle: 'none'
+                msOverflowStyle: 'none',
+                paddingBottom: '16px'
               }}
               sx={{
                 '&::-webkit-scrollbar': {
@@ -1612,9 +1894,147 @@ const Restaurants = () => {
               </Group>
             </Box>
 
-            {/* Advertisement Banner - Dynamic */}
+            {/* Great Deals Section */}
+            <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
+              <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
+                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
+                  Great Deals
+                </Title>
+                {/* Hyper-realistic animated flame */}
+                <Box
+                  component="span"
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '20px',
+                    height: '24px',
+                    marginLeft: '6px',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  {/* Main flame - center tongue */}
+                  <Box
+                    component="span"
+                    className="flame-main"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '50%',
+                      width: '6px',
+                      height: '20px',
+                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 30%, #ff8c42 60%, #ffd700 90%, #fff 100%)',
+                      clipPath: 'polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%)',
+                      borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                      animation: 'flameMain 0.3s ease-in-out infinite',
+                      transformOrigin: 'bottom center',
+                      filter: 'blur(0.3px)',
+                      boxShadow: '0 0 8px rgba(255, 107, 53, 0.9), 0 0 16px rgba(255, 69, 0, 0.6)',
+                    }}
+                  />
+                  {/* Left flame tongue */}
+                  <Box
+                    component="span"
+                    className="flame-left"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '15%',
+                      width: '5px',
+                      height: '16px',
+                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
+                      clipPath: 'polygon(50% 100%, 0% 85%, 0% 60%, 30% 40%, 40% 20%, 50% 0%, 60% 15%, 70% 35%, 100% 55%, 100% 80%)',
+                      animation: 'flameLeft 0.4s ease-in-out infinite',
+                      transformOrigin: 'bottom center',
+                      filter: 'blur(0.4px)',
+                    }}
+                  />
+                  {/* Right flame tongue */}
+                  <Box
+                    component="span"
+                    className="flame-right"
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: '15%',
+                      width: '5px',
+                      height: '16px',
+                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
+                      clipPath: 'polygon(50% 100%, 0% 80%, 0% 55%, 30% 35%, 40% 15%, 50% 0%, 60% 20%, 70% 40%, 100% 60%, 100% 85%)',
+                      animation: 'flameRight 0.5s ease-in-out infinite',
+                      transformOrigin: 'bottom center',
+                      filter: 'blur(0.4px)',
+                    }}
+                  />
+                  {/* Top flicker - small tongue */}
+                  <Box
+                    component="span"
+                    className="flame-top"
+                    style={{
+                      position: 'absolute',
+                      bottom: '14px',
+                      left: '50%',
+                      width: '4px',
+                      height: '10px',
+                      background: 'linear-gradient(to top, transparent 0%, #ff8c42 20%, #ffd700 60%, #fff 100%)',
+                      clipPath: 'polygon(50% 100%, 20% 80%, 30% 60%, 40% 40%, 50% 0%, 60% 40%, 70% 60%, 80% 80%)',
+                      animation: 'flameTop 0.25s ease-in-out infinite',
+                      transformOrigin: 'bottom center',
+                      filter: 'blur(0.5px)',
+                    }}
+                  />
+                  {/* Spark particles */}
+                  <Box
+                    component="span"
+                    className="flame-spark-1"
+                    style={{
+                      position: 'absolute',
+                      bottom: '16px',
+                      left: '25%',
+                      width: '1.5px',
+                      height: '1.5px',
+                      background: '#ffd700',
+                      borderRadius: '50%',
+                      animation: 'spark1 1s ease-out infinite',
+                      boxShadow: '0 0 3px rgba(255, 215, 0, 1)',
+                    }}
+                  />
+                  <Box
+                    component="span"
+                    className="flame-spark-2"
+                    style={{
+                      position: 'absolute',
+                      bottom: '18px',
+                      right: '25%',
+                      width: '1.5px',
+                      height: '1.5px',
+                      background: '#fff',
+                      borderRadius: '50%',
+                      animation: 'spark2 1.3s ease-out infinite',
+                      boxShadow: '0 0 3px rgba(255, 255, 255, 0.9)',
+                    }}
+                  />
+                  {/* Base glow */}
+                  <Box
+                    component="span"
+                    style={{
+                      position: 'absolute',
+                      bottom: '-1px',
+                      left: '50%',
+                      width: '12px',
+                      height: '6px',
+                      background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.5) 0%, transparent 70%)',
+                      animation: 'flameBaseGlow 0.6s ease-in-out infinite alternate',
+                      transform: 'translateX(-50%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                </Box>
+              </Group>
+            </Box>
+
+            {/* Advertisement Banner - Auto-Rotating Carousel */}
             <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {loadingAds ? (
+              {loadingAds || loadingBanners ? (
                 <Box
                   style={{
                     width: '380px',
@@ -1629,116 +2049,166 @@ const Restaurants = () => {
                 >
                   <Loader size="sm" />
                 </Box>
-              ) : (() => {
-                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
-                return adPlacement ? (
-                    <Box
-                      component="a"
-                      href={adPlacement.click_url || '/promotion-details'}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate('/promotion-details');
-                      }}
-                      style={{
-                        width: `${adPlacement.width}px`,
-                        maxWidth: '100%',
-                        height: `${adPlacement.height}px`,
-                        background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        overflow: 'hidden',
-                        textDecoration: 'none',
-                        boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
-                        position: 'relative',
-                        border: '2px solid rgba(255, 255, 255, 0.2)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
-                      }}
-                    >
-                      {adPlacement.ad_code ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
-                          style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}
-                        />
-                      ) : adPlacement.image_url ? (
-                        <MantineImage
-                          src={adPlacement.image_url}
-                          alt="Advertisement"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1 }}
-                        />
-                      ) : (
-                        <Box style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                          <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
-                            Advertisement
-                            <br />
-                            {adPlacement.width} × {adPlacement.height}
-                          </Text>
-                        </Box>
-                      )}
-                      {/* Overlay gradient for better text readability */}
+              ) : randomizedAds.length > 0 ? (
+                <Box
+                  style={{
+                    width: '380px',
+                    maxWidth: '100%',
+                    height: '200px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: '16px',
+                    isolation: 'isolate',
+                    transform: 'translateZ(0)',
+                    boxShadow: '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)',
+                  }}
+                >
+                  {randomizedAds.map((ad, index) => {
+                    const isActive = index === currentAdIndex;
+                    const isPrevious = index === (currentAdIndex - 1 + randomizedAds.length) % randomizedAds.length;
+                    
+                    // Calculate transform based on position
+                    let transform = 'translateX(100%)'; // Default: off-screen to the right
+                    let zIndex = 1;
+                    if (isActive) {
+                      transform = 'translateX(0)'; // Current: center
+                      zIndex = 3;
+                    } else if (isPrevious) {
+                      transform = 'translateX(-100%)'; // Previous: off-screen to the left
+                      zIndex = 2;
+                    }
+                    
+                    return (
                       <Box
+                        key={`${ad.type}-${ad.id || index}`}
+                        component={ad.click_url || ad.action_url || ad.link_url ? "a" : "div"}
+                        href={ad.click_url || ad.action_url || ad.link_url || undefined}
+                        onClick={(e) => {
+                          if (!ad.click_url && !ad.action_url && !ad.link_url) {
+                            e.preventDefault();
+                            return;
+                          }
+                          e.preventDefault();
+                          const link = ad.click_url || ad.action_url || ad.link_url;
+                          if (link) {
+                            navigate(link);
+                          }
+                        }}
                         style={{
                           position: 'absolute',
                           top: 0,
                           left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)',
-                          pointerEvents: 'none',
-                          zIndex: 2,
+                          width: '100%',
+                          height: '100%',
+                          transform: transform,
+                          transition: 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          pointerEvents: isActive ? 'auto' : 'none',
+                          zIndex: zIndex,
+                          willChange: 'transform',
+                          backfaceVisibility: 'hidden',
+                          WebkitBackfaceVisibility: 'hidden',
+                          background: ad.type === 'promotional_banner' && !ad.image_url
+                            ? 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)'
+                            : ad.background || 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
+                          borderRadius: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: (ad.click_url || ad.action_url || ad.link_url) ? 'pointer' : 'default',
+                          overflow: 'hidden',
+                          textDecoration: 'none',
+                          boxShadow: '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)',
+                          border: '2px solid rgba(255, 255, 255, 0.2)',
                         }}
-                      />
-                    </Box>
-                  ) : (
-                    <Box
-                      component="a"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate('/promotion-details');
-                      }}
-                      style={{
-                        width: '380px',
-                        maxWidth: '100%',
-                        height: '200px',
-                        background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
-                        border: '2px solid rgba(255, 255, 255, 0.2)',
-                        textDecoration: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
-                      }}
-                    >
-                      <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
-                        Advertisement
-                        <br />
-                        380 × 200
-                      </Text>
-                    </Box>
-                  );
-                })()}
-              </Box>
+                        onMouseEnter={(e) => {
+                          if (isActive) {
+                            e.currentTarget.style.transform = 'translateX(0) translateY(-4px)';
+                            e.currentTarget.style.boxShadow = '0 16px 48px rgba(255, 107, 53, 0.5), 0 0 60px rgba(255, 107, 53, 0.3)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isActive) {
+                            e.currentTarget.style.transform = 'translateX(0) translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)';
+                          }
+                        }}
+                      >
+                        {ad.ad_code ? (
+                          <div 
+                            dangerouslySetInnerHTML={{ __html: ad.ad_code }} 
+                            style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}
+                          />
+                        ) : ad.image_url ? (
+                          <MantineImage
+                            src={ad.image_url}
+                            alt={ad.title || "Advertisement"}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1 }}
+                          />
+                        ) : (
+                          <Box style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                            <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
+                              {ad.title || 'Advertisement'}
+                              <br />
+                              {ad.width || 380} × {ad.height || 200}
+                            </Text>
+                          </Box>
+                        )}
+                        {/* Overlay gradient for better text readability */}
+                        <Box
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)',
+                            pointerEvents: 'none',
+                            zIndex: 2,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Box>
+              ) : (
+                <Box
+                  component="a"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/promotion-details');
+                  }}
+                  style={{
+                    width: '380px',
+                    maxWidth: '100%',
+                    height: '200px',
+                    background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
+                  }}
+                >
+                  <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
+                    Advertisement
+                    <br />
+                    380 × 200
+                  </Text>
+                </Box>
+              )}
+            </Box>
 
             {/* Promotional Banner Carousel */}
             {loadingBanners ? (
@@ -1809,7 +2279,22 @@ const Restaurants = () => {
           </Box>
         </Box>
 
-        {/* Bottom Navigation removed - using global navigation */}
+        {/* White Bar at Bottom */}
+        <Box
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: '430px',
+            backgroundColor: '#ffffff',
+            height: '56px',
+            zIndex: 1000,
+            borderTop: '1px solid #e5e7eb',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        />
       </Box>
     );
   }
@@ -2667,6 +3152,134 @@ const Restaurants = () => {
       />
 
       <style>{`
+        @keyframes flameMain {
+          0% {
+            transform: translateX(-50%) scaleY(1) scaleX(1) translateY(0);
+            clipPath: polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%);
+          }
+          25% {
+            transform: translateX(-50%) scaleY(1.2) scaleX(0.9) translateY(-1px);
+            clipPath: polygon(50% 100%, 5% 75%, 5% 45%, 25% 25%, 35% 5%, 50% 0%, 65% 5%, 75% 25%, 95% 45%, 95% 75%);
+          }
+          50% {
+            transform: translateX(-50%) scaleY(0.9) scaleX(1.1) translateY(0);
+            clipPath: polygon(50% 100%, 0% 85%, 0% 55%, 15% 35%, 25% 15%, 50% 0%, 75% 15%, 85% 35%, 100% 55%, 100% 85%);
+          }
+          75% {
+            transform: translateX(-50%) scaleY(1.15) scaleX(0.95) translateY(-0.5px);
+            clipPath: polygon(50% 100%, 3% 78%, 3% 48%, 23% 28%, 33% 8%, 50% 0%, 67% 8%, 77% 28%, 97% 48%, 97% 78%);
+          }
+          100% {
+            transform: translateX(-50%) scaleY(1) scaleX(1) translateY(0);
+            clipPath: polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%);
+          }
+        }
+        
+        @keyframes flameLeft {
+          0% {
+            transform: translateX(0) rotate(-10deg) scaleY(1) scaleX(1);
+            opacity: 0.85;
+          }
+          33% {
+            transform: translateX(-1.5px) rotate(-18deg) scaleY(1.25) scaleX(0.85);
+            opacity: 1;
+          }
+          66% {
+            transform: translateX(0.5px) rotate(-5deg) scaleY(0.8) scaleX(1.15);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateX(0) rotate(-10deg) scaleY(1) scaleX(1);
+            opacity: 0.85;
+          }
+        }
+        
+        @keyframes flameRight {
+          0% {
+            transform: translateX(0) rotate(10deg) scaleY(1) scaleX(1);
+            opacity: 0.85;
+          }
+          33% {
+            transform: translateX(0.5px) rotate(5deg) scaleY(0.8) scaleX(1.15);
+            opacity: 0.8;
+          }
+          66% {
+            transform: translateX(-1.5px) rotate(18deg) scaleY(1.25) scaleX(0.85);
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(0) rotate(10deg) scaleY(1) scaleX(1);
+            opacity: 0.85;
+          }
+        }
+        
+        @keyframes flameTop {
+          0% {
+            transform: translateX(-50%) translateY(0) scaleY(1) scaleX(1);
+            opacity: 0.9;
+          }
+          50% {
+            transform: translateX(-50%) translateY(-3px) scaleY(1.4) scaleX(0.7);
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(-50%) translateY(0) scaleY(0.85) scaleX(1.2);
+            opacity: 0.8;
+          }
+        }
+        
+        @keyframes flameBaseGlow {
+          0% {
+            opacity: 0.3;
+            transform: translateX(-50%) scale(0.9);
+          }
+          100% {
+            opacity: 0.6;
+            transform: translateX(-50%) scale(1.1);
+          }
+        }
+        
+        @keyframes spark1 {
+          0% {
+            transform: translateY(0) translateX(0) scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: translateY(-8px) translateX(2px) scale(0.8);
+            opacity: 0.7;
+          }
+          100% {
+            transform: translateY(-12px) translateX(4px) scale(0.3);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes spark2 {
+          0% {
+            transform: translateY(0) translateX(0) scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: translateY(-10px) translateX(-3px) scale(0.7);
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateY(-14px) translateX(-5px) scale(0.2);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes flameGlow {
+          0% {
+            opacity: 0.2;
+            transform: translateX(-50%) scale(0.9);
+          }
+          100% {
+            opacity: 0.4;
+            transform: translateX(-50%) scale(1.1);
+          }
+        }
+        
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;

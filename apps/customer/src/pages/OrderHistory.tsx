@@ -17,6 +17,10 @@ import {
   Divider,
   ActionIcon,
   Paper,
+  Modal,
+  Textarea,
+  Select,
+  Radio,
 } from '@mantine/core';
 import {
   IconClock,
@@ -34,6 +38,8 @@ import {
   IconUser,
   IconShoppingBag,
   IconArrowLeft,
+  IconX,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCart } from '@/contexts/CartContext';
@@ -65,6 +71,8 @@ interface Order {
   order_status: string;
   delivery_method: string;
   driver_id?: string;
+  payment_status?: string;
+  payment_intent_id?: string;
   restaurant: {
     id: string;
     name: string;
@@ -82,6 +90,7 @@ const STATUS_CONFIG: Record<string, { label: string; gradient: string }> = {
   picked_up: { label: 'Picked Up', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
   out_for_delivery: { label: 'Delivering', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
   delivering: { label: 'Delivering', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+  cancelled: { label: 'Cancelled', gradient: 'linear-gradient(135deg, #dc2626, #991b1b)' },
 };
 
 const TIMELINE_STEPS = [
@@ -119,6 +128,11 @@ export default function OrderHistory() {
   const { cartCount } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelReason, setCancelReason] = useState<'customer' | 'restaurant'>('customer');
+  const [cancelNotes, setCancelNotes] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchActiveOrders();
@@ -270,6 +284,155 @@ export default function OrderHistory() {
     navigate(`/track-order/${orderId}`);
   };
 
+  const canCancelOrder = (order: Order): boolean => {
+    const nonCancellableStatuses = ['delivered', 'cancelled'];
+    return !nonCancellableStatuses.includes(order.order_status);
+  };
+
+  const canClearOrder = (order: Order): boolean => {
+    return order.order_status === 'pending';
+  };
+
+  const isRestaurantPreparing = (order: Order): boolean => {
+    const preparingStatuses = ['preparing', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'delivering'];
+    return preparingStatuses.includes(order.order_status);
+  };
+
+  const handleOpenCancelModal = (order: Order, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setSelectedOrder(order);
+    setCancelReason('customer');
+    setCancelNotes('');
+    setCancelModalOpen(true);
+  };
+
+  const handleClearPendingOrder = async (order: Order, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+
+    if (!confirm('Are you sure you want to clear this pending order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ order_status: 'cancelled' })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Order Cleared',
+        description: 'Pending order has been cleared.',
+      });
+
+      fetchActiveOrders();
+    } catch (error: any) {
+      console.error('Error clearing order:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to clear order',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+
+    setCancelling(true);
+    try {
+      const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_intent_id;
+      const isPreparing = isRestaurantPreparing(selectedOrder);
+
+      // Update order status to cancelled
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          order_status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedOrder.id);
+
+      if (updateError) throw updateError;
+
+      // Create cancellation record
+      const cancellationData: any = {
+        order_id: selectedOrder.id,
+        cancelled_by: cancelReason === 'customer' ? 'customer' : 'restaurant',
+        reason: cancelNotes || 'No reason provided',
+        cancelled_at: new Date().toISOString(),
+      };
+
+      // If paid, create refund request
+      if (isPaid) {
+        const refundAmount = selectedOrder.total_cents || selectedOrder.total_amount || 0;
+        
+        // Create refund request
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { error: refundError } = await supabase
+          .from('refund_requests')
+          .insert({
+            order_id: selectedOrder.id,
+            customer_id: user.id,
+            amount_cents: refundAmount,
+            reason: cancelNotes || `Order cancelled by ${cancelReason === 'customer' ? 'customer' : 'restaurant'}`,
+            status: isPreparing ? 'pending' : 'approved', // Auto-approve if not preparing
+            type: 'full',
+          });
+
+        if (refundError) {
+          console.error('Error creating refund request:', refundError);
+          // Continue with cancellation even if refund request fails
+        } else if (!isPreparing) {
+          // If not preparing, process refund immediately
+          try {
+            await supabase.functions.invoke('process-refund', {
+              body: {
+                orderId: selectedOrder.id,
+                amountCents: refundAmount,
+                reason: cancelNotes || 'Order cancelled',
+              },
+            });
+          } catch (refundProcessError) {
+            console.error('Error processing refund:', refundProcessError);
+            // Refund will be processed manually by admin
+          }
+        }
+      }
+
+      toast({
+        title: 'Order Cancelled',
+        description: isPaid && !isPreparing
+          ? 'Your order has been cancelled and a refund is being processed.'
+          : isPaid && isPreparing
+          ? 'Your order has been cancelled. Refund will be reviewed due to preparation status.'
+          : 'Your order has been cancelled.',
+      });
+
+      setCancelModalOpen(false);
+      setSelectedOrder(null);
+      setCancelReason('customer');
+      setCancelNotes('');
+      fetchActiveOrders();
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to cancel order',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const orderTime = new Date(timestamp);
@@ -307,7 +470,7 @@ export default function OrderHistory() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? '120px' : '80px' }}>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
       <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
         <Stack gap="lg">
           {/* Header with Back Button (Mobile) */}
@@ -467,160 +630,137 @@ export default function OrderHistory() {
                             </Button>
                           </Group>
                         )}
+                        {/* Cancel/Clear Actions */}
+                        {canCancelOrder(order) && (
+                          <Group gap="xs" mt="xs">
+                            {canClearOrder(order) ? (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                leftSection={<IconTrash size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearPendingOrder(order, e);
+                                }}
+                              >
+                                Clear Order
+                              </Button>
+                            ) : (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                leftSection={<IconX size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenCancelModal(order, e);
+                                }}
+                              >
+                                Cancel Order
+                              </Button>
+                            )}
+                          </Group>
+                        )}
                       </Group>
                     </Stack>
                   </Card>
                 );
               })}
+              {/* Spacer to ensure all orders scroll above View Cart button */}
+              {cartCount > 0 && <Box style={{ height: '120px' }} />}
             </Stack>
           )}
         </Stack>
       </Box>
 
-      {/* Bottom Navigation Bar */}
-      <BottomNavigation currentPath="/order-history" />
-
-      {/* Cart Button - Only shows if cart has items */}
-      {cartCount > 0 && <BottomCartButton />}
-    </Box>
-  );
-}
-
-// Bottom Navigation Component
-function BottomNavigation({ currentPath }: { currentPath: string }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isActive = (path: string) => {
-    if (path === '/account') {
-      // Highlight "Me" for account-related pages
-      return location.pathname === '/account' || 
-             location.pathname.startsWith('/customer-dashboard');
-    }
-    if (path === '/order-history') {
-      // Highlight "Orders" when on order history page
-      return location.pathname === '/order-history';
-    }
-    return location.pathname === path;
-  };
-
-  const navItems = [
-    { id: 'home', icon: IconHome, label: 'Home', path: '/restaurants' },
-    { id: 'orders', icon: IconShoppingBag, label: 'Orders', path: '/order-history' },
-    { id: 'browse', icon: IconSearch, label: 'Browse', path: '/restaurants' },
-    { id: 'account', icon: IconUser, label: 'Me', path: '/account' },
-  ];
-
-  return (
-    <Box
-      bg="white"
-      style={{
-        position: 'fixed',
-        bottom: 'calc(0px + env(safe-area-inset-bottom, 0px))',
-        left: 0,
-        right: 0,
-        width: '100%',
-        backgroundColor: '#ffffff',
-        paddingTop: '8px',
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        borderTop: '1px solid #e5e7eb',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)',
-        minHeight: '56px',
-      }}
-    >
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item.path);
-        return (
-          <ActionIcon
-            key={item.id}
-            variant="subtle"
-            onClick={() => navigate(item.path)}
-            size="lg"
-            style={{
-              color: active ? '#FF6B35' : '#6B7280',
-            }}
-          >
-            <Icon size={28} stroke={active ? 2.5 : 2} />
-          </ActionIcon>
-        );
-      })}
-    </Box>
-  );
-}
-
-// Bottom Cart Button Component
-function BottomCartButton() {
-  const navigate = useNavigate();
-  const { cartCount, getCartTotal, restaurantId } = useCart();
-  const [restaurantName, setRestaurantName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (restaurantId) {
-      supabase
-        .from('restaurants')
-        .select('name')
-        .eq('id', restaurantId)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setRestaurantName(data.name);
-          }
-        });
-    }
-  }, [restaurantId]);
-
-  if (cartCount === 0) return null;
-
-  return (
-    <Box
-      style={{
-        position: 'fixed',
-        bottom: `calc(64px + env(safe-area-inset-bottom, 0px))`,
-        left: 0,
-        right: 0,
-        width: '100%',
-        zIndex: 1001,
-        padding: '0 16px',
-      }}
-    >
-      <Button
-        fullWidth
-        size="lg"
-        onClick={() => navigate('/checkout')}
-        leftSection={<IconShoppingCart size={20} />}
-        rightSection={
-          <Badge size="lg" variant="filled" color="white" c="#FF6B35" style={{ fontSize: '14px', fontWeight: 600 }}>
-            {cartCount}
-          </Badge>
-        }
-        style={{
-          backgroundColor: '#FF6B35',
-          color: 'white',
-          fontWeight: 600,
-          fontSize: '14px',
-          height: '48px',
-          borderRadius: '8px',
+      {/* Cancel Order Modal */}
+      <Modal
+        opened={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setSelectedOrder(null);
+          setCancelReason('customer');
+          setCancelNotes('');
         }}
+        title="Cancel Order"
+        size="md"
+        centered
       >
-        <Box style={{ flex: 1, textAlign: 'left' }}>
-          <Text size="xs" c="white" style={{ opacity: 0.9, lineHeight: 1.2 }}>
-            View Cart
-          </Text>
-          {restaurantName && (
-            <Text size="sm" fw={700} c="white" style={{ lineHeight: 1.2 }}>
-              {restaurantName}
+        {selectedOrder && (
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              Order #{selectedOrder.order_number || selectedOrder.id.substring(0, 8).toUpperCase()}
             </Text>
-          )}
-        </Box>
-        <Text size="sm" fw={700} c="white" style={{ marginLeft: 'auto' }}>
-          ${(getCartTotal() / 100).toFixed(2)}
-        </Text>
-      </Button>
+            <Text size="sm" fw={500}>
+              {selectedOrder.restaurant?.name}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Total: ${((selectedOrder.total_cents || selectedOrder.total_amount || 0) / 100).toFixed(2)}
+            </Text>
+
+            {isRestaurantPreparing(selectedOrder) && (
+              <Paper p="sm" style={{ backgroundColor: '#fef3c7', border: '1px solid #fbbf24' }}>
+                <Text size="sm" c="#92400e" fw={500}>
+                  ⚠️ This order has started preparation. Cancellation will be reviewed and may require restaurant approval.
+                </Text>
+              </Paper>
+            )}
+
+            <Radio.Group
+              label="Cancellation Type"
+              value={cancelReason}
+              onChange={(value) => setCancelReason(value as 'customer' | 'restaurant')}
+            >
+              <Stack gap="xs" mt="xs">
+                <Radio value="customer" label="Crave'n Cancellation" />
+                <Radio value="restaurant" label="Restaurant Cancellation" />
+              </Stack>
+            </Radio.Group>
+
+            <Textarea
+              label="Reason for Cancellation"
+              placeholder="Please provide a reason for cancelling this order..."
+              value={cancelNotes}
+              onChange={(e) => setCancelNotes(e.currentTarget.value)}
+              minRows={3}
+            />
+
+            {(selectedOrder.payment_status === 'paid' || selectedOrder.payment_intent_id) && (
+              <Paper p="sm" style={{ backgroundColor: '#dbeafe', border: '1px solid #60a5fa' }}>
+                <Text size="sm" c="#1e40af" fw={500}>
+                  💳 This order was paid. {isRestaurantPreparing(selectedOrder) 
+                    ? 'A refund request will be submitted for review.'
+                    : 'A full refund will be processed automatically.'}
+                </Text>
+              </Paper>
+            )}
+
+            <Group justify="flex-end" gap="sm" mt="md">
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  setCancelModalOpen(false);
+                  setSelectedOrder(null);
+                  setCancelReason('customer');
+                  setCancelNotes('');
+                }}
+                disabled={cancelling}
+              >
+                Keep Order
+              </Button>
+              <Button
+                color="red"
+                onClick={handleCancelOrder}
+                loading={cancelling}
+                disabled={cancelling}
+              >
+                Confirm Cancellation
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
     </Box>
   );
 }
-

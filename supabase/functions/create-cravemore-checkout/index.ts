@@ -102,7 +102,7 @@ serve(async (req) => {
       );
     }
 
-    const { planKey } = body;
+    const { planKey, preferredPaymentMethod, startTrial } = body;
 
     if (!planKey || !["monthly", "annual", "lifetime"].includes(planKey)) {
       return new Response(
@@ -232,6 +232,8 @@ serve(async (req) => {
         processing_fee_cents: processingFeeCents,
         status: "pending",
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
+        preferred_payment_method: preferredPaymentMethod || null, // Store preferred payment method
+        is_trial: startTrial || false, // Store trial flag
       })
       .select()
       .single();

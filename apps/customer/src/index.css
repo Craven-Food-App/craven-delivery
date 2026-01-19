@@ -314,6 +314,30 @@ All colors MUST be HSL.
   padding-right: env(safe-area-inset-right, 0px);
 }
 
+/* ============================================
+   MOBILE LAYOUT UTILITIES
+   ============================================ */
+
+/* Utility class for pages that need extra bottom spacing beyond the nav */
+.mobile-content-with-nav {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* For headers that need to respect top safe area */
+.mobile-header-safe {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px)) !important;
+}
+
+/* Ensure fixed elements respect safe areas */
+.mobile-fixed-bottom {
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* For floating action buttons above bottom nav */
+.mobile-fab-above-nav {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
 @layer base {
   * {
     @apply border-border;

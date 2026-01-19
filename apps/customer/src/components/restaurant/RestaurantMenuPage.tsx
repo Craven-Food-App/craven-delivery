@@ -144,17 +144,15 @@ interface CartItem extends MenuItem {
 const MobileHeader = ({ restaurant, onBack, onShare, onLike, isLiked = false, cartCount = 0, onCartClick, isHeaderImageScrolled }: { restaurant: Restaurant | null; onBack: () => void; onShare: () => void; onLike: () => void; isLiked?: boolean; cartCount?: number; onCartClick: () => void; isHeaderImageScrolled?: boolean }) => (
   <Box
     style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 50,
-      backgroundColor: isHeaderImageScrolled ? 'white' : 'transparent',
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'white',
       overflow: 'visible',
-      padding: isHeaderImageScrolled ? '12px 16px' : '56px 16px 16px 16px',
+      padding: '8px 16px',
       pointerEvents: 'none',
-      transition: 'all 0.3s ease-in-out',
-      boxShadow: isHeaderImageScrolled ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+      display: 'flex',
+      alignItems: 'center',
+      paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
     }}
     className="lg:hidden"
   >
@@ -165,6 +163,7 @@ const MobileHeader = ({ restaurant, onBack, onShare, onLike, isLiked = false, ca
         overflow: 'visible',
         backgroundColor: 'transparent',
         pointerEvents: 'auto',
+        width: '100%',
       }}
     >
       {/* Back Button - Circular */}
@@ -1608,9 +1607,23 @@ const RestaurantMenuPage = () => {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white' }}>
-      {/* Mobile Header - DoorDash Style */}
-      <MobileHeader 
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', position: 'relative' }}>
+      {/* White Bar at Top with Buttons */}
+      <Box
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          backgroundColor: '#ffffff',
+          height: 'calc(56px + env(safe-area-inset-top, 0px))',
+          zIndex: 1000,
+          borderBottom: '1px solid #e5e7eb',
+        }}
+      >
+        {/* Mobile Header - DoorDash Style */}
+        <MobileHeader 
         restaurant={restaurant}
         isHeaderImageScrolled={isHeaderImageScrolled}
         onBack={() => navigate('/restaurants')}
@@ -1675,10 +1688,11 @@ const RestaurantMenuPage = () => {
             console.error('Error toggling like:', error);
           }
         }}
-        isLiked={isRestaurantLiked}
-        cartCount={cartCount}
-        onCartClick={() => navigate('/checkout')}
-      />
+          isLiked={isRestaurantLiked}
+          cartCount={cartCount}
+          onCartClick={() => navigate('/checkout')}
+        />
+      </Box>
 
       {/* Desktop Header - Hidden on Mobile */}
       <Box
@@ -2090,8 +2104,8 @@ const RestaurantMenuPage = () => {
         </Drawer>
 
         {/* Main Content */}
-        <Box style={{ flex: 1, position: 'relative' }}>
-          <Box style={{ backgroundColor: 'white', minHeight: '100vh' }}>
+        <Box style={{ flex: 1, position: 'relative', paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))', marginTop: 0 }}>
+          <Box style={{ backgroundColor: 'white', minHeight: '100vh', paddingBottom: 'calc(120px + env(safe-area-inset-bottom, 0px))' }}>
             <Box style={{ maxWidth: '1280px', margin: '0 auto' }}>
               {/* --- Mobile Hero Section (DoorDash Style) --- */}
               <Box className="block lg:hidden">
@@ -3309,11 +3323,10 @@ const RestaurantMenuPage = () => {
                 className="block lg:hidden"
                 style={{
                   position: 'fixed',
-                  bottom: 24,
+                  bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
                   left: 16,
                   right: 16,
-                  zIndex: 50,
-                  paddingBottom: 'env(safe-area-inset-bottom)',
+                  zIndex: 1001,
                 }}
               >
                 <Button
@@ -3437,6 +3450,22 @@ const RestaurantMenuPage = () => {
           </Box>
         </Box>
       </Box>
+      
+      {/* White Bar at Bottom */}
+      <Box
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          backgroundColor: '#ffffff',
+          height: '56px',
+          zIndex: 1000,
+          borderTop: '1px solid #e5e7eb',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      />
     </Box>
   );
 };

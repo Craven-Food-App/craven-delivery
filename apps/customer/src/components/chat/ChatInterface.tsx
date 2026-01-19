@@ -345,9 +345,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
 
       // Trigger AI response for support conversations (unless escalated)
-      if (conversationType === 'customer_support' && currentUserType === 'customer' && !needsRepresentative) {
+      // Set to false to disable AI responses - customers will wait for human support
+      const AI_CHAT_ENABLED = import.meta.env.VITE_AI_CHAT_ENABLED !== 'false';
+      
+      if (AI_CHAT_ENABLED && conversationType === 'customer_support' && currentUserType === 'customer' && !needsRepresentative) {
         try {
-          console.log('Calling AI chat support function...');
+          console.log('Calling AI chat support function...', {
+            message: messageContent.substring(0, 50),
+            conversationId: conversation.id,
+            userId: user.id
+          });
+          
           const { data: functionResponse, error: functionError } = await supabase.functions.invoke('ai-chat-support', {
             body: {
               message: messageContent,
@@ -358,11 +366,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           
           if (functionError) {
             console.error('AI function error:', functionError);
+            console.error('Error details:', {
+              message: functionError.message,
+              context: functionError.context,
+              status: functionError.status
+            });
+            
+            // Show user-friendly error message
+            setTimeout(async () => {
+              await supabase
+                .from('chat_messages')
+                .insert({
+                  conversation_id: conversation.id,
+                  sender_id: null,
+                  sender_type: 'ai',
+                  content: functionError.message?.includes('OPENAI_API_KEY') 
+                    ? "I'm currently unavailable. Please ask to speak to a representative for immediate assistance."
+                    : "I'm having trouble processing your request right now. Please try again or ask to speak to a representative for immediate assistance.",
+                  message_type: 'text'
+                });
+            }, 1000);
           } else {
-            console.log('AI function response:', functionResponse);
+            console.log('AI function response received:', functionResponse);
+            // Response is automatically saved by the edge function
           }
-        } catch (aiError) {
+        } catch (aiError: any) {
           console.error('AI response error:', aiError);
+          console.error('Error stack:', aiError?.stack);
+          console.error('Error name:', aiError?.name);
+          
           // Show fallback message if AI fails
           setTimeout(async () => {
             await supabase
@@ -608,9 +640,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Modern Header */}
-      <div className="flex items-center justify-between p-4 text-white" style={{ background: 'linear-gradient(to right, #ff6b35, #b91c1c)', flexShrink: 0 }}>
+    <div className="flex flex-col h-full bg-white overflow-hidden" style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      paddingBottom: 'calc(30px + env(safe-area-inset-bottom, 0px))',
+      position: 'relative',
+    }}>
+      {/* Modern Header - Fixed */}
+      <div className="flex items-center justify-between p-4 text-white" style={{ 
+        background: 'linear-gradient(to right, #ff6b35, #b91c1c)', 
+        flexShrink: 0,
+        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+      }}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {onClose && (
             <Button 
@@ -669,9 +714,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 bg-gray-50" style={{ flex: 1, minHeight: 0 }}>
-        <div className="p-4 space-y-4">
+      {/* Messages Area - Scrollable */}
+      <ScrollArea className="flex-1 bg-gray-50" style={{ 
+        flex: 1, 
+        minHeight: 0,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+      }}>
+        <div className="p-4 space-y-4" style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 0px))' }}>
           {messages.map((message) => (
             <div
               key={message.id}
@@ -761,7 +811,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </ScrollArea>
 
       {/* Enhanced Input Area */}
-      <div className="p-4 bg-white border-t border-gray-200" style={{ flexShrink: 0, paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}>
+      <div className="p-4 bg-white border-t border-gray-200" style={{ 
+        flexShrink: 0, 
+        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+        position: 'fixed',
+        bottom: 'calc(30px + env(safe-area-inset-bottom, 0px))',
+        left: 0,
+        right: 0,
+        zIndex: 1001,
+        width: '100%'
+      }}>
         <input
           ref={fileInputRef}
           type="file"

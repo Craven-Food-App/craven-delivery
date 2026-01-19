@@ -17,68 +17,6 @@ import { useCraveMoreOffer } from '@/hooks/useCraveMoreOffer';
 import cravenReferHero from '@/assets/crave_friend_invite .png';
 import { supabase } from '@/integrations/supabase/client';
 
-function BottomNavigation({ currentPath }: { currentPath: string }) {
-  return (
-    <Box
-      bg="white"
-      style={{
-        position: 'fixed',
-        bottom: 'calc(0px + env(safe-area-inset-bottom, 0px))',
-        left: 0,
-        right: 0,
-        width: '100%',
-        backgroundColor: '#ffffff',
-        paddingTop: '8px',
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderTop: '1px solid #e5e7eb',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.03)',
-        minHeight: '56px',
-      }}
-    />
-  );
-}
-
-function BottomCartButton() {
-  const navigate = useNavigate();
-  const { cartCount, getCartTotal } = useCart();
-
-  if (cartCount === 0) return null;
-
-  return (
-    <Box
-      style={{
-        position: 'fixed',
-        bottom: `calc(64px + env(safe-area-inset-bottom, 0px))`,
-        left: 0,
-        right: 0,
-        width: '100%',
-        zIndex: 1001,
-        padding: '0 16px',
-      }}
-    >
-      <Button
-        fullWidth
-        size="lg"
-        onClick={() => navigate('/checkout')}
-        style={{
-          backgroundColor: '#FF6B35',
-          color: 'white',
-          fontWeight: 600,
-          fontSize: '14px',
-          height: '48px',
-          borderRadius: '8px',
-        }}
-      >
-        View Cart • ${(getCartTotal() / 100).toFixed(2)}
-      </Button>
-    </Box>
-  );
-}
-
 const InviteFriends: React.FC = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
@@ -465,18 +403,8 @@ const InviteFriends: React.FC = () => {
           </Text>
         </Stack>
       </Stack>
-
-      {/* Bottom Navigation & Cart Button (mobile) */}
-      {isMobile && (
-        <>
-          <BottomNavigation currentPath="/invite-friends" />
-          {cartCount > 0 && <BottomCartButton />}
-        </>
-      )}
     </Box>
   );
 };
 
 export default InviteFriends;
-
-

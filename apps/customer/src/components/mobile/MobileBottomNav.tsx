@@ -77,8 +77,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         left={0}
         right={0}
         bg="white"
-        style={{ borderTop: '1px solid var(--mantine-color-gray-2)', zIndex: 40, height: '64px' }}
-        className="safe-area-padding-bottom"
+        style={{ 
+          borderTop: '1px solid var(--mantine-color-gray-2)', 
+          zIndex: 40, 
+          height: '56px',
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+        }}
       >
         <Group h="100%" gap={0}>
           {tabs.map(tab => {

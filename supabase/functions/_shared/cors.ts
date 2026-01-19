@@ -20,6 +20,11 @@ const getAllowedOrigins = (): string[] => {
     "http://localhost:8080",
     "http://localhost:8081",
     "http://localhost:5173",
+    // Mobile app origins
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
   ];
 };
 

@@ -90,6 +90,7 @@ const GlobalMobileBottomNav: React.FC = () => {
           borderTop: '1px solid #e5e7eb',
           boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
           zIndex: 1000,
+          visibility: 'hidden',
         }}
       >
         <Group justify="space-around" py="xs" px="xs" gap={0}>

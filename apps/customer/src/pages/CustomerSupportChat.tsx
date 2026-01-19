@@ -250,10 +250,27 @@ const CustomerSupportChat: React.FC = () => {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column', padding: 0, margin: 0 }}>
+    <Box style={{ 
+      minHeight: '100vh', 
+      backgroundColor: 'white', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      padding: 0, 
+      margin: 0,
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
       {/* Chat Interface - Full Screen */}
       {conversationId ? (
-        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
+        <Box style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '100vh', 
+          width: '100%',
+          overflow: 'hidden',
+        }}>
           <ChatInterface
             conversationId={conversationId}
             conversationType={chatType}
@@ -269,6 +286,22 @@ const CustomerSupportChat: React.FC = () => {
           </Stack>
         </Box>
       )}
+      
+      {/* White Bar at Bottom */}
+      <Box
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          backgroundColor: '#ffffff',
+          height: '30px',
+          zIndex: 1000,
+          borderTop: '1px solid #e5e7eb',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      />
     </Box>
   );
 };

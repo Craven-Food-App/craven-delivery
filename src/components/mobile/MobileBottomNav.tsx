@@ -77,7 +77,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         left={0}
         right={0}
         bg="white"
-        style={{ borderTop: '1px solid var(--mantine-color-gray-2)', zIndex: 40, height: '64px' }}
+        style={{ borderTop: '1px solid var(--mantine-color-gray-2)', zIndex: 40, height: '0px' }}
         className="safe-area-padding-bottom"
       >
         <Group h="100%" gap={0}>

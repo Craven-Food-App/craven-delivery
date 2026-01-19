@@ -18,12 +18,12 @@ const Auth: React.FC = () => {
   }, [navigate, searchParams]);
 
   // Show loading while redirecting
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-        <p>Redirecting...</p>
-      </div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Redirecting...</p>
+        </div>
     </div>
   );
 };

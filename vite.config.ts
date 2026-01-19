@@ -90,10 +90,13 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
+      dedupe: ['react', 'react-dom'], // Ensure single React instance
     },
     optimizeDeps: {
       entries: ['index.html'],
       include: [
+        'react',
+        'react-dom',
         '@mui/material',
         '@mui/icons-material',
         '@mui/x-data-grid',

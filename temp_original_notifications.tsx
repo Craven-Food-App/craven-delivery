@@ -1,24 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Text, Title, Button, ScrollArea, Badge, Group, ActionIcon, Divider, Paper, Stack, Card } from '@mantine/core';
-import { IconChevronLeft, IconGift, IconTruck, IconX, IconBell, IconCheck, IconHome, IconShoppingBag, IconSearch, IconUser, IconShoppingCart } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Text, Title, Button, ScrollArea, Badge, Group, ActionIcon, Divider, Paper } from '@mantine/core';
+import { IconChevronLeft, IconGift, IconTruck, IconX, IconBell, IconCheck } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { useCart } from '@/contexts/CartContext';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
 const GhostTownAnimation = () => {
-  // Check if it's night time based on user's local timezone
-  const isNightTime = () => {
-    const hour = new Date().getHours();
-    return hour >= 19 || hour < 7; // 7 PM to 7 AM
-  };
-
-  const isNight = isNightTime();
-
   return (
     <Box
       style={{
@@ -49,22 +40,13 @@ const GhostTownAnimation = () => {
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
-          {/* Hyper-Realistic Sky Gradient - Day Mode */}
+          {/* Hyper-Realistic Sky Gradient - Photorealistic */}
           <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#E8F4F8" stopOpacity="1" />
             <stop offset="25%" stopColor="#D0E8F0" stopOpacity="1" />
             <stop offset="50%" stopColor="#B8DCE8" stopOpacity="1" />
             <stop offset="75%" stopColor="#A8D0E0" stopOpacity="1" />
             <stop offset="100%" stopColor="#C8E4F0" stopOpacity="1" />
-          </linearGradient>
-          
-          {/* Hyper-Realistic Sky Gradient - Night Mode */}
-          <linearGradient id="skyGradientNight" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#0a0e27" stopOpacity="1" />
-            <stop offset="25%" stopColor="#1a1f3a" stopOpacity="1" />
-            <stop offset="50%" stopColor="#2d1b3d" stopOpacity="1" />
-            <stop offset="75%" stopColor="#1a1f3a" stopOpacity="1" />
-            <stop offset="100%" stopColor="#0a0e27" stopOpacity="1" />
           </linearGradient>
           
           {/* Top Fade-Out Effect - Soft Atmospheric Haze */}
@@ -220,25 +202,10 @@ const GhostTownAnimation = () => {
           <filter id="softEdge" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="0.8" />
           </filter>
-          {/* Moon Glow - Night Mode */}
-          <radialGradient id="moonGlow">
-            <stop offset="0%" stopColor="#f0f0f0" stopOpacity="0.95" />
-            <stop offset="30%" stopColor="#d0d0d0" stopOpacity="0.8" />
-            <stop offset="60%" stopColor="#b0b0b0" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#808080" stopOpacity="0" />
-          </radialGradient>
-          
-          {/* Moon Core - Night Mode */}
-          <radialGradient id="moonCore">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <stop offset="30%" stopColor="#f0f0f0" stopOpacity="1" />
-            <stop offset="60%" stopColor="#d0d0d0" stopOpacity="1" />
-            <stop offset="100%" stopColor="#b0b0b0" stopOpacity="1" />
-          </radialGradient>
         </defs>
         
-        {/* Hyper-Realistic Sky Background - Day or Night */}
-        <rect width="600" height="280" fill={isNight ? "url(#skyGradientNight)" : "url(#skyGradient)"} />
+        {/* Hyper-Realistic Sky Background */}
+        <rect width="600" height="280" fill="url(#skyGradient)" />
         
         {/* Top Fade-Out Effect - Soft Atmospheric */}
         <rect width="600" height="280" fill="url(#topFade)" />
@@ -246,140 +213,77 @@ const GhostTownAnimation = () => {
         {/* Atmospheric Haze Layer - Realistic */}
         <rect width="600" height="280" fill="url(#atmosphericHaze)" />
         
-        {/* Stars - Only visible at night */}
-        {isNight && Array.from({ length: 20 }).map((_, i) => {
-          const duration = 2 + (i % 3) * 0.5;
-          const delay = (i * 0.2) % 2;
-          const x = 50 + (i * 25) % 550;
-          const y = 30 + (i * 15) % 250;
-          return (
-            <circle
-              key={`star-${i}`}
-              cx={x}
-              cy={y}
-              r="1.5"
-              fill="white"
-              opacity="0.8"
-            >
-              <animate
-                attributeName="opacity"
-                values="0.8;0.2;0.8"
-                dur={`${duration}s`}
-                repeatCount="indefinite"
-                begin={`${delay}s`}
-              />
-              <animate
-                attributeName="r"
-                values="1.5;2;1.5"
-                dur={`${duration}s`}
-                repeatCount="indefinite"
-                begin={`${delay}s`}
-              />
-            </circle>
-          );
-        })}
-        
-        {/* Hyper-Realistic Cloud System - Only during day */}
-        {!isNight && (
-          <g opacity="0.7" filter="url(#softEdge)">
-            {/* Cloud Layer 1 - Slow Drift - Soft Blend */}
-            <g>
-              <ellipse cx="120" cy="60" rx="45" ry="28" fill="#E3F2FD" opacity="0.8">
-                <animate attributeName="cx" values="120;128;120" dur="20s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0.85;0.8" dur="8s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="140" cy="55" rx="35" ry="22" fill="#BBDEFB" opacity="0.75">
-                <animate attributeName="cx" values="140;148;140" dur="20s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="100" cy="65" rx="30" ry="20" fill="#E3F2FD" opacity="0.8">
-                <animate attributeName="cx" values="100;108;100" dur="20s" repeatCount="indefinite" />
-              </ellipse>
-            </g>
-            
-            {/* Cloud Layer 2 - Medium Drift - Soft Blend */}
-            <g>
-              <ellipse cx="450" cy="80" rx="55" ry="35" fill="#E3F2FD" opacity="0.75">
-                <animate attributeName="cx" values="450;460;450" dur="25s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.75;0.8;0.75" dur="10s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="480" cy="75" rx="40" ry="28" fill="#BBDEFB" opacity="0.7">
-                <animate attributeName="cx" values="480;490;480" dur="25s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="420" cy="85" rx="35" ry="25" fill="#E3F2FD" opacity="0.75">
-                <animate attributeName="cx" values="420;430;420" dur="25s" repeatCount="indefinite" />
-              </ellipse>
-            </g>
-            
-            {/* Cloud Layer 3 - Distant - Soft Blend */}
-            <g opacity="0.5">
-              <ellipse cx="250" cy="40" rx="30" ry="18" fill="#E3F2FD" opacity="0.7">
-                <animate attributeName="cx" values="250;255;250" dur="30s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="270" cy="38" rx="25" ry="15" fill="#BBDEFB" opacity="0.65">
-                <animate attributeName="cx" values="270;275;270" dur="30s" repeatCount="indefinite" />
-              </ellipse>
-            </g>
-          </g>
-        )}
-        
-        {/* Hyper-Realistic Sun - Only during day */}
-        {!isNight && (
-          <g opacity="1.0" filter="url(#softEdge)">
-            {/* Outer Halo - Very Soft */}
-            <circle cx="500" cy="70" r="60" fill="url(#sunHalo)" opacity="0.8">
-              <animate attributeName="r" values="60;62;60" dur="6s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.8;0.85;0.8" dur="7s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Outer Glow Ring - Soft Blend */}
-            <circle cx="500" cy="70" r="50" fill="url(#sunGlow)" opacity="0.7">
-              <animate attributeName="r" values="50;51.5;50" dur="4s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.7;0.75;0.7" dur="5s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Middle Glow Ring - Soft */}
-            <circle cx="500" cy="70" r="40" fill="url(#sunGlow)" opacity="0.8">
-              <animate attributeName="r" values="40;40.8;40" dur="3s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Sun Core - Hyper-Realistic */}
-            <circle cx="500" cy="70" r="30" fill="url(#sunCore)" opacity="0.95">
-              <animate attributeName="r" values="30;30.5;30" dur="2.5s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Sun Highlight - Soft Glow */}
-            <ellipse cx="495" cy="65" rx="10" ry="14" fill="#FFFFFF" opacity="0.7">
-              <animate attributeName="opacity" values="0.7;0.8;0.7" dur="3s" repeatCount="indefinite" />
-              <animate attributeName="rx" values="10;11;10" dur="3s" repeatCount="indefinite" />
+        {/* Hyper-Realistic Cloud System - Soft Organic Shapes */}
+        <g opacity="0.7" filter="url(#softEdge)">
+          {/* Cloud Layer 1 - Slow Drift - Soft Blend */}
+          <g>
+            <ellipse cx="120" cy="60" rx="45" ry="28" fill="#E3F2FD" opacity="0.8">
+              <animate attributeName="cx" values="120;128;120" dur="20s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.8;0.85;0.8" dur="8s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="140" cy="55" rx="35" ry="22" fill="#BBDEFB" opacity="0.75">
+              <animate attributeName="cx" values="140;148;140" dur="20s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="100" cy="65" rx="30" ry="20" fill="#E3F2FD" opacity="0.8">
+              <animate attributeName="cx" values="100;108;100" dur="20s" repeatCount="indefinite" />
             </ellipse>
           </g>
-        )}
-        
-        {/* Hyper-Realistic Moon - Only at night */}
-        {isNight && (
-          <g opacity="1.0" filter="url(#softEdge)">
-            {/* Moon Outer Glow */}
-            <circle cx="500" cy="70" r="50" fill="url(#moonGlow)" opacity="0.6">
-              <animate attributeName="r" values="50;52;50" dur="8s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.6;0.7;0.6" dur="8s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Moon Core */}
-            <circle cx="500" cy="70" r="30" fill="url(#moonCore)" opacity="0.95">
-              <animate attributeName="r" values="30;30.5;30" dur="4s" repeatCount="indefinite" />
-            </circle>
-            
-            {/* Moon Craters */}
-            <circle cx="490" cy="65" r="3" fill="rgba(0,0,0,0.15)" />
-            <circle cx="510" cy="75" r="2.5" fill="rgba(0,0,0,0.12)" />
-            <circle cx="505" cy="60" r="2" fill="rgba(0,0,0,0.1)" />
-            
-            {/* Moon Highlight */}
-            <ellipse cx="495" cy="65" rx="8" ry="12" fill="#FFFFFF" opacity="0.5">
-              <animate attributeName="opacity" values="0.5;0.6;0.5" dur="5s" repeatCount="indefinite" />
+          
+          {/* Cloud Layer 2 - Medium Drift - Soft Blend */}
+          <g>
+            <ellipse cx="450" cy="80" rx="55" ry="35" fill="#E3F2FD" opacity="0.75">
+              <animate attributeName="cx" values="450;460;450" dur="25s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.75;0.8;0.75" dur="10s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="480" cy="75" rx="40" ry="28" fill="#BBDEFB" opacity="0.7">
+              <animate attributeName="cx" values="480;490;480" dur="25s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="420" cy="85" rx="35" ry="25" fill="#E3F2FD" opacity="0.75">
+              <animate attributeName="cx" values="420;430;420" dur="25s" repeatCount="indefinite" />
             </ellipse>
           </g>
-        )}
+          
+          {/* Cloud Layer 3 - Distant - Soft Blend */}
+          <g opacity="0.5">
+            <ellipse cx="250" cy="40" rx="30" ry="18" fill="#E3F2FD" opacity="0.7">
+              <animate attributeName="cx" values="250;255;250" dur="30s" repeatCount="indefinite" />
+            </ellipse>
+            <ellipse cx="270" cy="38" rx="25" ry="15" fill="#BBDEFB" opacity="0.65">
+              <animate attributeName="cx" values="270;275;270" dur="30s" repeatCount="indefinite" />
+            </ellipse>
+          </g>
+        </g>
+        
+        {/* Hyper-Realistic Sun - Photorealistic with Soft Edges */}
+        <g opacity="1.0" filter="url(#softEdge)">
+          {/* Outer Halo - Very Soft */}
+          <circle cx="500" cy="70" r="60" fill="url(#sunHalo)" opacity="0.8">
+            <animate attributeName="r" values="60;62;60" dur="6s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.8;0.85;0.8" dur="7s" repeatCount="indefinite" />
+          </circle>
+          
+          {/* Outer Glow Ring - Soft Blend */}
+          <circle cx="500" cy="70" r="50" fill="url(#sunGlow)" opacity="0.7">
+            <animate attributeName="r" values="50;51.5;50" dur="4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.7;0.75;0.7" dur="5s" repeatCount="indefinite" />
+          </circle>
+          
+          {/* Middle Glow Ring - Soft */}
+          <circle cx="500" cy="70" r="40" fill="url(#sunGlow)" opacity="0.8">
+            <animate attributeName="r" values="40;40.8;40" dur="3s" repeatCount="indefinite" />
+          </circle>
+          
+          {/* Sun Core - Hyper-Realistic */}
+          <circle cx="500" cy="70" r="30" fill="url(#sunCore)" opacity="0.95">
+            <animate attributeName="r" values="30;30.5;30" dur="2.5s" repeatCount="indefinite" />
+          </circle>
+          
+          {/* Sun Highlight - Soft Glow */}
+          <ellipse cx="495" cy="65" rx="10" ry="14" fill="#FFFFFF" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.8;0.7" dur="3s" repeatCount="indefinite" />
+            <animate attributeName="rx" values="10;11;10" dur="3s" repeatCount="indefinite" />
+          </ellipse>
+        </g>
         
         {/* Premium Ground with Realistic Texture */}
         <rect y="280" width="600" height="170" fill="url(#groundGradient)" />
@@ -834,9 +738,7 @@ interface Notification {
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const isMobile = useIsMobile();
-  const { cartCount } = useCart();
   const [userName, setUserName] = useState('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1058,10 +960,9 @@ const Notifications = () => {
         maxWidth: isMobile ? '100%' : '600px',
         margin: '0 auto',
         minHeight: '100vh',
-        backgroundColor: 'white',
+        backgroundColor: '#FAFAFA',
         display: 'flex',
-        flexDirection: 'column',
-        paddingBottom: cartCount > 0 ? 'calc(160px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))'
+        flexDirection: 'column'
       }}
     >
       {/* Header */}

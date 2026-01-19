@@ -322,6 +322,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ isOpen, onClose, 
             <p className="text-muted-foreground">Order not found</p>
           </div>
         )}
+        
+        {/* White Bar at Bottom */}
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200"
+          style={{
+            height: '56px',
+            zIndex: 1000,
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

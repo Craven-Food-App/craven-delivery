@@ -15,10 +15,15 @@ const EditProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [editingProfile, setEditingProfile] = useState({
-    full_name: '',
+    first_name: '',
+    last_name: '',
     phone: '',
+    countryCode: '+1',
     email: ''
   });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -51,9 +56,31 @@ const EditProfile: React.FC = () => {
         throw error;
       }
 
+      const fullName = profile?.full_name || '';
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+      const rawPhone = profile?.phone || '';
+      let countryCode = '+1';
+      let localPhone = '';
+      if (rawPhone.startsWith('+')) {
+        const match = rawPhone.match(/^(\+\d{1,4})\s?(.*)$/);
+        if (match) {
+          countryCode = match[1];
+          localPhone = match[2] || '';
+        } else {
+          localPhone = rawPhone;
+        }
+      } else if (rawPhone) {
+        localPhone = rawPhone;
+      }
+
       setEditingProfile({
-        full_name: profile?.full_name || '',
-        phone: profile?.phone || '',
+        first_name: firstName,
+        last_name: lastName,
+        phone: localPhone,
+        countryCode,
         email: email
       });
     } catch (error: any) {
@@ -65,6 +92,31 @@ const EditProfile: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+
+      // On mobile, send back to restaurants landing; otherwise auth
+      const isMobileDevice =
+        window.innerWidth <= 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      if (isMobileDevice) {
+        window.location.href = '/restaurants';
+      } else {
+        window.location.href = '/auth';
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -93,9 +145,15 @@ const EditProfile: React.FC = () => {
         throw checkError;
       }
 
+      const fullNameValue =
+        `${editingProfile.first_name || ''} ${editingProfile.last_name || ''}`.trim() || null;
+      const phoneCombined = editingProfile.phone
+        ? `${editingProfile.countryCode || '+1'} ${editingProfile.phone}`
+        : null;
+
       const updateData: any = {
-        full_name: editingProfile.full_name || null,
-        phone: editingProfile.phone || null,
+        full_name: fullNameValue,
+        phone: phoneCombined,
         updated_at: new Date().toISOString()
       };
 
@@ -114,8 +172,8 @@ const EditProfile: React.FC = () => {
           .from('user_profiles')
           .insert({
             user_id: user.id,
-            full_name: editingProfile.full_name || null,
-            phone: editingProfile.phone || null,
+            full_name: fullNameValue,
+            phone: phoneCombined,
             role: 'customer', // Required field
             preferences: {},
             settings: {}
@@ -146,6 +204,50 @@ const EditProfile: React.FC = () => {
       });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Please enter and confirm your new password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Password updated successfully"
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive"
+      });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -181,28 +283,49 @@ const EditProfile: React.FC = () => {
         <div className="max-w-md mx-auto space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="full_name" className="text-sm font-medium text-gray-700">
-                Full Name
+              <Label className="text-sm font-medium text-gray-700">
+                Name
               </Label>
-              <Input
-                id="full_name"
-                value={editingProfile.full_name}
-                onChange={(e) => setEditingProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                className="mt-1 h-12 text-base"
-                placeholder="Enter your full name"
-              />
+              <div className="mt-1 grid grid-cols-2 gap-3">
+                <Input
+                  id="first_name"
+                  value={editingProfile.first_name}
+                  onChange={(e) => setEditingProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                  className="h-12 text-base"
+                  placeholder="First name"
+                />
+                <Input
+                  id="last_name"
+                  value={editingProfile.last_name}
+                  onChange={(e) => setEditingProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                  className="h-12 text-base"
+                  placeholder="Last name"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
                 Phone Number
               </Label>
-              <Input
-                id="phone"
-                value={editingProfile.phone}
-                onChange={(e) => setEditingProfile(prev => ({ ...prev, phone: e.target.value }))}
-                className="mt-1 h-12 text-base"
-                placeholder="Enter your phone number"
-              />
+              <div className="mt-1 flex gap-2">
+                <select
+                  value={editingProfile.countryCode}
+                  onChange={(e) => setEditingProfile(prev => ({ ...prev, countryCode: e.target.value }))}
+                  className="h-12 rounded-md border border-input bg-background px-3 text-base text-gray-900"
+                >
+                  <option value="+1">+1 (US)</option>
+                  <option value="+44">+44 (UK)</option>
+                  <option value="+61">+61 (AU)</option>
+                  <option value="+91">+91 (IN)</option>
+                </select>
+                <Input
+                  id="phone"
+                  value={editingProfile.phone}
+                  onChange={(e) => setEditingProfile(prev => ({ ...prev, phone: e.target.value }))}
+                  className="h-12 text-base flex-1"
+                  placeholder="Phone number"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -218,6 +341,32 @@ const EditProfile: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
+            <div>
+              <button
+                type="button"
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                className="text-sm font-medium text-red-600 hover:text-red-700 underline"
+              >
+                {changingPassword ? 'Updating password...' : 'Change Password'}
+              </button>
+              <div className="mt-2 space-y-2">
+                <Input
+                  type="password"
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="h-11 text-base"
+                />
+                <Input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-11 text-base"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -227,22 +376,31 @@ const EditProfile: React.FC = () => {
         className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4"
         style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}
       >
-        <div className="max-w-md mx-auto flex space-x-3">
+        <div className="max-w-md mx-auto space-y-3">
           <Button
-            onClick={() => navigate('/account')}
+            onClick={handleSignOut}
             variant="outline"
-            className="flex-1 h-12 text-base"
-            disabled={updating}
+            className="w-full h-11 text-base border-red-500 text-red-600 hover:bg-red-50"
           >
-            Cancel
+            Sign Out
           </Button>
-          <Button
-            onClick={saveProfileEdit}
-            className="flex-1 h-12 text-base bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
-            disabled={updating}
-          >
-            {updating ? 'Saving...' : 'Save Changes'}
-          </Button>
+          <div className="flex space-x-3">
+            <Button
+              onClick={() => navigate('/account')}
+              variant="outline"
+              className="flex-1 h-12 text-base"
+              disabled={updating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveProfileEdit}
+              className="flex-1 h-12 text-base bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+              disabled={updating}
+            >
+              {updating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

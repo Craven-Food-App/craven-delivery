@@ -4,16 +4,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  const origin = req.headers.get('origin') || req.headers.get('referer') || '*';
+  const corsHeaders = getCorsHeaders(origin);
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Check for OpenAI API key
+    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIKey) {
+      console.error('OPENAI_API_KEY is not set in Supabase environment variables');
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI service is not configured. Please contact support.',
+          details: 'OPENAI_API_KEY missing'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
     const { message, conversationId, userId } = await req.json();
 
     if (!message || !conversationId || !userId) {
+      console.error('Missing required parameters:', { message: !!message, conversationId: !!conversationId, userId: !!userId });
       throw new Error('Missing required parameters');
     }
 
@@ -51,7 +69,7 @@ serve(async (req) => {
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -75,10 +93,16 @@ Recent conversation: ${context}`
     });
 
     if (!openAIResponse.ok) {
-      throw new Error('Failed to get AI response');
+      const errorText = await openAIResponse.text();
+      console.error('OpenAI API error:', openAIResponse.status, errorText);
+      throw new Error(`Failed to get AI response: ${openAIResponse.status} - ${errorText}`);
     }
 
     const openAIData = await openAIResponse.json();
+    if (!openAIData.choices || !openAIData.choices[0] || !openAIData.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', openAIData);
+      throw new Error('Invalid AI response structure');
+    }
     const aiResponse = openAIData.choices[0].message.content;
 
     // Save AI response to database

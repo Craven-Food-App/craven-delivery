@@ -296,6 +296,14 @@ export const AccountSection = () => {
   };
 
 
+  const getDisplayName = (fullName: string | null | undefined) => {
+    if (!fullName) return 'User';
+    const parts = fullName.trim().split(' ');
+    const first = parts[0] || '';
+    const lastInitial = parts.length > 1 ? `${parts[1].charAt(0).toUpperCase()}.` : '';
+    return lastInitial ? `${first} ${lastInitial}` : first;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -318,7 +326,9 @@ export const AccountSection = () => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900">{profile?.full_name || 'User'}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {getDisplayName(profile?.full_name)}
+              </h1>
               <p className="text-gray-600">Member since 2024</p>
             </div>
           </div>
@@ -394,9 +404,60 @@ export const AccountSection = () => {
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </button>
 
-          {/* Notifications */}
+          {/* CraveMore */}
           <button 
-            onClick={() => navigate('/notifications')}
+            onClick={() => navigate('/crave-more-subscription')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">CraveMore/Get More with $0 delivery</p>
+                <p className="text-sm text-gray-600">Unlock exclusive benefits</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {/* My Credits */}
+          <button 
+            onClick={() => navigate('/my-credits')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">My Credits</p>
+                <p className="text-sm text-gray-600">View and redeem your credits</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {/* Invite Friends to Earn Credits */}
+          <button 
+            onClick={() => navigate('/invite-friends')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">Invite friends to earn credits</p>
+                <p className="text-sm text-gray-600">Share Crave’n and get rewarded</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {/* Notifications Settings */}
+          <button 
+            onClick={() => navigate('/notification-settings')}
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
@@ -427,23 +488,6 @@ export const AccountSection = () => {
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </button>
-
-          {/* Sign Out */}
-          <button 
-            onClick={handleSignOut}
-            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-red-600">Sign Out</p>
-                <p className="text-sm text-gray-600">Sign out of your account</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
         </div>
 
         {/* Bottom Spacing */}
@@ -462,7 +506,9 @@ export const AccountSection = () => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900">{profile?.full_name || 'User'}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {getDisplayName(profile?.full_name)}
+              </h1>
               <p className="text-gray-600 text-lg">Member since 2024</p>
               <p className="text-gray-500">{profile?.phone || 'No phone number'}</p>
             </div>

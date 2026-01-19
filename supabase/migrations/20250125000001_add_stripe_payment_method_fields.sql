@@ -132,3 +132,8 @@ COMMENT ON COLUMN public.orders.payment_provider IS 'Payment provider: stripe, m
 
 
 
+
+
+
+
+

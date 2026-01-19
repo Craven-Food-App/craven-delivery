@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -17,6 +18,11 @@ export function ThemeProvider({
   children: React.ReactNode;
   defaultTheme?: Theme;
 }) {
+  // Ensure React is available before using hooks
+  if (!React || !React.useState) {
+    throw new Error('React is not properly loaded. Please check your imports and bundler configuration.');
+  }
+  
   const [theme, setTheme] = useState<Theme>('light');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
