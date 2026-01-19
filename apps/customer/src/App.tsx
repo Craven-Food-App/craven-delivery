@@ -25,6 +25,11 @@ import TrackOrder from "@/pages/TrackOrder";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaymentCanceled from "@/pages/PaymentCanceled";
 import Auth from "@/pages/Auth";
+import EditProfile from "@/pages/EditProfile";
+import PaymentMethods from "@/pages/PaymentMethods";
+import DeliveryAddresses from "@/pages/DeliveryAddresses";
+import CustomerSupportChat from "@/pages/CustomerSupportChat";
+import PromotionDetails from "@/pages/PromotionDetails";
 import CraveMore from "@/pages/CraveMore";
 import CraveMoreSuccess from "@/pages/CraveMoreSuccess";
 import CraveMoreAccount from "@/pages/CraveMoreAccount";
@@ -77,6 +82,11 @@ function App() {
                     <Route path="/payment-canceled" element={<PaymentCanceled />} />
                     <Route path="/order-history" element={<OrderHistory />} />
                     <Route path="/account" element={<CustomerDashboard />} />
+                    <Route path="/account/edit-profile" element={<EditProfile />} />
+                    <Route path="/account/payment-methods" element={<PaymentMethods />} />
+                    <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
+                    <Route path="/customer-support" element={<CustomerSupportChat />} />
+                    <Route path="/promotion-details" element={<PromotionDetails />} />
                     <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/admin/promo" element={<PromoManagement />} />

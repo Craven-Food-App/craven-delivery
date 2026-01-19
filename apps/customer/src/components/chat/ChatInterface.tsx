@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Send, Bot, User, Headphones, MoreVertical, Paperclip, Smile, Phone, Video, Archive, Flag, Clock, Check, CheckCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Headphones, MoreVertical, Paperclip, Phone, Archive, Flag, Clock, Check, CheckCheck, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Message {
@@ -19,6 +18,7 @@ interface Message {
   is_read?: boolean;
   message_type?: 'text' | 'image' | 'file' | 'location' | 'system';
   metadata?: any;
+  image_url?: string;
 }
 
 interface Conversation {
@@ -27,6 +27,8 @@ interface Conversation {
   status: 'active' | 'closed' | 'archived';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   subject?: string;
+  driver_id?: string;
+  order_id?: string;
 }
 
 interface ChatInterfaceProps {
@@ -49,7 +51,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<any>(null);
@@ -128,6 +132,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // After setting, load messages and subscribe
     await loadMessagesById(id);
     subscribeToMessagesById(id);
+    
+    // Fetch phone number based on conversation type
+    await fetchPhoneNumber(data as Conversation);
   };
 
   const loadMessagesById = async (id: string) => {
@@ -220,6 +227,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Load messages and subscribe after creating conversation
     await loadMessagesById(data.id);
     subscribeToMessagesById(data.id);
+    
+    // Fetch phone number based on conversation type
+    await fetchPhoneNumber(data as Conversation);
   };
 
   const loadMessages = async () => {
@@ -422,7 +432,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
     
     if (message.is_read) {
-      return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      return <CheckCheck className="h-3 w-3" style={{ color: '#ff6b35' }} />;
     }
     
     return <Check className="h-3 w-3 text-muted-foreground" />;
@@ -440,6 +450,142 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const fetchPhoneNumber = async (conv: Conversation) => {
+    try {
+      if (conv.type === 'customer_support') {
+        // Customer service phone number - use environment variable or default
+        const supportPhone = import.meta.env.VITE_CUSTOMER_SERVICE_PHONE || '1-800-CRAVEN';
+        setPhoneNumber(supportPhone);
+      } else if (conv.type === 'customer_driver' && conv.driver_id) {
+        // Get driver phone from user_profiles
+        const { data: userProfile, error } = await supabase
+          .from('user_profiles')
+          .select('phone')
+          .eq('user_id', conv.driver_id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching driver phone:', error);
+        } else if (userProfile?.phone) {
+          setPhoneNumber(userProfile.phone);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching phone number:', error);
+    }
+  };
+
+  const handleCall = () => {
+    if (!phoneNumber) {
+      toast({
+        title: "Phone number unavailable",
+        description: "Phone number is not available for this contact.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Use tel: protocol to initiate phone call
+    window.location.href = `tel:${phoneNumber}`;
+  };
+
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !conversation) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    setSendingMessage(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `chat/${conversation.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase Storage (using chat-images bucket or create if needed)
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chat-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+
+      if (uploadError) {
+        // If bucket doesn't exist, try creating message with base64 or show error
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-images')
+        .getPublicUrl(uploadData.path);
+
+      const imageUrl = urlData.publicUrl;
+
+      // Create message with image
+      const { error: messageError } = await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversation.id,
+          sender_id: user.id,
+          sender_type: currentUserType,
+          content: '📷 Photo',
+          message_type: 'image',
+          metadata: { image_url: imageUrl, file_name: file.name }
+        });
+
+      if (messageError) throw messageError;
+
+      toast({
+        title: "Photo sent",
+        description: "Your photo has been sent successfully.",
+      });
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send photo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+      setSendingMessage(false);
+    }
+  };
+
   // Cleanup subscription on unmount
   useEffect(() => {
     return () => {
@@ -452,26 +598,37 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   if (!conversation) {
     return (
-      <Card className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center" style={{ minHeight: '100vh', width: '100%' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Starting conversation...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" style={{ color: '#ff6b35' }} />
+          <p className="text-gray-600">Starting conversation...</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Modern Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+      <div className="flex items-center justify-between p-4 text-white" style={{ background: 'linear-gradient(to right, #ff6b35, #b91c1c)', flexShrink: 0 }}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {onClose && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose} 
+              className="text-white hover:bg-white/20 flex-shrink-0"
+              style={{ padding: '8px' }}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
             {getSenderIcon(conversationType.includes('support') ? 'admin' : 'customer')}
           </div>
-          <div>
-            <h3 className="font-semibold text-lg">{conversation.subject || 'Chat Support'}</h3>
-            <div className="flex items-center gap-2 text-sm text-blue-100">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-lg truncate">{conversation.subject || (conversationType === 'customer_driver' ? 'Chat with Driver' : 'Customer Support')}</h3>
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span>Online</span>
               {conversation.priority !== 'normal' && (
@@ -482,12 +639,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-white hover:bg-white/20"
+            onClick={handleCall}
+            disabled={!phoneNumber}
+          >
             <Phone className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-            <Video className="h-4 w-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -506,16 +666,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20">
-              ✕
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 bg-gray-50">
+      <ScrollArea className="flex-1 bg-gray-50" style={{ flex: 1, minHeight: 0 }}>
         <div className="p-4 space-y-4">
           {messages.map((message) => (
             <div
@@ -525,13 +680,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }`}
             >
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className={`${
-                  message.sender_type === currentUserType 
-                    ? 'bg-blue-500 text-white' 
-                    : message.sender_type === 'ai'
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-gray-500 text-white'
-                }`}>
+                <AvatarFallback 
+                  className="text-white"
+                  style={{
+                    backgroundColor: message.sender_type === currentUserType 
+                      ? '#ff6b35' 
+                      : message.sender_type === 'ai'
+                      ? '#8b5cf6'
+                      : '#6b7280'
+                  }}
+                >
                   {getSenderIcon(message.sender_type)}
                 </AvatarFallback>
               </Avatar>
@@ -539,13 +697,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div
                   className={`rounded-2xl px-4 py-3 ${
                     message.sender_type === currentUserType
-                      ? 'bg-blue-500 text-white rounded-br-md'
+                      ? 'text-white rounded-br-md'
                       : message.sender_type === 'ai'
                       ? 'bg-white border border-purple-200 text-gray-800 rounded-bl-md'
                       : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
                   }`}
+                  style={message.sender_type === currentUserType ? {
+                    background: 'linear-gradient(to right, #ff6b35, #b91c1c)'
+                  } : {}}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.message_type === 'image' && (message.metadata?.image_url || message.image_url) ? (
+                    <div className="space-y-2">
+                      <img
+                        src={message.metadata?.image_url || message.image_url}
+                        alt="Shared photo"
+                        className="max-w-full rounded-lg"
+                        style={{ maxWidth: '300px', maxHeight: '400px', objectFit: 'contain' }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      {message.content && message.content !== '📷 Photo' && (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
                 </div>
                 <div className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${
                   message.sender_type === currentUserType ? 'flex-row-reverse' : ''
@@ -583,7 +761,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </ScrollArea>
 
       {/* Enhanced Input Area */}
-      <div className="p-4 bg-white border-t border-gray-200">
+      <div className="p-4 bg-white border-t border-gray-200" style={{ flexShrink: 0, paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageSelect}
+          style={{ display: 'none' }}
+        />
         <div className="flex items-end gap-2">
           <div className="flex-1 relative">
             <Input
@@ -594,22 +780,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              disabled={loading || conversation.status !== 'active'}
-              className="pr-20 rounded-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              disabled={loading || conversation.status !== 'active' || uploadingImage}
+              className="pr-20 rounded-full border-gray-300"
+              style={{
+                focusBorderColor: '#ff6b35',
+                focusRingColor: '#ff6b35'
+              }}
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className="h-6 w-6 p-0 hover:bg-gray-100"
-              >
-                <Smile className="h-4 w-4 text-gray-500" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-gray-100"
+                onClick={handleAttachmentClick}
+                disabled={uploadingImage || conversation.status !== 'active'}
               >
                 <Paperclip className="h-4 w-4 text-gray-500" />
               </Button>
@@ -617,10 +801,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
           <Button
             onClick={sendMessage}
-            disabled={!newMessage.trim() || loading || conversation.status !== 'active' || sendingMessage}
-            className="rounded-full bg-blue-500 hover:bg-blue-600 text-white px-6"
+            disabled={!newMessage.trim() || loading || conversation.status !== 'active' || sendingMessage || uploadingImage}
+            className="rounded-full text-white px-6"
+            style={{
+              background: 'linear-gradient(to right, #ff6b35, #b91c1c)',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(to right, #ea580c, #991b1b)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(to right, #ff6b35, #b91c1c)';
+            }}
           >
-            {sendingMessage ? (
+            {(sendingMessage || uploadingImage) ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Send className="h-4 w-4" />

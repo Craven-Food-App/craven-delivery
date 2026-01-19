@@ -32,7 +32,8 @@ import {
   IconChevronLeft,
   IconUser,
   IconRoute,
-  IconAlertCircle
+  IconAlertCircle,
+  IconMessageCircle
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import dayjs from 'dayjs';
@@ -720,10 +721,23 @@ const TrackOrder: React.FC = () => {
                         </Text>
                       </Group>
                       {feederLocation && (
-                        <Text size="xs" c="green" mt={2}>
+                        <Text size="xs" c="green" mt={2} mb="xs">
                           <IconNavigation size={10} style={{ display: 'inline', marginRight: 2 }} />
                           Live tracking active
                         </Text>
+                      )}
+                      {order.driver_id && !['delivered', 'cancelled'].includes(order.order_status) && (
+                        <Button
+                          fullWidth
+                          size="sm"
+                          variant="light"
+                          color="orange"
+                          leftSection={<IconMessageCircle size={16} />}
+                          onClick={() => navigate(`/customer-support?orderId=${order.id}&type=driver`)}
+                          mt="xs"
+                        >
+                          Chat with Driver
+                        </Button>
                       )}
                     </Box>
                   </Group>

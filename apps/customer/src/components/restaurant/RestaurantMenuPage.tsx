@@ -2154,26 +2154,26 @@ const RestaurantMenuPage = () => {
                       transition: 'all 0.2s ease-in-out'
                     }}
                   >
-                    <Group grow>
-                      <Button
-                        variant={deliveryMethod === 'delivery' ? 'filled' : 'light'}
-                        color={deliveryMethod === 'delivery' ? 'dark' : 'gray'}
-                        leftSection={<IconTruck size={16} />}
-                        onClick={() => setDeliveryMethod('delivery')}
-                        style={{ flex: 1 }}
-                      >
-                        Delivery
-                      </Button>
-                      <Button
-                        variant={deliveryMethod === 'pickup' ? 'filled' : 'light'}
-                        color={deliveryMethod === 'pickup' ? 'dark' : 'gray'}
-                        leftSection={<IconBuildingStore size={16} />}
-                        onClick={() => setDeliveryMethod('pickup')}
-                        style={{ flex: 1 }}
-                      >
-                        Pickup
-                      </Button>
-                    </Group>
+                  <Group grow>
+                    <Button
+                      variant={deliveryMethod === 'delivery' ? 'filled' : 'light'}
+                      color={deliveryMethod === 'delivery' ? 'dark' : 'gray'}
+                      leftSection={<IconTruck size={16} />}
+                      onClick={() => setDeliveryMethod('delivery')}
+                      style={{ flex: 1 }}
+                    >
+                      Delivery
+                    </Button>
+                    <Button
+                      variant={deliveryMethod === 'pickup' ? 'filled' : 'light'}
+                      color={deliveryMethod === 'pickup' ? 'dark' : 'gray'}
+                      leftSection={<IconBuildingStore size={16} />}
+                      onClick={() => setDeliveryMethod('pickup')}
+                      style={{ flex: 1 }}
+                    >
+                      Pickup
+                    </Button>
+                  </Group>
                   </Box>
                 </Box>
 

@@ -805,7 +805,7 @@ const Checkout: React.FC = () => {
   );
   const tipAmount = useMemo(
     () => formData.tipType === 'percentage' 
-      ? Math.round(subtotal * (formData.tipPercent / 100))
+    ? Math.round(subtotal * (formData.tipPercent / 100))
       : formData.tip,
     [formData.tipType, formData.tipPercent, formData.tip, subtotal]
   );

@@ -71,10 +71,10 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
       
       {/* Bottom safe area spacer - for home indicator (iOS only) */}
       {!isAndroid && (
-        <div 
+      <div 
           className="safe-area-bottom-spacer" 
-          aria-hidden="true"
-        />
+        aria-hidden="true"
+      />
       )}
     </div>
   );

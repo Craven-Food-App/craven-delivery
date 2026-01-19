@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
 import {
   Box,
   Card,
@@ -33,6 +32,7 @@ import {
   IconSearch,
   IconUser,
   IconShoppingBag,
+  IconArrowLeft,
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCart } from '@/contexts/CartContext';
@@ -306,11 +306,21 @@ export default function OrderHistory() {
 
   return (
     <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? '120px' : '80px' }}>
-      <Header />
-      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: '24px' }}>
+      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
         <Stack gap="lg">
-          {/* Header */}
+          {/* Header with Back Button (Mobile) */}
           <Box>
+            {isMobile && (
+              <Group mb="md" align="center">
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => navigate(-1)}
+                  style={{ color: '#171717' }}
+                >
+                  <IconArrowLeft size={24} />
+                </ActionIcon>
+              </Group>
+            )}
             <Text fw={900} size="xl" mb="xs" c="#171717">
               Order History
             </Text>
@@ -454,9 +464,6 @@ export default function OrderHistory() {
 
       {/* Cart Button - Only shows if cart has items */}
       {cartCount > 0 && <BottomCartButton />}
-
-      {/* Android Navigation Bar White Space */}
-      <AndroidNavBarSpacer />
     </Box>
   );
 }
@@ -493,15 +500,13 @@ function BottomNavigation({ currentPath }: { currentPath: string }) {
         left: 0,
         right: 0,
         width: '100%',
-        backgroundColor: '#ffffff',
-        borderTop: '1px solid #E5E7EB',
+        backgroundColor: 'transparent',
         paddingTop: '8px',
         paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
         zIndex: 1000,
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.05)',
       }}
     >
       {navItems.map((item) => {
@@ -597,34 +602,3 @@ function BottomCartButton() {
   );
 }
 
-// Android Navigation Bar White Spacer
-function AndroidNavBarSpacer() {
-  const [isAndroid, setIsAndroid] = useState(false);
-
-  useEffect(() => {
-    const checkAndroid = () => {
-      const platform = (window as any).Capacitor?.getPlatform?.();
-      const isAndroidPlatform = platform === 'android';
-      const isAndroidUA = /Android/i.test(navigator.userAgent);
-      setIsAndroid(isAndroidPlatform || isAndroidUA);
-    };
-    checkAndroid();
-  }, []);
-
-  if (!isAndroid) return null;
-
-  return (
-    <Box
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        width: '100%',
-        height: 'max(48px, env(safe-area-inset-bottom, 48px))',
-        backgroundColor: '#ffffff',
-        zIndex: 999,
-      }}
-    />
-  );
-}

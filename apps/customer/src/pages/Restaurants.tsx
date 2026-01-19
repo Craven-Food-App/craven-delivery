@@ -101,49 +101,54 @@ const RatingPill = ({ rating }: { rating: number }) => (
 );
 
 // Promo Card Component
-const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string; image: string }) => (
-  <Paper
-    shadow="md"
-    p="xl"
-    radius="md"
-    style={{
-      height: '440px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundImage: `url(${image})`,
-      position: 'relative'
-    }}
-  >
-    <Overlay
-      opacity={0.55}
-      zIndex={0}
+const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtitle: string; image: string; bannerId?: string }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <Paper
+      shadow="md"
+      p="xl"
+      radius="md"
       style={{
-        backgroundImage: 'linear-gradient(105deg, var(--mantine-color-black) 20%, #312f2f 50%, var(--mantine-color-gray-4) 100%)'
+        height: '440px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundImage: `url(${image})`,
+        position: 'relative'
       }}
-    />
-    <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <Box>
-        <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
-          {title}
-        </Title>
-        <Text size="sm" c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
-          {subtitle}
-        </Text>
+    >
+      <Overlay
+        opacity={0.55}
+        zIndex={0}
+        style={{
+          backgroundImage: 'linear-gradient(105deg, var(--mantine-color-black) 20%, #312f2f 50%, var(--mantine-color-gray-4) 100%)'
+        }}
+      />
+      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <Box>
+          <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
+            {title}
+          </Title>
+          <Text size="sm" c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
+            {subtitle}
+          </Text>
+        </Box>
+        <Button
+          variant="white"
+          color="dark"
+          onClick={() => navigate('/promotion-details')}
+          style={{ position: 'absolute', bottom: 'var(--mantine-spacing-xl)', right: 'var(--mantine-spacing-xl)' }}
+        >
+          View Details
+        </Button>
       </Box>
-      <Button
-        variant="white"
-        color="dark"
-        style={{ position: 'absolute', bottom: 'var(--mantine-spacing-xl)', right: 'var(--mantine-spacing-xl)' }}
-      >
-        View Details
-      </Button>
-    </Box>
-  </Paper>
-);
+    </Paper>
+  );
+};
 
 // Professional Restaurant Card
 const RestaurantCard = ({ 
@@ -1527,7 +1532,8 @@ const Restaurants = () => {
                       <PromoCard 
                         title={banner.title} 
                         subtitle={banner.description || banner.subtitle || ''}
-                        image={banner.image_url || ''} 
+                        image={banner.image_url || ''}
+                        bannerId={banner.id}
                       />
                     </Carousel.Slide>
                   ))}
