@@ -8,9 +8,10 @@ import { TestDataManager } from '@/components/testing/TestDataManager';
 import { TestDiamondExclusiveOrders } from '@/components/testing/TestDiamondExclusiveOrders';
 import { TestCtoEvaluation } from '@/components/testing/TestCtoEvaluation';
 import { TestOnFireGame } from '@/components/testing/TestOnFireGame';
+import { TestOrderCompletion } from '@/components/testing/TestOrderCompletion';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, Car, Store, Zap, Database, Gem, Shield, Flame } from 'lucide-react';
+import { ArrowLeft, Users, Car, Store, Zap, Database, Gem, Shield, Flame, CheckCircle } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -29,6 +30,7 @@ const TestingPortal: React.FC = () => {
     { id: 'driver', label: 'Driver Testing', icon: Car },
     { id: 'restaurant', label: 'Restaurant Testing', icon: Store },
     { id: 'live', label: 'Live Driver Testing', icon: Zap },
+    { id: 'order-completion', label: 'LIVE Order Completion', icon: CheckCircle },
     { id: 'data', label: 'Test Data Manager', icon: Database },
     { id: 'diamond-exclusive', label: 'Diamond Exclusive Orders', icon: Gem },
     { id: 'cto-eval', label: 'CTO Evaluation Gate (Test)', icon: Shield },
@@ -53,6 +55,8 @@ const TestingPortal: React.FC = () => {
         return <TestCtoEvaluation />;
       case 'on-fire':
         return <TestOnFireGame />;
+      case 'order-completion':
+        return <TestOrderCompletion />;
       default:
         return <TestCustomer />;
     }

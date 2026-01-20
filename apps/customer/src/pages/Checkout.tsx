@@ -13,6 +13,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { DeliveryMap } from '@/components/mobile/DeliveryMap';
 import feederNavIcon from '@/assets/feeder_nav_button_compressed.png';
+import { OrderCompletionModal } from '@/components/OrderCompletionModal';
 
 // Initialize Stripe - only if publishable key is available
 let stripePromise: Promise<any> | null = null;
@@ -375,6 +376,8 @@ const Checkout: React.FC = () => {
   const [selectedScheduleTime, setSelectedScheduleTime] = useState<string>('');
   const [isAdjustingPin, setIsAdjustingPin] = useState(false);
   const [pinLocation, setPinLocation] = useState<{ lng: number; lat: number } | null>(null);
+  const [showOrderCompletionModal, setShowOrderCompletionModal] = useState(false);
+  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -1055,10 +1058,11 @@ const Checkout: React.FC = () => {
         localStorage.removeItem('checkout_delivery_method');
         localStorage.removeItem('pending_order_id');
 
-        // Redirect to payment success page
+        // Show order completion modal instead of navigating
+        setCompletedOrderId(orderResult.order_id);
         setTimeout(() => {
-          navigate(`/payment-success?order_id=${orderResult.order_id}&payment_id=${orderResult.payment_intent_id}`);
-        }, 1500);
+          setShowOrderCompletionModal(true);
+        }, 500);
       } else {
         throw new Error(`Payment failed with status: ${orderResult.payment_status}`);
       }
@@ -2891,6 +2895,18 @@ const Checkout: React.FC = () => {
           />
         </SheetContent>
       </Sheet>
+
+      {/* Order Completion Modal */}
+      {completedOrderId && (
+        <OrderCompletionModal
+          isOpen={showOrderCompletionModal}
+          onClose={() => {
+            setShowOrderCompletionModal(false);
+            setCompletedOrderId(null);
+          }}
+          orderId={completedOrderId}
+        />
+      )}
     </div>
   );
 };
