@@ -1780,23 +1780,15 @@ const Restaurants = () => {
               style={{ 
                 borderBottom: '1px solid #e5e7eb', 
                 backgroundColor: 'white',
-                overflowX: 'auto',
-                overflowY: 'visible',
-                WebkitOverflowScrolling: 'touch',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                paddingBottom: '16px'
-              }}
-              sx={{
-                '&::-webkit-scrollbar': {
-                  display: 'none'
-                }
+                minHeight: '110px',
+                paddingTop: '10px',
+                paddingBottom: '10px'
               }}
             >
               {availableCuisines.length > 0 ? (
-                <Box style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '90px' }}>
                       {/* Row 1 */}
-                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
                         {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
                           const IconComponent = getCuisineIcon(cuisine);
                           const isActive = cuisineFilter === cuisine.toLowerCase();
@@ -1839,7 +1831,7 @@ const Restaurants = () => {
                     })}
                   </Box>
                       {/* Row 2 */}
-                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
                         {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
                           const IconComponent = getCuisineIcon(cuisine);
                           const isActive = cuisineFilter === cuisine.toLowerCase();

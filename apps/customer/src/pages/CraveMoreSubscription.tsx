@@ -433,9 +433,9 @@ const CraveMoreSubscription: React.FC = () => {
                 textDecoration: 'underline',
                 cursor: 'pointer'
               }}
-              onClick={() => setTermsModalOpen(true)}
+              onClick={() => navigate('/legal/cravemore')}
             >
-              CraveMore Terms and Conditions
+              CraveMore Subscription Terms
             </Text>
             {' '}and after my free trial, to an automatic recurring charge of $9.99/month + tax (or the then-current price), charged to a saved payment method until I cancel.{' '}
             <Text
@@ -451,6 +451,17 @@ const CraveMoreSubscription: React.FC = () => {
               Cancel
             </Text>
             {' '}in Settings prior to any renewal to avoid future charges.
+          </Text>
+          <Text
+            style={{
+              marginTop: '8px',
+              fontSize: '11px',
+              color: '#6B7280',
+              lineHeight: 1.5
+            }}
+          >
+            30‑day free trial, then <strong>$9.99/month</strong>, auto‑renews until canceled. Cancel anytime in
+            Account → CraveMore. No refunds for partial billing periods.
           </Text>
         </Box>
 

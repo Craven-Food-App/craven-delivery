@@ -18,12 +18,29 @@ const Auth: React.FC = () => {
   }, [navigate, searchParams]);
 
   // Show loading while redirecting
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Redirecting...</p>
-        </div>
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
+      <div className="text-center mb-6">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <p>Redirecting...</p>
+      </div>
+      <div className="mt-auto mb-4 text-center text-xs text-muted-foreground space-x-3">
+        <button
+          type="button"
+          className="underline"
+          onClick={() => navigate("/legal/privacy")}
+        >
+          Privacy Policy
+        </button>
+        <span>•</span>
+        <button
+          type="button"
+          className="underline"
+          onClick={() => navigate("/legal/terms")}
+        >
+          Terms of Service
+        </button>
+      </div>
     </div>
   );
 };

@@ -808,6 +808,36 @@ const CustomerDashboard = () => {
       {activeTab === 'account' && (
         <div className="pt-4 pb-20 bg-white">
           <AccountSection />
+
+          <div className="mt-6 border-t border-gray-200 pt-4 px-4">
+            <h2 className="text-sm font-semibold mb-2 text-gray-900">Legal &amp; Policies</h2>
+            <div className="flex flex-col gap-1 text-sm">
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/privacy")}
+              >
+                <span>Privacy Policy</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/terms")}
+              >
+                <span>Terms of Service</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/cravemore")}
+              >
+                <span>CraveMore Subscription Terms</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
