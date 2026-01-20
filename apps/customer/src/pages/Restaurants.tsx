@@ -1437,7 +1437,7 @@ const Restaurants = () => {
         paddingTop: 'env(safe-area-inset-top, 0px)'
       }}>
         {/* Search & Address Bar (Sticky Header) */}
-        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
+        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
             <Box style={{ position: 'relative', flex: 1 }}>
@@ -1658,6 +1658,93 @@ const Restaurants = () => {
           </Box>
         </Box>
 
+        {/* Menu Icons Dropdown - Sticky (appears below header when open) */}
+        {showMenuIcons && (
+          <Box 
+            p="md" 
+            style={{ 
+              position: 'sticky',
+              top: 'calc(140px + env(safe-area-inset-top, 0px))',
+              zIndex: 99,
+              borderBottom: '1px solid #e5e7eb', 
+              backgroundColor: 'white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
+            <Box
+              style={{
+                width: '100%',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'smooth'
+              }}
+              sx={{
+                '&::-webkit-scrollbar': {
+                  display: 'none'
+                }
+              }}
+            >
+              <Group gap="md" style={{ flexWrap: 'nowrap', width: 'max-content', paddingBottom: '8px' }}>
+                {navCategories.map((category) => {
+                  const IconComponent = category.icon;
+                  return (
+                    <Box
+                      key={category.id}
+                      onClick={() => {
+                        handleCategoryClick(category.id);
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        minWidth: '60px',
+                      }}
+                    >
+                      <Box
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '12px',
+                          backgroundColor: category.active ? '#ff5f1f' : 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <IconComponent 
+                          size={24} 
+                          style={{ 
+                            color: category.active ? 'white' : '#4b5563',
+                            strokeWidth: 2
+                          }} 
+                        />
+                      </Box>
+                      <Text 
+                        size="xs" 
+                        fw={category.active ? 600 : 500}
+                        c={category.active ? '#ff5f1f' : 'gray.7'}
+                        style={{ 
+                          textAlign: 'center',
+                          lineHeight: 1.2
+                        }}
+                      >
+                        {category.label}
+                      </Text>
+                    </Box>
+                  );
+                })}
+              </Group>
+            </Box>
+          </Box>
+        )}
+
         {/* Scrollable Content */}
         <Box style={{ 
           flex: 1, 
@@ -1666,98 +1753,6 @@ const Restaurants = () => {
           paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
         }}>
           <Box component="main">
-            {/* Menu Icons - Dropdown from search bar */}
-            {showMenuIcons && (
-              <Box 
-                p="md" 
-                style={{ 
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 100,
-                  borderBottom: '1px solid #e5e7eb', 
-                  backgroundColor: 'white',
-                  marginTop: '-8px', // Overlap with search bar shadow area
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                }}
-              >
-                <Box
-                  style={{
-                    width: '100%',
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                    scrollBehavior: 'smooth'
-                  }}
-                  sx={{
-                    '&::-webkit-scrollbar': {
-                      display: 'none'
-                    }
-                  }}
-                >
-                  <Group gap="md" style={{ flexWrap: 'nowrap', width: 'max-content', paddingBottom: '8px' }}>
-                    {navCategories.map((category) => {
-                      const IconComponent = category.icon;
-                      return (
-                        <Box
-                          key={category.id}
-                          onClick={() => {
-                            handleCategoryClick(category.id);
-                          }}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            cursor: 'pointer',
-                            flexShrink: 0,
-                            minWidth: '60px',
-                          }}
-                        >
-                          <Box
-                            style={{
-                              width: '48px',
-                              height: '48px',
-                              borderRadius: '12px',
-                              backgroundColor: category.active ? '#ff5f1f' : 'white',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s',
-                            }}
-                          >
-                            <IconComponent 
-                              size={24} 
-                              style={{ 
-                                color: category.active ? 'white' : '#4b5563',
-                                strokeWidth: 2
-                              }} 
-                            />
-                          </Box>
-                          <Text 
-                            size="xs" 
-                            fw={500} 
-                            c={category.active ? '#ff5f1f' : '#4b5563'}
-                            style={{ 
-                              textAlign: 'center',
-                              lineHeight: 1.2,
-                              maxWidth: '60px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {category.label}
-                          </Text>
-                        </Box>
-                      );
-                    })}
-                  </Group>
-                </Box>
-              </Box>
-            )}
-
             {/* Cuisine Types - 2 Rows Grid with Horizontal Scroll */}
             <Box 
               p="md" 
