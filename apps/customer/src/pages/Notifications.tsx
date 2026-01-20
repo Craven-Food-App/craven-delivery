@@ -1061,19 +1061,25 @@ const Notifications = () => {
         backgroundColor: 'white',
         display: 'flex',
         flexDirection: 'column',
+        paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))',
         paddingBottom: cartCount > 0 ? 'calc(160px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
     >
-      {/* Header */}
+      {/* Header - Fixed at Top matching Chat Header Structure */}
       <Paper
         shadow="xs"
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 1000,
           padding: '20px 24px',
           borderBottom: '1px solid #E5E7EB',
           backgroundColor: 'white',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
+          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          flexShrink: 0
         }}
       >
         <Group justify="space-between" align="center">

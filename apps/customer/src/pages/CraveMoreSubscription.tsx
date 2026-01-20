@@ -151,12 +151,20 @@ const CraveMoreSubscription: React.FC = () => {
           : 'calc(100px + env(safe-area-inset-bottom, 0px))'
       }}
     >
-      {/* Header */}
+      {/* Header - Fixed at Top matching Chat Header Structure */}
       <Group
         p="md"
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 1000,
+          backgroundColor: 'white',
           borderBottom: '1px solid #e5e7eb',
-          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))'
+          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          flexShrink: 0
         }}
       >
         <Button
@@ -184,7 +192,7 @@ const CraveMoreSubscription: React.FC = () => {
       </Group>
 
       {/* Main Content */}
-      <Stack gap="lg" p="md" style={{ maxWidth: '600px', margin: '0 auto' }}>
+      <Stack gap="lg" p="md" style={{ maxWidth: '600px', margin: '0 auto', paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
         {/* Main Headline */}
         <Title
           order={2}

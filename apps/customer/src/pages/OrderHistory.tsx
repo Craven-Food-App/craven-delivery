@@ -470,29 +470,41 @@ export default function OrderHistory() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))', paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
+      {/* Header - Fixed at Top matching Chat Header Structure */}
+      <Box style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1000,
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        padding: '1rem',
+        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        flexShrink: 0
+      }}>
+        {isMobile && (
+          <Group mb="md" align="center">
+            <ActionIcon
+              variant="subtle"
+              onClick={() => navigate(-1)}
+              style={{ color: '#171717' }}
+            >
+              <IconArrowLeft size={24} />
+            </ActionIcon>
+          </Group>
+        )}
+        <Text fw={900} size="xl" mb="xs" c="#171717">
+          Order History
+        </Text>
+        <Text size="sm" c="#737373">
+          Your recent orders
+        </Text>
+      </Box>
       <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
         <Stack gap="lg">
-          {/* Header with Back Button (Mobile) */}
-          <Box>
-            {isMobile && (
-              <Group mb="md" align="center">
-                <ActionIcon
-                  variant="subtle"
-                  onClick={() => navigate(-1)}
-                  style={{ color: '#171717' }}
-                >
-                  <IconArrowLeft size={24} />
-                </ActionIcon>
-              </Group>
-            )}
-            <Text fw={900} size="xl" mb="xs" c="#171717">
-              Order History
-            </Text>
-            <Text size="sm" c="#737373">
-              Your recent orders
-            </Text>
-          </Box>
 
           {/* Orders List */}
           {orders.length === 0 ? (

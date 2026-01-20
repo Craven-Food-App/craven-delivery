@@ -259,26 +259,34 @@ export default function MyCredits() {
 
       // Load user credits/rewards data
       // This would come from your rewards/credits table
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_credits')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (data) {
+      // Silently handle if table doesn't exist or no row found
+      if (error) {
+        // Only log non-404 errors (table not found is expected)
+        if (error.code !== 'PGRST116' && error.code !== '42P01') {
+          console.log('Error loading credits:', error.message);
+        }
+      } else if (data) {
         setCredits(data.balance_cents || 0);
         setTotalRedeemed(data.total_redeemed_cents || 0);
       }
-    } catch (error) {
-      // Table might not exist yet - that's okay
-      console.log('Credits table not found, using defaults');
+    } catch (error: any) {
+      // Table might not exist yet - that's okay, silently handle
+      if (error?.code !== 'PGRST116' && error?.code !== '42P01') {
+        console.log('Credits table not found, using defaults');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
+      <Box
       style={{
         width: '100%',
         maxWidth: isMobile ? '100%' : '600px',
@@ -287,19 +295,25 @@ export default function MyCredits() {
         backgroundColor: 'white',
         display: 'flex',
         flexDirection: 'column',
+        paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))',
         paddingBottom: cartCount > 0 ? 'calc(160px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))'
       }}
     >
-      {/* Page Header */}
+      {/* Page Header - Fixed at Top matching Chat Header Structure */}
       <Paper
         shadow="xs"
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 1000,
           padding: '20px 24px',
           borderBottom: '1px solid #E5E7EB',
           backgroundColor: 'white',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
+          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          flexShrink: 0
         }}
       >
         <Group justify="space-between" align="center">

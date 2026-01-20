@@ -262,20 +262,27 @@ const EditProfile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/account')}
-            className="h-9 w-9"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold text-gray-900">Edit Profile</h1>
-        </div>
+    <div className="min-h-screen bg-background" style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' }}>
+      {/* Header - Fixed at Top matching Chat Header Structure */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-background border-b border-border" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1000,
+        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        flexShrink: 0
+      }}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/account')}
+          className="h-9 w-9"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold text-gray-900">Edit Profile</h1>
       </div>
 
       {/* Content */}

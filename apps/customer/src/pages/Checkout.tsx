@@ -1081,9 +1081,18 @@ const Checkout: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       {showDeliveryDetailsView ? (
-        <div className="max-w-md mx-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-4 py-3">
+        <div className="max-w-md mx-auto" style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' }}>
+          {/* Header - Fixed at Top matching Chat Header Structure */}
+          <div className="bg-white border-b border-gray-200 px-4 py-3" style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            zIndex: 1000,
+            paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+            flexShrink: 0
+          }}>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate(-1)}

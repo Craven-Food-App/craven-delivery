@@ -1238,7 +1238,7 @@ const Restaurants = () => {
         </Box>
 
         {/* Content Container - On Background */}
-        <Box style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', paddingTop: '64px', paddingLeft: '24px', paddingRight: '24px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
+        <Box style={{ position: 'relative', zIndex: 10, flex: 1, display: 'flex', flexDirection: 'column', paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))', paddingLeft: '24px', paddingRight: '24px', paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` }}>
           {/* Logo and Tagline */}
           <Box style={{ marginBottom: '32px' }}>
             <Title order={1} style={{ fontSize: '80px', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.05em', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Craven.</Title>
@@ -1434,17 +1434,22 @@ const Restaurants = () => {
         backgroundColor: 'white', 
         display: 'flex', 
         flexDirection: 'column',
-        paddingTop: 'env(safe-area-inset-top, 0px)'
+        paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))'
       }}>
-        {/* Search & Address Bar (Sticky Header) */}
+        {/* Search & Address Bar (Fixed Header - Matching Chat Header Structure) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
-          position: 'sticky', 
-          top: 'env(safe-area-inset-top, 0px)', 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
           zIndex: 1000, 
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
           borderBottom: '1px solid #e5e7eb', 
-          padding: '8px 16px 12px' 
+          padding: '8px 16px 12px',
+          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          flexShrink: 0
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
@@ -1666,14 +1671,17 @@ const Restaurants = () => {
           </Box>
         </Box>
 
-        {/* Menu Icons Dropdown - Sticky (appears below header when open) */}
+        {/* Menu Icons Dropdown - Fixed (appears below header when open) */}
         {showMenuIcons && (
           <Box 
             px={0}
             py="md"
             style={{ 
-              position: 'sticky',
-              top: 'calc(140px + env(safe-area-inset-top, 0px))',
+              position: 'fixed',
+              top: 'calc(80px + env(safe-area-inset-top, 0px))',
+              left: 0,
+              right: 0,
+              width: '100%',
               zIndex: 999,
               borderBottom: '1px solid #e5e7eb', 
               backgroundColor: 'white',
