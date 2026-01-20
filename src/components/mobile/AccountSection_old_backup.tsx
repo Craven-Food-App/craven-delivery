@@ -283,7 +283,7 @@ export const AccountSection: React.FC<{
     return <div className="min-h-screen bg-slate-50">
       <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-4 safe-area-top">
         <button onClick={() => setCurrentSection('main')} className="flex items-center text-slate-700 hover:text-slate-900">
-          <ChevronRight className="h-5 w-5 rotate-180 mr-2" />
+          <ChevronRight className="h-5 w-5 rotate-180 mr-2" style={{ width: '25.4px', height: '25.4px' }} />
           <span className="font-medium">Back to Account</span>
         </button>
       </div>

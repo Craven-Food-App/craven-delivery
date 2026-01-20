@@ -107,7 +107,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
     p="xl"
     radius="md"
     style={{
-      height: '440px',
+      height: '350px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -130,7 +130,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
         <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)' }}>
           {title}
         </Title>
-        <Text size="sm" c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)' }}>
+        <Text c="white" style={{ opacity: 0.9, marginTop: 'var(--mantine-spacing-xs)', fontSize: '24px' }}>
           {subtitle}
         </Text>
       </Box>
@@ -186,8 +186,8 @@ const RestaurantCard = ({
         {/* Star rating * Mile distance * Delivery time */}
         <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
           <Group gap={4} wrap="nowrap">
-            <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-            <Text size="sm" fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
+            <IconStar size={24} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
+            <Text style={{ fontSize: '24px' }} fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
           </Group>
           <Text size="sm" c="gray.4">•</Text>
           <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
@@ -841,7 +841,7 @@ const Restaurants = () => {
             <Button
               variant="subtle"
               leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-              rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
+              rightSection={<IconChevronRight size={28} style={{ color: '#a3a3a3' }} />}
               onClick={() => setShowMain(false)}
               style={{ padding: '8px', borderRadius: '12px' }}
             >
@@ -903,7 +903,7 @@ const Restaurants = () => {
         <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fafafa' }}>
           <Box component="main">
             {/* Quick Filters/Categories */}
-            <Group gap="xs" p="md" style={{ overflowX: 'auto', whiteSpace: 'nowrap', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white' }}>
+            <Group gap="xs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white', padding: '10px 16px', scrollbarWidth: 'none' }}>
               {['Fast Delivery', 'High Rated', 'Breakfast', 'Deals', 'Grocery', 'Dessert'].map((item) => (
                 <Button
                   key={item}
@@ -956,11 +956,11 @@ const Restaurants = () => {
             ) : null}
 
             {/* Fastest near you */}
-            <Box px="md" py="xl" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '16px', paddingBottom: '16px' }}>
               <Group justify="space-between" mb="md">
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Craven Quick Picks</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={24} />
+                  <IconChevronRight size={26} style={{ height: '26px', width: '26px' }} />
                 </ActionIcon>
               </Group>
               
@@ -1067,11 +1067,11 @@ const Restaurants = () => {
               </Box>
 
             {/* Premium Selections */}
-            <Box px="md" py="xl" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '10px', paddingBottom: '16px', height: '46.8px' }}>
               <Group justify="space-between" mb="md">
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Premium Selections</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={24} />
+                  <IconChevronRight size={26} style={{ height: '26px', width: '26px' }} />
                 </ActionIcon>
               </Group>
               
@@ -1149,7 +1149,7 @@ const Restaurants = () => {
               {showMobileNav ? (
                 <IconX size={24} style={{ color: '#171717' }} />
               ) : (
-                <IconMenu2 size={24} style={{ color: '#171717' }} />
+                <IconMenu2 size={26} style={{ color: '#171717' }} />
               )}
             </ActionIcon>
           </Group>
@@ -1427,7 +1427,7 @@ const Restaurants = () => {
                 onClick={() => setShowMobileNav(!showMobileNav)}
                 className="lg:hidden p-2"
               >
-                {showMobileNav ? <IconX className="w-6 h-6" /> : <IconMenu2 className="w-6 h-6" />}
+                {showMobileNav ? <IconX className="w-6 h-6" /> : <IconMenu2 size={26} style={{ height: '26px', width: '16px' }} />}
               </button>
             </div>
           </div>
@@ -1437,19 +1437,26 @@ const Restaurants = () => {
       {/* Mobile Filter Pills - Mantine UI */}
       <Box
         component="nav"
+        px={0}
         style={{
           display: isMobile ? 'block' : 'none',
           position: 'sticky',
-          top: '140px',
-          zIndex: 40,
+          top: '100px',
+          zIndex: 999,
           backgroundColor: 'white',
           borderBottom: '1px solid #e5e7eb',
           overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
+          height: '400px',
+          paddingTop: '10px',
+          paddingBottom: '16px',
+          margin: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          width: '100%'
         }}
       >
-        <ScrollArea type="scroll" scrollbars="x" style={{ width: '100%' }}>
-          <Group gap="xs" p="md" style={{ flexWrap: 'nowrap', width: 'max-content' }}>
+        <ScrollArea type="scroll" scrollbars="x" style={{ width: '100%', overflow: 'auto hidden', scrollbarWidth: 'none', scrollBehavior: 'smooth', paddingLeft: '16px', paddingRight: '16px' }}>
+          <Group gap="xs" style={{ flexWrap: 'nowrap', width: 'max-content', paddingBottom: '8px' }}>
             {filterOptions.map((filter) => (
               <Button
                 key={filter.id}

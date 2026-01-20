@@ -596,7 +596,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                     <IconKey size={18} />
                   </ThemeIcon>
                 }
-                rightSection={<IconChevronRight size={18} color="var(--mantine-color-gray-4)" />}
+                rightSection={<IconChevronRight size={25.4} color="var(--mantine-color-gray-4)" />}
                 onClick={() => setShowPinDialog(true)}
                 style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
               >
@@ -958,7 +958,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
               <IconLogout size={20} />
             </ThemeIcon>
           }
-          rightSection={<IconChevronRight size={18} color="var(--mantine-color-red-4)" style={{ marginLeft: 'auto' }} />}
+          rightSection={<IconChevronRight size={25.4} color="var(--mantine-color-red-4)" style={{ marginLeft: 'auto' }} />}
           onClick={handleSignOut}
           size="md"
           radius={0}

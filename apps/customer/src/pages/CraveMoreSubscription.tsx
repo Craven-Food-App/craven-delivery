@@ -16,7 +16,21 @@ const CraveMoreSubscription: React.FC = () => {
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<CraveMorePlan | null>(null);
   const { offer, loading: plansLoading } = useCraveMoreOffer();
+
+  // Set initial selected plan to most popular when plans load
+  useEffect(() => {
+    if (offer?.plans && offer.plans.length > 0 && !selectedPlan) {
+      const mostPopular = offer.plans.find(p => p.isMostPopular);
+      if (mostPopular) {
+        setSelectedPlan(mostPopular);
+      } else {
+        // Default to first plan if no most popular
+        setSelectedPlan(offer.plans[0]);
+      }
+    }
+  }, [offer?.plans, selectedPlan]);
 
   const handleStartTrial = async () => {
     setLoading(true);
@@ -37,7 +51,7 @@ const CraveMoreSubscription: React.FC = () => {
         return;
       }
 
-      // Select the best plan (prefer monthly for trial, or most popular)
+      // Use the user-selected plan, or default to monthly/most popular
       const availablePlans = offer?.plans || [];
       if (availablePlans.length === 0) {
         toast.error('No subscription plans available. Please try again later.');
@@ -45,10 +59,13 @@ const CraveMoreSubscription: React.FC = () => {
         return;
       }
 
-      // Prefer monthly plan for trial, otherwise use most popular
-      let selectedPlan = availablePlans.find(p => p.planKey === 'monthly');
-      if (!selectedPlan) {
-        selectedPlan = availablePlans.find(p => p.isMostPopular) || availablePlans[0];
+      // Use selected plan, or default to monthly/most popular
+      let planToUse = selectedPlan;
+      if (!planToUse) {
+        planToUse = availablePlans.find(p => p.planKey === 'monthly');
+        if (!planToUse) {
+          planToUse = availablePlans.find(p => p.isMostPopular) || availablePlans[0];
+        }
       }
 
       // Detect device type for payment method preference
@@ -66,13 +83,13 @@ const CraveMoreSubscription: React.FC = () => {
       }
 
       // Track analytics
-      analytics.planSelected(selectedPlan.planKey);
-      analytics.checkoutStarted(selectedPlan.planKey);
+      analytics.planSelected(planToUse.planKey);
+      analytics.checkoutStarted(planToUse.planKey);
 
       // Create checkout session with trial and preferred payment method
       const { data, error } = await supabase.functions.invoke('create-cravemore-checkout', {
         body: { 
-          planKey: selectedPlan.planKey,
+          planKey: planToUse.planKey,
           startTrial: true, // Indicate this is a trial signup
           preferredPaymentMethod: preferredPaymentMethod // Pass preferred payment method
         },
@@ -144,7 +161,7 @@ const CraveMoreSubscription: React.FC = () => {
       >
         <Button
           variant="subtle"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/account')}
           style={{ padding: '8px', minWidth: 'auto' }}
         >
           <IconArrowLeft size={20} color="#111827" />
@@ -308,17 +325,25 @@ const CraveMoreSubscription: React.FC = () => {
                 else if (plan.planKey === 'annual') cadenceLabel = 'per year';
                 else cadenceLabel = 'one-time';
 
+                const isSelected = selectedPlan?.id === plan.id;
+                const isHighlighted = plan.isMostPopular || isSelected;
+
                 return (
                   <Box
                     key={plan.id}
+                    onClick={() => setSelectedPlan(plan)}
                     style={{
                       padding: '12px 14px',
                       borderRadius: '8px',
-                      border: plan.isMostPopular ? '2px solid #dc2626' : '1px solid #e5e7eb',
-                      backgroundColor: plan.isMostPopular ? '#fef2f2' : '#ffffff',
+                      border: isHighlighted ? '2px solid #dc2626' : '1px solid #e5e7eb',
+                      backgroundColor: isHighlighted ? '#fef2f2' : '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between'
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: isSelected ? '0 2px 8px rgba(220, 38, 38, 0.15)' : 'none'
                     }}
                   >
                     <Stack gap={2} style={{ flex: 1 }}>
@@ -343,7 +368,17 @@ const CraveMoreSubscription: React.FC = () => {
                           color="red"
                           style={{ marginTop: '4px' }}
                         >
-                          {plan.badgeText || 'Best Value'}
+                          {plan.badgeText || 'MOST POPULAR'}
+                        </Badge>
+                      )}
+                      {isSelected && !plan.isMostPopular && (
+                        <Badge
+                          size="xs"
+                          radius="xl"
+                          color="red"
+                          style={{ marginTop: '4px' }}
+                        >
+                          Selected
                         </Badge>
                       )}
                     </Stack>
@@ -745,6 +780,7 @@ const CraveMoreSubscription: React.FC = () => {
           fullWidth
           onClick={handleStartTrial}
           loading={loading}
+          disabled={!selectedPlan || loading || plansLoading}
           style={{
             marginTop: '24px',
             height: '56px',

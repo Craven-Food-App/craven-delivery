@@ -373,8 +373,8 @@ const EditProfile: React.FC = () => {
 
       {/* Bottom Action Buttons - Fixed */}
       <div 
-        className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4"
-        style={{ paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}
+        className="fixed left-0 right-0 bg-background border-t border-border p-4"
+        style={{ bottom: '53px', paddingBottom: `calc(1rem + env(safe-area-inset-bottom, 0px))` }}
       >
         <div className="max-w-md mx-auto space-y-3">
           <Button

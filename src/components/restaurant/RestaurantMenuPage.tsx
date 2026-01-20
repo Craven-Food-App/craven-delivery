@@ -1968,7 +1968,7 @@ const RestaurantMenuPage = () => {
                   p="md"
                   style={{
                     margin: '0 16px',
-                    paddingTop: '16px',
+                    paddingTop: '10px',
                   }}
                 >
                   <Group align="flex-start" gap="sm" mb="md">
@@ -2059,7 +2059,7 @@ const RestaurantMenuPage = () => {
                 <Box
                   style={{
                     position: 'sticky',
-                    top: '48px',
+                    top: '110px',
                     zIndex: 40,
                     backgroundColor: 'white',
                     borderBottom: '1px solid var(--mantine-color-gray-3)',
@@ -2075,7 +2075,7 @@ const RestaurantMenuPage = () => {
                           setSearchQuery('');
                         }}
                         style={{
-                          padding: '12px 16px',
+                          padding: '10px 16px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
@@ -2095,7 +2095,7 @@ const RestaurantMenuPage = () => {
                           scrollToSection('most-ordered');
                         }}
                         style={{
-                          padding: '12px 16px',
+                          padding: '10px 16px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
@@ -2116,7 +2116,7 @@ const RestaurantMenuPage = () => {
                           scrollToSection('frequently-ordered-mobile');
                         }}
                         style={{
-                          padding: '12px 16px',
+                          padding: '10px 16px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           flexShrink: 0,
@@ -2138,7 +2138,7 @@ const RestaurantMenuPage = () => {
                             scrollToSection(category.id);
                           }}
                           style={{
-                            padding: '12px 16px',
+                            padding: '10px 16px',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             flexShrink: 0,
@@ -2364,7 +2364,7 @@ const RestaurantMenuPage = () => {
                             label={
                               <Stack align="center" gap={2}>
                                 <Text size="xl" fw={700}>4.4</Text>
-                                <IconStar size={14} style={{ color: 'var(--mantine-color-gray-4)' }} />
+                                <IconStar size={24} style={{ color: 'var(--mantine-color-gray-4)' }} />
                               </Stack>
                             }
                           />
@@ -2395,7 +2395,7 @@ const RestaurantMenuPage = () => {
                             <Group gap="xs" mb="xs">
                               <Group gap={2}>
                                 {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                  <IconStar key={i} size={24} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
                                 ))}
                               </Group>
                               <Text size="xs" c="dimmed">11/15/23</Text>
@@ -2426,7 +2426,7 @@ const RestaurantMenuPage = () => {
                             <Group gap="xs" mb="xs">
                               <Group gap={2}>
                                 {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                  <IconStar key={i} size={24} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
                                 ))}
                               </Group>
                               <Text size="xs" c="dimmed">10/28/23</Text>
@@ -2457,7 +2457,7 @@ const RestaurantMenuPage = () => {
                             <Group gap="xs" mb="xs">
                               <Group gap={2}>
                                 {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
+                                  <IconStar key={i} size={24} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
                                 ))}
                               </Group>
                               <Text size="xs" c="dimmed">12/02/23</Text>

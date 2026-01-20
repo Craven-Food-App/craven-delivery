@@ -439,7 +439,7 @@ const SponsorPipeline: React.FC = () => {
                           cursor: "pointer",
                         }}
                       >
-                        <ChevronRight size={18} color="#6b7280" />
+                        <ChevronRight size={25.4} color="#6b7280" />
                       </button>
                     </div>
                   </div>

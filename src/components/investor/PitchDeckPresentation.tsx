@@ -475,7 +475,7 @@ const PitchDeckPresentation: React.FC = () => {
             onClick={() => setCurrentSlide(0)}
             className="px-8 py-3 bg-orange-500 text-black font-bold rounded-full hover:bg-orange-400 transition-colors flex items-center gap-2"
           >
-            Restart Presentation <ChevronRight size={18} />
+            Restart Presentation <ChevronRight size={25.4} />
           </button>
         </div>
       )

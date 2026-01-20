@@ -644,7 +644,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
       position: 'relative',
     }}>
       {/* Modern Header - Fixed at Top under Safe Area */}
@@ -666,7 +666,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               size="sm" 
               onClick={onClose} 
               className="text-white hover:bg-white/20 flex-shrink-0"
-              style={{ padding: '8px' }}
+              style={{ padding: '8px', height: '54px', width: '54px' }}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -694,12 +694,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             className="text-white hover:bg-white/20"
             onClick={handleCall}
             disabled={!phoneNumber}
+            style={{ height: '54px', width: '54px' }}
           >
             <Phone className="h-4 w-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" style={{ height: '54px', width: '54px' }}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -819,7 +820,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         flexShrink: 0, 
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
         position: 'fixed',
-        bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+        bottom: 0,
         left: 0,
         right: 0,
         zIndex: 100,
@@ -854,9 +855,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 hover:bg-gray-100"
+                className="p-0 hover:bg-gray-100"
                 onClick={handleAttachmentClick}
                 disabled={uploadingImage || conversation.status !== 'active'}
+                style={{ height: '54px', width: '54px' }}
               >
                 <Paperclip className="h-4 w-4 text-gray-500" />
               </Button>

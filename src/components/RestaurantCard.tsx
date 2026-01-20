@@ -57,13 +57,13 @@ const RestaurantCard = ({
 
         {/* Content */}
         <div className="p-3 sm:p-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0">
               {name}
             </h3>
-            <div className="flex items-center space-x-1 text-xs sm:text-sm flex-shrink-0 ml-2">
+            <div className="flex items-center space-x-1 text-sm flex-shrink-0">
               <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{rating}</span>
+              <span className="font-medium" style={{ fontSize: '24px' }}>{rating}</span>
             </div>
           </div>
 
