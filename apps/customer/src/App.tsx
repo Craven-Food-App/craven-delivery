@@ -121,39 +121,39 @@ function App() {
                     <InstallAppBanner />
                     
                     <MobileLayout>
-                      <Routes>
-                        <Route path="/" element={<Navigate to="/restaurants" replace />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/restaurants" element={<Restaurants />} />
-                        <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
-                        <Route path="/favorites" element={<Favorites />} />
-                        <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-                        <Route path="/restaurant/:id/menu" element={<RestaurantMenuPage />} />
-                        <Route path="/checkout" element={<Checkout />} />
-                        <Route path="/track-order/:orderId" element={<TrackOrder />} />
-                        <Route path="/payment-success" element={<PaymentSuccess />} />
-                        <Route path="/payment-canceled" element={<PaymentCanceled />} />
-                        <Route path="/order-history" element={<OrderHistory />} />
-                        <Route path="/account" element={<CustomerDashboard />} />
-                        <Route path="/account/edit-profile" element={<EditProfile />} />
-                        <Route path="/account/payment-methods" element={<PaymentMethods />} />
-                        <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
-                        <Route path="/account/my-credits" element={<MyCredits />} />
-                        <Route path="/my-credits" element={<MyCredits />} />
-                        <Route path="/invite-friends" element={<InviteFriends />} />
-                        <Route path="/customer-support" element={<CustomerSupportChat />} />
-                        <Route path="/promotion-details" element={<PromotionDetails />} />
-                        <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/notification-settings" element={<NotificationSettings />} />
-                        <Route path="/admin/promo" element={<PromoManagement />} />
-                        <Route path="/crave-more" element={<CraveMore />} />
-                        <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
-                        <Route path="/cravemore" element={<CraveMore />} />
-                        <Route path="/cravemore/success" element={<CraveMoreSuccess />} />
-                        <Route path="/account/cravemore" element={<CraveMoreAccount />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
+                    <Routes>
+                    <Route path="/" element={<Navigate to="/restaurants" replace />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/restaurants" element={<Restaurants />} />
+                    <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
+                    <Route path="/favorites" element={<Favorites />} />
+                    <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                    <Route path="/restaurant/:id/menu" element={<RestaurantMenuPage />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/track-order/:orderId" element={<TrackOrder />} />
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-canceled" element={<PaymentCanceled />} />
+                    <Route path="/order-history" element={<OrderHistory />} />
+                    <Route path="/account" element={<CustomerDashboard />} />
+                    <Route path="/account/edit-profile" element={<EditProfile />} />
+                    <Route path="/account/payment-methods" element={<PaymentMethods />} />
+                    <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
+                    <Route path="/account/my-credits" element={<MyCredits />} />
+                    <Route path="/my-credits" element={<MyCredits />} />
+                    <Route path="/invite-friends" element={<InviteFriends />} />
+                    <Route path="/customer-support" element={<CustomerSupportChat />} />
+                    <Route path="/promotion-details" element={<PromotionDetails />} />
+                    <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/notification-settings" element={<NotificationSettings />} />
+                    <Route path="/admin/promo" element={<PromoManagement />} />
+                    <Route path="/crave-more" element={<CraveMore />} />
+                    <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
+                    <Route path="/cravemore" element={<CraveMore />} />
+                    <Route path="/cravemore/success" element={<CraveMoreSuccess />} />
+                    <Route path="/account/cravemore" element={<CraveMoreAccount />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
                     </MobileLayout>
                     
                     {/* Global bottom navigation */}

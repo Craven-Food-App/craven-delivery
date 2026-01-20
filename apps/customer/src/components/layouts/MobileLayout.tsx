@@ -13,6 +13,7 @@ interface MobileLayoutProps {
  * - Ensures bottom safe area (home indicator, nav buttons)
  * - Provides consistent spacing across all pages
  * - Responsive to any mobile screen size
+ * - No background colors - transparent layout
  */
 export function MobileLayout({ children, showBottomNav = true }: MobileLayoutProps) {
   const location = useLocation();
@@ -20,7 +21,6 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
   // Pages where we hide bottom navigation
   const hideNavPaths = [
     '/auth',
-    '/customer-support',
     '/checkout',
   ];
   
@@ -44,6 +44,7 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
         paddingTop: 'env(safe-area-inset-top, 0px)',
         // No bottom padding - handled by fixed nav
         paddingBottom: 0,
+        overflow: 'hidden',
       }}
     >
       {/* Main scrollable content */}

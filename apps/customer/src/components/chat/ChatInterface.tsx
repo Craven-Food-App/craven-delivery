@@ -644,17 +644,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       minHeight: '100vh', 
       display: 'flex', 
       flexDirection: 'column',
-      paddingBottom: 'calc(30px + env(safe-area-inset-bottom, 0px))',
+      paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
       position: 'relative',
     }}>
-      {/* Modern Header - Fixed */}
+      {/* Modern Header - Fixed at Top under Safe Area */}
       <div className="flex items-center justify-between p-4 text-white" style={{ 
         background: 'linear-gradient(to right, #ff6b35, #b91c1c)', 
         flexShrink: 0,
         paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 10,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        width: '100%',
       }}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {onClose && (
@@ -720,8 +723,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         minHeight: 0,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
+        marginTop: 'calc(72px + env(safe-area-inset-top, 0px))',
       }}>
-        <div className="p-4 space-y-4" style={{ paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="p-4 space-y-4" style={{ paddingBottom: 'calc(160px + env(safe-area-inset-bottom, 0px))' }}>
           {messages.map((message) => (
             <div
               key={message.id}
@@ -815,10 +819,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         flexShrink: 0, 
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
         position: 'fixed',
-        bottom: 'calc(30px + env(safe-area-inset-bottom, 0px))',
+        bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
         left: 0,
         right: 0,
-        zIndex: 1001,
+        zIndex: 100,
         width: '100%'
       }}>
         <input

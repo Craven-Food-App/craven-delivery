@@ -348,6 +348,18 @@ All colors MUST be HSL.
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Prevent any top/bottom overflow in the app */
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  html {
+    overflow-y: auto;
   }
 
   /* Hide scrollbars for mobile */

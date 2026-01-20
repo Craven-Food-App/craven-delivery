@@ -91,27 +91,27 @@ const GlobalMobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <Box
-      component="nav"
-      style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
+      <Box
+        component="nav"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
         width: '100%',
         maxWidth: '100vw',
-        backgroundColor: 'white',
-        borderTop: '1px solid #e5e7eb',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-        zIndex: 1000,
+          backgroundColor: 'white',
+          borderTop: '1px solid #e5e7eb',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+          zIndex: 1000,
         // Safe area for bottom (Android nav buttons, iOS home indicator)
         paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
         paddingTop: '8px',
         // Ensure it's always visible
         visibility: 'visible',
         display: 'flex',
-      }}
-    >
+        }}
+      >
       <Group
         justify="space-around"
         gap={0}
@@ -121,46 +121,46 @@ const GlobalMobileBottomNav: React.FC = () => {
           maxWidth: '100%',
         }}
       >
-        {navItems.map((item) => {
-          const IconComponent = item.icon;
-          const isActive = item.isActive;
+          {navItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = item.isActive;
 
-          return (
+            return (
             <ActionIcon
-              key={item.id}
-              onClick={() => navigate(item.path)}
-              variant="subtle"
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                variant="subtle"
               size="xl"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
                 justifyContent: 'center',
                 gap: '4px',
                 padding: '4px 8px',
                 minWidth: '60px',
                 minHeight: '48px',
-                flex: '1 1 0',
+                  flex: '1 1 0',
                 color: isActive ? '#ff6b35' : '#737373',
-                position: 'relative',
+                  position: 'relative',
                 backgroundColor: 'transparent',
                 borderRadius: 0,
                 // Touch-friendly size
                 touchAction: 'manipulation',
-              }}
-            >
-              <Box style={{ position: 'relative' }}>
+                }}
+              >
+                <Box style={{ position: 'relative' }}>
                 <IconComponent 
                   size={24} 
                   stroke={isActive ? 2.5 : 2}
                   style={{ color: isActive ? '#ff6b35' : '#737373' }} 
                 />
-                {item.showBadge && cartCount > 0 && (
-                  <Badge
-                    size="xs"
-                    color="red"
-                    style={{
-                      position: 'absolute',
+                  {item.showBadge && cartCount > 0 && (
+                    <Badge
+                      size="xs"
+                      color="red"
+                      style={{
+                        position: 'absolute',
                       top: -6,
                       right: -6,
                       minWidth: '18px',
@@ -173,12 +173,12 @@ const GlobalMobileBottomNav: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </Badge>
-                )}
-              </Box>
+                      }}
+                    >
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </Badge>
+                  )}
+                </Box>
               <Text 
                 size="11px" 
                 fw={isActive ? 600 : 500}
@@ -188,13 +188,13 @@ const GlobalMobileBottomNav: React.FC = () => {
                   marginTop: '2px',
                 }}
               >
-                {item.label}
-              </Text>
+                  {item.label}
+                </Text>
             </ActionIcon>
-          );
-        })}
-      </Group>
-    </Box>
+            );
+          })}
+        </Group>
+      </Box>
   );
 };
 

@@ -6,6 +6,7 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, MessageCircle, Truck } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import GlobalMobileBottomNav from '@/components/mobile/GlobalMobileBottomNav';
 import {
   Box,
   Text,
@@ -252,12 +253,10 @@ const CustomerSupportChat: React.FC = () => {
   return (
     <Box style={{ 
       minHeight: '100vh', 
-      backgroundColor: 'white', 
       display: 'flex', 
       flexDirection: 'column', 
       padding: 0, 
       margin: 0,
-      paddingTop: 'env(safe-area-inset-top, 0px)',
       overflow: 'hidden',
       position: 'relative',
     }}>
@@ -279,7 +278,7 @@ const CustomerSupportChat: React.FC = () => {
           />
         </Box>
       ) : (
-        <Box style={{ minHeight: '100vh', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Stack align="center" gap="md">
             <Loader size="lg" color="orange" />
             <Text c="gray">Starting chat...</Text>
@@ -287,21 +286,8 @@ const CustomerSupportChat: React.FC = () => {
         </Box>
       )}
       
-      {/* White Bar at Bottom */}
-      <Box
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          width: '100%',
-          backgroundColor: '#ffffff',
-          height: '30px',
-          zIndex: 1000,
-          borderTop: '1px solid #e5e7eb',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }}
-      />
+      {/* Global Bottom Navigation */}
+      <GlobalMobileBottomNav />
     </Box>
   );
 };
