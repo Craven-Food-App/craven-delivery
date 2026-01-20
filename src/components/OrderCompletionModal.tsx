@@ -16,6 +16,8 @@ interface OrderCompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderId: string;
+  // Optional override for status when used in test portals (avoids RLS / update issues)
+  testStatusOverride?: string;
 }
 
 interface OrderDetails {
@@ -49,7 +51,8 @@ const ORDER_STEPS = [
 export const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
   isOpen,
   onClose,
-  orderId
+  orderId,
+  testStatusOverride
 }) => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetails | null>(null);
@@ -177,9 +180,8 @@ export const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
     }
   };
 
-  const getCurrentStepIndex = (): number => {
-    if (!order) return 0;
-    const index = ORDER_STEPS.findIndex(step => step.key === order.order_status);
+  const getCurrentStepIndex = (status: string): number => {
+    const index = ORDER_STEPS.findIndex(step => step.key === status);
     return index >= 0 ? index : 0;
   };
 
@@ -208,7 +210,10 @@ export const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
     navigate('/crave-more-subscription');
   };
 
-  const currentStepIndex = getCurrentStepIndex();
+  // Effective status: use test override when provided (for Testing Portal),
+  // otherwise fall back to the order status from the database
+  const effectiveStatus = testStatusOverride || order?.order_status || 'pending';
+  const currentStepIndex = getCurrentStepIndex(effectiveStatus);
   const restaurant = order?.restaurants;
   const restaurantName = restaurant?.name || 'Restaurant';
   const restaurantLogo = restaurant?.image_url;

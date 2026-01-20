@@ -25,6 +25,7 @@ interface TestOrder {
 
 export const TestOrderCompletion = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [testOrder, setTestOrder] = useState<TestOrder | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [testResults, setTestResults] = useState<{
@@ -299,28 +300,31 @@ export const TestOrderCompletion = () => {
     }
   };
 
-  const simulateStatusUpdate = async (newStatus: string) => {
-    if (!testOrder) return;
-
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ order_status: newStatus })
-        .eq('id', testOrder.id);
-
-      if (error) throw error;
-
+  const simulateStatusUpdate = (newStatus: string) => {
+    if (!testOrder) {
       toast({
-        title: 'Status Updated',
-        description: `Order status changed to: ${newStatus}`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error updating status',
-        description: error.message,
+        title: 'No Test Order',
+        description: 'Please create a test order first',
         variant: 'destructive'
       });
+      return;
     }
+
+    if (isUpdatingStatus) return; // Prevent multiple simultaneous updates
+
+    setIsUpdatingStatus(true);
+
+    // Pure client-side simulation for Testing Portal – we don't rely on database writes here
+    setTestOrder((prev) => prev ? { ...prev, order_status: newStatus } : null);
+    setTestResults((prev) => ({ ...prev, statusUpdates: true }));
+
+    toast({
+      title: 'Status Updated (Test Only)',
+      description: `Simulated status changed to: ${newStatus}`,
+    });
+
+    // Small delay to show loading state feedback
+    setTimeout(() => setIsUpdatingStatus(false), 200);
   };
 
   const resetTest = () => {
@@ -429,18 +433,27 @@ export const TestOrderCompletion = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {testStatuses.map((status) => (
-                <Button
-                  key={status.key}
-                  onClick={() => simulateStatusUpdate(status.key)}
-                  variant={testOrder.order_status === status.key ? 'default' : 'outline'}
-                  size="sm"
-                  disabled={isLoading}
-                >
-                  {status.label}
-                </Button>
-              ))}
+              {testStatuses.map((status) => {
+                const isActive = testOrder.order_status === status.key;
+                return (
+                  <Button
+                    key={status.key}
+                    onClick={() => simulateStatusUpdate(status.key)}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
+                    disabled={isLoading || isUpdatingStatus || !testOrder}
+                    className={isActive ? 'bg-orange-500 hover:bg-orange-600' : ''}
+                  >
+                    {status.label}
+                  </Button>
+                );
+              })}
             </div>
+            {!testOrder && (
+              <p className="text-sm text-muted-foreground mt-4 text-center">
+                Create a test order first to enable status updates
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -529,6 +542,8 @@ export const TestOrderCompletion = () => {
           isOpen={showModal}
           onClose={() => setShowModal(false)}
           orderId={testOrder.id}
+          // Use local simulated status instead of relying on database writes
+          testStatusOverride={testOrder.order_status}
         />
       )}
     </div>

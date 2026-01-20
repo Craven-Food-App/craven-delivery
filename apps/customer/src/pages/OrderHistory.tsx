@@ -485,24 +485,24 @@ export default function OrderHistory() {
         paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
         flexShrink: 0
       }}>
-        {isMobile && (
-          <Group mb="md" align="center">
-            <ActionIcon
-              variant="subtle"
-              onClick={() => navigate(-1)}
-              style={{ color: '#171717' }}
-            >
-              <IconArrowLeft size={24} />
-            </ActionIcon>
-          </Group>
-        )}
-        <Text fw={900} size="xl" mb="xs" c="#171717">
-          Order History
-        </Text>
-        <Text size="sm" c="#737373">
-          Your recent orders
-        </Text>
-      </Box>
+            {isMobile && (
+              <Group mb="md" align="center">
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => navigate(-1)}
+                  style={{ color: '#171717' }}
+                >
+                  <IconArrowLeft size={24} />
+                </ActionIcon>
+              </Group>
+            )}
+            <Text fw={900} size="xl" mb="xs" c="#171717">
+              Order History
+            </Text>
+            <Text size="sm" c="#737373">
+              Your recent orders
+            </Text>
+          </Box>
       <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
         <Stack gap="lg">
 

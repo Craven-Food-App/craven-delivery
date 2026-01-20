@@ -274,15 +274,15 @@ const EditProfile: React.FC = () => {
         paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
         flexShrink: 0
       }}>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/account')}
-          className="h-9 w-9"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-gray-900">Edit Profile</h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/account')}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-gray-900">Edit Profile</h1>
       </div>
 
       {/* Content */}

@@ -241,7 +241,7 @@ export default function NotificationSettings() {
   const selectedSettingData = settings.find(s => s.id === selectedSetting);
 
   return (
-      <Box
+    <Box
       style={{
         width: '100%',
         maxWidth: isMobile ? '100%' : '600px',

@@ -278,7 +278,7 @@ export default function MyCredits() {
     } catch (error: any) {
       // Table might not exist yet - that's okay, silently handle
       if (error?.code !== 'PGRST116' && error?.code !== '42P01') {
-        console.log('Credits table not found, using defaults');
+      console.log('Credits table not found, using defaults');
       }
     } finally {
       setLoading(false);
@@ -286,7 +286,7 @@ export default function MyCredits() {
   };
 
   return (
-      <Box
+    <Box
       style={{
         width: '100%',
         maxWidth: isMobile ? '100%' : '600px',
