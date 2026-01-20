@@ -98,18 +98,19 @@ const GlobalMobileBottomNav: React.FC = () => {
           bottom: 0,
           left: 0,
           right: 0,
-        width: '100%',
-        maxWidth: '100vw',
+          width: '100%',
+          maxWidth: '100vw',
           backgroundColor: 'white',
           borderTop: '1px solid #e5e7eb',
           boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-          zIndex: 1000,
-        // Safe area for bottom (Android nav buttons, iOS home indicator)
-        paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
-        paddingTop: '8px',
-        // Ensure it's always visible
-        visibility: 'visible',
-        display: 'flex',
+          zIndex: 9999,
+          // Safe area for bottom (Android nav buttons, iOS home indicator)
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+          paddingTop: '8px',
+          // Ensure it's always visible and sticky
+          visibility: 'visible',
+          display: 'flex',
+          pointerEvents: 'auto',
         }}
       >
       <Group
