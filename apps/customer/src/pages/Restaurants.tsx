@@ -1776,13 +1776,18 @@ const Restaurants = () => {
           <Box component="main">
             {/* Cuisine Types - 2 Rows Grid with Horizontal Scroll */}
             <Box 
-              p="md" 
               style={{ 
                 borderBottom: '1px solid #e5e7eb', 
                 backgroundColor: 'white',
                 minHeight: '110px',
                 paddingTop: '10px',
-                paddingBottom: '10px'
+                paddingBottom: '10px',
+                padding: '16px',
+                marginTop: '35px',
+                marginRight: '35px',
+                marginBottom: '35px',
+                marginLeft: '5px',
+                width: '385px'
               }}
             >
               {availableCuisines.length > 0 ? (
