@@ -1669,7 +1669,8 @@ const Restaurants = () => {
         {/* Menu Icons Dropdown - Sticky (appears below header when open) */}
         {showMenuIcons && (
           <Box 
-            p="md" 
+            px={0}
+            py="md"
             style={{ 
               position: 'sticky',
               top: 'calc(140px + env(safe-area-inset-top, 0px))',
@@ -1677,6 +1678,8 @@ const Restaurants = () => {
               borderBottom: '1px solid #e5e7eb', 
               backgroundColor: 'white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              width: '100%',
+              margin: 0,
             }}
           >
             <Box
@@ -1687,7 +1690,9 @@ const Restaurants = () => {
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
                 WebkitOverflowScrolling: 'touch',
-                scrollBehavior: 'smooth'
+                scrollBehavior: 'smooth',
+                paddingLeft: '16px',
+                paddingRight: '16px',
               }}
               sx={{
                 '&::-webkit-scrollbar': {
