@@ -1437,7 +1437,15 @@ const Restaurants = () => {
         paddingTop: 'env(safe-area-inset-top, 0px)'
       }}>
         {/* Search & Address Bar (Sticky Header) */}
-        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
+        <Box component="header" style={{ 
+          backgroundColor: 'white', 
+          position: 'sticky', 
+          top: 'env(safe-area-inset-top, 0px)', 
+          zIndex: 1000, 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
+          borderBottom: '1px solid #e5e7eb', 
+          padding: '8px 16px 12px' 
+        }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
             <Box style={{ position: 'relative', flex: 1 }}>
@@ -1665,7 +1673,7 @@ const Restaurants = () => {
             style={{ 
               position: 'sticky',
               top: 'calc(140px + env(safe-area-inset-top, 0px))',
-              zIndex: 99,
+              zIndex: 999,
               borderBottom: '1px solid #e5e7eb', 
               backgroundColor: 'white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
