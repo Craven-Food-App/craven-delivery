@@ -1678,7 +1678,7 @@ const Restaurants = () => {
             py="md"
             style={{ 
               position: 'fixed',
-              top: 'calc(80px + env(safe-area-inset-top, 0px))',
+              top: '120px',
               left: 0,
               right: 0,
               width: '100%',
