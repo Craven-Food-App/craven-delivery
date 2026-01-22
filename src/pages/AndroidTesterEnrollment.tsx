@@ -88,22 +88,23 @@ const AndroidTesterEnrollment: React.FC = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('enroll_android_tester', {
-        p_email: email.trim(),
-        p_full_name: fullName.trim(),
-        p_platform: 'android',
+      // Use Edge Function for enrollment (public access)
+      const { data, error } = await supabase.functions.invoke('tester-enroll', {
+        body: {
+          email: email.trim(),
+          full_name: fullName.trim(),
+        }
       });
 
       if (error) {
-        if (error.message.includes('already_enrolled')) {
-          toast({
-            title: 'Already Enrolled',
-            description: 'This email is already enrolled in the tester program.',
-            variant: 'default',
-          });
-        } else {
-          throw error;
-        }
+        throw error;
+      } else if (data?.error === 'already_enrolled') {
+        toast({
+          title: 'Already Enrolled',
+          description: 'This email is already enrolled in the tester program.',
+          variant: 'default',
+        });
+        setShowSuccess(true);
       } else if (data?.success) {
         setShowSuccess(true);
         setRemainingSpots(prev => Math.max(0, prev - 1));

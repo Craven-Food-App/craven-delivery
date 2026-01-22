@@ -47,6 +47,13 @@ import PromoManagement from "@/pages/admin/PromoManagement";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance";
+import { useTesterActivityTracking } from "@/hooks/useTesterActivityTracking";
+import { useTesterActivation } from "@/hooks/useTesterActivation";
+import { useTesterFeedbackPrompts } from "@/hooks/useTesterFeedbackPrompts";
+import TesterHub from "@/components/TesterHub";
+import TesterReferMerchant from "@/pages/TesterReferMerchant";
+import TesterDriverInterest from "@/pages/TesterDriverInterest";
+import TesterInviteFriends from "@/pages/TesterInviteFriends";
 import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 import { MobileLayout } from "@/components/layouts/MobileLayout";
 import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
@@ -66,6 +73,12 @@ function App() {
   const isMobile = useIsMobile();
   // Auto-issue tester credits when user signs up with enrolled email
   const rewardModal = useTesterCreditIssuance();
+  // Track activity on app launch
+  useTesterActivityTracking();
+  // Activate enrollment when account is created
+  useTesterActivation();
+  // Auto-trigger feedback prompts
+  const feedbackPrompts = useTesterFeedbackPrompts();
 
   useEffect(() => {
     // Wait for isMobile to be determined
@@ -146,6 +159,11 @@ function App() {
                     <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
                     <Route path="/account/my-credits" element={<MyCredits />} />
                     <Route path="/my-credits" element={<MyCredits />} />
+                    <Route path="/account/tester-hub" element={<TesterHub />} />
+                    <Route path="/tester-hub" element={<TesterHub />} />
+                    <Route path="/tester/refer-merchant" element={<TesterReferMerchant />} />
+                    <Route path="/tester/driver-interest" element={<TesterDriverInterest />} />
+                    <Route path="/tester/invite-friends" element={<TesterInviteFriends />} />
                     <Route path="/invite-friends" element={<InviteFriends />} />
                     <Route path="/customer-support" element={<CustomerSupportChat />} />
                     <Route path="/promotion-details" element={<PromotionDetails />} />
@@ -165,6 +183,7 @@ function App() {
                   </Routes>
                     </MobileLayout>
                     {rewardModal}
+                    {feedbackPrompts}
                     
                     {/* Global bottom navigation */}
                     <GlobalMobileBottomNav />

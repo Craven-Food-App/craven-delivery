@@ -1136,6 +1136,9 @@ const Checkout: React.FC = () => {
             : `Your payment is being processed. Order confirmed.${promoMessage}`,
         });
 
+        // Mark first checkout for feedback prompt
+        sessionStorage.setItem('tester_first_checkout_completed', 'true');
+
         // Clear cart from context and localStorage
         clearCart();
         localStorage.removeItem('checkout_cart');

@@ -89,6 +89,7 @@ import {
   IconPackage
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/contexts/CartContext';
 import cravenLogo from "@/assets/craven-logo.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
 
@@ -242,10 +243,11 @@ const Restaurants = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   
   // Mobile app states
-  const [showMain, setShowMain] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true); // Add loading state for auth check
+  // Web version: Always show main view, never show landing page
+  const [showMain, setShowMain] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(false); // Web doesn't need auth check for landing page
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
-  const [cartCount] = useState(3);
+  const { cartCount } = useCart(); // Use actual cart count from context, not hardcoded
   
   // New state for enhanced functionality
   const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>('delivery');
@@ -688,53 +690,17 @@ const Restaurants = () => {
     }
   };
 
-  // Check if user is logged in - if so, skip landing page (check BEFORE rendering)
+  // Web version: Always show main view, never show landing page
+  // Landing page logic is disabled for web - only used in customer app
   useEffect(() => {
-    const checkAuth = async () => {
-      if (!isMobile) {
-        setCheckingAuth(false);
-        return; // Only check on mobile
-      }
-      
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // User is logged in - skip landing page and show main restaurants view
-          setShowMain(true);
-        } else {
-          // User is logged out - ensure landing page shows
-          setShowMain(false);
-        }
-      } catch (error) {
-        console.error('Error checking auth:', error);
-        // On error, assume not logged in and show landing page
-        setShowMain(false);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
+    // Web always shows main view
+    setShowMain(true);
+    setCheckingAuth(false);
+  }, []);
 
-    // Also listen for auth state changes (e.g., when user logs out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' && isMobile) {
-        // User logged out - show landing page
-        setShowMain(false);
-        setCheckingAuth(false);
-      } else if (event === 'SIGNED_IN' && session?.user && isMobile) {
-        // User logged in - show main view
-        setShowMain(true);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [isMobile]);
-
-  // Show loading state while checking auth (prevents flash of landing page)
-  if (isMobile && checkingAuth) {
+  // Web version: Never show landing page or loading state
+  // Show loading state while checking auth (prevents flash of landing page) - DISABLED FOR WEB
+  if (false && isMobile && checkingAuth) {
     return (
       <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />
@@ -742,8 +708,8 @@ const Restaurants = () => {
     );
   }
 
-  // Mobile App Landing Page (only show if user is NOT logged in)
-  if (isMobile && !showMain && !checkingAuth) {
+  // Mobile App Landing Page (only show if user is NOT logged in) - DISABLED FOR WEB
+  if (false && isMobile && !showMain && !checkingAuth) {
     return (
       <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         {/* Hero Section - Light, Premium */}

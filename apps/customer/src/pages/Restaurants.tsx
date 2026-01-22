@@ -1209,20 +1209,20 @@ const Restaurants = () => {
       } else if (event === 'SIGNED_IN' && session?.user) {
         // User logged in - show main view
         if (isMobile) {
-          setShowMain(true);
-          // Cache auth state
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('craven_auth_state', JSON.stringify({
-              isAuthenticated: true,
-              timestamp: Date.now()
-            }));
-          }
-          // Reset form
-          setEmail('');
-          setPassword('');
-          setConfirmPassword('');
-          setFullName('');
-          setIsSignUp(false);
+        setShowMain(true);
+        // Cache auth state
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('craven_auth_state', JSON.stringify({
+            isAuthenticated: true,
+            timestamp: Date.now()
+          }));
+        }
+        // Reset form
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setFullName('');
+        setIsSignUp(false);
         }
       }
     });

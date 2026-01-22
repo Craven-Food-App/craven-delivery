@@ -28,6 +28,38 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'customer_cart';
+const RESTAURANT_STORAGE_KEY = 'customer_cart_restaurant';
+
+// Safe localStorage helper
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      return window.localStorage.getItem(key);
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      if (typeof window === 'undefined') return;
+      window.localStorage.setItem(key, value);
+    } catch (error) {
+      console.error('Error writing to localStorage:', error);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      if (typeof window === 'undefined') return;
+      window.localStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from localStorage:', error);
+    }
+  },
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -41,6 +73,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadCart = async () => {
     try {
+      // First, try to load from localStorage (works even when not logged in)
+      const localCartData = safeLocalStorage.getItem(CART_STORAGE_KEY);
+      const localRestaurantId = safeLocalStorage.getItem(RESTAURANT_STORAGE_KEY);
+      
+      if (localCartData) {
+        try {
+          const parsedItems = JSON.parse(localCartData) as CartItem[];
+          if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+            setCartItems(parsedItems);
+            setRestaurantId(localRestaurantId);
+          }
+        } catch (e) {
+          console.error('Error parsing localStorage cart:', e);
+        }
+      }
+
+      // Then try to load from database if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
@@ -67,8 +116,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (persistedCart) {
-        setCartItems(Array.isArray(persistedCart.items) ? persistedCart.items as unknown as CartItem[] : []);
-        setRestaurantId(persistedCart.restaurant_id || null);
+        const dbItems = Array.isArray(persistedCart.items) ? persistedCart.items as unknown as CartItem[] : [];
+        // Prefer database cart if it exists and has items, otherwise keep localStorage cart
+        if (dbItems.length > 0) {
+          setCartItems(dbItems);
+          setRestaurantId(persistedCart.restaurant_id || null);
+          // Sync to localStorage
+          safeLocalStorage.setItem(CART_STORAGE_KEY, JSON.stringify(dbItems));
+          if (persistedCart.restaurant_id) {
+            safeLocalStorage.setItem(RESTAURANT_STORAGE_KEY, persistedCart.restaurant_id);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -78,6 +136,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const saveCart = async (items: CartItem[], restaurantId: string | null) => {
+    // Always save to localStorage first (works even when offline or not logged in)
+    try {
+      safeLocalStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      if (restaurantId) {
+        safeLocalStorage.setItem(RESTAURANT_STORAGE_KEY, restaurantId);
+      } else {
+        safeLocalStorage.removeItem(RESTAURANT_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
+
+    // Also save to database if user is logged in
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -90,7 +161,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           items: items as any,
         });
     } catch (error) {
-      console.error('Error saving cart:', error);
+      console.error('Error saving cart to database:', error);
     }
   };
 
