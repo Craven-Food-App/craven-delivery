@@ -44,7 +44,6 @@ import MyCredits from "@/pages/MyCredits";
 import InviteFriends from "@/pages/InviteFriends";
 import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
-import TesterEnrollmentManagement from "@/pages/admin/TesterEnrollmentManagement";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance";
@@ -154,7 +153,6 @@ function App() {
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/notification-settings" element={<NotificationSettings />} />
                     <Route path="/admin/promo" element={<PromoManagement />} />
-                    <Route path="/admin/tester-enrollment" element={<TesterEnrollmentManagement />} />
                     <Route path="/crave-more" element={<CraveMore />} />
                     <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
                     <Route path="/cravemore" element={<CraveMore />} />
