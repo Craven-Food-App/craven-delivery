@@ -44,8 +44,10 @@ import MyCredits from "@/pages/MyCredits";
 import InviteFriends from "@/pages/InviteFriends";
 import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
+import TesterEnrollmentManagement from "@/pages/admin/TesterEnrollmentManagement";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
+import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance";
 import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 import { MobileLayout } from "@/components/layouts/MobileLayout";
 import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
@@ -63,6 +65,8 @@ const queryClient = new QueryClient({
 function App() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const isMobile = useIsMobile();
+  // Auto-issue tester credits when user signs up with enrolled email
+  const rewardModal = useTesterCreditIssuance();
 
   useEffect(() => {
     // Wait for isMobile to be determined
@@ -150,6 +154,7 @@ function App() {
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/notification-settings" element={<NotificationSettings />} />
                     <Route path="/admin/promo" element={<PromoManagement />} />
+                    <Route path="/admin/tester-enrollment" element={<TesterEnrollmentManagement />} />
                     <Route path="/crave-more" element={<CraveMore />} />
                     <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
                     <Route path="/cravemore" element={<CraveMore />} />
@@ -161,6 +166,7 @@ function App() {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                     </MobileLayout>
+                    {rewardModal}
                     
                     {/* Global bottom navigation */}
                     <GlobalMobileBottomNav />

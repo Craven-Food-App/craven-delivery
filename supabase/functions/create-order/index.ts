@@ -230,12 +230,50 @@ serve(async (req) => {
     }
 
     // ========================================================================
-    // STEP 2: Calculate final totals (server-side, promo already applied)
+    // STEP 1B: Apply tester credits (if available) - ONLY to Crave'n fees
+    // ========================================================================
+    let testerCreditQuote: any = null;
+    let testerServiceCredit = 0;
+    let testerDeliveryCredit = 0;
+    let testerPlatformCredit = 0;
+    let totalTesterCreditApplied = 0;
+
+    try {
+      const { data: testerQuote, error: testerError } = await supabaseAdmin.rpc(
+        'apply_tester_credits_to_checkout',
+        {
+          p_user_id: user.id,
+          p_service_fee_cents: finalServiceFee, // Use already-promo-adjusted service fee
+          p_delivery_fee_cents: finalDeliveryFee, // Use already-promo-adjusted delivery fee
+          p_platform_fee_cents: 0, // Platform fees not currently calculated separately
+        }
+      );
+
+      if (!testerError && testerQuote?.applied) {
+        testerCreditQuote = testerQuote;
+        testerServiceCredit = testerQuote.service_credit_cents || 0;
+        testerDeliveryCredit = testerQuote.delivery_credit_cents || 0;
+        testerPlatformCredit = testerQuote.platform_credit_cents || 0;
+
+        // Apply tester credits to already-promo-adjusted fees
+        finalDeliveryFee = Math.max(0, finalDeliveryFee - testerDeliveryCredit);
+        finalServiceFee = Math.max(0, finalServiceFee - testerServiceCredit);
+      }
+    } catch (testerError) {
+      console.error('Tester credit application error (non-fatal):', testerError);
+      // Continue without tester credits if application fails
+    }
+
+    // ========================================================================
+    // STEP 2: Calculate final totals (server-side, promo and tester credits already applied)
     // ========================================================================
     const finalSubtotal = food_subtotal_cents; // NEVER reduce food subtotal
     const finalTax = tax_cents || 0; // NEVER reduce tax
     const finalTip = tip_cents || 0; // NEVER reduce tip
     const finalTotal = finalSubtotal + finalDeliveryFee + finalServiceFee + finalTax + finalTip;
+    
+    // Calculate total tester credits applied
+    totalTesterCreditApplied = testerServiceCredit + testerDeliveryCredit + testerPlatformCredit;
 
     // ========================================================================
     // STEP 3: Create order record
@@ -247,6 +285,10 @@ serve(async (req) => {
         restaurant_id: restaurant_id,
         food_subtotal_cents: finalSubtotal,
         delivery_fee_cents: delivery_method === 'delivery' ? finalDeliveryFee : 0,
+        tester_credit_applied_cents: totalTesterCreditApplied,
+        tester_service_credit_applied_cents: testerServiceCredit,
+        tester_delivery_credit_applied_cents: testerDeliveryCredit,
+        tester_platform_credit_applied_cents: testerPlatformCredit,
         service_fee_cents: finalServiceFee,
         tax_cents: finalTax,
         tip_cents: finalTip,
@@ -386,6 +428,27 @@ serve(async (req) => {
         }
       }
 
+      // ========================================================================
+      // STEP 6B: Redeem tester credits (only after payment confirmed)
+      // ========================================================================
+      if (testerCreditQuote && testerCreditQuote.applied && confirmedPayment.status === 'succeeded') {
+        const { data: testerRedemption, error: testerRedeemError } = await supabaseAdmin.rpc(
+          'redeem_tester_credits_for_order',
+          {
+            p_user_id: user.id,
+            p_order_id: createdOrder.id,
+            p_service_credit_cents: testerServiceCredit,
+            p_delivery_credit_cents: testerDeliveryCredit,
+            p_platform_credit_cents: testerPlatformCredit,
+          }
+        );
+
+        if (testerRedeemError) {
+          console.error('Tester credit redemption error:', testerRedeemError);
+          // Non-fatal - order is created and paid
+        }
+      }
+
       // Return success
       return new Response(
         JSON.stringify({
@@ -400,6 +463,13 @@ serve(async (req) => {
             delivery_credit_cents: promoReservation.delivery_credit_cents,
             service_credit_cents: promoReservation.service_credit_cents,
             step: promoReservation.step,
+          } : null,
+          tester_credits: testerCreditQuote && testerCreditQuote.applied ? {
+            applied: true,
+            total_credit_cents: totalTesterCreditApplied,
+            service_credit_cents: testerServiceCredit,
+            delivery_credit_cents: testerDeliveryCredit,
+            platform_credit_cents: testerPlatformCredit,
           } : null,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

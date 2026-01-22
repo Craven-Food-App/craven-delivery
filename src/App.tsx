@@ -44,6 +44,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
 import Restaurants from "./pages/Restaurants";
+import AndroidTesterEnrollment from "./pages/AndroidTesterEnrollment";
 import HelpCenter from "./pages/HelpCenter";
 import Safety from "./pages/Safety";
 import ContactUs from "./pages/ContactUs";
@@ -680,6 +681,7 @@ const App = () => {
               <Route path="/business-auth" element={<BusinessAuthWrapper />} />
               <Route path="/" element={<Index />} />
           <Route path="/restaurants" element={<Restaurants />} />
+          <Route path="/android-tester-enrollment" element={<AndroidTesterEnrollment />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/crave-more" element={<CraveMore />} />

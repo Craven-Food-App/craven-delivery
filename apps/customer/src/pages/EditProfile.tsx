@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const EditProfile: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [editingProfile, setEditingProfile] = useState({
@@ -99,18 +97,9 @@ const EditProfile: React.FC = () => {
     try {
       await supabase.auth.signOut();
 
-      // On mobile, send back to restaurants landing; otherwise auth
-      const isMobileDevice =
-        window.innerWidth <= 768 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        );
-
-      if (isMobileDevice) {
-        window.location.href = '/restaurants';
-      } else {
-        window.location.href = '/auth';
-      }
+      // Navigate to restaurants page - it will show landing page when not authenticated
+      // The auth state change handler in Restaurants.tsx will handle showing the landing page
+      navigate('/restaurants');
     } catch (error) {
       toast({
         title: 'Error',

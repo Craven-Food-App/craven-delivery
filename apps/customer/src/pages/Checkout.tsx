@@ -341,6 +341,12 @@ const Checkout: React.FC = () => {
   // First-order promo state
   const [promoQuote, setPromoQuote] = useState<any>(null);
   const [promoLoading, setPromoLoading] = useState(false);
+  // Tester credit state
+  const [testerCreditQuote, setTesterCreditQuote] = useState<any>(null);
+  const [testerCreditLoading, setTesterCreditLoading] = useState(false);
+  const [showTesterCreditDisclosure, setShowTesterCreditDisclosure] = useState(false);
+  const [testerCreditAcknowledged, setTesterCreditAcknowledged] = useState(false);
+  const [testerCreditApplied, setTesterCreditApplied] = useState(false);
   const [showDealsModal, setShowDealsModal] = useState(false);
   const [availableDeals, setAvailableDeals] = useState<any[]>([]);
   const [appliedDeal, setAppliedDeal] = useState<any>(null);
@@ -562,6 +568,58 @@ const Checkout: React.FC = () => {
     // Only fetch if we have the necessary data
     if (restaurant && cart.length > 0) {
       fetchPromoQuote();
+    }
+  }, [cart, formData.deliveryMethod, restaurant, deliveryFee, processingFeePercentCard, processingFeePercentAch]);
+
+  // Fetch tester credit quote when cart/subtotal changes
+  useEffect(() => {
+    const fetchTesterCreditQuote = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !restaurant || cart.length === 0) {
+        setTesterCreditQuote(null);
+        return;
+      }
+
+      setTesterCreditLoading(true);
+      try {
+        // Calculate current totals for quote
+        const foodSubtotal = cart.reduce((sum, item) => sum + (item.price_cents * item.quantity), 0);
+        const currentDeliveryFee = formData.deliveryMethod === 'delivery' ? (deliveryFee || 300) : 0;
+        const percent =
+          typeof processingFeePercentCard === 'number'
+            ? processingFeePercentCard
+            : typeof processingFeePercentAch === 'number'
+              ? processingFeePercentAch
+              : 0;
+        const currentServiceFee = percent > 0 
+          ? Math.round((foodSubtotal + currentDeliveryFee) * (percent / 100))
+          : 0;
+
+        // Call RPC function to get tester credit preview
+        const { data, error } = await supabase.rpc('apply_tester_credits_to_checkout', {
+          p_user_id: user.id,
+          p_service_fee_cents: currentServiceFee,
+          p_delivery_fee_cents: currentDeliveryFee,
+          p_platform_fee_cents: 0, // Platform fees not currently calculated separately
+        });
+
+        if (error) {
+          console.error('Tester credit quote error:', error);
+          setTesterCreditQuote(null);
+        } else {
+          setTesterCreditQuote(data);
+        }
+      } catch (err) {
+        console.error('Error fetching tester credit quote:', err);
+        setTesterCreditQuote(null);
+      } finally {
+        setTesterCreditLoading(false);
+      }
+    };
+
+    // Only fetch if we have the necessary data
+    if (restaurant && cart.length > 0) {
+      fetchTesterCreditQuote();
     }
   }, [cart, formData.deliveryMethod, restaurant, deliveryFee, processingFeePercentCard, processingFeePercentAch]);
 
@@ -898,15 +956,42 @@ const Checkout: React.FC = () => {
     () => promoQuote?.preview?.service_credit_cents || 0,
     [promoQuote]
   );
-  const finalDeliveryFee = useMemo(
-    () => Math.max(0, deliveryFee - promoDeliveryCredit),
-    [deliveryFee, promoDeliveryCredit]
+
+  // Calculate tester credits for preview (ONLY applies to Crave'n fees)
+  // Only apply if user has acknowledged and clicked Apply
+  const testerDeliveryCredit = useMemo(
+    () => (testerCreditApplied ? testerCreditQuote?.delivery_credit_cents : 0) || 0,
+    [testerCreditQuote, testerCreditApplied]
+  );
+  const testerServiceCredit = useMemo(
+    () => (testerCreditApplied ? testerCreditQuote?.service_credit_cents : 0) || 0,
+    [testerCreditQuote, testerCreditApplied]
+  );
+  const testerPlatformCredit = useMemo(
+    () => (testerCreditApplied ? testerCreditQuote?.platform_credit_cents : 0) || 0,
+    [testerCreditQuote, testerCreditApplied]
   );
 
-  // Apply promo credit to service fee (processing fee)
+  // Combine promo and tester credits (both apply to same fees)
+  const totalDeliveryCredit = useMemo(
+    () => promoDeliveryCredit + testerDeliveryCredit,
+    [promoDeliveryCredit, testerDeliveryCredit]
+  );
+  const totalServiceCredit = useMemo(
+    () => promoServiceCredit + testerServiceCredit,
+    [promoServiceCredit, testerServiceCredit]
+  );
+
+  // Apply credits to fees (credits only reduce Crave'n fees, never food prices)
+  const finalDeliveryFee = useMemo(
+    () => Math.max(0, deliveryFee - totalDeliveryCredit),
+    [deliveryFee, totalDeliveryCredit]
+  );
+
+  // Apply credits to service fee (processing fee)
   const finalServiceFee = useMemo(
-    () => Math.max(0, (processingFeeCents || 0) - promoServiceCredit),
-    [processingFeeCents, promoServiceCredit]
+    () => Math.max(0, (processingFeeCents || 0) - totalServiceCredit),
+    [processingFeeCents, totalServiceCredit]
   );
   
   const total = useMemo(
@@ -1415,6 +1500,24 @@ const Checkout: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
+
+              {/* Tester Balance/Reward */}
+              {testerCreditQuote && testerCreditQuote.total_credit_cents > 0 && !testerCreditApplied && (
+                <button
+                  onClick={() => setShowTesterCreditDisclosure(true)}
+                  className="w-full flex items-center justify-between p-3 border border-orange-500 rounded-lg hover:border-orange-600 bg-orange-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">
+                      Available Balance: ${(testerCreditQuote.total_credit_cents / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-orange-500">Apply</span>
+                </button>
+              )}
 
               {/* Subtotal */}
               <div className="flex justify-between text-sm">
@@ -2906,6 +3009,55 @@ const Checkout: React.FC = () => {
           }}
           orderId={completedOrderId}
         />
+      )}
+
+      {/* Tester Credit Disclosure Modal (Phase C - Fee-only restriction) */}
+      {showTesterCreditDisclosure && testerCreditQuote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Apply Reward</h3>
+            <div className="mb-4 space-y-2 text-sm text-gray-700">
+              <p>Crave'n Credits apply only to Crave'n platform fees.</p>
+              <p>Food prices, merchant charges, feeder earnings, tips, and taxes are not affected.</p>
+              <p>Any unused balance remains available for future orders.</p>
+            </div>
+            <div className="mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={testerCreditAcknowledged}
+                  onChange={(e) => setTesterCreditAcknowledged(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">I understand and agree</span>
+              </label>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowTesterCreditDisclosure(false);
+                  setTesterCreditAcknowledged(false);
+                }}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (testerCreditAcknowledged) {
+                    setTesterCreditApplied(true);
+                    setShowTesterCreditDisclosure(false);
+                    setTesterCreditAcknowledged(false);
+                  }
+                }}
+                disabled={!testerCreditAcknowledged}
+                className="flex-1 py-2 px-4 bg-orange-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600"
+              >
+                Apply Reward
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

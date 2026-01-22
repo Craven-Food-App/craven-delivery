@@ -1108,12 +1108,36 @@ const Restaurants = () => {
     const checkAuth = async () => {
       if (!isMobile) {
         setCheckingAuth(false);
-        return; // Only check on mobile
+        setShowMain(true); // Desktop always shows main view
+        return;
       }
 
-      // If we have cached auth state, skip the check
+      // Always check auth state, but use cache as initial state
+      // This ensures we re-check on page load even with cache
+      const initialShowMain = cachedAuth === true;
+      setShowMain(initialShowMain);
+      
+      // If we have valid cached auth state, we can skip the check for faster load
+      // But we'll still verify in the background
       if (cachedAuth !== null) {
         setCheckingAuth(false);
+        // Still verify in background
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          const isAuthenticated = !!user;
+          if (isAuthenticated !== cachedAuth) {
+            // Cache was wrong, update it
+            setShowMain(isAuthenticated);
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('craven_auth_state', JSON.stringify({
+                isAuthenticated,
+                timestamp: Date.now()
+              }));
+            }
+          }
+        }).catch(() => {
+          // On error, assume not logged in
+          setShowMain(false);
+        });
         return;
       }
       
@@ -1170,33 +1194,36 @@ const Restaurants = () => {
 
     // Also listen for auth state changes (e.g., when user logs out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' && isMobile) {
+      if (event === 'SIGNED_OUT') {
         // User logged out - show landing page
         setShowMain(false);
         setCheckingAuth(false);
         // Clear cached auth state
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('craven_auth_state', JSON.stringify({
-            isAuthenticated: false,
-            timestamp: Date.now()
-          }));
+          sessionStorage.removeItem('craven_auth_state');
         }
-      } else if (event === 'SIGNED_IN' && session?.user && isMobile) {
+        // If on mobile, ensure we're on restaurants page to show landing
+        if (isMobile) {
+          // Already on restaurants page, just ensure landing shows
+        }
+      } else if (event === 'SIGNED_IN' && session?.user) {
         // User logged in - show main view
-        setShowMain(true);
-        // Cache auth state
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('craven_auth_state', JSON.stringify({
-            isAuthenticated: true,
-            timestamp: Date.now()
-          }));
+        if (isMobile) {
+          setShowMain(true);
+          // Cache auth state
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('craven_auth_state', JSON.stringify({
+              isAuthenticated: true,
+              timestamp: Date.now()
+            }));
+          }
+          // Reset form
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setFullName('');
+          setIsSignUp(false);
         }
-        // Reset form
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setFullName('');
-        setIsSignUp(false);
       }
     });
 
@@ -1678,7 +1705,7 @@ const Restaurants = () => {
             py="md"
             style={{ 
               position: 'fixed',
-              top: '120px',
+              top: 'calc(120px + env(safe-area-inset-top, 0px))',
               left: 0,
               right: 0,
               width: '100%',
@@ -1686,7 +1713,6 @@ const Restaurants = () => {
               borderBottom: '1px solid #e5e7eb', 
               backgroundColor: 'white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              width: '100%',
               margin: 0,
             }}
           >

@@ -8,12 +8,16 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Utensils, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AndroidEnrollmentPopup } from "@/components/AndroidEnrollmentPopup";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const navigate = useNavigate();
+  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [neverShowAgain, setNeverShowAgain] = useState(false);
 
   useEffect(() => {
     const search = searchParams.get("search");
@@ -22,6 +26,52 @@ const Index = () => {
     if (search) setSearchQuery(search);
     if (address) setDeliveryAddress(address);
   }, [searchParams]);
+
+  // Check if user is on Android and show enrollment modal
+  useEffect(() => {
+    const checkAndShowModal = async () => {
+      // Detect Android device
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isAndroidDevice = /android/.test(userAgent);
+      setIsAndroid(isAndroidDevice);
+
+      // Check if modal was already dismissed
+      const modalDismissed = localStorage.getItem('android_enrollment_modal_dismissed');
+      if (modalDismissed === 'true') {
+        return;
+      }
+
+      // Check if user is already enrolled (if logged in)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          const { data: enrollment } = await supabase
+            .from('android_tester_enrollments')
+            .select('id')
+            .eq('email', user.email)
+            .maybeSingle();
+          
+          if (enrollment) {
+            // Already enrolled, don't show modal
+            return;
+          }
+        }
+      } catch (error) {
+        // Silently handle - user might not be logged in
+      }
+
+      // Show modal for Android users after a short delay
+      // For testing: show for all users, but in production only show for Android
+      // Change isAndroidDevice to true for production
+      if (isAndroidDevice || true) { // TODO: Remove "|| true" for production
+        setTimeout(() => {
+          setShowEnrollmentModal(true);
+        }, 1500); // Show after 1.5 seconds
+      }
+    };
+
+    checkAndShowModal();
+  }, []);
 
   // Auto-redirect drivers to /mobile when opening PWA
   useEffect(() => {
@@ -114,6 +164,30 @@ const Index = () => {
         <Hero />
         <Footer />
       </div>
+
+      {/* Android Tester Enrollment Popup */}
+      <AndroidEnrollmentPopup
+        opened={showEnrollmentModal}
+        onClose={() => {
+          setShowEnrollmentModal(false);
+          // Only prevent future shows if checkbox is checked
+          if (neverShowAgain) {
+            localStorage.setItem('android_enrollment_modal_dismissed', 'true');
+          }
+          setNeverShowAgain(false); // Reset checkbox
+        }}
+        onEnroll={() => {
+          setShowEnrollmentModal(false);
+          // Only prevent future shows if checkbox is checked
+          if (neverShowAgain) {
+            localStorage.setItem('android_enrollment_modal_dismissed', 'true');
+          }
+          setNeverShowAgain(false); // Reset checkbox
+          navigate('/android-tester-enrollment');
+        }}
+        neverShowAgain={neverShowAgain}
+        onNeverShowAgainChange={setNeverShowAgain}
+      />
     </>
   );
 };

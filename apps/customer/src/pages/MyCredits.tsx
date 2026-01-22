@@ -8,7 +8,9 @@ import {
   Group, 
   ActionIcon, 
   Paper, 
-  Stack
+  Stack,
+  Badge,
+  Divider
 } from '@mantine/core';
 import { 
   IconChevronLeft, 
@@ -17,7 +19,10 @@ import {
   IconShoppingBag, 
   IconSearch, 
   IconUser, 
-  IconShoppingCart 
+  IconShoppingCart,
+  IconClock,
+  IconCheck,
+  IconX
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -244,6 +249,8 @@ export default function MyCredits() {
   const [totalRedeemed, setTotalRedeemed] = useState(0);
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [testerCredits, setTesterCredits] = useState<any>(null);
+  const [testerEnrollmentStatus, setTesterEnrollmentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadCreditsData();
@@ -274,6 +281,27 @@ export default function MyCredits() {
       } else if (data) {
         setCredits(data.balance_cents || 0);
         setTotalRedeemed(data.total_redeemed_cents || 0);
+      }
+
+      // Load tester credits
+      const { data: testerCreditsData, error: testerError } = await supabase.rpc(
+        'get_available_tester_credits',
+        { p_user_id: user.id }
+      );
+
+      if (!testerError && testerCreditsData) {
+        setTesterCredits(testerCreditsData);
+      }
+
+      // Load enrollment status to determine language
+      const { data: enrollment } = await supabase
+        .from('android_tester_enrollments')
+        .select('tester_reward_status')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (enrollment) {
+        setTesterEnrollmentStatus(enrollment.tester_reward_status);
       }
     } catch (error: any) {
       // Table might not exist yet - that's okay, silently handle
@@ -377,31 +405,89 @@ export default function MyCredits() {
           {/* Premium Coupons Animation */}
           <CouponsBlowingAnimation />
 
-          {/* Empty State Message */}
-          <Stack gap="md" align="center" style={{ textAlign: 'center', marginTop: '16px' }}>
-            <Title
-              order={3}
-              style={{
-                fontSize: '24px',
-                fontWeight: 600,
-                color: '#111827',
-                margin: 0
-              }}
-            >
-              No credits...yet.
-            </Title>
-            <Text
-              size="md"
-              style={{
-                color: '#6B7280',
-                fontSize: '16px',
-                maxWidth: '400px',
-                lineHeight: '1.5'
-              }}
-            >
-              Start earning credits by placing an order at a participating store.
-            </Text>
-          </Stack>
+          {/* Tester Balance/Credits Section */}
+          {testerCredits && testerCredits.available_credit_cents > 0 && (
+            <Paper p="md" withBorder radius="md" style={{ width: '100%', maxWidth: '400px' }}>
+              <Stack gap="sm">
+                <Group justify="space-between">
+                  <Text fw={600} size="lg">
+                    {testerEnrollmentStatus === 'issued' ? 'Crave\'n Credits' : 'Available Balance'}
+                  </Text>
+                  <Badge color="orange" size="lg">
+                    ${(testerCredits.available_credit_cents / 100).toFixed(2)}
+                  </Badge>
+                </Group>
+                {testerEnrollmentStatus !== 'issued' && (
+                  <Text size="sm" c="dimmed">
+                    Your reward balance will be available after testing completion.
+                  </Text>
+                )}
+                {testerEnrollmentStatus === 'issued' && (
+                  <Text size="sm" c="dimmed">
+                    Available credits apply only to Crave'n platform fees
+                  </Text>
+                )}
+                {testerCredits.earliest_expires_at && (
+                  <Group gap="xs">
+                    <IconClock size={14} />
+                    <Text size="xs" c="dimmed">
+                      Expires: {new Date(testerCredits.earliest_expires_at).toLocaleDateString()}
+                    </Text>
+                  </Group>
+                )}
+                {testerCredits.grants && testerCredits.grants.length > 0 && testerEnrollmentStatus === 'issued' && (
+                  <Stack gap="xs" mt="xs">
+                    <Divider />
+                    {testerCredits.grants.map((grant: any, idx: number) => (
+                      <Group key={idx} justify="space-between">
+                        <Text size="xs" c="dimmed">
+                          {grant.grant_type === 'base_enrollment' ? 'Base Enrollment' : 'Selected Tester Bonus'}
+                        </Text>
+                        <Group gap="xs">
+                          <Text size="xs">
+                            ${((grant.available_cents || 0) / 100).toFixed(2)} available
+                          </Text>
+                          {new Date(grant.expires_at) < new Date() ? (
+                            <IconX size={12} color="red" />
+                          ) : (
+                            <IconCheck size={12} color="green" />
+                          )}
+                        </Group>
+                      </Group>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+          )}
+
+          {/* Empty State Message - only show if no credits at all */}
+          {(!testerCredits || testerCredits.available_credit_cents === 0) && credits === 0 && (
+            <Stack gap="md" align="center" style={{ textAlign: 'center', marginTop: '16px' }}>
+              <Title
+                order={3}
+                style={{
+                  fontSize: '24px',
+                  fontWeight: 600,
+                  color: '#111827',
+                  margin: 0
+                }}
+              >
+                No credits...yet.
+              </Title>
+              <Text
+                size="md"
+                style={{
+                  color: '#6B7280',
+                  fontSize: '16px',
+                  maxWidth: '400px',
+                  lineHeight: '1.5'
+                }}
+              >
+                Start earning credits by placing an order at a participating store.
+              </Text>
+            </Stack>
+          )}
 
           {/* CTA Button */}
           <Button
