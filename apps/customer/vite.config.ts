@@ -23,10 +23,9 @@ export default defineConfig(({ mode }) => {
       open: false,
       cors: true,
       hmr: {
-        host: 'localhost',
-        port: 8080,
         protocol: 'ws',
-        clientPort: 8080,
+        // Let Vite auto-detect the host to match server configuration
+        reconnect: true,
       },
       watch: {
         usePolling: false,

@@ -20,10 +20,10 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Fetch order details
+    // Fetch order details with snapshot payout fields
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("id, customer_id, driver_id, assigned_craver_id, subtotal_cents, tip_cents, order_status")
+      .select("id, customer_id, driver_id, assigned_craver_id, subtotal_cents, tip_cents, order_status, delivery_fees_total_cents, driver_base_pay_cents, driver_delivery_fee_share_bps, delivery_fee_cents")
       .eq("id", orderId)
       .single();
 
@@ -56,21 +56,50 @@ serve(async (req) => {
       if (statusErr) throw statusErr;
     }
 
-    // Get active payout setting
-    const { data: setting } = await supabase
-      .from('driver_payout_settings')
-      .select('percentage')
-      .eq('is_active', true)
-      .maybeSingle();
+    // Get payout values from order snapshot (if available) or current settings
+    // Use snapshot values if they exist, otherwise fall back to current settings
+    let deliveryFeesTotal = Number(order.delivery_fees_total_cents ?? 0);
+    let basePayCents = Number(order.driver_base_pay_cents ?? 250);
+    let shareBps = Number(order.driver_delivery_fee_share_bps ?? 7000);
+    const tip = Number(order.tip_cents ?? 0); // 100% of customer's selected tip goes to driver
 
-    const percentage = Number(setting?.percentage ?? 70);
+    // If snapshot fields are missing, try to get from delivery_fee_cents and current settings
+    if (deliveryFeesTotal === 0 && order.delivery_fee_cents) {
+      deliveryFeesTotal = Number(order.delivery_fee_cents);
+    }
 
-    const subtotal = Number(order.subtotal_cents ?? 0);
-    const tip = Number(order.tip_cents ?? 0); // 100% of customer's selected tip goes to Feeder
+    // If still missing snapshot values, get from current settings
+    if (basePayCents === 250 || shareBps === 7000) {
+      const { data: setting } = await supabase
+        .from('driver_payout_settings')
+        .select('driver_base_pay_cents, driver_delivery_fee_share_bps')
+        .eq('is_active', true)
+        .maybeSingle();
 
-    // Calculate earnings
-    const basePay = Math.round((percentage / 100) * subtotal);
-    const total = basePay + tip; // Tip is added in full - no deductions
+      if (setting) {
+        if (basePayCents === 250) basePayCents = Number(setting.driver_base_pay_cents ?? 250);
+        if (shareBps === 7000) shareBps = Number(setting.driver_delivery_fee_share_bps ?? 7000);
+      }
+    }
+
+    // Calculate driver payout using SQL function (single source of truth)
+    const { data: payoutResult, error: payoutError } = await supabase.rpc(
+      'calculate_driver_payout_cents',
+      {
+        p_delivery_fees_total_cents: deliveryFeesTotal,
+        p_tip_cents: tip,
+        p_base_pay_cents: basePayCents,
+        p_share_bps: shareBps
+      }
+    );
+
+    if (payoutError || !payoutResult || payoutResult.length === 0) {
+      throw new Error(`Failed to calculate driver payout: ${payoutError?.message || 'Unknown error'}`);
+    }
+
+    const payout = payoutResult[0];
+    const driverPayoutCents = Number(payout.driver_payout_cents ?? 0);
+    const driverBeforeTipCents = Number(payout.driver_before_tip_cents ?? 0);
 
     // Insert driver_earnings record (idempotent-ish: avoid duplicates for same order)
     // Try delete existing then insert to keep it simple
@@ -79,10 +108,10 @@ serve(async (req) => {
     const { error: earnErr } = await supabase.from('driver_earnings').insert({
       driver_id: resolvedDriverId,
       order_id: orderId,
-      amount_cents: basePay,
+      amount_cents: driverBeforeTipCents, // Base pay (before tip)
       tip_cents: tip,
-      total_cents: total,
-      payout_cents: total,
+      total_cents: driverPayoutCents, // Total payout (base + tip)
+      payout_cents: driverPayoutCents,
     });
 
     if (earnErr) throw earnErr;
@@ -90,7 +119,10 @@ serve(async (req) => {
     console.log('Delivery finalized:', {
       orderId,
       driverId: resolvedDriverId,
-      earnings: total / 100,
+      deliveryFeesTotal: deliveryFeesTotal / 100,
+      basePay: driverBeforeTipCents / 100,
+      tip: tip / 100,
+      totalEarnings: driverPayoutCents / 100,
       hasPickupPhoto: !!pickupPhotoUrl,
       hasDeliveryPhoto: !!deliveryPhotoUrl
     });
@@ -98,10 +130,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        percentage, 
-        basePay, 
-        tip, 
-        total,
+        deliveryFeesTotal: deliveryFeesTotal,
+        basePay: driverBeforeTipCents, 
+        tip: tip, 
+        total: driverPayoutCents,
+        shareBps: shareBps,
         photos: {
           pickup: pickupPhotoUrl,
           delivery: deliveryPhotoUrl

@@ -63,9 +63,8 @@ export default defineConfig(({ mode }) => {
       cors: true,
       hmr: {
         overlay: true,
-        clientPort: 8080,
         protocol: 'ws',
-        host: 'localhost',
+        // Let Vite auto-detect the host to match server configuration
         // Make HMR more resilient to connection issues
         reconnect: true,
       },

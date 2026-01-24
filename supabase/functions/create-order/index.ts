@@ -276,7 +276,39 @@ serve(async (req) => {
     totalTesterCreditApplied = testerServiceCredit + testerDeliveryCredit + testerPlatformCredit;
 
     // ========================================================================
-    // STEP 3: Create order record
+    // STEP 2.5: Snapshot driver payout settings and calculate driver payout
+    // ========================================================================
+    // Get active payout settings to snapshot at order creation
+    const { data: payoutSettings } = await supabaseAdmin
+      .from('driver_payout_settings')
+      .select('driver_base_pay_cents, driver_delivery_fee_share_bps')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const snapshotBasePayCents = Number(payoutSettings?.driver_base_pay_cents ?? 250);
+    const snapshotShareBps = Number(payoutSettings?.driver_delivery_fee_share_bps ?? 7000);
+    const deliveryFeesTotalCents = delivery_method === 'delivery' ? finalDeliveryFee : 0;
+
+    // Calculate driver payout using SQL function (single source of truth)
+    let driverPayoutSnapshot = { driver_payout_cents: 0, platform_delivery_share_cents: 0 };
+    if (deliveryFeesTotalCents > 0) {
+      const { data: payoutResult, error: payoutError } = await supabaseAdmin.rpc(
+        'calculate_driver_payout_cents',
+        {
+          p_delivery_fees_total_cents: deliveryFeesTotalCents,
+          p_tip_cents: finalTip,
+          p_base_pay_cents: snapshotBasePayCents,
+          p_share_bps: snapshotShareBps
+        }
+      );
+
+      if (!payoutError && payoutResult && payoutResult.length > 0) {
+        driverPayoutSnapshot = payoutResult[0];
+      }
+    }
+
+    // ========================================================================
+    // STEP 3: Create order record with snapshot payout fields
     // ========================================================================
     const { data: createdOrder, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -284,14 +316,21 @@ serve(async (req) => {
         customer_id: user.id,
         restaurant_id: restaurant_id,
         food_subtotal_cents: finalSubtotal,
+        subtotal_cents: finalSubtotal, // Keep for backward compatibility
         delivery_fee_cents: delivery_method === 'delivery' ? finalDeliveryFee : 0,
+        // Snapshot payout fields (critical for historical accuracy)
+        delivery_fees_total_cents: deliveryFeesTotalCents,
+        tip_cents: finalTip,
+        driver_base_pay_cents: snapshotBasePayCents,
+        driver_delivery_fee_share_bps: snapshotShareBps,
+        driver_payout_cents: Number(driverPayoutSnapshot.driver_payout_cents ?? 0),
+        platform_delivery_share_cents: Number(driverPayoutSnapshot.platform_delivery_share_cents ?? 0),
         tester_credit_applied_cents: totalTesterCreditApplied,
         tester_service_credit_applied_cents: testerServiceCredit,
         tester_delivery_credit_applied_cents: testerDeliveryCredit,
         tester_platform_credit_applied_cents: testerPlatformCredit,
         service_fee_cents: finalServiceFee,
         tax_cents: finalTax,
-        tip_cents: finalTip,
         total_cents: finalTotal,
         order_status: 'pending',
         customer_name: customer_info?.name || '',

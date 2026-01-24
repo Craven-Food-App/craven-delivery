@@ -9,17 +9,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, Save } from 'lucide-react';
 
 export const PayoutSettingsManager: React.FC = () => {
-  const [percentage, setPercentage] = useState<number>(70);
+  const [basePayCents, setBasePayCents] = useState<number>(250); // $2.50 default
+  const [shareBps, setShareBps] = useState<number>(7000); // 70% default (7000 basis points)
   const [loading, setLoading] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Convert basis points to percentage for display
+  const sharePercentage = shareBps / 100;
 
   const fetchCurrent = async () => {
     const { data, error } = await supabase
       .from('driver_payout_settings')
-      .select('percentage')
+      .select('driver_base_pay_cents, driver_delivery_fee_share_bps')
       .eq('is_active', true)
       .maybeSingle();
-    if (!error && data?.percentage != null) setPercentage(Number(data.percentage));
+    if (!error && data) {
+      if (data.driver_base_pay_cents != null) setBasePayCents(Number(data.driver_base_pay_cents));
+      if (data.driver_delivery_fee_share_bps != null) setShareBps(Number(data.driver_delivery_fee_share_bps));
+    }
   };
 
   useEffect(() => {
@@ -33,12 +40,16 @@ export const PayoutSettingsManager: React.FC = () => {
       const { data: userData } = await supabase.auth.getUser();
       await supabase.from('driver_payout_settings').update({ is_active: false }).eq('is_active', true);
       const { error } = await supabase.from('driver_payout_settings').insert({
-        percentage,
+        driver_base_pay_cents: basePayCents,
+        driver_delivery_fee_share_bps: shareBps,
         is_active: true,
         updated_by: userData?.user?.id || null,
       });
       if (error) throw error;
-      toast({ title: 'Payout updated', description: `Drivers now earn ${percentage}% of subtotal + 100% tips.` });
+      toast({ 
+        title: 'Payout updated', 
+        description: `Drivers now earn max($${(basePayCents/100).toFixed(2)}, ${sharePercentage}% of delivery fees) + 100% tips.` 
+      });
     } catch (e: any) {
       toast({ title: 'Save failed', description: e.message || 'Unknown error', variant: 'destructive' });
     } finally {
@@ -53,13 +64,50 @@ export const PayoutSettingsManager: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <Label className="mb-2 block">Driver percentage of order subtotal</Label>
+          <Label className="mb-2 block">Base Pay (Minimum Guarantee)</Label>
           <div className="flex items-center gap-4">
-            <Slider value={[percentage]} onValueChange={(v) => setPercentage(v[0])} min={50} max={95} step={1} className="flex-1" />
-            <Input type="number" min={0} max={100} value={percentage} onChange={(e) => setPercentage(Math.max(0, Math.min(100, Number(e.target.value))))} className="w-20" />
-            <span className="text-sm text-muted-foreground">%</span>
+            <Input 
+              type="number" 
+              min={0} 
+              step={10}
+              value={basePayCents} 
+              onChange={(e) => setBasePayCents(Math.max(0, Number(e.target.value)))} 
+              className="w-32" 
+            />
+            <span className="text-sm text-muted-foreground">cents (${(basePayCents/100).toFixed(2)})</span>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">Formula: Earnings = {`{percentage}% of subtotal`} + 100% of tip</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Minimum amount driver earns per delivery (before tip). Acts as a floor, not additive.
+          </p>
+        </div>
+        <div>
+          <Label className="mb-2 block">Driver Share of Delivery Fees</Label>
+          <div className="flex items-center gap-4">
+            <Slider 
+              value={[shareBps]} 
+              onValueChange={(v) => setShareBps(v[0])} 
+              min={0} 
+              max={10000} 
+              step={100} 
+              className="flex-1" 
+            />
+            <Input 
+              type="number" 
+              min={0} 
+              max={10000} 
+              step={100}
+              value={shareBps} 
+              onChange={(e) => setShareBps(Math.max(0, Math.min(10000, Number(e.target.value))))} 
+              className="w-24" 
+            />
+            <span className="text-sm text-muted-foreground">bps ({sharePercentage}%)</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Formula: Earnings = max(base pay, {sharePercentage}% of delivery fees) + 100% of tip
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Drivers get 0% of food subtotal. Only delivery fees are shared.
+          </p>
         </div>
         <div className="flex justify-end">
           <Button onClick={save} disabled={loading} className="gap-2">
