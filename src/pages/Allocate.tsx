@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { DollarSign, CheckCircle2, AlertCircle, ArrowRight, Lock } from "lucide-react";
 
 export default function Allocate() {
   const navigate = useNavigate();
@@ -93,9 +94,15 @@ export default function Allocate() {
 
   if (!inviteSession) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <p className="text-zinc-600">Loading...</p>
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--primary))]/10">
+            <svg className="h-6 w-6 animate-spin text-[hsl(var(--primary))]" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -106,88 +113,154 @@ export default function Allocate() {
   const maxAmount = inviteSession.maxAmount / 100;
 
   return (
-    <div className="min-h-screen bg-white text-zinc-950">
-      <div className="mx-auto max-w-2xl px-6 py-16">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Select Amount</h1>
-          <p className="mt-2 text-sm text-zinc-600">
-            Choose your support amount (${minAmount.toFixed(2)} - ${maxAmount.toFixed(2)})
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-8">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {presetAmounts.map((preset) => {
-              const isValid = preset >= minAmount && preset <= maxAmount;
-              if (!isValid) return null;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => handleAmountSelect(preset)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-                    amount === preset && !customAmount
-                      ? "border-zinc-950 bg-zinc-950 text-white"
-                      : "border-zinc-200 hover:border-zinc-950"
-                  }`}
-                >
-                  ${preset}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-4">
-            <label className="text-xs font-medium text-zinc-700">Custom Amount</label>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-zinc-500">$</span>
-              <input
-                type="number"
-                value={customAmount}
-                onChange={(e) => handleCustomAmount(e.target.value)}
-                min={minAmount}
-                max={maxAmount}
-                step="1"
-                placeholder="Enter amount"
-                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
-              />
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
+      {/* Header Section */}
+      <div className="bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(14_95%_48%)] to-[hsl(14_90%_53%)]">
+        <div className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
+          <div className="text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+              <DollarSign className="h-4 w-4" />
+              <span>Select Amount</span>
             </div>
-            <p className="mt-1 text-xs text-zinc-500">
-              Minimum: ${minAmount.toFixed(2)} | Maximum: ${maxAmount.toFixed(2)}
+            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+              Choose Your Support Amount
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-white/90">
+              Select an amount between ${minAmount.toFixed(2)} and ${maxAmount.toFixed(2)}
             </p>
           </div>
+        </div>
+      </div>
 
-          <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="accept"
-                checked={accepted}
-                onChange={(e) => setAccepted(e.target.checked)}
-                className="mt-0.5"
-              />
-              <label htmlFor="accept" className="text-sm text-zinc-700">
-                I understand this is a friends & family support contribution and not an investment or equity offering.
+      {/* Form Section */}
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <div className="rounded-2xl bg-card p-8 shadow-lg ring-1 ring-border">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Preset Amounts */}
+            <div>
+              <label className="mb-4 block text-sm font-medium text-foreground">
+                Quick Select
               </label>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {presetAmounts.map((preset) => {
+                  const isValid = preset >= minAmount && preset <= maxAmount;
+                  if (!isValid) return null;
+                  const isSelected = amount === preset && !customAmount;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => handleAmountSelect(preset)}
+                      className={`group relative rounded-xl border-2 px-4 py-4 text-base font-semibold transition-all ${
+                        isSelected
+                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-white shadow-lg scale-105"
+                          : "border-border bg-background text-foreground hover:border-[hsl(var(--primary))] hover:scale-105"
+                      }`}
+                    >
+                      ${preset}
+                      {isSelected && (
+                        <CheckCircle2 className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-white text-[hsl(var(--primary))]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
-              {error}
+            {/* Custom Amount */}
+            <div>
+              <label htmlFor="customAmount" className="mb-2 block text-sm font-medium text-foreground">
+                Or Enter Custom Amount
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
+                  $
+                </span>
+                <input
+                  id="customAmount"
+                  type="number"
+                  value={customAmount}
+                  onChange={(e) => handleCustomAmount(e.target.value)}
+                  min={minAmount}
+                  max={maxAmount}
+                  step="1"
+                  placeholder="Enter amount"
+                  className="w-full rounded-xl border border-input bg-background pl-8 pr-4 py-3 text-base font-medium outline-none transition-colors focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Minimum: ${minAmount.toFixed(2)} • Maximum: ${maxAmount.toFixed(2)}
+              </p>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={busy || !accepted || amount < minAmount || amount > maxAmount}
-            className="mt-6 w-full rounded-xl bg-zinc-950 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-          >
-            {busy ? "Processing..." : "Continue to Payment"}
-          </button>
-        </form>
+            {/* Selected Amount Display */}
+            {amount > 0 && (
+              <div className="rounded-xl bg-[hsl(var(--primary))]/10 p-4 text-center ring-1 ring-[hsl(var(--primary))]/20">
+                <p className="text-sm text-muted-foreground">Your Support Amount</p>
+                <p className="mt-1 text-3xl font-bold text-[hsl(var(--primary))]">
+                  ${amount.toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {/* Terms Acceptance */}
+            <div className="rounded-xl border border-border bg-muted/50 p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="accept"
+                  checked={accepted}
+                  onChange={(e) => {
+                    setAccepted(e.target.checked);
+                    setError(null);
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-input text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                />
+                <label htmlFor="accept" className="flex-1 text-sm leading-6 text-foreground">
+                  I understand this is a friends & family support contribution and not an investment or equity offering.
+                </label>
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-3 rounded-xl bg-destructive/10 p-4 text-sm text-destructive ring-1 ring-destructive/20">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                <p>{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy || !accepted || amount < minAmount || amount > maxAmount}
+              className="group w-full rounded-xl bg-[hsl(var(--primary))] px-6 py-4 text-base font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:bg-[hsl(14_95%_48%)] hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2"
+            >
+              {busy ? (
+                <span className="flex items-center justify-center">
+                  <svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <Lock className="mr-2 h-5 w-5" />
+                  Continue to Secure Payment
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </span>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Security Note */}
+        <div className="mt-6 rounded-xl bg-muted/50 p-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            <Lock className="mr-1 inline h-3 w-3" />
+            Secure payment processing powered by Stripe
+          </p>
+        </div>
       </div>
     </div>
   );
 }
-
