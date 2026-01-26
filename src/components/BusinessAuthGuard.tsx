@@ -42,19 +42,23 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
   }, [navigate]);
 
   const checkAuth = async () => {
+    const currentPath = window.location.pathname;
+    console.log('[BusinessAuthGuard] Checking auth for path:', currentPath);
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error || !user) {
+        console.log('[BusinessAuthGuard] Not authenticated, redirecting to /auth?hq=true');
         setIsAuthenticated(false);
         startTransition(() => {
           navigate('/auth?hq=true');
         });
       } else {
+        console.log('[BusinessAuthGuard] Authenticated, user:', user.email);
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('[BusinessAuthGuard] Auth check error:', error);
       setIsAuthenticated(false);
       startTransition(() => {
         navigate('/auth?hq=true');
@@ -66,8 +70,10 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
 
   // Debug: Log route changes
   useEffect(() => {
-    console.log('[BusinessAuthGuard] Current path:', window.location.pathname);
-  }, []);
+    const currentPath = window.location.pathname;
+    console.log('[BusinessAuthGuard] Route changed to:', currentPath);
+    console.log('[BusinessAuthGuard] Auth state:', { loading, isAuthenticated });
+  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (
