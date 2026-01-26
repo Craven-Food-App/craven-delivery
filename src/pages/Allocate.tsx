@@ -217,7 +217,7 @@ export default function Allocate() {
                   className="mt-1 h-4 w-4 rounded border-input text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
                 />
                 <label htmlFor="accept" className="flex-1 text-sm leading-6 text-foreground">
-                  I understand this is a friends & family support contribution and not an investment or equity offering.
+                  I understand this is a friends & family support contribution and I have received the necessary documentation.
                 </label>
               </div>
             </div>

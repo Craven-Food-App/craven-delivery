@@ -71,7 +71,7 @@ export default function Support() {
             </div>
             <h3 className="mt-6 text-lg font-semibold text-foreground">Friends & Family</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              This is a support contribution from those closest to us, not an investment or equity offering.
+              A private opportunity for those closest to us to support Crave'n's growth.
             </p>
           </div>
 
