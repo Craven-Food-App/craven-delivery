@@ -97,6 +97,11 @@ import CookiePolicy from "./pages/CookiePolicy";
 import CraveMore from "./pages/CraveMore";
 import CraveMoreAccount from "./pages/CraveMoreAccount";
 import CraveMoreSuccess from "./pages/CraveMoreSuccess";
+import Support from "./pages/Support";
+import Access from "./pages/Access";
+import Allocate from "./pages/Allocate";
+import Success from "./pages/Success";
+import HubFoundationalInvites from "./pages/HubFoundationalInvites";
 import ExecutiveSignature from "./pages/ExecutiveSignature";
 import { ExecutiveDocumentPortal } from "./pages/ExecutiveDocumentPortal";
 import ThankYou from "./pages/ThankYou";
@@ -794,6 +799,7 @@ const App = () => {
           <Route path="/testing" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense>} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
+          <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><HubFoundationalInvites /></BusinessAuthGuard>} />
           <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/hr-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading HR Portal" />}><HRPortal /></Suspense></BusinessAuthGuard>} />
@@ -873,6 +879,16 @@ const App = () => {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/track-order/:orderId" element={<TrackOrder />} />
           <Route path="/payment-canceled" element={<PaymentCanceled />} />
+          {/* Foundational Support Routes */}
+          <Route path="/support" element={<Support />} />
+          <Route path="/access" element={<Access />} />
+          <Route path="/allocate" element={<Allocate />} />
+          <Route path="/success" element={<Success />} />
+          {/* Foundational Support Routes */}
+          <Route path="/support" element={<Support />} />
+          <Route path="/access" element={<Access />} />
+          <Route path="/allocate" element={<Allocate />} />
+          <Route path="/success" element={<Success />} />
           {/* Executive signature route */}
           <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
           <Route path="/executive/profile" element={<ExecutiveProfile />} />
