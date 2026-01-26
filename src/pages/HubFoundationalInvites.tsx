@@ -37,14 +37,23 @@ export default function HubFoundationalInvitesPage() {
 
   async function load() {
     try {
+      console.log('[HubFoundationalInvites] Loading invites from /api/hub/invites/list');
       const res = await fetch("/api/hub/invites/list");
+      if (!res.ok) {
+        console.error('[HubFoundationalInvites] API error:', res.status, res.statusText);
+        setErr(`API error: ${res.status} ${res.statusText}`);
+        return;
+      }
       const data = await res.json();
       if (data.error) {
+        console.error('[HubFoundationalInvites] API returned error:', data.error);
         setErr(data.error);
         return;
       }
+      console.log('[HubFoundationalInvites] Loaded invites:', data.invites?.length || 0);
       setInvites(data.invites || []);
     } catch (e: any) {
+      console.error('[HubFoundationalInvites] Load error:', e);
       setErr(e.message || "Failed to load invites.");
     }
   }
