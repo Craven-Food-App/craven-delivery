@@ -64,6 +64,11 @@ const BusinessAuthGuard: React.FC<BusinessAuthGuardProps> = ({ children }) => {
     }
   };
 
+  // Debug: Log route changes
+  useEffect(() => {
+    console.log('[BusinessAuthGuard] Current path:', window.location.pathname);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900">

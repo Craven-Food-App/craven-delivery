@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type Invite = {
   id: string;
@@ -14,6 +15,7 @@ type Invite = {
 };
 
 export default function HubFoundationalInvitesPage() {
+  const navigate = useNavigate();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -21,6 +23,15 @@ export default function HubFoundationalInvitesPage() {
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Prevent any redirects - ensure we stay on this page
+  useEffect(() => {
+    // Verify we're on the correct route
+    if (window.location.pathname !== '/hub/foundational/invites') {
+      console.log('Path mismatch, correcting:', window.location.pathname);
+      navigate('/hub/foundational/invites', { replace: true });
+    }
+  }, [navigate]);
 
   async function load() {
     try {

@@ -1995,7 +1995,12 @@ const MainHub: React.FC = () => {
                     }}
                     onClick={() => {
                       if (allowed) {
-                        navigate(portal.path);
+                        // Use window.location for absolute paths to ensure proper navigation
+                        if (portal.path.startsWith('/hub/foundational')) {
+                          window.location.href = portal.path;
+                        } else {
+                          navigate(portal.path);
+                        }
                       } else {
                         message.warning('Access denied for this portal');
                       }
