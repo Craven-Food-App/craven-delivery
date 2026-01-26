@@ -1993,14 +1993,13 @@ const MainHub: React.FC = () => {
                       background: "#ffffff",
                       opacity: allowed ? 1 : 0.5,
                     }}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       if (allowed) {
-                        // Use window.location for absolute paths to ensure proper navigation
-                        if (portal.path.startsWith('/hub/foundational')) {
-                          window.location.href = portal.path;
-                        } else {
-                          navigate(portal.path);
-                        }
+                        console.log('[MainHub] Navigating to:', portal.path);
+                        // Use navigate for all routes - React Router handles it
+                        navigate(portal.path, { replace: false });
                       } else {
                         message.warning('Access denied for this portal');
                       }

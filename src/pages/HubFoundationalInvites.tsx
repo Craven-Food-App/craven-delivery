@@ -26,9 +26,11 @@ export default function HubFoundationalInvitesPage() {
 
   // Prevent any redirects - ensure we stay on this page
   useEffect(() => {
+    console.log('[HubFoundationalInvites] Component mounted, path:', window.location.pathname);
     // Verify we're on the correct route
-    if (window.location.pathname !== '/hub/foundational/invites') {
-      console.log('Path mismatch, correcting:', window.location.pathname);
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/hub/foundational/invites') {
+      console.log('[HubFoundationalInvites] Path mismatch, correcting:', currentPath);
       navigate('/hub/foundational/invites', { replace: true });
     }
   }, [navigate]);
