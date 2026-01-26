@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -15,6 +15,12 @@ import {
   Progress,
   Avatar,
   Divider,
+  ActionIcon,
+  Paper,
+  Modal,
+  Textarea,
+  Select,
+  Radio,
 } from '@mantine/core';
 import {
   IconClock,
@@ -26,8 +32,17 @@ import {
   IconMessageCircle,
   IconPackage,
   IconStar,
+  IconHome,
+  IconShoppingCart,
+  IconSearch,
+  IconUser,
+  IconShoppingBag,
+  IconArrowLeft,
+  IconX,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCart } from '@/contexts/CartContext';
 
 interface OrderItem {
   id: string;
@@ -55,6 +70,9 @@ interface Order {
   total_amount?: number;
   order_status: string;
   delivery_method: string;
+  driver_id?: string;
+  payment_status?: string;
+  payment_intent_id?: string;
   restaurant: {
     id: string;
     name: string;
@@ -72,6 +90,7 @@ const STATUS_CONFIG: Record<string, { label: string; gradient: string }> = {
   picked_up: { label: 'Picked Up', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
   out_for_delivery: { label: 'Delivering', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
   delivering: { label: 'Delivering', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+  cancelled: { label: 'Cancelled', gradient: 'linear-gradient(135deg, #dc2626, #991b1b)' },
 };
 
 const TIMELINE_STEPS = [
@@ -106,26 +125,45 @@ export default function OrderHistory() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { cartCount } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelReason, setCancelReason] = useState<'customer' | 'restaurant'>('customer');
+  const [cancelNotes, setCancelNotes] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchActiveOrders();
     
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('active-orders')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          fetchActiveOrders();
-        }
-      )
-      .subscribe();
+    // Set up real-time subscription for order updates
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    return () => {
-      channel.unsubscribe();
+      const channel = supabase
+        .channel('order-history-updates')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders',
+            filter: `customer_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Order update received:', payload);
+            fetchActiveOrders();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
     };
+
+    setupSubscription();
   }, []);
 
   const fetchActiveOrders = async () => {
@@ -136,6 +174,8 @@ export default function OrderHistory() {
         return;
       }
 
+      // Fetch all orders (active and past) for order history
+      // Use orders table which has customer_id
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -149,14 +189,18 @@ export default function OrderHistory() {
             id,
             quantity,
             price_cents,
+            special_instructions,
             menu_items (
-              name
+              id,
+              name,
+              description,
+              image_url
             )
           )
         `)
         .eq('customer_id', user.id)
-        .in('order_status', ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'delivering'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error('Error fetching orders:', error);
@@ -170,71 +214,39 @@ export default function OrderHistory() {
         return;
       }
 
-      // Transform order items to ensure name is properly set
-      const transformedData = (data || []).map((order: any) => ({
-        ...order,
-        order_items: (order.order_items || []).map((item: any) => ({
-          ...item,
-          name: item.menu_items?.name || item.name || 'Unknown Item',
-          price: item.price_cents || item.price || 0,
-        })),
-      }));
-
-      // Fetch driver info for orders that are being delivered
-      const ordersWithDrivers = await Promise.all(
-        transformedData.map(async (order: any) => {
-          if (['picked_up', 'out_for_delivery', 'delivering'].includes(order.order_status)) {
-            try {
-              // First get the assignment
-              const { data: assignment } = await supabase
-                .from('order_assignments')
-                .select('driver_id')
-                .eq('order_id', order.id)
-                .eq('status', 'accepted')
-                .single();
-
-              if (assignment?.driver_id) {
-                // Try to get driver profile and user profile for name
-                const [driverProfileResult, userProfileResult] = await Promise.all([
-                  supabase
-                    .from('driver_profiles')
-                    .select('user_id, rating')
-                    .eq('user_id', assignment.driver_id)
-                    .single()
-                    .then(res => res, () => ({ data: null, error: null })),
-                  supabase
-                    .from('user_profiles')
-                    .select('user_id, full_name')
-                    .eq('user_id', assignment.driver_id)
-                    .single()
-                    .then(res => res, () => ({ data: null, error: null })),
-                ]);
-
-                const driverProfile = driverProfileResult.data;
-                const userProfile = userProfileResult.data;
-                
-                if (driverProfile) {
-                  return {
-                    ...order,
-                    driver: {
-                      id: driverProfile.user_id,
-                      name: userProfile?.full_name || `Driver ${assignment.driver_id.substring(0, 8).toUpperCase()}`,
-                      rating: Number(driverProfile.rating) || 4.9,
-                      distance: 2.3,
-                    },
-                  };
-                }
-              }
-            } catch (error) {
-              // If driver lookup fails, just return order without driver info
-              console.warn('Error fetching driver info:', error);
-            }
+      // Transform orders
+      const transformedData = (data || []).map((order: any) => {
+        // Handle order_items - should be an array from the relationship
+        let orderItems: any[] = [];
+        
+        if (Array.isArray(order.order_items)) {
+          // Array from orders table relationship
+          orderItems = order.order_items;
+        } else if (order.order_items && typeof order.order_items === 'object') {
+          // JSONB field from customer_orders table (fallback)
+          try {
+            orderItems = Array.isArray(order.order_items) 
+              ? order.order_items 
+              : JSON.parse(JSON.stringify(order.order_items));
+          } catch (e) {
+            console.warn('Error parsing order_items:', e);
+            orderItems = [];
           }
-          return order;
-        })
-      );
+        }
 
-      setOrders(ordersWithDrivers as Order[]);
+        return {
+          ...order,
+          order_items: orderItems.map((item: any) => ({
+            ...item,
+            name: item.menu_items?.name || 'Unknown Item',
+            price: item.price_cents || 0,
+            quantity: item.quantity || 1,
+            special_instructions: item.special_instructions || null,
+          })),
+        };
+      });
+
+      setOrders(transformedData as Order[]);
     } catch (error: any) {
       console.error('Error fetching active orders:', error);
       toast({
@@ -254,11 +266,11 @@ export default function OrderHistory() {
     });
   };
 
-  const handleMessageDriver = (driver: Driver) => {
-    toast({
-      title: 'Messaging Driver',
-      description: `Opening chat with ${driver.name}...`,
-    });
+  const handleMessageDriver = (orderId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    navigate(`/customer-support?orderId=${orderId}&type=driver`);
   };
 
   const handleCallRestaurant = (restaurant: { name: string }) => {
@@ -270,6 +282,155 @@ export default function OrderHistory() {
 
   const handleTrackOrder = (orderId: string) => {
     navigate(`/track-order/${orderId}`);
+  };
+
+  const canCancelOrder = (order: Order): boolean => {
+    const nonCancellableStatuses = ['delivered', 'cancelled'];
+    return !nonCancellableStatuses.includes(order.order_status);
+  };
+
+  const canClearOrder = (order: Order): boolean => {
+    return order.order_status === 'pending';
+  };
+
+  const isRestaurantPreparing = (order: Order): boolean => {
+    const preparingStatuses = ['preparing', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'delivering'];
+    return preparingStatuses.includes(order.order_status);
+  };
+
+  const handleOpenCancelModal = (order: Order, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setSelectedOrder(order);
+    setCancelReason('customer');
+    setCancelNotes('');
+    setCancelModalOpen(true);
+  };
+
+  const handleClearPendingOrder = async (order: Order, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+
+    if (!confirm('Are you sure you want to clear this pending order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ order_status: 'cancelled' })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Order Cleared',
+        description: 'Pending order has been cleared.',
+      });
+
+      fetchActiveOrders();
+    } catch (error: any) {
+      console.error('Error clearing order:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to clear order',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+
+    setCancelling(true);
+    try {
+      const isPaid = selectedOrder.payment_status === 'paid' || selectedOrder.payment_intent_id;
+      const isPreparing = isRestaurantPreparing(selectedOrder);
+
+      // Update order status to cancelled
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          order_status: 'cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedOrder.id);
+
+      if (updateError) throw updateError;
+
+      // Create cancellation record
+      const cancellationData: any = {
+        order_id: selectedOrder.id,
+        cancelled_by: cancelReason === 'customer' ? 'customer' : 'restaurant',
+        reason: cancelNotes || 'No reason provided',
+        cancelled_at: new Date().toISOString(),
+      };
+
+      // If paid, create refund request
+      if (isPaid) {
+        const refundAmount = selectedOrder.total_cents || selectedOrder.total_amount || 0;
+        
+        // Create refund request
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const { error: refundError } = await supabase
+          .from('refund_requests')
+          .insert({
+            order_id: selectedOrder.id,
+            customer_id: user.id,
+            amount_cents: refundAmount,
+            reason: cancelNotes || `Order cancelled by ${cancelReason === 'customer' ? 'customer' : 'restaurant'}`,
+            status: isPreparing ? 'pending' : 'approved', // Auto-approve if not preparing
+            type: 'full',
+          });
+
+        if (refundError) {
+          console.error('Error creating refund request:', refundError);
+          // Continue with cancellation even if refund request fails
+        } else if (!isPreparing) {
+          // If not preparing, process refund immediately
+          try {
+            await supabase.functions.invoke('process-refund', {
+              body: {
+                orderId: selectedOrder.id,
+                amountCents: refundAmount,
+                reason: cancelNotes || 'Order cancelled',
+              },
+            });
+          } catch (refundProcessError) {
+            console.error('Error processing refund:', refundProcessError);
+            // Refund will be processed manually by admin
+          }
+        }
+      }
+
+      toast({
+        title: 'Order Cancelled',
+        description: isPaid && !isPreparing
+          ? 'Your order has been cancelled and a refund is being processed.'
+          : isPaid && isPreparing
+          ? 'Your order has been cancelled. Refund will be reviewed due to preparation status.'
+          : 'Your order has been cancelled.',
+      });
+
+      setCancelModalOpen(false);
+      setSelectedOrder(null);
+      setCancelReason('customer');
+      setCancelNotes('');
+      fetchActiveOrders();
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to cancel order',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const formatTimeAgo = (timestamp: string) => {
@@ -309,284 +470,309 @@ export default function OrderHistory() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: '80px' }}>
-      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: '24px' }}>
-        <Stack gap="lg">
-          {/* Header */}
-          <Box>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))', paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
+      {/* Header - Fixed at Top matching Chat Header Structure */}
+      <Box style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1000,
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        padding: '1rem',
+        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        flexShrink: 0
+      }}>
+            {isMobile && (
+              <Group mb="md" align="center">
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => navigate(-1)}
+                  style={{ color: '#171717' }}
+                >
+                  <IconArrowLeft size={24} />
+                </ActionIcon>
+              </Group>
+            )}
             <Text fw={900} size="xl" mb="xs" c="#171717">
-              Active Orders
+              Order History
             </Text>
             <Text size="sm" c="#737373">
-              Track your cravings in real-time
+              Your recent orders
             </Text>
           </Box>
+      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
+        <Stack gap="lg">
 
           {/* Orders List */}
           {orders.length === 0 ? (
             <Card p="xl" style={{ textAlign: 'center' }}>
               <Text size="64px" mb="md" style={{ opacity: 0.3 }}>📦</Text>
               <Text fw={900} size="lg" mb="xs" c="#171717">
-                No Active Orders
+                No Orders Yet
               </Text>
               <Text size="sm" c="#737373" mb="lg">
-                You don't have any orders in progress right now
+                Start ordering to see your order history here
               </Text>
               <Button onClick={() => navigate('/restaurants')} color="#ff7a00" size="md">
                 Start Ordering
               </Button>
             </Card>
           ) : (
-            <Stack gap="md">
+            <Stack gap="sm">
               {orders.map((order) => {
                 const statusConfig = STATUS_CONFIG[order.order_status] || STATUS_CONFIG.pending;
                 const progress = getProgressPercentage(order.order_status);
                 const estimatedTime = getEstimatedTime(order.order_status);
+                const isActive = !['delivered', 'cancelled'].includes(order.order_status);
+                const itemCount = order.order_items?.length || 0;
+                const firstItem = order.order_items?.[0]?.name || 'Items';
 
                 return (
                   <Card
                     key={order.id}
-                    p="lg"
+                    p="md"
+                    onClick={() => handleTrackOrder(order.id)}
                     style={{
-                      borderRadius: '16px',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                      position: 'relative',
-                      overflow: 'hidden',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      cursor: 'pointer',
+                      border: isActive ? '2px solid #ff5f1f' : '1px solid #e5e7eb',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+                      e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    {/* Top Border */}
-                    <Box
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '4px',
-                        background: statusConfig.gradient,
-                      }}
-                    />
-
-                    <Stack gap="md">
-                      {/* Order Header */}
-                      <Group justify="space-between" align="flex-start">
-                        <Stack gap={4}>
-                          <Text size="xs" fw={600} c="#737373" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Order #{order.order_number || order.id.substring(0, 8).toUpperCase()}
-                          </Text>
-                          <Text fw={900} size="lg" c="#171717">
-                            {order.restaurant?.name}
-                          </Text>
-                        </Stack>
-                        <Badge
-                          size="lg"
-                          style={{
-                            background: statusConfig.gradient,
-                            color: 'white',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          {statusConfig.label}
-                        </Badge>
-                      </Group>
-
-                      {/* Progress Bar */}
-                      <Box>
-                        <Text size="xs" fw={600} c="#525252" mb="xs">
-                          Estimated {order.order_status === 'delivering' || order.order_status === 'out_for_delivery' ? 'Arrival' : 'Ready'}: {estimatedTime}
-                        </Text>
-                        <Progress
-                          value={progress}
-                          size="sm"
-                          radius="md"
-                          color="#ff7a00"
-                          style={{ height: '8px' }}
-                        />
-                      </Box>
-
-                      {/* Driver Section */}
-                      {order.driver && (order.order_status === 'delivering' || order.order_status === 'out_for_delivery' || order.order_status === 'picked_up') && (
-                        <Box
-                          p="md"
-                          style={{
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '12px',
-                            border: '2px solid #e5e7eb',
-                          }}
-                        >
-                          <Group mb="md">
-                            <Avatar
-                              size="md"
-                              radius="xl"
+                    <Stack gap="sm">
+                      {/* Compact Header */}
+                      <Group justify="space-between" align="flex-start" gap="xs">
+                        <Box style={{ flex: 1, minWidth: 0 }}>
+                          <Group gap="xs" mb={4}>
+                            <Text size="xs" fw={600} c="#737373" style={{ textTransform: 'uppercase' }}>
+                              #{order.order_number || order.id.substring(0, 8).toUpperCase()}
+                            </Text>
+                            <Badge
+                              size="sm"
                               style={{
-                                background: 'linear-gradient(135deg, #ea580c, #dc2626)',
+                                background: statusConfig.gradient,
                                 color: 'white',
-                                fontWeight: 900,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                fontSize: '10px',
+                                padding: '2px 8px',
                               }}
                             >
-                              {order.driver.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                            </Avatar>
-                            <Stack gap={2} style={{ flex: 1 }}>
-                              <Text fw={700} size="md" c="#171717">
-                                {order.driver.name}
-                              </Text>
-                              <Group gap={4}>
-                                <IconStar size={12} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-                                <Text size="xs" c="#737373">
-                                  {order.driver.rating?.toFixed(1)} • {order.driver.distance?.toFixed(1)} mi away
-                                </Text>
-                              </Group>
-                            </Stack>
+                              {statusConfig.label}
+                            </Badge>
                           </Group>
-                          <Group gap="xs">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ flex: 1, borderColor: '#e5e5e5' }}
-                              onClick={() => handleCallDriver(order.driver!)}
-                              leftSection={<IconPhone size={16} />}
-                            >
-                              Call
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ flex: 1, borderColor: '#e5e5e5' }}
-                              onClick={() => handleMessageDriver(order.driver!)}
-                              leftSection={<IconMessageCircle size={16} />}
-                            >
-                              Message
-                            </Button>
-                          </Group>
-                        </Box>
-                      )}
-
-                      {/* Timeline */}
-                      <Box>
-                        <Stack gap="md">
-                          {TIMELINE_STEPS.map((step) => {
-                            const timelineStatus = getTimelineStatus(order.order_status, step.key);
-                            const StepIcon = step.icon;
-                            
-                            return (
-                              <Group key={step.key} gap="md" align="flex-start">
-                                <Box
-                                  style={{
-                                    width: '28px',
-                                    height: '28px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor:
-                                      timelineStatus === 'completed'
-                                        ? '#10b981'
-                                        : timelineStatus === 'active'
-                                        ? '#ea580c'
-                                        : '#f5f5f5',
-                                    color: timelineStatus === 'pending' ? '#a3a3a3' : 'white',
-                                    position: 'relative',
-                                    zIndex: 1,
-                                  }}
-                                >
-                                  {timelineStatus === 'completed' ? (
-                                    <IconCheck size={16} />
-                                  ) : (
-                                    <StepIcon size={16} />
-                                  )}
-                                </Box>
-                                <Stack gap={2} style={{ flex: 1, paddingTop: '2px' }}>
-                                  <Text
-                                    size="sm"
-                                    fw={700}
-                                    c={timelineStatus === 'pending' ? '#a3a3a3' : '#171717'}
-                                  >
-                                    {step.label}
-                                  </Text>
-                                  <Text size="xs" c="#737373">
-                                    {timelineStatus === 'active' ? 'In progress' : timelineStatus === 'completed' ? 'Completed' : 'Pending'}
-                                  </Text>
-                                </Stack>
-                              </Group>
-                            );
-                          })}
-                        </Stack>
-                      </Box>
-
-                      <Divider />
-
-                      {/* Items */}
-                      <Box>
-                        <Text size="xs" fw={700} c="#171717" mb="md" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Order Items ({order.order_items?.length || 0})
-                        </Text>
-                        <Stack gap="xs">
-                          {order.order_items?.map((item, idx) => (
-                            <Group key={idx} justify="space-between">
-                              <Text size="sm" c="#404040" fw={500}>
-                                {item.name || item.menu_items?.name || 'Unknown Item'}
-                              </Text>
-                              <Text size="sm" c="#737373" fw={600}>
-                                x{item.quantity}
-                              </Text>
-                            </Group>
-                          ))}
-                        </Stack>
-                      </Box>
-
-                      <Divider />
-
-                      {/* Footer */}
-                      <Group justify="space-between" align="center">
-                        <Group gap={4}>
-                          <IconClock size={14} style={{ color: '#737373' }} />
-                          <Text size="xs" c="#737373">
-                            Ordered {formatTimeAgo(order.created_at)}
+                          <Text fw={700} size="sm" c="#171717" style={{ lineHeight: 1.2 }}>
+                            {order.restaurant?.name}
                           </Text>
-                        </Group>
-                        <Text fw={900} size="lg" c="#171717">
+                          <Text size="xs" c="#737373" mt={2}>
+                            {firstItem} {itemCount > 1 ? `+${itemCount - 1} more` : ''}
+                          </Text>
+                        </Box>
+                        <Text fw={700} size="md" c="#171717">
                           ${((order.total_cents || order.total_amount || 0) / 100).toFixed(2)}
                         </Text>
                       </Group>
 
-                      {/* Action Buttons */}
-                      <Group gap="xs">
-                        {(order.order_status === 'delivering' || order.order_status === 'out_for_delivery') && (
-                          <Button
-                            onClick={() => handleTrackOrder(order.id)}
-                            style={{ flex: 1 }}
-                            color="#ff7a00"
-                            leftSection={<IconMapPin size={16} />}
-                          >
-                            Track Live
-                          </Button>
+                      {/* Horizontal Progress Bar */}
+                      <Box>
+                        {isActive && (
+                          <Text size="xs" fw={500} c="#525252" mb={4}>
+                            Estimated {order.order_status === 'delivering' || order.order_status === 'out_for_delivery' ? 'Arrival' : 'Ready'}: {estimatedTime}
+                          </Text>
                         )}
-                        {order.order_status === 'preparing' && (
-                          <Button
-                            onClick={() => handleCallRestaurant(order.restaurant)}
-                            variant="outline"
-                            style={{ flex: 1 }}
-                            leftSection={<IconPhone size={16} />}
-                          >
-                            Call Restaurant
-                          </Button>
+                        <Progress
+                          value={progress}
+                          size="md"
+                          radius="xl"
+                          color="#ff5f1f"
+                          style={{ 
+                            height: isActive ? '10px' : '6px',
+                            backgroundColor: 'white'
+                          }}
+                          animated={isActive}
+                        />
+                      </Box>
+
+                      {/* Footer */}
+                      <Group justify="space-between" align="center">
+                        <Group gap={4}>
+                          <IconClock size={12} style={{ color: '#9ca3af' }} />
+                          <Text size="xs" c="#9ca3af">
+                            {formatTimeAgo(order.created_at)}
+                          </Text>
+                        </Group>
+                        {isActive && (
+                          <Group gap="xs">
+                            {order.driver_id && (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="orange"
+                                leftSection={<IconMessageCircle size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMessageDriver(order.id, e);
+                                }}
+                              >
+                                Contact Driver
+                              </Button>
+                            )}
+                            <Button
+                              size="xs"
+                              variant="subtle"
+                              color="orange"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrackOrder(order.id);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          </Group>
                         )}
-                        <Button
-                          variant="outline"
-                          style={{ flex: 1 }}
-                        >
-                          Help
-                        </Button>
+                        {/* Cancel/Clear Actions */}
+                        {canCancelOrder(order) && (
+                          <Group gap="xs" mt="xs">
+                            {canClearOrder(order) ? (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                leftSection={<IconTrash size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearPendingOrder(order, e);
+                                }}
+                              >
+                                Clear Order
+                              </Button>
+                            ) : (
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                leftSection={<IconX size={14} />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenCancelModal(order, e);
+                                }}
+                              >
+                                Cancel Order
+                              </Button>
+                            )}
+                          </Group>
+                        )}
                       </Group>
                     </Stack>
                   </Card>
                 );
               })}
+              {/* Spacer to ensure all orders scroll above View Cart button */}
+              {cartCount > 0 && <Box style={{ height: '120px' }} />}
             </Stack>
           )}
         </Stack>
       </Box>
+
+      {/* Cancel Order Modal */}
+      <Modal
+        opened={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setSelectedOrder(null);
+          setCancelReason('customer');
+          setCancelNotes('');
+        }}
+        title="Cancel Order"
+        size="md"
+        centered
+      >
+        {selectedOrder && (
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              Order #{selectedOrder.order_number || selectedOrder.id.substring(0, 8).toUpperCase()}
+            </Text>
+            <Text size="sm" fw={500}>
+              {selectedOrder.restaurant?.name}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Total: ${((selectedOrder.total_cents || selectedOrder.total_amount || 0) / 100).toFixed(2)}
+            </Text>
+
+            {isRestaurantPreparing(selectedOrder) && (
+              <Paper p="sm" style={{ backgroundColor: '#fef3c7', border: '1px solid #fbbf24' }}>
+                <Text size="sm" c="#92400e" fw={500}>
+                  ⚠️ This order has started preparation. Cancellation will be reviewed and may require restaurant approval.
+                </Text>
+              </Paper>
+            )}
+
+            <Radio.Group
+              label="Cancellation Type"
+              value={cancelReason}
+              onChange={(value) => setCancelReason(value as 'customer' | 'restaurant')}
+            >
+              <Stack gap="xs" mt="xs">
+                <Radio value="customer" label="Crave'n Cancellation" />
+                <Radio value="restaurant" label="Restaurant Cancellation" />
+              </Stack>
+            </Radio.Group>
+
+            <Textarea
+              label="Reason for Cancellation"
+              placeholder="Please provide a reason for cancelling this order..."
+              value={cancelNotes}
+              onChange={(e) => setCancelNotes(e.currentTarget.value)}
+              minRows={3}
+            />
+
+            {(selectedOrder.payment_status === 'paid' || selectedOrder.payment_intent_id) && (
+              <Paper p="sm" style={{ backgroundColor: '#dbeafe', border: '1px solid #60a5fa' }}>
+                <Text size="sm" c="#1e40af" fw={500}>
+                  💳 This order was paid. {isRestaurantPreparing(selectedOrder) 
+                    ? 'A refund request will be submitted for review.'
+                    : 'A full refund will be processed automatically.'}
+                </Text>
+              </Paper>
+            )}
+
+            <Group justify="flex-end" gap="sm" mt="md">
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  setCancelModalOpen(false);
+                  setSelectedOrder(null);
+                  setCancelReason('customer');
+                  setCancelNotes('');
+                }}
+                disabled={cancelling}
+              >
+                Keep Order
+              </Button>
+              <Button
+                color="red"
+                onClick={handleCancelOrder}
+                loading={cancelling}
+                disabled={cancelling}
+              >
+                Confirm Cancellation
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Modal>
     </Box>
   );
 }

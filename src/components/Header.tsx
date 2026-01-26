@@ -368,9 +368,9 @@ const Header = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem asChild>
-                      <Link to="/order-history" className="flex items-center cursor-pointer">
+                      <Link to="/track-order" className="flex items-center cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
-                        <span>My Orders</span>
+                        <span>Active Orders</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -548,9 +548,9 @@ const Header = () => {
                       className="w-full justify-start text-lg h-12"
                       asChild
                     >
-                      <Link to="/order-history" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Link to="/track-order" onClick={() => setIsMobileMenuOpen(false)}>
                         <User className="mr-3 h-5 w-5" />
-                        My Orders
+                        Active Orders
                       </Link>
                     </Button>
                     {isMerchant && !merchantLoading && (

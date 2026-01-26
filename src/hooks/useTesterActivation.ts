@@ -25,7 +25,8 @@ export const useTesterActivation = () => {
           return;
         }
 
-        // Call activation Edge Function
+      // Call activation Edge Function (wrapped to suppress CORS errors if not deployed)
+      try {
         const { data, error } = await supabase.functions.invoke('tester-activate', {
           body: {
             user_id: user.id,
@@ -36,9 +37,11 @@ export const useTesterActivation = () => {
         if (!error && data?.success) {
           setActivated(true);
         }
+      } catch (fnError) {
+        // Silently handle function invocation errors
+      }
       } catch (error) {
-        // Silently handle - user might not be enrolled
-        console.warn('Tester activation error:', error);
+        // Silently handle - user might not be enrolled (suppressed to avoid console clutter)
       }
     };
 

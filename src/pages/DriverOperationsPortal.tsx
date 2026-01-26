@@ -10,6 +10,7 @@ import { DriverRatingManagement } from '@/components/admin/DriverRatingManagemen
 import { DriverPromoManagement } from '@/components/admin/DriverPromoManagement';
 import { DriverSupportDashboard } from '@/components/admin/DriverSupportDashboard';
 import { PayoutSettingsManager } from '@/components/admin/PayoutSettingsManager';
+import DriverPayoutSettingsCompact from '@/components/admin/DriverPayoutSettingsCompact';
 import { ResendWaitlistEmail } from '@/pages/admin/ResendWaitlistEmail';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,7 +65,7 @@ const DriverOperationsPortal: React.FC = () => {
       case 'support':
         return <DriverSupportDashboard />;
       case 'payouts':
-        return <PayoutSettingsManager />;
+        return <DriverPayoutSettingsCompact />;
       default:
         return <ApplicationReview />;
     }

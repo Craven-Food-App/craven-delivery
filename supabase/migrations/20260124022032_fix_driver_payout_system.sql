@@ -88,6 +88,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
+-- Ensure function signature matches (already correct, but adding comment for clarity)
+COMMENT ON FUNCTION public.calculate_driver_payout_cents IS 'Calculate driver payout based on delivery fees (not subtotal). Base pay is a floor, not additive. Returns driver_payout_cents, platform_delivery_share_cents, driver_before_tip_cents, and driver_fee_share_cents.';
+
 -- Add comment
 COMMENT ON FUNCTION public.calculate_driver_payout_cents IS 'Calculate driver payout based on delivery fees (not subtotal). Base pay is a floor, not additive. Returns driver_payout_cents, platform_delivery_share_cents, driver_before_tip_cents, and driver_fee_share_cents.';
 

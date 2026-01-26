@@ -1,8 +1,8 @@
 import React from 'react';
-import CustomerDashboardComponent from '@/components/account/CustomerDashboard';
+import { AccountSection } from '@/components/account/AccountSection';
 
 const CustomerDashboard = () => {
-  return <CustomerDashboardComponent />;
+  return <AccountSection />;
 };
 
 export default CustomerDashboard;

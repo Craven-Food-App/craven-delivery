@@ -183,6 +183,8 @@ serve(async (req) => {
       delivery_method,
       customer_info,
       payment_method_id,
+      auto_boost_enabled = true,
+      auto_boost_cap_cents = 600,
     } = await req.json();
 
     if (!restaurant_id || !cart_items || !food_subtotal_cents || !payment_method_id) {
@@ -281,7 +283,7 @@ serve(async (req) => {
     // Get active payout settings to snapshot at order creation
     const { data: payoutSettings } = await supabaseAdmin
       .from('driver_payout_settings')
-      .select('driver_base_pay_cents, driver_delivery_fee_share_bps')
+      .select('driver_base_pay_cents, driver_delivery_fee_share_bps, merchant_commission_bps')
       .eq('is_active', true)
       .maybeSingle();
 
@@ -308,7 +310,70 @@ serve(async (req) => {
     }
 
     // ========================================================================
-    // STEP 3: Create order record with snapshot payout fields
+    // STEP 2.6: Calculate fee components (for now, simplified - should be from quote)
+    // ========================================================================
+    const base_delivery_fee_cents = delivery_method === 'delivery' ? finalDeliveryFee : 0;
+    const distance_fee_cents = 0; // Should be calculated from actual distance
+    const time_fee_cents = 0; // Should be calculated based on time of day
+    const demand_fee_cents = 0; // Should be calculated based on demand
+    const escalation_fee_cents = 0; // Starts at 0, increases during broadcasting
+
+    // Recompute delivery_fees_total_cents with components
+    const { data: computedDeliveryFees } = await supabaseAdmin.rpc(
+      'compute_delivery_fees_total_cents',
+      {
+        p_base_delivery_fee_cents: base_delivery_fee_cents,
+        p_distance_fee_cents: distance_fee_cents,
+        p_time_fee_cents: time_fee_cents,
+        p_demand_fee_cents: demand_fee_cents,
+        p_escalation_fee_cents: escalation_fee_cents
+      }
+    );
+
+    const deliveryFeesTotalCents = computedDeliveryFees || base_delivery_fee_cents;
+
+    // Recalculate driver payout with correct delivery fees
+    let driverPayoutSnapshot = { driver_payout_cents: 0, platform_delivery_share_cents: 0, driver_fee_share_cents: 0 };
+    if (deliveryFeesTotalCents > 0) {
+      const { data: payoutResult } = await supabaseAdmin.rpc(
+        'calculate_driver_payout_cents',
+        {
+          p_delivery_fees_total_cents: deliveryFeesTotalCents,
+          p_tip_cents: finalTip,
+          p_base_pay_cents: snapshotBasePayCents,
+          p_share_bps: snapshotShareBps
+        }
+      );
+      if (payoutResult && payoutResult.length > 0) {
+        driverPayoutSnapshot = payoutResult[0];
+      }
+    }
+
+    // Calculate merchant payout
+    const { data: merchantPayout } = await supabaseAdmin.rpc(
+      'calculate_merchant_payout_cents',
+      {
+        p_food_subtotal_cents: finalSubtotal,
+        p_merchant_commission_bps: Number(payoutSettings?.merchant_commission_bps ?? 1500)
+      }
+    );
+
+    const merchantPayoutResult = merchantPayout?.[0] || {
+      merchant_commission_cents: 0,
+      merchant_payout_cents: 0,
+      platform_food_commission_cents: 0
+    };
+
+    // Auto-boost settings already extracted from request body above
+
+    // Calculate next escalation time (2 minutes from now if auto-boost enabled)
+    const broadcastStartedAt = new Date().toISOString();
+    const nextEscalationAt = auto_boost_enabled 
+      ? new Date(Date.now() + 2 * 60 * 1000).toISOString() // +2 minutes
+      : null;
+
+    // ========================================================================
+    // STEP 3: Create order record with snapshot payout fields and broadcasting status
     // ========================================================================
     const { data: createdOrder, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -318,13 +383,33 @@ serve(async (req) => {
         food_subtotal_cents: finalSubtotal,
         subtotal_cents: finalSubtotal, // Keep for backward compatibility
         delivery_fee_cents: delivery_method === 'delivery' ? finalDeliveryFee : 0,
+        // Fee components
+        base_delivery_fee_cents: base_delivery_fee_cents,
+        distance_fee_cents: distance_fee_cents,
+        time_fee_cents: time_fee_cents,
+        demand_fee_cents: demand_fee_cents,
+        escalation_fee_cents: escalation_fee_cents,
         // Snapshot payout fields (critical for historical accuracy)
         delivery_fees_total_cents: deliveryFeesTotalCents,
         tip_cents: finalTip,
         driver_base_pay_cents: snapshotBasePayCents,
         driver_delivery_fee_share_bps: snapshotShareBps,
+        driver_fee_share_cents: Number(driverPayoutSnapshot.driver_fee_share_cents ?? 0),
         driver_payout_cents: Number(driverPayoutSnapshot.driver_payout_cents ?? 0),
         platform_delivery_share_cents: Number(driverPayoutSnapshot.platform_delivery_share_cents ?? 0),
+        // Merchant settlement snapshots
+        merchant_commission_cents: Number(merchantPayoutResult.merchant_commission_cents ?? 0),
+        merchant_payout_cents: Number(merchantPayoutResult.merchant_payout_cents ?? 0),
+        platform_food_commission_cents: Number(merchantPayoutResult.platform_food_commission_cents ?? 0),
+        // Escalation/dispatch fields
+        order_status: 'broadcasting', // Start in broadcasting state
+        broadcast_started_at: broadcastStartedAt,
+        next_escalation_step: 0,
+        next_escalation_at: nextEscalationAt,
+        auto_boost_enabled: auto_boost_enabled,
+        auto_boost_cap_cents: auto_boost_cap_cents,
+        escalated_total_cents: 0,
+        customer_boost_required: false,
         tester_credit_applied_cents: totalTesterCreditApplied,
         tester_service_credit_applied_cents: testerServiceCredit,
         tester_delivery_credit_applied_cents: testerDeliveryCredit,
@@ -332,7 +417,6 @@ serve(async (req) => {
         service_fee_cents: finalServiceFee,
         tax_cents: finalTax,
         total_cents: finalTotal,
-        order_status: 'pending',
         customer_name: customer_info?.name || '',
         customer_phone: customer_info?.phone || '',
         delivery_address: delivery_method === 'delivery' ? delivery_address : null,

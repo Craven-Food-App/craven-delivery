@@ -67,11 +67,25 @@ const CustomerDashboard = () => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  const getUserFirstName = () => {
+  const getUserDisplayName = () => {
     if (!user) return 'Friend';
+
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.raw_user_meta_data?.full_name ||
+      (user.user_metadata?.first_name && user.user_metadata?.last_name
+        ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`
+        : null);
+
+    if (fullName) {
+      const parts = fullName.trim().split(' ');
+      const first = parts[0] || '';
+      const lastInitial = parts.length > 1 ? `${parts[1].charAt(0).toUpperCase()}.` : '';
+      return lastInitial ? `${first} ${lastInitial}` : first;
+    }
+
     if (user.user_metadata?.first_name) return user.user_metadata.first_name;
     if (user.raw_user_meta_data?.first_name) return user.raw_user_meta_data.first_name;
-    if (user.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0];
     if (user.email) return user.email.split('@')[0].split('.')[0];
     return 'Friend';
   };
@@ -203,52 +217,32 @@ const CustomerDashboard = () => {
     }
   };
 
-  // Mobile Bottom Navigation
-  const MobileBottomNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
-      <div className="flex justify-around items-center h-16 px-2">
-        {[
-          { id: 'home', icon: Home, label: 'Home' },
-          { id: 'orders', icon: Package, label: 'Orders' },
-          { id: 'account', icon: User, label: 'Account' },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          
-          return (
-            <button
-              key={tab.id}
-              onClick={() => navigate(`?tab=${tab.id}`)}
-              className={`flex flex-col items-center justify-center flex-1 py-2 transition-colors ${
-                isActive ? 'text-primary' : 'text-gray-500'
-              }`}
-            >
-              <Icon className={`w-6 h-6 mb-1 ${isActive ? 'stroke-[2.5]' : ''}`} />
-              <span className="text-xs font-medium">{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
 
   // Mobile Header
   const MobileHeader = () => (
     <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {activeTab === 'home' ? `Good ${getGreeting()}!` : activeTab === 'orders' ? 'Orders' : 'Account'}
-            </h1>
-            {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserFirstName()}</p>}
+          <div className="flex items-center gap-3 flex-1">
+            {/* X button to exit account - only on account tab, replaces hamburger menu */}
+            {activeTab === 'account' && (
+              <button 
+                onClick={() => {
+                  navigate('/restaurants');
+                }}
+                className="p-2 -ml-2 active:bg-gray-100 rounded-full transition-colors"
+                aria-label="Back to restaurants"
+              >
+                <X className="w-6 h-6 text-gray-900" strokeWidth={2.5} />
+              </button>
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {activeTab === 'home' ? `Good ${getGreeting()}!` : activeTab === 'orders' ? 'Orders' : 'Account'}
+              </h1>
+              {activeTab === 'home' && <p className="text-sm text-gray-600">{getUserDisplayName()}</p>}
+            </div>
           </div>
-          <button 
-            onClick={() => setShowMobileNav(!showMobileNav)}
-            className="p-2 -mr-2 active:bg-gray-100 rounded-full transition-colors"
-          >
-            {showMobileNav ? <X className="w-6 h-6 text-gray-900" /> : <Menu className="w-6 h-6 text-gray-900" />}
-          </button>
         </div>
         
         {activeTab === 'home' && (
@@ -807,17 +801,45 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <MobileHeader />
+      <MobileHeader key={showMobileNav ? 'menu-open' : 'menu-closed'} />
       
       {activeTab === 'home' && <MobileHomeTab />}
       {activeTab === 'orders' && <MobileOrdersTab />}
       {activeTab === 'account' && (
         <div className="pt-4 pb-20 bg-white">
           <AccountSection />
+
+          <div className="mt-6 border-t border-gray-200 pt-4 px-4">
+            <h2 className="text-sm font-semibold mb-2 text-gray-900">Legal &amp; Policies</h2>
+            <div className="flex flex-col gap-1 text-sm">
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/privacy")}
+              >
+                <span>Privacy Policy</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/terms")}
+              >
+                <span>Terms of Service</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+              <button
+                type="button"
+                className="flex justify-between items-center py-2"
+                onClick={() => navigate("/legal/cravemore")}
+              >
+                <span>CraveMore Subscription Terms</span>
+                <span className="text-xs text-gray-500">View</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
-      
-      <MobileBottomNav />
       
       {/* Mobile Navigation Overlay */}
       {showMobileNav && (
@@ -832,8 +854,9 @@ const CustomerDashboard = () => {
                 <button 
                   onClick={() => setShowMobileNav(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close menu"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-6 h-6 text-gray-900" />
                 </button>
               </div>
               <nav className="space-y-1">

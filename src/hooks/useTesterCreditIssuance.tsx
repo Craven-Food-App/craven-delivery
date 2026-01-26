@@ -35,32 +35,16 @@ export const useTesterCreditIssuance = () => {
           return;
         }
 
-        // If credits already exist, skip issuance
+        // If credits already exist, skip issuance (credits are now issued by the evaluation function)
         if (existingGrants && existingGrants.length > 0) {
           return;
         }
 
-        // Issue credits if user is enrolled
-        const { data, error } = await supabase.rpc('issue_tester_credits', {
-          p_user_id: user.id,
-          p_enrollment_email: user.email,
-        });
-
-        if (error) {
-          // Silently handle errors (user might not be enrolled, which is fine)
-          if (!error.message.includes('enrollment_not_found')) {
-            console.warn('Tester credit issuance error:', error);
-          }
-        } else if (data?.success) {
-          // Credits were just issued - show modal (Phase B reveal)
-          const totalAmount = data.issued_credits_total_cents || 0;
-          setRewardAmount(totalAmount);
-          setShowRewardModal(true);
-          sessionStorage.setItem(`tester_reward_modal_shown_${user.id}`, 'true');
-        }
+        // Note: Credits are now issued automatically by the tester-evaluate-and-issue function
+        // when the user completes Tier A requirements (3 days active + 2 feedback prompts)
+        // This hook only displays the modal when credits are detected
       } catch (error) {
-        // Silently handle errors
-        console.warn('Error checking tester credit issuance:', error);
+        // Silently handle errors (suppressed to avoid console clutter)
       }
     };
 
