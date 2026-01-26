@@ -1,7 +1,4 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 type Invite = {
   id: string;
