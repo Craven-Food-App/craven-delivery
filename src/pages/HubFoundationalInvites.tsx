@@ -26,12 +26,15 @@ export default function HubFoundationalInvitesPage() {
 
   // Prevent any redirects - ensure we stay on this page
   useEffect(() => {
-    console.log('[HubFoundationalInvites] Component mounted, path:', window.location.pathname);
-    // Verify we're on the correct route
     const currentPath = window.location.pathname;
+    console.log('[HubFoundationalInvites] Component mounted, path:', currentPath);
+    
+    // Verify we're on the correct route
     if (currentPath !== '/hub/foundational/invites') {
-      console.log('[HubFoundationalInvites] Path mismatch, correcting:', currentPath);
+      console.log('[HubFoundationalInvites] Path mismatch detected, correcting:', currentPath, '-> /hub/foundational/invites');
       navigate('/hub/foundational/invites', { replace: true });
+    } else {
+      console.log('[HubFoundationalInvites] Path is correct, staying on page');
     }
   }, [navigate]);
 

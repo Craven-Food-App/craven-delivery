@@ -1380,6 +1380,18 @@ const MainHub: React.FC = () => {
   }, []);
 
   const isPortalAllowed = (id: string): boolean => {
+    // TORRANCE STROMAN: UNIVERSAL ACCESS - CHECK FIRST
+    const userEmail = user?.email?.toLowerCase() || '';
+    const isTorrance = hasFullAccess(user?.email) || 
+                      userEmail === 'tstroman.ceo@cravenusa.com' || 
+                      userEmail.includes('torrance') || 
+                      userEmail.includes('tstroman');
+    
+    if (isTorrance) {
+      console.log('[MainHub] Torrance access granted for portal:', id);
+      return true;
+    }
+
     switch (id) {
       case 'company': return hasCompanyAccess;
       case 'admin': return canAdmin;
@@ -1395,7 +1407,17 @@ const MainHub: React.FC = () => {
       case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
       case 'hr': return canHR;
-      case 'foundational-invites': return canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
+      case 'foundational-invites': 
+        const allowed = canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
+        console.log('[MainHub] Foundational invites access check:', {
+          portalId: id,
+          canAdmin,
+          canCEO,
+          userEmail: user?.email,
+          hasFullAccess: user?.email ? hasFullAccess(user.email) : false,
+          allowed
+        });
+        return allowed;
       default: return true;
     }
   };
@@ -1996,11 +2018,18 @@ const MainHub: React.FC = () => {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      console.log('[MainHub] Portal clicked:', {
+                        id: portal.id,
+                        path: portal.path,
+                        allowed,
+                        userEmail: user?.email
+                      });
                       if (allowed) {
                         console.log('[MainHub] Navigating to:', portal.path);
                         // Use navigate for all routes - React Router handles it
                         navigate(portal.path, { replace: false });
                       } else {
+                        console.warn('[MainHub] Access denied for portal:', portal.id);
                         message.warning('Access denied for this portal');
                       }
                     }}
