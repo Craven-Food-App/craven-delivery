@@ -1308,6 +1308,14 @@ const MainHub: React.FC = () => {
       color: "#722ed1",
     },
     {
+      id: "foundational-invites",
+      name: "Foundational Invites",
+      description: "Friends & family support invites ($50-$500)",
+      icon: DollarOutlined,
+      path: "/hub/foundational/invites",
+      color: "#10b981",
+    },
+    {
       id: "intern-manager",
       name: "Intern Manager",
       description: "Manage assigned interns, reviews, and approvals",
@@ -1387,6 +1395,7 @@ const MainHub: React.FC = () => {
       case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
       case 'hr': return canHR;
+      case 'foundational-invites': return canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
       default: return true;
     }
   };
