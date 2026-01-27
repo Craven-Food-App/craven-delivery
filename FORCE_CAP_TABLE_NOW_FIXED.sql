@@ -21,6 +21,7 @@ SET
   holding_company_percentage = 58.00,
   founder_percentage = 15.00,
   pool_percentage = 21.00,
+  par_value = 0.0001,
   updated_at = NOW()
 WHERE id = (SELECT id FROM public.cap_tables LIMIT 1);
 
@@ -162,7 +163,8 @@ SELECT
   equity_pool as pool,
   holding_company_percentage as invero_pct,
   founder_percentage as torrance_pct,
-  pool_percentage as pool_pct
+  pool_percentage as pool_pct,
+  par_value
 FROM public.cap_tables
 LIMIT 1;
 
