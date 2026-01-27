@@ -188,40 +188,22 @@ const CapTableOverview: React.FC = () => {
           }
         }
 
-        // Build recipient name
-        let recipientName = 'Unknown';
+        // Build recipient name - equity_ledger is ONLY for executives
+        let recipientName = 'Unknown Executive';
 
         if (execUser) {
           const fullName = `${execUser.first_name || ''} ${execUser.last_name || ''}`.trim();
           const role = execUser.title || '';
           
-          // Format: "ROLE Full Name" (e.g., "CFO Justin Sweet")
-          if (role && fullName) {
-            recipientName = `${role} ${fullName}`;
+          // Format: "Full Name (ROLE)" (e.g., "Justin Sweet (CFO)")
+          if (fullName && role) {
+            recipientName = `${fullName} (${role})`;
           } else if (fullName) {
             recipientName = fullName;
           } else if (role) {
             recipientName = role;
           } else {
             recipientName = 'Executive';
-          }
-        } else {
-          // Try employees
-          const { data: employee } = await supabase
-            .from('employees')
-            .select('first_name, last_name')
-            .eq('user_id', grant.recipient_user_id)
-            .maybeSingle();
-
-          if (employee) {
-            recipientName = `${employee.first_name || ''} ${employee.last_name || ''}`.trim();
-          } else {
-            // Fallback: use known grants by amount
-            if (grant.shares_amount >= 4500000 && grant.shares_amount <= 5500000) {
-              recipientName = 'CFO Justin Sweet';
-            } else {
-              recipientName = `Grant Recipient (${grant.shares_amount.toLocaleString()} shares)`;
-            }
           }
         }
 
