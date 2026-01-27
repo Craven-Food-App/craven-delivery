@@ -94,51 +94,22 @@ const CapTableOverview: React.FC = () => {
 
   const loadEquityGrants = async () => {
     try {
-      // Get all active grants from equity_ledger
+      // Get ALL executive equity from equity_ledger ONLY (single source of truth for executives)
       const { data: grants, error: grantsError } = await supabase
         .from('equity_ledger')
-        .select('id, recipient_user_id, shares_amount, transaction_type, notes')
+        .select('id, recipient_user_id, shares_amount, transaction_type, notes, price_per_share')
         .eq('transaction_type', 'grant')
         .order('shares_amount', { ascending: false });
-      
-      // Also check for Justin's grant by finding his user_id from exec_users
-      const { data: justinExec } = await supabase
-        .from('exec_users')
-        .select('user_id, title, first_name, last_name')
-        .ilike('title', '%cfo%')
-        .maybeSingle();
-      
-      console.log('👤 [EQUITY GRANTS] Justin exec_user lookup:', justinExec);
-      
-      if (justinExec?.user_id) {
-        const { data: justinGrants } = await supabase
-          .from('equity_ledger')
-          .select('id, recipient_user_id, shares_amount, transaction_type, notes')
-          .eq('transaction_type', 'grant')
-          .eq('recipient_user_id', justinExec.user_id);
-        
-        console.log('💰 [EQUITY GRANTS] Justin-specific grants by user_id:', justinGrants);
-        
-        // If Justin's grant exists but wasn't in the main query, add it
-        if (justinGrants && justinGrants.length > 0) {
-          // Look for Justin's grant (4.2M shares, updated from 5M)
-          const justinGrant = justinGrants.find(g => g.shares_amount >= 4000000 && g.shares_amount <= 5000000);
-          if (justinGrant && !grants?.some(g => g.id === justinGrant.id)) {
-            console.log('➕ [EQUITY GRANTS] Adding Justin grant that was missing from main query');
-            grants?.push(justinGrant);
-          }
-        }
-      }
 
       if (grantsError) throw grantsError;
 
-      console.log('📊 [EQUITY GRANTS] Raw grants from ledger:', grants);
-      console.log('📊 [EQUITY GRANTS] Total grants found:', grants?.length || 0);
+      console.log('📊 [EQUITY LEDGER] All executive grants:', grants);
+      console.log('📊 [EQUITY LEDGER] Total executive grants found:', grants?.length || 0);
       
-      // Log all grant amounts to debug
+      // Log all grant amounts
       if (grants) {
         grants.forEach((g: any) => {
-          console.log(`  - Grant: ${g.shares_amount} shares, user_id: ${g.recipient_user_id}`);
+          console.log(`  - Executive Grant: ${g.shares_amount} shares @ $${g.price_per_share || 0} strike, user_id: ${g.recipient_user_id}`);
         });
       }
 
