@@ -11,27 +11,22 @@ SELECT
   COUNT(*) FILTER (WHERE status IN ('terminated', 'REJECTED', 'TERMINATED')) as terminated
 FROM executive_appointments;
 
--- Show all appointments (handle both old and new schema)
+-- Show all appointments (new schema with executive_id)
 SELECT 
   'APPOINTMENT DETAILS' as info,
-  id,
-  CASE 
-    WHEN proposed_officer_name IS NOT NULL THEN proposed_officer_name
-    WHEN executive_id IS NOT NULL THEN (SELECT name FROM exec_users WHERE id = executive_id)
-    ELSE 'Unknown'
-  END as officer_name,
-  CASE 
-    WHEN proposed_title IS NOT NULL THEN proposed_title
-    WHEN position IS NOT NULL THEN position
-    ELSE 'Unknown'
-  END as position,
-  appointment_type,
-  status,
-  effective_date,
-  COALESCE(board_resolution_id, resolution_id) as resolution_id,
-  created_at
-FROM executive_appointments
-ORDER BY created_at DESC
+  ea.id,
+  eu.name as officer_name,
+  eu.email as officer_email,
+  ea.position,
+  ea.appointment_type,
+  ea.status,
+  ea.effective_date,
+  ea.resolution_id,
+  ea.appointed_by,
+  ea.created_at
+FROM executive_appointments ea
+LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+ORDER BY ea.created_at DESC
 LIMIT 20;
 
 -- 2. Check governance_board_resolutions
