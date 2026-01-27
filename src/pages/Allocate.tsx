@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DollarSign, CheckCircle2, AlertCircle, ArrowRight, Lock } from "lucide-react";
+import { supportApi } from "@/lib/api-client";
 
 export default function Allocate() {
   const navigate = useNavigate();
@@ -64,30 +65,26 @@ export default function Allocate() {
     setBusy(true);
 
     try {
-      const res = await fetch("/api/support/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inviteId: inviteSession.inviteId,
-          amountCents: Math.round(finalAmount * 100),
-          email: inviteSession.email,
-        }),
-      });
+      const response = await supportApi.createCheckout(
+        inviteSession.inviteId,
+        Math.round(finalAmount * 100),
+        inviteSession.email
+      );
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Unable to create checkout session.");
+      if (!response.ok) {
+        setError(response.error || "Unable to create checkout session.");
+        return;
       }
 
       // Redirect to Stripe Checkout
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (response.data.checkoutUrl) {
+        window.location.href = response.data.checkoutUrl;
       } else {
-        throw new Error("No checkout URL received.");
+        setError("No checkout URL received.");
       }
     } catch (e: any) {
       setError(e.message || "Unable to proceed to payment.");
+    } finally {
       setBusy(false);
     }
   };

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Key, ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
+import { supportApi } from "@/lib/api-client";
 
 export default function Access() {
   const navigate = useNavigate();
@@ -15,30 +16,22 @@ export default function Access() {
     setBusy(true);
 
     try {
-      const res = await fetch("/api/support/verify-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          accessCode: accessCode.toUpperCase().trim(),
-          email: email.trim().toLowerCase(),
-        }),
-      });
+      const response = await supportApi.verifyAccess(accessCode, email);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Invalid access code or email.");
+      if (!response.ok) {
+        setError(response.error || "Invalid access code or email.");
+        return;
       }
 
       // Store invite info in sessionStorage for allocate page
       sessionStorage.setItem("invite_session", JSON.stringify({
-        inviteId: data.invite.id,
-        email: data.invite.email,
-        minAmount: data.invite.min_amount_cents,
-        maxAmount: data.invite.max_amount_cents,
+        inviteId: response.data.invite.id,
+        email: response.data.invite.email,
+        minAmount: response.data.invite.min_amount_cents,
+        maxAmount: response.data.invite.max_amount_cents,
       }));
 
-      navigate(`/allocate?invite_id=${data.invite.id}`);
+      navigate(`/allocate?invite_id=${response.data.invite.id}`);
     } catch (e: any) {
       setError(e.message || "Unable to verify access.");
     } finally {
