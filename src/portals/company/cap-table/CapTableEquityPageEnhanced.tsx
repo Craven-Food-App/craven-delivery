@@ -89,68 +89,113 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
       setCapTable(capData);
 
-      // 2. Get ALL executives from equity_ledger
+      // 2. Get ALL executives from equity_ledger and aggregate by user_id
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('equity_ledger')
         .select('recipient_user_id, shares_amount, price_per_share')
         .eq('transaction_type', 'grant')
-        .order('shares_amount', { ascending: false });
+        .not('recipient_user_id', 'is', null);
 
       if (ledgerError) throw new Error(`Equity ledger error: ${ledgerError.message}`);
 
-      // 3. Get exec_users and their names from user_profiles/employees
-      const recipientUserIds = [...new Set((ledgerData || []).map(g => g.recipient_user_id))];
+      // Aggregate shares by recipient_user_id (in case of duplicates)
+      const sharesByUserId: Record<string, { shares: number; strikePrice: number }> = {};
+      (ledgerData || []).forEach(grant => {
+        if (grant.recipient_user_id) {
+          if (!sharesByUserId[grant.recipient_user_id]) {
+            sharesByUserId[grant.recipient_user_id] = {
+              shares: 0,
+              strikePrice: grant.price_per_share || 0,
+            };
+          }
+          sharesByUserId[grant.recipient_user_id].shares += grant.shares_amount || 0;
+        }
+      });
+
+      const recipientUserIds = Object.keys(sharesByUserId);
       
-      // Get exec_users
+      if (recipientUserIds.length === 0) {
+        setExecutives([]);
+        return;
+      }
+
+      // 3. Get exec_users with role information
       const { data: execData, error: execError } = await supabase
         .from('exec_users')
-        .select('id, user_id, title')
+        .select('id, user_id, title, role')
         .in('user_id', recipientUserIds);
 
       if (execError) throw new Error(`Exec users error: ${execError.message}`);
 
-      // Get names from user_profiles
+      // 4. Get names from user_profiles
       const { data: userProfiles } = await supabase
         .from('user_profiles')
         .select('id, full_name')
         .in('id', recipientUserIds);
 
-      // Get names from employees (fallback)
+      // 5. Get names from employees (fallback)
       const { data: employees } = await supabase
         .from('employees')
         .select('user_id, first_name, last_name')
         .in('user_id', recipientUserIds);
 
-      // Build name map
+      // Build name map - prioritize user_profiles, then employees
       const nameMap: Record<string, string> = {};
       (userProfiles || []).forEach(profile => {
         if (profile.full_name) nameMap[profile.id] = profile.full_name;
       });
       (employees || []).forEach(emp => {
-        if (emp.first_name || emp.last_name) {
-          nameMap[emp.user_id] = `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+        if (emp.user_id && !nameMap[emp.user_id]) {
+          const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+          if (fullName) nameMap[emp.user_id] = fullName;
         }
       });
 
-      // 4. Match ledger to executives
+      // 6. Build executive equity list with proper names
       const executiveEquity: ExecutiveEquity[] = [];
 
-      for (const grant of ledgerData || []) {
-        const exec = execData?.find(e => e.user_id === grant.recipient_user_id);
+      for (const userId of recipientUserIds) {
+        const exec = execData?.find(e => e.user_id === userId);
+        const shareData = sharesByUserId[userId];
         
-        if (exec) {
-          const percentage = (grant.shares_amount / capData.total_authorized) * 100;
-          const name = nameMap[grant.recipient_user_id] || exec.title || 'Executive';
+        if (shareData && shareData.shares > 0) {
+          // Get name - prioritize actual name, never use title as name
+          let name = nameMap[userId];
+          
+          // If no name found, try to construct from exec data
+          if (!name && exec) {
+            // Check if we can get email and extract name
+            const { data: authUser } = await supabase.auth.admin.getUserById(userId).catch(() => ({ data: { user: null } }));
+            if (authUser?.user?.email) {
+              // Extract name from email as last resort
+              const emailName = authUser.user.email.split('@')[0];
+              name = emailName.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+            }
+          }
+          
+          // Final fallback - use a generic name but log warning
+          if (!name) {
+            console.warn(`⚠️ No name found for user_id: ${userId}, using title as fallback`);
+            name = exec?.title || 'Executive';
+          }
+          
+          // Title should be the role/title, not the name
+          const title = exec?.title || (exec?.role ? exec.role.toUpperCase() : 'Executive');
+          
+          const percentage = (shareData.shares / capData.total_authorized) * 100;
           
           executiveEquity.push({
             name: name,
-            title: exec.title || 'Executive',
-            shares: grant.shares_amount,
+            title: title,
+            shares: shareData.shares,
             percentage: percentage,
-            strike_price: grant.price_per_share || 0,
+            strike_price: shareData.strikePrice,
           });
         }
       }
+
+      // Sort by shares descending
+      executiveEquity.sort((a, b) => b.shares - a.shares);
 
       setExecutives(executiveEquity);
 
