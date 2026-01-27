@@ -93,6 +93,16 @@ const EquityGrantsList: React.FC = () => {
         console.warn('⚠️ Error loading cancellations:', cancelError);
       }
       
+      console.log('🔍 [REVOCATION CHECK] Cancellations found:', cancellations?.length || 0);
+      if (cancellations && cancellations.length > 0) {
+        console.log('🔍 [REVOCATION CHECK] Cancellation details:', cancellations.map(c => ({
+          user_id: c.recipient_user_id,
+          shares: c.shares_amount,
+          grant_id: c.grant_id,
+          date: c.transaction_date
+        })));
+      }
+      
       // Create a set of revoked grant keys (user_id + shares_amount or grant_id)
       const revokedGrantKeys = new Set<string>();
       const revokedByUserId = new Map<string, Set<number>>(); // user_id -> set of revoked share amounts
