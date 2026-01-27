@@ -95,18 +95,33 @@ const EquityGrantsList: React.FC = () => {
       
       // Create a set of revoked grant keys (user_id + shares_amount or grant_id)
       const revokedGrantKeys = new Set<string>();
+      const revokedByUserId = new Map<string, Set<number>>(); // user_id -> set of revoked share amounts
+      
       if (cancellations) {
         for (const cancel of cancellations) {
-          // Match by grant_id if available, otherwise by user_id + shares_amount
+          // Match by grant_id if available
           if (cancel.grant_id) {
             revokedGrantKeys.add(`grant_id:${cancel.grant_id}`);
-          } else {
-            revokedGrantKeys.add(`${cancel.recipient_user_id}_${cancel.shares_amount}`);
           }
+          
+          // ALWAYS add user_id + shares_amount match (even if grant_id exists)
+          // This handles cases where grant_id is NULL
+          const userSharesKey = `${cancel.recipient_user_id}_${cancel.shares_amount}`;
+          revokedGrantKeys.add(userSharesKey);
+          
+          // Also track by user_id for flexible matching
+          if (!revokedByUserId.has(cancel.recipient_user_id)) {
+            revokedByUserId.set(cancel.recipient_user_id, new Set());
+          }
+          revokedByUserId.get(cancel.recipient_user_id)!.add(cancel.shares_amount);
         }
       }
       
-      console.log('🚫 Found', revokedGrantKeys.size, 'revoked grants to exclude');
+      console.log('🚫 Found', revokedGrantKeys.size, 'revoked grant keys to exclude');
+      console.log('🚫 Revoked by user_id:', Array.from(revokedByUserId.entries()).map(([uid, amounts]) => ({
+        user_id: uid,
+        revoked_amounts: Array.from(amounts)
+      })));
       
       const { data: ledgerEntries, error: ledgerError } = await supabase
         .from('equity_ledger')
@@ -123,16 +138,33 @@ const EquityGrantsList: React.FC = () => {
       
       // Filter out revoked grants
       const activeGrants = ledgerEntries?.filter(entry => {
-        const grantKey = entry.grant_id 
-          ? `grant_id:${entry.grant_id}` 
-          : `${entry.recipient_user_id}_${entry.shares_amount}`;
-        const isRevoked = revokedGrantKeys.has(grantKey);
+        // Check multiple matching strategies
+        let isRevoked = false;
+        
+        // Strategy 1: Match by grant_id if available
+        if (entry.grant_id) {
+          isRevoked = revokedGrantKeys.has(`grant_id:${entry.grant_id}`);
+        }
+        
+        // Strategy 2: Match by user_id + shares_amount (works even if grant_id is NULL)
+        if (!isRevoked) {
+          const userSharesKey = `${entry.recipient_user_id}_${entry.shares_amount}`;
+          isRevoked = revokedGrantKeys.has(userSharesKey);
+        }
+        
+        // Strategy 3: Check if this user_id has ANY revocation for this share amount
+        if (!isRevoked && revokedByUserId.has(entry.recipient_user_id)) {
+          const revokedAmounts = revokedByUserId.get(entry.recipient_user_id)!;
+          isRevoked = revokedAmounts.has(entry.shares_amount);
+        }
+        
         if (isRevoked) {
           console.log('🚫 Filtering out revoked grant:', {
             id: entry.id,
             user_id: entry.recipient_user_id,
             shares: entry.shares_amount,
-            grant_id: entry.grant_id
+            grant_id: entry.grant_id,
+            matched_by: entry.grant_id ? 'grant_id' : 'user_id+shares_amount'
           });
         }
         return !isRevoked;
