@@ -32,7 +32,7 @@ BEGIN
     
     RAISE NOTICE 'Renamed trusts table to holding_companies';
   END IF;
+  
+  RAISE NOTICE '✅ All "trust" references removed from database schema';
 END $$;
-
-RAISE NOTICE '✅ All "trust" references removed from database schema';
 
