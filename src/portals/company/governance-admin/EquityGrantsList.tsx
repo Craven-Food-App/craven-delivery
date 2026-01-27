@@ -84,6 +84,22 @@ const EquityGrantsList: React.FC = () => {
     setLoading(true);
     try {
       // First, get all cancellation entries to identify revoked grants
+      // Also query ALL transaction types to debug RLS issues
+      const { data: allTransactions, error: allError } = await supabase
+        .from('equity_ledger')
+        .select('transaction_type, recipient_user_id, shares_amount, grant_id, transaction_date, created_at, notes')
+        .order('created_at', { ascending: false });
+      
+      console.log('🔍 [REVOCATION CHECK] All equity_ledger entries:', allTransactions?.length || 0);
+      if (allTransactions && allTransactions.length > 0) {
+        const byType = allTransactions.reduce((acc: any, t: any) => {
+          acc[t.transaction_type] = (acc[t.transaction_type] || 0) + 1;
+          return acc;
+        }, {});
+        console.log('🔍 [REVOCATION CHECK] Entries by transaction_type:', byType);
+        console.log('🔍 [REVOCATION CHECK] All entries:', allTransactions);
+      }
+      
       const { data: cancellations, error: cancelError } = await supabase
         .from('equity_ledger')
         .select('recipient_user_id, shares_amount, grant_id, transaction_date, created_at, notes')
