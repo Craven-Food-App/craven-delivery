@@ -147,10 +147,12 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       // Remove any users with zero or negative shares (fully revoked)
       Object.keys(sharesByUserId).forEach(userId => {
         if (sharesByUserId[userId].shares <= 0) {
+          console.log(`🚫 Removing user ${userId} - shares are ${sharesByUserId[userId].shares} (revoked)`);
           delete sharesByUserId[userId];
         }
       });
 
+      console.log('📊 Net shares by user_id after filtering revoked:', sharesByUserId);
       const recipientUserIds = Object.keys(sharesByUserId);
       
       if (recipientUserIds.length === 0) {
@@ -165,6 +167,12 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         .in('user_id', recipientUserIds);
 
       if (execError) throw new Error(`Exec users error: ${execError.message}`);
+      
+      console.log('👥 Exec users found:', execData?.map(e => ({
+        user_id: e.user_id,
+        title: e.title,
+        role: e.role
+      })));
 
       // 4. Get names from user_profiles
       const { data: userProfiles } = await supabase
