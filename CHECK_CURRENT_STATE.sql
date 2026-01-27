@@ -65,9 +65,9 @@ SELECT
   'GOVERNANCE_LOGS' as table_name,
   action,
   description,
-  created_at
+  timestamp
 FROM public.governance_logs
 WHERE action IN ('equity_adjusted', 'cap_table_restructured')
-ORDER BY created_at DESC
+ORDER BY timestamp DESC
 LIMIT 5;
 
