@@ -7,6 +7,7 @@ import OfficersTab from './officers/OfficersTab';
 import ResolutionsTab from './resolutions/ResolutionsTab';
 import CertificatesTab from './certificates/CertificatesTab';
 import ExitWorkflowsTab from './exit-workflows/ExitWorkflowsTab';
+// Using old GovernanceLogList for now - will be moved later
 import GovernanceLogList from '../governance-admin/GovernanceLogList';
 
 /**

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import CompanyPortalLayout from './index';
-import CapTableEquityPageEnhanced from './cap-table/CapTableEquityPageEnhanced';
+import CapTableTest from './cap-table/CapTableTest'; // Temporary test
+// import CapTableEquityPageEnhanced from './cap-table/CapTableEquityPageEnhanced';
 import GovernancePage from './governance/GovernancePage';
 import BoardPortalPage from './board/BoardPortalPage';
 import TeamPage from './team/TeamPage';
@@ -20,7 +21,7 @@ const CompanyPortalRoutes: React.FC = () => {
     <Routes>
       <Route element={<CompanyPortalLayout />}>
         <Route index element={<Navigate to="cap-table" replace />} />
-        <Route path="cap-table" element={<CapTableEquityPageEnhanced />} />
+        <Route path="cap-table" element={<CapTableTest />} />
         <Route path="governance/*" element={<GovernancePage />} />
         <Route path="board" element={<BoardPortalPage />} />
         <Route path="team" element={<TeamPage />} />
