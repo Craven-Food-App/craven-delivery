@@ -162,21 +162,21 @@ const CapTableEquityPageEnhanced: React.FC = () => {
           // Get name - prioritize actual name, never use title as name
           let name = nameMap[userId];
           
-          // If no name found, try to construct from exec data
-          if (!name && exec) {
-            // Check if we can get email and extract name
-            const { data: authUser } = await supabase.auth.admin.getUserById(userId).catch(() => ({ data: { user: null } }));
-            if (authUser?.user?.email) {
-              // Extract name from email as last resort
-              const emailName = authUser.user.email.split('@')[0];
-              name = emailName.split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
-            }
-          }
-          
           // Final fallback - use a generic name but log warning
           if (!name) {
-            console.warn(`⚠️ No name found for user_id: ${userId}, using title as fallback`);
-            name = exec?.title || 'Executive';
+            console.warn(`⚠️ No name found for user_id: ${userId}, using role/title as fallback`);
+            // Use role if available, otherwise title, but make it clear it's not a name
+            if (exec?.role) {
+              const roleMap: Record<string, string> = {
+                'ceo': 'CEO',
+                'cfo': 'CFO',
+                'cto': 'CTO',
+                'coo': 'COO',
+              };
+              name = roleMap[exec.role.toLowerCase()] || exec.role.toUpperCase();
+            } else {
+              name = exec?.title || 'Executive';
+            }
           }
           
           // Title should be the role/title, not the name
