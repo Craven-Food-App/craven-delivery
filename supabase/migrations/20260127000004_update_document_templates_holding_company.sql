@@ -68,7 +68,7 @@ BEGIN
     RAISE NOTICE 'board_document_templates table does not exist, skipping template updates';
   END IF;
 
-  -- Check if board_documents table exists and update content
+  -- Check if board_documents table exists and update html_template
   IF EXISTS (
     SELECT 1 FROM information_schema.tables 
     WHERE table_schema = 'public' 
@@ -76,26 +76,62 @@ BEGIN
   ) THEN
     RAISE NOTICE 'Found board_documents table, updating existing documents...';
     
-    UPDATE public.board_documents
-    SET 
-      content = REPLACE(
-        REPLACE(
+    -- Check which column to update (html_template or content)
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'board_documents'
+      AND column_name = 'html_template'
+    ) THEN
+      UPDATE public.board_documents
+      SET 
+        html_template = REPLACE(
           REPLACE(
-            REPLACE(content, 
-              'Invero Business Trust (Irrevocable Trust)', 
+            REPLACE(
+              REPLACE(html_template, 
+                'Invero Business Trust (Irrevocable Trust)', 
+                'Holding Company'),
+              'Invero Business Trust', 
               'Holding Company'),
-            'Invero Business Trust', 
-            'Holding Company'),
-          '{{founder_trust_name}}', 
-          '{{holding_company_name}}'),
-        'founder_trust_name', 
-        'holding_company_name'
-      ),
-      updated_at = NOW()
-    WHERE content ILIKE '%Invero Business Trust%'
-       OR content ILIKE '%founder_trust_name%';
-
-    RAISE NOTICE 'board_documents updated successfully';
+            '{{founder_trust_name}}', 
+            '{{holding_company_name}}'),
+          'founder_trust_name', 
+          'holding_company_name'
+        ),
+        updated_at = NOW()
+      WHERE html_template ILIKE '%Invero Business Trust%'
+         OR html_template ILIKE '%founder_trust_name%';
+      
+      RAISE NOTICE 'board_documents.html_template updated successfully';
+    ELSIF EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_schema = 'public' 
+      AND table_name = 'board_documents'
+      AND column_name = 'content'
+    ) THEN
+      UPDATE public.board_documents
+      SET 
+        content = REPLACE(
+          REPLACE(
+            REPLACE(
+              REPLACE(content, 
+                'Invero Business Trust (Irrevocable Trust)', 
+                'Holding Company'),
+              'Invero Business Trust', 
+              'Holding Company'),
+            '{{founder_trust_name}}', 
+            '{{holding_company_name}}'),
+          'founder_trust_name', 
+          'holding_company_name'
+        ),
+        updated_at = NOW()
+      WHERE content ILIKE '%Invero Business Trust%'
+         OR content ILIKE '%founder_trust_name%';
+      
+      RAISE NOTICE 'board_documents.content updated successfully';
+    ELSE
+      RAISE NOTICE 'board_documents table exists but has no html_template or content column';
+    END IF;
   ELSE
     RAISE NOTICE 'board_documents table does not exist, skipping document updates';
   END IF;
