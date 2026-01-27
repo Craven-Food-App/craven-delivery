@@ -6,19 +6,20 @@
 -- PART 1: Check for appointments that need to be linked to resolutions
 -- ============================================================================
 
--- Find appointments with board_resolution_id that don't have matching resolutions
+-- Find appointments with resolution_id that don't have matching resolutions
 SELECT 
   'APPOINTMENTS WITH MISSING RESOLUTIONS' as info,
   ea.id,
-  ea.proposed_officer_name,
-  ea.proposed_title,
-  ea.board_resolution_id,
+  ea.position,
+  eu.title as executive_title,
+  ea.resolution_id,
   ea.status
 FROM executive_appointments ea
-WHERE ea.board_resolution_id IS NOT NULL
+LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+WHERE ea.resolution_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM governance_board_resolutions gbr
-    WHERE gbr.id = ea.board_resolution_id
+    WHERE gbr.id = ea.resolution_id
   )
 LIMIT 10;
 
@@ -43,25 +44,22 @@ WHERE NOT EXISTS (
 -- PART 3: Link appointments to executives in exec_users
 -- ============================================================================
 
--- Find appointments that need to be linked to exec_users
+-- Find appointments that are already linked to exec_users
 SELECT 
-  'APPOINTMENTS NEEDING EXECUTIVE LINK' as info,
+  'APPOINTMENT EXECUTIVE LINKS' as info,
   ea.id,
-  ea.proposed_officer_name,
-  ea.proposed_officer_email,
-  ea.proposed_title,
+  ea.position,
+  eu.id as executive_id,
+  eu.title as executive_title,
+  up.full_name as executive_name,
+  up.email as executive_email,
   CASE 
     WHEN eu.id IS NOT NULL THEN '✅ Linked'
     ELSE '❌ Not Linked'
-  END as link_status,
-  eu.id as executive_id,
-  eu.name as executive_name
+  END as link_status
 FROM executive_appointments ea
-LEFT JOIN exec_users eu ON (
-  eu.email = ea.proposed_officer_email 
-  OR LOWER(eu.name) = LOWER(ea.proposed_officer_name)
-)
-WHERE ea.executive_id IS NULL
+LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 LIMIT 20;
 
 -- ============================================================================
@@ -72,8 +70,8 @@ LIMIT 20;
 SELECT 
   'APPOINTMENTS THAT SHOULD BE OFFICERS' as info,
   ea.id as appointment_id,
-  ea.proposed_title,
-  ea.proposed_officer_name,
+  ea.position,
+  up.full_name as executive_name,
   CASE 
     WHEN co.id IS NOT NULL THEN '✅ Officer exists'
     ELSE '❌ No officer entry'
@@ -81,13 +79,11 @@ SELECT
   co.id as officer_id,
   co.position as officer_position
 FROM executive_appointments ea
-LEFT JOIN exec_users eu ON (
-  eu.email = ea.proposed_officer_email 
-  OR LOWER(eu.name) = LOWER(ea.proposed_officer_name)
-)
+LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 LEFT JOIN corporate_officers co ON co.executive_id = eu.id
 WHERE ea.status IN ('ACTIVE', 'APPROVED', 'active', 'approved')
-  AND ea.proposed_title IN (
+  AND ea.position IN (
     'President', 'Chief Executive Officer', 'CEO',
     'Secretary', 'Corporate Secretary',
     'Treasurer', 'Chief Financial Officer', 'CFO',
@@ -101,23 +97,23 @@ LIMIT 20;
 -- PART 5: Map appointment titles to officer positions
 -- ============================================================================
 
--- This shows how to map appointment titles to Delaware officer positions
+-- This shows how to map appointment positions to Delaware officer positions
 SELECT 
-  'TITLE TO POSITION MAPPING' as info,
-  ea.proposed_title,
+  'POSITION TO OFFICER MAPPING' as info,
+  ea.position,
   CASE 
-    WHEN ea.proposed_title ILIKE '%president%' OR ea.proposed_title ILIKE '%ceo%' THEN 'president'
-    WHEN ea.proposed_title ILIKE '%secretary%' THEN 'secretary'
-    WHEN ea.proposed_title ILIKE '%treasurer%' OR ea.proposed_title ILIKE '%cfo%' THEN 'treasurer'
-    WHEN ea.proposed_title ILIKE '%vice%' OR ea.proposed_title ILIKE '%vp%' THEN 'vice-president'
-    WHEN ea.proposed_title ILIKE '%assistant secretary%' THEN 'assistant-secretary'
-    WHEN ea.proposed_title ILIKE '%assistant treasurer%' THEN 'assistant-treasurer'
+    WHEN ea.position ILIKE '%president%' OR ea.position ILIKE '%ceo%' THEN 'president'
+    WHEN ea.position ILIKE '%secretary%' THEN 'secretary'
+    WHEN ea.position ILIKE '%treasurer%' OR ea.position ILIKE '%cfo%' THEN 'treasurer'
+    WHEN ea.position ILIKE '%vice%' OR ea.position ILIKE '%vp%' THEN 'vice-president'
+    WHEN ea.position ILIKE '%assistant secretary%' THEN 'assistant-secretary'
+    WHEN ea.position ILIKE '%assistant treasurer%' THEN 'assistant-treasurer'
     ELSE NULL
-  END as suggested_position,
+  END as suggested_officer_position,
   COUNT(*) as count
 FROM executive_appointments ea
-WHERE ea.proposed_title IS NOT NULL
-GROUP BY ea.proposed_title
+WHERE ea.position IS NOT NULL
+GROUP BY ea.position
 ORDER BY count DESC;
 
 -- ============================================================================
@@ -127,14 +123,14 @@ ORDER BY count DESC;
 SELECT 
   'RESTORATION SUMMARY' as info,
   (SELECT COUNT(*) FROM executive_appointments WHERE executive_id IS NULL) as appointments_without_executive,
-  (SELECT COUNT(*) FROM executive_appointments WHERE board_resolution_id IS NOT NULL 
-   AND NOT EXISTS (SELECT 1 FROM governance_board_resolutions WHERE id = executive_appointments.board_resolution_id)) as appointments_with_missing_resolutions,
-  (SELECT COUNT(*) FROM executive_appointments WHERE status IN ('ACTIVE', 'APPROVED', 'active', 'approved')
+  (SELECT COUNT(*) FROM executive_appointments WHERE resolution_id IS NOT NULL 
+   AND NOT EXISTS (SELECT 1 FROM governance_board_resolutions WHERE id = executive_appointments.resolution_id)) as appointments_with_missing_resolutions,
+  (SELECT COUNT(*) FROM executive_appointments ea
+   JOIN exec_users eu ON ea.executive_id = eu.id
+   WHERE ea.status IN ('ACTIVE', 'APPROVED', 'active', 'approved')
    AND NOT EXISTS (
      SELECT 1 FROM corporate_officers co
-     JOIN exec_users eu ON co.executive_id = eu.id
-     WHERE (eu.email = executive_appointments.proposed_officer_email 
-            OR LOWER(eu.name) = LOWER(executive_appointments.proposed_officer_name))
+     WHERE co.executive_id = eu.id
    )) as active_appointments_without_officers,
   (SELECT COUNT(*) FROM board_resolutions WHERE NOT EXISTS (
      SELECT 1 FROM governance_board_resolutions 

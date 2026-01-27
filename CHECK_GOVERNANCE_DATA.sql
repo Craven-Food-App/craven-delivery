@@ -87,13 +87,13 @@ SELECT
   'ORPHANED APPOINTMENTS (no resolution)' as info,
   COUNT(*) as count
 FROM executive_appointments
-WHERE COALESCE(board_resolution_id, resolution_id) IS NULL;
+WHERE resolution_id IS NULL;
 
 SELECT 
   'APPOINTMENTS WITH RESOLUTIONS' as info,
   COUNT(*) as count
 FROM executive_appointments
-WHERE COALESCE(board_resolution_id, resolution_id) IS NOT NULL;
+WHERE resolution_id IS NOT NULL;
 
 -- 5. Summary
 SELECT 
