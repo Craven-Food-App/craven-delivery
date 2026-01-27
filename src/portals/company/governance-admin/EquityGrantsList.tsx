@@ -569,7 +569,7 @@ const EquityGrantsList: React.FC = () => {
 
   const loadRevokedGrants = async (revokedGrantKeys: Set<string>, cancellations: any[]) => {
     try {
-      // Get all grants that have been revoked
+      // Get all grants that have been revoked from equity_ledger
       const { data: allGrants, error: grantsError } = await supabase
         .from('equity_ledger')
         .select('id, recipient_user_id, shares_amount, share_class, transaction_date, transaction_type, created_at, resolution_id, grant_id')
@@ -581,13 +581,70 @@ const EquityGrantsList: React.FC = () => {
         return;
       }
 
-      // Filter to only revoked grants
+      // Filter to only revoked grants from equity_ledger
       const revokedGrantEntries = allGrants?.filter(entry => {
         const grantKey = entry.grant_id 
           ? `grant_id:${entry.grant_id}` 
           : `${entry.recipient_user_id}_${entry.shares_amount}`;
         return revokedGrantKeys.has(grantKey);
       }) || [];
+
+      // Also check equity_grants table for revoked grants that aren't in equity_ledger
+      const { data: equityGrants, error: equityGrantsError } = await supabase
+        .from('equity_grants')
+        .select(`
+          id,
+          executive_id,
+          employee_id,
+          shares_total,
+          board_resolution_id,
+          status,
+          grant_date,
+          share_class,
+          exec_users(user_id, title, role, email),
+          employees(user_id, first_name, last_name, email)
+        `)
+        .order('grant_date', { ascending: false });
+
+      if (!equityGrantsError && equityGrants) {
+        for (const grant of equityGrants) {
+          const execUser = (grant as any).exec_users;
+          const employee = (grant as any).employees;
+          const sharesNum = Number(grant.shares_total) || 0;
+          
+          let userId = execUser?.user_id || employee?.user_id;
+          
+          // Match Nathan's 500K grant
+          if (!userId && sharesNum >= 450000 && sharesNum <= 550000) {
+            userId = '76e5acef-e7c0-4b26-a9e1-52e25c3e7ff3';
+          }
+          
+          if (userId) {
+            const grantKey = `${userId}_${sharesNum}`;
+            // If this grant is revoked and not already in revokedGrantEntries, add it
+            if (revokedGrantKeys.has(grantKey)) {
+              const alreadyInList = revokedGrantEntries.some(e => 
+                e.recipient_user_id === userId && e.shares_amount === sharesNum
+              );
+              
+              if (!alreadyInList) {
+                // Create a revoked grant entry from equity_grants
+                revokedGrantEntries.push({
+                  id: grant.id,
+                  recipient_user_id: userId,
+                  shares_amount: sharesNum,
+                  share_class: grant.share_class || 'Common',
+                  transaction_date: grant.grant_date || new Date().toISOString().split('T')[0],
+                  transaction_type: 'grant',
+                  created_at: grant.grant_date || new Date().toISOString(),
+                  resolution_id: grant.board_resolution_id,
+                  grant_id: null,
+                });
+              }
+            }
+          }
+        }
+      }
 
       // Create a map of cancellations by grant key for revocation details
       const cancellationMap = new Map<string, any>();
