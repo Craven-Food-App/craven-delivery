@@ -89,19 +89,42 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
       setCapTable(capData);
 
-      // 2. Get ALL executives from equity_ledger and aggregate by user_id
+      // 2. Get ALL transactions from equity_ledger (grants AND cancellations)
       const { data: ledgerData, error: ledgerError } = await supabase
         .from('equity_ledger')
-        .select('recipient_user_id, shares_amount, price_per_share')
-        .eq('transaction_type', 'grant')
+        .select('recipient_user_id, shares_amount, price_per_share, transaction_type, grant_id')
+        .in('transaction_type', ['grant', 'cancellation'])
         .not('recipient_user_id', 'is', null);
 
       if (ledgerError) throw new Error(`Equity ledger error: ${ledgerError.message}`);
 
-      // Aggregate shares by recipient_user_id (in case of duplicates)
+      // Build map of revoked grants (by grant_id or by user_id + shares_amount)
+      const revokedGrantKeys = new Set<string>();
+      (ledgerData || [])
+        .filter(t => t.transaction_type === 'cancellation')
+        .forEach(revocation => {
+          if (revocation.grant_id) {
+            revokedGrantKeys.add(`grant_id:${revocation.grant_id}`);
+          } else {
+            revokedGrantKeys.add(`${revocation.recipient_user_id}_${revocation.shares_amount}`);
+          }
+        });
+
+      // Filter out revoked grants and calculate net shares
+      const activeGrants = (ledgerData || []).filter(entry => {
+        if (entry.transaction_type === 'cancellation') return false; // Don't count cancellations as grants
+        
+        const grantKey = entry.grant_id 
+          ? `grant_id:${entry.grant_id}` 
+          : `${entry.recipient_user_id}_${entry.shares_amount}`;
+        
+        return !revokedGrantKeys.has(grantKey);
+      });
+
+      // Aggregate NET shares by recipient_user_id (grants minus cancellations)
       const sharesByUserId: Record<string, { shares: number; strikePrice: number }> = {};
-      (ledgerData || []).forEach(grant => {
-        if (grant.recipient_user_id) {
+      activeGrants.forEach(grant => {
+        if (grant.recipient_user_id && grant.transaction_type === 'grant') {
           if (!sharesByUserId[grant.recipient_user_id]) {
             sharesByUserId[grant.recipient_user_id] = {
               shares: 0,
@@ -109,6 +132,22 @@ const CapTableEquityPageEnhanced: React.FC = () => {
             };
           }
           sharesByUserId[grant.recipient_user_id].shares += grant.shares_amount || 0;
+        }
+      });
+
+      // Also subtract cancellations directly
+      (ledgerData || [])
+        .filter(t => t.transaction_type === 'cancellation')
+        .forEach(cancellation => {
+          if (cancellation.recipient_user_id && sharesByUserId[cancellation.recipient_user_id]) {
+            sharesByUserId[cancellation.recipient_user_id].shares -= cancellation.shares_amount || 0;
+          }
+        });
+
+      // Remove any users with zero or negative shares (fully revoked)
+      Object.keys(sharesByUserId).forEach(userId => {
+        if (sharesByUserId[userId].shares <= 0) {
+          delete sharesByUserId[userId];
         }
       });
 
