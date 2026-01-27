@@ -98,12 +98,39 @@ const CapTableEquityPageEnhanced: React.FC = () => {
 
       if (ledgerError) throw new Error(`Equity ledger error: ${ledgerError.message}`);
 
-      // 3. Get executive names from exec_users
+      // 3. Get exec_users and their names from user_profiles/employees
+      const recipientUserIds = [...new Set((ledgerData || []).map(g => g.recipient_user_id))];
+      
+      // Get exec_users
       const { data: execData, error: execError } = await supabase
         .from('exec_users')
-        .select('user_id, name, title');
+        .select('id, user_id, title')
+        .in('user_id', recipientUserIds);
 
       if (execError) throw new Error(`Exec users error: ${execError.message}`);
+
+      // Get names from user_profiles
+      const { data: userProfiles } = await supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .in('id', recipientUserIds);
+
+      // Get names from employees (fallback)
+      const { data: employees } = await supabase
+        .from('employees')
+        .select('user_id, first_name, last_name')
+        .in('user_id', recipientUserIds);
+
+      // Build name map
+      const nameMap: Record<string, string> = {};
+      (userProfiles || []).forEach(profile => {
+        if (profile.full_name) nameMap[profile.id] = profile.full_name;
+      });
+      (employees || []).forEach(emp => {
+        if (emp.first_name || emp.last_name) {
+          nameMap[emp.user_id] = `${emp.first_name || ''} ${emp.last_name || ''}`.trim();
+        }
+      });
 
       // 4. Match ledger to executives
       const executiveEquity: ExecutiveEquity[] = [];
@@ -113,9 +140,10 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         
         if (exec) {
           const percentage = (grant.shares_amount / capData.total_authorized) * 100;
+          const name = nameMap[grant.recipient_user_id] || exec.title || 'Executive';
           
           executiveEquity.push({
-            name: exec.name || 'Executive',
+            name: name,
             title: exec.title || 'Executive',
             shares: grant.shares_amount,
             percentage: percentage,
