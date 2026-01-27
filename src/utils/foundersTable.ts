@@ -224,13 +224,13 @@ export const buildShareholdersTableHtml = async (target?: FoundersTableTarget): 
   // Process all shareholders from employee_equity (EXCLUDE Torrance Stroman)
   if (equityData && equityData.length > 0) {
     equityData.forEach((eq: any) => {
-      // Handle non-employee shareholders (trusts, entities like Invero Business Trust)
+      // Handle non-employee shareholders (entities like Holding Company)
       if (eq.shareholder_name && !eq.employees) {
         const role = eq.is_majority_shareholder ? 'majority_shareholder' : 'shareholder';
-        const title = eq.shareholder_type === 'trust' 
+        const title = eq.shareholder_type === 'entity'
+          ? eq.is_majority_shareholder ? 'Majority Shareholder (Holding Company)' : 'Shareholder (Entity)'
+          : eq.shareholder_type === 'trust' 
           ? 'Majority Shareholder (Trust)' 
-          : eq.shareholder_type === 'entity'
-          ? 'Shareholder (Entity)'
           : 'Shareholder';
 
         let vestingText = formatVesting(eq.vesting_schedule);
