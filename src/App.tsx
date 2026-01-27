@@ -147,25 +147,12 @@ import ExecutiveDocumentSign from "./pages/ExecutiveDocumentSign";
 import ExecutiveSigningPortal from "./pages/ExecutiveSigningPortal";
 import ExecutiveProfile from "./pages/ExecutiveProfile";
 import ExecutiveResetPassword from "./pages/ExecutiveResetPassword";
-// Company Portal - lazy loaded
-import CompanyPortalLayout from "./portals/company/index";
-import CompanyDashboard from "./portals/company/dashboard/CompanyDashboard";
-import GovernanceAdminDashboard from "./portals/company/governance-admin/GovernanceAdminDashboard";
-import AppointmentList from "./portals/company/governance-admin/AppointmentList";
-import NewAppointmentForm from "./portals/company/governance-admin/NewAppointmentForm";
-import ExecutiveAppointmentWizard from "./portals/company/governance-admin/wizards/ExecutiveAppointmentWizard";
-import ResolutionList from "./portals/company/governance-admin/ResolutionList";
-import OfficerLedger from "./portals/company/governance-admin/OfficerLedger";
-import GovernanceLogList from "./portals/company/governance-admin/GovernanceLogList";
-import ResolutionVotingDashboard from "./portals/company/governance-admin/ResolutionVotingDashboard";
-import BoardDashboard from "./portals/company/board/BoardDashboard";
-import BoardResolutionDetail from "./portals/company/board/BoardResolutionDetail";
-import ExecutiveDashboard from "./portals/company/executives/ExecutiveDashboard";
-import MyAppointment from "./portals/company/executives/MyAppointment";
-import OfficerDirectoryInternal from "./portals/company/executives/OfficerDirectoryInternal";
-import LeadershipPublicPage from "./portals/company/leadership-public/LeadershipPublicPage";
-import SOPWrapper from "./portals/company/sop/SOPWrapper";
-import { TemplateManager } from "./components/board/TemplateManager";
+// Company Portal - New Structure
+import CompanyPortalRoutes from "./portals/company/CompanyPortalRoutes";
+// SOP Portal - Standalone
+import SOPPortalRoutes from "./portals/sop/SOPPortalRoutes";
+// Templates Portal - Standalone
+import TemplatesPortalRoutes from "./portals/templates/TemplatesPortalRoutes";
 // Intern & Manager Portals - lazy loaded
 const InternPortalLayout = lazy(() => import("./portals/intern/InternPortalLayout"));
 const InternDashboard = lazy(() => import("./portals/intern/dashboard/InternDashboard"));
@@ -818,24 +805,14 @@ const App = () => {
           <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
           <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/executive/discipline" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><ExecutiveAccountability /></Suspense></BusinessAuthGuard>} />
-          <Route path="/company/*" element={<CompanyPortalLayout />}>
-            <Route index element={<CompanyDashboard />} />
-            <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
-            <Route path="governance-admin/appointments" element={<AppointmentList />} />
-            <Route path="governance-admin/appointments/new" element={<NewAppointmentForm />} />
-            <Route path="governance-admin/resolutions" element={<ResolutionList />} />
-            <Route path="governance-admin/officers" element={<OfficerLedger />} />
-            <Route path="governance-admin/logs" element={<GovernanceLogList />} />
-            <Route path="board" element={<BoardDashboard />} />
-            <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
-            <Route path="voting" element={<ResolutionVotingDashboard />} />
-            <Route path="executives" element={<ExecutiveDashboard />} />
-            <Route path="executives/my-appointment" element={<MyAppointment />} />
-            <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
-            <Route path="leadership-public" element={<LeadershipPublicPage />} />
-            <Route path="leadership/templates" element={<TemplateManager />} />
-            <Route path="sop" element={<SOPWrapper />} />
-          </Route>
+          {/* Company Portal - New Structure */}
+          <Route path="/company/*" element={<CompanyPortalRoutes />} />
+          
+          {/* SOP Portal - Standalone */}
+          <Route path="/sop/*" element={<SOPPortalRoutes />} />
+          
+          {/* Templates Portal - Standalone */}
+          <Route path="/templates/*" element={<TemplatesPortalRoutes />} />
           <Route path="/intern/*" element={<Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense>}>
             <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternDashboard /></Suspense>} />
             <Route path="training" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternTraining /></Suspense>} />

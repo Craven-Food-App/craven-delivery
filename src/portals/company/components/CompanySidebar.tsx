@@ -14,6 +14,7 @@ import {
   IconCheckbox,
   IconChevronRight,
   IconBuildingSkyscraper,
+  IconChartPie,
 } from '@tabler/icons-react';
 import { fetchUserRoles, canManageGovernance, canVoteOnResolutions } from '@/lib/roles';
 import { supabase } from '@/integrations/supabase/client';
@@ -75,22 +76,22 @@ const CompanySidebar: React.FC = () => {
 
   const navItems = [
     {
-      label: 'Dashboard',
-      icon: IconDashboard,
-      path: '/company',
+      label: 'Cap Table',
+      icon: IconChartPie,
+      path: '/company/cap-table',
       roles: ['all'],
     },
     {
-      label: 'Governance Admin',
+      label: 'Governance',
       icon: IconShield,
-      path: '/company/governance-admin',
+      path: '/company/governance',
       roles: ['CRAVEN_FOUNDER', 'CRAVEN_CORPORATE_SECRETARY'],
       children: [
-        { label: 'Appointments', path: '/company/governance-admin?tab=appointments' },
-        { label: 'Resolutions', path: '/company/governance-admin?tab=resolutions' },
-        { label: 'Exit Workflows', path: '/company/governance-admin?tab=exit-workflows' },
-        { label: 'Officers', path: '/company/governance-admin?tab=officers' },
-        { label: 'Logs', path: '/company/governance-admin?tab=logs' },
+        { label: 'Appointments', path: '/company/governance?tab=appointments' },
+        { label: 'Officers', path: '/company/governance?tab=officers' },
+        { label: 'Resolutions', path: '/company/governance?tab=resolutions' },
+        { label: 'Certificates', path: '/company/governance?tab=certificates' },
+        { label: 'Exit Workflows', path: '/company/governance?tab=exit-workflows' },
       ],
     },
     {
@@ -100,41 +101,11 @@ const CompanySidebar: React.FC = () => {
       roles: ['CRAVEN_BOARD_MEMBER', 'CRAVEN_FOUNDER'],
     },
     {
-      label: 'Voting',
-      icon: IconCheckbox,
-      path: '/company/voting',
-      roles: ['CRAVEN_BOARD_MEMBER', 'CRAVEN_FOUNDER', 'CRAVEN_EXECUTIVE'],
-    },
-    {
-      label: 'Executives',
+      label: 'Team',
       icon: IconUserCheck,
-      path: '/company/executives',
-      roles: ['CRAVEN_EXECUTIVE'],
-      permission: 'company.executives.view', // CFOs get this automatically
-      children: [
-        { label: 'My Appointment', path: '/company/executives/my-appointment' },
-        { label: 'Directory', path: '/company/executives/directory' },
-      ],
-    },
-    {
-      label: 'Leadership',
-      icon: IconWorld,
-      path: '/company/leadership-public',
+      path: '/company/team',
       roles: ['all'],
-      permission: 'company.leadership.view', // CFOs get this automatically
-    },
-    {
-      label: 'Template Manager',
-      icon: IconFileText,
-      path: '/company/leadership/templates',
-      roles: ['CRAVEN_FOUNDER', 'CRAVEN_CORPORATE_SECRETARY', 'CRAVEN_CEO'],
-    },
-    {
-      label: 'SOP Documents',
-      icon: IconBook,
-      path: '/company/sop',
-      roles: ['all'],
-      permission: 'company.sop.view',
+      permission: 'company.executives.view',
     },
   ];
 

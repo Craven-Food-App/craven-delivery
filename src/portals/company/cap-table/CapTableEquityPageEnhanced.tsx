@@ -1,0 +1,522 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Title,
+  Text,
+  Stack,
+  Card,
+  Group,
+  Grid,
+  Badge,
+  Table,
+  Progress,
+  Loader,
+  Alert,
+  NumberFormatter,
+  Button,
+  Tabs,
+} from '@mantine/core';
+import { IconChartPie, IconAlertCircle, IconDownload, IconCoins } from '@tabler/icons-react';
+import { supabase } from '@/integrations/supabase/client';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import EquityGrantsList from '../governance-admin/EquityGrantsList';
+import EquityGrantWizard from '../governance-admin/wizards/EquityGrantWizard';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface CapTableData {
+  total_authorized: number;
+  total_issued: number;
+  total_unissued: number;
+  holding_company_shares: number;
+  holding_company_percentage: number;
+  founder_shares: number;
+  founder_percentage: number;
+  equity_pool: number;
+  pool_percentage: number;
+  par_value: number;
+}
+
+interface ExecutiveEquity {
+  name: string;
+  title: string;
+  shares: number;
+  percentage: number;
+  strike_price: number;
+}
+
+interface PieChartData {
+  name: string;
+  value: number;
+  shares: number;
+  color: string;
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+const CapTableEquityPageEnhanced: React.FC = () => {
+  const [capTable, setCapTable] = useState<CapTableData | null>(null);
+  const [executives, setExecutives] = useState<ExecutiveEquity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [grantWizardOpen, setGrantWizardOpen] = useState(false);
+
+  useEffect(() => {
+    loadCapTable();
+  }, []);
+
+  // ==========================================================================
+  // LOAD CAP TABLE DATA
+  // ==========================================================================
+  const loadCapTable = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 1. Get cap table summary
+      const { data: capData, error: capError } = await supabase
+        .from('cap_tables')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (capError) throw new Error(`Cap table error: ${capError.message}`);
+      if (!capData) throw new Error('No cap table data found');
+
+      setCapTable(capData);
+
+      // 2. Get ALL executives from equity_ledger
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('equity_ledger')
+        .select('recipient_user_id, shares_amount, price_per_share')
+        .eq('transaction_type', 'grant')
+        .order('shares_amount', { ascending: false });
+
+      if (ledgerError) throw new Error(`Equity ledger error: ${ledgerError.message}`);
+
+      // 3. Get executive names from exec_users
+      const { data: execData, error: execError } = await supabase
+        .from('exec_users')
+        .select('user_id, name, title');
+
+      if (execError) throw new Error(`Exec users error: ${execError.message}`);
+
+      // 4. Match ledger to executives
+      const executiveEquity: ExecutiveEquity[] = [];
+
+      for (const grant of ledgerData || []) {
+        const exec = execData?.find(e => e.user_id === grant.recipient_user_id);
+        
+        if (exec) {
+          const percentage = (grant.shares_amount / capData.total_authorized) * 100;
+          
+          executiveEquity.push({
+            name: exec.name || 'Executive',
+            title: exec.title || 'Executive',
+            shares: grant.shares_amount,
+            percentage: percentage,
+            strike_price: grant.price_per_share || 0,
+          });
+        }
+      }
+
+      setExecutives(executiveEquity);
+
+    } catch (err: any) {
+      console.error('❌ Cap table load error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================================================
+  // PIE CHART DATA
+  // ==========================================================================
+  const getPieChartData = (): PieChartData[] => {
+    if (!capTable) return [];
+
+    const data: PieChartData[] = [
+      {
+        name: 'Invero, Inc.',
+        value: capTable.holding_company_percentage,
+        shares: capTable.holding_company_shares,
+        color: '#3b82f6', // Blue
+      },
+      {
+        name: 'Torrance Stroman',
+        value: capTable.founder_percentage,
+        shares: capTable.founder_shares,
+        color: '#8b5cf6', // Purple
+      },
+      ...executives.map(exec => ({
+        name: exec.name,
+        value: exec.percentage,
+        shares: exec.shares,
+        color: '#ec4899', // Pink
+      })),
+      {
+        name: 'Equity Pool',
+        value: capTable.pool_percentage,
+        shares: capTable.equity_pool,
+        color: '#f97316', // Orange
+      },
+    ];
+
+    return data.filter(item => item.value > 0);
+  };
+
+  // ==========================================================================
+  // EXPORT TO CSV
+  // ==========================================================================
+  const exportToCSV = () => {
+    if (!capTable) return;
+
+    const rows = [
+      ['Holder', 'Shares', 'Percentage', 'Strike Price'],
+      ['Invero, Inc. (Holding Company)', capTable.holding_company_shares, `${capTable.holding_company_percentage.toFixed(1)}%`, '$0.00'],
+      ['Torrance Stroman (Founder)', capTable.founder_shares, `${capTable.founder_percentage.toFixed(1)}%`, '$0.00'],
+      ...executives.map(exec => [exec.name, exec.shares, `${exec.percentage.toFixed(1)}%`, `$${exec.strike_price.toFixed(2)}`]),
+      ['Equity Pool (Reserved)', capTable.equity_pool, `${capTable.pool_percentage.toFixed(1)}%`, 'N/A'],
+    ];
+
+    const csv = rows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cap-table-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // ==========================================================================
+  // LOADING STATE
+  // ==========================================================================
+  if (loading) {
+    return (
+      <Container size="xl" py="xl">
+        <Stack align="center" gap="md" style={{ minHeight: 400, justifyContent: 'center' }}>
+          <Loader size="lg" />
+          <Text c="dimmed">Loading cap table...</Text>
+        </Stack>
+      </Container>
+    );
+  }
+
+  // ==========================================================================
+  // ERROR STATE
+  // ==========================================================================
+  if (error || !capTable) {
+    return (
+      <Container size="xl" py="xl">
+        <Alert icon={<IconAlertCircle size={16} />} title="Error Loading Cap Table" color="red">
+          {error || 'Cap table data not found'}
+        </Alert>
+      </Container>
+    );
+  }
+
+  const pieData = getPieChartData();
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
+  return (
+    <Container size="xl" py="xl">
+      <Stack gap="xl">
+        {/* Header */}
+        <Group justify="space-between">
+          <div>
+            <Title order={1}>
+              <IconChartPie size={36} style={{ marginRight: 12, verticalAlign: 'middle' }} />
+              Cap Table & Equity
+            </Title>
+            <Text c="dimmed" size="sm" mt={4}>
+              Crave'n Inc. - 70,000,000 Authorized Shares at ${capTable.par_value.toFixed(4)} par value
+            </Text>
+          </div>
+          <Group>
+            <Button
+              leftSection={<IconDownload size={16} />}
+              variant="light"
+              onClick={exportToCSV}
+            >
+              Export CSV
+            </Button>
+            <Button
+              leftSection={<IconCoins size={16} />}
+              onClick={() => setGrantWizardOpen(true)}
+            >
+              Grant Equity
+            </Button>
+          </Group>
+        </Group>
+
+        {/* Overview Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#3b82f6', borderWidth: 2 }}>
+              <Stack gap="md">
+                <Title order={4} c="dimmed">Total Authorized</Title>
+                <Text size="2xl" fw={700} c="blue">
+                  <NumberFormatter value={capTable.total_authorized} thousandSeparator />
+                </Text>
+                <Text size="xs" c="dimmed">Delaware authorized shares</Text>
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#10b981', borderWidth: 2 }}>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <Title order={4} c="dimmed">Total Issued</Title>
+                  <Badge color="green" size="lg">{((capTable.total_issued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
+                </Group>
+                <Text size="2xl" fw={700} c="green">
+                  <NumberFormatter value={capTable.total_issued} thousandSeparator />
+                </Text>
+                <Progress value={(capTable.total_issued / capTable.total_authorized) * 100} color="green" size="lg" radius="xl" />
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#eab308', borderWidth: 2 }}>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <Title order={4} c="dimmed">Unissued</Title>
+                  <Badge color="yellow" size="lg">{((capTable.total_unissued / capTable.total_authorized) * 100).toFixed(1)}%</Badge>
+                </Group>
+                <Text size="2xl" fw={700} style={{ color: '#eab308' }}>
+                  <NumberFormatter value={capTable.total_unissued} thousandSeparator />
+                </Text>
+                <Progress value={(capTable.total_unissued / capTable.total_authorized) * 100} color="yellow" size="lg" radius="xl" />
+              </Stack>
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6, lg: 3 }}>
+            <Card padding="xl" radius="md" withBorder style={{ height: '100%', borderColor: '#f97316', borderWidth: 2 }}>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <Title order={4} c="dimmed">Equity Pool</Title>
+                  <Badge color="orange" size="lg">Reserved</Badge>
+                </Group>
+                <Text size="2xl" fw={700} c="orange">
+                  <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                </Text>
+                <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
+              </Stack>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        {/* Ownership Distribution - Chart + Table */}
+        <Grid>
+          <Grid.Col span={{ base: 12, lg: 5 }}>
+            <Card padding="xl" radius="md" withBorder>
+              <Title order={3} mb="md">Ownership Distribution</Title>
+              {pieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number, name: string, props: any) => [
+                        `${props.payload.shares.toLocaleString()} shares (${value.toFixed(1)}%)`,
+                        'Ownership'
+                      ]}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Text c="dimmed" ta="center" py="xl">No ownership data available</Text>
+              )}
+            </Card>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, lg: 7 }}>
+            <Card padding="xl" radius="md" withBorder>
+              <Title order={3} mb="md">Share Distribution</Title>
+              <Table highlightOnHover verticalSpacing="md">
+                <Table.Thead style={{ backgroundColor: '#f9fafb' }}>
+                  <Table.Tr>
+                    <Table.Th style={{ fontWeight: 600 }}>Holder</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Shares</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Percentage</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Strike Price</Table.Th>
+                    <Table.Th style={{ fontWeight: 600 }}>Visual</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {/* Holding Company */}
+                  <Table.Tr>
+                    <Table.Td>
+                      <div>
+                        <Text fw={600} size="sm">Invero, Inc.</Text>
+                        <Text size="xs" c="dimmed">Holding Company</Text>
+                      </div>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text fw={700} size="sm">
+                        <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="blue" size="lg" variant="light">
+                        {capTable.holding_company_percentage.toFixed(1)}%
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="gray" size="sm" variant="outline">
+                        $0.00
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Progress value={capTable.holding_company_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                    </Table.Td>
+                  </Table.Tr>
+
+                  {/* Founder */}
+                  <Table.Tr>
+                    <Table.Td>
+                      <div>
+                        <Text fw={600} size="sm">Torrance Stroman</Text>
+                        <Text size="xs" c="dimmed">Founder & CEO</Text>
+                      </div>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text fw={700} size="sm">
+                        <NumberFormatter value={capTable.founder_shares} thousandSeparator />
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="green" size="lg" variant="light">
+                        {capTable.founder_percentage.toFixed(1)}%
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="gray" size="sm" variant="outline">
+                        $0.00
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Progress value={capTable.founder_percentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                    </Table.Td>
+                  </Table.Tr>
+
+                  {/* Executives */}
+                  {executives.map((exec, index) => (
+                    <Table.Tr key={`exec-${index}`}>
+                      <Table.Td>
+                        <div>
+                          <Text fw={600} size="sm">{exec.name}</Text>
+                          <Text size="xs" c="dimmed">{exec.title}</Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fw={700} size="sm">
+                          <NumberFormatter value={exec.shares} thousandSeparator />
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="purple" size="lg" variant="light">
+                          {exec.percentage.toFixed(1)}%
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge 
+                          color={exec.strike_price === 0 ? "gray" : "indigo"} 
+                          size="sm" 
+                          variant="outline"
+                        >
+                          ${exec.strike_price.toFixed(2)}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Progress value={exec.percentage} color="purple" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+
+                  {/* Pool */}
+                  <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
+                    <Table.Td>
+                      <div>
+                        <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
+                        <Text size="xs" c="dimmed">Available for grants</Text>
+                      </div>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text fw={700} size="sm" c="dimmed">
+                        <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="orange" size="lg" variant="light">
+                        {capTable.pool_percentage.toFixed(1)}%
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color="gray" size="sm" variant="outline">
+                        N/A
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Progress value={capTable.pool_percentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                    </Table.Td>
+                  </Table.Tr>
+                </Table.Tbody>
+              </Table>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        {/* Equity Grants History */}
+        <Card padding="xl" radius="md" withBorder>
+          <Tabs defaultValue="grants">
+            <Tabs.List>
+              <Tabs.Tab value="grants">Equity Grants History</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="grants" pt="xl">
+              <EquityGrantsList />
+            </Tabs.Panel>
+          </Tabs>
+        </Card>
+      </Stack>
+
+      {/* Grant Equity Wizard Modal */}
+      {grantWizardOpen && (
+        <EquityGrantWizard
+          opened={grantWizardOpen}
+          onClose={() => {
+            setGrantWizardOpen(false);
+            loadCapTable();
+          }}
+        />
+      )}
+    </Container>
+  );
+};
+
+export default CapTableEquityPageEnhanced;
+
