@@ -125,6 +125,13 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       const sharesByUserId: Record<string, { shares: number; strikePrice: number }> = {};
       activeGrants.forEach(grant => {
         if (grant.recipient_user_id && grant.transaction_type === 'grant') {
+          // Skip old 18M grants - these are outdated Torrance data
+          // Torrance should have 10.5M, not 18M
+          if (grant.shares_amount >= 17500000 && grant.shares_amount <= 18500000) {
+            console.log(`🚫 Skipping old 18M grant for user_id ${grant.recipient_user_id} - outdated data`);
+            return;
+          }
+          
           if (!sharesByUserId[grant.recipient_user_id]) {
             sharesByUserId[grant.recipient_user_id] = {
               shares: 0,
@@ -224,6 +231,15 @@ const CapTableEquityPageEnhanced: React.FC = () => {
             } else {
               name = exec?.title || 'Executive';
             }
+          }
+          
+          // Skip entries where name is just "CEO" or "Chief Executive Officer" - these are duplicates
+          // Torrance Stroman should be the only CEO entry
+          if (name === 'CEO' || name === 'Chief Executive Officer' || 
+              (name && name.toUpperCase() === 'CEO') ||
+              (exec?.title === 'Chief Executive Officer' && !nameMap[userId])) {
+            console.log(`🚫 Skipping duplicate CEO entry for user_id ${userId} - name: ${name}, title: ${exec?.title}`);
+            continue;
           }
           
           // Title should be the role/title, not the name
