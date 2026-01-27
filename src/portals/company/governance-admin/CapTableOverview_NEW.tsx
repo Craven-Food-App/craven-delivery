@@ -88,7 +88,7 @@ const CapTableOverview: React.FC = () => {
       // 3. Get executive names from exec_users
       const { data: execData, error: execError } = await supabase
         .from('exec_users')
-        .select('user_id, name, title');
+        .select('user_id, first_name, last_name, title');
 
       if (execError) throw new Error(`Exec users error: ${execError.message}`);
 
@@ -102,7 +102,7 @@ const CapTableOverview: React.FC = () => {
           const percentage = (grant.shares_amount / capData.total_authorized) * 100;
           
           executiveEquity.push({
-            name: exec.name || 'Executive',
+            name: `${exec.first_name} ${exec.last_name}`,
             title: exec.title || 'Executive',
             shares: grant.shares_amount,
             percentage: percentage,
