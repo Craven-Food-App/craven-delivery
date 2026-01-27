@@ -1,3 +1,8 @@
+-- =====================================================
+-- FOUNDATIONAL INVITES MIGRATION
+-- Apply this in Supabase SQL Editor NOW
+-- =====================================================
+
 -- Create foundational invites table for friends & family support process
 -- Amount limits: $50 min / $500 max (5000-50000 cents)
 
@@ -59,4 +64,12 @@ CREATE POLICY "invites_admin_access" ON public.invites
       AND user_roles.role IN ('admin', 'ceo', 'super_admin')
     )
   );
+
+-- =====================================================
+-- DONE - Run this entire script once
+-- =====================================================
+
+
+
+
 

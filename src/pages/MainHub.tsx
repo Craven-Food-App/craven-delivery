@@ -47,6 +47,57 @@ interface Portal {
   color: string;
 }
 
+interface HubSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  portalIds: string[];
+}
+
+const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
+  switch (deptId) {
+    case "executive":
+      return ["ceo", "admin", "company", "investors", "cxo", "cfo"].includes(portalId);
+    case "operations":
+      return [
+        "coo",
+        "merchant-operations",
+        "driver-operations",
+        "support-operations",
+        "customer-success",
+      ].includes(portalId);
+    case "finance":
+      return ["cfo", "foundational-invites"].includes(portalId);
+    case "technology":
+      return [
+        "cto",
+        "engineering-workspace",
+        "platform-infrastructure",
+        "product-command",
+        "quality-release",
+        "internal-it",
+        "testing",
+      ].includes(portalId);
+    case "marketing":
+      return ["marketing"].includes(portalId);
+    case "hr":
+      return [
+        "hr",
+        "talent-management",
+        "intern",
+        "intern-manager",
+        "intern-sponsor",
+        "intern-program-admin",
+      ].includes(portalId);
+    case "support":
+      return ["support-operations", "customer-success"].includes(portalId);
+    case "logistics":
+      return ["coo", "driver-operations", "merchant-operations"].includes(portalId);
+    default:
+      return true;
+  }
+};
+
 interface EmployeeInfo {
   id: string;
   employee_number: string;
@@ -90,10 +141,10 @@ const MainHub: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentDuration, setCurrentDuration] = useState('00:00:00');
   
-  // Departments state
+  // Departments / filters
   const [departments, setDepartments] = useState<any[]>([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
-  const [showDepartments, setShowDepartments] = useState(true);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   
   // Access control state
   const [userAccess, setUserAccess] = useState<{
@@ -1339,6 +1390,61 @@ const MainHub: React.FC = () => {
       path: "/admin/intern-program/dashboard",
       color: "#f97316",
     },
+    {
+      id: "talent-management",
+      name: "Talent Management",
+      description: "Consolidated intern and manager talent workflows",
+      icon: TeamOutlined,
+      path: "/intern/dashboard",
+      color: "#6366f1",
+    },
+  ];
+
+  const hubSections: HubSection[] = [
+    {
+      id: "executive-leadership",
+      title: "Executive & Leadership",
+      subtitle: "Strategic leadership and corporate governance",
+      portalIds: ["ceo", "admin", "company", "investors"],
+    },
+    {
+      id: "operations-delivery",
+      title: "Operations & Delivery",
+      subtitle: "Field operations and service delivery",
+      portalIds: ["driver-operations", "merchant-operations", "coo", "cxo"],
+    },
+    {
+      id: "technology-engineering",
+      title: "Technology & Engineering",
+      subtitle: "Product development and platform stability",
+      portalIds: [
+        "cto",
+        "engineering-workspace",
+        "platform-infrastructure",
+        "product-command",
+        "quality-release",
+        "internal-it",
+        "testing",
+      ],
+    },
+    {
+      id: "people-culture",
+      title: "People & Culture",
+      subtitle: "People, performance, and leadership development",
+      portalIds: ["hr", "talent-management", "intern-sponsor"],
+    },
+    {
+      id: "growth-support",
+      title: "Growth & Support",
+      subtitle: "Growth, customer relationships, and support",
+      portalIds: ["marketing", "support-operations", "customer-success"],
+    },
+    {
+      id: "finance-legal",
+      title: "Finance & Legal",
+      subtitle: "Financial control and key legal workflows",
+      portalIds: ["cfo", "foundational-invites"],
+    },
   ];
 
   // Permission flags (used to gray out tiles but keep visible)
@@ -1388,7 +1494,6 @@ const MainHub: React.FC = () => {
                       userEmail.includes('tstroman');
     
     if (isTorrance) {
-      console.log('[MainHub] Torrance access granted for portal:', id);
       return true;
     }
 
@@ -1443,681 +1548,698 @@ const MainHub: React.FC = () => {
 
   return (
     <ConfigProvider theme={cravenDriverTheme}>
-      <Layout style={{ minHeight: "100vh", background: "#ffffff" }}>
-        {/* Corporate Header */}
+      <Layout style={{ minHeight: "100vh", background: "#f8f9fa" }}>
+        {/* Header */}
         <Header
           style={{
             background: "#ffffff",
-            padding: "0 16px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            padding: "0 24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             borderBottom: "1px solid #e5e7eb",
-            height: 56,
-            flexWrap: "wrap",
-            minHeight: 56,
+            height: 60,
+            minHeight: 60,
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 16,
-              flex: "1 1 auto",
               minWidth: 0,
+              flex: "1 1 auto",
             }}
           >
-            <img
-              src={cravenLogo}
-              alt="Crave'N"
+            <div
               style={{
-                height: 32,
-                width: "auto",
-                flexShrink: 0,
+                fontFamily:
+                  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+                fontSize: 20,
+                fontWeight: 700,
+                color: "#FF6B35",
+                marginRight: 16,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Crave'n
+            </div>
+            <div
+              style={{
+                borderLeft: "1px solid #e5e7eb",
+                height: 24,
+                marginRight: 16,
               }}
             />
             <div
               style={{
+                fontSize: 14,
+                color: "#6b7280",
+                marginRight: 16,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Portal Access
+            </div>
+            <div
+              style={{
                 borderLeft: "1px solid #e5e7eb",
-                height: 32,
-                flexShrink: 0,
+                height: 24,
+                marginRight: 16,
               }}
             />
             <div
               style={{
                 minWidth: 0,
-                flex: "1 1 auto",
                 overflow: "hidden",
               }}
             >
-              <Title
-                level={4}
+              <div
                 style={{
-                  margin: 0,
-                  color: "#111827",
-                  fontSize: 16,
+                  fontSize: 13,
                   fontWeight: 600,
-                  lineHeight: 1.3,
+                  color: "#1f2937",
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
                   textOverflow: "ellipsis",
+                  overflow: "hidden",
                 }}
               >
-                Portal Access
-              </Title>
-              <Text
-                type="secondary"
+                {employeeInfo?.full_name || user?.email || "Corporate User"}
+              </div>
+              <div
                 style={{
                   fontSize: 11,
                   color: "#6b7280",
-                  display: "block",
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
                   textOverflow: "ellipsis",
-                  lineHeight: 1.3,
+                  overflow: "hidden",
                 }}
               >
-                {employeeInfo ? `${employeeInfo.full_name} • ${employeeInfo.position}` : "Corporate Access Portal"}
-              </Text>
+                {employeeInfo?.position || "Crave'n HQ"}
+              </div>
             </div>
           </div>
-          <Space
-            size="middle"
+          <div
             style={{
-              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
               marginLeft: 16,
             }}
           >
             {employeeInfo && (
-              <Avatar
-                size={32}
+              <div
                 style={{
-                  backgroundColor: "#ff7a45",
-                  color: "#fff",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  backgroundColor: "#FF6B35",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
                   fontWeight: 600,
-                  flexShrink: 0,
                 }}
               >
                 {employeeInfo.full_name.charAt(0).toUpperCase()}
-              </Avatar>
+              </div>
             )}
             <Button
-              icon={<LogoutOutlined />}
               onClick={handleLogout}
               style={{
                 borderColor: "#d1d5db",
                 color: "#374151",
-                height: 36,
-                flexShrink: 0,
-                fontSize: 13,
-                padding: "0 12px",
+                height: 32,
+                fontSize: 12,
+                padding: "0 14px",
+                borderRadius: 4,
+                background: "#ffffff",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#f9fafb";
+                e.currentTarget.style.borderColor = "#9ca3af";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.borderColor = "#d1d5db";
               }}
             >
               Sign Out
             </Button>
-          </Space>
+          </div>
         </Header>
 
         {/* Main Content */}
         <Content
           style={{
-            padding: "16px 12px",
-            maxWidth: 1600,
+            padding: "20px 24px",
+            maxWidth: 1800,
             margin: "0 auto",
             width: "100%",
-            background: "#ffffff",
           }}
         >
-          <div style={{ marginBottom: 16 }} />
-
-          {/* Time Clock Section - Redesigned Compact Layout */}
+          {/* Time Clock */}
           {user && (
-            <Card
+            <div
               style={{
-                marginBottom: 16,
-                background: flashColor === 'green' 
-                  ? 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)'
-                  : flashColor === 'red'
-                  ? 'linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%)'
-                  : '#ffffff',
-                border: '1px solid #e5e7eb',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                transition: 'background 0.3s ease',
+                marginBottom: 20,
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 4,
+                padding: "16px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 20,
+                flexWrap: "wrap",
               }}
-              styles={{ body: { padding: 16 } }}
             >
-              <Row gutter={[16, 12]} align="middle">
-                {/* Left Section: Time & Date */}
-                <Col xs={24} sm={12} md={8}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <ClockCircleOutlined style={{ 
-                      fontSize: 32, 
-                      color: flashColor ? '#fff' : '#ff7a45',
-                      opacity: 0.9 
-                    }} />
-                    <div style={{ color: flashColor ? '#fff' : '#111827' }}>
-                      <div style={{ 
-                        fontSize: 28, 
-                        fontWeight: 700, 
-                        fontFamily: 'monospace', 
-                        lineHeight: 1.2,
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 6
-                      }}>
-                        {formatTime(currentTime).split(' ')[0]}
-                        <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.8 }}>
-                          {formatTime(currentTime).split(' ')[1]}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>
-                        {formatDate(currentTime)}
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-                
-                {/* Center Section: Status Badge & Duration */}
-                <Col xs={24} sm={12} md={6}>
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center',
-                    gap: 6
-                  }}>
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 14px',
-                      borderRadius: 20,
-                      background: clockStatus.isClockedIn 
-                        ? (flashColor ? 'rgba(255,255,255,0.3)' : '#52c41a')
-                        : (flashColor ? 'rgba(255,255,255,0.25)' : '#f3f4f6'),
-                      border: clockStatus.isClockedIn && !flashColor ? '1px solid #52c41a' : 'none',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: clockStatus.isClockedIn 
-                        ? (flashColor ? '#fff' : '#fff')
-                        : (flashColor ? '#fff' : '#6b7280'),
-                      letterSpacing: 0.5,
-                    }}>
-                      {clockStatus.isClockedIn ? (
-                        <>
-                          <div style={{ 
-                            width: 6, 
-                            height: 6, 
-                            borderRadius: '50%', 
-                            background: flashColor ? '#fff' : '#fff',
-                            animation: clockStatus.isClockedIn ? 'pulse 2s infinite' : 'none'
-                          }} />
-                          CLOCKED IN
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ 
-                            width: 6, 
-                            height: 6, 
-                            borderRadius: '50%', 
-                            background: flashColor ? '#fff' : '#9ca3af'
-                          }} />
-                          CLOCKED OUT
-                        </>
-                      )}
-                    </div>
-                    {clockStatus.isClockedIn && clockStatus.clockInAt && (
-                      <div style={{ 
-                        fontSize: 13, 
-                        fontFamily: 'monospace', 
-                        fontWeight: 600,
-                        color: flashColor ? '#fff' : '#111827',
-                        opacity: 0.9
-                      }}>
-                        {currentDuration}
-                      </div>
-                    )}
-                  </div>
-                </Col>
-                
-                {/* Right Section: Action Buttons */}
-                <Col xs={24} sm={24} md={10}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <Button
-                      type="primary"
-                      size="middle"
-                      icon={<LoginOutlined />}
-                      loading={clockLoading && pendingClockAction === 'in'}
-                      onClick={handleClockIn}
-                      disabled={clockLoading || clockStatus.isClockedIn}
-                      style={{
-                        background: clockStatus.isClockedIn ? '#d1d5db' : '#52c41a',
-                        border: 'none',
-                        height: 36,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        flex: 1,
-                        boxShadow: clockStatus.isClockedIn ? 'none' : '0 2px 4px rgba(82, 196, 26, 0.3)',
-                      }}
-                    >
-                      Clock In
-                    </Button>
-                    <Button
-                      type="primary"
-                      size="middle"
-                      icon={<LogoutOutlined />}
-                      loading={clockLoading && pendingClockAction === 'out'}
-                      onClick={handleClockOut}
-                      disabled={clockLoading || !clockStatus.isClockedIn || pendingClockAction === 'in'}
-                      style={{
-                        background: !clockStatus.isClockedIn ? '#d1d5db' : '#ff4d4f',
-                        border: 'none',
-                        height: 36,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        flex: 1,
-                        boxShadow: (!clockStatus.isClockedIn || pendingClockAction === 'in') ? 'none' : '0 2px 4px rgba(255, 77, 79, 0.3)',
-                      }}
-                    >
-                      Clock Out
-                    </Button>
-                  </div>
-                </Col>
-              </Row>
-              
-              {/* Bottom Section: Stats & History */}
-              <Row gutter={[12, 8]} style={{ marginTop: 12 }}>
-                <Col xs={12} sm={6}>
-                  <div style={{ 
-                    padding: '8px 12px',
-                    background: flashColor ? 'rgba(255,255,255,0.15)' : '#f9fafb',
-                    borderRadius: 6,
-                    border: flashColor ? 'none' : '1px solid #e5e7eb',
-                  }}>
-                    <div style={{ 
-                      fontSize: 10, 
-                      fontWeight: 600,
-                      color: flashColor ? '#fff' : '#6b7280', 
-                      marginBottom: 4,
-                      opacity: 0.9
-                    }}>
-                      Hours Today
-                    </div>
-                    <div style={{ 
-                      fontSize: 20, 
-                      fontWeight: 700, 
-                      color: flashColor ? '#fff' : '#111827', 
-                      fontFamily: 'monospace'
-                    }}>
-                      {clockStatus.hoursToday.toFixed(1)}h
-                    </div>
-                  </div>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <div style={{ 
-                    padding: '8px 12px',
-                    background: flashColor ? 'rgba(255,255,255,0.15)' : '#f9fafb',
-                    borderRadius: 6,
-                    border: flashColor ? 'none' : '1px solid #e5e7eb',
-                  }}>
-                    <div style={{ 
-                      fontSize: 10, 
-                      fontWeight: 600,
-                      color: flashColor ? '#fff' : '#6b7280', 
-                      marginBottom: 4,
-                      opacity: 0.9
-                    }}>
-                      Hours This Week
-                    </div>
-                    <div style={{ 
-                      fontSize: 20, 
-                      fontWeight: 700, 
-                      color: flashColor ? '#fff' : '#111827', 
-                      fontFamily: 'monospace'
-                    }}>
-                      {clockStatus.weeklyHours.toFixed(1)}h
-                    </div>
-                  </div>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Button
-                    type="default"
-                    size="small"
-                    icon={<HistoryOutlined />}
-                    onClick={() => {
-                      setShowClockHistory(!showClockHistory);
-                      if (!showClockHistory) fetchTimeEntries();
-                    }}
-                    block
+              {/* Time */}
+              <div style={{ minWidth: 140 }}>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: "#1f2937",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {formatTime(currentTime)}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#6b7280",
+                    marginTop: 2,
+                  }}
+                >
+                  {formatDate(currentTime)}
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div
+                style={{
+                  width: 1,
+                  alignSelf: "stretch",
+                  background: "#e5e7eb",
+                }}
+              />
+
+              {/* Stats */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 20,
+                  flexWrap: "wrap",
+                  minWidth: 260,
+                }}
+              >
+                <div>
+                  <div
                     style={{
-                      background: flashColor ? 'rgba(255,255,255,0.2)' : '#ffffff',
-                      border: flashColor ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e5e7eb',
-                      color: flashColor ? '#fff' : '#6b7280',
-                      height: 36,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      color: "#9ca3af",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    Today
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#1f2937",
+                    }}
+                  >
+                    {clockStatus.hoursToday.toFixed(1)}h
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      color: "#9ca3af",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    This Week
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#1f2937",
+                    }}
+                  >
+                    {clockStatus.weeklyHours.toFixed(1)}h
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      color: "#9ca3af",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    This Month
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "#1f2937",
+                    }}
+                  >
+                    {/* Placeholder until monthly aggregation exists */}
+                    —
+                  </div>
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div
+                style={{
+                  width: 1,
+                  alignSelf: "stretch",
+                  background: "#e5e7eb",
+                }}
+              />
+
+              {/* Status + Actions */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  flex: "1 1 auto",
+                  justifyContent: "flex-end",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    minWidth: 120,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: clockStatus.isClockedIn
+                        ? "#059669"
+                        : "#f59e0b",
+                    }}
+                  />
+                  <span
+                    style={{
                       fontSize: 12,
+                      color: "#374151",
                       fontWeight: 500,
                     }}
                   >
-                    {showClockHistory ? 'Hide' : 'View'} Time History ({timeEntries.length})
-                  </Button>
-                </Col>
-              </Row>
-              
-              {/* History Table */}
-              {showClockHistory && (
-                <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                  <Card
-                    style={{
-                      background: 'rgba(255,255,255,0.95)',
-                      border: 'none',
-                    }}
-                    styles={{ body: { padding: 12 } }}
-                  >
-                    <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
-                        <HistoryOutlined style={{ marginRight: 4, color: '#ff7a45', fontSize: 14 }} />
-                        Recent Time Entries
-                      </Title>
-                    </div>
-                    
-                    {timeEntries.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 16, color: '#999', fontSize: 12 }}>
-                        No time entries recorded yet.
-                      </div>
-                    ) : (
-                      <Table
-                        dataSource={timeEntries}
-                        rowKey="id"
-                        size="small"
-                        pagination={{ pageSize: 8, size: 'small' }}
-                        columns={[
-                          {
-                            title: 'Name',
-                            dataIndex: 'display_name',
-                            key: 'name',
-                            render: (name: string) => (
-                              <span style={{ fontWeight: 500 }}>{name || 'Unknown'}</span>
-                            ),
-                          },
-                          {
-                            title: 'Clock In',
-                            dataIndex: 'clock_in_at',
-                            key: 'clock_in',
-                            render: (date: string) => (
-                              <span>
-                                {formatDate(date)} at {formatTime(date)}
-                              </span>
-                            ),
-                          },
-                          {
-                            title: 'Clock Out',
-                            dataIndex: 'clock_out_at',
-                            key: 'clock_out',
-                            render: (date: string | null) => date ? formatTime(date) : 'N/A',
-                          },
-                          {
-                            title: 'Duration',
-                            dataIndex: 'total_hours',
-                            key: 'duration',
-                            render: (hours: number) => hours ? `${hours.toFixed(2)} hrs` : 'N/A',
-                          },
-                          {
-                            title: 'Status',
-                            dataIndex: 'status',
-                            key: 'status',
-                            render: (status: string) => (
-                              <Tag color={status === 'clocked_out' ? 'green' : status === 'clocked_in' ? 'blue' : 'orange'}>
-                                {status === 'clocked_out' ? 'Completed' : status === 'clocked_in' ? 'Active' : 'On Break'}
-                              </Tag>
-                            ),
-                          },
-                        ]}
-                      />
-                    )}
-                  </Card>
+                    {clockStatus.isClockedIn ? "Clocked In" : "Clocked Out"}
+                  </span>
                 </div>
-              )}
-            </Card>
-          )}
 
-          {/* Departments Section */}
-          {user && employeeInfo && (
-            <Card
-              style={{
-                marginBottom: 16,
-                background: '#ffffff',
-                border: '1px solid #e5e7eb',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-              }}
-              styles={{ body: { padding: 16 } }}
-            >
-              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center', fontSize: 14 }}>
-                  <TeamOutlined style={{ marginRight: 6, color: '#ff7a45', fontSize: 16 }} />
-                  Company Departments
-                </Title>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={showDepartments ? <span>−</span> : <span>+</span>}
-                  onClick={() => setShowDepartments(!showDepartments)}
-                  style={{ fontSize: 12, fontWeight: 600, padding: '0 8px', height: 24 }}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
                 >
-                  {showDepartments ? 'Collapse' : 'Expand'}
-                </Button>
-              </div>
-
-              {showDepartments && (
-                <Spin spinning={departmentsLoading}>
-                  {departments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 16, color: '#999', fontSize: 12 }}>
-                      No departments found.
-                    </div>
-                  ) : (
-                    <Row gutter={[8, 8]}>
-                      {departments.map((dept) => (
-                        <Col xs={12} sm={8} md={6} lg={4} xl={3} key={dept.id}>
-                          <Card
-                            hoverable
-                            style={{
-                              height: '100%',
-                              borderRadius: 4,
-                              border: '1px solid #e5e7eb',
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-                              transition: 'all 0.2s',
-                              cursor: 'pointer',
-                            }}
-                            styles={{ body: { padding: 12 } }}
-                            onClick={() => {
-                              const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
-                              navigate(`/hub/department/${deptName}`);
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.borderColor = '#ff7a45';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.borderColor = '#e5e7eb';
-                            }}
-                          >
-                            <div style={{ marginBottom: 8 }}>
-                              <div style={{ color: '#111827', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-                                {dept.name}
-                              </div>
-                              {userAccess.canViewEmployeeCount && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <span style={{ fontSize: 10, color: '#6b7280' }}>Employees</span>
-                                  <Tag color="blue" style={{ margin: 0, fontSize: 10, padding: '0 6px', height: 18 }}>
-                                    {dept.employee_count || 0}
-                                  </Tag>
-                                </div>
-                              )}
-                              {userAccess.canViewBudget && dept.budget && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <span style={{ fontSize: 10, color: '#6b7280' }}>Budget</span>
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#52c41a' }}>
-                                    ${(Number(dept.budget) / 1000).toFixed(0)}k
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* View Portals Button */}
-                            <Button
-                              type="primary"
-                              size="small"
-                              block
-                              style={{
-                                background: '#ff7a45',
-                                borderColor: '#ff7a45',
-                                height: 24,
-                                fontSize: 10,
-                                fontWeight: 500,
-                                marginTop: 8,
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const deptName = dept.name.toLowerCase().replace(/\s+/g, '-');
-                                navigate(`/hub/department/${deptName}`);
-                              }}
-                            >
-                              View →
-                            </Button>
-                          </Card>
-                        </Col>
-                      ))}
-                    </Row>
-                  )}
-                </Spin>
-              )}
-            </Card>
-          )}
-
-          {/* Portal Grid - Compact Grid */}
-          <Row gutter={[10, 10]}>
-            {portals.map((portal) => {
-              const allowed = isPortalAllowed(portal.id);
-              const Icon = portal.icon;
-              return (
-                <Col xs={12} sm={8} md={6} lg={4} xl={3} key={portal.id}>
-                  <Card
-                    hoverable
+                  <Button
+                    onClick={handleClockIn}
+                    disabled={clockLoading || clockStatus.isClockedIn}
                     style={{
-                      height: "100%",
+                      backgroundColor: clockStatus.isClockedIn
+                        ? "#ffffff"
+                        : "#059669",
+                      color: clockStatus.isClockedIn ? "#374151" : "#ffffff",
+                      borderColor: clockStatus.isClockedIn
+                        ? "#d1d5db"
+                        : "#059669",
+                      height: 32,
+                      fontSize: 12,
+                      padding: "0 16px",
                       borderRadius: 4,
-                      cursor: allowed ? "pointer" : "not-allowed",
-                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                      border: "1px solid #e5e7eb",
-                      boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-                      background: "#ffffff",
-                      opacity: allowed ? 1 : 0.5,
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('[MainHub] Portal clicked:', {
-                        id: portal.id,
-                        path: portal.path,
-                        allowed,
-                        userEmail: user?.email
-                      });
-                      if (allowed) {
-                        console.log('[MainHub] Navigating to:', portal.path);
-                        // Use navigate for all routes - React Router handles it
-                        navigate(portal.path, { replace: false });
-                      } else {
-                        console.warn('[MainHub] Access denied for portal:', portal.id);
-                        message.warning('Access denied for this portal');
-                      }
-                    }}
-                    styles={{ body: { padding: 12 } }}
-                    onMouseEnter={(e) => {
-                      if (allowed) {
-                        e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.1)";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                        e.currentTarget.style.borderColor = portal.color;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.06)";
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.borderColor = "#e5e7eb";
+                      opacity: clockLoading && pendingClockAction === "in" ? 0.7 : 1,
                     }}
                   >
-                    <div style={{ textAlign: "center" }}>
-                      <div
+                    Clock In
+                  </Button>
+                  <Button
+                    onClick={handleClockOut}
+                    disabled={
+                      clockLoading || !clockStatus.isClockedIn
+                    }
+                    style={{
+                      backgroundColor: "#ffffff",
+                      color: clockStatus.isClockedIn ? "#374151" : "#9ca3af",
+                      borderColor: "#d1d5db",
+                      height: 32,
+                      fontSize: 12,
+                      padding: "0 16px",
+                      borderRadius: 4,
+                      opacity:
+                        clockLoading && pendingClockAction === "out" ? 0.7 : 1,
+                    }}
+                  >
+                    Clock Out
+                  </Button>
+                  <Button
+                    type="link"
+                    onClick={() => setShowClockHistory(true)}
+                    style={{
+                      fontSize: 11,
+                      color: "#6b7280",
+                      padding: 0,
+                      height: 24,
+                    }}
+                  >
+                    View History
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Two-column layout: Departments sidebar + portal sections */}
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Left Sidebar - Departments */}
+            <div
+              style={{
+                flex: "0 0 200px",
+                maxWidth: 240,
+                width: "100%",
+              }}
+            >
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 4,
+                  padding: 12,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    color: "#9ca3af",
+                    letterSpacing: 1,
+                    marginBottom: 8,
+                  }}
+                >
+                  Departments
+                </div>
+                {[
+                  { id: "all", label: "All Portals" },
+                  { id: "executive", label: "Executive" },
+                  { id: "operations", label: "Operations" },
+                  { id: "finance", label: "Finance" },
+                  { id: "technology", label: "Technology" },
+                  { id: "marketing", label: "Marketing" },
+                  { id: "hr", label: "Human Resources" },
+                  { id: "support", label: "Customer Support" },
+                  { id: "logistics", label: "Logistics" },
+                ].map((dept) => {
+                  const active = selectedDepartment === dept.id;
+                  const count =
+                    dept.id === "all"
+                      ? portals.length
+                      : portals.filter((p) => isPortalInDepartment(p.id, dept.id)).length;
+                  return (
+                    <div
+                      key={dept.id}
+                      onClick={() => setSelectedDepartment(dept.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "6px 8px",
+                        marginBottom: 4,
+                        borderRadius: 3,
+                        cursor: "pointer",
+                        backgroundColor: active ? "#eff6ff" : "transparent",
+                        color: active ? "#1d4ed8" : "#374151",
+                        fontSize: 12,
+                        fontWeight: 500,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }
+                      }}
+                    >
+                      <span>{dept.label}</span>
+                      <span
                         style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 4,
-                          background: `linear-gradient(135deg, ${portal.color}15 0%, ${portal.color}08 100%)`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          margin: "0 auto 6px",
-                          border: `1px solid ${portal.color}20`,
+                          fontSize: 10,
+                          color: "#9ca3af",
                         }}
                       >
-                        <Icon style={{ fontSize: 18, color: portal.color }} />
-                      </div>
-                      <div
-                        style={{
-                          color: "#111827",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {portal.name}
-                      </div>
-                      <Tooltip title={portal.description}>
-                        <Button
-                          type="primary"
-                          size="small"
-                          style={{
-                            background: portal.color,
-                            borderColor: portal.color,
-                            width: "100%",
-                            height: 24,
-                            fontWeight: 500,
-                            fontSize: 10,
-                            borderRadius: 4,
-                            padding: '0 8px',
-                            boxShadow: `0 2px 4px ${portal.color}30`,
-                          }}
-                          onMouseEnter={(e) => {
-                              e.currentTarget.style.background = portal.color;
-                              e.currentTarget.style.borderColor = portal.color;
-                              if (allowed) {
-                                e.currentTarget.style.opacity = "0.9";
-                                e.currentTarget.style.transform = "scale(1.02)";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = portal.color;
-                              e.currentTarget.style.borderColor = portal.color;
-                              e.currentTarget.style.opacity = "1";
-                              e.currentTarget.style.transform = "scale(1)";
-                            }}
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              if (allowed) navigate(portal.path);
-                            }}
-                            disabled={!allowed}
-                          >
-                            {allowed ? 'Access Portal →' : 'No Access'}
-                          </Button>
-                        </Tooltip>
+                        {count}
+                      </span>
                     </div>
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Main Area - Portal Sections */}
+            <div
+              style={{
+                flex: "1 1 0%",
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 4,
+                  padding: 16,
+                }}
+              >
+                {hubSections.map((section, index) => {
+                  // Filter portals by department selection
+                  const sectionPortals = section.portalIds
+                    .map((id) => portals.find((p) => p.id === id))
+                    .filter((p): p is Portal => {
+                      if (!p) return false;
+                      if (selectedDepartment === "all") return true;
+                      return isPortalInDepartment(p.id, selectedDepartment);
+                    });
+
+                  if (sectionPortals.length === 0) return null;
+
+                  return (
+                    <div
+                      key={section.id}
+                      style={{
+                        marginTop: index === 0 ? 0 : 24,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          color: "#9ca3af",
+                          letterSpacing: 1,
+                          paddingBottom: 8,
+                          borderBottom: "1px solid #e5e7eb",
+                          marginBottom: 12,
+                        }}
+                      >
+                        {section.title}
+                      </div>
+                      <Row gutter={[12, 12]}>
+                        {sectionPortals.map((portal) => {
+                          const allowed = isPortalAllowed(portal.id);
+
+                          // Category badge styles
+                          let badgeLabel = "Corporate";
+                          let badgeBg = "#dbeafe";
+                          let badgeColor = "#1e40af";
+
+                          if (["ceo", "admin", "company", "investors", "cxo"].includes(portal.id)) {
+                            badgeLabel = "Executive";
+                            badgeBg = "#dbeafe";
+                            badgeColor = "#1e40af";
+                          } else if (
+                            ["driver-operations", "merchant-operations", "coo"].includes(
+                              portal.id
+                            )
+                          ) {
+                            badgeLabel = "Operations";
+                            badgeBg = "#ede9fe";
+                            badgeColor = "#6b21a8";
+                          } else if (
+                            [
+                              "cto",
+                              "engineering-workspace",
+                              "platform-infrastructure",
+                              "product-command",
+                              "quality-release",
+                              "internal-it",
+                              "testing",
+                            ].includes(portal.id)
+                          ) {
+                            badgeLabel = "Technology";
+                            badgeBg = "#cffafe";
+                            badgeColor = "#0e7490";
+                          } else if (
+                            ["hr", "talent-management", "intern-sponsor"].includes(portal.id)
+                          ) {
+                            badgeLabel = "People / HR";
+                            badgeBg = "#fed7aa";
+                            badgeColor = "#9a3412";
+                          } else if (portal.id === "marketing") {
+                            badgeLabel = "Marketing";
+                            badgeBg = "#fce7f3";
+                            badgeColor = "#9f1239";
+                          } else if (["support-operations"].includes(portal.id)) {
+                            badgeLabel = "Support";
+                            badgeBg = "#e0e7ff";
+                            badgeColor = "#3730a3";
+                          } else if (["customer-success"].includes(portal.id)) {
+                            badgeLabel = "Success";
+                            badgeBg = "#e0e7ff";
+                            badgeColor = "#3730a3";
+                          } else if (
+                            ["cfo", "foundational-invites"].includes(portal.id)
+                          ) {
+                            badgeLabel = "Finance";
+                            badgeBg = "#d1fae5";
+                            badgeColor = "#065f46";
+                          }
+
+                          return (
+                            <Col xs={24} sm={12} md={8} lg={6} xl={4} key={portal.id}>
+                              <div
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (!allowed) {
+                                    message.warning("Access denied for this portal");
+                                    return;
+                                  }
+                                  console.log("[MainHub] Portal clicked:", {
+                                    id: portal.id,
+                                    path: portal.path,
+                                    allowed,
+                                    userEmail: user?.email,
+                                  });
+
+                                  // Special-case: Investor Relations should always use the public investor portal
+                                  if (portal.id === "investors") {
+                                    // Drop any ?hq=true flags by doing a full navigation
+                                    window.location.href = "/investors/portal";
+                                    return;
+                                  }
+
+                                  navigate(portal.path, { replace: false });
+                                }}
+                                style={{
+                                  border: "1px solid #e5e7eb",
+                                  borderRadius: 3,
+                                  padding: 12,
+                                  cursor: allowed ? "pointer" : "default",
+                                  backgroundColor: "#ffffff",
+                                  opacity: allowed ? 1 : 0.5,
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = "#9ca3af";
+                                  e.currentTarget.style.boxShadow =
+                                    "0 1px 3px rgba(0,0,0,0.1)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = "#e5e7eb";
+                                  e.currentTarget.style.boxShadow = "none";
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: 600,
+                                      color: "#1f2937",
+                                      marginRight: 8,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {portal.name}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      padding: "2px 6px",
+                                      borderRadius: 2,
+                                      backgroundColor: badgeBg,
+                                      color: badgeColor,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {badgeLabel}
+                                  </div>
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: "#6b7280",
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {portal.description}
+                                </div>
+                              </div>
+                            </Col>
+                          );
+                        })}
+                      </Row>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </Content>
 
         {/* PIN Verification Modal - Corporate Style */}

@@ -111,6 +111,9 @@ export default function Allocate() {
   const presetAmounts = [50, 100, 250, 500];
   const minAmount = inviteSession.minAmount / 100;
   const maxAmount = inviteSession.maxAmount / 100;
+  const amountCents = Math.round(amount * 100);
+  const minAmountCents = inviteSession.minAmount;
+  const maxAmountCents = inviteSession.maxAmount;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
@@ -199,6 +202,34 @@ export default function Allocate() {
                 <p className="text-sm text-muted-foreground">Your Support Amount</p>
                 <p className="mt-1 text-3xl font-bold text-[hsl(var(--primary))]">
                   ${amount.toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {/* Foundational Support Breakdown (securities-neutral) */}
+            {amount > 0 && (
+              <div className="rounded-2xl border border-border bg-muted/40 p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-2">
+                  Foundational Support Breakdown
+                </h3>
+                <dl className="space-y-1 text-sm text-foreground">
+                  <div className="flex justify-between">
+                    <dt>Your selected amount</dt>
+                    <dd>${(amountCents / 100).toFixed(2)}</dd>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>Minimum for this invitation</dt>
+                    <dd>${(minAmountCents / 100).toFixed(2)}</dd>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>Maximum for this invitation</dt>
+                    <dd>${(maxAmountCents / 100).toFixed(2)}</dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  This is a private friends &amp; family support program for Crave&apos;n Inc.
+                  It is not a public offering. Any additional recognition or benefits from
+                  this support are documented separately by Crave&apos;n.
                 </p>
               </div>
             )}

@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => {
     // Use relative paths only when building for Capacitor so native apps can load bundles
     base,
     server: {
-      host: "::",
+      host: "0.0.0.0",
       port: 8080,
       strictPort: false,
       open: false,
@@ -64,11 +64,10 @@ export default defineConfig(({ mode }) => {
       hmr: {
         overlay: true,
         protocol: 'ws',
-        // Let Vite auto-detect the host to match server configuration
+        host: 'localhost',
         // Make HMR more resilient to connection issues
         reconnect: true,
       },
-      // Suppress WebSocket connection errors in console
       watch: {
         ignored: ['**/node_modules/**', '**/.git/**'],
       },

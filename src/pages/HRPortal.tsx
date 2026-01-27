@@ -257,7 +257,6 @@ const HRPortal: React.FC = () => {
   const navigate = useNavigate();
   const { loading, user, execUser, isAuthorized, signOut } = useExecAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   if (loading) {
     return (
@@ -277,293 +276,270 @@ const HRPortal: React.FC = () => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#ffffff' }}>
-      <Header style={{ 
-        background: '#ffffff', 
-        borderBottom: '1px solid #e5e7eb',
-        padding: '0 24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <Space>
+    <Layout style={{ minHeight: '100vh', background: '#f8f9fa' }}>
+      <Header
+        style={{
+          background: '#ffffff',
+          borderBottom: '1px solid #e5e7eb',
+          padding: '0 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 60,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: 0,
+            flex: '1 1 auto',
+          }}
+        >
+          <div
+            style={{
+              fontFamily:
+                "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+              fontSize: 20,
+              fontWeight: 700,
+              color: '#FF6B35',
+              marginRight: 16,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Crave'n
+          </div>
+          <div
+            style={{
+              borderLeft: '1px solid #e5e7eb',
+              height: 24,
+              marginRight: 16,
+            }}
+          />
+          <div
+            style={{
+              fontSize: 14,
+              color: '#6b7280',
+              marginRight: 16,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            HR Portal
+          </div>
+          <div
+            style={{
+              borderLeft: '1px solid #e5e7eb',
+              height: 24,
+              marginRight: 16,
+            }}
+          />
+          <div
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#1f2937',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              {execUser?.full_name || user?.email || 'HR Executive'}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: '#6b7280',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              {execUser?.title || 'People & Culture'}
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginLeft: 16,
+          }}
+        >
           <Button
             type="default"
-            size="middle"
-            icon={<ArrowLeftOutlined />}
+            size="small"
             onClick={() => navigate('/hub')}
+            style={{
+              borderColor: '#d1d5db',
+              color: '#374151',
+              height: 28,
+              fontSize: 11,
+              padding: '0 12px',
+              borderRadius: 4,
+              background: '#ffffff',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f9fafb';
+              e.currentTarget.style.borderColor = '#9ca3af';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.borderColor = '#d1d5db';
+            }}
           >
             Back to Hub
           </Button>
-          <Title level={3} style={{ margin: 0, marginLeft: 16 }}>
-            HR Portal
-          </Title>
-        </Space>
-        <Space>
-          <Button onClick={() => navigate('/ceo')}>CEO Portal</Button>
-          <Button onClick={signOut}>Sign Out</Button>
-        </Space>
+          <Button
+            onClick={signOut}
+            style={{
+              borderColor: '#d1d5db',
+              color: '#374151',
+              height: 32,
+              fontSize: 12,
+              padding: '0 14px',
+              borderRadius: 4,
+              background: '#ffffff',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f9fafb';
+              e.currentTarget.style.borderColor = '#9ca3af';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.borderColor = '#d1d5db';
+            }}
+          >
+            Sign Out
+          </Button>
+        </div>
       </Header>
 
-      <Layout>
-        <Sider
-          collapsible
-          collapsed={sidebarCollapsed}
-          onCollapse={setSidebarCollapsed}
-          width={256}
+      <Content
+        style={{
+          padding: '20px 24px',
+          maxWidth: 1800,
+          margin: '0 auto',
+          width: '100%',
+        }}
+      >
+        <div
           style={{
-            background: '#fff',
-            boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
-            overflowY: 'auto',
-            overflowX: 'hidden',
+            display: 'flex',
+            gap: 16,
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
           }}
-          theme="light"
         >
-          <div style={{ padding: '16px' }}>
-            <Title level={5} style={{ margin: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <SafetyOutlined style={{ color: '#ff7a45' }} />
-              {!sidebarCollapsed && 'HR Canvas'}
-            </Title>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <Button
-                type={activeTab === 'dashboard' ? 'primary' : 'text'}
-                icon={<DashboardOutlined />}
-                block
+          {/* Left navigation */}
+          <div
+            style={{
+              flex: '0 0 220px',
+              maxWidth: 260,
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 4,
+                padding: 12,
+              }}
+            >
+              <div
                 style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'dashboard' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'dashboard' ? '#fff' : '#666',
-                  border: 'none',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  color: '#9ca3af',
+                  letterSpacing: 1,
+                  marginBottom: 8,
                 }}
-                onClick={() => setActiveTab('dashboard')}
               >
-                {!sidebarCollapsed && 'Dashboard'}
-              </Button>
-              <Button
-                type={activeTab === 'documents' ? 'primary' : 'text'}
-                icon={<FileTextOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'documents' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'documents' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('documents')}
-              >
-                {!sidebarCollapsed && 'Document Generator'}
-              </Button>
-              <Button
-                type={activeTab === 'documents_dashboard' ? 'primary' : 'text'}
-                icon={<FileSearchOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'documents_dashboard' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'documents_dashboard' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('documents_dashboard')}
-              >
-                {!sidebarCollapsed && 'Document Dashboard'}
-              </Button>
-              <Button
-                type={activeTab === 'personnel' ? 'primary' : 'text'}
-                icon={<TeamOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'personnel' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'personnel' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('personnel')}
-              >
-                {!sidebarCollapsed && 'Personnel Management'}
-              </Button>
-              <Button
-                type={activeTab === 'exit_workflows' ? 'primary' : 'text'}
-                icon={<UserDeleteOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'exit_workflows' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'exit_workflows' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('exit_workflows')}
-              >
-                {!sidebarCollapsed && 'Exit Workflows'}
-              </Button>
-              <Button
-                type={activeTab === 'intern_candidates' ? 'primary' : 'text'}
-                icon={<UserAddOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'intern_candidates' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'intern_candidates' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('intern_candidates')}
-              >
-                {!sidebarCollapsed && 'Intern Candidates'}
-              </Button>
-              <Divider style={{ margin: '8px 0' }} />
-              <Button
-                type={activeTab === 'time_pto' ? 'primary' : 'text'}
-                icon={<CalendarOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'time_pto' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'time_pto' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('time_pto')}
-              >
-                {!sidebarCollapsed && 'Time & PTO'}
-              </Button>
-              <Button
-                type={activeTab === 'performance' ? 'primary' : 'text'}
-                icon={<ThunderboltOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'performance' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'performance' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('performance')}
-              >
-                {!sidebarCollapsed && 'Performance'}
-              </Button>
-              <Button
-                type={activeTab === 'compensation' ? 'primary' : 'text'}
-                icon={<DollarOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'compensation' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'compensation' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('compensation')}
-              >
-                {!sidebarCollapsed && 'Compensation'}
-              </Button>
-              <Button
-                type={activeTab === 'wellness' ? 'primary' : 'text'}
-                icon={<HeartOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'wellness' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'wellness' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('wellness')}
-              >
-                {!sidebarCollapsed && 'Wellness'}
-              </Button>
-              <Button
-                type={activeTab === 'analytics' ? 'primary' : 'text'}
-                icon={<BarChartOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'analytics' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'analytics' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('analytics')}
-              >
-                {!sidebarCollapsed && 'Analytics'}
-              </Button>
-              <Button
-                type={activeTab === 'compliance' ? 'primary' : 'text'}
-                icon={<SafetyOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'compliance' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'compliance' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('compliance')}
-              >
-                {!sidebarCollapsed && 'Compliance'}
-              </Button>
-              <Divider style={{ margin: '8px 0' }} />
-              <Button
-                type={activeTab === 'audit' ? 'primary' : 'text'}
-                icon={<FileSearchOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'audit' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'audit' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('audit')}
-              >
-                {!sidebarCollapsed && 'Audit Trail'}
-              </Button>
-              <Divider style={{ margin: '8px 0' }} />
-              <Button
-                type={activeTab === 'system_admin' ? 'primary' : 'text'}
-                icon={<SettingOutlined />}
-                block
-                style={{
-                  textAlign: 'left',
-                  height: '40px',
-                  marginBottom: '4px',
-                  background: activeTab === 'system_admin' ? '#ff7a45' : 'transparent',
-                  color: activeTab === 'system_admin' ? '#fff' : '#666',
-                  border: 'none',
-                }}
-                onClick={() => setActiveTab('system_admin')}
-              >
-                {!sidebarCollapsed && 'System Admin (Permissions)'}
-              </Button>
+                HR Workspace
+              </div>
+              {[
+                { id: 'dashboard', label: 'Dashboard' },
+                { id: 'documents', label: 'Document Generator' },
+                { id: 'documents_dashboard', label: 'Document Dashboard' },
+                { id: 'word_processor', label: 'Word Processor' },
+                { id: 'communications', label: 'Executive Communications' },
+                { id: 'personnel', label: 'Personnel Management' },
+                { id: 'exit_workflows', label: 'Exit Workflows' },
+                { id: 'intern_candidates', label: 'Intern Candidates' },
+                { id: 'time_pto', label: 'Time & PTO' },
+                { id: 'performance', label: 'Performance' },
+                { id: 'compensation', label: 'Compensation' },
+                { id: 'wellness', label: 'Wellness' },
+                { id: 'analytics', label: 'Analytics' },
+                { id: 'compliance', label: 'Compliance' },
+                { id: 'equity', label: 'Equity Management' },
+                { id: 'audit', label: 'Audit Trail' },
+                { id: 'system_admin', label: 'System Admin' },
+              ].map((item) => {
+                const active = activeTab === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '6px 8px',
+                      marginBottom: 4,
+                      borderRadius: 3,
+                      cursor: 'pointer',
+                      backgroundColor: active ? '#eff6ff' : 'transparent',
+                      color: active ? '#1d4ed8' : '#374151',
+                      fontSize: 12,
+                      fontWeight: 500,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    <span>{item.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </Sider>
 
-        <Content style={{ padding: 24 }}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            size="large"
-            tabBarStyle={{ borderBottom: '2px solid #e2e8f0' }}
-            renderTabBar={(props, DefaultTabBar) => <DefaultTabBar {...props} />}
+          {/* Right content */}
+          <div
+            style={{
+              flex: '1 1 0%',
+              minWidth: 0,
+            }}
           >
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 4,
+                padding: 16,
+              }}
+            >
+              <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                tabBarStyle={{ display: 'none' }}
+              >
           <TabPane
             tab={
               <span>
@@ -768,9 +744,11 @@ const HRPortal: React.FC = () => {
           >
             <SystemAdminView />
           </TabPane>
-        </Tabs>
-        </Content>
-      </Layout>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      </Content>
     </Layout>
   );
 };

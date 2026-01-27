@@ -113,12 +113,11 @@ test.describe('Foundational Invites Portal Navigation', () => {
 
     // If we got redirected to auth, log it and stop
     if (initialUrl.includes('/auth') || initialUrl.includes('/business-auth')) {
-      log('error', '❌ Redirected to auth page - user not logged in. Please log in manually first.');
-      log('console', 'To test with login, please:');
+      log('error', '⚠️ Redirected to auth page - user not logged in. Continuing to direct route check.');
+      log('console', 'To test full flow with login, please:');
       log('console', '1. Open browser and log in to http://localhost:8080/hub');
       log('console', '2. Copy browser cookies/storage');
       log('console', '3. Re-run test with authentication context');
-      return;
     }
 
     // Step 2: Wait for Main Hub to load
@@ -126,6 +125,20 @@ test.describe('Foundational Invites Portal Navigation', () => {
     await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
       log('error', 'Network idle timeout - continuing anyway');
     });
+
+    // Step 3: Navigate directly to foundational invites route to verify routing
+    log('navigation', 'Step 3: Navigating directly to /hub/foundational/invites');
+    await page.goto('http://localhost:8080/hub/foundational/invites', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(1500);
+
+    const directRouteUrl = page.url();
+    log('navigation', `URL after direct route navigation: ${directRouteUrl}`);
+    await page.screenshot({ path: 'tests/screenshots/02-direct-route.png', fullPage: true });
+    log('screenshot', 'Screenshot: Direct route navigation', { path: 'tests/screenshots/02-direct-route.png' });
+
+    // Ensure we are NOT being dumped to home page
+    expect(directRouteUrl).not.toBe('http://localhost:8080/');
+    expect(directRouteUrl).not.toBe('http://localhost:8080');
 
     // Step 4: Wait for Main Hub to load and find Foundational Invites tile
     log('navigation', 'Step 4: Looking for Foundational Invites portal tile');

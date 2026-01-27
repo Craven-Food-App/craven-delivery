@@ -407,6 +407,7 @@ const App = () => {
                   <Route path="/executive/profile" element={<ExecutiveProfile />} />
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Foundational Invites" />}><HubFoundationalInvites /></Suspense></BusinessAuthGuard>} />
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Department" />}><DepartmentHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
