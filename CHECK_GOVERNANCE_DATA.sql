@@ -12,11 +12,12 @@ SELECT
 FROM executive_appointments;
 
 -- Show all appointments (new schema with executive_id)
+-- Join with exec_users and user_profiles to get names
 SELECT 
   'APPOINTMENT DETAILS' as info,
   ea.id,
-  eu.name as officer_name,
-  eu.email as officer_email,
+  COALESCE(up.full_name, eu.title, 'Unknown') as officer_name,
+  COALESCE(up.email, 'N/A') as officer_email,
   ea.position,
   ea.appointment_type,
   ea.status,
@@ -26,6 +27,7 @@ SELECT
   ea.created_at
 FROM executive_appointments ea
 LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 ORDER BY ea.created_at DESC
 LIMIT 20;
 
@@ -71,11 +73,12 @@ SELECT
   co.appointed_date,
   co.term_start,
   co.term_end,
-  eu.name as executive_name,
-  eu.email as executive_email,
+  COALESCE(up.full_name, eu.title, 'Unknown') as executive_name,
+  COALESCE(up.email, 'N/A') as executive_email,
   eu.title as executive_title
 FROM corporate_officers co
 LEFT JOIN exec_users eu ON co.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 ORDER BY co.appointed_date DESC
 LIMIT 20;
 
