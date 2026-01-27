@@ -31,25 +31,76 @@ const AppointmentsTab: React.FC = () => {
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      // Try to load from executive_appointments table, fallback to existing table if needed
+      // Load from executive_appointments table - check both old and new schema
       const { data, error } = await supabase
         .from('executive_appointments')
         .select('*')
-        .order('appointment_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.warn('executive_appointments table may not exist yet:', error);
-        // Fallback: try appointments table or return empty
+        console.warn('Error loading appointments:', error);
         setAppointments([]);
-      } else {
-        setAppointments(data || []);
+        return;
       }
+
+      // Transform data to match our interface (handle both old and new schema)
+      const transformed = (data || []).map((apt: any) => {
+        // Check if it's old schema (has proposed_officer_name) or new schema (has executive_id)
+        if (apt.proposed_officer_name) {
+          // OLD SCHEMA - transform to new format
+          return {
+            id: apt.id,
+            executive_id: apt.appointee_user_id || apt.proposed_officer_email || '', // Try to find exec_user by email
+            position: apt.proposed_title || '',
+            appointment_type: apt.appointment_type || 'initial',
+            appointment_date: apt.created_at || new Date().toISOString(),
+            effective_date: apt.effective_date || apt.created_at || new Date().toISOString(),
+            appointed_by: apt.created_by || apt.secretary_approved_by || '',
+            resolution_id: apt.board_resolution_id,
+            status: mapOldStatusToNew(apt.status),
+            notes: apt.notes || '',
+          };
+        } else {
+          // NEW SCHEMA - use as is
+          return {
+            id: apt.id,
+            executive_id: apt.executive_id,
+            position: apt.position,
+            appointment_type: apt.appointment_type,
+            appointment_date: apt.appointment_date || apt.created_at,
+            effective_date: apt.effective_date,
+            appointed_by: apt.appointed_by,
+            resolution_id: apt.resolution_id,
+            status: apt.status,
+            notes: apt.notes || '',
+          };
+        }
+      });
+
+      setAppointments(transformed);
     } catch (err) {
       console.error('Error loading appointments:', err);
       setAppointments([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Map old status values to new status values
+  const mapOldStatusToNew = (oldStatus: string): 'pending' | 'approved' | 'active' | 'terminated' => {
+    const statusMap: Record<string, 'pending' | 'approved' | 'active' | 'terminated'> = {
+      'DRAFT': 'pending',
+      'SENT_TO_BOARD': 'pending',
+      'BOARD_ADOPTED': 'approved',
+      'AWAITING_SIGNATURES': 'pending',
+      'READY_FOR_SECRETARY_REVIEW': 'pending',
+      'SECRETARY_APPROVED': 'approved',
+      'ACTIVATING': 'pending',
+      'ACTIVE': 'active',
+      'APPROVED': 'approved',
+      'REJECTED': 'terminated',
+    };
+    return statusMap[oldStatus.toUpperCase()] || 'pending';
   };
 
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
