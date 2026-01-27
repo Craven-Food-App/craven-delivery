@@ -472,12 +472,16 @@ const EquityGrantsList: React.FC = () => {
           
           let userId = execUser?.user_id || employee?.user_id;
           
+          // Skip 18M grants - these are old Torrance grants that should be 10.5M
+          // The "CEO" entry is a duplicate that should be removed
+          if (sharesNum >= 17500000 && sharesNum <= 18500000) {
+            console.log('🚫 Skipping 18M grant - this is old Torrance data, should be 10.5M');
+            continue;
+          }
+          
           if (!userId && sharesNum >= 4500000 && sharesNum <= 5500000) {
             userId = '5a259c29-8cdd-4569-9a3c-4f7481f1b441';
             console.log('🔍 Found 5M grant, using Justin Sweet user_id:', userId);
-          } else if (!userId && sharesNum >= 17500000 && sharesNum <= 18500000) {
-            userId = '93a342c6-9dc2-4bf6-ab1c-0dc1d17148cd';
-            console.log('🔍 Found 18M grant, using Torrance user_id:', userId);
           } else if (!userId && sharesNum >= 450000 && sharesNum <= 550000) {
             userId = '76e5acef-e7c0-4b26-a9e1-52e25c3e7ff3';
             console.log('🔍 Found 500K grant, using Nathan user_id:', userId);
@@ -485,14 +489,26 @@ const EquityGrantsList: React.FC = () => {
           
           const grantKey = userId ? `${userId}_${sharesNum}` : null;
           
+          // Check if this grant has been revoked
+          const isRevoked = userId && (
+            revokedGrantKeys.has(grantKey || '') ||
+            revokedByUserId.has(userId) && revokedByUserId.get(userId)!.has(sharesNum)
+          );
+          
+          if (isRevoked) {
+            console.log('🚫 Skipping revoked grant from equity_grants:', {
+              userId,
+              shares: sharesNum,
+              grantKey
+            });
+            continue;
+          }
+          
           if (userId && grantKey && !ledgerGrantKeys.has(grantKey)) {
             let recipientName = '';
             let recipientEmail = '';
             
-            if (sharesNum >= 17500000 && sharesNum <= 18500000) {
-              recipientName = 'Torrance Stroman';
-              recipientEmail = 'tstroman.ceo@cravenusa.com';
-            } else if (sharesNum >= 4500000 && sharesNum <= 5500000) {
+            if (sharesNum >= 4500000 && sharesNum <= 5500000) {
               recipientName = 'Justin Sweet';
               recipientEmail = 'jsweet.cfo@cravenusa.com';
             } else if (sharesNum >= 450000 && sharesNum <= 550000) {
