@@ -1,32 +1,34 @@
 -- CHECK EXISTING GOVERNANCE DATA
 -- Run this to see what appointment, resolution, and officer data exists
 
--- 1. Check executive_appointments
+-- 1. Check executive_appointments (handle both old and new schema)
 SELECT 
   'EXECUTIVE APPOINTMENTS' as table_name,
   COUNT(*) as total_count,
-  COUNT(*) FILTER (WHERE status = 'pending') as pending,
-  COUNT(*) FILTER (WHERE status = 'active') as active,
-  COUNT(*) FILTER (WHERE status = 'approved') as approved,
-  COUNT(*) FILTER (WHERE status = 'terminated') as terminated
+  COUNT(*) FILTER (WHERE status IN ('pending', 'DRAFT', 'SENT_TO_BOARD', 'AWAITING_SIGNATURES')) as pending,
+  COUNT(*) FILTER (WHERE status IN ('active', 'ACTIVE')) as active,
+  COUNT(*) FILTER (WHERE status IN ('approved', 'APPROVED', 'BOARD_ADOPTED', 'SECRETARY_APPROVED')) as approved,
+  COUNT(*) FILTER (WHERE status IN ('terminated', 'REJECTED', 'TERMINATED')) as terminated
 FROM executive_appointments;
 
--- Show all appointments
+-- Show all appointments (handle both old and new schema)
 SELECT 
   'APPOINTMENT DETAILS' as info,
   id,
   CASE 
     WHEN proposed_officer_name IS NOT NULL THEN proposed_officer_name
-    ELSE (SELECT name FROM exec_users WHERE id = executive_id)
+    WHEN executive_id IS NOT NULL THEN (SELECT name FROM exec_users WHERE id = executive_id)
+    ELSE 'Unknown'
   END as officer_name,
   CASE 
     WHEN proposed_title IS NOT NULL THEN proposed_title
-    ELSE position
+    WHEN position IS NOT NULL THEN position
+    ELSE 'Unknown'
   END as position,
   appointment_type,
   status,
   effective_date,
-  board_resolution_id,
+  COALESCE(board_resolution_id, resolution_id) as resolution_id,
   created_at
 FROM executive_appointments
 ORDER BY created_at DESC
@@ -87,13 +89,13 @@ SELECT
   'ORPHANED APPOINTMENTS (no resolution)' as info,
   COUNT(*) as count
 FROM executive_appointments
-WHERE board_resolution_id IS NULL AND resolution_id IS NULL;
+WHERE COALESCE(board_resolution_id, resolution_id) IS NULL;
 
 SELECT 
   'APPOINTMENTS WITH RESOLUTIONS' as info,
   COUNT(*) as count
 FROM executive_appointments
-WHERE board_resolution_id IS NOT NULL OR resolution_id IS NOT NULL;
+WHERE COALESCE(board_resolution_id, resolution_id) IS NOT NULL;
 
 -- 5. Summary
 SELECT 
@@ -101,6 +103,6 @@ SELECT
   (SELECT COUNT(*) FROM executive_appointments) as total_appointments,
   (SELECT COUNT(*) FROM governance_board_resolutions) as total_resolutions,
   (SELECT COUNT(*) FROM corporate_officers) as total_officers,
-  (SELECT COUNT(*) FROM executive_appointments WHERE status = 'active') as active_appointments,
+  (SELECT COUNT(*) FROM executive_appointments WHERE status IN ('active', 'ACTIVE')) as active_appointments,
   (SELECT COUNT(*) FROM corporate_officers WHERE status = 'active') as active_officers;
 
