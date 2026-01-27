@@ -71,7 +71,7 @@ serve(async (req) => {
         .eq("id", invite.id);
     }
 
-    // Return invite info
+    // Return invite info (including strike price if available)
     return new Response(
       JSON.stringify({
         invite: {
@@ -80,6 +80,7 @@ serve(async (req) => {
           max_amount_cents: invite.max_amount_cents,
           email: invite.email,
           full_name: invite.full_name,
+          strike_price: invite.strike_price || 0.0001, // Default to $0.0001 if not set
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

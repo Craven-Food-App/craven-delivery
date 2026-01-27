@@ -111,6 +111,8 @@ export default function Allocate() {
   const amountCents = Math.round(amount * 100);
   const minAmountCents = inviteSession.minAmount;
   const maxAmountCents = inviteSession.maxAmount;
+  const strikePrice = inviteSession.strikePrice || 0.0001;
+  const sharesAllocated = Math.floor(amount / strikePrice);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
@@ -203,31 +205,63 @@ export default function Allocate() {
               </div>
             )}
 
-            {/* Foundational Support Breakdown (securities-neutral) */}
+            {/* Investment Breakdown */}
             {amount > 0 && (
-              <div className="rounded-2xl border border-border bg-muted/40 p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-2">
-                  Foundational Support Breakdown
+              <div className="rounded-2xl border border-border bg-muted/40 p-6">
+                <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-[hsl(var(--primary))]" />
+                  Your Investment Breakdown
                 </h3>
-                <dl className="space-y-1 text-sm text-foreground">
-                  <div className="flex justify-between">
-                    <dt>Your selected amount</dt>
-                    <dd>${(amountCents / 100).toFixed(2)}</dd>
+                
+                <div className="space-y-4">
+                  {/* Contribution Amount */}
+                  <div className="rounded-lg bg-background p-4 border border-border">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-muted-foreground">Contribution Amount</span>
+                      <span className="text-2xl font-bold text-[hsl(var(--primary))]">${amount.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <dt>Minimum for this invitation</dt>
-                    <dd>${(minAmountCents / 100).toFixed(2)}</dd>
+
+                  {/* Share Calculation */}
+                  <div className="rounded-lg bg-background p-4 border border-border">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Share Allocation</h4>
+                    <dl className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Strike Price per Share</dt>
+                        <dd className="font-medium text-foreground">${strikePrice.toFixed(4)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground">Number of Shares</dt>
+                        <dd className="font-medium text-foreground">
+                          {sharesAllocated.toLocaleString()}
+                        </dd>
+                      </div>
+                      <div className="pt-2 border-t border-border">
+                        <div className="flex justify-between items-center">
+                          <dt className="text-sm font-medium text-foreground">Total Investment Value</dt>
+                          <dd className="text-lg font-bold text-[hsl(var(--primary))]">${amount.toFixed(2)}</dd>
+                        </div>
+                      </div>
+                    </dl>
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <dt>Maximum for this invitation</dt>
-                    <dd>${(maxAmountCents / 100).toFixed(2)}</dd>
+
+                  {/* Terms & Conditions */}
+                  <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 border border-amber-200 dark:border-amber-800">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">Important Information</h4>
+                    <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
+                      <li>Share allocation is based on the strike price of ${strikePrice.toFixed(4)} per share</li>
+                      <li>Shares are subject to the terms outlined in your investment documentation</li>
+                      <li>Vesting schedule and equity percentage will be detailed in your grant agreement</li>
+                      <li>This is a private friends & family offering, not a public securities offering</li>
+                    </ul>
                   </div>
-                </dl>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  This is a private friends &amp; family support program for Crave&apos;n Inc.
-                  It is not a public offering. Any additional recognition or benefits from
-                  this support are documented separately by Crave&apos;n.
-                </p>
+
+                  {/* Limits */}
+                  <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                    <span>Minimum: ${minAmount.toFixed(2)}</span>
+                    <span>Maximum: ${maxAmount.toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             )}
 
