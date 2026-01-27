@@ -17,6 +17,8 @@ import TeamPage from './team/TeamPage';
  * - /company/team - Team management
  */
 const CompanyPortalRoutes: React.FC = () => {
+  console.log('🚀 [CompanyPortalRoutes] Component rendering');
+  
   return (
     <Routes>
       <Route element={<CompanyPortalLayout />}>

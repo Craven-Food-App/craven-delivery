@@ -23,10 +23,13 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
 
   useEffect(() => {
     const checkAccess = async () => {
+      console.log('🔐 [CompanySecureRoute] Starting auth check...');
       try {
         // Get user first, then check roles in parallel
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('🔐 [CompanySecureRoute] User:', user?.email || 'No user');
         if (!user) {
+          console.log('🔐 [CompanySecureRoute] No user found, denying access');
           setIsAuthorized(false);
           setLoading(false);
           return;
@@ -34,6 +37,7 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
 
         // TORRANCE STROMAN: FULL ACCESS TO EVERYTHING
         if (hasFullAccess(user.email)) {
+          console.log('🔐 [CompanySecureRoute] Full access granted (Torrance)');
           setIsAuthorized(true);
           setLoading(false);
           return;
@@ -55,30 +59,37 @@ export const CompanySecureRoute: React.FC<CompanySecureRouteProps> = ({
         ]);
 
         const authorized = hasAnyRole(roles, allowedRoles);
+        console.log('🔐 [CompanySecureRoute] Roles check result:', { roles, allowedRoles, authorized });
         
         // Fallback check with exec_users if not authorized via user_roles
         if (!authorized && execUserResult.data) {
+          console.log('🔐 [CompanySecureRoute] Checking exec_users fallback:', execUserResult.data);
           const execRole = execUserResult.data.role?.toUpperCase();
           const hasAccess = allowedRoles.some(role => {
             const normalizedRole = role.replace('CRAVEN_', '').toLowerCase();
             return execRole === normalizedRole || execRole === 'CEO';
           });
+          console.log('🔐 [CompanySecureRoute] Exec access:', hasAccess);
           setIsAuthorized(hasAccess);
         } else if (!authorized) {
           // Check if user has any company portal permissions (CFO with limited access)
           const hasAnyCompanyPermission = companyPerms[0].data || companyPerms[1].data;
+          console.log('🔐 [CompanySecureRoute] Company permission check:', hasAnyCompanyPermission);
           setIsAuthorized(hasAnyCompanyPermission);
         } else {
+          console.log('🔐 [CompanySecureRoute] Access granted via roles');
           setIsAuthorized(authorized);
         }
       } catch (error) {
-        console.error('Error checking access:', error);
+        console.error('🔐 [CompanySecureRoute] Error checking access:', error);
         setIsAuthorized(false);
       } finally {
+        console.log('🔐 [CompanySecureRoute] Auth check complete, loading=false');
         setLoading(false);
       }
     };
 
+    console.log('🔐 [CompanySecureRoute] Effect triggered, starting check...');
     checkAccess();
   }, [allowedRoles]);
 
