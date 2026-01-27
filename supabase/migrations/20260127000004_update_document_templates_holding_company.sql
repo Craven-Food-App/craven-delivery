@@ -1,9 +1,9 @@
--- Update document templates to use "Holding Company" instead of "Invero Business Trust"
+-- Update document templates to use "Invero, Inc." instead of "Invero Business Trust"
 -- This is a safe migration that only updates tables if they exist
 
 DO $$
 BEGIN
-  RAISE NOTICE 'Starting Holding Company document template updates...';
+  RAISE NOTICE 'Starting Invero, Inc. document template updates...';
 
   -- Check if board_document_templates table exists
   IF EXISTS (
@@ -20,9 +20,9 @@ BEGIN
         REPLACE(
           REPLACE(template_content, 
             'Invero Business Trust (Irrevocable Trust)', 
-            'Holding Company'),
+            'Invero, Inc.'),
           'Invero Business Trust', 
-          'Holding Company'),
+          'Invero, Inc.'),
         'founder_trust_name', 
         'holding_company_name'
       ),
@@ -38,13 +38,13 @@ BEGIN
           REPLACE(
             REPLACE(template_content, 
               '{{founder_trust_name}}      = "Invero Business Trust"', 
-              '{{holding_company_name}}      = "Holding Company"'),
+              '{{holding_company_name}}      = "Invero, Inc."'),
             '{{founder_trust_name}}', 
             '{{holding_company_name}}'),
           'Invero Business Trust (Irrevocable Trust)', 
-          'Holding Company'),
+          'Invero, Inc.'),
         'Invero Business Trust', 
-        'Holding Company'
+        'Invero, Inc.'
       ),
       updated_at = NOW()
     WHERE template_name = 'founders_agreement'
@@ -56,9 +56,9 @@ BEGIN
       template_content = REPLACE(
         REPLACE(template_content, 
           'Invero Business Trust (Irrevocable Trust)', 
-          'Holding Company'),
+          'Invero, Inc.'),
         'Invero Business Trust', 
-        'Holding Company'
+        'Invero, Inc.'
       ),
       updated_at = NOW()
     WHERE template_content ILIKE '%Invero Business Trust%';
@@ -90,9 +90,9 @@ BEGIN
             REPLACE(
               REPLACE(html_template, 
                 'Invero Business Trust (Irrevocable Trust)', 
-                'Holding Company'),
+                'Invero, Inc.'),
               'Invero Business Trust', 
-              'Holding Company'),
+              'Invero, Inc.'),
             '{{founder_trust_name}}', 
             '{{holding_company_name}}'),
           'founder_trust_name', 
@@ -116,9 +116,9 @@ BEGIN
             REPLACE(
               REPLACE(content, 
                 'Invero Business Trust (Irrevocable Trust)', 
-                'Holding Company'),
+                'Invero, Inc.'),
               'Invero Business Trust', 
-              'Holding Company'),
+              'Invero, Inc.'),
             '{{founder_trust_name}}', 
             '{{holding_company_name}}'),
           'founder_trust_name', 
@@ -159,12 +159,12 @@ BEGIN
       UPDATE public.board_document_placeholders
       SET 
         placeholder_name = 'holding_company_name',
-        description = 'Name of the holding company (majority shareholder)',
-        default_value = 'Holding Company',
+        description = 'Name of the holding company (majority shareholder): Invero, Inc.',
+        default_value = 'Invero, Inc.',
         updated_at = NOW()
       WHERE placeholder_name = 'founder_trust_name';
       
-      RAISE NOTICE 'Updated placeholder: founder_trust_name → holding_company_name';
+      RAISE NOTICE 'Updated placeholder: founder_trust_name → holding_company_name (Invero, Inc.)';
     ELSE
       -- Insert new placeholder if it doesn't exist
       INSERT INTO public.board_document_placeholders (
@@ -174,12 +174,12 @@ BEGIN
         required
       ) VALUES (
         'holding_company_name',
-        'Name of the holding company (majority shareholder)',
-        'Holding Company',
+        'Name of the holding company (majority shareholder): Invero, Inc.',
+        'Invero, Inc.',
         true
       ) ON CONFLICT DO NOTHING;
       
-      RAISE NOTICE 'Created new placeholder: holding_company_name';
+      RAISE NOTICE 'Created new placeholder: holding_company_name (Invero, Inc.)';
     END IF;
 
     -- Update trust_state to holding_company_state if exists

@@ -30,10 +30,10 @@ BEGIN
   -- Calculate new percentage (40.6M / 70M)
   new_percentage := ROUND((40600000::NUMERIC / 70000000::NUMERIC * 100), 2);
 
-  -- Update the trust record to Holding Company
+  -- Update the trust record to Invero, Inc.
   UPDATE public.employee_equity
   SET 
-    shareholder_name = 'Holding Company',
+    shareholder_name = 'Invero, Inc.',
     shareholder_type = 'entity',  -- Changed from 'trust' to 'entity'
     shares_total = 40600000,
     shares_percentage = new_percentage,
@@ -88,7 +88,7 @@ BEGIN
   
   UPDATE public.trusts
   SET 
-    name = 'Holding Company',
+    name = 'Invero, Inc.',
     type = 'Corporate Entity',
     updated_at = NOW()
   WHERE name ILIKE '%Invero%Business%Trust%'
@@ -107,11 +107,11 @@ BEGIN
   ) VALUES (
     'equity_adjusted',
     'entity',
-    (SELECT id FROM public.employee_equity WHERE shareholder_name = 'Holding Company' LIMIT 1),
-    'Renamed Trust to Holding Company and adjusted equity from 55M to 40.6M shares',
+    (SELECT id FROM public.employee_equity WHERE shareholder_name = 'Invero, Inc.' LIMIT 1),
+    'Renamed Trust to Invero, Inc. and adjusted equity from 55M to 40.6M shares',
     jsonb_build_object(
       'old_name', 'Invero Business Trust',
-      'new_name', 'Holding Company',
+      'new_name', 'Invero, Inc.',
       'old_shares', old_trust_shares,
       'new_shares', 40600000,
       'shares_returned', shares_returned,
@@ -123,7 +123,7 @@ BEGIN
 
   RAISE NOTICE '============================================';
   RAISE NOTICE 'Migration completed successfully';
-  RAISE NOTICE 'Trust → Holding Company';
+  RAISE NOTICE 'Trust → Invero, Inc.';
   RAISE NOTICE '55M → 40.6M shares (returned % to pool)', shares_returned;
   RAISE NOTICE 'New percentage: %%', new_percentage;
   RAISE NOTICE '============================================';
@@ -134,18 +134,18 @@ END $$;
 -- ========================================
 
 COMMENT ON COLUMN public.cap_tables.trust_shares IS 
-  'Shares held by the Holding Company (formerly Invero Business Trust). Historical column name retained for compatibility.';
+  'Shares held by Invero, Inc. (formerly Invero Business Trust). Historical column name retained for compatibility.';
 
 COMMENT ON COLUMN public.cap_tables.trust_percentage IS 
-  'Percentage held by the Holding Company (formerly Invero Business Trust). Historical column name retained for compatibility.';
+  'Percentage held by Invero, Inc. (formerly Invero Business Trust). Historical column name retained for compatibility.';
 
 -- ========================================
 -- VERIFICATION QUERIES
 -- ========================================
 
--- Verify Holding Company equity
+-- Verify Invero, Inc. equity
 SELECT 
-  'Holding Company' as entity,
+  'Invero, Inc.' as entity,
   shareholder_name,
   shares_total as shares,
   shares_percentage as percentage,
@@ -153,8 +153,8 @@ SELECT
   is_majority_shareholder,
   '(employee_equity)' as source
 FROM public.employee_equity
-WHERE shareholder_name = 'Holding Company'
-   OR shareholder_name ILIKE '%Holding%Company%';
+WHERE shareholder_name = 'Invero, Inc.'
+   OR shareholder_name ILIKE '%Invero%Inc%';
 
 -- Verify cap table
 SELECT 
