@@ -23,13 +23,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface CapTable {
   id: string;
-  total_authorized: number; // Note: column is total_authorized, not total_authorized_shares
-  total_issued: number; // Note: column is total_issued, not total_issued_shares
+  total_authorized: number;
+  total_issued: number;
   total_unissued: number;
   equity_pool: number;
-  trust_shares: number;
+  holding_company_shares: number;
   founder_shares: number;
-  trust_percentage: number;
+  holding_company_percentage: number;
   founder_percentage: number;
   pool_percentage: number;
   as_of_date: string;
@@ -79,7 +79,7 @@ const CapTableOverview: React.FC = () => {
         total_authorized: data?.total_authorized,
         total_issued: data?.total_issued,
         total_unissued: data?.total_unissued,
-        trust_shares: data?.trust_shares,
+        holding_company_shares: data?.holding_company_shares,
         founder_shares: data?.founder_shares,
         equity_pool: data?.equity_pool,
       });
@@ -645,20 +645,20 @@ const CapTableOverview: React.FC = () => {
           <Table.Tbody>
             <Table.Tr>
               <Table.Td>
-                <Text fw={600} size="sm">Trust</Text>
+                <Text fw={600} size="sm">Invero, Inc. (Holding Company)</Text>
               </Table.Td>
               <Table.Td>
                 <Text fw={700} size="sm">
-                  <NumberFormatter value={capTable.trust_shares} thousandSeparator />
+                  <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
                 </Text>
               </Table.Td>
               <Table.Td>
                 <Badge color="blue" size="lg" variant="light">
-                  {capTable.trust_percentage.toFixed(1)}%
+                  {capTable.holding_company_percentage.toFixed(1)}%
                 </Badge>
               </Table.Td>
               <Table.Td>
-                <Progress value={capTable.trust_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                <Progress value={capTable.holding_company_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
               </Table.Td>
             </Table.Tr>
             <Table.Tr>
