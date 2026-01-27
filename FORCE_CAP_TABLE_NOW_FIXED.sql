@@ -114,7 +114,7 @@ WHERE (
 );
 
 -- ==============================================================================
--- STEP 4: FORCE JUSTIN SWEET TO 4.2M SHARES
+-- STEP 4: FORCE JUSTIN SWEET TO 4.2M SHARES WITH $2.00 STRIKE PRICE
 -- ==============================================================================
 
 -- Update vesting schedules
@@ -135,16 +135,31 @@ WHERE recipient_user_id = (
   SELECT id FROM auth.users WHERE email = 'jsweet.cfo@cravenusa.com' LIMIT 1
 );
 
--- Update equity ledger
+-- Update equity ledger with $2.00 strike price
 UPDATE public.equity_ledger
 SET 
   shares_amount = 4200000,
-  notes = 'Equity: 4,200,000 shares to Justin Sweet (CFO), immediate vesting',
+  price_per_share = 2.00,
+  notes = 'Equity: 4,200,000 shares to Justin Sweet (CFO) at $2.00 strike price, immediate vesting',
   updated_at = NOW()
 WHERE recipient_user_id = (
   SELECT id FROM auth.users WHERE email = 'jsweet.cfo@cravenusa.com' LIMIT 1
 )
 AND transaction_type = 'grant';
+
+-- Update employee_equity if Justin has a record there
+UPDATE public.employee_equity
+SET 
+  shares_total = 4200000,
+  shares_percentage = 6.00,
+  strike_price = 2.00,
+  updated_at = NOW()
+WHERE employee_id = (
+  SELECT e.id FROM public.employees e
+  JOIN auth.users u ON e.user_id = u.id
+  WHERE u.email = 'jsweet.cfo@cravenusa.com'
+  LIMIT 1
+);
 
 COMMIT;
 
