@@ -245,7 +245,7 @@ serve(async (req) => {
     const grantsFromLedger = existingGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
     const trustShares = Number(capTableData.trust_shares || 0);
     const founderShares = Number(capTableData.founder_shares || 0);
-    const totalAuthorized = Number(capTableData.total_authorized || 100000000);
+    const totalAuthorized = Number(capTableData.total_authorized || 70000000);
     
     // Total issued = Trust + Founder + Grants from ledger
     const currentTotalIssued = trustShares + founderShares + grantsFromLedger;

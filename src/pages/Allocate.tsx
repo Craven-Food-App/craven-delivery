@@ -111,8 +111,28 @@ export default function Allocate() {
   const amountCents = Math.round(amount * 100);
   const minAmountCents = inviteSession.minAmount;
   const maxAmountCents = inviteSession.maxAmount;
-  const strikePrice = inviteSession.strikePrice || 0.0001;
-  const sharesAllocated = Math.floor(amount / strikePrice);
+
+  // Tiered equity structure
+  const TOTAL_AUTHORIZED_SHARES = 70000000; // 70M shares
+  
+  const getEquityForAmount = (amount: number): { percentage: number; tier: string } => {
+    if (amount >= 500) {
+      return { percentage: 1.0, tier: "Founder's Circle" };
+    } else if (amount >= 250) {
+      return { percentage: 0.8, tier: "Executive Tier" };
+    } else if (amount >= 100) {
+      return { percentage: 0.6, tier: "Partner Tier" };
+    } else {
+      return { percentage: 0.2, tier: "Supporter Tier" };
+    }
+  };
+
+  const calculateShares = (equityPercentage: number): number => {
+    return Math.floor((equityPercentage / 100) * TOTAL_AUTHORIZED_SHARES);
+  };
+
+  const { percentage: equityPercentage, tier: equityTier } = getEquityForAmount(amount);
+  const sharesAllocated = calculateShares(equityPercentage);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
@@ -220,15 +240,19 @@ export default function Allocate() {
                       <span className="text-sm font-medium text-muted-foreground">Contribution Amount</span>
                       <span className="text-2xl font-bold text-[hsl(var(--primary))]">${amount.toFixed(2)}</span>
                     </div>
+                    <div className="mt-2 pt-2 border-t border-border">
+                      <span className="text-xs text-muted-foreground">Tier: </span>
+                      <span className="text-xs font-semibold text-[hsl(var(--primary))]">{equityTier}</span>
+                    </div>
                   </div>
 
-                  {/* Share Calculation */}
+                  {/* Equity Allocation */}
                   <div className="rounded-lg bg-background p-4 border border-border">
-                    <h4 className="text-sm font-semibold text-foreground mb-3">Share Allocation</h4>
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Equity Allocation</h4>
                     <dl className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Strike Price per Share</dt>
-                        <dd className="font-medium text-foreground">${strikePrice.toFixed(4)}</dd>
+                        <dt className="text-muted-foreground">Equity Percentage</dt>
+                        <dd className="font-medium text-foreground">{equityPercentage.toFixed(1)}%</dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-muted-foreground">Number of Shares</dt>
@@ -245,13 +269,52 @@ export default function Allocate() {
                     </dl>
                   </div>
 
+                  {/* Tier Comparison */}
+                  <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-4 border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">Investment Tiers</h4>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className={amount >= 50 && amount < 100 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          $50 - $99
+                        </span>
+                        <span className={amount >= 50 && amount < 100 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          0.2% equity ({Math.floor((0.2 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={amount >= 100 && amount < 250 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          $100 - $249
+                        </span>
+                        <span className={amount >= 100 && amount < 250 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          0.6% equity ({Math.floor((0.6 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={amount >= 250 && amount < 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          $250 - $499
+                        </span>
+                        <span className={amount >= 250 && amount < 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          0.8% equity ({Math.floor((0.8 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={amount >= 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          $500+
+                        </span>
+                        <span className={amount >= 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
+                          1.0% equity ({Math.floor((1.0 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Terms & Conditions */}
                   <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-4 border border-amber-200 dark:border-amber-800">
                     <h4 className="text-sm font-semibold text-foreground mb-2">Important Information</h4>
                     <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
-                      <li>Share allocation is based on the strike price of ${strikePrice.toFixed(4)} per share</li>
+                      <li>Equity allocation is based on your contribution tier</li>
                       <li>Shares are subject to the terms outlined in your investment documentation</li>
-                      <li>Vesting schedule and equity percentage will be detailed in your grant agreement</li>
+                      <li>Vesting schedule and additional terms will be detailed in your grant agreement</li>
                       <li>This is a private friends & family offering, not a public securities offering</li>
                     </ul>
                   </div>
