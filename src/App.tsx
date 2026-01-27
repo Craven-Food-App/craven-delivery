@@ -425,24 +425,14 @@ const App = () => {
                   <Route path="/finance/*" element={<Navigate to="/cfo" replace />} />
                   <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/executive-portal/documents" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Documents" />}><ExecutiveDocumentPortal /></Suspense></BusinessAuthGuard>} />
-                  <Route path="/company/*" element={<CompanyPortalLayout />}>
-                    <Route index element={<CompanyDashboard />} />
-                    <Route path="governance-admin" element={<GovernanceAdminDashboard />} />
-                    <Route path="governance-admin/appointments" element={<AppointmentList />} />
-                    <Route path="governance-admin/appointments/new" element={<ExecutiveAppointmentWizard />} />
-                    <Route path="governance-admin/resolutions" element={<ResolutionList />} />
-                    <Route path="governance-admin/officers" element={<OfficerLedger />} />
-                    <Route path="governance-admin/logs" element={<GovernanceLogList />} />
-                    <Route path="board" element={<BoardDashboard />} />
-                    <Route path="board/resolution/:id" element={<BoardResolutionDetail />} />
-                    <Route path="voting" element={<ResolutionVotingDashboard />} />
-                    <Route path="executives" element={<ExecutiveDashboard />} />
-                    <Route path="executives/my-appointment" element={<MyAppointment />} />
-                    <Route path="executives/directory" element={<OfficerDirectoryInternal />} />
-                    <Route path="leadership-public" element={<LeadershipPublicPage />} />
-                    <Route path="leadership/templates" element={<TemplateManager />} />
-                    <Route path="sop" element={<SOPWrapper />} />
-                  </Route>
+                  {/* Company Portal - New Structure */}
+                  <Route path="/company/*" element={<CompanyPortalRoutes />} />
+                  
+                  {/* SOP Portal - Standalone */}
+                  <Route path="/sop/*" element={<SOPPortalRoutes />} />
+                  
+                  {/* Templates Portal - Standalone */}
+                  <Route path="/templates/*" element={<TemplatesPortalRoutes />} />
                   {/* Intern program portals (HQ view) */}
                   <Route path="/intern/*" element={<Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense>}>
                     <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternDashboard /></Suspense>} />
