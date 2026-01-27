@@ -92,6 +92,7 @@ const CompanySidebar: React.FC = () => {
         { label: 'Resolutions', path: '/company/governance?tab=resolutions' },
         { label: 'Certificates', path: '/company/governance?tab=certificates' },
         { label: 'Exit Workflows', path: '/company/governance?tab=exit-workflows' },
+        { label: 'Logs', path: '/company/governance?tab=logs' },
       ],
     },
     {

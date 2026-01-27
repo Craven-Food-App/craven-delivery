@@ -39,13 +39,13 @@ const AppointmentList: React.FC<AppointmentListProps> = ({
       const executiveIds = [...new Set(appointments.map(a => a.executive_id))];
       const { data } = await supabase
         .from('exec_users')
-        .select('user_id, name')
-        .in('user_id', executiveIds);
+        .select('id, name')
+        .in('id', executiveIds);
 
       if (data) {
         const names: Record<string, string> = {};
         data.forEach(exec => {
-          names[exec.user_id] = exec.name;
+          names[exec.id] = exec.name;
         });
         setExecutiveNames(names);
       }

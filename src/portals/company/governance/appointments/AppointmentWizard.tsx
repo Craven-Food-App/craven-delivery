@@ -35,7 +35,7 @@ const AppointmentWizard: React.FC<AppointmentWizardProps> = ({ opened, onClose }
     try {
       const { data, error } = await supabase
         .from('exec_users')
-        .select('user_id, name, title')
+        .select('id, name, title')
         .order('name');
 
       if (error) throw error;
@@ -111,7 +111,7 @@ const AppointmentWizard: React.FC<AppointmentWizardProps> = ({ opened, onClose }
               label="Executive"
               placeholder="Select executive"
               data={executives.map(e => ({
-                value: e.user_id,
+                value: e.id,
                 label: `${e.name} - ${e.title || 'Executive'}`
               }))}
               value={executiveId}

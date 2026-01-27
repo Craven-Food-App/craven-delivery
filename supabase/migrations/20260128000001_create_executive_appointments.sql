@@ -1,7 +1,7 @@
 -- Create executive_appointments table for appointment workflow
 CREATE TABLE IF NOT EXISTS executive_appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  executive_id UUID NOT NULL REFERENCES exec_users(user_id) ON DELETE CASCADE,
+  executive_id UUID NOT NULL REFERENCES exec_users(id) ON DELETE CASCADE,
   position TEXT NOT NULL,
   appointment_type TEXT NOT NULL CHECK (appointment_type IN ('initial', 'reappointment', 'promotion', 'lateral')),
   appointment_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),

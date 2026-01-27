@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Tabs, Stack, Title, Text, Box } from '@mantine/core';
-import { IconUserCheck, IconShield, IconFileText, IconCertificate, IconUserMinus } from '@tabler/icons-react';
+import { IconUserCheck, IconShield, IconFileText, IconCertificate, IconUserMinus, IconHistory } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import AppointmentsTab from './appointments/AppointmentsTab';
 import OfficersTab from './officers/OfficersTab';
 import ResolutionsTab from './resolutions/ResolutionsTab';
 import CertificatesTab from './certificates/CertificatesTab';
 import ExitWorkflowsTab from './exit-workflows/ExitWorkflowsTab';
+import GovernanceLogList from '../governance-admin/GovernanceLogList';
 
 /**
  * Governance Administration Page
@@ -67,6 +68,9 @@ const GovernancePage: React.FC = () => {
             <Tabs.Tab value="exit-workflows" leftSection={<IconUserMinus size={18} />}>
               Exit Workflows
             </Tabs.Tab>
+            <Tabs.Tab value="logs" leftSection={<IconHistory size={18} />}>
+              Logs
+            </Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="appointments" pt="xl">
@@ -87,6 +91,10 @@ const GovernancePage: React.FC = () => {
 
           <Tabs.Panel value="exit-workflows" pt="xl">
             <ExitWorkflowsTab />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="logs" pt="xl">
+            <GovernanceLogList />
           </Tabs.Panel>
         </Tabs>
       </Stack>

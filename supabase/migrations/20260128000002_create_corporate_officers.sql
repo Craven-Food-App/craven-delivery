@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS corporate_officers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   position TEXT NOT NULL CHECK (position IN ('president', 'secretary', 'treasurer', 'vice-president', 'assistant-secretary', 'assistant-treasurer')),
-  executive_id UUID NOT NULL REFERENCES exec_users(user_id) ON DELETE CASCADE,
+  executive_id UUID NOT NULL REFERENCES exec_users(id) ON DELETE CASCADE,
   appointed_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   term_start TIMESTAMPTZ NOT NULL,
   term_end TIMESTAMPTZ,
