@@ -653,6 +653,37 @@ const EquityGrantsList: React.FC = () => {
           ? `grant_id:${cancel.grant_id}` 
           : `${cancel.recipient_user_id}_${cancel.shares_amount}`;
         cancellationMap.set(key, cancel);
+        
+        // If cancellation exists but grant not found in equity_ledger, create revoked grant entry from cancellation
+        const grantKey = cancel.grant_id 
+          ? `grant_id:${cancel.grant_id}` 
+          : `${cancel.recipient_user_id}_${cancel.shares_amount}`;
+        
+        if (revokedGrantKeys.has(grantKey)) {
+          const alreadyInList = revokedGrantEntries.some(e => 
+            e.recipient_user_id === cancel.recipient_user_id && 
+            e.shares_amount === cancel.shares_amount
+          );
+          
+          if (!alreadyInList) {
+            // Create revoked grant entry from cancellation data
+            revokedGrantEntries.push({
+              id: cancel.id || `cancel_${cancel.recipient_user_id}_${cancel.shares_amount}`,
+              recipient_user_id: cancel.recipient_user_id,
+              shares_amount: cancel.shares_amount,
+              share_class: cancel.share_class || 'Common',
+              transaction_date: cancel.transaction_date || cancel.created_at,
+              transaction_type: 'grant',
+              created_at: cancel.created_at || new Date().toISOString(),
+              resolution_id: null,
+              grant_id: cancel.grant_id,
+            });
+            console.log('✅ Created revoked grant entry from cancellation:', {
+              user_id: cancel.recipient_user_id,
+              shares: cancel.shares_amount
+            });
+          }
+        }
       }
 
       // Build revoked grants list with user info
