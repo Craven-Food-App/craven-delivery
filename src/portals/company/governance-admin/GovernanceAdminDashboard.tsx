@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Title, Text, Stack, Tabs, Card, Box, Group } from '@mantine/core';
-import { IconShield, IconUsers, IconFileText, IconUserCheck, IconHistory, IconChecklist, IconTags, IconKey, IconPlus, IconChartPie, IconCoins, IconCertificate, IconUserPlus, IconUserMinus, IconArchive } from '@tabler/icons-react';
+import { IconShield, IconUsers, IconFileText, IconUserCheck, IconHistory, IconChecklist, IconTags, IconKey, IconPlus, IconChartPie, IconCertificate, IconUserPlus, IconUserMinus, IconArchive } from '@tabler/icons-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AppointmentList from './AppointmentList';
 import ResolutionList from './ResolutionList';
@@ -13,9 +13,6 @@ import OfficerValidationWizard from './wizards/OfficerValidationWizard';
 import DocumentTemplates from './DocumentTemplates';
 import RoleManagement from './RoleManagement';
 import CapTableOverview from './CapTableOverview';
-import EquityGrantForm from './EquityGrantForm';
-import EquityGrantWizard from './wizards/EquityGrantWizard';
-import EquityGrantsList from './EquityGrantsList';
 import ShareCertificateViewer from './ShareCertificateViewer';
 import { BoardSetupModule } from '@/components/board/BoardSetupModule';
 import UserAccountManager from '@/components/admin/UserAccountManager';
@@ -180,17 +177,6 @@ const GovernanceAdminDashboard: React.FC = () => {
                 Cap Table
               </Tabs.Tab>
               <Tabs.Tab 
-                value="equity-grant" 
-                leftSection={<IconCoins size={18} />}
-                style={{
-                  fontWeight: 500,
-                  padding: '12px 20px',
-                  borderRadius: '8px 8px 0 0',
-                }}
-              >
-                Equity Grants
-              </Tabs.Tab>
-              <Tabs.Tab 
                 value="certificates" 
                 leftSection={<IconCertificate size={18} />}
                 style={{
@@ -298,13 +284,6 @@ const GovernanceAdminDashboard: React.FC = () => {
 
             <Tabs.Panel value="cap-table" pt="xl" px="xl" pb="xl">
               <CapTableOverview />
-            </Tabs.Panel>
-
-            <Tabs.Panel value="equity-grant" pt="xl" px="xl" pb="xl">
-              <Stack gap="xl">
-                <EquityGrantsList />
-                <EquityGrantWizard />
-              </Stack>
             </Tabs.Panel>
 
             <Tabs.Panel value="certificates" pt="xl" px="xl" pb="xl">
