@@ -121,7 +121,8 @@ const CapTableOverview: React.FC = () => {
         
         // If Justin's grant exists but wasn't in the main query, add it
         if (justinGrants && justinGrants.length > 0) {
-          const justinGrant = justinGrants.find(g => g.shares_amount >= 4500000 && g.shares_amount <= 5500000);
+          // Look for Justin's grant (4.2M shares, updated from 5M)
+          const justinGrant = justinGrants.find(g => g.shares_amount >= 4000000 && g.shares_amount <= 5000000);
           if (justinGrant && !grants?.some(g => g.id === justinGrant.id)) {
             console.log('➕ [EQUITY GRANTS] Adding Justin grant that was missing from main query');
             grants?.push(justinGrant);
