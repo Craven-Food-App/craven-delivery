@@ -19,7 +19,7 @@ BEGIN
 
   RAISE NOTICE '✅ Found Nathan Curry user_id: %', nathan_user_id;
 
-  -- Find Nathan's 500K grant
+  -- Find Nathan's 500K grant (try exact match first, then any grant for Nathan)
   SELECT id, shares_amount, share_class, grant_id, transaction_date, created_at
   INTO nathan_grant
   FROM equity_ledger
@@ -29,8 +29,34 @@ BEGIN
   ORDER BY created_at DESC
   LIMIT 1;
 
+  -- If exact 500K not found, try to find ANY grant for Nathan
   IF nathan_grant IS NULL THEN
-    RAISE EXCEPTION 'Nathan Curry 500K grant not found';
+    SELECT id, shares_amount, share_class, grant_id, transaction_date, created_at
+    INTO nathan_grant
+    FROM equity_ledger
+    WHERE recipient_user_id = nathan_user_id
+      AND transaction_type = 'grant'
+    ORDER BY created_at DESC
+    LIMIT 1;
+    
+    IF nathan_grant IS NULL THEN
+      RAISE NOTICE '⚠️ No grants found for Nathan Curry - checking if already revoked or in different table';
+      -- Check if cancellation already exists
+      SELECT EXISTS (
+        SELECT 1 FROM equity_ledger
+        WHERE recipient_user_id = nathan_user_id
+          AND transaction_type = 'cancellation'
+      ) INTO cancellation_exists;
+      
+      IF cancellation_exists THEN
+        RAISE NOTICE '✅ Nathan Curry shares already revoked (cancellation exists)';
+      ELSE
+        RAISE NOTICE '⚠️ No grants or cancellations found for Nathan Curry';
+      END IF;
+      RETURN;
+    ELSE
+      RAISE NOTICE '⚠️ Found Nathan grant with % shares (not exactly 500K), will revoke this amount', nathan_grant.shares_amount;
+    END IF;
   END IF;
 
   RAISE NOTICE '✅ Found Nathan grant: id=%, shares=%, grant_id=%', 
@@ -66,13 +92,13 @@ BEGIN
     ) VALUES (
       'cancellation',
       nathan_user_id,
-      500000,
+      nathan_grant.shares_amount,  -- Use actual grant amount (might not be exactly 500K)
       COALESCE(nathan_grant.share_class, 'Common'),
       0.0001,
       CURRENT_DATE,
       CURRENT_DATE,
       nathan_grant.grant_id,
-      'PERMANENT REVOCATION: 500,000 shares revoked. Nathan Curry has been exited and terminated. This revocation is permanent and logged in governance_logs.',
+      'PERMANENT REVOCATION: ' || nathan_grant.shares_amount || ' shares revoked. Nathan Curry has been exited and terminated. This revocation is permanent and logged in governance_logs.',
       NOW()
     );
 
@@ -92,22 +118,22 @@ BEGIN
     'equity_revoked',
     'executive',
     nathan_user_id::text,
-    'PERMANENT: Nathan Curry 500,000 shares revoked - executive terminated and exited',
-    jsonb_build_object(
-      'recipient_user_id', nathan_user_id,
-      'shares_revoked', 500000,
-      'grant_id', nathan_grant.grant_id,
-      'revocation_date', CURRENT_DATE,
-      'reason', 'Executive termination - Nathan Curry exited and fired',
-      'permanent', true,
-      'carved_in_stone', true
-    ),
+      'PERMANENT: Nathan Curry ' || nathan_grant.shares_amount || ' shares revoked - executive terminated and exited',
+      jsonb_build_object(
+        'recipient_user_id', nathan_user_id,
+        'shares_revoked', nathan_grant.shares_amount,
+        'grant_id', nathan_grant.grant_id,
+        'revocation_date', CURRENT_DATE,
+        'reason', 'Executive termination - Nathan Curry exited and fired',
+        'permanent', true,
+        'carved_in_stone', true
+      ),
     NOW()
   WHERE NOT EXISTS (
     SELECT 1 FROM governance_logs
     WHERE entity_id = nathan_user_id::text
       AND action = 'equity_revoked'
-      AND description LIKE '%Nathan Curry%500,000%'
+      AND description LIKE '%Nathan Curry%'
   );
 
   RAISE NOTICE '✅ Logged revocation in governance_logs';
