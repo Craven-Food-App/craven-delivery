@@ -216,6 +216,10 @@ const TesterHooksWrapper = () => {
 };
 
 const App = () => {
+  console.log('🔥 [App] Component mounting - React is working!');
+  console.log('🔥 [App] Current URL:', window.location.href);
+  console.log('🔥 [App] Current pathname:', window.location.pathname);
+  
   const [user, setUser] = useState(null);
   const [isHQSubdomain, setIsHQSubdomain] = useState(false);
 
@@ -378,7 +382,9 @@ const App = () => {
   }
 
   // If on HQ/business subdomain, show only business routes
+  console.log('🔥 [App] isHQSubdomain:', isHQSubdomain);
   if (isHQSubdomain) {
+    console.log('🔥 [App] Rendering HQ subdomain routes');
     return (
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
@@ -484,7 +490,9 @@ const App = () => {
   }
 
   // If on feeder subdomain, show only feeder-related routes
+  console.log('🔥 [App] isFeederSubdomain:', isFeederSubdomain);
   if (isFeederSubdomain) {
+    console.log('🔥 [App] Rendering feeder subdomain routes');
     return (
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
