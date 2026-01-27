@@ -3,18 +3,19 @@
 ## Summary
 
 **Entity Rename & Equity Adjustment:**
-- **Old**: "Invero Business Trust" with 55,000,000 shares (78.57% of 70M)
-- **New**: "Holding Company" with 40,600,000 shares (58% of 70M)
+- **Old**: "Invero Business Trust" (irrevocable trust) with 55,000,000 shares (78.57% of 70M)
+- **New**: "Invero, Inc." (holding company entity) with 40,600,000 shares (58% of 70M)
 - **Shares returned to pool**: 14,400,000 shares
 - **Entity type**: Changed from "trust" to "entity"
 
 ## What This Accomplishes
 
-1. Renames the majority shareholder from "Invero Business Trust" to "Holding Company"
-2. Reduces holding from 55M to 40.6M shares
-3. Returns 14.4M shares to the equity pool
-4. Updates all document templates to reflect the new entity name
-5. Maintains majority shareholder status (58% > 50%)
+1. Renames the majority shareholder from "Invero Business Trust" to "Invero, Inc."
+2. Changes entity type from irrevocable trust to holding company
+3. Reduces holding from 55M to 40.6M shares
+4. Returns 14.4M shares to the equity pool
+5. Updates all document templates to reflect the new entity name
+6. Maintains majority shareholder status (58% > 50%)
 
 ## Apply the Migrations
 
@@ -55,7 +56,7 @@ supabase db push
 After running migrations:
 
 ```sql
--- Check Holding Company equity
+-- Check Invero, Inc. equity
 SELECT 
   shareholder_name,
   shares_total,
@@ -63,7 +64,7 @@ SELECT
   shareholder_type,
   is_majority_shareholder
 FROM employee_equity
-WHERE shareholder_name = 'Holding Company';
+WHERE shareholder_name = 'Invero, Inc.';
 
 -- Expected: 40,600,000 shares, 58%, type='entity', is_majority=true
 
@@ -80,7 +81,8 @@ SELECT
   pool_percentage
 FROM cap_tables;
 
--- Expected: trust_shares (now Holding Company) = 40,600,000
+-- Expected: trust_shares (now Invero, Inc.) = 40,600,000
+-- Note: Column name "trust_shares" is historical, it represents Invero, Inc.
 
 -- View all shareholders
 SELECT 
@@ -97,23 +99,33 @@ ORDER BY eq.shares_percentage DESC;
 
 | Shareholder | Shares | Percentage | Type |
 |------------|--------|------------|------|
-| Holding Company | 40,600,000 | 58.00% | Entity (Majority) |
+| **Invero, Inc.** | 40,600,000 | 58.00% | Holding Company (Majority) |
 | Torrance Stroman | 10,500,000 | 15.00% | Founder |
 | Justin Sweet | 4,200,000 | 6.00% | Employee |
 | Equity Pool | ~14,700,000+ | ~21%+ | Available |
+
+**Important**: "Invero Business Trust (Irrevocable Trust)" is no longer used. The majority shareholder is **Invero, Inc.**, which is the holding company that owns Crave'n Inc.
 
 **Note**: Equity pool increased by 14.4M from Trust reduction + 8.3M from Torrance/Justin adjustments = ~22.7M available for allocation
 
 ## Column Name Note
 
-The `cap_tables.trust_shares` and `cap_tables.trust_percentage` columns retain their historical names for database compatibility, but now represent **Holding Company** shares and percentage. Comments have been added to the schema for clarity.
+The `cap_tables.trust_shares` and `cap_tables.trust_percentage` columns retain their historical names for database compatibility, but now represent **Invero, Inc.** shares and percentage. Comments have been added to the schema for clarity.
+
+**Invero, Inc.** is the holding company that:
+- Owns Crave'n Inc.
+- Is the majority shareholder (58% of 70M shares)
+- Replaced the former "Invero Business Trust (Irrevocable Trust)"
 
 ## Document Templates Updated
 
 All governance document templates now reference:
-- `{{holding_company_name}}` instead of `{{founder_trust_name}}`
-- "Holding Company" instead of "Invero Business Trust"
+- `{{holding_company_name}}` with value "Invero, Inc."
+- Replaced all instances of "Invero Business Trust (Irrevocable Trust)"
+- Replaced placeholder `{{founder_trust_name}}` with `{{holding_company_name}}`
 - Updated equity percentages to reflect new allocation
+
+**Key Change**: The irrevocable trust structure is no longer used. Invero, Inc. is the holding company entity.
 
 ## Testing
 
