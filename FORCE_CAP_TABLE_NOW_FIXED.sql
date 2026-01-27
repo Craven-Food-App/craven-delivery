@@ -195,5 +195,35 @@ LEFT JOIN public.employees e ON eq.employee_id = e.id
 WHERE eq.shares_total > 0
 ORDER BY eq.shares_percentage DESC;
 
+SELECT 'JUSTIN SWEET (LEDGER)' as section;
+
+SELECT 
+  shares_amount as shares,
+  price_per_share as strike_price,
+  notes,
+  updated_at
+FROM public.equity_ledger
+WHERE recipient_user_id = (
+  SELECT id FROM auth.users WHERE email = 'jsweet.cfo@cravenusa.com' LIMIT 1
+)
+AND transaction_type = 'grant'
+ORDER BY updated_at DESC
+LIMIT 1;
+
+SELECT 'STRIKE PRICES SUMMARY' as section;
+
+SELECT 
+  COALESCE(shareholder_name, e.first_name || ' ' || e.last_name) as name,
+  eq.shares_total as shares,
+  COALESCE(eq.strike_price, 0) as strike_price,
+  CASE 
+    WHEN COALESCE(eq.strike_price, 0) = 0 THEN 'Founder/No Cost'
+    ELSE 'Priced Equity'
+  END as equity_type
+FROM public.employee_equity eq
+LEFT JOIN public.employees e ON eq.employee_id = e.id
+WHERE eq.shares_total > 0
+ORDER BY eq.shares_percentage DESC;
+
 SELECT '✅ DONE - NO MORE TRUST REFERENCES' as status;
 
