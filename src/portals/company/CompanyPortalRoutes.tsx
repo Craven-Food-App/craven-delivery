@@ -18,8 +18,8 @@ import TeamPage from './team/TeamPage';
 const CompanyPortalRoutes: React.FC = () => {
   return (
     <Routes>
-      <Route path="/" element={<CompanyPortalLayout />}>
-        <Route index element={<Navigate to="/company/cap-table" replace />} />
+      <Route element={<CompanyPortalLayout />}>
+        <Route index element={<Navigate to="cap-table" replace />} />
         <Route path="cap-table" element={<CapTableEquityPageEnhanced />} />
         <Route path="governance/*" element={<GovernancePage />} />
         <Route path="board" element={<BoardPortalPage />} />
