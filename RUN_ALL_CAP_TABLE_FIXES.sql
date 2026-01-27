@@ -180,7 +180,9 @@ BEGIN
   
   INSERT INTO public.governance_logs (action, entity_type, entity_id, description, data)
   VALUES 
-    ('cap_table_restructured', 'company', NULL, 'Complete cap table restructure to 70M shares',
+    ('cap_table_restructured', 'cap_table', 
+     (SELECT id FROM public.cap_tables LIMIT 1), 
+     'Complete cap table restructure to 70M shares',
      jsonb_build_object(
        'total_authorized', 70000000,
        'trust_to_holding', 'Invero Business Trust → Invero, Inc.',
