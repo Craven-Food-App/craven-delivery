@@ -62,16 +62,97 @@ BEGIN
   END IF;
 END $$;
 
--- 5. Check if old appointments table exists and show data
+-- 5. Check if old appointments table exists and show ALL data with names
 SELECT 
   'OLD APPOINTMENTS TABLE DATA' as info,
-  id,
-  appointee_user_id,
-  role_titles,
-  effective_date,
-  created_at
-FROM appointments
+  a.id,
+  a.appointee_user_id,
+  a.role_titles,
+  a.effective_date,
+  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, e.email, 'Unknown') as appointee_name,
+  e.email as appointee_email,
+  a.created_at
+FROM appointments a
+LEFT JOIN user_profiles up ON a.appointee_user_id = up.user_id
+LEFT JOIN auth.users e ON a.appointee_user_id = e.id
 WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'appointments')
-ORDER BY created_at DESC
-LIMIT 20;
+ORDER BY a.created_at DESC;
+
+-- 6. Check corporate_officers for Torrance and Justin
+SELECT 
+  'CORPORATE OFFICERS' as info,
+  co.id,
+  co.position,
+  co.status,
+  co.appointed_date,
+  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, eu.title, 'Unknown') as officer_name,
+  COALESCE(up.email, 'N/A') as officer_email,
+  eu.title as executive_title,
+  eu.id as executive_id
+FROM corporate_officers co
+LEFT JOIN exec_users eu ON co.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
+ORDER BY co.appointed_date DESC;
+
+-- 7. Check exec_users for Torrance and Justin
+SELECT 
+  'EXEC_USERS (Torrance & Justin)' as info,
+  eu.id,
+  eu.user_id,
+  eu.title,
+  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, 'Unknown') as name,
+  COALESCE(up.email, e.email, 'N/A') as email
+FROM exec_users eu
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
+LEFT JOIN auth.users e ON eu.user_id = e.id
+WHERE up.email ILIKE '%torrance%' 
+   OR up.email ILIKE '%tstroman%'
+   OR up.email ILIKE '%justin%'
+   OR up.email ILIKE '%sweet%'
+   OR up.full_name ILIKE '%torrance%'
+   OR up.full_name ILIKE '%justin%'
+   OR e.email ILIKE '%torrance%'
+   OR e.email ILIKE '%tstroman%'
+   OR e.email ILIKE '%justin%'
+   OR e.email ILIKE '%sweet%';
+
+-- 8. Check governance_board_resolutions for appointment resolutions
+SELECT 
+  'APPOINTMENT RESOLUTIONS' as info,
+  gbr.id,
+  gbr.resolution_number,
+  gbr.title,
+  gbr.type,
+  gbr.status,
+  gbr.meeting_date,
+  gbr.effective_date,
+  gbr.related_officer_id,
+  gbr.created_at
+FROM governance_board_resolutions gbr
+WHERE gbr.type = 'appointment' 
+   OR gbr.title ILIKE '%appointment%'
+   OR gbr.title ILIKE '%torrance%'
+   OR gbr.title ILIKE '%justin%'
+   OR gbr.title ILIKE '%CEO%'
+   OR gbr.title ILIKE '%CFO%'
+ORDER BY gbr.created_at DESC;
+
+-- 9. Check if appointments exist in old table but not in new executive_appointments
+SELECT 
+  'MISSING APPOINTMENTS (in old table, not in new)' as info,
+  a.id as old_appointment_id,
+  a.appointee_user_id,
+  a.role_titles,
+  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, e.email, 'Unknown') as appointee_name,
+  COALESCE(up.email, e.email, 'N/A') as appointee_email,
+  a.effective_date,
+  a.created_at
+FROM appointments a
+LEFT JOIN user_profiles up ON a.appointee_user_id = up.user_id
+LEFT JOIN auth.users e ON a.appointee_user_id = e.id
+LEFT JOIN exec_users eu ON a.appointee_user_id = eu.user_id
+LEFT JOIN executive_appointments ea ON eu.id = ea.executive_id
+WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'appointments')
+  AND ea.id IS NULL  -- Not in new table
+ORDER BY a.created_at DESC;
 
