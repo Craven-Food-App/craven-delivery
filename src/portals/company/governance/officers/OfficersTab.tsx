@@ -93,6 +93,9 @@ const OfficersTab: React.FC = () => {
       'vice-president': 'Vice President',
       'assistant-secretary': 'Assistant Secretary',
       'assistant-treasurer': 'Assistant Treasurer',
+      'ceo': 'Chief Executive Officer',
+      'cfo': 'Chief Financial Officer',
+      'cto': 'Chief Technology Officer',
     };
     return labels[position] || position;
   };
@@ -114,7 +117,7 @@ const OfficersTab: React.FC = () => {
       <Group justify="space-between">
         <div>
           <Title order={2}>Corporate Officers</Title>
-          <Text c="dimmed">Delaware statutory officer positions</Text>
+          <Text c="dimmed">Corporate officer positions and executive titles</Text>
         </div>
         <Button leftSection={<IconPlus size={16} />}>
           Appoint Officer

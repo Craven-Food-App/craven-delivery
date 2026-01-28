@@ -60,9 +60,18 @@ const EquityGrantsList: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'shares' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedGrant, setSelectedGrant] = useState<EquityGrant | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
   const [revoking, setRevoking] = useState(false);
+  const [editingShares, setEditingShares] = useState<number>(0);
+  const [editingShareClass, setEditingShareClass] = useState<string>('Common');
+  const [editingVestingType, setEditingVestingType] = useState<string>('immediate');
+  const [editingCliffMonths, setEditingCliffMonths] = useState<number>(0);
+  const [editingVestingPeriodMonths, setEditingVestingPeriodMonths] = useState<number>(48);
+  const [editingGrantDate, setEditingGrantDate] = useState<string>('');
+  const [currentVestingSchedule, setCurrentVestingSchedule] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     console.log('🚀 [EQUITY GRANTS LIST] Component mounted, loading grants...');
@@ -319,7 +328,7 @@ const EquityGrantsList: React.FC = () => {
           let recipientEmail = '';
           let recipientName = '';
           
-          if (sharesNum >= 17500000 && sharesNum <= 18500000) {
+          if ((sharesNum >= 17500000 && sharesNum <= 18500000) || (sharesNum >= 10400000 && sharesNum <= 10600000)) {
             recipientName = 'Torrance Stroman';
             recipientEmail = 'tstroman.ceo@cravenusa.com';
             console.log('✅ TORRANCE:', sharesNum, 'shares');
@@ -444,6 +453,76 @@ const EquityGrantsList: React.FC = () => {
           }
 
           const vesting = vestingSchedules?.find(v => v.recipient_user_id === entry.recipient_user_id);
+          
+          // Calculate vested/unvested based on actual shares_amount and current date
+          let vestedShares: number | undefined;
+          let unvestedShares: number | undefined;
+          
+          if (vesting) {
+            const vestingType = (vesting.vesting_type || '').toLowerCase();
+            const grantDate = new Date(entry.transaction_date || entry.created_at);
+            const currentDate = new Date();
+            const monthsSinceGrant = Math.floor(
+              (currentDate.getTime() - grantDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+            );
+            
+            if (vestingType === 'immediate') {
+              vestedShares = sharesNum;
+              unvestedShares = 0;
+            } else if (vestingType === 'graded' || vestingType === 'cliff') {
+              const cliffMonths = vesting.cliff_months || 0;
+              const vestingPeriodMonths = vesting.vesting_period_months || 48;
+              
+              if (monthsSinceGrant < cliffMonths) {
+                // Before cliff - no shares vested
+                vestedShares = 0;
+                unvestedShares = sharesNum;
+              } else if (monthsSinceGrant >= vestingPeriodMonths) {
+                // Fully vested
+                vestedShares = sharesNum;
+                unvestedShares = 0;
+              } else {
+                // Calculate vested shares based on standard 4-year with 1-year cliff
+                if (cliffMonths === 12 && vestingPeriodMonths === 48) {
+                  // Standard: 25% at cliff, 75% monthly over 36 months
+                  const cliffShares = Math.floor(sharesNum * 0.25); // 25% at cliff
+                  const monthlyShares = Math.floor((sharesNum - cliffShares) / 36); // Remaining 75% / 36 months
+                  const monthsAfterCliff = Math.max(0, monthsSinceGrant - cliffMonths);
+                  const monthsVested = Math.min(monthsAfterCliff, 36);
+                  
+                  vestedShares = cliffShares + (monthlyShares * monthsVested);
+                  unvestedShares = sharesNum - vestedShares;
+                } else {
+                  // Generic calculation for other schedules
+                  const vestingTotal = Number(vesting.vested_shares || 0) + Number(vesting.unvested_shares || 0);
+                  if (vestingTotal > 0 && Math.abs(vestingTotal - sharesNum) > 1000) {
+                    // Recalculate proportionally
+                    const vestedRatio = Number(vesting.vested_shares || 0) / vestingTotal;
+                    vestedShares = Math.round(sharesNum * vestedRatio);
+                    unvestedShares = sharesNum - vestedShares;
+                  } else {
+                    vestedShares = Number(vesting.vested_shares || 0);
+                    unvestedShares = Number(vesting.unvested_shares || 0);
+                  }
+                }
+              }
+            } else {
+              // Use stored values for other types
+              const vestingTotal = Number(vesting.vested_shares || 0) + Number(vesting.unvested_shares || 0);
+              if (vestingTotal > 0 && Math.abs(vestingTotal - sharesNum) > 1000) {
+                const vestedRatio = Number(vesting.vested_shares || 0) / vestingTotal;
+                vestedShares = Math.round(sharesNum * vestedRatio);
+                unvestedShares = sharesNum - vestedShares;
+              } else {
+                vestedShares = Number(vesting.vested_shares || 0);
+                unvestedShares = Number(vesting.unvested_shares || 0);
+              }
+            }
+          } else if (sharesNum >= 10400000 && sharesNum <= 10600000) {
+            // Torrance's 10.5M shares - immediate vesting
+            vestedShares = sharesNum;
+            unvestedShares = 0;
+          }
 
           grantsWithUsers.push({
             id: entry.id,
@@ -453,9 +532,9 @@ const EquityGrantsList: React.FC = () => {
             shares_amount: sharesNum,
             share_class: entry.share_class || 'common',
             transaction_date: entry.transaction_date || entry.created_at,
-            vesting_type: vesting?.vesting_type,
-            vested_shares: vesting ? Number(vesting.vested_shares || 0) : undefined,
-            unvested_shares: vesting ? Number(vesting.unvested_shares || 0) : undefined,
+            vesting_type: vesting?.vesting_type?.toUpperCase() || (sharesNum >= 10400000 && sharesNum <= 10600000 ? 'IMMEDIATE' : undefined),
+            vested_shares: vestedShares,
+            unvested_shares: unvestedShares,
           });
         }
       }
@@ -1137,7 +1216,7 @@ const EquityGrantsList: React.FC = () => {
                   
                   if (!displayName || displayName === 'Unknown' || !displayEmail || displayEmail === 'N/A') {
                     const grantShares = grant.shares_amount;
-                    if (grantShares >= 17500000 && grantShares <= 18500000) {
+                    if ((grantShares >= 17500000 && grantShares <= 18500000) || (grantShares >= 10400000 && grantShares <= 10600000)) {
                       displayName = 'Torrance Stroman';
                       displayEmail = 'tstroman.ceo@cravenusa.com';
                     } else if (grantShares >= 4500000 && grantShares <= 5500000) {
@@ -1219,7 +1298,36 @@ const EquityGrantsList: React.FC = () => {
                             <Menu.Item leftSection={<IconEye size={16} />}>
                               View Details
                             </Menu.Item>
-                            <Menu.Item leftSection={<IconEdit size={16} />}>
+                            <Menu.Item 
+                              leftSection={<IconEdit size={16} />}
+                              onClick={async () => {
+                                setSelectedGrant(grant);
+                                setEditingShares(grant.shares_amount);
+                                setEditingShareClass(grant.share_class || 'Common');
+                                setEditingVestingType(grant.vesting_type?.toLowerCase() || 'immediate');
+                                setEditingGrantDate(grant.transaction_date || new Date().toISOString().split('T')[0]);
+                                
+                                // Load current vesting schedule
+                                const { data: vesting } = await supabase
+                                  .from('vesting_schedules')
+                                  .select('*')
+                                  .eq('recipient_user_id', grant.recipient_user_id)
+                                  .maybeSingle();
+                                
+                                if (vesting) {
+                                  setCurrentVestingSchedule(vesting);
+                                  setEditingCliffMonths(vesting.cliff_months || 0);
+                                  setEditingVestingPeriodMonths(vesting.vesting_period_months || 48);
+                                  setEditingVestingType((vesting.vesting_type || 'immediate').toLowerCase());
+                                } else {
+                                  setCurrentVestingSchedule(null);
+                                  setEditingCliffMonths(0);
+                                  setEditingVestingPeriodMonths(48);
+                                }
+                                
+                                setEditModalOpen(true);
+                              }}
+                            >
                               Edit Grant
                             </Menu.Item>
                             <Menu.Divider />
@@ -1395,6 +1503,312 @@ const EquityGrantsList: React.FC = () => {
               Revoke Grant
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      {/* Edit Grant Modal */}
+      <Modal
+        opened={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedGrant(null);
+          setEditingShares(0);
+          setEditingShareClass('Common');
+          setEditingVestingType('immediate');
+          setEditingCliffMonths(0);
+          setEditingVestingPeriodMonths(48);
+          setEditingGrantDate('');
+          setCurrentVestingSchedule(null);
+        }}
+        title="Edit Equity Grant"
+        size="lg"
+      >
+        <Stack gap="md">
+          {selectedGrant && (
+            <>
+              <div>
+                <Text size="sm" fw={500}>Recipient:</Text>
+                <Text size="sm">{selectedGrant.recipient_name}</Text>
+              </div>
+              <div>
+                <Text size="sm" fw={500}>Email:</Text>
+                <Text size="sm">{selectedGrant.recipient_email}</Text>
+              </div>
+
+              <Divider label="Grant Details" labelPosition="left" />
+
+              <TextInput
+                label="Shares Amount"
+                type="number"
+                value={editingShares}
+                onChange={(e) => setEditingShares(Number(e.target.value) || 0)}
+                placeholder="Enter shares amount"
+                min={0}
+                required
+              />
+
+              <Select
+                label="Share Class"
+                value={editingShareClass}
+                onChange={(value) => setEditingShareClass(value || 'Common')}
+                data={['Common', 'Preferred', 'Series A', 'Series B', 'Options']}
+              />
+
+              <TextInput
+                label="Grant Date"
+                type="date"
+                value={editingGrantDate}
+                onChange={(e) => setEditingGrantDate(e.target.value)}
+                required
+              />
+
+              <Divider label="Vesting Schedule" labelPosition="left" />
+
+              <Select
+                label="Vesting Type"
+                value={editingVestingType}
+                onChange={(value) => {
+                  setEditingVestingType(value || 'immediate');
+                  if (value === 'immediate') {
+                    setEditingCliffMonths(0);
+                    setEditingVestingPeriodMonths(0);
+                  } else if (value === 'graded') {
+                    if (editingCliffMonths === 0 && editingVestingPeriodMonths === 0) {
+                      setEditingCliffMonths(12);
+                      setEditingVestingPeriodMonths(48);
+                    }
+                  }
+                }}
+                data={[
+                  { value: 'immediate', label: 'Immediate (All shares vested immediately)' },
+                  { value: 'graded', label: 'Graded (Monthly vesting over period)' },
+                  { value: 'cliff', label: 'Cliff (All shares vest at cliff date)' },
+                ]}
+                required
+              />
+
+              {editingVestingType !== 'immediate' && (
+                <>
+                  <TextInput
+                    label="Cliff Months"
+                    type="number"
+                    value={editingCliffMonths}
+                    onChange={(e) => setEditingCliffMonths(Number(e.target.value) || 0)}
+                    placeholder="Months before first vest (e.g., 12)"
+                    min={0}
+                    description="Number of months before any shares vest (typically 12 for 1-year cliff)"
+                  />
+
+                  <TextInput
+                    label="Vesting Period (Months)"
+                    type="number"
+                    value={editingVestingPeriodMonths}
+                    onChange={(e) => setEditingVestingPeriodMonths(Number(e.target.value) || 48)}
+                    placeholder="Total vesting period in months (e.g., 48 for 4 years)"
+                    min={1}
+                    description="Total number of months over which shares vest"
+                  />
+                </>
+              )}
+
+              <Alert color="blue" variant="light">
+                <Text size="xs">
+                  Changes will update both the equity ledger and vesting schedule. This will affect cap table calculations.
+                </Text>
+              </Alert>
+
+              <Group justify="flex-end" mt="md">
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setEditModalOpen(false);
+                    setSelectedGrant(null);
+                    setEditingShares(0);
+                    setEditingShareClass('Common');
+                    setEditingVestingType('immediate');
+                    setEditingCliffMonths(0);
+                    setEditingVestingPeriodMonths(48);
+                    setEditingGrantDate('');
+                    setCurrentVestingSchedule(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!selectedGrant || editingShares <= 0) {
+                      notifications.show({
+                        title: 'Error',
+                        message: 'Please enter a valid shares amount',
+                        color: 'red',
+                      });
+                      return;
+                    }
+
+                    if (!editingGrantDate) {
+                      notifications.show({
+                        title: 'Error',
+                        message: 'Please select a grant date',
+                        color: 'red',
+                      });
+                      return;
+                    }
+
+                    setEditing(true);
+                    try {
+                      // Update equity_ledger entry
+                      const { error: updateError } = await supabase
+                        .from('equity_ledger')
+                        .update({
+                          shares_amount: editingShares,
+                          share_class: editingShareClass,
+                          transaction_date: editingGrantDate,
+                          effective_date: editingGrantDate,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', selectedGrant.id);
+
+                      if (updateError) throw updateError;
+
+                      // Calculate vesting schedule dates
+                      const grantDate = new Date(editingGrantDate);
+                      const cliffDate = new Date(grantDate);
+                      cliffDate.setMonth(cliffDate.getMonth() + editingCliffMonths);
+                      const endDate = new Date(grantDate);
+                      endDate.setMonth(endDate.getMonth() + editingVestingPeriodMonths);
+
+                      // Build vesting schedule array
+                      let vestingScheduleArray: any[] = [];
+                      let initialVested = 0;
+                      let initialUnvested = editingShares;
+
+                      if (editingVestingType === 'immediate') {
+                        vestingScheduleArray = [{
+                          date: editingGrantDate,
+                          shares: editingShares,
+                          vested: true,
+                        }];
+                        initialVested = editingShares;
+                        initialUnvested = 0;
+                      } else if (editingVestingType === 'cliff') {
+                        vestingScheduleArray = [{
+                          date: cliffDate.toISOString().split('T')[0],
+                          shares: editingShares,
+                          vested: false,
+                        }];
+                        initialVested = 0;
+                        initialUnvested = editingShares;
+                      } else if (editingVestingType === 'graded') {
+                        // Graded vesting: cliff at specified month, then monthly vesting
+                        const cliffShares = editingCliffMonths > 0 
+                          ? Math.floor(editingShares * 0.25) 
+                          : 0;
+                        const remainingShares = editingShares - cliffShares;
+                        const monthsAfterCliff = editingVestingPeriodMonths - editingCliffMonths;
+                        const monthlyShares = monthsAfterCliff > 0 
+                          ? Math.floor(remainingShares / monthsAfterCliff) 
+                          : 0;
+                        const remainder = remainingShares - (monthlyShares * monthsAfterCliff);
+                        
+                        if (editingCliffMonths > 0) {
+                          vestingScheduleArray.push({
+                            date: cliffDate.toISOString().split('T')[0],
+                            shares: cliffShares,
+                            vested: false,
+                          });
+                        }
+
+                        // Monthly vesting after cliff
+                        for (let i = 1; i <= monthsAfterCliff; i++) {
+                          const vestDate = new Date(cliffDate);
+                          vestDate.setMonth(vestDate.getMonth() + i);
+                          // Add remainder to last month to account for rounding
+                          const sharesForThisMonth = (i === monthsAfterCliff) 
+                            ? monthlyShares + remainder 
+                            : monthlyShares;
+                          vestingScheduleArray.push({
+                            date: vestDate.toISOString().split('T')[0],
+                            shares: sharesForThisMonth,
+                            vested: false,
+                          });
+                        }
+                        initialVested = 0;
+                        initialUnvested = editingShares;
+                      }
+
+                      // Update or create vesting schedule
+                      if (currentVestingSchedule) {
+                        const { error: vestingError } = await supabase
+                          .from('vesting_schedules')
+                          .update({
+                            total_shares: editingShares,
+                            vesting_type: editingVestingType,
+                            cliff_months: editingCliffMonths,
+                            vesting_period_months: editingVestingPeriodMonths,
+                            vesting_schedule: vestingScheduleArray,
+                            start_date: editingGrantDate,
+                            end_date: endDate.toISOString().split('T')[0],
+                            vested_shares: initialVested,
+                            unvested_shares: initialUnvested,
+                            updated_at: new Date().toISOString(),
+                          })
+                          .eq('id', currentVestingSchedule.id);
+
+                        if (vestingError) throw vestingError;
+                      } else {
+                        // Create new vesting schedule
+                        const { error: vestingError } = await supabase
+                          .from('vesting_schedules')
+                          .insert({
+                            recipient_user_id: selectedGrant.recipient_user_id,
+                            total_shares: editingShares,
+                            vesting_type: editingVestingType,
+                            cliff_months: editingCliffMonths,
+                            vesting_period_months: editingVestingPeriodMonths,
+                            vesting_schedule: vestingScheduleArray,
+                            start_date: editingGrantDate,
+                            end_date: endDate.toISOString().split('T')[0],
+                            vested_shares: initialVested,
+                            unvested_shares: initialUnvested,
+                          });
+
+                        if (vestingError) throw vestingError;
+                      }
+
+                      notifications.show({
+                        title: 'Success',
+                        message: 'Grant and vesting schedule updated successfully',
+                        color: 'green',
+                      });
+
+                      setEditModalOpen(false);
+                      setSelectedGrant(null);
+                      setEditingShares(0);
+                      setEditingShareClass('Common');
+                      setEditingVestingType('immediate');
+                      setEditingCliffMonths(0);
+                      setEditingVestingPeriodMonths(48);
+                      setEditingGrantDate('');
+                      setCurrentVestingSchedule(null);
+                      loadGrants();
+                    } catch (error: any) {
+                      console.error('Error updating grant:', error);
+                      notifications.show({
+                        title: 'Error',
+                        message: error.message || 'Failed to update grant',
+                        color: 'red',
+                      });
+                    } finally {
+                      setEditing(false);
+                    }
+                  }}
+                  loading={editing}
+                >
+                  Save Changes
+                </Button>
+              </Group>
+            </>
+          )}
         </Stack>
       </Modal>
     </Stack>

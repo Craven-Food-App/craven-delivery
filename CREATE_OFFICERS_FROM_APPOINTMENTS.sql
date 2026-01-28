@@ -29,14 +29,18 @@ BEGIN
     RAISE NOTICE 'Processing appointment for: % (Position: %)', 
       appointment_record.executive_name, appointment_record.position;
     
-    -- Map position to Delaware officer position
+    -- Map position to corporate officer position
+    -- Use executive titles (CEO, CFO, CTO) directly instead of Delaware statutory positions
     officer_position := CASE 
-      WHEN appointment_record.position ILIKE '%president%' OR appointment_record.position ILIKE '%ceo%' OR appointment_record.position ILIKE '%Chief Executive%' THEN 'president'
-      WHEN appointment_record.position ILIKE '%secretary%' THEN 'secretary'
-      WHEN appointment_record.position ILIKE '%treasurer%' OR appointment_record.position ILIKE '%cfo%' OR appointment_record.position ILIKE '%Chief Financial%' THEN 'treasurer'
+      WHEN appointment_record.position ILIKE '%ceo%' OR appointment_record.position ILIKE '%Chief Executive%' THEN 'ceo'
+      WHEN appointment_record.position ILIKE '%president%' AND NOT appointment_record.position ILIKE '%vice%' THEN 'president'
+      WHEN appointment_record.position ILIKE '%cfo%' OR appointment_record.position ILIKE '%Chief Financial%' THEN 'cfo'
+      WHEN appointment_record.position ILIKE '%treasurer%' AND NOT appointment_record.position ILIKE '%assistant%' THEN 'treasurer'
+      WHEN appointment_record.position ILIKE '%secretary%' AND NOT appointment_record.position ILIKE '%assistant%' THEN 'secretary'
       WHEN appointment_record.position ILIKE '%vice%' OR appointment_record.position ILIKE '%vp%' THEN 'vice-president'
       WHEN appointment_record.position ILIKE '%assistant secretary%' THEN 'assistant-secretary'
       WHEN appointment_record.position ILIKE '%assistant treasurer%' THEN 'assistant-treasurer'
+      WHEN appointment_record.position ILIKE '%cto%' OR appointment_record.position ILIKE '%Chief Technology%' THEN 'cto'
       ELSE NULL
     END;
     
@@ -79,7 +83,7 @@ BEGIN
           appointment_record.executive_name, officer_position;
       END IF;
     ELSE
-      RAISE NOTICE '⚠️ Position "%" does not map to a Delaware officer position, skipping', 
+      RAISE NOTICE '⚠️ Position "%" does not map to a corporate officer position, skipping', 
         appointment_record.position;
     END IF;
   END LOOP;

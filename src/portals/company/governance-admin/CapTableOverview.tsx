@@ -30,6 +30,7 @@ interface CapTableData {
   founder_shares: number;
   founder_percentage: number;
   equity_pool: number;
+  micro_equity_pool?: number; // Micro-Equity Pool (1,400,000)
   pool_percentage: number;
   par_value: number;
 }
@@ -212,6 +213,23 @@ const CapTableOverview: React.FC = () => {
                   <NumberFormatter value={capTable.total_unissued} thousandSeparator />
                 </Text>
                 <Progress value={(capTable.total_unissued / capTable.total_authorized) * 100} color="yellow" size="lg" radius="xl" />
+                {/* Show breakdown if micro_equity_pool exists */}
+                {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                  <Stack gap="xs" mt="xs">
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Micro-Equity Pool:</Text>
+                      <Text size="xs" fw={500}>
+                        <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Equity Pool:</Text>
+                      <Text size="xs" fw={500}>
+                        <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                  </Stack>
+                )}
               </Stack>
             </Card>
           </Grid.Col>
@@ -227,6 +245,17 @@ const CapTableOverview: React.FC = () => {
                   <NumberFormatter value={capTable.equity_pool} thousandSeparator />
                 </Text>
                 <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
+                {/* Show micro-equity pool if it exists */}
+                {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                  <Stack gap="xs" mt="xs" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Micro-Equity Pool:</Text>
+                      <Text size="xs" fw={500} c="orange">
+                        <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                  </Stack>
+                )}
               </Stack>
             </Card>
           </Grid.Col>

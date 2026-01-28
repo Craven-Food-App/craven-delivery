@@ -1,19 +1,19 @@
 -- CREATE TERMINATED CORPORATE OFFICER RECORD FOR NATHAN CURRY
 -- Nathan Curry was terminated and should appear as a terminated officer
+-- This script merges any existing active/terminated records into a single terminated record
+-- Position: Chief Technology Officer (CTO)
+-- Appointed: 11/19/2025
+-- Terminated: 1/1/2026
 
 DO $$
 DECLARE
   nathan_user_id UUID;
   nathan_exec_user_id UUID;
   nathan_appointment_id UUID;
-  nathan_appointment_effective_date TIMESTAMPTZ;
   nathan_appointment_resolution_id UUID;
-  nathan_appointment_position TEXT;
-  nathan_officer_position TEXT;
-  officer_exists BOOLEAN;
-  new_officer_id UUID;
   resolution_id UUID;
-  torrance_user_id UUID;
+  new_officer_id UUID;
+  deleted_count INTEGER;
 BEGIN
   -- Find Nathan Curry's user ID
   SELECT id INTO nathan_user_id
@@ -41,9 +41,9 @@ BEGIN
 
   RAISE NOTICE '✅ Found Nathan Curry exec_user_id: %', nathan_exec_user_id;
 
-  -- Find Nathan's appointment (if exists) to get dates and resolution
-  SELECT ea.id, ea.effective_date, ea.resolution_id 
-  INTO nathan_appointment_id, nathan_appointment_effective_date, nathan_appointment_resolution_id
+  -- Find Nathan's appointment (if exists) to get resolution
+  SELECT ea.id, ea.resolution_id 
+  INTO nathan_appointment_id, nathan_appointment_resolution_id
   FROM executive_appointments ea
   WHERE ea.executive_id = nathan_exec_user_id
   ORDER BY ea.effective_date DESC
@@ -63,125 +63,46 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Check if terminated officer record already exists
-  SELECT EXISTS (
-    SELECT 1 FROM corporate_officers
-    WHERE executive_id = nathan_exec_user_id
-      AND status = 'terminated'
-  ) INTO officer_exists;
-
-  IF officer_exists THEN
-    RAISE NOTICE '⚠️ Terminated officer record already exists for Nathan Curry';
-    
-    -- Show existing record
-    SELECT id, position, status, term_end INTO new_officer_id
-    FROM corporate_officers
-    WHERE executive_id = nathan_exec_user_id
-      AND status = 'terminated'
-    LIMIT 1;
-    
-    RAISE NOTICE '   Existing officer ID: %', new_officer_id;
-    RETURN;
-  END IF;
-
-  -- Nathan Curry was the Chief Technology Officer (CTO)
-  -- CTO is now a valid corporate officer position per company bylaws
-  nathan_officer_position := 'cto';
+  -- Delete ALL existing officer records for Nathan (both active and terminated)
+  -- We'll create a single correct record
+  DELETE FROM corporate_officers
+  WHERE executive_id = nathan_exec_user_id;
   
-  RAISE NOTICE 'Nathan Curry position: CTO (Chief Technology Officer)';
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
   
-  -- Check if there's an active officer record that needs to be terminated
-  SELECT id INTO new_officer_id
-  FROM corporate_officers
-  WHERE executive_id = nathan_exec_user_id
-    AND status = 'active'
-  LIMIT 1;
-
-  IF new_officer_id IS NOT NULL THEN
-    -- Update existing active officer to terminated
-    -- Keep the existing position (don't change it, as CTO is not a valid Delaware position)
-    UPDATE corporate_officers
-    SET 
-      status = 'terminated',
-      term_end = CURRENT_DATE - INTERVAL '30 days', -- Terminated 30 days ago
-      updated_at = NOW()
-    WHERE id = new_officer_id;
-    
-    -- Get the position that was kept
-    SELECT position INTO nathan_officer_position
-    FROM corporate_officers
-    WHERE id = new_officer_id;
-    
-    RAISE NOTICE '✅ Updated existing officer record % to terminated status (position: %, terminated: %)', 
-      new_officer_id, nathan_officer_position, CURRENT_DATE - INTERVAL '30 days';
+  IF deleted_count > 0 THEN
+    RAISE NOTICE '✅ Deleted % existing officer record(s) for Nathan Curry', deleted_count;
   ELSE
-    -- Create new terminated officer record
-    -- Note: CTO is not a Delaware statutory position
-    -- If no existing officer position found, we cannot create a valid corporate_officers record
-    -- since all positions must be valid Delaware statutory positions
-    
-    IF nathan_officer_position IS NULL THEN
-      RAISE NOTICE '❌ Cannot create corporate_officers record: Nathan was CTO, which is not a Delaware statutory position.';
-      RAISE NOTICE '   Please specify which Delaware officer position Nathan held (if any),';
-      RAISE NOTICE '   or create the officer record manually with the correct position.';
-      RETURN;
-    END IF;
-    
-    INSERT INTO corporate_officers (
-      position,
-      executive_id,
-      appointed_date,
-      term_start,
-      term_end,
-      resolution_id,
-      status,
-      created_at
-    ) VALUES (
-      nathan_officer_position, -- Use existing position from previous officer record
-      nathan_exec_user_id,
-      COALESCE(
-        nathan_appointment_effective_date,
-        CURRENT_DATE - INTERVAL '180 days' -- Backdate appointment to 6 months ago
-      ),
-      COALESCE(
-        nathan_appointment_effective_date,
-        CURRENT_DATE - INTERVAL '180 days'
-      ),
-      CURRENT_DATE - INTERVAL '30 days', -- Terminated 30 days ago
-      resolution_id,
-      'terminated',
-      CURRENT_DATE - INTERVAL '180 days' -- Backdate creation
-    )
-    RETURNING id INTO new_officer_id;
-    
-    RAISE NOTICE '✅ Created terminated officer record % for Nathan Curry (position: %)', 
-      new_officer_id, nathan_officer_position;
+    RAISE NOTICE 'ℹ️ No existing officer records found for Nathan Curry';
   END IF;
 
-  -- Show the created/updated officer
-  SELECT 
-    co.id,
-    co.position,
-    co.status,
-    co.appointed_date,
-    co.term_start,
-    co.term_end,
-    up.full_name as executive_name
-  INTO new_officer_id
-  FROM corporate_officers co
-  JOIN exec_users eu ON co.executive_id = eu.id
-  LEFT JOIN user_profiles up ON eu.user_id = up.user_id
-  WHERE co.id = new_officer_id;
-
-  -- Get final position for display
-  SELECT position INTO nathan_officer_position
-  FROM corporate_officers
-  WHERE id = new_officer_id;
+  -- Create the single correct terminated officer record
+  INSERT INTO corporate_officers (
+    position,
+    executive_id,
+    appointed_date,
+    term_start,
+    term_end,
+    resolution_id,
+    status,
+    created_at
+  ) VALUES (
+    'cto', -- Chief Technology Officer
+    nathan_exec_user_id,
+    '2025-11-19'::DATE, -- Appointed on 11/19/2025
+    '2025-11-19'::DATE, -- Term started on 11/19/2025
+    '2026-01-01'::DATE, -- Terminated on 1/1/2026
+    resolution_id,
+    'terminated',
+    '2025-11-19'::TIMESTAMPTZ
+  )
+  RETURNING id INTO new_officer_id;
   
-  RAISE NOTICE '   Officer Details:';
-  RAISE NOTICE '   - ID: %', new_officer_id;
+  RAISE NOTICE '✅ Created terminated officer record % for Nathan Curry', new_officer_id;
+  RAISE NOTICE '   - Position: CTO (Chief Technology Officer)';
+  RAISE NOTICE '   - Appointed: 2025-11-19';
+  RAISE NOTICE '   - Terminated: 2026-01-01';
   RAISE NOTICE '   - Status: terminated';
-  RAISE NOTICE '   - Position: % (Nathan was CTO - this is his Delaware officer position)', nathan_officer_position;
 END $$;
 
 -- Verify the terminated officer was created

@@ -35,6 +35,7 @@ interface CapTableData {
   founder_shares: number;
   founder_percentage: number;
   equity_pool: number;
+  micro_equity_pool?: number; // Micro-Equity Pool (1,400,000)
   pool_percentage: number;
   par_value: number;
 }
@@ -301,6 +302,12 @@ const CapTableEquityPageEnhanced: React.FC = () => {
         shares: capTable.equity_pool,
         color: '#f97316', // Orange
       },
+      ...(capTable.micro_equity_pool && capTable.micro_equity_pool > 0 ? [{
+        name: 'Equity Pool (Micro-Equity)',
+        value: (capTable.micro_equity_pool / capTable.total_authorized) * 100,
+        shares: capTable.micro_equity_pool,
+        color: '#fb923c', // Lighter orange
+      }] : []),
     ];
 
     return data.filter(item => item.value > 0);
@@ -318,6 +325,9 @@ const CapTableEquityPageEnhanced: React.FC = () => {
       ['Torrance Stroman (Founder)', capTable.founder_shares, `${capTable.founder_percentage.toFixed(1)}%`, '$0.00'],
       ...executives.map(exec => [exec.name, exec.shares, `${exec.percentage.toFixed(1)}%`, `$${exec.strike_price.toFixed(2)}`]),
       ['Equity Pool (Reserved)', capTable.equity_pool, `${capTable.pool_percentage.toFixed(1)}%`, 'N/A'],
+      ...(capTable.micro_equity_pool && capTable.micro_equity_pool > 0 ? [
+        ['Equity Pool (Micro-Equity)', capTable.micro_equity_pool, `${((capTable.micro_equity_pool / capTable.total_authorized) * 100).toFixed(1)}%`, 'N/A']
+      ] : []),
     ];
 
     const csv = rows.map(row => row.join(',')).join('\n');
@@ -433,6 +443,23 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                   <NumberFormatter value={capTable.total_unissued} thousandSeparator />
                 </Text>
                 <Progress value={(capTable.total_unissued / capTable.total_authorized) * 100} color="yellow" size="lg" radius="xl" />
+                {/* Show breakdown if micro_equity_pool exists */}
+                {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                  <Stack gap="xs" mt="xs">
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Micro-Equity Pool:</Text>
+                      <Text size="xs" fw={500}>
+                        <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Equity Pool:</Text>
+                      <Text size="xs" fw={500}>
+                        <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                  </Stack>
+                )}
               </Stack>
             </Card>
           </Grid.Col>
@@ -448,6 +475,17 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                   <NumberFormatter value={capTable.equity_pool} thousandSeparator />
                 </Text>
                 <Text size="xs" c="dimmed">{capTable.pool_percentage.toFixed(1)}% reserved</Text>
+                {/* Show micro-equity pool if it exists */}
+                {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                  <Stack gap="xs" mt="xs" style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+                    <Group justify="space-between" gap="xs">
+                      <Text size="xs" c="dimmed">Micro-Equity Pool:</Text>
+                      <Text size="xs" fw={500} c="orange">
+                        <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                      </Text>
+                    </Group>
+                  </Stack>
+                )}
               </Stack>
             </Card>
           </Grid.Col>
@@ -594,11 +632,11 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                     </Table.Tr>
                   ))}
 
-                  {/* Pool */}
+                  {/* Equity Pool */}
                   <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
                     <Table.Td>
                       <div>
-                        <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
+                        <Text fw={600} size="sm" c="dimmed">Equity Pool (Reserved)</Text>
                         <Text size="xs" c="dimmed">Available for grants</Text>
                       </div>
                     </Table.Td>
@@ -621,6 +659,42 @@ const CapTableEquityPageEnhanced: React.FC = () => {
                       <Progress value={capTable.pool_percentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
                     </Table.Td>
                   </Table.Tr>
+
+                  {/* Micro-Equity Pool */}
+                  {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                    <Table.Tr style={{ backgroundColor: '#fff7ed' }}>
+                      <Table.Td>
+                        <div>
+                          <Text fw={600} size="sm" c="dimmed">Equity Pool (Micro-Equity)</Text>
+                          <Text size="xs" c="dimmed">Micro-equity grants</Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fw={700} size="sm" c="dimmed">
+                          <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="orange" size="lg" variant="light">
+                          {((capTable.micro_equity_pool / capTable.total_authorized) * 100).toFixed(1)}%
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="gray" size="sm" variant="outline">
+                          N/A
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Progress 
+                          value={(capTable.micro_equity_pool / capTable.total_authorized) * 100} 
+                          color="orange" 
+                          size="sm" 
+                          radius="xl" 
+                          style={{ minWidth: 100 }} 
+                        />
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
                 </Table.Tbody>
               </Table>
             </Card>

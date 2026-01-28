@@ -31,6 +31,8 @@ serve(async (req) => {
       share_class = 'Common',
       resolution_id,
       appointment_id,
+      certificate_id, // Optional: if updating existing certificate
+      certificate_number, // Optional: if updating existing certificate
     } = body;
 
     if (!recipient_user_id || !shares_amount) {
@@ -59,20 +61,59 @@ serve(async (req) => {
     const companyName = companySettings?.find(s => s.setting_key === 'company_name')?.setting_value || 'Crave\'n, Inc.';
     const state = companySettings?.find(s => s.setting_key === 'state_of_incorporation')?.setting_value || 'Delaware';
 
-    // Generate certificate number
+    // Generate certificate number with retry logic for uniqueness
     let certNumber: string;
-    const { data: certNumData, error: certNumError } = await supabaseAdmin.rpc('generate_certificate_number');
+    let attempts = 0;
+    const maxAttempts = 10;
     
-    if (certNumError || !certNumData) {
-      // Fallback: generate manually
-      const year = new Date().getFullYear();
-      const { count } = await supabaseAdmin
+    while (attempts < maxAttempts) {
+      const { data: certNumData, error: certNumError } = await supabaseAdmin.rpc('generate_certificate_number');
+      
+      if (certNumError || !certNumData) {
+        // Fallback: generate manually
+        const year = new Date().getFullYear();
+        const { data: existingCerts } = await supabaseAdmin
+          .from('share_certificates')
+          .select('certificate_number')
+          .like('certificate_number', `CERT-${year}-%`);
+        
+        // Find the highest number for this year
+        let maxNum = 0;
+        if (existingCerts && existingCerts.length > 0) {
+          existingCerts.forEach(cert => {
+            const match = cert.certificate_number.match(new RegExp(`^CERT-${year}-(\\d+)$`));
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          });
+        }
+        
+        certNumber = `CERT-${year}-${String(maxNum + 1).padStart(6, '0')}`;
+      } else {
+        certNumber = certNumData as string;
+      }
+      
+      // Check if this certificate number already exists
+      const { data: existing } = await supabaseAdmin
         .from('share_certificates')
-        .select('*', { count: 'exact', head: true });
-      const nextNum = (count || 0) + 1;
-      certNumber = `CERT-${year}-${String(nextNum).padStart(6, '0')}`;
-    } else {
-      certNumber = certNumData as string;
+        .select('id')
+        .eq('certificate_number', certNumber)
+        .maybeSingle();
+      
+      if (!existing) {
+        // Number is unique, break out of loop
+        break;
+      }
+      
+      // Number exists, try again (shouldn't happen with fixed function, but safety check)
+      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error('Failed to generate unique certificate number after multiple attempts');
+      }
+      
+      // Add a small delay to avoid race conditions
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Get appointment details if available
@@ -153,26 +194,108 @@ serve(async (req) => {
       .from(bucket)
       .getPublicUrl(fileName);
 
-    // Create certificate record
-    const { data: certificate, error: certError } = await supabaseAdmin
-      .from('share_certificates')
-      .insert({
-        certificate_number: certNumber,
-        recipient_user_id,
-        shares_amount,
-        share_class,
-        issue_date: new Date().toISOString().split('T')[0],
-        resolution_id,
-        appointment_id,
-        document_url: urlData?.publicUrl || '',
-        html_template: html,
-        status: 'issued',
-      })
-      .select()
-      .single();
+    // Create or update certificate record
+    let certificate: any;
+    
+    if (certificate_id) {
+      // Update existing certificate (just add the document)
+      const { data: updatedCert, error: updateError } = await supabaseAdmin
+        .from('share_certificates')
+        .update({
+          document_url: urlData?.publicUrl || '',
+          html_template: html,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', certificate_id)
+        .select()
+        .single();
+      
+      if (updateError) {
+        throw updateError;
+      }
+      
+      certificate = updatedCert;
+      certNumber = certificate.certificate_number; // Use existing number
+    } else {
+      // Create new certificate with retry logic for duplicate numbers
+      let insertAttempts = 0;
+      const maxInsertAttempts = 5;
+      
+      while (insertAttempts < maxInsertAttempts) {
+        const { data: newCert, error: certError } = await supabaseAdmin
+          .from('share_certificates')
+          .insert({
+            certificate_number: certNumber,
+            recipient_user_id,
+            shares_amount,
+            share_class,
+            issue_date: new Date().toISOString().split('T')[0],
+            resolution_id,
+            appointment_id,
+            document_url: urlData?.publicUrl || '',
+            html_template: html,
+            status: 'issued',
+          })
+          .select()
+          .single();
 
-    if (certError) {
-      throw certError;
+        if (certError) {
+          // If duplicate key error, generate a new number and retry
+          if (certError.code === '23505' && certError.message?.includes('certificate_number')) {
+            insertAttempts++;
+            if (insertAttempts >= maxInsertAttempts) {
+              throw new Error('Failed to generate unique certificate number after multiple attempts');
+            }
+            
+            // Generate a new certificate number
+            const { data: newCertNum } = await supabaseAdmin.rpc('generate_certificate_number');
+            if (!newCertNum) {
+              throw new Error('Failed to generate new certificate number');
+            }
+            
+            certNumber = newCertNum as string;
+            
+            // Update the template data with new number
+            templateData.certificate_number = certNumber;
+            
+            // Re-interpolate template with new number
+            html = template.html_content;
+            Object.keys(templateData).forEach(key => {
+              const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
+              html = html.replace(regex, String(templateData[key] || ''));
+            });
+            
+            // Re-upload with new number
+            const newFileName = `certificates/${certNumber}_${Date.now()}.html`;
+            const { error: newUploadError } = await supabaseAdmin.storage
+              .from(bucket)
+              .upload(newFileName, new Blob([html], { type: 'text/html' }), {
+                contentType: 'text/html',
+                upsert: false,
+              });
+            
+            if (newUploadError) {
+              throw newUploadError;
+            }
+            
+            const { data: newUrlData } = supabaseAdmin.storage
+              .from(bucket)
+              .getPublicUrl(newFileName);
+            
+            // Update urlData for next iteration
+            if (newUrlData) {
+              urlData.publicUrl = newUrlData.publicUrl;
+            }
+            
+            continue; // Retry insert with new number
+          } else {
+            throw certError;
+          }
+        } else {
+          certificate = newCert;
+          break; // Success, exit loop
+        }
+      }
     }
 
     // Log the action
