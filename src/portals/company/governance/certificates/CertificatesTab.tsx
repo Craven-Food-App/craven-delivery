@@ -50,6 +50,7 @@ const CertificatesTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [fullScreenCertificate, setFullScreenCertificate] = useState<Certificate | null>(null);
   const [activeTab, setActiveTab] = useState<string>('issued');
 
   useEffect(() => {
@@ -766,15 +767,78 @@ const CertificatesTab: React.FC = () => {
               <Text>{new Date(selectedCertificate.issue_date).toLocaleDateString()}</Text>
             </Group>
             {selectedCertificate.document_url && (
-              <Anchor href={selectedCertificate.document_url} target="_blank">
-                <Button leftSection={<IconDownload size={16} />} fullWidth>
-                  Download Certificate PDF
-                </Button>
-              </Anchor>
+              <>
+                <Text size="sm" c="dimmed">
+                  Preview (click to open full-screen)
+                </Text>
+                <div
+                  style={{
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    height: 360,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    setFullScreenCertificate(selectedCertificate);
+                    setPreviewModalOpen(false);
+                  }}
+                >
+                  <iframe
+                    src={selectedCertificate.document_url}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                      backgroundColor: '#ffffff',
+                    }}
+                    title={`Certificate preview ${selectedCertificate.certificate_number}`}
+                  />
+                </div>
+              </>
             )}
           </Stack>
         )}
       </Modal>
+
+      {fullScreenCertificate && fullScreenCertificate.document_url && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text c="white" fw={500}>
+              Certificate {fullScreenCertificate.certificate_number}
+            </Text>
+            <Button
+              size="sm"
+              variant="white"
+              onClick={() => setFullScreenCertificate(null)}
+            >
+              Back to certificates
+            </Button>
+          </div>
+          <div style={{ flex: 1, padding: '0 16px 16px' }}>
+            <iframe
+              src={fullScreenCertificate.document_url}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: 8,
+                backgroundColor: '#ffffff',
+              }}
+              title={`Certificate full view ${fullScreenCertificate.certificate_number}`}
+            />
+          </div>
+        </div>
+      )}
     </Stack>
   );
 };

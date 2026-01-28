@@ -11,6 +11,62 @@ function getCorsHeaders(origin: string | null) {
   };
 }
 
+// Local HTML → PDF helper (mirrors foundational-generate-docs implementation)
+async function convertHtmlToPdf(htmlContent: string): Promise<Uint8Array> {
+  const apiKey = Deno.env.get('APDF_API_KEY');
+
+  if (!apiKey) {
+    throw new Error(
+      'APDF_API_KEY not configured. Please set it in Supabase Edge Function secrets.'
+    );
+  }
+
+  const fullHtml = htmlContent.includes('<!DOCTYPE html>')
+    ? htmlContent
+    : `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>${htmlContent}</body>
+</html>`;
+
+  const response = await fetch('https://apdf.io/api/pdf/file/create', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ html: fullHtml }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `PDF conversion failed: ${response.status} - ${errorText}`
+    );
+  }
+
+  const json = await response.json();
+  if (!json?.file) {
+    throw new Error(
+      `aPDF.io did not return a file URL: ${JSON.stringify(json)}`
+    );
+  }
+
+  const fileResp = await fetch(json.file);
+  if (!fileResp.ok) {
+    const t = await fileResp.text();
+    throw new Error(
+      `Failed to download generated PDF: ${fileResp.status} - ${t}`
+    );
+  }
+
+  const pdfBuffer = await fileResp.arrayBuffer();
+  return new Uint8Array(pdfBuffer);
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
 
@@ -183,21 +239,24 @@ serve(async (req) => {
       resolution_date: resolutionData.meeting_date || new Date().toISOString().split('T')[0],
     };
 
-    // Interpolate template
+    // Interpolate template to HTML
     let html = template.html_content;
-    Object.keys(templateData).forEach(key => {
+    Object.keys(templateData).forEach((key) => {
       const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
       html = html.replace(regex, String(templateData[key] || ''));
     });
 
-    // Upload HTML to storage
+    // Convert HTML → PDF
+    const pdfBytes = await convertHtmlToPdf(html);
+
+    // Upload PDF to storage
     const bucket = 'governance-certificates';
-    const fileName = `certificates/${certNumber}_${Date.now()}.html`;
-    
+    const fileName = `certificates/${certNumber}_${Date.now()}.pdf`;
+
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
-      .upload(fileName, new Blob([html], { type: 'text/html' }), {
-        contentType: 'text/html',
+      .upload(fileName, pdfBytes, {
+        contentType: 'application/pdf',
         upsert: false,
       });
 
@@ -281,12 +340,15 @@ serve(async (req) => {
               html = html.replace(regex, String(templateData[key] || ''));
             });
             
-            // Re-upload with new number
-            const newFileName = `certificates/${certNumber}_${Date.now()}.html`;
+            // Re-convert to PDF with new number
+            const newPdfBytes = await convertHtmlToPdf(html);
+            
+            // Re-upload PDF with new number
+            const newFileName = `certificates/${certNumber}_${Date.now()}.pdf`;
             const { error: newUploadError } = await supabaseAdmin.storage
               .from(bucket)
-              .upload(newFileName, new Blob([html], { type: 'text/html' }), {
-                contentType: 'text/html',
+              .upload(newFileName, newPdfBytes, {
+                contentType: 'application/pdf',
                 upsert: false,
               });
             
