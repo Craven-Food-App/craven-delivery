@@ -70,17 +70,25 @@ BEGIN
         FROM exec_users
         WHERE id = resolution_record.related_officer_id::uuid
         LIMIT 1;
+        
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       EXCEPTION WHEN OTHERS THEN
         -- If casting fails, try as text
         SELECT * INTO exec_user_record
         FROM exec_users
         WHERE id::text = resolution_record.related_officer_id
         LIMIT 1;
+        
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       END;
     END IF;
     
     -- Method 2: Try to find executive by matching title/role from resolution title
-    IF exec_user_record.id IS NULL THEN
+    IF exec_user_record IS NULL OR exec_user_record.id IS NULL THEN
       -- Try to match by role in title
       IF resolution_record.title ILIKE '%CEO%' OR resolution_record.title ILIKE '%Chief Executive%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'ceo' LIMIT 1;
@@ -90,11 +98,14 @@ BEGIN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'cto' LIMIT 1;
       ELSIF resolution_record.title ILIKE '%COO%' OR resolution_record.title ILIKE '%Chief Operating%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'coo' LIMIT 1;
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       END IF;
     END IF;
     
     -- If we found an executive, create the appointment
-    IF exec_user_record.id IS NOT NULL THEN
+    IF exec_user_record IS NOT NULL AND exec_user_record.id IS NOT NULL THEN
         -- Check if appointment already exists (by resolution_id OR by executive_id + position match)
         SELECT EXISTS (
           SELECT 1 FROM executive_appointments

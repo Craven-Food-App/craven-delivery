@@ -43,7 +43,7 @@ BEGIN
     END
   LIMIT 1;
   
-  IF exec_user_record.id IS NULL THEN
+  IF NOT FOUND OR exec_user_record.id IS NULL THEN
     RAISE NOTICE '❌ Torrance Stroman exec_user not found';
     RETURN;
   END IF;
