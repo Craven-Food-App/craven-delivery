@@ -38,20 +38,23 @@ BEGIN
   RAISE NOTICE '✅ Found Nathan Curry exec_user_id: %', nathan_exec_user_id;
 
   -- Find Nathan's appointment (if exists) to get dates and resolution
-  SELECT id, effective_date, resolution_id INTO nathan_appointment_id
-  FROM executive_appointments
-  WHERE executive_id = nathan_exec_user_id
-  ORDER BY effective_date DESC
+  SELECT ea.id, ea.effective_date, ea.resolution_id 
+  INTO nathan_appointment_id, resolution_id
+  FROM executive_appointments ea
+  WHERE ea.executive_id = nathan_exec_user_id
+  ORDER BY ea.effective_date DESC
   LIMIT 1;
 
-  -- Find resolution related to Nathan's termination
-  SELECT id INTO resolution_id
-  FROM governance_board_resolutions
-  WHERE title ILIKE '%nathan%curry%'
-     OR title ILIKE '%nathan%removal%'
-     OR title ILIKE '%nathan%termination%'
-  ORDER BY created_at DESC
-  LIMIT 1;
+  -- If no resolution from appointment, find resolution related to Nathan's termination
+  IF resolution_id IS NULL THEN
+    SELECT id INTO resolution_id
+    FROM governance_board_resolutions
+    WHERE title ILIKE '%nathan%curry%'
+       OR title ILIKE '%nathan%removal%'
+       OR title ILIKE '%nathan%termination%'
+    ORDER BY created_at DESC
+    LIMIT 1;
+  END IF;
 
   -- Check if terminated officer record already exists
   SELECT EXISTS (
@@ -114,11 +117,11 @@ BEGIN
       'assistant-secretary', -- CTOs often hold this as a secondary role, or we can use a position from his appointment
       nathan_exec_user_id,
       COALESCE(
-        (SELECT effective_date FROM executive_appointments WHERE id = nathan_appointment_id),
+        (SELECT ea.effective_date FROM executive_appointments ea WHERE ea.id = nathan_appointment_id),
         CURRENT_DATE - INTERVAL '180 days' -- Backdate appointment to 6 months ago
       ),
       COALESCE(
-        (SELECT effective_date FROM executive_appointments WHERE id = nathan_appointment_id),
+        (SELECT ea.effective_date FROM executive_appointments ea WHERE ea.id = nathan_appointment_id),
         CURRENT_DATE - INTERVAL '180 days'
       ),
       CURRENT_DATE - INTERVAL '30 days', -- Terminated 30 days ago
