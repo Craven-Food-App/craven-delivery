@@ -1,6 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Brand asset URLs for executive stock certificates
+// Update these if you move assets to a different bucket/path.
+const CRAVEN_LOGO_URL =
+  'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/branding/craven-logo.png';
+const CRAVEN_C_WATERMARK_URL =
+  'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/branding/craven-c-new.png';
+
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin = origin || '*';
   return {
@@ -233,10 +240,16 @@ serve(async (req) => {
       share_class: share_class,
       company_name: companyName,
       state: state,
-      issue_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      issue_date: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
       effective_date: appointmentData.effective_date || new Date().toISOString().split('T')[0],
       resolution_number: resolutionData.resolution_number || 'N/A',
       resolution_date: resolutionData.meeting_date || new Date().toISOString().split('T')[0],
+      logo_url: CRAVEN_LOGO_URL,
+      watermark_url: CRAVEN_C_WATERMARK_URL,
     };
 
     // Interpolate template to HTML
