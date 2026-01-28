@@ -164,14 +164,169 @@ r.post("/webhook", async (req, res) => {
 
     if (inviteId) {
       const sb = supabaseAdmin();
-      await sb
-        .from("invites")
-        .update({
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          paid_amount_cents: session.amount_total || 0,
-        })
-        .eq("id", inviteId);
+      
+      try {
+        // Get invite details
+        const { data: invite, error: inviteError } = await sb
+          .from("invites")
+          .select("*")
+          .eq("id", inviteId)
+          .single();
+
+        if (inviteError || !invite) {
+          console.error("Invite not found for webhook:", inviteId);
+          return res.status(404).json({ error: "Invite not found" });
+        }
+
+        // Prevent duplicate processing
+        if (invite.status === "paid") {
+          console.log("Invite already processed:", inviteId);
+          return res.json({ received: true, message: "Already processed" });
+        }
+
+        const amountCents = session.amount_total || 0;
+        const contributorEmail = invite.email;
+        const contributorName = invite.full_name || contributorEmail;
+
+        // Calculate tier and shares
+        const { data: tierData, error: tierError } = await sb.rpc(
+          "calculate_foundational_tier",
+          { p_amount_cents: amountCents }
+        );
+
+        if (tierError || !tierData) {
+          console.error("Error calculating tier:", tierError);
+          // Still mark invite as paid, but log error
+          await sb
+            .from("invites")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              paid_amount_cents: amountCents,
+            })
+            .eq("id", inviteId);
+          return res.status(500).json({ 
+            error: "Failed to calculate tier",
+            received: true 
+          });
+        }
+
+        const tierInfo = tierData as {
+          equity_percentage: number;
+          tier_name: string;
+          shares: number;
+        };
+
+        // Create contribution order
+        const { data: contributionOrder, error: orderError } = await sb
+          .from("contribution_orders")
+          .insert({
+            invite_id: inviteId,
+            contributor_email: contributorEmail,
+            contributor_name: contributorName,
+            amount_cents: amountCents,
+            shares_promised: tierInfo.shares,
+            tier_name: tierInfo.tier_name,
+            equity_percentage: tierInfo.equity_percentage,
+            payment_status: "paid",
+            stripe_session_id: session.id,
+            stripe_payment_intent_id: session.payment_intent as string | null,
+            paid_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (orderError || !contributionOrder) {
+          console.error("Error creating contribution order:", orderError);
+          // Still mark invite as paid
+          await sb
+            .from("invites")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              paid_amount_cents: amountCents,
+            })
+            .eq("id", inviteId);
+          return res.status(500).json({ 
+            error: "Failed to create contribution order",
+            received: true 
+          });
+        }
+
+        // Issue equity from micro-equity pool (atomic operation)
+        const { data: issuanceResult, error: issuanceError } = await sb.rpc(
+          "issue_micro_equity_from_pool",
+          {
+            p_contribution_order_id: contributionOrder.id,
+            p_contributor_email: contributorEmail,
+            p_contributor_name: contributorName,
+            p_shares_promised: tierInfo.shares,
+          }
+        );
+
+        if (issuanceError || !issuanceResult?.success) {
+          console.error("Error issuing equity:", issuanceError, issuanceResult);
+          // This is critical - equity issuance failed
+          // Mark contribution order as failed for manual review
+          await sb
+            .from("contribution_orders")
+            .update({
+              payment_status: "failed",
+            })
+            .eq("id", contributionOrder.id);
+          
+          // Still mark invite as paid (payment succeeded)
+          await sb
+            .from("invites")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              paid_amount_cents: amountCents,
+            })
+            .eq("id", inviteId);
+
+          return res.status(500).json({ 
+            error: "Payment processed but equity issuance failed",
+            contribution_order_id: contributionOrder.id,
+            received: true 
+          });
+        }
+
+        // Success: Mark invite as paid
+        await sb
+          .from("invites")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            paid_amount_cents: amountCents,
+          })
+          .eq("id", inviteId);
+
+        console.log("Successfully processed contribution and issued equity:", {
+          inviteId,
+          contributionOrderId: contributionOrder.id,
+          issuanceId: issuanceResult.issuance_id,
+          shares: tierInfo.shares,
+        });
+
+      } catch (error: any) {
+        console.error("Error processing webhook:", error);
+        // Mark invite as paid even if equity issuance fails
+        // Admin can manually review and fix
+        await sb
+          .from("invites")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            paid_amount_cents: session.amount_total || 0,
+          })
+          .eq("id", inviteId);
+        
+        return res.status(500).json({ 
+          error: "Error processing contribution",
+          received: true 
+        });
+      }
     }
   }
 
