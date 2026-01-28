@@ -95,27 +95,28 @@ BEGIN
     
     -- If we found an executive, create the appointment
     IF exec_user_record.id IS NOT NULL THEN
-        -- Check if appointment already exists
+        -- Check if appointment already exists (by resolution_id OR by executive_id + position match)
         SELECT EXISTS (
           SELECT 1 FROM executive_appointments
           WHERE resolution_id = resolution_record.id
+             OR (executive_id = exec_user_record.id 
+                 AND position ILIKE '%' || exec_user_record.title || '%'
+                 AND effective_date::date = COALESCE(resolution_record.effective_date::date, resolution_record.created_at::date))
         ) INTO appointment_exists;
         
         IF NOT appointment_exists THEN
           -- Determine position from resolution title or executive title
-          position_text := COALESCE(
-            exec_user_record.title,
-            CASE 
-              WHEN resolution_record.title ILIKE '%CEO%' OR resolution_record.title ILIKE '%Chief Executive%' THEN 'Chief Executive Officer'
-              WHEN resolution_record.title ILIKE '%CFO%' OR resolution_record.title ILIKE '%Chief Financial%' THEN 'Chief Financial Officer'
-              WHEN resolution_record.title ILIKE '%CTO%' OR resolution_record.title ILIKE '%Chief Technology%' THEN 'Chief Technology Officer'
-              WHEN resolution_record.title ILIKE '%COO%' OR resolution_record.title ILIKE '%Chief Operating%' THEN 'Chief Operating Officer'
-              WHEN resolution_record.title ILIKE '%President%' THEN 'President'
-              WHEN resolution_record.title ILIKE '%Secretary%' THEN 'Secretary'
-              WHEN resolution_record.title ILIKE '%Treasurer%' THEN 'Treasurer'
-              ELSE 'Executive'
-            END
-          );
+          -- Extract position from resolution title first, then fall back to executive title
+          position_text := CASE 
+            WHEN resolution_record.title ILIKE '%CEO%' OR resolution_record.title ILIKE '%Chief Executive%' THEN 'Chief Executive Officer'
+            WHEN resolution_record.title ILIKE '%CFO%' OR resolution_record.title ILIKE '%Chief Financial%' THEN 'Chief Financial Officer'
+            WHEN resolution_record.title ILIKE '%CTO%' OR resolution_record.title ILIKE '%Chief Technology%' THEN 'Chief Technology Officer'
+            WHEN resolution_record.title ILIKE '%COO%' OR resolution_record.title ILIKE '%Chief Operating%' THEN 'Chief Operating Officer'
+            WHEN resolution_record.title ILIKE '%President%' THEN 'President'
+            WHEN resolution_record.title ILIKE '%Secretary%' THEN 'Secretary'
+            WHEN resolution_record.title ILIKE '%Treasurer%' THEN 'Treasurer'
+            ELSE COALESCE(exec_user_record.title, 'Executive')
+          END;
           
           -- Create appointment
           INSERT INTO executive_appointments (
@@ -138,9 +139,10 @@ BEGIN
             COALESCE(resolution_record.created_by::text, 'System'),
             resolution_record.id,
             CASE 
-              WHEN resolution_record.status = 'ADOPTED' THEN 'approved'
-              WHEN resolution_record.status = 'REJECTED' THEN 'terminated'
-              ELSE 'pending'
+              WHEN resolution_record.status = 'ADOPTED' OR resolution_record.status = 'EXECUTED' THEN 'ACTIVE'
+              WHEN resolution_record.status = 'REJECTED' THEN 'REJECTED'
+              WHEN resolution_record.status = 'PENDING_VOTE' THEN 'SENT_TO_BOARD'
+              ELSE 'ACTIVE'
             END,
             'Restored from resolution: ' || resolution_record.resolution_number,
             resolution_record.created_at
