@@ -139,10 +139,10 @@ BEGIN
             COALESCE(resolution_record.created_by::text, 'System'),
             resolution_record.id,
             CASE 
-              WHEN resolution_record.status = 'ADOPTED' OR resolution_record.status = 'EXECUTED' THEN 'ACTIVE'
-              WHEN resolution_record.status = 'REJECTED' THEN 'REJECTED'
-              WHEN resolution_record.status = 'PENDING_VOTE' THEN 'SENT_TO_BOARD'
-              ELSE 'ACTIVE'
+              WHEN resolution_record.status = 'ADOPTED' OR resolution_record.status = 'EXECUTED' THEN 'active'
+              WHEN resolution_record.status = 'REJECTED' THEN 'terminated'
+              WHEN resolution_record.status = 'PENDING_VOTE' THEN 'pending'
+              ELSE 'active'
             END,
             'Restored from resolution: ' || resolution_record.resolution_number,
             resolution_record.created_at
