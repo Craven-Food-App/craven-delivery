@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getCorsHeaders } from "../_shared/cors.ts";
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = origin || '*';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
@@ -61,59 +70,66 @@ serve(async (req) => {
     const companyName = companySettings?.find(s => s.setting_key === 'company_name')?.setting_value || 'Crave\'n, Inc.';
     const state = companySettings?.find(s => s.setting_key === 'state_of_incorporation')?.setting_value || 'Delaware';
 
-    // Generate certificate number with retry logic for uniqueness
+    // Generate certificate number with retry logic for uniqueness.
+    // If certificate_id + certificate_number are provided, reuse the existing
+    // certificate_number so that regenerated documents keep the same ID.
     let certNumber: string;
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    while (attempts < maxAttempts) {
-      const { data: certNumData, error: certNumError } = await supabaseAdmin.rpc('generate_certificate_number');
+
+    if (certificate_id && certificate_number) {
+      certNumber = certificate_number as string;
+    } else {
+      let attempts = 0;
+      const maxAttempts = 10;
       
-      if (certNumError || !certNumData) {
-        // Fallback: generate manually
-        const year = new Date().getFullYear();
-        const { data: existingCerts } = await supabaseAdmin
-          .from('share_certificates')
-          .select('certificate_number')
-          .like('certificate_number', `CERT-${year}-%`);
+      while (attempts < maxAttempts) {
+        const { data: certNumData, error: certNumError } = await supabaseAdmin.rpc('generate_certificate_number');
         
-        // Find the highest number for this year
-        let maxNum = 0;
-        if (existingCerts && existingCerts.length > 0) {
-          existingCerts.forEach(cert => {
-            const match = cert.certificate_number.match(new RegExp(`^CERT-${year}-(\\d+)$`));
-            if (match) {
-              const num = parseInt(match[1], 10);
-              if (num > maxNum) maxNum = num;
-            }
-          });
+        if (certNumError || !certNumData) {
+          // Fallback: generate manually
+          const year = new Date().getFullYear();
+          const { data: existingCerts } = await supabaseAdmin
+            .from('share_certificates')
+            .select('certificate_number')
+            .like('certificate_number', `CERT-${year}-%`);
+          
+          // Find the highest number for this year
+          let maxNum = 0;
+          if (existingCerts && existingCerts.length > 0) {
+            existingCerts.forEach(cert => {
+              const match = cert.certificate_number.match(new RegExp(`^CERT-${year}-(\\d+)$`));
+              if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+              }
+            });
+          }
+          
+          certNumber = `CERT-${year}-${String(maxNum + 1).padStart(6, '0')}`;
+        } else {
+          certNumber = certNumData as string;
         }
         
-        certNumber = `CERT-${year}-${String(maxNum + 1).padStart(6, '0')}`;
-      } else {
-        certNumber = certNumData as string;
+        // Check if this certificate number already exists
+        const { data: existing } = await supabaseAdmin
+          .from('share_certificates')
+          .select('id')
+          .eq('certificate_number', certNumber)
+          .maybeSingle();
+        
+        if (!existing) {
+          // Number is unique, break out of loop
+          break;
+        }
+        
+        // Number exists, try again (shouldn't happen with fixed function, but safety check)
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error('Failed to generate unique certificate number after multiple attempts');
+        }
+        
+        // Add a small delay to avoid race conditions
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      
-      // Check if this certificate number already exists
-      const { data: existing } = await supabaseAdmin
-        .from('share_certificates')
-        .select('id')
-        .eq('certificate_number', certNumber)
-        .maybeSingle();
-      
-      if (!existing) {
-        // Number is unique, break out of loop
-        break;
-      }
-      
-      // Number exists, try again (shouldn't happen with fixed function, but safety check)
-      attempts++;
-      if (attempts >= maxAttempts) {
-        throw new Error('Failed to generate unique certificate number after multiple attempts');
-      }
-      
-      // Add a small delay to avoid race conditions
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Get appointment details if available

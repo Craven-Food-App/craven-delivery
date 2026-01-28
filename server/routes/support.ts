@@ -302,7 +302,35 @@ r.post("/webhook", async (req, res) => {
           })
           .eq("id", inviteId);
 
-        console.log("Successfully processed contribution and issued equity:", {
+        // Generate documentation layer (4 PDFs) via Supabase Edge Function
+        try {
+          const { data: docsResult, error: docsError } = await sb.functions.invoke(
+            "foundational-generate-docs",
+            {
+              body: {
+                contribution_order_id: contributionOrder.id,
+                equity_issuance_id: issuanceResult.issuance_id ?? null,
+                contributor_id: contributionOrder.contributor_id ?? null,
+                contributor_name: contributorName,
+                contributor_email: contributorEmail,
+                amount_cents: amountCents,
+                shares_issued: tierInfo.shares,
+                tier_name: tierInfo.tier_name,
+                pool_code: "family_micro_equity_pool",
+              },
+            }
+          );
+
+          if (docsError || !docsResult?.ok) {
+            console.error("Error generating foundational documents:", docsError || docsResult);
+          } else {
+            console.log("Foundational documents generated:", docsResult.docs);
+          }
+        } catch (docErr) {
+          console.error("Unexpected error during foundational document generation:", docErr);
+        }
+
+        console.log("Successfully processed contribution, issued equity, and triggered docs:", {
           inviteId,
           contributionOrderId: contributionOrder.id,
           issuanceId: issuanceResult.issuance_id,
