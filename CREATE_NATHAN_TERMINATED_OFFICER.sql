@@ -6,6 +6,8 @@ DECLARE
   nathan_user_id UUID;
   nathan_exec_user_id UUID;
   nathan_appointment_id UUID;
+  nathan_appointment_effective_date TIMESTAMPTZ;
+  nathan_appointment_resolution_id UUID;
   officer_exists BOOLEAN;
   new_officer_id UUID;
   resolution_id UUID;
@@ -39,11 +41,14 @@ BEGIN
 
   -- Find Nathan's appointment (if exists) to get dates and resolution
   SELECT ea.id, ea.effective_date, ea.resolution_id 
-  INTO nathan_appointment_id, resolution_id
+  INTO nathan_appointment_id, nathan_appointment_effective_date, nathan_appointment_resolution_id
   FROM executive_appointments ea
   WHERE ea.executive_id = nathan_exec_user_id
   ORDER BY ea.effective_date DESC
   LIMIT 1;
+
+  -- Use resolution from appointment if found
+  resolution_id := nathan_appointment_resolution_id;
 
   -- If no resolution from appointment, find resolution related to Nathan's termination
   IF resolution_id IS NULL THEN
@@ -117,11 +122,11 @@ BEGIN
       'assistant-secretary', -- CTOs often hold this as a secondary role, or we can use a position from his appointment
       nathan_exec_user_id,
       COALESCE(
-        (SELECT ea.effective_date FROM executive_appointments ea WHERE ea.id = nathan_appointment_id),
+        nathan_appointment_effective_date,
         CURRENT_DATE - INTERVAL '180 days' -- Backdate appointment to 6 months ago
       ),
       COALESCE(
-        (SELECT ea.effective_date FROM executive_appointments ea WHERE ea.id = nathan_appointment_id),
+        nathan_appointment_effective_date,
         CURRENT_DATE - INTERVAL '180 days'
       ),
       CURRENT_DATE - INTERVAL '30 days', -- Terminated 30 days ago
