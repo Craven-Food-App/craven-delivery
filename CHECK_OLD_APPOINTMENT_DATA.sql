@@ -69,8 +69,8 @@ SELECT
   a.appointee_user_id,
   a.role_titles,
   a.effective_date,
-  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, e.email, 'Unknown') as appointee_name,
-  e.email as appointee_email,
+  COALESCE(up.full_name, up.email, e.email, 'Unknown') as appointee_name,
+  COALESCE(up.email, e.email, 'N/A') as appointee_email,
   a.created_at
 FROM appointments a
 LEFT JOIN user_profiles up ON a.appointee_user_id = up.user_id
@@ -85,7 +85,7 @@ SELECT
   co.position,
   co.status,
   co.appointed_date,
-  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, eu.title, 'Unknown') as officer_name,
+  COALESCE(up.full_name, up.email, eu.title, 'Unknown') as officer_name,
   COALESCE(up.email, 'N/A') as officer_email,
   eu.title as executive_title,
   eu.id as executive_id
@@ -100,21 +100,19 @@ SELECT
   eu.id,
   eu.user_id,
   eu.title,
-  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, 'Unknown') as name,
+  COALESCE(up.full_name, up.email, e.email, 'Unknown') as name,
   COALESCE(up.email, e.email, 'N/A') as email
 FROM exec_users eu
 LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 LEFT JOIN auth.users e ON eu.user_id = e.id
-WHERE up.email ILIKE '%torrance%' 
-   OR up.email ILIKE '%tstroman%'
-   OR up.email ILIKE '%justin%'
-   OR up.email ILIKE '%sweet%'
-   OR up.full_name ILIKE '%torrance%'
-   OR up.full_name ILIKE '%justin%'
-   OR e.email ILIKE '%torrance%'
-   OR e.email ILIKE '%tstroman%'
-   OR e.email ILIKE '%justin%'
-   OR e.email ILIKE '%sweet%';
+WHERE COALESCE(up.email, e.email, '') ILIKE '%torrance%' 
+   OR COALESCE(up.email, e.email, '') ILIKE '%tstroman%'
+   OR COALESCE(up.email, e.email, '') ILIKE '%justin%'
+   OR COALESCE(up.email, e.email, '') ILIKE '%sweet%'
+   OR COALESCE(up.full_name, '') ILIKE '%torrance%'
+   OR COALESCE(up.full_name, '') ILIKE '%justin%'
+   OR eu.title ILIKE '%CEO%'
+   OR eu.title ILIKE '%CFO%';
 
 -- 8. Check governance_board_resolutions for appointment resolutions
 SELECT 
@@ -143,7 +141,7 @@ SELECT
   a.id as old_appointment_id,
   a.appointee_user_id,
   a.role_titles,
-  COALESCE(up.full_name, up.first_name || ' ' || up.last_name, e.email, 'Unknown') as appointee_name,
+  COALESCE(up.full_name, up.email, e.email, 'Unknown') as appointee_name,
   COALESCE(up.email, e.email, 'N/A') as appointee_email,
   a.effective_date,
   a.created_at
