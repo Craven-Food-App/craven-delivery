@@ -116,13 +116,54 @@ const AppointmentList: React.FC = () => {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
+      // Query with new schema (executive_id, position) and join to get executive info
       const { data, error } = await supabase
         .from('executive_appointments')
-        .select('*')
+        .select(`
+          *,
+          exec_users:executive_id (
+            id,
+            user_id,
+            title
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAppointments(data || []);
+
+      // Transform data to match the interface (for backward compatibility)
+      // Map new schema (executive_id, position) to old interface fields (proposed_officer_name, proposed_title)
+      const transformed = await Promise.all(
+        (data || []).map(async (apt: any) => {
+          const exec = apt.exec_users;
+          let fullName = exec?.title || 'Unknown';
+          let email = '';
+
+          // Get name and email from user_profiles if available
+          if (exec?.user_id) {
+            const { data: profileData } = await supabase
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('user_id', exec.user_id)
+              .single();
+
+            if (profileData) {
+              fullName = profileData.full_name || fullName;
+              email = profileData.email || '';
+            }
+          }
+
+          return {
+            ...apt,
+            // Map new schema to old interface fields for backward compatibility
+            proposed_officer_name: fullName,
+            proposed_officer_email: email,
+            proposed_title: apt.position || exec?.title || '',
+          };
+        })
+      );
+
+      setAppointments(transformed);
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
       notifications.show({
