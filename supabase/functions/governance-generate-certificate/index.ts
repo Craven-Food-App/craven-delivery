@@ -7,6 +7,8 @@ const CRAVEN_LOGO_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/Craven-LogoV2.png';
 const CRAVEN_C_WATERMARK_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/Craven-C-Logo.png';
+const CEO_SIGNATURE_URL =
+  'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/torrance_stroman_signature.png';
 
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin = origin || '*';
@@ -250,6 +252,7 @@ serve(async (req) => {
       resolution_date: resolutionData.meeting_date || new Date().toISOString().split('T')[0],
       logo_url: CRAVEN_LOGO_URL,
       watermark_url: CRAVEN_C_WATERMARK_URL,
+      signature_url: CEO_SIGNATURE_URL,
     };
 
     // Interpolate template to HTML
