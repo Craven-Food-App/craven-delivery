@@ -174,7 +174,22 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
             {userEmail.charAt(0).toUpperCase() || 'C'}
           </div>
           <Button
+            onClick={handleBackToHub}
+            leftSection={<IconHome size={14} />}
+            variant="light"
+            style={{
+              color: '#FF6B35',
+              height: 32,
+              fontSize: 12,
+              padding: '0 14px',
+              borderRadius: 4,
+            }}
+          >
+            Back to Hub
+          </Button>
+          <Button
             onClick={handleSignOut}
+            variant="outline"
             style={{
               borderColor: '#d1d5db',
               color: '#374151',
