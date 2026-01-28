@@ -153,12 +153,9 @@ BEGIN
           RAISE NOTICE '⚠️ Appointment already exists for resolution %', resolution_record.resolution_number;
         END IF;
       ELSE
-        RAISE NOTICE '⚠️ Executive not found for resolution % (related_officer_id: %)', 
-          resolution_record.resolution_number, resolution_record.related_officer_id;
+        RAISE NOTICE '⚠️ Executive not found for resolution % (title: %, type: %)', 
+          resolution_record.resolution_number, resolution_record.title, resolution_record.type;
       END IF;
-    ELSE
-      RAISE NOTICE '⚠️ Resolution % has no related_officer_id', resolution_record.resolution_number;
-    END IF;
   END LOOP;
 END $$;
 
