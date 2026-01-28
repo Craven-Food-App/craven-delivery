@@ -29,7 +29,7 @@ const TeamPage: React.FC = () => {
         .select(`
           user_id,
           title,
-          user_profiles:user_id (
+          user_profiles (
             full_name,
             email
           )

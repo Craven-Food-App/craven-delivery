@@ -46,11 +46,11 @@ const AppointmentsTab: React.FC = () => {
           exec_users:executive_id (
             id,
             user_id,
-            title
-          ),
-          user_profiles:exec_users.user_id (
-            full_name,
-            email
+            title,
+            user_profiles:user_id (
+              full_name,
+              email
+            )
           )
         `)
         .order('created_at', { ascending: false });
@@ -64,8 +64,8 @@ const AppointmentsTab: React.FC = () => {
       // Transform to match interface (for stats only - AppointmentListOriginal handles its own data)
       const transformed = (data || []).map((apt: any) => ({
         id: apt.id,
-        proposed_officer_name: apt.user_profiles?.full_name || apt.exec_users?.title || 'Unknown',
-        proposed_officer_email: apt.user_profiles?.email || '',
+        proposed_officer_name: apt.exec_users?.user_profiles?.full_name || apt.exec_users?.title || 'Unknown',
+        proposed_officer_email: apt.exec_users?.user_profiles?.email || '',
         proposed_title: apt.position || apt.exec_users?.title || '',
         status: apt.status,
         effective_date: apt.effective_date,

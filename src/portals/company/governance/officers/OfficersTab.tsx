@@ -38,11 +38,11 @@ const OfficersTab: React.FC = () => {
             id,
             user_id,
             title,
-            role
-          ),
-          user_profiles:exec_users.user_id (
-            full_name,
-            email
+            role,
+            user_profiles:user_id (
+              full_name,
+              email
+            )
           )
         `)
         .order('appointed_date', { ascending: false });
@@ -55,7 +55,7 @@ const OfficersTab: React.FC = () => {
       // Transform data to include executive info from user_profiles
       const transformed = (data || []).map((officer: any) => {
         const exec = officer.exec_users;
-        const profile = officer.user_profiles;
+        const profile = exec?.user_profiles;
         return {
           ...officer,
           executive_name: profile?.full_name || exec?.title || 'Unknown',
