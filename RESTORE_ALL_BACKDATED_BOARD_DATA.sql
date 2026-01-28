@@ -294,28 +294,41 @@ BEGIN
         
         -- If board member doesn't exist, create it
         IF board_member_record.id IS NULL THEN
-          INSERT INTO board_members (
-            user_id,
-            full_name,
-            email,
-            role_title,
-            appointment_date,
-            status,
-            created_at
-          )
-          SELECT 
-            exec_user_record.user_id,
-            COALESCE(up.full_name, e.email, 'Board Member'),
-            COALESCE(up.email, e.email, 'unknown@example.com'),
-            COALESCE(exec_user_record.title, 'Director'),
-            COALESCE(exec_user_record.approved_at, exec_user_record.created_at)::date,
-            'Active',
-            exec_user_record.created_at
-          FROM exec_users eu
-          LEFT JOIN user_profiles up ON eu.user_id = up.user_id
-          LEFT JOIN auth.users e ON eu.user_id = e.id
-          WHERE eu.id = exec_user_record.id
-          RETURNING id INTO new_board_member_id;
+          -- Get user profile and auth user data
+          DECLARE
+            user_profile_name TEXT;
+            user_profile_email TEXT;
+            auth_user_email TEXT;
+          BEGIN
+            SELECT full_name, email INTO user_profile_name, user_profile_email
+            FROM user_profiles
+            WHERE user_id = exec_user_record.user_id
+            LIMIT 1;
+            
+            SELECT email INTO auth_user_email
+            FROM auth.users
+            WHERE id = exec_user_record.user_id
+            LIMIT 1;
+            
+            INSERT INTO board_members (
+              user_id,
+              full_name,
+              email,
+              role_title,
+              appointment_date,
+              status,
+              created_at
+            ) VALUES (
+              exec_user_record.user_id,
+              COALESCE(user_profile_name, auth_user_email, 'Board Member'),
+              COALESCE(user_profile_email, auth_user_email, 'unknown@example.com'),
+              COALESCE(exec_user_record.title, 'Director'),
+              COALESCE(exec_user_record.approved_at, exec_user_record.created_at)::date,
+              'Active',
+              exec_user_record.created_at
+            )
+            RETURNING id INTO new_board_member_id;
+          END;
           
           -- Update vote with new board_member_id
           UPDATE board_resolution_votes
