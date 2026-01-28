@@ -4,8 +4,8 @@
 
 INSERT INTO public.document_templates (
   template_key,
-  template_name,
-  template_category,
+  name,
+  category,
   html_content,
   is_active,
   created_at,
@@ -587,6 +587,6 @@ DO UPDATE SET
   is_active = EXCLUDED.is_active,
   updated_at = now();
 
-COMMENT ON COLUMN public.document_templates.template_key IS
-  'Unique identifier for template. stock_certificate = executive equity, foundational_support_certificate = foundational program acknowledgment (not equity).';
+COMMENT ON TABLE public.document_templates IS
+  'Document templates for generated PDFs. stock_certificate = executive equity certificates, foundational_support_certificate = foundational program acknowledgment (not equity).';
 
