@@ -2,6 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
+// Brand asset URLs for foundational support certificates
+const CRAVEN_C_WATERMARK_URL = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/craven-c-new.png';
+const CEO_SIGNATURE_URL = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/torrance_stroman_signature.png';
+
 // Reuse the same HTML → PDF conversion helper as document-generate
 async function convertHtmlToPdf(htmlContent: string): Promise<Uint8Array> {
   const apiKey = Deno.env.get("APDF_API_KEY");
@@ -197,30 +201,41 @@ serve(async (req) => {
     await generateAndStore("contribution_receipt", "Contribution Receipt", receiptHtml);
 
     // DOCUMENT 2: Common Stock Issuance Certificate
-    const certificateHtml = `
-      <h1>Common Stock Issuance Certificate</h1>
-      <p><strong>Certificate No.:</strong> ${certificateNumber}</p>
-      <p><strong>Shareholder Name:</strong> ${contributor_name}</p>
-      <p><strong>Shares Issued:</strong> ${shares_issued.toLocaleString()}</p>
-      <p><strong>Class:</strong> Common Stock</p>
-      <p><strong>Par Value:</strong> $0.0001</p>
-      <p><strong>Date of Issuance:</strong> ${issueDate}</p>
-      <p><strong>Source:</strong> Foundational Micro-Equity Pool</p>
-      <hr />
-      <p>This certifies that the shareholder named above is the lawful holder of the number of shares of Common Stock of Craven, Inc., a Delaware corporation, set forth herein, duly issued and recorded on the Company’s official stock ledger.</p>
-      <p>The shares represented hereby are non-controlling common stock, confer no board or management rights, and are subject to dilution.</p>
-      <p>The shares are subject to transfer restrictions and may not be transferred without the prior written consent of the Company, except as required by law.</p>
-      <p>This certificate is governed by the laws of the State of Delaware.</p>
-      <br />
-      <p>
-        Torrance A. Stroman<br/>
-        Chief Executive Officer<br/>
-        Craven, Inc.<br/>
-        Date: ___________
-      </p>
-    `;
+    // Fetch the foundational support certificate template
+    const { data: template, error: templateError } = await supabase
+      .from('document_templates')
+      .select('html_content')
+      .eq('template_key', 'foundational_support_certificate')
+      .eq('is_active', true)
+      .single();
 
-    await generateAndStore("stock_certificate", "Common Stock Issuance Certificate", certificateHtml);
+    if (templateError || !template) {
+      throw new Error(`Foundational support certificate template not found: ${templateError?.message}`);
+    }
+
+    // Prepare template data for foundational support certificate
+    const currentYear = new Date().getFullYear();
+    const contributionAmount = `$${(amount_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    const templateData: Record<string, string> = {
+      certificate_number: certificateNumber,
+      contributor_name: contributor_name,
+      contribution_date: issueDate,
+      contribution_amount: contributionAmount,
+      issue_year: currentYear.toString(),
+      seal_year: currentYear.toString(),
+      watermark_url: CRAVEN_C_WATERMARK_URL,
+      signature_url: CEO_SIGNATURE_URL,
+    };
+
+    // Replace placeholders in template
+    let certificateHtml = template.html_content;
+    Object.keys(templateData).forEach((key) => {
+      const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
+      certificateHtml = certificateHtml.replace(regex, templateData[key] || '');
+    });
+
+    await generateAndStore("stock_certificate", "Foundational Support Certificate", certificateHtml);
 
     // DOCUMENT 3: Foundational Participation Disclosure
     const disclosureHtml = `
