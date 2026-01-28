@@ -33,9 +33,26 @@ const AppointmentsTab: React.FC = () => {
   const loadAppointments = async () => {
     try {
       setLoading(true);
+      // Use new schema: executive_id, position instead of proposed_officer_name, proposed_title
       const { data, error } = await supabase
         .from('executive_appointments')
-        .select('id, proposed_officer_name, proposed_officer_email, proposed_title, status, effective_date, created_at')
+        .select(`
+          id,
+          executive_id,
+          position,
+          status,
+          effective_date,
+          created_at,
+          exec_users:executive_id (
+            id,
+            user_id,
+            title
+          ),
+          user_profiles:exec_users.user_id (
+            full_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -44,7 +61,18 @@ const AppointmentsTab: React.FC = () => {
         return;
       }
 
-      setAppointments(data || []);
+      // Transform to match interface (for stats only - AppointmentListOriginal handles its own data)
+      const transformed = (data || []).map((apt: any) => ({
+        id: apt.id,
+        proposed_officer_name: apt.user_profiles?.full_name || apt.exec_users?.title || 'Unknown',
+        proposed_officer_email: apt.user_profiles?.email || '',
+        proposed_title: apt.position || apt.exec_users?.title || '',
+        status: apt.status,
+        effective_date: apt.effective_date,
+        created_at: apt.created_at,
+      }));
+
+      setAppointments(transformed);
     } catch (err) {
       console.error('Error loading appointments:', err);
       setAppointments([]);
