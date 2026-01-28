@@ -95,7 +95,10 @@ BEGIN
         exec_user_record.user_id,
         COALESCE(
           user_profile_record.full_name,
-          auth_user_record.email?.split('@')[0],
+          CASE 
+            WHEN auth_user_record.email IS NOT NULL THEN SPLIT_PART(auth_user_record.email, '@', 1)
+            ELSE NULL
+          END,
           exec_user_record.title,
           'Board Member'
         ),
