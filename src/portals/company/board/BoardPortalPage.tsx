@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Container, Stack, Title, Text, Tabs, Card, Grid, Badge, Group } from '@mantine/core';
 import { IconUsers, IconFileText, IconCalendar, IconCheckbox } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
-import ResolutionVotingDashboard from '../../governance-admin/ResolutionVotingDashboard';
+import ResolutionVotingDashboard from '../governance-admin/ResolutionVotingDashboard';
 import BoardResolutionList from './BoardResolutionList';
 import BoardMembersDirectory from './BoardMembersDirectory';
 import BoardMeetingsTab from './BoardMeetingsTab';
