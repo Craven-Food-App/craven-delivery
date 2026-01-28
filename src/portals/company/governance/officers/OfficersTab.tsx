@@ -38,11 +38,7 @@ const OfficersTab: React.FC = () => {
             id,
             user_id,
             title,
-            role,
-            user_profiles:user_id (
-              full_name,
-              email
-            )
+            role
           )
         `)
         .order('appointed_date', { ascending: false });
@@ -52,17 +48,34 @@ const OfficersTab: React.FC = () => {
         return;
       }
 
-      // Transform data to include executive info from user_profiles
-      const transformed = (data || []).map((officer: any) => {
-        const exec = officer.exec_users;
-        const profile = exec?.user_profiles;
-        return {
-          ...officer,
-          executive_name: profile?.full_name || exec?.title || 'Unknown',
-          executive_email: profile?.email || '',
-          executive_title: exec?.title || exec?.role || '',
-        };
-      });
+      // Fetch user profiles separately and combine
+      const transformed = await Promise.all(
+        (data || []).map(async (officer: any) => {
+          const exec = officer.exec_users;
+          let fullName = exec?.title || 'Unknown';
+          let email = '';
+
+          if (exec?.user_id) {
+            const { data: profileData } = await supabase
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('user_id', exec.user_id)
+              .single();
+
+            if (profileData) {
+              fullName = profileData.full_name || fullName;
+              email = profileData.email || '';
+            }
+          }
+
+          return {
+            ...officer,
+            executive_name: fullName,
+            executive_email: email,
+            executive_title: exec?.title || exec?.role || '',
+          };
+        })
+      );
 
       setOfficers(transformed);
     } catch (err) {

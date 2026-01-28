@@ -46,11 +46,7 @@ const AppointmentsTab: React.FC = () => {
           exec_users:executive_id (
             id,
             user_id,
-            title,
-            user_profiles:user_id (
-              full_name,
-              email
-            )
+            title
           )
         `)
         .order('created_at', { ascending: false });
@@ -61,16 +57,36 @@ const AppointmentsTab: React.FC = () => {
         return;
       }
 
-      // Transform to match interface (for stats only - AppointmentListOriginal handles its own data)
-      const transformed = (data || []).map((apt: any) => ({
-        id: apt.id,
-        proposed_officer_name: apt.exec_users?.user_profiles?.full_name || apt.exec_users?.title || 'Unknown',
-        proposed_officer_email: apt.exec_users?.user_profiles?.email || '',
-        proposed_title: apt.position || apt.exec_users?.title || '',
-        status: apt.status,
-        effective_date: apt.effective_date,
-        created_at: apt.created_at,
-      }));
+      // Fetch user profiles separately for each executive
+      const transformed = await Promise.all(
+        (data || []).map(async (apt: any) => {
+          let fullName = apt.exec_users?.title || 'Unknown';
+          let email = '';
+
+          if (apt.exec_users?.user_id) {
+            const { data: profileData } = await supabase
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('user_id', apt.exec_users.user_id)
+              .single();
+
+            if (profileData) {
+              fullName = profileData.full_name || fullName;
+              email = profileData.email || '';
+            }
+          }
+
+          return {
+            id: apt.id,
+            proposed_officer_name: fullName,
+            proposed_officer_email: email,
+            proposed_title: apt.position || apt.exec_users?.title || '',
+            status: apt.status,
+            effective_date: apt.effective_date,
+            created_at: apt.created_at,
+          };
+        })
+      );
 
       setAppointments(transformed);
     } catch (err) {

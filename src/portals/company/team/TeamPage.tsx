@@ -23,17 +23,10 @@ const TeamPage: React.FC = () => {
 
   const loadExecutives = async () => {
     try {
-      // Load executives with user profiles for names and emails
+      // Load executives
       const { data: execData, error: execError } = await supabase
         .from('exec_users')
-        .select(`
-          user_id,
-          title,
-          user_profiles (
-            full_name,
-            email
-          )
-        `)
+        .select('user_id, title')
         .order('title');
 
       if (execError) throw execError;
@@ -49,6 +42,14 @@ const TeamPage: React.FC = () => {
 
       const executivesWithEquity = await Promise.all(
         (execData || []).map(async (exec: any) => {
+          // Fetch user profile for name and email
+          const { data: profileData } = await supabase
+            .from('user_profiles')
+            .select('full_name, email')
+            .eq('user_id', exec.user_id)
+            .single();
+
+          // Fetch equity data
           const { data: equityData } = await supabase
             .from('equity_ledger')
             .select('shares_amount')
@@ -61,9 +62,9 @@ const TeamPage: React.FC = () => {
 
           return {
             user_id: exec.user_id,
-            name: exec.user_profiles?.full_name || exec.title || 'Unknown',
+            name: profileData?.full_name || exec.title || 'Unknown',
             title: exec.title || '',
-            email: exec.user_profiles?.email || '',
+            email: profileData?.email || '',
             shares,
             percentage,
           };
