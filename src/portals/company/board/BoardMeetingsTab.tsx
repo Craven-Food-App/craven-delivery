@@ -17,7 +17,7 @@ import {
   Alert,
 } from '@mantine/core';
 import { IconPlus, IconCalendar, IconVideo, IconClock } from '@tabler/icons-react';
-import { DatePickerInput, TimeInput } from '@mantine/dates';
+import { DatePickerInput, DateTimePicker } from '@mantine/dates';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import dayjs from 'dayjs';
@@ -256,11 +256,12 @@ const BoardMeetingsTab: React.FC = () => {
             }
             rows={3}
           />
-          <DatePickerInput
-            label="Meeting Date"
+          <DateTimePicker
+            label="Meeting Date & Time"
             value={formData.scheduled_at}
             onChange={(date) => setFormData({ ...formData, scheduled_at: date })}
             required
+            placeholder="Select date and time"
           />
           <NumberInput
             label="Duration (minutes)"
