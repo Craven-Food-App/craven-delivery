@@ -38,6 +38,19 @@ import { hasFullAccess } from '@/utils/torranceAccess';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
+// Shared time-clock duration helper used by MainHub and tests
+export const calculateDuration = (start: Date | string, end: Date | string): string => {
+  const startDate = typeof start === 'string' ? new Date(start) : start;
+  const endDate = typeof end === 'string' ? new Date(end) : end;
+  const diffMs = endDate.getTime() - startDate.getTime();
+  const seconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+};
+
 interface Portal {
   id: string;
   name: string;
@@ -531,18 +544,6 @@ const MainHub: React.FC = () => {
       month: 'long',
       day: 'numeric',
     });
-  };
-
-  const calculateDuration = (start: Date | string, end: Date | string): string => {
-    const startDate = typeof start === 'string' ? new Date(start) : start;
-    const endDate = typeof end === 'string' ? new Date(end) : end;
-    const diffMs = endDate.getTime() - startDate.getTime();
-    const seconds = Math.floor(diffMs / 1000);
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
   };
 
   // Fetch clock status - ALWAYS trust the database, never auto-reset
