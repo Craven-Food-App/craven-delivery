@@ -701,6 +701,10 @@ const MainHub: React.FC = () => {
     }
   };
 
+  const closeClockHistory = () => {
+    setShowClockHistory(false);
+  };
+
   // Verify SSN last 4 digits
   const verifySSN = async (ssnLast4: string): Promise<boolean> => {
     if (!user) return false;
@@ -848,7 +852,7 @@ const MainHub: React.FC = () => {
     try {
       // Call with user_id (works for both employees and executives)
       const { data, error } = await supabase.rpc('clock_in', {
-        p_user_id: user.id
+        p_user_id: user.id,
       });
       
       if (error) throw error;
@@ -946,6 +950,17 @@ const MainHub: React.FC = () => {
     } catch (error: any) {
       console.error('Clock in error:', error);
       message.error(error.message || 'Failed to clock in');
+      
+      // If backend says we are already clocked in, immediately resync UI
+      const msg = String(error.message || '').toLowerCase();
+      if (msg.includes('already clocked in') || msg.includes('user is already clocked in')) {
+        try {
+          await fetchClockStatus();
+          await fetchTimeEntries();
+        } catch (syncErr) {
+          console.error('Error syncing clock status after already-clocked-in error:', syncErr);
+        }
+      }
     } finally {
       setClockLoading(false);
     }
@@ -1702,6 +1717,7 @@ const MainHub: React.FC = () => {
           {/* Time Clock */}
           {user && (
             <div
+              data-testid="time-clock-card"
               style={{
                 marginBottom: 20,
                 background: "#ffffff",
@@ -1853,6 +1869,7 @@ const MainHub: React.FC = () => {
                   }}
                 >
                   <span
+                    data-testid="time-clock-status"
                     style={{
                       width: 8,
                       height: 8,
@@ -1881,8 +1898,13 @@ const MainHub: React.FC = () => {
                   }}
                 >
                   <Button
-                    onClick={handleClockIn}
+                    onClick={async () => {
+                      // Always fetch latest status before attempting to clock in
+                      await fetchClockStatus();
+                      await handleClockIn();
+                    }}
                     disabled={clockLoading || clockStatus.isClockedIn}
+                    data-testid="time-clock-clock-in"
                     style={{
                       backgroundColor: clockStatus.isClockedIn
                         ? "#ffffff"
@@ -1901,10 +1923,15 @@ const MainHub: React.FC = () => {
                     Clock In
                   </Button>
                   <Button
-                    onClick={handleClockOut}
+                    onClick={async () => {
+                      // Sync from server before attempting to clock out
+                      await fetchClockStatus();
+                      await handleClockOut();
+                    }}
                     disabled={
                       clockLoading || !clockStatus.isClockedIn
                     }
+                    data-testid="time-clock-clock-out"
                     style={{
                       backgroundColor: "#ffffff",
                       color: clockStatus.isClockedIn ? "#374151" : "#9ca3af",
@@ -1921,7 +1948,11 @@ const MainHub: React.FC = () => {
                   </Button>
                   <Button
                     type="link"
-                    onClick={() => setShowClockHistory(true)}
+                    onClick={async () => {
+                      // Always refresh history from the server before opening
+                      await fetchTimeEntries();
+                      setShowClockHistory(true);
+                    }}
                     style={{
                       fontSize: 11,
                       color: "#6b7280",
@@ -2242,6 +2273,70 @@ const MainHub: React.FC = () => {
             </div>
           </div>
         </Content>
+
+        {/* Time Entry History Modal */}
+        <Modal
+          title="Time Entry History"
+          open={showClockHistory}
+          onCancel={closeClockHistory}
+          footer={null}
+          width={800}
+        >
+          <Table
+            dataSource={timeEntries}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+            scroll={{ y: 400 }}
+            columns={[
+              {
+                title: 'Name',
+                dataIndex: 'display_name',
+                key: 'display_name',
+                render: (value: string) => value || '—',
+              },
+              {
+                title: 'Clock In',
+                dataIndex: 'clock_in_at',
+                key: 'clock_in_at',
+                render: (value: string) =>
+                  value ? new Date(value).toLocaleString('en-US') : '—',
+              },
+              {
+                title: 'Clock Out',
+                dataIndex: 'clock_out_at',
+                key: 'clock_out_at',
+                render: (value: string | null) =>
+                  value ? new Date(value).toLocaleString('en-US') : '—',
+              },
+              {
+                title: 'Hours',
+                dataIndex: 'total_hours',
+                key: 'total_hours',
+                render: (value: number | null) =>
+                  typeof value === 'number' ? value.toFixed(2) : '—',
+              },
+              {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                render: (value: string) => (
+                  <Tag
+                    color={
+                      value === 'clocked_in'
+                        ? 'green'
+                        : value === 'clocked_out'
+                        ? 'default'
+                        : 'orange'
+                    }
+                  >
+                    {value.replace('_', ' ')}
+                  </Tag>
+                ),
+              },
+            ]}
+          />
+        </Modal>
 
         {/* PIN Verification Modal - Corporate Style */}
         <Modal
