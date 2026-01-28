@@ -22,13 +22,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function regenerateAllCertificates() {
   console.log('🔍 Fetching all existing share certificates...\n');
+  console.log('   Using Supabase URL:', supabaseUrl);
+  console.log('   Service key configured:', !!supabaseServiceKey);
 
-  // Get all certificates with status = 'issued'
-  const { data: certificates, error } = await supabase
+  // Get ALL certificates (don't filter by status)
+  const { data: certificates, error, count } = await supabase
     .from('share_certificates')
-    .select('*')
-    .eq('status', 'issued')
+    .select('*', { count: 'exact' })
     .order('issue_date', { ascending: true });
+
+  console.log('   Raw response - data:', certificates?.length || 0, 'error:', error, 'count:', count);
 
   if (error) {
     console.error('❌ Error fetching certificates:', error);

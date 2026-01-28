@@ -768,20 +768,27 @@ const CertificatesTab: React.FC = () => {
             </Group>
             {selectedCertificate.document_url && (
               <>
-                <Text size="sm" c="dimmed">
-                  Preview (click to open full-screen)
-                </Text>
+                <Group justify="space-between" align="center">
+                  <Text size="sm" c="dimmed">
+                    Preview
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={() => {
+                      setFullScreenCertificate(selectedCertificate);
+                      setPreviewModalOpen(false);
+                    }}
+                  >
+                    Open full-screen
+                  </Button>
+                </Group>
                 <div
                   style={{
                     borderRadius: 8,
                     overflow: 'hidden',
                     border: '1px solid #e5e7eb',
                     height: 360,
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setFullScreenCertificate(selectedCertificate);
-                    setPreviewModalOpen(false);
                   }}
                 >
                   <iframe
