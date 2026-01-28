@@ -7,6 +7,7 @@ import { HeroImageManager } from '@/components/admin/HeroImageManager';
 import { FeederHeroImageManager } from '@/components/admin/FeederHeroImageManager';
 import { PartnerHeroImageManager } from '@/components/admin/PartnerHeroImageManager';
 import { InvestorHeroImageManager } from '@/components/admin/InvestorHeroImageManager';
+import { FoundationalSupportHeroImageManager } from '@/components/admin/FoundationalSupportHeroImageManager';
 import { ICADocumentManager } from '@/components/admin/ICADocumentManager';
 import { ApplicationBackgroundImageManager } from '@/components/admin/ApplicationBackgroundImageManager';
 import { CustomerManagement } from '@/components/admin/CustomerManagement';
@@ -155,6 +156,7 @@ const MarketingPortal: React.FC = () => {
         { id: 'feeder-hero-image', label: 'Feeder Hero Image', icon: ImageIcon },
         { id: 'partner-hero-image', label: 'Partner Hero Image', icon: ImageIcon },
         { id: 'investor-hero-image', label: 'Investor Hero Image', icon: ImageIcon },
+        { id: 'foundational-support-hero-image', label: 'Foundational Support Hero', icon: ImageIcon },
         { id: 'application-background-image', label: 'Application Background', icon: ImageIcon },
         { id: 'ica-document', label: 'ICA Document', icon: FileText },
         { id: 'referral-program', label: 'Referral Program', icon: UserPlus },
@@ -259,6 +261,8 @@ const MarketingPortal: React.FC = () => {
         return <PartnerHeroImageManager />;
       case 'investor-hero-image':
         return <InvestorHeroImageManager />;
+      case 'foundational-support-hero-image':
+        return <FoundationalSupportHeroImageManager />;
       case 'application-background-image':
         return <ApplicationBackgroundImageManager />;
       case 'ica-document':

@@ -1,13 +1,59 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, Shield, Users, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import foundationalSupportHero from "@/assets/foundational_support.png";
 
 export default function Support() {
   const navigate = useNavigate();
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHeroImage = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('marketing_settings')
+          .select('foundational_support_hero_image_url')
+          .limit(1)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching hero image:', error);
+        } else {
+          setHeroImageUrl(data?.foundational_support_hero_image_url || null);
+        }
+      } catch (error) {
+        console.error('Error fetching hero image:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeroImage();
+  }, []);
+
+  // Use marketing portal image if available, otherwise fallback to local asset
+  const displayImageUrl = heroImageUrl || foundationalSupportHero;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(14_95%_48%)] to-[hsl(14_90%_53%)]">
+      <section className="relative overflow-hidden">
+        {/* Background Image */}
+        {displayImageUrl && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${displayImageUrl})`,
+            }}
+          />
+        )}
+        
+        {/* Gradient Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/90 via-[hsl(14_95%_48%)]/85 to-[hsl(14_90%_53%)]/90" />
+        
+        {/* Pattern overlay (optional, for texture) */}
         <div 
           className="absolute inset-0 opacity-20" 
           style={{

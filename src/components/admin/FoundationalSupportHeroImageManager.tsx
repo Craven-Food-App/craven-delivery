@@ -1,0 +1,334 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Upload,
+  X,
+  Loader2,
+  Image as ImageIcon
+} from 'lucide-react';
+
+export const FoundationalSupportHeroImageManager: React.FC = () => {
+  const [heroImageUrl, setHeroImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const fetchHeroImage = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('marketing_settings')
+        .select('foundational_support_hero_image_url')
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+      
+      const imageUrl = data?.foundational_support_hero_image_url || '';
+      setHeroImageUrl(imageUrl);
+      setImagePreview(imageUrl || null);
+    } catch (error: any) {
+      console.error('Error fetching foundational support hero image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch foundational support hero image settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHeroImage();
+  }, []);
+
+  useEffect(() => {
+    // Set preview when heroImageUrl changes
+    if (heroImageUrl && !imageFile) {
+      setImagePreview(heroImageUrl);
+    }
+  }, [heroImageUrl, imageFile]);
+
+  const handleImageUpload = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Please upload an image smaller than 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    setImageFile(file);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `foundational-support-hero/${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('promotional-banners')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('promotional-banners')
+        .getPublicUrl(fileName);
+
+      // Update settings with the public URL
+      setHeroImageUrl(publicUrl);
+      
+      toast({
+        title: 'Success',
+        description: 'Image uploaded successfully',
+      });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+      setImagePreview(null);
+      setImageFile(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setImageFile(null);
+    setHeroImageUrl('');
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Check if a row exists
+      const { data: existing } = await supabase
+        .from('marketing_settings')
+        .select('id')
+        .limit(1)
+        .single();
+
+      let error;
+      if (existing) {
+        // Update existing row
+        const { error: updateError } = await supabase
+          .from('marketing_settings')
+          .update({
+            foundational_support_hero_image_url: heroImageUrl || null,
+            updated_by: user.id,
+          })
+          .eq('id', existing.id);
+        error = updateError;
+      } else {
+        // Insert new row
+        const { error: insertError } = await supabase
+          .from('marketing_settings')
+          .insert({
+            foundational_support_hero_image_url: heroImageUrl || null,
+            updated_by: user.id,
+          });
+        error = insertError;
+      }
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Foundational support hero image updated successfully',
+      });
+
+      fetchHeroImage();
+    } catch (error: any) {
+      console.error('Error saving foundational support hero image:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save foundational support hero image',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !heroImageUrl) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p>Loading...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardHeader className="p-3">
+          <CardTitle className="text-base">Foundational Invites Support Hero Image</CardTitle>
+          <CardDescription className="text-xs">
+            Set the hero image displayed on the Foundational Invites support page (/support)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-3 space-y-3">
+          {/* Upload Section */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Hero Image</Label>
+            
+            {!imagePreview ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  id="foundational-support-hero-image"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+                <label htmlFor="foundational-support-hero-image" className="cursor-pointer">
+                  <div className="flex flex-col items-center justify-center">
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400 mb-1.5" />
+                        <p className="text-xs text-gray-600">Uploading...</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-6 w-6 text-gray-400 mb-1.5" />
+                        <p className="text-xs font-medium text-gray-700">
+                          Click to upload or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          PNG, JPG, WEBP up to 10MB
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Foundational Support Hero Preview" 
+                  className="w-full h-40 object-cover rounded-md border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-1.5 right-1.5 h-6 w-6 p-0"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+            
+            {/* URL Input as Alternative */}
+            <div className="mt-1.5">
+              <p className="text-xs text-gray-500 mb-1">Or enter image URL:</p>
+              <Input
+                id="foundational_support_hero_image_url"
+                className="h-8 text-sm"
+                type="url"
+                value={heroImageUrl}
+                onChange={(e) => {
+                  setHeroImageUrl(e.target.value);
+                  if (e.target.value) {
+                    setImagePreview(e.target.value);
+                    setImageFile(null);
+                  }
+                }}
+                placeholder="https://images.unsplash.com/photo-..."
+                disabled={uploadingImage}
+              />
+            </div>
+          </div>
+
+          {/* Preview Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
+            <p className="text-xs text-blue-800">
+              <strong>Note:</strong> This image will be displayed as the hero image on the Foundational Invites support page. 
+              Ensure the image has good contrast for text overlay.
+            </p>
+          </div>
+
+          {/* Save Button */}
+          <Button 
+            onClick={handleSave} 
+            disabled={uploadingImage || loading}
+            size="sm"
+            className="w-full h-8 text-xs"
+          >
+            {uploadingImage || loading ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                {uploadingImage ? 'Uploading...' : 'Saving...'}
+              </>
+            ) : (
+              'Save Foundational Support Hero Image'
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
