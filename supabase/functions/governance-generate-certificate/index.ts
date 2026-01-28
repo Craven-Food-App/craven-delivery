@@ -6,7 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CRAVEN_LOGO_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/Craven-LogoV2.png';
 const CRAVEN_C_WATERMARK_URL =
-  'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/Craven-C-Logo.png';
+  'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/craven-c-new.png';
 const CEO_SIGNATURE_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/torrance_stroman_signature.png';
 
@@ -235,6 +235,7 @@ serve(async (req) => {
     }
 
     // Prepare template data
+    const currentYear = new Date().getFullYear();
     const templateData: Record<string, any> = {
       certificate_number: certNumber,
       shareholder_name: recipientName,
@@ -247,6 +248,8 @@ serve(async (req) => {
         month: 'long',
         day: 'numeric',
       }),
+      issue_year: currentYear.toString(),
+      seal_year: currentYear.toString(),
       effective_date: appointmentData.effective_date || new Date().toISOString().split('T')[0],
       resolution_number: resolutionData.resolution_number || 'N/A',
       resolution_date: resolutionData.meeting_date || new Date().toISOString().split('T')[0],
