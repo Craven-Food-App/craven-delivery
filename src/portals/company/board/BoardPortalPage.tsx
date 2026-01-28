@@ -30,12 +30,12 @@ const BoardPortalPage: React.FC = () => {
   };
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
+    <Container size="xl" py="md" style={{ padding: '16px 24px' }}>
+      <Stack gap="md">
         {/* Header */}
         <div>
-          <Title order={1}>Board Portal</Title>
-          <Text c="dimmed" size="lg" mt={4}>
+          <Title order={1} style={{ fontSize: 24 }}>Board Portal</Title>
+          <Text c="dimmed" size="sm" mt={4}>
             Board member dashboard, voting, and governance
           </Text>
         </div>
@@ -43,33 +43,33 @@ const BoardPortalPage: React.FC = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tabs.List>
-            <Tabs.Tab value="members" leftSection={<IconUsers size={18} />}>
+            <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
               Board Members
             </Tabs.Tab>
-            <Tabs.Tab value="voting" leftSection={<IconCheckbox size={18} />}>
+            <Tabs.Tab value="voting" leftSection={<IconCheckbox size={16} />}>
               Voting Dashboard
             </Tabs.Tab>
-            <Tabs.Tab value="meetings" leftSection={<IconCalendar size={18} />}>
+            <Tabs.Tab value="meetings" leftSection={<IconCalendar size={16} />}>
               Meetings
             </Tabs.Tab>
-            <Tabs.Tab value="documents" leftSection={<IconFileText size={18} />}>
+            <Tabs.Tab value="documents" leftSection={<IconFileText size={16} />}>
               Documents
             </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="members" pt="xl">
+          <Tabs.Panel value="members" pt="md">
             <BoardMembersDirectory />
           </Tabs.Panel>
 
-          <Tabs.Panel value="voting" pt="xl">
+          <Tabs.Panel value="voting" pt="md">
             <ResolutionVotingDashboard />
           </Tabs.Panel>
 
-          <Tabs.Panel value="meetings" pt="xl">
+          <Tabs.Panel value="meetings" pt="md">
             <BoardMeetingsTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="documents" pt="xl">
+          <Tabs.Panel value="documents" pt="md">
             <BoardDocumentsTab />
           </Tabs.Panel>
         </Tabs>

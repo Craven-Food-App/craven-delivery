@@ -41,12 +41,12 @@ const GovernancePage: React.FC = () => {
   };
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
+    <Container size="xl" py="md" style={{ padding: '16px 24px' }}>
+      <Stack gap="md">
         {/* Header */}
         <Box>
-          <Title order={1}>Governance Administration</Title>
-          <Text c="dimmed" size="lg" mt={4}>
+          <Title order={1} style={{ fontSize: 24 }}>Governance Administration</Title>
+          <Text c="dimmed" size="sm" mt={4}>
             Corporate governance, appointments, and compliance
           </Text>
         </Box>
@@ -54,47 +54,47 @@ const GovernancePage: React.FC = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tabs.List>
-            <Tabs.Tab value="appointments" leftSection={<IconUserCheck size={18} />}>
+            <Tabs.Tab value="appointments" leftSection={<IconUserCheck size={16} />}>
               Appointments
             </Tabs.Tab>
-            <Tabs.Tab value="officers" leftSection={<IconShield size={18} />}>
+            <Tabs.Tab value="officers" leftSection={<IconShield size={16} />}>
               Officers
             </Tabs.Tab>
-            <Tabs.Tab value="resolutions" leftSection={<IconFileText size={18} />}>
+            <Tabs.Tab value="resolutions" leftSection={<IconFileText size={16} />}>
               Resolutions
             </Tabs.Tab>
-            <Tabs.Tab value="certificates" leftSection={<IconCertificate size={18} />}>
+            <Tabs.Tab value="certificates" leftSection={<IconCertificate size={16} />}>
               Certificates
             </Tabs.Tab>
-            <Tabs.Tab value="exit-workflows" leftSection={<IconUserMinus size={18} />}>
+            <Tabs.Tab value="exit-workflows" leftSection={<IconUserMinus size={16} />}>
               Exit Workflows
             </Tabs.Tab>
-            <Tabs.Tab value="logs" leftSection={<IconHistory size={18} />}>
+            <Tabs.Tab value="logs" leftSection={<IconHistory size={16} />}>
               Logs
             </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="appointments" pt="xl">
+          <Tabs.Panel value="appointments" pt="md">
             <AppointmentsTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="officers" pt="xl">
+          <Tabs.Panel value="officers" pt="md">
             <OfficersTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="resolutions" pt="xl">
+          <Tabs.Panel value="resolutions" pt="md">
             <ResolutionsTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="certificates" pt="xl">
+          <Tabs.Panel value="certificates" pt="md">
             <CertificatesTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="exit-workflows" pt="xl">
+          <Tabs.Panel value="exit-workflows" pt="md">
             <ExitWorkflowsTab />
           </Tabs.Panel>
 
-          <Tabs.Panel value="logs" pt="xl">
+          <Tabs.Panel value="logs" pt="md">
             <GovernanceLogList />
           </Tabs.Panel>
         </Tabs>

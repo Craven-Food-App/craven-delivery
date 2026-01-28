@@ -112,27 +112,26 @@ export default function Allocate() {
   const minAmountCents = inviteSession.minAmount;
   const maxAmountCents = inviteSession.maxAmount;
 
-  // Tiered equity structure
+  // Tiered equity structure - Fixed share amounts
   const TOTAL_AUTHORIZED_SHARES = 70000000; // 70M shares
   
-  const getEquityForAmount = (amount: number): { percentage: number; tier: string } => {
+  const getEquityForAmount = (amount: number): { shares: number; percentage: number; tier: string } => {
     if (amount >= 500) {
-      return { percentage: 1.0, tier: "Founder's Circle" };
+      // Tier 4: $500+ → 15,000 shares at 0.0214%
+      return { shares: 15000, percentage: 0.021428, tier: "Founder's Circle" };
     } else if (amount >= 250) {
-      return { percentage: 0.8, tier: "Executive Tier" };
+      // Tier 3: $250-$499 → 7,500 shares at 0.0107%
+      return { shares: 7500, percentage: 0.010714, tier: "Executive Tier" };
     } else if (amount >= 100) {
-      return { percentage: 0.6, tier: "Partner Tier" };
+      // Tier 2: $100-$249 → 2,500 shares at 0.0036%
+      return { shares: 2500, percentage: 0.003571, tier: "Partner Tier" };
     } else {
-      return { percentage: 0.2, tier: "Supporter Tier" };
+      // Tier 1: $50-$99 → 1,000 shares at 0.0014%
+      return { shares: 1000, percentage: 0.001429, tier: "Supporter Tier" };
     }
   };
 
-  const calculateShares = (equityPercentage: number): number => {
-    return Math.floor((equityPercentage / 100) * TOTAL_AUTHORIZED_SHARES);
-  };
-
-  const { percentage: equityPercentage, tier: equityTier } = getEquityForAmount(amount);
-  const sharesAllocated = calculateShares(equityPercentage);
+  const { shares: sharesAllocated, percentage: equityPercentage, tier: equityTier } = getEquityForAmount(amount);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
@@ -252,7 +251,7 @@ export default function Allocate() {
                     <dl className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <dt className="text-muted-foreground">Equity Percentage</dt>
-                        <dd className="font-medium text-foreground">{equityPercentage.toFixed(1)}%</dd>
+                        <dd className="font-medium text-foreground">{equityPercentage.toFixed(4)}%</dd>
                       </div>
                       <div className="flex justify-between">
                         <dt className="text-muted-foreground">Number of Shares</dt>
@@ -278,7 +277,7 @@ export default function Allocate() {
                           $50 - $99
                         </span>
                         <span className={amount >= 50 && amount < 100 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
-                          0.2% equity ({Math.floor((0.2 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                          0.0014% equity (1,000 shares)
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -286,7 +285,7 @@ export default function Allocate() {
                           $100 - $249
                         </span>
                         <span className={amount >= 100 && amount < 250 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
-                          0.6% equity ({Math.floor((0.6 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                          0.0036% equity (2,500 shares)
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -294,7 +293,7 @@ export default function Allocate() {
                           $250 - $499
                         </span>
                         <span className={amount >= 250 && amount < 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
-                          0.8% equity ({Math.floor((0.8 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                          0.0107% equity (7,500 shares)
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -302,7 +301,7 @@ export default function Allocate() {
                           $500+
                         </span>
                         <span className={amount >= 500 ? "font-semibold text-[hsl(var(--primary))]" : "text-muted-foreground"}>
-                          1.0% equity ({Math.floor((1.0 / 100) * TOTAL_AUTHORIZED_SHARES).toLocaleString()} shares)
+                          0.0214% equity (15,000 shares)
                         </span>
                       </div>
                     </div>

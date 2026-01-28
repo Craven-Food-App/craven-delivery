@@ -24,6 +24,12 @@ import {
   Checkbox,
   Box,
   ScrollArea,
+  Tabs,
+  Grid,
+  Timeline,
+  Tooltip,
+  Menu,
+  Anchor,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
@@ -47,6 +53,16 @@ import {
   IconInfoCircle,
   IconEdit,
   IconCoins,
+  IconDownload,
+  IconHistory,
+  IconFileCheck,
+  IconFileX,
+  IconCalendar,
+  IconBuilding,
+  IconSignature,
+  IconTrendingUp,
+  IconCash,
+  IconGift,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from '@mantine/form';
@@ -108,10 +124,19 @@ const AppointmentList: React.FC = () => {
   const [updatingNathanStatus, setUpdatingNathanStatus] = useState(false);
   const [sendingNathanEmail, setSendingNathanEmail] = useState(false);
   const [instructionsOpened, setInstructionsOpened] = useState(false);
+  const [documentStatuses, setDocumentStatuses] = useState<Record<string, any>>({});
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [boardResolution, setBoardResolution] = useState<any>(null);
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  useEffect(() => {
+    if (viewModalOpen && selectedAppointment) {
+      fetchAppointmentDetails(selectedAppointment.id);
+    }
+  }, [viewModalOpen, selectedAppointment]);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -196,6 +221,52 @@ const AppointmentList: React.FC = () => {
         {config.label}
       </Badge>
     );
+  };
+
+  const fetchAppointmentDetails = async (appointmentId: string) => {
+    setLoadingDocuments(true);
+    try {
+      // Fetch document statuses from executive_documents
+      const { data: documents, error: docError } = await supabase
+        .from('executive_documents')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .order('created_at', { ascending: false });
+
+      if (docError) {
+        console.error('Error fetching documents:', docError);
+      } else {
+        // Create a map of document type to status
+        const statusMap: Record<string, any> = {};
+        (documents || []).forEach((doc: any) => {
+          statusMap[doc.type] = doc;
+        });
+        setDocumentStatuses(statusMap);
+      }
+
+      // Fetch board resolution if exists
+      const { data: appointment } = await supabase
+        .from('executive_appointments')
+        .select('board_resolution_id')
+        .eq('id', appointmentId)
+        .single();
+
+      if (appointment?.board_resolution_id) {
+        const { data: resolution, error: resError } = await supabase
+          .from('governance_board_resolutions')
+          .select('*')
+          .eq('id', appointment.board_resolution_id)
+          .single();
+
+        if (!resError && resolution) {
+          setBoardResolution(resolution);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching appointment details:', error);
+    } finally {
+      setLoadingDocuments(false);
+    }
   };
 
   const handleViewDocument = async (url: string, name: string) => {
@@ -1328,496 +1399,529 @@ const AppointmentList: React.FC = () => {
         onClose={() => {
           setViewModalOpen(false);
           setSelectedAppointment(null);
+          setDocumentStatuses({});
+          setBoardResolution(null);
         }}
-        title="Appointment Details"
-        size="lg"
+        title={
+          <Group gap="xs">
+            <IconUsers size={20} />
+            <Text fw={600} size="lg">Appointment Details</Text>
+          </Group>
+        }
+        size="xl"
+        styles={{
+          body: { padding: 0 },
+        }}
       >
         {selectedAppointment && (
-          <Stack gap="md">
-            <div>
-              <Text size="sm" c="dimmed" mb={4}>
-                Officer Name
-              </Text>
-              <Text fw={500}>{selectedAppointment.proposed_officer_name}</Text>
-            </div>
+          <Tabs defaultValue="overview" styles={{ root: { padding: 'md' } }}>
+            <Tabs.List>
+              <Tabs.Tab value="overview" leftSection={<IconInfoCircle size={16} />}>
+                Overview
+              </Tabs.Tab>
+              <Tabs.Tab value="documents" leftSection={<IconFileText size={16} />}>
+                Documents
+                {Object.keys(documentStatuses).length > 0 && (
+                  <Badge size="xs" variant="filled" color="blue" ml={8}>
+                    {Object.keys(documentStatuses).length}
+                  </Badge>
+                )}
+              </Tabs.Tab>
+              <Tabs.Tab value="compensation" leftSection={<IconCoins size={16} />}>
+                Compensation & Equity
+              </Tabs.Tab>
+              <Tabs.Tab value="timeline" leftSection={<IconHistory size={16} />}>
+                Timeline
+              </Tabs.Tab>
+            </Tabs.List>
 
-            {selectedAppointment.proposed_officer_email && (
-              <div>
-                <Text size="sm" c="dimmed" mb={4}>
-                  Email
-                </Text>
-                <Text>{selectedAppointment.proposed_officer_email}</Text>
-              </div>
-            )}
+            <Tabs.Panel value="overview" pt="md">
+              <Stack gap="lg">
+                {/* Header Section */}
+                <Paper p="md" withBorder radius="md" style={{ backgroundColor: '#f8f9fa' }}>
+                  <Group justify="space-between" align="flex-start">
+                    <Stack gap="xs">
+                      <Text size="xl" fw={700} c="dark">
+                        {selectedAppointment.proposed_officer_name}
+                      </Text>
+                      <Text size="lg" c="dimmed" fw={500}>
+                        {selectedAppointment.proposed_title}
+                      </Text>
+                      {selectedAppointment.proposed_officer_email && (
+                        <Group gap="xs" mt={4}>
+                          <IconMail size={14} />
+                          <Anchor href={`mailto:${selectedAppointment.proposed_officer_email}`} size="sm">
+                            {selectedAppointment.proposed_officer_email}
+                          </Anchor>
+                        </Group>
+                      )}
+                    </Stack>
+                    {getStatusBadge(selectedAppointment.status)}
+                  </Group>
+                </Paper>
 
-            <div>
-              <Text size="sm" c="dimmed" mb={4}>
-                Title
-              </Text>
-              <Text fw={500}>{selectedAppointment.proposed_title}</Text>
-            </div>
+                {/* Key Information Grid */}
+                <Grid>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <Paper p="md" withBorder radius="md">
+                      <Group gap="xs" mb="xs">
+                        <IconCalendar size={18} color="var(--mantine-color-blue-6)" />
+                        <Text size="sm" fw={600} c="dimmed">Effective Date</Text>
+                      </Group>
+                      <Text size="lg" fw={500}>
+                        {dayjs(selectedAppointment.effective_date).format('MMMM D, YYYY')}
+                      </Text>
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {dayjs(selectedAppointment.effective_date).fromNow()}
+                      </Text>
+                    </Paper>
+                  </Grid.Col>
 
-            <div>
-              <Text size="sm" c="dimmed" mb={4}>
-                Status
-              </Text>
-              {getStatusBadge(selectedAppointment.status)}
-            </div>
-
-            <Divider />
-
-            <div>
-              <Text size="sm" c="dimmed" mb={4}>
-                Effective Date
-              </Text>
-              <Text>{dayjs(selectedAppointment.effective_date).format('MMMM D, YYYY')}</Text>
-            </div>
-
-            {selectedAppointment.board_meeting_date && (
-              <div>
-                <Text size="sm" c="dimmed" mb={4}>
-                  Board Meeting Date
-                </Text>
-                <Text>{dayjs(selectedAppointment.board_meeting_date).format('MMMM D, YYYY')}</Text>
-              </div>
-            )}
-
-            <Divider />
-
-            <div>
-              <Text size="sm" c="dimmed" mb="md">
-                Generated Documents
-              </Text>
-              <Stack gap="xs">
-                {/* Core Employment Documents */}
-                <Group justify="space-between">
-                  <Text size="sm">Appointment Letter</Text>
-                  {selectedAppointment.appointment_letter_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.appointment_letter_url!,
-                          'Appointment Letter'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
+                  {selectedAppointment.board_meeting_date && (
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <Paper p="md" withBorder radius="md">
+                        <Group gap="xs" mb="xs">
+                          <IconBuilding size={18} color="var(--mantine-color-cyan-6)" />
+                          <Text size="sm" fw={600} c="dimmed">Board Meeting</Text>
+                        </Group>
+                        <Text size="lg" fw={500}>
+                          {dayjs(selectedAppointment.board_meeting_date).format('MMMM D, YYYY')}
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={4}>
+                          {dayjs(selectedAppointment.board_meeting_date).fromNow()}
+                        </Text>
+                      </Paper>
+                    </Grid.Col>
                   )}
-                </Group>
 
-                <Group justify="space-between">
-                  <Text size="sm">Employment Agreement</Text>
-                  {selectedAppointment.employment_agreement_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.employment_agreement_url!,
-                          'Employment Agreement'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
+                  {selectedAppointment.term_length_months && (
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <Paper p="md" withBorder radius="md">
+                        <Group gap="xs" mb="xs">
+                          <IconClock size={18} color="var(--mantine-color-orange-6)" />
+                          <Text size="sm" fw={600} c="dimmed">Term Length</Text>
+                        </Group>
+                        <Text size="lg" fw={500}>
+                          {selectedAppointment.term_length_months} months
+                        </Text>
+                        {selectedAppointment.effective_date && (
+                          <Text size="xs" c="dimmed" mt={4}>
+                            Expires {dayjs(selectedAppointment.effective_date).add(selectedAppointment.term_length_months, 'months').format('MMM D, YYYY')}
+                          </Text>
+                        )}
+                      </Paper>
+                    </Grid.Col>
                   )}
-                </Group>
 
-                <Group justify="space-between">
-                  <Text size="sm">Confidentiality & IP Assignment</Text>
-                  {selectedAppointment.confidentiality_ip_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.confidentiality_ip_url!,
-                          'Confidentiality & IP Assignment'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
+                  {selectedAppointment.appointment_type && (
+                    <Grid.Col span={{ base: 12, sm: 6 }}>
+                      <Paper p="md" withBorder radius="md">
+                        <Group gap="xs" mb="xs">
+                          <IconUsers size={18} color="var(--mantine-color-violet-6)" />
+                          <Text size="sm" fw={600} c="dimmed">Appointment Type</Text>
+                        </Group>
+                        <Text size="lg" fw={500} tt="capitalize">
+                          {selectedAppointment.appointment_type.replace(/_/g, ' ')}
+                        </Text>
+                      </Paper>
+                    </Grid.Col>
                   )}
-                </Group>
+                </Grid>
 
-                {/* Board & Formation Documents */}
-                <Group justify="space-between">
-                  <Text size="sm">Board Resolution</Text>
-                  {selectedAppointment.board_resolution_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.board_resolution_url!,
-                          'Board Resolution'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                {selectedAppointment.formation_mode && (
-                  <>
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Pre-Incorporation Consent</Text>
-                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Formation
+                {/* Board Resolution Details */}
+                {boardResolution && (
+                  <Paper p="md" withBorder radius="md" style={{ backgroundColor: '#f0f9ff' }}>
+                    <Group gap="xs" mb="md">
+                      <IconShield size={18} color="var(--mantine-color-blue-6)" />
+                      <Text size="sm" fw={600}>Board Resolution</Text>
+                    </Group>
+                    <Stack gap="xs">
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Resolution Number</Text>
+                        <Text fw={500}>{boardResolution.resolution_number || 'N/A'}</Text>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Status</Text>
+                        <Badge color={boardResolution.status === 'ADOPTED' ? 'green' : 'blue'}>
+                          {boardResolution.status}
                         </Badge>
                       </Group>
-                      {selectedAppointment.pre_incorporation_consent_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.pre_incorporation_consent_url!,
-                              'Pre-Incorporation Consent'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
+                      {boardResolution.adoption_date && (
+                        <Group justify="space-between">
+                          <Text size="sm" c="dimmed">Adoption Date</Text>
+                          <Text fw={500}>{dayjs(boardResolution.adoption_date).format('MMMM D, YYYY')}</Text>
+                        </Group>
                       )}
-                    </Group>
-
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Certificate of Incorporation</Text>
-                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Formation
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.certificate_of_incorporation_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.certificate_of_incorporation_url!,
-                              'Certificate of Incorporation'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
-                    </Group>
-
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Bylaws</Text>
-                        <Badge color="blue" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Formation
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.bylaws_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.bylaws_url!,
-                              'Bylaws'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
-                    </Group>
-                  </>
+                    </Stack>
+                  </Paper>
                 )}
 
-                {/* Governance Documents */}
-                <Group justify="space-between">
-                  <Text size="sm">Bylaws Acknowledgment</Text>
-                  {selectedAppointment.bylaws_acknowledgment_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.bylaws_acknowledgment_url!,
-                          'Bylaws Acknowledgment'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="sm">Fiduciary Duty & Ethics</Text>
-                  {selectedAppointment.fiduciary_ethics_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.fiduciary_ethics_url!,
-                          'Fiduciary Duty & Ethics'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="sm">Conflict of Interest Disclosure</Text>
-                  {selectedAppointment.conflict_disclosure_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.conflict_disclosure_url!,
-                          'Conflict of Interest Disclosure'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                <Group justify="space-between">
-                  <Text size="sm">Officer Indemnification</Text>
-                  {selectedAppointment.officer_indemnification_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.officer_indemnification_url!,
-                          'Officer Indemnification'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
-
-                {/* Equity Documents */}
-                {selectedAppointment.equity_included && (
-                  <>
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Stock Certificate</Text>
-                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Equity
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.certificate_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.certificate_url!,
-                              'Stock Certificate'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
+                {/* Authority & Responsibilities */}
+                {selectedAppointment.authority_granted && (
+                  <Paper p="md" withBorder radius="md">
+                    <Group gap="xs" mb="md">
+                      <IconShield size={18} color="var(--mantine-color-indigo-6)" />
+                      <Text size="sm" fw={600}>Authority Granted</Text>
                     </Group>
-
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Stock Subscription</Text>
-                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Equity
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.stock_subscription_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.stock_subscription_url!,
-                              'Stock Subscription'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
-                    </Group>
-
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Equity Incentive Plan</Text>
-                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Equity
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.equity_plan_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.equity_plan_url!,
-                              'Equity Incentive Plan'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
-                    </Group>
-
-                    <Group justify="space-between">
-                      <Group gap="xs">
-                        <Text size="sm">Option/RSU Award</Text>
-                        <Badge color="green" variant="light" size="xs" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Equity
-                        </Badge>
-                      </Group>
-                      {selectedAppointment.option_rsu_award_url ? (
-                        <Button
-                          size="xs"
-                          variant="light"
-                          leftSection={<IconEye size={14} />}
-                          onClick={() =>
-                            handleViewDocument(
-                              selectedAppointment.option_rsu_award_url!,
-                              'Option/RSU Award'
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                      ) : (
-                        <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                          Not Generated
-                        </Badge>
-                      )}
-                    </Group>
-                  </>
+                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                      {selectedAppointment.authority_granted}
+                    </Text>
+                  </Paper>
                 )}
 
-                {/* Deferred Compensation */}
-                <Group justify="space-between">
-                  <Text size="sm">Deferred Compensation</Text>
-                  {selectedAppointment.deferred_compensation_url ? (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      leftSection={<IconEye size={14} />}
-                      onClick={() =>
-                        handleViewDocument(
-                          selectedAppointment.deferred_compensation_url!,
-                          'Deferred Compensation'
-                        )
-                      }
-                    >
-                      View
-                    </Button>
-                  ) : (
-                    <Badge color="yellow" variant="light" size="sm" style={{ maxWidth: 'none', whiteSpace: 'nowrap' }}>
-                      Not Generated
-                    </Badge>
-                  )}
-                </Group>
+                {/* Notes */}
+                {selectedAppointment.notes && (
+                  <Paper p="md" withBorder radius="md">
+                    <Group gap="xs" mb="md">
+                      <IconInfoCircle size={18} color="var(--mantine-color-gray-6)" />
+                      <Text size="sm" fw={600}>Notes</Text>
+                    </Group>
+                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                      {selectedAppointment.notes}
+                    </Text>
+                  </Paper>
+                )}
               </Stack>
-            </div>
+            </Tabs.Panel>
 
-            <Divider />
+            <Tabs.Panel value="documents" pt="md">
+              <Stack gap="md">
+                <Group justify="space-between" mb="md">
+                  <Text size="sm" fw={600} c="dimmed">
+                    Document Status & Management
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconRefresh size={14} />}
+                    onClick={() => selectedAppointment && fetchAppointmentDetails(selectedAppointment.id)}
+                    loading={loadingDocuments}
+                  >
+                    Refresh Status
+                  </Button>
+                </Group>
 
-            <Group justify="flex-end">
-              <Button
-                variant="light"
-                onClick={() => handleRegenerateDocuments(selectedAppointment.id)}
-              >
-                Regenerate All Documents
-              </Button>
-            </Group>
-          </Stack>
+                {/* Document Categories */}
+                {(() => {
+                  const documentCategories = [
+                    {
+                      title: 'Employment Documents',
+                      icon: IconFileText,
+                      color: 'blue',
+                      documents: [
+                        { key: 'appointment_letter', label: 'Appointment Letter', url: selectedAppointment.appointment_letter_url, type: 'appointment_letter' },
+                        { key: 'employment_agreement', label: 'Employment Agreement', url: selectedAppointment.employment_agreement_url, type: 'employment_agreement' },
+                        { key: 'confidentiality_ip', label: 'Confidentiality & IP Assignment', url: selectedAppointment.confidentiality_ip_url, type: 'confidentiality_ip' },
+                      ],
+                    },
+                    {
+                      title: 'Board & Governance',
+                      icon: IconShield,
+                      color: 'cyan',
+                      documents: [
+                        { key: 'board_resolution', label: 'Board Resolution', url: selectedAppointment.board_resolution_url, type: 'board_resolution' },
+                        { key: 'bylaws_acknowledgment', label: 'Bylaws Acknowledgment', url: selectedAppointment.bylaws_acknowledgment_url, type: 'bylaws_acknowledgment' },
+                        { key: 'fiduciary_ethics', label: 'Fiduciary Duty & Ethics', url: selectedAppointment.fiduciary_ethics_url, type: 'fiduciary_ethics' },
+                        { key: 'conflict_disclosure', label: 'Conflict of Interest Disclosure', url: selectedAppointment.conflict_disclosure_url, type: 'conflict_disclosure' },
+                        { key: 'officer_indemnification', label: 'Officer Indemnification', url: selectedAppointment.officer_indemnification_url, type: 'officer_indemnification' },
+                      ],
+                    },
+                    ...(selectedAppointment.equity_included ? [{
+                      title: 'Equity Documents',
+                      icon: IconTrendingUp,
+                      color: 'green',
+                      documents: [
+                        { key: 'certificate', label: 'Stock Certificate', url: selectedAppointment.certificate_url, type: 'stock_certificate' },
+                        { key: 'stock_subscription', label: 'Stock Subscription', url: selectedAppointment.stock_subscription_url, type: 'stock_subscription' },
+                        { key: 'equity_plan', label: 'Equity Incentive Plan', url: selectedAppointment.equity_plan_url, type: 'equity_plan' },
+                        { key: 'option_rsu_award', label: 'Option/RSU Award', url: selectedAppointment.option_rsu_award_url, type: 'option_rsu_award' },
+                      ],
+                    }] : []),
+                    {
+                      title: 'Compensation',
+                      icon: IconCash,
+                      color: 'orange',
+                      documents: [
+                        { key: 'deferred_compensation', label: 'Deferred Compensation', url: selectedAppointment.deferred_compensation_url, type: 'deferred_compensation' },
+                      ],
+                    },
+                    ...(selectedAppointment.formation_mode ? [{
+                      title: 'Formation Documents',
+                      icon: IconBuilding,
+                      color: 'violet',
+                      documents: [
+                        { key: 'pre_incorporation_consent', label: 'Pre-Incorporation Consent', url: selectedAppointment.pre_incorporation_consent_url, type: 'pre_incorporation_consent' },
+                        { key: 'certificate_of_incorporation', label: 'Certificate of Incorporation', url: selectedAppointment.certificate_of_incorporation_url, type: 'certificate_of_incorporation' },
+                        { key: 'bylaws', label: 'Bylaws', url: selectedAppointment.bylaws_url, type: 'bylaws' },
+                      ],
+                    }] : []),
+                  ];
+
+                  const renderDocumentRow = (doc: any) => {
+                    const docStatus = documentStatuses[doc.type];
+                    const hasUrl = !!doc.url;
+                    const isSigned = docStatus?.signature_status === 'signed';
+                    const isPending = docStatus?.signature_status === 'pending';
+                    const generatedAt = docStatus?.created_at || (hasUrl ? 'Generated' : null);
+
+                    return (
+                      <Paper key={doc.key} p="sm" withBorder radius="md" style={{ backgroundColor: hasUrl ? '#f8f9fa' : '#fff' }}>
+                        <Group justify="space-between" align="center">
+                          <Group gap="md" style={{ flex: 1 }}>
+                            <div style={{ flex: 1 }}>
+                              <Group gap="xs" mb={4}>
+                                <Text size="sm" fw={500}>{doc.label}</Text>
+                                {hasUrl && (
+                                  <Badge size="xs" color="green" variant="light">
+                                    Generated
+                                  </Badge>
+                                )}
+                                {isSigned && (
+                                  <Badge size="xs" color="blue" variant="light" leftSection={<IconFileCheck size={10} />}>
+                                    Signed
+                                  </Badge>
+                                )}
+                                {isPending && (
+                                  <Badge size="xs" color="orange" variant="light" leftSection={<IconClock size={10} />}>
+                                    Pending Signature
+                                  </Badge>
+                                )}
+                              </Group>
+                              {generatedAt && (
+                                <Text size="xs" c="dimmed">
+                                  {typeof generatedAt === 'string' ? dayjs(generatedAt).format('MMM D, YYYY [at] h:mm A') : generatedAt}
+                                </Text>
+                              )}
+                              {isSigned && docStatus?.signed_at && (
+                                <Text size="xs" c="dimmed" mt={2}>
+                                  Signed {dayjs(docStatus.signed_at).format('MMM D, YYYY [at] h:mm A')}
+                                </Text>
+                              )}
+                            </div>
+                          </Group>
+                          <Group gap="xs">
+                            {hasUrl ? (
+                              <>
+                                <Tooltip label="View Document">
+                                  <Button
+                                    size="xs"
+                                    variant="light"
+                                    leftSection={<IconEye size={14} />}
+                                    onClick={() => handleViewDocument(doc.url, doc.label)}
+                                  >
+                                    View
+                                  </Button>
+                                </Tooltip>
+                                <Menu shadow="md" width={200}>
+                                  <Menu.Target>
+                                    <Button size="xs" variant="light" leftSection={<IconChevronDown size={14} />}>
+                                      More
+                                    </Button>
+                                  </Menu.Target>
+                                  <Menu.Dropdown>
+                                    <Menu.Item
+                                      leftSection={<IconDownload size={14} />}
+                                      onClick={() => window.open(doc.url, '_blank')}
+                                    >
+                                      Download
+                                    </Menu.Item>
+                                    <Menu.Item
+                                      leftSection={<IconRefresh size={14} />}
+                                      onClick={() => {
+                                        // Regenerate single document
+                                        notifications.show({
+                                          title: 'Regenerating Document',
+                                          message: `Regenerating ${doc.label}...`,
+                                          color: 'blue',
+                                        });
+                                      }}
+                                    >
+                                      Regenerate
+                                    </Menu.Item>
+                                    {docStatus && (
+                                      <Menu.Item
+                                        leftSection={<IconSignature size={14} />}
+                                        onClick={() => {
+                                          // View signing status
+                                          notifications.show({
+                                            title: 'Signing Status',
+                                            message: isSigned
+                                              ? `Signed on ${dayjs(docStatus.signed_at).format('MMM D, YYYY')}`
+                                              : 'Pending signature',
+                                            color: isSigned ? 'green' : 'orange',
+                                          });
+                                        }}
+                                      >
+                                        {isSigned ? 'View Signature' : 'Signing Pending'}
+                                      </Menu.Item>
+                                    )}
+                                  </Menu.Dropdown>
+                                </Menu>
+                              </>
+                            ) : (
+                              <Badge color="yellow" variant="light" size="sm">
+                                Not Generated
+                              </Badge>
+                            )}
+                          </Group>
+                        </Group>
+                      </Paper>
+                    );
+                  };
+
+                  return (
+                    <Stack gap="lg">
+                      {documentCategories.map((category) => (
+                        <div key={category.title}>
+                          <Group gap="xs" mb="md">
+                            <category.icon size={18} color={`var(--mantine-color-${category.color}-6)`} />
+                            <Text size="sm" fw={600} c="dark">
+                              {category.title}
+                            </Text>
+                            <Badge size="xs" variant="light" color={category.color}>
+                              {category.documents.filter(d => d.url).length} / {category.documents.length}
+                            </Badge>
+                          </Group>
+                          <Stack gap="xs">
+                            {category.documents.map(renderDocumentRow)}
+                          </Stack>
+                        </div>
+                      ))}
+
+                      <Divider />
+
+                      <Group justify="flex-end" mt="md">
+                        <Button
+                          variant="light"
+                          leftSection={<IconRefresh size={16} />}
+                          onClick={() => handleRegenerateDocuments(selectedAppointment.id)}
+                        >
+                          Regenerate All Documents
+                        </Button>
+                      </Group>
+                    </Stack>
+                  );
+                })()}
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="compensation" pt="md">
+              <Stack gap="md">
+                {selectedAppointment.equity_included ? (
+                  <>
+                    <Paper p="md" withBorder radius="md" style={{ backgroundColor: '#f0fdf4' }}>
+                      <Group gap="xs" mb="md">
+                        <IconGift size={18} color="var(--mantine-color-green-6)" />
+                        <Text size="sm" fw={600}>Equity Included</Text>
+                      </Group>
+                      {selectedAppointment.equity_details && (
+                        <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                          {selectedAppointment.equity_details}
+                        </Text>
+                      )}
+                    </Paper>
+                  </>
+                ) : (
+                  <Paper p="md" withBorder radius="md">
+                    <Text size="sm" c="dimmed">No equity included in this appointment.</Text>
+                  </Paper>
+                )}
+
+                {selectedAppointment.compensation_structure && (
+                  <Paper p="md" withBorder radius="md">
+                    <Group gap="xs" mb="md">
+                      <IconCash size={18} color="var(--mantine-color-orange-6)" />
+                      <Text size="sm" fw={600}>Compensation Structure</Text>
+                    </Group>
+                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                      {selectedAppointment.compensation_structure}
+                    </Text>
+                  </Paper>
+                )}
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="timeline" pt="md">
+              <Stack gap="md">
+                <Timeline active={-1} bulletSize={24} lineWidth={2}>
+                  <Timeline.Item
+                    bullet={<IconFileText size={12} />}
+                    title="Appointment Created"
+                  >
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {dayjs(selectedAppointment.created_at).format('MMMM D, YYYY [at] h:mm A')}
+                    </Text>
+                  </Timeline.Item>
+
+                  {selectedAppointment.board_meeting_date && (
+                    <Timeline.Item
+                      bullet={<IconBuilding size={12} />}
+                      title="Board Meeting"
+                    >
+                      <Text size="xs" c="dimmed" mt={4}>
+                        {dayjs(selectedAppointment.board_meeting_date).format('MMMM D, YYYY')}
+                      </Text>
+                    </Timeline.Item>
+                  )}
+
+                  <Timeline.Item
+                    bullet={<IconCalendar size={12} />}
+                    title="Effective Date"
+                  >
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {dayjs(selectedAppointment.effective_date).format('MMMM D, YYYY')}
+                    </Text>
+                  </Timeline.Item>
+
+                  {selectedAppointment.status === 'ACTIVE' && (
+                    <Timeline.Item
+                      bullet={<IconCheck size={12} />}
+                      title="Appointment Active"
+                      color="green"
+                    >
+                      <Text size="xs" c="dimmed" mt={4}>
+                        Currently active
+                      </Text>
+                    </Timeline.Item>
+                  )}
+                </Timeline>
+              </Stack>
+            </Tabs.Panel>
+          </Tabs>
+        )}
+      </Modal>
+
+      {/* Document Viewer Modal */}
+      <Modal
+        opened={documentModalOpen}
+        onClose={() => {
+          setDocumentModalOpen(false);
+          setSelectedDocumentUrl('');
+          setSelectedDocumentName('');
+          setDocumentContent('');
+        }}
+        title={selectedDocumentName}
+        size="xl"
+      >
+        {loadingDocument ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <Text>Loading document...</Text>
+          </div>
+        ) : selectedDocumentUrl ? (
+          selectedDocumentUrl.includes('.html') || selectedDocumentUrl.endsWith('.html') ? (
+            <div
+              dangerouslySetInnerHTML={{ __html: documentContent }}
+              style={{ padding: '1rem' }}
+            />
+          ) : (
+            <iframe
+              src={selectedDocumentUrl}
+              style={{ width: '100%', height: '80vh', border: 'none' }}
+              title={selectedDocumentName}
+            />
+          )
+        ) : (
+          <Text>No document URL provided</Text>
         )}
       </Modal>
 

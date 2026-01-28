@@ -281,123 +281,179 @@ const CapTableOverview: React.FC = () => {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {/* Holding Company */}
-              <Table.Tr>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm">Invero, Inc.</Text>
-                    <Text size="xs" c="dimmed">Holding Company</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm">
-                    <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="blue" size="lg" variant="light">
-                    {capTable.holding_company_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    $0.00
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.holding_company_percentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+              {(() => {
+                // Recalculate all percentages from actual shares to ensure 100% accuracy
+                const totalAuthorized = capTable.total_authorized;
+                const holdingCompanyPercentage = (capTable.holding_company_shares / totalAuthorized) * 100;
+                const founderPercentage = (capTable.founder_shares / totalAuthorized) * 100;
+                
+                return (
+                  <>
+                    {/* Holding Company */}
+                    <Table.Tr>
+                      <Table.Td>
+                        <div>
+                          <Text fw={600} size="sm">Invero, Inc.</Text>
+                          <Text size="xs" c="dimmed">Holding Company</Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fw={700} size="sm">
+                          <NumberFormatter value={capTable.holding_company_shares} thousandSeparator />
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="blue" size="lg" variant="light">
+                          {holdingCompanyPercentage.toFixed(1)}%
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="gray" size="sm" variant="outline">
+                          $0.00
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Progress value={holdingCompanyPercentage} color="blue" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                      </Table.Td>
+                    </Table.Tr>
 
-              {/* Founder */}
-              <Table.Tr>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm">Torrance Stroman</Text>
-                    <Text size="xs" c="dimmed">Founder & CEO</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm">
-                    <NumberFormatter value={capTable.founder_shares} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="green" size="lg" variant="light">
-                    {capTable.founder_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    $0.00
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.founder_percentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+                    {/* Founder */}
+                    <Table.Tr>
+                      <Table.Td>
+                        <div>
+                          <Text fw={600} size="sm">Torrance Stroman</Text>
+                          <Text size="xs" c="dimmed">Founder & CEO</Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fw={700} size="sm">
+                          <NumberFormatter value={capTable.founder_shares} thousandSeparator />
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="green" size="lg" variant="light">
+                          {founderPercentage.toFixed(1)}%
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color="gray" size="sm" variant="outline">
+                          $0.00
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Progress value={founderPercentage} color="green" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                      </Table.Td>
+                    </Table.Tr>
 
-              {/* Executives */}
-              {executives.map((exec, index) => (
-                <Table.Tr key={`exec-${index}`}>
-                  <Table.Td>
-                    <div>
-                      <Text fw={600} size="sm">{exec.name}</Text>
-                      <Text size="xs" c="dimmed">{exec.title}</Text>
-                    </div>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text fw={700} size="sm">
-                      <NumberFormatter value={exec.shares} thousandSeparator />
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color="purple" size="lg" variant="light">
-                      {exec.percentage.toFixed(1)}%
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge 
-                      color={exec.strike_price === 0 ? "gray" : "indigo"} 
-                      size="sm" 
-                      variant="outline"
-                    >
-                      ${exec.strike_price.toFixed(2)}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Progress value={exec.percentage} color="purple" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                  </Table.Td>
-                </Table.Tr>
-              ))}
+                    {/* Executives */}
+                    {executives.map((exec, index) => {
+                      const execPercentage = (exec.shares / totalAuthorized) * 100;
+                      return (
+                        <Table.Tr key={`exec-${index}`}>
+                          <Table.Td>
+                            <div>
+                              <Text fw={600} size="sm">{exec.name}</Text>
+                              <Text size="xs" c="dimmed">{exec.title}</Text>
+                            </div>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text fw={700} size="sm">
+                              <NumberFormatter value={exec.shares} thousandSeparator />
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Badge color="purple" size="lg" variant="light">
+                              {execPercentage.toFixed(1)}%
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td>
+                            <Badge 
+                              color={exec.strike_price === 0 ? "gray" : "indigo"} 
+                              size="sm" 
+                              variant="outline"
+                            >
+                              ${exec.strike_price.toFixed(2)}
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td>
+                            <Progress value={execPercentage} color="purple" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
 
-              {/* Pool */}
-              <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
-                <Table.Td>
-                  <div>
-                    <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
-                    <Text size="xs" c="dimmed">Available for grants</Text>
-                  </div>
-                </Table.Td>
-                <Table.Td>
-                  <Text fw={700} size="sm" c="dimmed">
-                    <NumberFormatter value={capTable.equity_pool} thousandSeparator />
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="orange" size="lg" variant="light">
-                    {capTable.pool_percentage.toFixed(1)}%
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Badge color="gray" size="sm" variant="outline">
-                    N/A
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Progress value={capTable.pool_percentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
-                </Table.Td>
-              </Table.Tr>
+                    {/* Pool */}
+                    {(() => {
+                      const totalAuthorized = capTable.total_authorized;
+                      const equityPoolPercentage = (capTable.equity_pool / totalAuthorized) * 100;
+                      const microEquityPoolPercentage = capTable.micro_equity_pool 
+                        ? (capTable.micro_equity_pool / totalAuthorized) * 100 
+                        : 0;
+                      
+                      return (
+                        <>
+                          <Table.Tr style={{ backgroundColor: '#fef3c7' }}>
+                            <Table.Td>
+                              <div>
+                                <Text fw={600} size="sm" c="dimmed">Pool (Reserved)</Text>
+                                <Text size="xs" c="dimmed">Available for grants</Text>
+                              </div>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text fw={700} size="sm" c="dimmed">
+                                <NumberFormatter value={capTable.equity_pool} thousandSeparator />
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Badge color="orange" size="lg" variant="light">
+                                {equityPoolPercentage.toFixed(1)}%
+                              </Badge>
+                            </Table.Td>
+                            <Table.Td>
+                              <Badge color="gray" size="sm" variant="outline">
+                                N/A
+                              </Badge>
+                            </Table.Td>
+                            <Table.Td>
+                              <Progress value={equityPoolPercentage} color="orange" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                            </Table.Td>
+                          </Table.Tr>
+                          
+                          {/* Micro-Equity Pool */}
+                          {capTable.micro_equity_pool && capTable.micro_equity_pool > 0 && (
+                            <Table.Tr style={{ backgroundColor: '#fff7ed' }}>
+                              <Table.Td>
+                                <div>
+                                  <Text fw={600} size="sm" c="dimmed">Micro-Equity Pool</Text>
+                                  <Text size="xs" c="dimmed">Reserved for small grants</Text>
+                                </div>
+                              </Table.Td>
+                              <Table.Td>
+                                <Text fw={700} size="sm" c="dimmed">
+                                  <NumberFormatter value={capTable.micro_equity_pool} thousandSeparator />
+                                </Text>
+                              </Table.Td>
+                              <Table.Td>
+                                <Badge color="cyan" size="lg" variant="light">
+                                  {microEquityPoolPercentage.toFixed(1)}%
+                                </Badge>
+                              </Table.Td>
+                              <Table.Td>
+                                <Badge color="gray" size="sm" variant="outline">
+                                  N/A
+                                </Badge>
+                              </Table.Td>
+                              <Table.Td>
+                                <Progress value={microEquityPoolPercentage} color="cyan" size="sm" radius="xl" style={{ minWidth: 100 }} />
+                              </Table.Td>
+                            </Table.Tr>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                );
+              })()}
             </Table.Tbody>
           </Table>
         </Card>

@@ -122,22 +122,24 @@ const CompanySidebar: React.FC = () => {
       style={{
         backgroundColor: '#ffffff',
         borderRight: '1px solid #e5e7eb',
-        padding: '16px',
-        minHeight: '100vh',
+        padding: '12px',
       }}
     >
       <Stack gap={4}>
-        {/* Enterprise Header */}
-        <Box mb="md" pb="md" style={{ borderBottom: '2px solid #f3f4f6' }}>
-          <Group gap={8} mb={4}>
-            <IconBuildingSkyscraper size={24} color="#ff6a00" />
-            <Text fw={700} size="sm" c="dark" style={{ letterSpacing: '0.5px' }}>
-              COMPANY PORTAL
-            </Text>
-          </Group>
-          <Text size="xs" c="dimmed" style={{ letterSpacing: '0.3px' }}>
-            Enterprise Governance Platform
-          </Text>
+        {/* Compact Enterprise Header */}
+        <Box mb="sm" pb="sm" style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              color: '#9ca3af',
+              letterSpacing: 1,
+              marginBottom: 8,
+            }}
+          >
+            Sections
+          </div>
         </Box>
 
         {navItems.map((item) => {
@@ -191,7 +193,7 @@ const CompanySidebar: React.FC = () => {
                       )}
                     </Group>
                   }
-                  leftSection={<Icon size={18} stroke={active ? 2.5 : 2} />}
+                  leftSection={<Icon size={16} stroke={active ? 2.5 : 2} />}
                   active={active}
                   onClick={(e) => {
                     e.preventDefault();
@@ -200,8 +202,9 @@ const CompanySidebar: React.FC = () => {
                     });
                   }}
                   style={{
-                    borderRadius: '8px',
-                    padding: '10px 12px',
+                    borderRadius: '4px',
+                    padding: '6px 8px',
+                    fontSize: 13,
                     color: active ? '#ffffff' : '#374151',
                     backgroundColor: active 
                       ? 'linear-gradient(135deg, #ff6a00 0%, #ff8533 100%)' 
@@ -230,7 +233,7 @@ const CompanySidebar: React.FC = () => {
               </Tooltip>
               
               {hasChildren && active && (
-                <Stack gap={2} mt={6} pl={36}>
+                <Stack gap={2} mt={4} pl={28}>
                   {item.children.map((child) => {
                     const childPath = child.path.split('?')[0];
                     const childTab = child.path.split('tab=')[1];
@@ -253,9 +256,9 @@ const CompanySidebar: React.FC = () => {
                           });
                         }}
                         style={{
-                          borderRadius: '6px',
-                          padding: '8px 10px',
-                          fontSize: '13px',
+                          borderRadius: '4px',
+                          padding: '6px 8px',
+                          fontSize: 12,
                           color: isChildActive ? '#ff6a00' : '#6b7280',
                           backgroundColor: isChildActive ? 'rgba(255, 106, 0, 0.08)' : 'transparent',
                           fontWeight: isChildActive ? 600 : 500,

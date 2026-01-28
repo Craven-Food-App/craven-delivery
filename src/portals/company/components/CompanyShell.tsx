@@ -40,7 +40,7 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
 
   return (
     <AppShell
-      header={{ height: 70 }}
+      header={{ height: 60 }}
       navbar={{
         width: 280,
         breakpoint: 'sm',
@@ -49,7 +49,7 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
       padding="md"
       styles={{
         main: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#f8f9fa',
           minHeight: '100vh',
         },
       }}
@@ -57,66 +57,137 @@ export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
       <AppShell.Header
         style={{
           backgroundColor: '#ffffff',
+          padding: '0 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           borderBottom: '1px solid #e5e7eb',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          height: 60,
+          minHeight: 60,
         }}
       >
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" color="orange" />
-            <IconBuilding size={28} stroke={2} style={{ color: '#ff6a00' }} />
-            <div>
-              <Text fw={700} size="lg" c="dark">
-                Crave'n Company Portal
-              </Text>
-              <Badge size="xs" color="orange" variant="light">
-                High-Level Access
-              </Badge>
-            </div>
-          </Group>
-          <Group gap="xs">
-            <Button
-              leftSection={<IconHome size={16} />}
-              variant="light"
-              color="orange"
-              onClick={handleBackToHub}
-              visibleFrom="sm"
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            minWidth: 0,
+            flex: '1 1 auto',
+          }}
+        >
+          <Burger
+            opened={opened}
+            onClick={toggle}
+            hiddenFrom="sm"
+            size="sm"
+            style={{ marginRight: 12 }}
+          />
+          <div
+            style={{
+              fontFamily:
+                "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+              fontSize: 20,
+              fontWeight: 700,
+              color: '#FF6B35',
+              marginRight: 16,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Crave'n
+          </div>
+          <div
+            style={{
+              borderLeft: '1px solid #e5e7eb',
+              height: 24,
+              marginRight: 16,
+            }}
+          />
+          <div
+            style={{
+              fontSize: 14,
+              color: '#6b7280',
+              marginRight: 16,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Company Portal
+          </div>
+          <div
+            style={{
+              borderLeft: '1px solid #e5e7eb',
+              height: 24,
+              marginRight: 16,
+            }}
+          />
+          <div
+            style={{
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#1f2937',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
             >
-              Back to Hub
-            </Button>
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <UnstyledButton>
-                  <Group gap="xs">
-                    <Avatar size="sm" color="orange" radius="xl">
-                      {userEmail.charAt(0).toUpperCase()}
-                    </Avatar>
-                    <Text size="sm" c="dimmed" visibleFrom="sm">
-                      {userEmail.split('@')[0]}
-                    </Text>
-                    <IconChevronDown size={16} />
-                  </Group>
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item leftSection={<IconHome size={14} />} onClick={handleBackToHub} hiddenFrom="sm">
-                  Back to Hub
-                </Menu.Item>
-                <Menu.Item leftSection={<IconUser size={14} />}>
-                  Profile
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconLogout size={14} />}
-                  onClick={handleSignOut}
-                  color="red"
-                >
-                  Sign Out
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
+              {userEmail.split('@')[0] || 'Corporate User'}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: '#6b7280',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              Corporate HQ
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginLeft: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              backgroundColor: '#FF6B35',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {userEmail.charAt(0).toUpperCase() || 'C'}
+          </div>
+          <Button
+            onClick={handleSignOut}
+            style={{
+              borderColor: '#d1d5db',
+              color: '#374151',
+              height: 32,
+              fontSize: 12,
+              padding: '0 14px',
+              borderRadius: 4,
+              background: '#ffffff',
+            }}
+          >
+            Sign Out
+          </Button>
+        </div>
       </AppShell.Header>
 
       <AppShell.Navbar

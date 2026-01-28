@@ -209,12 +209,12 @@ const TeamPage: React.FC = () => {
   };
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
+    <Container size="xl" py="md" style={{ padding: '16px 24px' }}>
+      <Stack gap="md">
         <Group justify="space-between">
           <div>
-            <Title order={1}>Team Management</Title>
-            <Text c="dimmed" size="lg" mt={4}>
+            <Title order={1} style={{ fontSize: 24 }}>Team Management</Title>
+            <Text c="dimmed" size="sm" mt={4}>
               Executive directory and contact information
             </Text>
           </div>
