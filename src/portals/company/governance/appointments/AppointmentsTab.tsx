@@ -112,20 +112,7 @@ const AppointmentsTab: React.FC = () => {
       </Grid>
 
       {/* Original AppointmentList Component - Has all the functionality */}
-      {/* We'll hide the header Paper using CSS */}
-      <Box
-        style={{
-          // Hide the first Paper element (the header) from AppointmentList
-        }}
-        className="appointments-list-wrapper"
-      >
-        <style>{`
-          .appointments-list-wrapper > div > div:first-child {
-            display: none !important;
-          }
-        `}</style>
-        <AppointmentListOriginal />
-      </Box>
+      <AppointmentListOriginal />
     </Stack>
   );
 };
