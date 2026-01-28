@@ -38,7 +38,7 @@ SELECT
   up.full_name as executive_name,
   up.email as executive_email
 FROM governance_board_resolutions gbr
-LEFT JOIN exec_users eu ON eu.id::text = gbr.related_officer_id
+LEFT JOIN exec_users eu ON eu.id = gbr.related_officer_id::uuid
 LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 WHERE gbr.related_officer_id IS NOT NULL
 ORDER BY gbr.created_at DESC;
@@ -65,7 +65,7 @@ BEGIN
     IF resolution_record.related_officer_id IS NOT NULL THEN
       SELECT * INTO exec_user_record
       FROM exec_users
-      WHERE id::text = resolution_record.related_officer_id
+      WHERE id = resolution_record.related_officer_id::uuid
       LIMIT 1;
       
       IF exec_user_record.id IS NOT NULL THEN
