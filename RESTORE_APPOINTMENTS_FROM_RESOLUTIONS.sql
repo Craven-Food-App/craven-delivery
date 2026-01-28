@@ -58,17 +58,43 @@ DECLARE
 BEGIN
   FOR resolution_record IN 
     SELECT * FROM governance_board_resolutions
-    WHERE type = 'EXECUTIVE_APPOINTMENT' OR type ILIKE '%appointment%'
     ORDER BY created_at DESC
   LOOP
-    -- Try to find the executive from related_officer_id
+    -- Try multiple methods to find the executive
+    exec_user_record := NULL;
+    
+    -- Method 1: Use related_officer_id if it exists
     IF resolution_record.related_officer_id IS NOT NULL THEN
-      SELECT * INTO exec_user_record
-      FROM exec_users
-      WHERE id = resolution_record.related_officer_id::uuid
-      LIMIT 1;
-      
-      IF exec_user_record.id IS NOT NULL THEN
+      BEGIN
+        SELECT * INTO exec_user_record
+        FROM exec_users
+        WHERE id = resolution_record.related_officer_id::uuid
+        LIMIT 1;
+      EXCEPTION WHEN OTHERS THEN
+        -- If casting fails, try as text
+        SELECT * INTO exec_user_record
+        FROM exec_users
+        WHERE id::text = resolution_record.related_officer_id
+        LIMIT 1;
+      END;
+    END IF;
+    
+    -- Method 2: Try to find executive by matching title/role from resolution title
+    IF exec_user_record.id IS NULL THEN
+      -- Try to match by role in title
+      IF resolution_record.title ILIKE '%CEO%' OR resolution_record.title ILIKE '%Chief Executive%' THEN
+        SELECT * INTO exec_user_record FROM exec_users WHERE role = 'ceo' LIMIT 1;
+      ELSIF resolution_record.title ILIKE '%CFO%' OR resolution_record.title ILIKE '%Chief Financial%' THEN
+        SELECT * INTO exec_user_record FROM exec_users WHERE role = 'cfo' LIMIT 1;
+      ELSIF resolution_record.title ILIKE '%CTO%' OR resolution_record.title ILIKE '%Chief Technology%' THEN
+        SELECT * INTO exec_user_record FROM exec_users WHERE role = 'cto' LIMIT 1;
+      ELSIF resolution_record.title ILIKE '%COO%' OR resolution_record.title ILIKE '%Chief Operating%' THEN
+        SELECT * INTO exec_user_record FROM exec_users WHERE role = 'coo' LIMIT 1;
+      END IF;
+    END IF;
+    
+    -- If we found an executive, create the appointment
+    IF exec_user_record.id IS NOT NULL THEN
         -- Check if appointment already exists
         SELECT EXISTS (
           SELECT 1 FROM executive_appointments
