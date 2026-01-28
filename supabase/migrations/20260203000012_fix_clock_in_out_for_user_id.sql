@@ -2,12 +2,31 @@
 -- Previous versions expected p_employee_id, but frontend calls with p_user_id
 -- This version uses time_entries.user_id as the source of truth
 
--- Drop old versions first (specify exact signatures to avoid ambiguity)
--- PostgreSQL uses parameter types, not names, to distinguish functions
-DROP FUNCTION IF EXISTS public.clock_in(UUID, TEXT);
-DROP FUNCTION IF EXISTS public.clock_in(UUID);
-DROP FUNCTION IF EXISTS public.clock_out(UUID, INTEGER);
-DROP FUNCTION IF EXISTS public.clock_out(UUID);
+-- Drop old versions first using DO block to handle multiple overloads
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  -- Drop all clock_in overloads
+  FOR r IN 
+    SELECT oid::regprocedure 
+    FROM pg_proc 
+    WHERE proname = 'clock_in' 
+    AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.oid || ' CASCADE';
+  END LOOP;
+  
+  -- Drop all clock_out overloads
+  FOR r IN 
+    SELECT oid::regprocedure 
+    FROM pg_proc 
+    WHERE proname = 'clock_out' 
+    AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.oid || ' CASCADE';
+  END LOOP;
+END $$;
 
 -- 1. Create clock_in to accept p_user_id
 CREATE OR REPLACE FUNCTION public.clock_in(p_user_id UUID, p_work_location TEXT DEFAULT NULL)
