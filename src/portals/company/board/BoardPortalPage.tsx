@@ -3,7 +3,6 @@ import { Container, Stack, Title, Text, Tabs, Card, Grid, Badge, Group } from '@
 import { IconUsers, IconFileText, IconCalendar, IconCheckbox } from '@tabler/icons-react';
 import { useSearchParams } from 'react-router-dom';
 import ResolutionVotingDashboard from '../governance-admin/ResolutionVotingDashboard';
-import BoardResolutionList from './BoardResolutionList';
 import BoardMembersDirectory from './BoardMembersDirectory';
 import BoardMeetingsTab from './BoardMeetingsTab';
 import BoardDocumentsTab from './BoardDocumentsTab';
