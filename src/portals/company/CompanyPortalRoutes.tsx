@@ -14,6 +14,7 @@ import NewAppointmentForm from './governance-admin/NewAppointmentForm';
  * - /company/cap-table - Cap table & equity grants
  * - /company/governance - Governance admin (5 tabs)
  * - /company/governance-admin/appointments/new - Create new appointment (original workflow)
+ * - /company/governance-admin/appointments - Redirect to governance appointments tab
  * - /company/board - Board portal
  * - /company/team - Team management
  */
@@ -26,8 +27,9 @@ const CompanyPortalRoutes: React.FC = () => {
         <Route index element={<Navigate to="cap-table" replace />} />
         <Route path="cap-table" element={<CapTableEquityPageEnhanced />} />
         <Route path="governance/*" element={<GovernancePage />} />
-        {/* Keep old route for backward compatibility - original appointment creation workflow */}
+        {/* Old routes for backward compatibility */}
         <Route path="governance-admin/appointments/new" element={<NewAppointmentForm />} />
+        <Route path="governance-admin/appointments" element={<Navigate to="/company/governance?tab=appointments" replace />} />
         <Route path="board" element={<BoardPortalPage />} />
         <Route path="team" element={<TeamPage />} />
       </Route>
