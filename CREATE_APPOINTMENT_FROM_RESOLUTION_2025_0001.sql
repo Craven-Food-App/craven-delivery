@@ -6,6 +6,7 @@ DO $$
 DECLARE
   resolution_record RECORD;
   exec_user_record RECORD;
+  appointment_record RECORD;
   appointment_exists BOOLEAN;
   new_appointment_id UUID;
   position_text TEXT;
@@ -62,14 +63,16 @@ BEGIN
     RAISE NOTICE '⚠️ Appointment already exists for this resolution/executive';
     
     -- Show existing appointment
-    SELECT id, position, status, effective_date INTO appointment_record
-    FROM executive_appointments
-    WHERE resolution_id = resolution_record.id
-       OR (executive_id = exec_user_record.id AND position ILIKE '%CEO%')
-    LIMIT 1;
-    
-    RAISE NOTICE '   Existing appointment ID: %, Position: %, Status: %', 
-      appointment_record.id, appointment_record.position, appointment_record.status;
+    FOR appointment_record IN
+      SELECT id, position, status, effective_date
+      FROM executive_appointments
+      WHERE resolution_id = resolution_record.id
+         OR (executive_id = exec_user_record.id AND position ILIKE '%CEO%')
+      LIMIT 1
+    LOOP
+      RAISE NOTICE '   Existing appointment ID: %, Position: %, Status: %', 
+        appointment_record.id, appointment_record.position, appointment_record.status;
+    END LOOP;
     RETURN;
   END IF;
   
@@ -111,27 +114,28 @@ BEGIN
     new_appointment_id, resolution_record.resolution_number;
     
   -- Show the created appointment
-  SELECT 
-    ea.id,
-    ea.position,
-    ea.status,
-    ea.effective_date,
-    up.full_name as executive_name,
-    gbr.resolution_number
-  INTO appointment_record
-  FROM executive_appointments ea
-  JOIN exec_users eu ON ea.executive_id = eu.id
-  LEFT JOIN user_profiles up ON eu.user_id = up.user_id
-  LEFT JOIN governance_board_resolutions gbr ON ea.resolution_id = gbr.id
-  WHERE ea.id = new_appointment_id;
-  
-  RAISE NOTICE '   Appointment Details:';
-  RAISE NOTICE '   - ID: %', appointment_record.id;
-  RAISE NOTICE '   - Executive: %', appointment_record.executive_name;
-  RAISE NOTICE '   - Position: %', appointment_record.position;
-  RAISE NOTICE '   - Status: %', appointment_record.status;
-  RAISE NOTICE '   - Effective Date: %', appointment_record.effective_date;
-  RAISE NOTICE '   - Resolution: %', appointment_record.resolution_number;
+  FOR appointment_record IN
+    SELECT 
+      ea.id,
+      ea.position,
+      ea.status,
+      ea.effective_date,
+      up.full_name as executive_name,
+      gbr.resolution_number
+    FROM executive_appointments ea
+    JOIN exec_users eu ON ea.executive_id = eu.id
+    LEFT JOIN user_profiles up ON eu.user_id = up.user_id
+    LEFT JOIN governance_board_resolutions gbr ON ea.resolution_id = gbr.id
+    WHERE ea.id = new_appointment_id
+  LOOP
+    RAISE NOTICE '   Appointment Details:';
+    RAISE NOTICE '   - ID: %', appointment_record.id;
+    RAISE NOTICE '   - Executive: %', appointment_record.executive_name;
+    RAISE NOTICE '   - Position: %', appointment_record.position;
+    RAISE NOTICE '   - Status: %', appointment_record.status;
+    RAISE NOTICE '   - Effective Date: %', appointment_record.effective_date;
+    RAISE NOTICE '   - Resolution: %', appointment_record.resolution_number;
+  END LOOP;
 END $$;
 
 -- Verify the appointment was created
