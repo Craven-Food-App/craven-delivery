@@ -261,6 +261,9 @@ DECLARE
   board_member_record RECORD;
   exec_user_record RECORD;
   new_board_member_id UUID;
+  user_profile_name TEXT;
+  user_profile_email TEXT;
+  auth_user_email TEXT;
 BEGIN
   -- Find votes that don't have valid board_member_id
   FOR vote_record IN 
@@ -295,40 +298,34 @@ BEGIN
         -- If board member doesn't exist, create it
         IF board_member_record.id IS NULL THEN
           -- Get user profile and auth user data
-          DECLARE
-            user_profile_name TEXT;
-            user_profile_email TEXT;
-            auth_user_email TEXT;
-          BEGIN
-            SELECT full_name, email INTO user_profile_name, user_profile_email
-            FROM user_profiles
-            WHERE user_id = exec_user_record.user_id
-            LIMIT 1;
-            
-            SELECT email INTO auth_user_email
-            FROM auth.users
-            WHERE id = exec_user_record.user_id
-            LIMIT 1;
-            
-            INSERT INTO board_members (
-              user_id,
-              full_name,
-              email,
-              role_title,
-              appointment_date,
-              status,
-              created_at
-            ) VALUES (
-              exec_user_record.user_id,
-              COALESCE(user_profile_name, auth_user_email, 'Board Member'),
-              COALESCE(user_profile_email, auth_user_email, 'unknown@example.com'),
-              COALESCE(exec_user_record.title, 'Director'),
-              COALESCE(exec_user_record.approved_at, exec_user_record.created_at)::date,
-              'Active',
-              exec_user_record.created_at
-            )
-            RETURNING id INTO new_board_member_id;
-          END;
+          SELECT full_name, email INTO user_profile_name, user_profile_email
+          FROM user_profiles
+          WHERE user_id = exec_user_record.user_id
+          LIMIT 1;
+          
+          SELECT email INTO auth_user_email
+          FROM auth.users
+          WHERE id = exec_user_record.user_id
+          LIMIT 1;
+          
+          INSERT INTO board_members (
+            user_id,
+            full_name,
+            email,
+            role_title,
+            appointment_date,
+            status,
+            created_at
+          ) VALUES (
+            exec_user_record.user_id,
+            COALESCE(user_profile_name, auth_user_email, 'Board Member'),
+            COALESCE(user_profile_email, auth_user_email, 'unknown@example.com'),
+            COALESCE(exec_user_record.title, 'Director'),
+            COALESCE(exec_user_record.approved_at, exec_user_record.created_at)::date,
+            'Active',
+            exec_user_record.created_at
+          )
+          RETURNING id INTO new_board_member_id;
           
           -- Update vote with new board_member_id
           UPDATE board_resolution_votes
