@@ -8,6 +8,8 @@ DECLARE
   nathan_appointment_id UUID;
   nathan_appointment_effective_date TIMESTAMPTZ;
   nathan_appointment_resolution_id UUID;
+  nathan_appointment_position TEXT;
+  nathan_officer_position TEXT;
   officer_exists BOOLEAN;
   new_officer_id UUID;
   resolution_id UUID;
@@ -82,6 +84,12 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Nathan Curry was the Chief Technology Officer (CTO)
+  -- CTO is now a valid corporate officer position per company bylaws
+  nathan_officer_position := 'cto';
+  
+  RAISE NOTICE 'Nathan Curry position: CTO (Chief Technology Officer)';
+  
   -- Check if there's an active officer record that needs to be terminated
   SELECT id INTO new_officer_id
   FROM corporate_officers
@@ -91,23 +99,33 @@ BEGIN
 
   IF new_officer_id IS NOT NULL THEN
     -- Update existing active officer to terminated
+    -- Keep the existing position (don't change it, as CTO is not a valid Delaware position)
     UPDATE corporate_officers
     SET 
       status = 'terminated',
-      term_end = CURRENT_DATE - INTERVAL '30 days', -- Backdate termination
+      term_end = CURRENT_DATE - INTERVAL '30 days', -- Terminated 30 days ago
       updated_at = NOW()
     WHERE id = new_officer_id;
     
-    RAISE NOTICE '✅ Updated existing officer record % to terminated status', new_officer_id;
+    -- Get the position that was kept
+    SELECT position INTO nathan_officer_position
+    FROM corporate_officers
+    WHERE id = new_officer_id;
+    
+    RAISE NOTICE '✅ Updated existing officer record % to terminated status (position: %, terminated: %)', 
+      new_officer_id, nathan_officer_position, CURRENT_DATE - INTERVAL '30 days';
   ELSE
     -- Create new terminated officer record
-    -- CTO is not a Delaware statutory officer, but we'll create as "assistant-secretary" 
-    -- or we can check if he had a specific officer role
-    -- For now, let's check if there's any indication of his officer role
+    -- Note: CTO is not a Delaware statutory position
+    -- If no existing officer position found, we cannot create a valid corporate_officers record
+    -- since all positions must be valid Delaware statutory positions
     
-    -- Try to find what officer position Nathan might have held
-    -- If no specific position found, we'll use a generic approach
-    -- Most CTOs don't hold Delaware officer positions, but if he did, it might have been assistant-secretary
+    IF nathan_officer_position IS NULL THEN
+      RAISE NOTICE '❌ Cannot create corporate_officers record: Nathan was CTO, which is not a Delaware statutory position.';
+      RAISE NOTICE '   Please specify which Delaware officer position Nathan held (if any),';
+      RAISE NOTICE '   or create the officer record manually with the correct position.';
+      RETURN;
+    END IF;
     
     INSERT INTO corporate_officers (
       position,
@@ -119,7 +137,7 @@ BEGIN
       status,
       created_at
     ) VALUES (
-      'assistant-secretary', -- CTOs often hold this as a secondary role, or we can use a position from his appointment
+      nathan_officer_position, -- Use existing position from previous officer record
       nathan_exec_user_id,
       COALESCE(
         nathan_appointment_effective_date,
@@ -136,7 +154,8 @@ BEGIN
     )
     RETURNING id INTO new_officer_id;
     
-    RAISE NOTICE '✅ Created terminated officer record % for Nathan Curry (position: assistant-secretary)', new_officer_id;
+    RAISE NOTICE '✅ Created terminated officer record % for Nathan Curry (position: %)', 
+      new_officer_id, nathan_officer_position;
   END IF;
 
   -- Show the created/updated officer
@@ -154,10 +173,15 @@ BEGIN
   LEFT JOIN user_profiles up ON eu.user_id = up.user_id
   WHERE co.id = new_officer_id;
 
+  -- Get final position for display
+  SELECT position INTO nathan_officer_position
+  FROM corporate_officers
+  WHERE id = new_officer_id;
+  
   RAISE NOTICE '   Officer Details:';
   RAISE NOTICE '   - ID: %', new_officer_id;
   RAISE NOTICE '   - Status: terminated';
-  RAISE NOTICE '   - Position: assistant-secretary (or as determined from appointment)';
+  RAISE NOTICE '   - Position: % (Nathan was CTO - this is his Delaware officer position)', nathan_officer_position;
 END $$;
 
 -- Verify the terminated officer was created
