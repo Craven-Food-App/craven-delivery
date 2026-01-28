@@ -76,26 +76,40 @@ BEGIN
         END IF;
       EXCEPTION WHEN OTHERS THEN
         -- If casting fails, try as text
-        SELECT * INTO exec_user_record
-        FROM exec_users
-        WHERE id::text = resolution_record.related_officer_id
-        LIMIT 1;
-        
-        IF NOT FOUND THEN
+        BEGIN
+          SELECT * INTO exec_user_record
+          FROM exec_users
+          WHERE id::text = resolution_record.related_officer_id
+          LIMIT 1;
+          
+          IF NOT FOUND THEN
+            exec_user_record := NULL;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
           exec_user_record := NULL;
-        END IF;
+        END;
       END;
     END IF;
     
     -- Method 2: Try to find executive by matching title/role from resolution title
-    IF exec_user_record IS NULL OR exec_user_record.id IS NULL THEN
+    -- Check if we need to search (only if exec_user_record wasn't found in Method 1)
+    IF exec_user_record IS NULL THEN
       -- Try to match by role in title
       IF resolution_record.title ILIKE '%CEO%' OR resolution_record.title ILIKE '%Chief Executive%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'ceo' LIMIT 1;
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       ELSIF resolution_record.title ILIKE '%CFO%' OR resolution_record.title ILIKE '%Chief Financial%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'cfo' LIMIT 1;
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       ELSIF resolution_record.title ILIKE '%CTO%' OR resolution_record.title ILIKE '%Chief Technology%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'cto' LIMIT 1;
+        IF NOT FOUND THEN
+          exec_user_record := NULL;
+        END IF;
       ELSIF resolution_record.title ILIKE '%COO%' OR resolution_record.title ILIKE '%Chief Operating%' THEN
         SELECT * INTO exec_user_record FROM exec_users WHERE role = 'coo' LIMIT 1;
         IF NOT FOUND THEN
@@ -105,7 +119,8 @@ BEGIN
     END IF;
     
     -- If we found an executive, create the appointment
-    IF exec_user_record IS NOT NULL AND exec_user_record.id IS NOT NULL THEN
+    -- Only check exec_user_record.id if the record was assigned
+    IF exec_user_record IS NOT NULL THEN
         -- Check if appointment already exists (by resolution_id OR by executive_id + position match)
         SELECT EXISTS (
           SELECT 1 FROM executive_appointments
