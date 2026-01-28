@@ -11,50 +11,67 @@ WHERE table_schema = 'public'
   AND table_name = 'executive_appointments'
 ORDER BY ordinal_position;
 
--- 2. Check if there are any rows with old schema columns
--- (This will fail if columns don't exist, but that's okay - we'll know the schema)
+-- 2. Check current schema and data
 SELECT 
-  'OLD SCHEMA DATA CHECK' as info,
-  COUNT(*) FILTER (WHERE proposed_officer_name IS NOT NULL) as has_proposed_officer_name,
-  COUNT(*) FILTER (WHERE proposed_title IS NOT NULL) as has_proposed_title,
-  COUNT(*) FILTER (WHERE board_resolution_id IS NOT NULL) as has_board_resolution_id,
+  'CURRENT APPOINTMENT DATA' as info,
+  COUNT(*) as total_rows,
   COUNT(*) FILTER (WHERE executive_id IS NOT NULL) as has_executive_id,
   COUNT(*) FILTER (WHERE position IS NOT NULL) as has_position,
-  COUNT(*) as total_rows
+  COUNT(*) FILTER (WHERE resolution_id IS NOT NULL) as has_resolution_id
 FROM executive_appointments;
 
--- 3. Show all appointment data (try both schemas)
+-- 3. Show all appointment data (new schema)
 SELECT 
   'ALL APPOINTMENT DATA' as info,
-  id,
-  -- New schema columns
-  executive_id,
-  position,
-  appointment_type,
-  status,
-  effective_date,
-  resolution_id,
-  created_at,
-  -- Old schema columns (if they exist)
-  proposed_officer_name,
-  proposed_title,
-  board_resolution_id
-FROM executive_appointments
-ORDER BY created_at DESC
+  ea.id,
+  ea.executive_id,
+  ea.position,
+  ea.appointment_type,
+  ea.status,
+  ea.effective_date,
+  ea.resolution_id,
+  up.full_name as executive_name,
+  up.email as executive_email,
+  gbr.resolution_number,
+  ea.created_at
+FROM executive_appointments ea
+LEFT JOIN exec_users eu ON ea.executive_id = eu.id
+LEFT JOIN user_profiles up ON eu.user_id = up.user_id
+LEFT JOIN governance_board_resolutions gbr ON ea.resolution_id = gbr.id
+ORDER BY ea.created_at DESC
 LIMIT 20;
 
 -- 4. Check if there's data in the old appointments table
-SELECT 
-  'OLD APPOINTMENTS TABLE' as info,
-  COUNT(*) as count
-FROM appointments
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'appointments');
+DO $$
+DECLARE
+  appointments_count INTEGER := 0;
+  board_resolutions_count INTEGER := 0;
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'appointments') THEN
+    SELECT COUNT(*) INTO appointments_count FROM appointments;
+    RAISE NOTICE 'OLD APPOINTMENTS TABLE: % rows', appointments_count;
+  ELSE
+    RAISE NOTICE 'OLD APPOINTMENTS TABLE: does not exist';
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'board_resolutions') THEN
+    SELECT COUNT(*) INTO board_resolutions_count FROM board_resolutions WHERE resolution_type = 'appointment';
+    RAISE NOTICE 'BOARD_RESOLUTIONS (old table) with appointment type: % rows', board_resolutions_count;
+  ELSE
+    RAISE NOTICE 'BOARD_RESOLUTIONS (old table): does not exist';
+  END IF;
+END $$;
 
--- 5. Check board_resolutions table (might have appointment data)
+-- 5. Check if old appointments table exists and show data
 SELECT 
-  'BOARD_RESOLUTIONS (old table)' as info,
-  COUNT(*) as count
-FROM board_resolutions
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'board_resolutions')
-  AND resolution_type = 'appointment';
+  'OLD APPOINTMENTS TABLE DATA' as info,
+  id,
+  appointee_user_id,
+  role_titles,
+  effective_date,
+  created_at
+FROM appointments
+WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'appointments')
+ORDER BY created_at DESC
+LIMIT 20;
 
