@@ -2,9 +2,12 @@
 -- Previous versions expected p_employee_id, but frontend calls with p_user_id
 -- This version uses time_entries.user_id as the source of truth
 
--- Drop old versions first (drop all overloads to avoid ambiguity)
-DROP FUNCTION IF EXISTS public.clock_in CASCADE;
-DROP FUNCTION IF EXISTS public.clock_out CASCADE;
+-- Drop old versions first (specify exact signatures to avoid ambiguity)
+-- PostgreSQL uses parameter types, not names, to distinguish functions
+DROP FUNCTION IF EXISTS public.clock_in(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.clock_in(UUID);
+DROP FUNCTION IF EXISTS public.clock_out(UUID, INTEGER);
+DROP FUNCTION IF EXISTS public.clock_out(UUID);
 
 -- 1. Create clock_in to accept p_user_id
 CREATE OR REPLACE FUNCTION public.clock_in(p_user_id UUID, p_work_location TEXT DEFAULT NULL)
