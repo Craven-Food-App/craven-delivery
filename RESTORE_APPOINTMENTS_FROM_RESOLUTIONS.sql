@@ -38,7 +38,7 @@ SELECT
   up.full_name as executive_name,
   up.email as executive_email
 FROM governance_board_resolutions gbr
-LEFT JOIN exec_users eu ON gbr.related_officer_id = eu.id::text
+LEFT JOIN exec_users eu ON eu.id::text = gbr.related_officer_id
 LEFT JOIN user_profiles up ON eu.user_id = up.user_id
 WHERE gbr.related_officer_id IS NOT NULL
 ORDER BY gbr.created_at DESC;
