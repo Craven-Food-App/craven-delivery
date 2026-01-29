@@ -32,7 +32,7 @@ import {
 import JsBarcode from 'jsbarcode';
 import { docsAPI } from '@/components/hr/api';
 import ohioSealImageUrl from '@/assets/thereal-ohio-state-seal.png';
-import frankSignatureImageUrl from '@/assets/frank-sig.png';
+import frankSignatureImageUrl from '@/assets/torrance_stroman_signature.png';
 
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
