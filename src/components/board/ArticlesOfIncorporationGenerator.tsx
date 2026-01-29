@@ -32,7 +32,6 @@ import {
 import JsBarcode from 'jsbarcode';
 import { docsAPI } from '@/components/hr/api';
 import ohioSealImageUrl from '@/assets/thereal-ohio-state-seal.png';
-import frankSignatureImageUrl from '@/assets/torrance_stroman_signature.png';
 
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
@@ -1155,13 +1154,10 @@ const ArticlesOfIncorporationGenerator: React.FC = () => {
   useEffect(() => {
     let isActive = true;
     const loadAssets = async () => {
-      const [seal, signature] = await Promise.all([
-        loadAssetAsDataUrl(ohioSealImageUrl),
-        loadAssetAsDataUrl(frankSignatureImageUrl),
-      ]);
+      const seal = await loadAssetAsDataUrl(ohioSealImageUrl);
       if (!isActive) return;
       setSealDataUrl(seal);
-      setSignatureDataUrl(signature);
+      // signatureDataUrl remains empty - no default signature loaded
     };
 
     loadAssets();
@@ -1294,9 +1290,9 @@ const ArticlesOfIncorporationGenerator: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!sealDataUrl || !signatureDataUrl) return;
+    if (!sealDataUrl) return;
     syncHtmlWithForm(form.getFieldsValue(true) as ArticlesFormValues);
-  }, [sealDataUrl, signatureDataUrl, form, syncHtmlWithForm]);
+  }, [sealDataUrl, form, syncHtmlWithForm]);
 
   const handleTemplateSelect = (templateId?: string) => {
     if (!templateId) {
