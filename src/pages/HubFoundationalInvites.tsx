@@ -29,6 +29,12 @@ export default function HubFoundationalInvitesPage() {
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  
+  // Email tester state
+  const [testEmail, setTestEmail] = useState("");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testErr, setTestErr] = useState<string | null>(null);
+  const [testSuccess, setTestSuccess] = useState<string | null>(null);
 
   // Prevent any redirects - ensure we stay on this page
   useEffect(() => {
@@ -127,6 +133,66 @@ export default function HubFoundationalInvitesPage() {
       await load();
     } catch (e: any) {
       setErr(e.message || "Failed to revoke invite.");
+    }
+  }
+
+  async function sendTestEmail() {
+    setTestErr(null);
+    setTestSuccess(null);
+    setTestBusy(true);
+    
+    try {
+      if (!testEmail.trim()) {
+        setTestErr("Email is required");
+        setTestBusy(false);
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(testEmail.trim())) {
+        setTestErr("Please enter a valid email address");
+        setTestBusy(false);
+        return;
+      }
+
+      console.log('[HubFoundationalInvites] Sending test email to:', testEmail);
+
+      // Mock data for the test email (no attachments for test)
+      const mockData = {
+        contributorName: "Jordan Smith",
+        contributorEmail: testEmail.trim(),
+        sharesIssued: 2500,
+        certificateNumber: "CS-2025-001",
+        issueDate: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        amountDollars: "$250.00",
+        documents: [], // No attachments for test emails
+      };
+
+      const { data, error } = await supabase.functions.invoke(
+        "send-foundational-confirmation-email",
+        {
+          body: mockData,
+        }
+      );
+
+      if (error) {
+        console.error('[HubFoundationalInvites] Test email error:', error);
+        throw new Error(error.message || "Failed to send test email");
+      }
+
+      console.log('[HubFoundationalInvites] Test email sent successfully:', data);
+      setTestSuccess(`Test email sent successfully to ${testEmail.trim()}!`);
+      setTestEmail("");
+    } catch (e: any) {
+      console.error('[HubFoundationalInvites] Test email exception:', e);
+      setTestErr(e.message || "Failed to send test email");
+    } finally {
+      setTestBusy(false);
     }
   }
 
@@ -322,6 +388,68 @@ export default function HubFoundationalInvitesPage() {
 
                 <div className="mt-4 text-xs text-zinc-500">
                   Share access codes directly with trusted contacts. Do not post codes publicly or in any marketing.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Tester Panel */}
+          <div className="mt-8">
+            <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+              <div className="p-6">
+                <h2 className="text-sm font-semibold mb-1">Email Tester</h2>
+                <p className="text-xs text-zinc-500 mb-4">
+                  Send a test confirmation email with mock data to any email address. Useful for previewing the email template.
+                </p>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-zinc-700">Test Email Address</label>
+                    <input
+                      className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
+                      value={testEmail}
+                      onChange={(e) => {
+                        setTestEmail(e.target.value);
+                        setTestErr(null);
+                        setTestSuccess(null);
+                      }}
+                      placeholder="your-email@example.com"
+                      type="email"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <h3 className="text-xs font-semibold text-amber-900 mb-2">Mock Data Preview</h3>
+                    <div className="text-xs text-amber-800 space-y-1">
+                      <div><strong>Name:</strong> Jordan Smith</div>
+                      <div><strong>Shares:</strong> 2,500</div>
+                      <div><strong>Certificate:</strong> CS-2025-001</div>
+                      <div><strong>Amount:</strong> $250.00</div>
+                      <div><strong>Note:</strong> Test emails are sent without PDF attachments</div>
+                    </div>
+                  </div>
+                </div>
+
+                {testErr && (
+                  <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200">
+                    <p className="text-sm text-red-600">{testErr}</p>
+                  </div>
+                )}
+
+                {testSuccess && (
+                  <div className="mt-4 p-3 rounded-xl bg-green-50 border border-green-200">
+                    <p className="text-sm text-green-600">{testSuccess}</p>
+                  </div>
+                )}
+
+                <div className="mt-5">
+                  <Button
+                    disabled={testBusy}
+                    onClick={sendTestEmail}
+                    className="rounded-xl"
+                  >
+                    {testBusy ? "Sending…" : "Send Test Email"}
+                  </Button>
                 </div>
               </div>
             </div>
