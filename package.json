@@ -53,7 +53,11 @@
     "reset-exec-password": "tsx scripts/reset-executive-password.ts",
     "cleanup:report": "tsx scripts/cleanup-codebase.ts",
     "git:push": "pwsh -File git-push.ps1",
-    "push": "pwsh -File git-push.ps1"
+    "push": "pwsh -File git-push.ps1",
+    "tablet:dev": "cd apps/tablet && npm run dev",
+    "tablet:build": "cd apps/tablet && npm run build",
+    "tablet:sync": "cd apps/tablet && npm run sync",
+    "tablet:open:android": "cd apps/tablet && npm run open:android"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.6",

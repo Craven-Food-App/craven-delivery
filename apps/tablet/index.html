@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Crave'N Corporate</title>
+    <style>
+      /* Force landscape on Android - NO PORTRAIT */
+      @media screen and (orientation: portrait) {
+        html,
+        body {
+          transform: rotate(90deg);
+          transform-origin: center center;
+          width: 100vh;
+          height: 100vw;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          margin-left: -50vh;
+          margin-top: -50vw;
+          overflow: hidden;
+          background: #000000;
+        }
+      }
+
+      @media screen and (orientation: landscape) {
+        html,
+        body {
+          width: 100vw;
+          height: 100vh;
+          margin: 0;
+          padding: 0;
+          background: #0f172a;
+        }
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
+
+

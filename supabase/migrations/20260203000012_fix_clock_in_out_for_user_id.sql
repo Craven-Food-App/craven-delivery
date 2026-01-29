@@ -85,6 +85,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Grant execute permissions to authenticated users
+GRANT EXECUTE ON FUNCTION public.clock_in(UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.clock_out(UUID, INTEGER) TO authenticated;
+
 COMMENT ON FUNCTION public.clock_in IS
   'Clock in function that accepts user_id (works for both employees and executives). Uses time_entries.user_id as source of truth.';
 

@@ -1012,6 +1012,13 @@ const MainHub: React.FC = () => {
         await fetchTimeEntries();
       }, 100);
     } catch (error: any) {
+      console.error('Clock out error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       message.error(error.message || 'Failed to clock out');
     } finally {
       setClockLoading(false);

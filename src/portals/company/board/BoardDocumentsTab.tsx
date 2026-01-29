@@ -231,3 +231,5 @@ const DocumentList: React.FC<DocumentListProps> = ({ documents, getTypeBadge, ge
 
 export default BoardDocumentsTab;
 
+
+

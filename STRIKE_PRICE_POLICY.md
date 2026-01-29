@@ -59,3 +59,5 @@ When issuing new equity:
 
 As the company grows, obtain a 409A valuation to set Fair Market Value (FMV) for future employee grants. This protects against IRS penalties for underpriced equity.
 
+
+
