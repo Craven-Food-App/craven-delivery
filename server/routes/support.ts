@@ -325,6 +325,38 @@ r.post("/webhook", async (req, res) => {
             console.error("Error generating foundational documents:", docsError || docsResult);
           } else {
             console.log("Foundational documents generated:", docsResult.docs);
+            
+            // Send confirmation email with documents attached
+            try {
+              const { error: emailError } = await sb.functions.invoke(
+                "send-foundational-confirmation-email",
+                {
+                  body: {
+                    contributorName,
+                    contributorEmail,
+                    sharesIssued: tierInfo.shares,
+                    certificateNumber: docsResult.certificate_number,
+                    issueDate: new Date().toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }),
+                    amountDollars: `$${(amountCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    documents: docsResult.docs,
+                  },
+                }
+              );
+
+              if (emailError) {
+                console.error("Error sending confirmation email:", emailError);
+                // Don't fail the webhook - email is non-critical
+              } else {
+                console.log("Confirmation email sent successfully to:", contributorEmail);
+              }
+            } catch (emailErr) {
+              console.error("Unexpected error sending confirmation email:", emailErr);
+              // Don't fail the webhook - email is non-critical
+            }
           }
         } catch (docErr) {
           console.error("Unexpected error during foundational document generation:", docErr);
