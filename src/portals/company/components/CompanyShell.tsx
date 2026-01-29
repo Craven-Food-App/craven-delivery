@@ -12,7 +12,6 @@ interface CompanyShellProps {
 
 export const CompanyShell: React.FC<CompanyShellProps> = ({ children }) => {
   const [opened, { toggle }] = useDisclosure();
-  const navigate = useNavigate();
   const [userEmail, setUserEmail] = React.useState<string>('');
   
   // Track user activity
