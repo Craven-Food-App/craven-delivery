@@ -45,6 +45,7 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 
 interface PitchDeck {
@@ -518,4 +519,5 @@ const PitchDeckManager: React.FC = () => {
   );
 };
 
+export { PitchDeckManager };
 export default PitchDeckManager;

@@ -175,7 +175,7 @@ export function DataTable<T extends Record<string, any>>({
         {exportable && (
           <Menu>
             <Menu.Target>
-              <Button size="sm" variant="subtle" leftSection={<Download size={16} />}>
+              <Button size="sm" variant="subtle" leftSection={<IconDownload size={16} />}>
                 Export
               </Button>
             </Menu.Target>
@@ -223,12 +223,12 @@ export function DataTable<T extends Record<string, any>>({
                       <div>
                         {sorting.column === column.id ? (
                           sorting.direction === 'asc' ? (
-                            <ArrowUp size={14} style={{ color: '#ff5f1f' }} />
+                            <IconArrowUp size={14} style={{ color: '#ff5f1f' }} />
                           ) : (
-                            <ArrowDown size={14} style={{ color: '#ff5f1f' }} />
+                            <IconArrowDown size={14} style={{ color: '#ff5f1f' }} />
                           )
                         ) : (
-                          <ArrowUpDown size={14} style={{ color: '#9ca3af' }} />
+                          <IconArrowsSort size={14} style={{ color: '#9ca3af' }} />
                         )}
                       </div>
                     )}

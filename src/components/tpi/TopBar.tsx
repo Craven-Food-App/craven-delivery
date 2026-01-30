@@ -56,16 +56,13 @@ export function TopBar({
   return (
     <div
       style={{
-        height: '64px',
+        height: '100%',
+        width: '100%',
         backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
       }}
     >
       <Group gap="lg" style={{ flex: 1 }}>

@@ -142,8 +142,12 @@ const CtoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
     );
   }
 
-  const start = evaluation!.evaluation_start_date;
-  const end = evaluation!.evaluation_end_date;
+  if (!evaluation) {
+    return <Card withBorder padding="lg">No evaluation data available.</Card>;
+  }
+
+  const start = evaluation.evaluation_start_date;
+  const end = evaluation.evaluation_end_date;
   const today = new Date().toISOString().slice(0, 10);
   const totalDays =
     (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24);
@@ -529,13 +533,13 @@ const CtoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
           <div>
             <Text fw={600}>CTO Evaluation Gate</Text>
             <Text size="xs" c="dimmed">
-              {start} → {end} • Status: {evaluation!.status}
+              {start} → {end} • Status: {evaluation.status}
             </Text>
           </div>
         </Group>
-        <Badge color={evaluation!.fail_count > 0 ? "red" : "green"}>
-          {evaluation!.fail_count} failed gate
-          {evaluation!.fail_count === 1 ? "" : "s"}
+        <Badge color={evaluation.fail_count > 0 ? "red" : "green"}>
+          {evaluation.fail_count} failed gate
+          {evaluation.fail_count === 1 ? "" : "s"}
         </Badge>
       </Group>
 

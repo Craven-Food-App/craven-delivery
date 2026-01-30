@@ -54,7 +54,7 @@ export function Breadcrumbs({ items, maxItems = 5 }: BreadcrumbsProps) {
 
         return (
           <React.Fragment key={index}>
-            <ChevronRight size={16} style={{ color: '#9ca3af' }} />
+            <IconChevronRight size={16} style={{ color: '#9ca3af' }} />
             <Anchor
               component="button"
               onClick={() => item.path && navigate(item.path)}

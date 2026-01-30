@@ -262,7 +262,7 @@ export const IncidentsDashboard: React.FC = () => {
       render: (value) => (
         <StatusBadge
           status={getSeverityStatus(value)}
-          label={value.toUpperCase()}
+          label={value?.toUpperCase() || 'Unknown'}
           size="sm"
         />
       ),
@@ -276,7 +276,7 @@ export const IncidentsDashboard: React.FC = () => {
       render: (value) => (
         <StatusBadge
           status={getStatusStatus(value)}
-          label={value.charAt(0).toUpperCase() + value.slice(1)}
+          label={value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown'}
           size="sm"
         />
       ),
@@ -486,14 +486,14 @@ export const IncidentsDashboard: React.FC = () => {
                         <Text size="xs" c="dimmed" fw={500}>Severity</Text>
                         <StatusBadge
                           status={getSeverityStatus(selectedIncidentData.severity)}
-                          label={selectedIncidentData.severity.toUpperCase()}
+                          label={selectedIncidentData.severity?.toUpperCase() || 'Unknown'}
                         />
                       </div>
                       <div>
                         <Text size="xs" c="dimmed" fw={500}>Status</Text>
                         <StatusBadge
                           status={getStatusStatus(selectedIncidentData.status)}
-                          label={selectedIncidentData.status.charAt(0).toUpperCase() + selectedIncidentData.status.slice(1)}
+                          label={selectedIncidentData.status ? selectedIncidentData.status.charAt(0).toUpperCase() + selectedIncidentData.status.slice(1) : 'Unknown'}
                         />
                       </div>
                     </Group>

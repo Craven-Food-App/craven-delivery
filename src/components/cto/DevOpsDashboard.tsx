@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Grid,
   Group,
@@ -220,11 +220,21 @@ export const DevOpsDashboard: React.FC = () => {
     },
   });
 
+  // Track if we're currently fetching to prevent duplicate calls
+  const fetchingRef = useRef(false);
+
   // Fetch all data
   const fetchAllData = useCallback(async () => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      return;
+    }
+    
+    fetchingRef.current = true;
     setLoading(true);
     try {
-      await Promise.all([
+      // Use Promise.allSettled to handle individual failures gracefully
+      await Promise.allSettled([
         fetchPipelines(),
         fetchBuilds(),
         fetchTestRuns(),
@@ -234,9 +244,13 @@ export const DevOpsDashboard: React.FC = () => {
       ]);
     } catch (error: any) {
       console.error('Error fetching DevOps data:', error);
-      toast.error(error?.message || 'Failed to load DevOps data', 'Error');
+      // Don't show error toast for network errors or missing tables
+      if (error?.code !== 'PGRST116' && error?.code !== '42P01' && !error?.message?.includes('Failed to fetch')) {
+        toast.error(error?.message || 'Failed to load DevOps data', 'Error');
+      }
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [toast]);
 
@@ -247,11 +261,23 @@ export const DevOpsDashboard: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // If table doesn't exist, just set empty array
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setPipelines([]);
+          return;
+        }
+        throw error;
+      }
       setPipelines((data || []) as Pipeline[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setPipelines([]);
+        return;
+      }
       console.error('Error fetching pipelines:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setPipelines([]);
     }
   };
 
@@ -263,11 +289,22 @@ export const DevOpsDashboard: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setBuilds([]);
+          return;
+        }
+        throw error;
+      }
       setBuilds((data || []) as Build[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setBuilds([]);
+        return;
+      }
       console.error('Error fetching builds:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setBuilds([]);
     }
   };
 
@@ -279,11 +316,22 @@ export const DevOpsDashboard: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setTestRuns([]);
+          return;
+        }
+        throw error;
+      }
       setTestRuns((data || []) as TestRun[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setTestRuns([]);
+        return;
+      }
       console.error('Error fetching test runs:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setTestRuns([]);
     }
   };
 
@@ -295,11 +343,22 @@ export const DevOpsDashboard: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setReleases([]);
+          return;
+        }
+        throw error;
+      }
       setReleases((data || []) as Release[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setReleases([]);
+        return;
+      }
       console.error('Error fetching releases:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setReleases([]);
     }
   };
 
@@ -310,11 +369,22 @@ export const DevOpsDashboard: React.FC = () => {
         .select('*')
         .order('environment_type', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setEnvironments([]);
+          return;
+        }
+        throw error;
+      }
       setEnvironments((data || []) as Environment[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setEnvironments([]);
+        return;
+      }
       console.error('Error fetching environments:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setEnvironments([]);
     }
   };
 
@@ -326,11 +396,22 @@ export const DevOpsDashboard: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116' || error.code === '42P01') {
+          setSecurityScans([]);
+          return;
+        }
+        throw error;
+      }
       setSecurityScans((data || []) as SecurityScan[]);
     } catch (error: any) {
+      // Silently handle network errors to prevent console spam
+      if (error?.message?.includes('Failed to fetch') || error?.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
+        setSecurityScans([]);
+        return;
+      }
       console.error('Error fetching security scans:', error);
-      if (error.code !== 'PGRST116') throw error;
+      setSecurityScans([]);
     }
   };
 
@@ -549,14 +630,16 @@ export const DevOpsDashboard: React.FC = () => {
       }, 0) / rolledBackReleases.length
     : 0;
 
-  // Auto-refresh
+  // Initial fetch only - disable auto-refresh to prevent resource exhaustion
   useEffect(() => {
-    fetchAllData();
-    const interval = setInterval(() => {
+    // Only fetch once on mount, prevent re-fetching on re-renders
+    if (!fetchingRef.current) {
       fetchAllData();
-    }, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }, [fetchAllData]);
+    }
+    // Removed auto-refresh interval to prevent ERR_INSUFFICIENT_RESOURCES
+    // Users can manually refresh if needed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   // Build metrics for chart
   const buildMetrics = [];

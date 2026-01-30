@@ -99,6 +99,7 @@ export function PortalLayout({
         breakpoint: 'sm',
         collapsed: { mobile: true, desktop: false },
       }}
+      header={{ height: 64 }}
       styles={{
         main: {
           padding: 0,
@@ -107,6 +108,23 @@ export function PortalLayout({
         },
       }}
     >
+      <AppShell.Header
+        p={0}
+        style={{
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e5e7eb',
+        }}
+      >
+        <TopBar
+          portalName={portalName}
+          onSearch={onSearch}
+          quickActions={quickActions}
+          notifications={notifications}
+          user={user}
+          onUserMenuClick={handleUserMenuClick}
+        />
+      </AppShell.Header>
+
       <AppShell.Navbar
         p={0}
         style={{
@@ -124,15 +142,6 @@ export function PortalLayout({
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <TopBar
-          portalName={portalName}
-          onSearch={onSearch}
-          quickActions={quickActions}
-          notifications={notifications}
-          user={user}
-          onUserMenuClick={handleUserMenuClick}
-        />
-
         <Box
           style={{
             maxWidth: maxContentWidth,

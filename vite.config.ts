@@ -107,6 +107,33 @@ export default defineConfig(({ mode }) => {
       ],
     },
     build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Split large vendor libraries into separate chunks for better caching
+            if (id.includes('node_modules')) {
+              if (id.includes('@mui/material') || id.includes('@mui/icons-material')) {
+                return 'mui';
+              }
+              if (id.includes('@mantine')) {
+                return 'mantine';
+              }
+              if (id.includes('antd')) {
+                return 'antd';
+              }
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'react-vendor';
+              }
+              if (id.includes('supabase')) {
+                return 'supabase';
+              }
+              // All other node_modules
+              return 'vendor';
+            }
+          },
+        },
+      },
       commonjsOptions: {
         transformMixedEsModules: true,
       },

@@ -77,7 +77,6 @@ import { IncidentsDashboard } from '@/components/cto/IncidentsDashboard';
 import { AssetManagement } from '@/components/cto/AssetManagement';
 import { CTOOnboardingGovernance } from '@/components/cto/CTOOnboardingGovernance';
 import CtoTrainingRouter from '@/components/cto/training/CtoTrainingRouter';
-import ArticlesOfIncorporationGenerator from '@/components/board/ArticlesOfIncorporationGenerator';
 import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 import { useToast } from '@/hooks/useEmbeddedToast';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -95,7 +94,6 @@ import {
   Settings,
   Database,
   Scale,
-  ScrollText,
 } from 'lucide-react';
 
 function CTOPortalContent() {
@@ -129,7 +127,6 @@ function CTOPortalContent() {
     if (path.includes('/assets')) return 'assets';
     if (path.includes('/communications')) return 'communications';
     if (path.includes('/documents')) return 'word';
-    if (path.includes('/articles')) return 'articles-generator';
     if (path.includes('/manual')) return 'manual';
     return 'overview';
   }, [location.pathname]);
@@ -243,7 +240,6 @@ function CTOPortalContent() {
       children: [
         { id: 'communications', label: 'Communications', icon: Mail, path: '/cto/communications' },
         { id: 'word', label: 'Documents', icon: FileText, path: '/cto/documents' },
-        { id: 'articles-generator', label: 'Articles of Incorporation', icon: ScrollText, path: '/cto/articles' },
       ],
     },
     {
@@ -292,8 +288,6 @@ function CTOPortalContent() {
         return <BusinessEmailSystem />;
       case 'word':
         return <ExecutiveWordProcessor storageKey="cto" supabaseTable="cto_documents" />;
-      case 'articles-generator':
-        return <ArticlesOfIncorporationGenerator />;
       case 'manual':
         return <CTOPortalInstructionManual />;
       default:
