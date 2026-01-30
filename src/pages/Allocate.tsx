@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DollarSign, CheckCircle2, AlertCircle, ArrowRight, Lock } from "lucide-react";
 import { supportApi } from "@/lib/api-client";
+import foundationalSupportAmountHero from "@/assets/foundational_support_amount.png";
 
 export default function Allocate() {
   const navigate = useNavigate();
@@ -135,22 +136,25 @@ export default function Allocate() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
-      {/* Header Section */}
-      <div className="bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(14_95%_48%)] to-[hsl(14_90%_53%)]">
-        <div className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
-          <div className="text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-              <DollarSign className="h-4 w-4" />
-              <span>Select Amount</span>
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Choose Your Support Amount
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-white/90">
-              Select an amount between ${minAmount.toFixed(2)} and ${maxAmount.toFixed(2)}
-            </p>
-          </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${foundationalSupportAmountHero})`,
+          }}
+        />
+        
+        <div className="relative mx-auto max-w-7xl px-6 py-16 sm:py-20 md:py-24 lg:py-28">
         </div>
+      </section>
+
+      {/* Subtitle Section */}
+      <div className="mx-auto max-w-7xl px-6 pt-8 pb-4">
+        <p className="mx-auto max-w-xl text-center text-base text-black sm:text-lg md:text-xl">
+          Select an amount between ${minAmount.toFixed(2)} and ${maxAmount.toFixed(2)}
+        </p>
       </div>
 
       {/* Form Section */}
