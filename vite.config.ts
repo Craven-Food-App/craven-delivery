@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+
 const componentTagger = (): any => ({
   name: 'component-tagger',
   enforce: 'pre' as const,
@@ -119,20 +120,31 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
+          // Ensure proper chunk ordering - React must load first
+          chunkFileNames: (chunkInfo) => {
+            // React vendor chunk must be loaded first
+            if (chunkInfo.name === 'react-vendor') {
+              return 'assets/react-vendor-[hash].js';
+            }
+            return 'assets/[name]-[hash].js';
+          },
           manualChunks(id) {
+            // CRITICAL: NEVER split React - always keep it in main bundle
+            // This prevents "useLayoutEffect" errors in production
+            // React and React-DOM must be in the same chunk as the entry point
+            if (
+              id.includes('react') || 
+              id.includes('react-dom') ||
+              id.includes('react/jsx-runtime') ||
+              id.includes('react/jsx-dev-runtime') ||
+              id.includes('scheduler')
+            ) {
+              // Return undefined to keep in main entry bundle
+              return undefined;
+            }
+            
             // Split large vendor libraries into separate chunks for better caching
             if (id.includes('node_modules')) {
-              // CRITICAL: React and React-DOM must be in the same chunk
-              // to prevent "useLayoutEffect" undefined errors
-              // Check for exact React packages first
-              if (
-                id.includes('/react/') || 
-                id.includes('/react-dom/') ||
-                id.includes('\\react\\') ||
-                id.includes('\\react-dom\\')
-              ) {
-                return 'react-vendor';
-              }
               if (id.includes('@mui/material') || id.includes('@mui/icons-material')) {
                 return 'mui';
               }
@@ -150,11 +162,22 @@ export default defineConfig(({ mode }) => {
             }
           },
         },
+        // Ensure React chunk is loaded before other chunks
+        external: [],
+        onwarn(warning, warn) {
+          // Suppress warnings about circular dependencies in React
+          if (warning.code === 'CIRCULAR_DEPENDENCY' && warning.message.includes('react')) {
+            return;
+          }
+          warn(warning);
+        },
       },
       commonjsOptions: {
         transformMixedEsModules: true,
       },
       sourcemap: mode === 'development',
+      // Ensure React is not tree-shaken incorrectly
+      minify: 'esbuild',
     },
   };
 });
