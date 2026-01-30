@@ -114,15 +114,6 @@ export default defineConfig(({ mode }) => {
         'onnxruntime-common',
         'onnxruntime-web',
       ],
-      // Force React to be pre-bundled together to prevent duplicate instances
-      esbuildOptions: {
-        resolve: {
-          alias: {
-            'react': path.resolve(__dirname, './node_modules/react'),
-            'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
-          },
-        },
-      },
     },
     build: {
       chunkSizeWarningLimit: 1000,
