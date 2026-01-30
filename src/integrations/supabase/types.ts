@@ -16052,6 +16052,109 @@ export type Database = {
           },
         ]
       }
+      investor_demo_access: {
+        Row: {
+          access_count: number | null
+          access_token: string
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          full_name: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          last_accessed_at: string | null
+          notes: string | null
+          organization: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          access_count?: number | null
+          access_token: string
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          full_name?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          last_accessed_at?: string | null
+          notes?: string | null
+          organization?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          access_count?: number | null
+          access_token?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          full_name?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          last_accessed_at?: string | null
+          notes?: string | null
+          organization?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_demo_access_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      investor_demo_access_logs: {
+        Row: {
+          access_id: string | null
+          accessed_at: string | null
+          created_at: string | null
+          email: string
+          id: string
+          ip_address: string | null
+          session_duration_seconds: number | null
+          user_agent: string | null
+          view_type: string
+        }
+        Insert: {
+          access_id?: string | null
+          accessed_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          ip_address?: string | null
+          session_duration_seconds?: number | null
+          user_agent?: string | null
+          view_type: string
+        }
+        Update: {
+          access_id?: string | null
+          accessed_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          ip_address?: string | null
+          session_duration_seconds?: number | null
+          user_agent?: string | null
+          view_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investor_demo_access_logs_access_id_fkey"
+            columns: ["access_id"]
+            isOneToOne: false
+            referencedRelation: "investor_demo_access"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investor_intake: {
         Row: {
           accepted_at: string | null
@@ -26481,6 +26584,24 @@ export type Database = {
         }
         Relationships: []
       }
+      investor_demo_analytics: {
+        Row: {
+          access_count: number | null
+          customer_views: number | null
+          driver_views: number | null
+          email: string | null
+          expires_at: string | null
+          full_name: string | null
+          invited_at: string | null
+          last_accessed_at: string | null
+          last_view_at: string | null
+          merchant_views: number | null
+          organization: string | null
+          status: string | null
+          total_views: number | null
+        }
+        Relationships: []
+      }
       payroll_summary: {
         Row: {
           department_id: string | null
@@ -27018,11 +27139,13 @@ export type Database = {
         Returns: boolean
       }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      expire_old_investor_tokens: { Args: never; Returns: undefined }
       generate_certificate_number: { Args: never; Returns: string }
       generate_code_request_number: { Args: never; Returns: string }
       generate_employee_number: { Args: never; Returns: string }
       generate_expense_number: { Args: never; Returns: string }
       generate_governance_resolution_number: { Args: never; Returns: string }
+      generate_investor_access_token: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_journal_entry_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }

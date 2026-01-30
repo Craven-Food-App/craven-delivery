@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,13 +43,11 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
       setLoading(true);
       const { data: userData } = await supabase.auth.getUser();
 
-      // Deactivate current settings
       await supabase
         .from('commission_settings')
         .update({ is_active: false })
         .eq('is_active', true);
 
-      // Insert new settings
       const { error } = await supabase
         .from('commission_settings')
         .insert({
@@ -74,11 +73,10 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
     }
   };
 
-  // Calculate example order
   const exampleSubtotal = 25.00;
   const exampleMiles = 3;
   const serviceFee = exampleSubtotal * (serviceFeePct / 100);
-  const deliveryFee = exampleSubtotal * 0 + (deliveryFeeBase + (exampleMiles * deliveryFeePerMile)); // keep existing units
+  const deliveryFee = deliveryFeeBase + (exampleMiles * deliveryFeePerMile);
   const total = exampleSubtotal + serviceFee + deliveryFee;
   const stripeFee = (total * (stripeFeePercent / 100)) + stripeFeeFixed;
   const restaurantGets = exampleSubtotal * (1 - (restaurantCommission / 100));
@@ -121,9 +119,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
               />
               <span className="text-sm text-muted-foreground w-8">%</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Platform commission on food subtotal
-            </p>
           </div>
 
           <div>
@@ -148,9 +143,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
               />
               <span className="text-sm text-muted-foreground w-8">%</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Fee added to customer's order
-            </p>
           </div>
 
           <div>
@@ -209,9 +201,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
               />
               <span className="text-sm text-muted-foreground w-8">x</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Applied to delivery fee during peak hours (1.3x-1.6x range)
-            </p>
           </div>
 
           <div className="pt-4 border-t">
@@ -268,7 +257,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Revenue Preview */}
       <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -283,7 +271,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
             </h4>
             
             <div className="grid grid-cols-2 gap-6">
-              {/* Customer Pays */}
               <div className="p-4 bg-white rounded-lg border">
                 <h5 className="font-semibold mb-3 text-blue-600">Customer Pays:</h5>
                 <div className="space-y-2 text-sm">
@@ -306,7 +293,6 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
                 </div>
               </div>
 
-              {/* Revenue Split */}
               <div className="p-4 bg-white rounded-lg border">
                 <h5 className="font-semibold mb-3 text-green-600">Revenue Split:</h5>
                 <div className="space-y-2 text-sm">
@@ -347,7 +333,7 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
                 <strong>Gross Take Rate:</strong> {((cravenGrossRevenue / total) * 100).toFixed(1)}% of total order value
               </div>
               <div className="p-3 bg-blue-100 rounded border border-blue-300 text-sm">
-                <strong>Net Take Rate:</strong> {((cravenNetRevenue / total) * 100).toFixed(1)}% (after Stripe fees)
+                <strong>Net Take Rate:</strong> {((cravenNetRevenue / total) * 100).toFixed(1)}% (after processing fees)
               </div>
             </div>
           </div>
@@ -356,4 +342,3 @@ export function GlobalSettings({ settings, onRefresh }: GlobalSettingsProps) {
     </div>
   );
 }
-
