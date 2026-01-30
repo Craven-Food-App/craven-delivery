@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 
+import { getCorsHeaders } from '../_shared/cors.ts';
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Get allowed origins from environment or use defaults

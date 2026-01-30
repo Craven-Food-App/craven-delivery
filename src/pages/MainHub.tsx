@@ -26,6 +26,7 @@ import {
   AppstoreOutlined,
   CheckCircleOutlined,
   DesktopOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -1382,6 +1383,14 @@ const MainHub: React.FC = () => {
       color: "#722ed1",
     },
     {
+      id: "investor-demo",
+      name: "Investor Demo Portal",
+      description: "Manage investor demo access with mock data views",
+      icon: EyeOutlined,
+      path: "/hub/investor-demo",
+      color: "#9333ea",
+    },
+    {
       id: "foundational-invites",
       name: "Foundational Invites",
       description: "Friends & family support invites ($50-$500)",
@@ -1428,7 +1437,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "investors"],
+      portalIds: ["ceo", "admin", "company", "investors", "investor-demo"],
     },
     {
       id: "operations-delivery",
@@ -1546,6 +1555,8 @@ const MainHub: React.FC = () => {
           allowed
         });
         return allowed;
+      case 'investor-demo':
+        return canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
       default: return true;
     }
   };

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 
+import { getCorsHeaders } from '../_shared/cors.ts';
 // CORS headers helper (inlined to avoid _shared dependency)
 const getAllowedOrigins = (): string[] => {
   const envOrigins = Deno.env.get("ALLOWED_ORIGINS");

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
+import { getCorsHeaders } from '../_shared/cors.ts';
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Get allowed origins from environment or use defaults

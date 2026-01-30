@@ -42,4 +42,8 @@ apps/*/ios/Pods/
 apps/*/ios/.swiftpm/
 apps/*/ios/DerivedData/
 apps/*/ios/*.xcworkspace/xcuserdata/
-apps/*/ios/*.xcodeproj/xcuserdata/
+apps/*/ios/*.xcodeproj/xcuserdata/PRODUCTION_BLOCKERS_ACTION_PLAN.md
+CORS_HARDENING_COMPLETE_JAN_29_2026.md
+ENV_CONFIGURATION_LIVE_KEYS.txt
+SETUP_ENV_FILE_NOW.md
+STRIPE_LIVE_KEYS_SETUP_JAN_29_2026.md

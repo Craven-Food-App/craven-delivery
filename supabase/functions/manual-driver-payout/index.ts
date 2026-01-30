@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 import { createMoovTransfer } from '../_shared/moov.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   // SECURITY: Get secure CORS headers based on request origin

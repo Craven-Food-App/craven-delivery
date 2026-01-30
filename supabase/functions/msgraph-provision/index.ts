@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@4.0.0';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 const TENANT = Deno.env.get('GRAPH_TENANT_ID') || '';
 const CLIENT = Deno.env.get('GRAPH_CLIENT_ID') || '';

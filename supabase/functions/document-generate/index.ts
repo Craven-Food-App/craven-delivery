@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { convertLayoutToAnchors, getPdfPageDimensions } from '../_shared/pdfAnchors.ts';
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 // Convert HTML to PDF using aPDF.io (free service)
 async function convertHtmlToPdf(htmlContent: string): Promise<Uint8Array> {

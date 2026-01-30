@@ -102,6 +102,11 @@ import Access from "./pages/Access";
 import Allocate from "./pages/Allocate";
 import Success from "./pages/Success";
 import HubFoundationalInvites from "./pages/HubFoundationalInvites";
+const HubInvestorDemoManagement = lazy(() => import("./pages/HubInvestorDemoManagement"));
+const InvestorDemoPortal = lazy(() => import("./pages/InvestorDemoPortal"));
+const InvestorDemoCustomer = lazy(() => import("./pages/InvestorDemoCustomer"));
+const InvestorDemoMerchant = lazy(() => import("./pages/InvestorDemoMerchant"));
+const InvestorDemoDriver = lazy(() => import("./pages/InvestorDemoDriver"));
 import ExecutiveSignature from "./pages/ExecutiveSignature";
 import { ExecutiveDocumentPortal } from "./pages/ExecutiveDocumentPortal";
 import ThankYou from "./pages/ThankYou";
@@ -401,6 +406,11 @@ const App = () => {
                   <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
                   <Route path="/hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Foundational Invites" />}><HubFoundationalInvites /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/hub/investor-demo" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Investor Demo Management" />}><HubInvestorDemoManagement /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/investor-demo" element={<Suspense fallback={<SuspenseLoader message="Loading Demo Portal" />}><InvestorDemoPortal /></Suspense>} />
+                  <Route path="/investor-demo/customer" element={<Suspense fallback={<SuspenseLoader message="Loading Customer Demo" />}><InvestorDemoCustomer /></Suspense>} />
+                  <Route path="/investor-demo/merchant" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Demo" />}><InvestorDemoMerchant /></Suspense>} />
+                  <Route path="/investor-demo/driver" element={<Suspense fallback={<SuspenseLoader message="Loading Driver Demo" />}><InvestorDemoDriver /></Suspense>} />
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Department" />}><DepartmentHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />

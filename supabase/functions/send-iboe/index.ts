@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { getGoogleWorkspaceConfig, sendGoogleWorkspaceEmail } from "../_shared/googleWorkspaceEmail.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 type SendIboePayload = {
   to: string;

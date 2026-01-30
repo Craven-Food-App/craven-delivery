@@ -22,6 +22,12 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   SMTP_FROM: process.env.SMTP_FROM || "Crave'n Docs <no-reply@cravenusa.com>",
   
-  ORIGIN: process.env.ORIGIN || "http://localhost:8080"
+  // CORS Configuration
+  ORIGIN: process.env.ORIGIN || "http://localhost:8080",
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 
+    "https://cravenusa.com,https://www.cravenusa.com,https://feeder.cravenusa.com,https://merchant.cravenusa.com,https://board.cravenusa.com,https://hq.cravenusa.com,https://ceo.cravenusa.com,https://cfo.cravenusa.com,https://coo.cravenusa.com,https://cto.cravenusa.com,http://localhost:8080,http://localhost:5173",
+  
+  // Environment
+  NODE_ENV: process.env.NODE_ENV || 'development',
 };
 

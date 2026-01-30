@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encode as base64Encode } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 const escapeHtml = (input: string = '') =>
   input

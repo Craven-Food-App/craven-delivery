@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
+import { getCorsHeaders } from '../_shared/cors.ts';
 // Get allowed origins from environment or use defaults
 const getAllowedOrigins = (): string[] => {
   const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
