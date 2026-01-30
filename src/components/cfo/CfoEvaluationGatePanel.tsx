@@ -113,7 +113,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
     });
   };
 
-  if (evalQuery.isLoading) {
+  if (evalQuery.isPending) {
     return <Card withBorder padding="lg">Loading CFO Evaluation Gate…</Card>;
   }
 
@@ -154,7 +154,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
         <Button
           mt="md"
           color="red"
-          loading={startMutation.isLoading}
+          loading={startMutation.isPending}
           onClick={() => startMutation.mutate()}
         >
           Initiate CFO Evaluation Gate
@@ -234,7 +234,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
             <Button
               mt="md"
               onClick={() => handleSubmitGate(gate)}
-              loading={submitMutation.isLoading}
+              loading={submitMutation.isPending}
             >
               Submit Gate 1
             </Button>
@@ -300,7 +300,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
             <Button
               mt="md"
               onClick={() => handleSubmitGate(gate)}
-              loading={submitMutation.isLoading}
+              loading={submitMutation.isPending}
             >
               Submit Gate 2
             </Button>
@@ -374,7 +374,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
             <Button
               mt="md"
               onClick={() => handleSubmitGate(gate)}
-              loading={submitMutation.isLoading}
+              loading={submitMutation.isPending}
             >
               Submit Gate 3
             </Button>
@@ -450,7 +450,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
             <Button
               mt="md"
               onClick={() => handleSubmitGate(gate)}
-              loading={submitMutation.isLoading}
+              loading={submitMutation.isPending}
             >
               Submit Gate 4
             </Button>
@@ -524,7 +524,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
             <Button
               mt="md"
               onClick={() => handleSubmitGate(gate)}
-              loading={submitMutation.isLoading}
+              loading={submitMutation.isPending}
             >
               Submit Gate 5
             </Button>
@@ -603,7 +603,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
                   <Button
                     color="red"
                     leftSection={<IconAlertTriangle size={16} />}
-                    loading={reviewMutation.isLoading}
+                    loading={reviewMutation.isPending}
                     onClick={() =>
                       reviewMutation.mutate({ gateId: g.id, decision: "fail" })
                     }
@@ -612,7 +612,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
                   </Button>
                   <Button
                     variant="outline"
-                    loading={reviewMutation.isLoading}
+                    loading={reviewMutation.isPending}
                     onClick={() =>
                       reviewMutation.mutate({
                         gateId: g.id,
@@ -625,7 +625,7 @@ const CfoEvaluationGatePanel: React.FC<Props> = ({ mode, test }) => {
                   <Button
                     color="green"
                     leftSection={<IconCheck size={16} />}
-                    loading={reviewMutation.isLoading}
+                    loading={reviewMutation.isPending}
                     onClick={() =>
                       reviewMutation.mutate({ gateId: g.id, decision: "pass" })
                     }

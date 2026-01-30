@@ -18,12 +18,14 @@ interface WorkflowGate {
 
 interface Appointment {
   id: string;
-  proposed_officer_name: string;
-  proposed_officer_email: string | null;
-  proposed_title: string;
+  executive_id: string;
+  position: string;
   effective_date: string;
   status: string;
   created_at: string;
+  proposed_officer_name?: string;
+  proposed_officer_email?: string | null;
+  proposed_title?: string;
   gates: WorkflowGate[];
 }
 
@@ -69,25 +71,61 @@ export const AppointmentWorkflowDashboard: React.FC = () => {
     try {
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('executive_appointments')
-        .select('id, proposed_officer_name, proposed_officer_email, proposed_title, effective_date, status, created_at')
+        .select(`
+          id,
+          executive_id,
+          position,
+          effective_date,
+          status,
+          created_at,
+          exec_users:executive_id (
+            id,
+            user_id,
+            title
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (appointmentsError) throw appointmentsError;
 
-      // Fetch gates for each appointment
+      // Fetch gates and transform data for each appointment
       const appointmentsWithGates = await Promise.all(
-        (appointmentsData || []).map(async (appt) => {
+        (appointmentsData || []).map(async (appt: any) => {
           const { data: gatesData } = await supabase
             .from('appointment_workflow_gates')
             .select('*')
             .eq('appointment_id', appt.id)
             .order('gate_number', { ascending: true });
 
-          return { ...appt, gates: gatesData || [] };
+          const exec = appt.exec_users;
+          let fullName = exec?.title || 'Unknown';
+          let email = '';
+
+          // Get name and email from user_profiles if available
+          if (exec?.user_id) {
+            const { data: profileData } = await supabase
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('user_id', exec.user_id)
+              .single();
+
+            if (profileData) {
+              fullName = profileData.full_name || fullName;
+              email = profileData.email || '';
+            }
+          }
+
+          return {
+            ...appt,
+            proposed_officer_name: fullName,
+            proposed_officer_email: email,
+            proposed_title: appt.position || exec?.title || '',
+            gates: gatesData || [],
+          };
         })
       );
 
-      setAppointments(appointmentsWithGates as any);
+      setAppointments(appointmentsWithGates);
     } catch (error) {
       console.error('Error fetching appointments:', error);
     } finally {

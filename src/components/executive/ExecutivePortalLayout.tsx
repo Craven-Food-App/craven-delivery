@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ChevronRight, Home, LogOut } from 'lucide-react';
+import { Menu, X, ChevronRight, Home, LogOut, LucideIcon } from 'lucide-react';
 
-type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
+type IconComponent = React.ComponentType<{ size?: number; className?: string }> | LucideIcon;
 
 export interface ExecutiveNavItem {
   id: string;

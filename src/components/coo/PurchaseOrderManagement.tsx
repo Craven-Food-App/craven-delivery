@@ -28,6 +28,7 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  FileAddOutlined,
   SearchOutlined,
   EyeOutlined,
   DollarOutlined,
@@ -163,9 +164,10 @@ export const PurchaseOrderManagement: React.FC = () => {
         }
       }
 
-      // Attach user emails to PO data
-      const posWithUsers = (data || []).map(po => ({
+      // Attach user emails to PO data and properly type items
+      const posWithUsers: PurchaseOrder[] = (data || []).map((po: any) => ({
         ...po,
+        items: Array.isArray(po.items) ? po.items : (typeof po.items === 'string' ? JSON.parse(po.items) : []),
         requester: po.requested_by ? { email: userEmails[po.requested_by] || po.requested_by } : null,
         approver: po.approved_by ? { email: userEmails[po.approved_by] || po.approved_by } : null,
       }));
