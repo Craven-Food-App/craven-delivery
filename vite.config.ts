@@ -93,6 +93,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // Force single React instance to prevent "useLayoutEffect" errors
+        "react": path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       },
       dedupe: ['react', 'react-dom'], // Ensure single React instance
     },
@@ -111,6 +114,15 @@ export default defineConfig(({ mode }) => {
         'onnxruntime-common',
         'onnxruntime-web',
       ],
+      // Force React to be pre-bundled together to prevent duplicate instances
+      esbuildOptions: {
+        resolve: {
+          alias: {
+            'react': path.resolve(__dirname, './node_modules/react'),
+            'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+          },
+        },
+      },
     },
     build: {
       chunkSizeWarningLimit: 1000,
@@ -119,6 +131,17 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             // Split large vendor libraries into separate chunks for better caching
             if (id.includes('node_modules')) {
+              // CRITICAL: React and React-DOM must be in the same chunk
+              // to prevent "useLayoutEffect" undefined errors
+              // Check for exact React packages first
+              if (
+                id.includes('/react/') || 
+                id.includes('/react-dom/') ||
+                id.includes('\\react\\') ||
+                id.includes('\\react-dom\\')
+              ) {
+                return 'react-vendor';
+              }
               if (id.includes('@mui/material') || id.includes('@mui/icons-material')) {
                 return 'mui';
               }
@@ -127,9 +150,6 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes('antd')) {
                 return 'antd';
-              }
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'react-vendor';
               }
               if (id.includes('supabase')) {
                 return 'supabase';

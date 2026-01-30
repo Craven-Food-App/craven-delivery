@@ -73,9 +73,17 @@ export const SecurityComplianceCenter: React.FC = () => {
           console.warn('security_audits table not found, using empty findings');
           setFindings([]);
         } else {
+          console.error('Error fetching security audits:', auditsError);
+          console.error('Error details:', {
+            code: auditsError.code,
+            message: auditsError.message,
+            details: auditsError.details,
+            hint: auditsError.hint,
+          });
           throw auditsError;
         }
       } else {
+        console.log('Security audits fetched:', auditsData?.length || 0, 'findings');
         setFindings((auditsData || []) as SecurityFinding[]);
       }
 
