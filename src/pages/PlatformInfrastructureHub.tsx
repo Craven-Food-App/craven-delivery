@@ -320,3 +320,13 @@ function PlatformInfrastructureHubContent() {
   );
 }
 
+const PlatformInfrastructureHub: React.FC = () => {
+  return (
+    <EmbeddedToastProvider>
+      <PlatformInfrastructureHubContent />
+    </EmbeddedToastProvider>
+  );
+};
+
+export default PlatformInfrastructureHub;
+

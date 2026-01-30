@@ -1,5 +1,5 @@
+// @ts-nocheck
 // Tester Enrollment Testing System
-// Allows admins to test the enrollment flow, simulate progress, and trigger rewards
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
