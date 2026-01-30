@@ -5,7 +5,7 @@
  * and managing test environment for driver delivery flow tests
  */
 
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
 export interface TestDriver {
   email: string;
@@ -59,10 +59,17 @@ export async function loginAsDriver(page: Page, driver: TestDriver): Promise<voi
   // Fill in login form
   await page.fill('input[type="email"]', driver.email);
   await page.fill('input[type="password"]', driver.password);
-  await page.click('button:has-text("Sign In")').or(
-    page.click('button[type="submit"]')
-  );
   
+  // Try Sign In button first, then submit button
+  const signInButton = page.locator('button:has-text("Sign In")');
+  const submitButton = page.locator('button[type="submit"]');
+  
+  if (await signInButton.isVisible()) {
+    await signInButton.click();
+  } else {
+    await submitButton.click();
+  }
+
   // Wait for redirect to dashboard
   await page.waitForURL('**/mobile', { timeout: 10000 });
 }

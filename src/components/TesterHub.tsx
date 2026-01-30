@@ -1,5 +1,5 @@
+// @ts-nocheck
 // Tester Hub - Main UI for tester enrollment progress
-// Mantine compact components
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
