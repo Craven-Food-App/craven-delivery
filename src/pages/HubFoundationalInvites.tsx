@@ -35,6 +35,7 @@ export default function HubFoundationalInvitesPage() {
   const [testBusy, setTestBusy] = useState(false);
   const [testErr, setTestErr] = useState<string | null>(null);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
+  const [testEmailType, setTestEmailType] = useState<"confirmation" | "invite">("confirmation");
 
   // Prevent any redirects - ensure we stay on this page
   useEffect(() => {
@@ -88,12 +89,15 @@ export default function HubFoundationalInvitesPage() {
       }
 
       const accessCode = generateInviteCode();
+      const inviteEmail = email.trim().toLowerCase();
+      const inviteName = fullName.trim() || null;
+      
       const { error } = await supabase
         .from('invites')
         .insert({
           access_code: accessCode,
-          email: email.trim().toLowerCase(),
-          full_name: fullName.trim() || null,
+          email: inviteEmail,
+          full_name: inviteName,
           relationship_note: relationshipNote.trim() || null,
           status: 'invited',
           min_amount_cents: 5000,
@@ -104,6 +108,30 @@ export default function HubFoundationalInvitesPage() {
       if (error) {
         console.error('[HubFoundationalInvites] Create error:', error);
         throw new Error(error.message || "Failed to create invite.");
+      }
+
+      // Send invite email
+      try {
+        const { error: emailError } = await supabase.functions.invoke(
+          "send-foundational-invite-email",
+          {
+            body: {
+              inviteeName: inviteName || "there",
+              inviteeEmail: inviteEmail,
+              accessCode: accessCode,
+            },
+          }
+        );
+
+        if (emailError) {
+          console.error('[HubFoundationalInvites] Error sending invite email:', emailError);
+          // Don't fail the invite creation if email fails
+        } else {
+          console.log('[HubFoundationalInvites] Invite email sent successfully');
+        }
+      } catch (emailErr) {
+        console.error('[HubFoundationalInvites] Unexpected error sending invite email:', emailErr);
+        // Don't fail the invite creation if email fails
       }
 
       setEmail("");
@@ -156,37 +184,62 @@ export default function HubFoundationalInvitesPage() {
         return;
       }
 
-      console.log('[HubFoundationalInvites] Sending test email to:', testEmail);
+      console.log('[HubFoundationalInvites] Sending test', testEmailType, 'email to:', testEmail);
 
-      // Mock data for the test email (no attachments for test)
-      const mockData = {
-        contributorName: "Jordan Smith",
-        contributorEmail: testEmail.trim(),
-        sharesIssued: 2500,
-        certificateNumber: "CS-2025-001",
-        issueDate: new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        amountDollars: "$250.00",
-        documents: [], // No attachments for test emails
-      };
+      if (testEmailType === "confirmation") {
+        // Mock data for the confirmation email (no attachments for test)
+        const mockData = {
+          contributorName: "Jordan Smith",
+          contributorEmail: testEmail.trim(),
+          sharesIssued: 2500,
+          certificateNumber: "CS-2025-001",
+          issueDate: new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          amountDollars: "$250.00",
+          documents: [], // No attachments for test emails
+        };
 
-      const { data, error } = await supabase.functions.invoke(
-        "send-foundational-confirmation-email",
-        {
-          body: mockData,
+        const { data, error } = await supabase.functions.invoke(
+          "send-foundational-confirmation-email",
+          {
+            body: mockData,
+          }
+        );
+
+        if (error) {
+          console.error('[HubFoundationalInvites] Test confirmation email error:', error);
+          throw new Error(error.message || "Failed to send test email");
         }
-      );
 
-      if (error) {
-        console.error('[HubFoundationalInvites] Test email error:', error);
-        throw new Error(error.message || "Failed to send test email");
+        console.log('[HubFoundationalInvites] Test confirmation email sent successfully:', data);
+        setTestSuccess(`Test confirmation email sent successfully to ${testEmail.trim()}!`);
+      } else {
+        // Mock data for the invite email
+        const mockData = {
+          inviteeName: "Jordan Smith",
+          inviteeEmail: testEmail.trim(),
+          accessCode: "CRV-TEST-XXXX-XXXX",
+        };
+
+        const { data, error } = await supabase.functions.invoke(
+          "send-foundational-invite-email",
+          {
+            body: mockData,
+          }
+        );
+
+        if (error) {
+          console.error('[HubFoundationalInvites] Test invite email error:', error);
+          throw new Error(error.message || "Failed to send test email");
+        }
+
+        console.log('[HubFoundationalInvites] Test invite email sent successfully:', data);
+        setTestSuccess(`Test invite email sent successfully to ${testEmail.trim()}!`);
       }
 
-      console.log('[HubFoundationalInvites] Test email sent successfully:', data);
-      setTestSuccess(`Test email sent successfully to ${testEmail.trim()}!`);
       setTestEmail("");
     } catch (e: any) {
       console.error('[HubFoundationalInvites] Test email exception:', e);
@@ -399,8 +452,36 @@ export default function HubFoundationalInvitesPage() {
               <div className="p-6">
                 <h2 className="text-sm font-semibold mb-1">Email Tester</h2>
                 <p className="text-xs text-zinc-500 mb-4">
-                  Send a test confirmation email with mock data to any email address. Useful for previewing the email template.
+                  Send test emails with mock data to any email address. Useful for previewing email templates.
                 </p>
+
+                {/* Email Type Selector */}
+                <div className="mb-4 flex gap-2">
+                  <Button
+                    variant={testEmailType === "confirmation" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setTestEmailType("confirmation");
+                      setTestErr(null);
+                      setTestSuccess(null);
+                    }}
+                    className="rounded-xl"
+                  >
+                    Confirmation Email
+                  </Button>
+                  <Button
+                    variant={testEmailType === "invite" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setTestEmailType("invite");
+                      setTestErr(null);
+                      setTestSuccess(null);
+                    }}
+                    className="rounded-xl"
+                  >
+                    Invite Email
+                  </Button>
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
@@ -418,16 +499,28 @@ export default function HubFoundationalInvitesPage() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                    <h3 className="text-xs font-semibold text-amber-900 mb-2">Mock Data Preview</h3>
-                    <div className="text-xs text-amber-800 space-y-1">
-                      <div><strong>Name:</strong> Jordan Smith</div>
-                      <div><strong>Shares:</strong> 2,500</div>
-                      <div><strong>Certificate:</strong> CS-2025-001</div>
-                      <div><strong>Amount:</strong> $250.00</div>
-                      <div><strong>Note:</strong> Test emails are sent without PDF attachments</div>
+                  {testEmailType === "confirmation" ? (
+                    <div className="sm:col-span-2 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                      <h3 className="text-xs font-semibold text-amber-900 mb-2">Confirmation Email - Mock Data Preview</h3>
+                      <div className="text-xs text-amber-800 space-y-1">
+                        <div><strong>Name:</strong> Jordan Smith</div>
+                        <div><strong>Shares:</strong> 2,500</div>
+                        <div><strong>Certificate:</strong> CS-2025-001</div>
+                        <div><strong>Amount:</strong> $250.00</div>
+                        <div><strong>Note:</strong> Test emails are sent without PDF attachments</div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="sm:col-span-2 p-4 rounded-xl bg-blue-50 border border-blue-200">
+                      <h3 className="text-xs font-semibold text-blue-900 mb-2">Invite Email - Mock Data Preview</h3>
+                      <div className="text-xs text-blue-800 space-y-1">
+                        <div><strong>Name:</strong> Jordan Smith</div>
+                        <div><strong>Email:</strong> {testEmail || "your-email@example.com"}</div>
+                        <div><strong>Access Code:</strong> CRV-TEST-XXXX-XXXX</div>
+                        <div><strong>Note:</strong> This email includes the access code and instructions for registry access</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {testErr && (
@@ -448,7 +541,7 @@ export default function HubFoundationalInvitesPage() {
                     onClick={sendTestEmail}
                     className="rounded-xl"
                   >
-                    {testBusy ? "Sending…" : "Send Test Email"}
+                    {testBusy ? "Sending…" : `Send Test ${testEmailType === "confirmation" ? "Confirmation" : "Invite"} Email`}
                   </Button>
                 </div>
               </div>
