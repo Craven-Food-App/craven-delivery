@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Mail, Key, ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
 import { supportApi } from "@/lib/api-client";
+import foundationalSupportAccessHero from "@/assets/foundational_support_access_hero.png";
 
 export default function Access() {
   const navigate = useNavigate();
@@ -42,22 +43,36 @@ export default function Access() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted">
-      {/* Header Section */}
-      <div className="bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(14_95%_48%)] to-[hsl(14_90%_53%)]">
-        <div className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
-          <div className="text-center">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-              <Shield className="h-4 w-4" />
-              <span>Secure Access</span>
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Access Portal
-            </h1>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-white/90">
-              Enter your invitation code and email to continue
-            </p>
-          </div>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${foundationalSupportAccessHero})`,
+          }}
+        />
+        
+        {/* Gradient Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/90 via-[hsl(14_95%_48%)]/85 to-[hsl(14_90%_53%)]/90" />
+        
+        {/* Pattern overlay (optional, for texture) */}
+        <div 
+          className="absolute inset-0 opacity-20" 
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        />
+        
+        <div className="relative mx-auto max-w-7xl px-6 py-16 sm:py-20 md:py-24 lg:py-28">
         </div>
+      </section>
+
+      {/* Subtitle Section */}
+      <div className="mx-auto max-w-7xl px-6 pt-8 pb-4">
+        <p className="mx-auto max-w-xl text-center text-base text-black sm:text-lg md:text-xl">
+          Enter your invitation code and email to continue
+        </p>
       </div>
 
       {/* Form Section */}
