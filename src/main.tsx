@@ -107,7 +107,8 @@ createRoot(document.getElementById("root")!).render(
 );
 
 // Register Service Worker for Web Push notifications and PWA support
-if ('serviceWorker' in navigator) {
+// Skip service worker registration in development to avoid MIME type issues
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   // Wait for document to be ready and check if already registered
   const registerServiceWorker = async () => {
     try {

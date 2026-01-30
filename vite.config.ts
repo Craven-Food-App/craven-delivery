@@ -78,6 +78,12 @@ export default defineConfig(({ mode }) => {
           secure: false,
         },
       },
+      // Ensure proper MIME types for module scripts
+      middlewareMode: false,
+      fs: {
+        strict: false,
+        allow: ['..'],
+      },
     },
     plugins: [
       react(),
