@@ -280,21 +280,21 @@ export const mockMerchantOrders: MockOrder[] = [
   },
 ];
 
-// Mock Deliveries (Driver View)
+// Mock Deliveries (Driver View) - Enhanced for demo flow
 export const mockDriverDeliveries: MockDelivery[] = [
   {
     id: 'del-1',
     orderNumber: '#2847',
-    restaurantName: 'Bella Italia',
-    restaurantAddress: '500 Market St, San Francisco, CA',
-    customerName: 'Demo Customer',
-    customerAddress: '123 Main St, Apt 4B, San Francisco, CA',
-    pickupTime: '6:25 PM',
-    dropoffTime: '6:45 PM',
+    restaurantName: 'Bella Italia Trattoria',
+    restaurantAddress: '123 Main Street, Suite 100, New York, NY 10001',
+    customerName: 'Sarah Johnson',
+    customerAddress: '456 Park Avenue, Apt 12B, New York, NY 10022',
+    pickupTime: new Date(Date.now() + 5 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    dropoffTime: new Date(Date.now() + 25 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     distance: '1.8 mi',
-    earnings: 8.50,
-    status: 'picked_up',
-    items: ['Margherita Pizza', 'Caesar Salad'],
+    earnings: 12.50,
+    status: 'accepted',
+    items: ['Margherita Pizza', 'Caesar Salad', 'Tiramisu'],
   },
   {
     id: 'del-2',
@@ -303,12 +303,26 @@ export const mockDriverDeliveries: MockDelivery[] = [
     restaurantAddress: '320 Castro St, San Francisco, CA',
     customerName: 'Alex Martinez',
     customerAddress: '890 Valencia St, San Francisco, CA',
-    pickupTime: '7:00 PM',
-    dropoffTime: '7:20 PM',
+    pickupTime: new Date(Date.now() + 30 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    dropoffTime: new Date(Date.now() + 50 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     distance: '2.3 mi',
-    earnings: 10.25,
+    earnings: 14.25,
     status: 'available',
-    items: ['California Roll', 'Spicy Tuna Roll', 'Miso Soup'],
+    items: ['California Roll', 'Spicy Tuna Roll', 'Dragon Roll', 'Miso Soup'],
+  },
+  {
+    id: 'del-3',
+    orderNumber: '#2851',
+    restaurantName: 'Burger Haven',
+    restaurantAddress: '555 Market St, San Francisco, CA',
+    customerName: 'Michael Chen',
+    customerAddress: '234 Mission St, Apt 5, San Francisco, CA',
+    pickupTime: new Date(Date.now() + 45 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    dropoffTime: new Date(Date.now() + 60 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    distance: '1.2 mi',
+    earnings: 10.75,
+    status: 'available',
+    items: ['Classic Burger', 'Bacon Cheeseburger', 'Fries'],
   },
 ];
 
@@ -354,6 +368,67 @@ export const mockDriverStats: DriverStats = {
   rating: 4.9,
   totalDeliveries: 1247,
   onlineTime: '4h 23m',
+};
+
+// Enhanced Mock Data for Active Delivery Flow Demo
+export interface ActiveDeliveryMock {
+  id: string;
+  orderNumber: string;
+  status: 'heading_to_pickup' | 'arrived_at_pickup' | 'picked_up' | 'heading_to_customer' | 'arrived_at_customer' | 'delivered';
+  restaurant: {
+    name: string;
+    address: string;
+    phone: string;
+    coordinates: { lat: number; lng: number };
+    logo_url: string;
+  };
+  customer: {
+    name: string;
+    address: string;
+    phone: string;
+    coordinates: { lat: number; lng: number };
+    delivery_instructions?: string;
+  };
+  items: Array<{
+    name: string;
+    quantity: number;
+    special_instructions?: string;
+  }>;
+  earnings: number;
+  distance: string;
+  estimatedTime: string;
+  pickupTime: string;
+  deliveryTime: string;
+}
+
+export const mockActiveDelivery: ActiveDeliveryMock = {
+  id: 'active-del-1',
+  orderNumber: '#2847',
+  status: 'heading_to_pickup',
+  restaurant: {
+    name: 'Bella Italia Trattoria',
+    address: '123 Main Street, Suite 100, New York, NY 10001',
+    phone: '+1 (555) 987-6543',
+    coordinates: { lat: 40.7589, lng: -73.9851 },
+    logo_url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=200',
+  },
+  customer: {
+    name: 'Sarah Johnson',
+    address: '456 Park Avenue, Apt 12B, New York, NY 10022',
+    phone: '+1 (555) 123-4567',
+    coordinates: { lat: 40.7614, lng: -73.9776 },
+    delivery_instructions: 'Please call when you arrive. I\'ll come down to meet you.',
+  },
+  items: [
+    { name: 'Margherita Pizza', quantity: 1 },
+    { name: 'Caesar Salad', quantity: 1 },
+    { name: 'Tiramisu', quantity: 1, special_instructions: 'Extra chocolate shavings' },
+  ],
+  earnings: 12.50,
+  distance: '1.8 mi',
+  estimatedTime: '18 min',
+  pickupTime: new Date(Date.now() + 5 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+  deliveryTime: new Date(Date.now() + 25 * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
 };
 
 // Helper functions
