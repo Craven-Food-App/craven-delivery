@@ -149,7 +149,9 @@ export async function getOrCreateCustomer(params: {
 }
 
 /**
- * Create a payment intent for an order
+ * Create a payment intent for an order (MARKETPLACE MODEL)
+ * Platform is merchant of record. NO destination charges.
+ * Transfers happen separately via webhook after payment succeeds.
  */
 export async function createPaymentIntent(params: {
   amount: number; // in cents
@@ -158,12 +160,7 @@ export async function createPaymentIntent(params: {
   paymentMethodId?: string;
   description?: string;
   metadata?: Record<string, string>;
-  applicationFeeAmount?: number; // Platform fee in cents
-  onBehalfOf?: string; // Stripe Connect account ID for merchant
-  transferData?: {
-    destination: string; // Stripe Connect account ID
-    amount?: number; // Amount to transfer in cents
-  };
+  // REMOVED: applicationFeeAmount, onBehalfOf, transferData (marketplace model)
 }): Promise<{
   id: string;
   clientSecret: string;
@@ -191,12 +188,8 @@ export async function createPaymentIntent(params: {
     paymentIntentParams.confirm = true;
   }
   
-  // For Stripe Connect (merchant payouts)
-  if (params.onBehalfOf || params.transferData) {
-    paymentIntentParams.on_behalf_of = params.onBehalfOf;
-    paymentIntentParams.transfer_data = params.transferData;
-    paymentIntentParams.application_fee_amount = params.applicationFeeAmount;
-  }
+  // NO destination charges - platform collects full amount
+  // Transfers to connected accounts happen via webhook (payment_intent.succeeded)
   
   const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
   

@@ -2,11 +2,10 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
-import { getCorsHeaders } from '../_shared/cors.ts';import { 
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { 
   createPaymentIntent, 
-  confirmPaymentIntent,
-  getOrCreateCustomer,
-  getStripeClient 
+  getOrCreateCustomer
 } from '../_shared/stripe.ts';
 
 // Get allowed origins from environment or use defaults
@@ -131,10 +130,10 @@ async function createStripePaymentHandler(
   );
 
   try {
-    // Get order details to determine merchant payout
+    // Get order details (restaurant_id for metadata)
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('restaurant_id, restaurant:restaurants(stripe_connect_account_id)')
+      .select('restaurant_id')
       .eq('id', orderId)
       .single();
 
@@ -152,21 +151,15 @@ async function createStripePaymentHandler(
       },
     });
 
-    // Calculate platform fee (if applicable)
-    // For now, we'll use a simple percentage - adjust based on your business model
-    const platformFeePercent = 0.03; // 3% platform fee
-    const platformFeeAmount = Math.round(orderTotal * platformFeePercent);
-    const merchantAmount = orderTotal - platformFeeAmount;
+    // MARKETPLACE MODEL: Platform is merchant of record
+    // NO destination charges, NO on_behalf_of, NO application_fee_amount
+    // Transfers happen via webhook after payment succeeds
 
-    // Get merchant Stripe Connect account ID if available
-    const merchantAccountId = (order.restaurant as any)?.stripe_connect_account_id;
-
-    // Create payment intent
+    // Create payment intent on PLATFORM account only
     const paymentIntent = await createPaymentIntent({
       amount: orderTotal,
-      currency: 'USD',
+      currency: 'usd',
       customerId: customerId,
-      paymentMethodId: paymentMethodId,
       description: `Order #${orderId}`,
       metadata: {
         order_id: orderId,
@@ -174,59 +167,39 @@ async function createStripePaymentHandler(
         customer_name: customerInfo.name || '',
         restaurant_id: order.restaurant_id || '',
       },
-      // If merchant has Stripe Connect account, split payment
-      ...(merchantAccountId ? {
-        onBehalfOf: merchantAccountId,
-        applicationFeeAmount: platformFeeAmount,
-        transferData: {
-          destination: merchantAccountId,
-          amount: merchantAmount,
-        },
-      } : {}),
+      // NO onBehalfOf, NO transferData, NO applicationFeeAmount
     });
 
-    console.log('Stripe payment intent created:', {
+    console.log('Stripe PaymentIntent created (client-side confirmation):', {
       paymentIntentId: paymentIntent.id,
-      status: paymentIntent.status,
       orderId,
-      merchantAccountId,
     });
 
-    // Confirm the payment intent
-    const confirmedPayment = await confirmPaymentIntent(
-      paymentIntent.id,
-      paymentMethodId
-    );
+    // CRITICAL: Do NOT confirm server-side
+    // Client will confirm using Stripe.js
+    // Webhook will set payment_status='succeeded'
 
-    console.log('Stripe payment confirmed:', {
-      paymentIntentId: confirmedPayment.id,
-      status: confirmedPayment.status,
-      charges: confirmedPayment.charges,
-    });
-
-    // Update order with payment information
+    // Update order with payment intent ID and PENDING status
     await supabase
       .from('orders')
       .update({
+        stripe_payment_intent_id: paymentIntent.id,
+        payment_status: 'pending', // ONLY webhook sets 'succeeded'
         updated_at: new Date().toISOString(),
-        // Add payment tracking fields if they exist
-        payment_intent_id: confirmedPayment.id,
-        payment_status: confirmedPayment.status,
       })
       .eq('id', orderId)
       .catch(err => {
         console.error('Order update error (non-critical):', err);
       });
 
-    // Return payment result
+    // Return client_secret for client-side confirmation
     return new Response(
       JSON.stringify({ 
-        payment_id: confirmedPayment.id,
-        status: confirmedPayment.status,
+        payment_id: paymentIntent.id,
+        client_secret: paymentIntent.clientSecret, // Client confirms with this
+        status: 'pending', // Always pending until webhook confirms
         provider: 'stripe',
         order_id: orderId,
-        requires_action: confirmedPayment.status === 'requires_action' || confirmedPayment.status === 'requires_confirmation',
-        client_secret: paymentIntent.clientSecret, // For 3D Secure if needed
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

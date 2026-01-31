@@ -51,15 +51,10 @@ async function createPaymentIntent(params: {
   amount: number;
   currency: string;
   customerId?: string;
-  paymentMethodId?: string;
   description?: string;
   metadata?: Record<string, string>;
-  applicationFeeAmount?: number;
-  onBehalfOf?: string;
-  transferData?: {
-    destination: string;
-    amount?: number;
-  };
+  // REMOVED: onBehalfOf, transferData, applicationFeeAmount (marketplace model)
+  // REMOVED: paymentMethodId (client-side confirmation only)
 }): Promise<{
   id: string;
   clientSecret: string;
@@ -81,17 +76,9 @@ async function createPaymentIntent(params: {
     paymentIntentParams.customer = params.customerId;
   }
   
-  if (params.paymentMethodId) {
-    paymentIntentParams.payment_method = params.paymentMethodId;
-    paymentIntentParams.confirmation_method = 'manual';
-    paymentIntentParams.confirm = true;
-  }
-  
-  if (params.onBehalfOf || params.transferData) {
-    paymentIntentParams.on_behalf_of = params.onBehalfOf;
-    paymentIntentParams.transfer_data = params.transferData;
-    paymentIntentParams.application_fee_amount = params.applicationFeeAmount;
-  }
+  // REMOVED: Server-side confirmation (client-side only now)
+  // Client will attach payment method and confirm using Stripe.js
+  // Webhook will set payment_status='succeeded'
   
   const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
   
@@ -102,35 +89,7 @@ async function createPaymentIntent(params: {
   };
 }
 
-async function confirmPaymentIntent(
-  paymentIntentId: string,
-  paymentMethodId?: string
-): Promise<{
-  id: string;
-  status: string;
-  charges: Array<{ id: string; amount: number }>;
-}> {
-  const stripe = getStripeClient();
-  
-  const confirmParams: any = {};
-  if (paymentMethodId) {
-    confirmParams.payment_method = paymentMethodId;
-  }
-  
-  const paymentIntent = await stripe.paymentIntents.confirm(
-    paymentIntentId,
-    confirmParams
-  );
-  
-  return {
-    id: paymentIntent.id,
-    status: paymentIntent.status,
-    charges: paymentIntent.charges.data.map((charge) => ({
-      id: charge.id,
-      amount: charge.amount,
-    })),
-  };
-}
+// REMOVED: confirmPaymentIntent function (client-side confirmation only)
 
 const corsHeaders = {
   ...getCorsHeaders(req.headers.get('origin')),
@@ -525,107 +484,81 @@ serve(async (req) => {
         },
       });
 
-      // Calculate platform fee (if applicable)
-      // This is business logic - adjust as needed
-      const platformFeePercent = 0.15; // 15% platform fee
-      const merchantAmount = Math.round(finalSubtotal * (1 - platformFeePercent));
-      const platformFeeAmount = finalSubtotal - merchantAmount;
+      // Calculate marketplace splits (15% platform fee)
+      const platformFeePercent = 0.15;
+      const platformFeeCents = Math.round(finalSubtotal * platformFeePercent);
+      const restaurantNetCents = finalSubtotal - platformFeeCents;
+      const driverPayCents = driverPayoutSnapshot.driver_payout_cents || 0;
 
-      // Create payment intent
+      // Calculate total amount (customer pays everything to platform)
+      const amountTotalCents = finalTotal;
+
+      // Get driver_id if available (from order assignment)
+      const driverId = createdOrder.driver_id || null;
+
+      // Create payment intent on PLATFORM account only (no destination charges)
+      // CRITICAL: Do NOT confirm server-side - client will confirm using Stripe.js
       paymentIntent = await createPaymentIntent({
-        amount: finalTotal,
-        currency: 'USD',
+        amount: amountTotalCents,
+        currency: 'usd',
         customerId: stripeCustomerId,
-        paymentMethodId: payment_method_id,
         description: `Order #${createdOrder.id}`,
         metadata: {
           order_id: createdOrder.id,
           customer_id: user.id,
           restaurant_id: restaurant_id,
+          driver_id: driverId || '',
         },
-        // Stripe Connect split payment if restaurant has account
-        ...(restaurant?.stripe_connect_account_id ? {
-          onBehalfOf: restaurant.stripe_connect_account_id,
-          applicationFeeAmount: platformFeeAmount,
-          transferData: {
-            destination: restaurant.stripe_connect_account_id,
-            amount: merchantAmount,
-          },
-        } : {}),
+        // NO onBehalfOf, NO transferData, NO applicationFeeAmount
+        // NO paymentMethodId (client attaches and confirms)
       });
 
-      // Confirm payment intent
-      const confirmedPayment = await confirmPaymentIntent(
-        paymentIntent.id,
-        payment_method_id
-      );
-
-      // Update order with payment info
+      // Update order with payment intent ID and PENDING status
+      // ONLY webhook sets payment_status='succeeded' after confirmation
       await supabaseAdmin
         .from('orders')
         .update({
-          payment_intent_id: confirmedPayment.id,
-          payment_status: confirmedPayment.status,
-          payment_provider: 'stripe',
+          stripe_payment_intent_id: paymentIntent.id,
+          payment_status: 'pending', // ONLY webhook sets 'succeeded'
+          amount_total_cents: amountTotalCents,
+          platform_fee_cents: platformFeeCents,
+          restaurant_net_cents: restaurantNetCents,
+          driver_pay_cents: driverPayCents,
+          currency: 'usd',
+          transfers_status: 'not_started', // Transfers happen via webhook
         })
         .eq('id', createdOrder.id);
 
       // ========================================================================
-      // STEP 6: Redeem promo (only after payment confirmed)
+      // STEP 6: DEFER promo/credit redemption to webhook
       // ========================================================================
-      if (promoReservation && confirmedPayment.status === 'succeeded') {
-        const { data: redemption, error: redeemError } = await supabaseAdmin.rpc(
-          'redeem_reserved_promo',
-          {
-            p_user_id: user.id,
-            p_order_id: createdOrder.id,
-          }
-        );
+      // Promo and tester credit redemption will happen in the webhook
+      // after payment_intent.succeeded event confirms payment
+      // This ensures we don't redeem credits for failed payments
 
-        if (redeemError) {
-          console.error('Promo redemption error:', redeemError);
-          // Non-fatal - order is created and paid
-        }
-      }
-
-      // ========================================================================
-      // STEP 6B: Redeem tester credits (only after payment confirmed)
-      // ========================================================================
-      if (testerCreditQuote && testerCreditQuote.applied && confirmedPayment.status === 'succeeded') {
-        const { data: testerRedemption, error: testerRedeemError } = await supabaseAdmin.rpc(
-          'redeem_tester_credits_for_order',
-          {
-            p_user_id: user.id,
-            p_order_id: createdOrder.id,
-            p_service_credit_cents: testerServiceCredit,
-            p_delivery_credit_cents: testerDeliveryCredit,
-            p_platform_credit_cents: testerPlatformCredit,
-          }
-        );
-
-        if (testerRedeemError) {
-          console.error('Tester credit redemption error:', testerRedeemError);
-          // Non-fatal - order is created and paid
-        }
-      }
-
-      // Return success
+      // Return success - client must confirm payment using client_secret
       return new Response(
         JSON.stringify({
           success: true,
           order_id: createdOrder.id,
-          payment_intent_id: confirmedPayment.id,
-          payment_status: confirmedPayment.status,
+          payment_intent_id: paymentIntent.id,
+          client_secret: paymentIntent.clientSecret, // Client uses this to confirm
+          payment_status: 'pending', // Always pending until webhook confirms
           total_cents: finalTotal,
+          splits: {
+            platform_fee_cents: platformFeeCents,
+            restaurant_net_cents: restaurantNetCents,
+            driver_pay_cents: driverPayCents,
+          },
           promo: promoReservation ? {
-            applied: true,
+            reserved: true, // Reserved, will redeem in webhook after payment succeeds
             credit_cents: promoCreditApplied,
             delivery_credit_cents: promoReservation.delivery_credit_cents,
             service_credit_cents: promoReservation.service_credit_cents,
             step: promoReservation.step,
           } : null,
           tester_credits: testerCreditQuote && testerCreditQuote.applied ? {
-            applied: true,
+            reserved: true, // Reserved, will redeem in webhook after payment succeeds
             total_credit_cents: totalTesterCreditApplied,
             service_credit_cents: testerServiceCredit,
             delivery_credit_cents: testerDeliveryCredit,
@@ -644,7 +577,8 @@ serve(async (req) => {
         .from('orders')
         .update({
           payment_status: 'failed',
-          payment_provider: 'stripe',
+          transfers_status: 'failed',
+          transfers_error: paymentError?.message || 'Payment failed',
         })
         .eq('id', createdOrder.id);
 
