@@ -18,6 +18,8 @@ type Invite = {
   paid_at: string | null;
   paid_amount_cents: number | null;
   expires_at: string | null;
+  access_count: number | null;
+  last_accessed_at: string | null;
 };
 
 export default function HubFoundationalInvitesPage() {
@@ -56,7 +58,7 @@ export default function HubFoundationalInvitesPage() {
       console.log('[HubFoundationalInvites] Loading invites from Supabase');
       const { data, error } = await supabase
         .from('invites')
-        .select('id, access_code, email, full_name, status, accepted_at, paid_at, paid_amount_cents, created_at, expires_at')
+        .select('id, access_code, email, full_name, status, accepted_at, paid_at, paid_amount_cents, created_at, expires_at, access_count, last_accessed_at')
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -395,6 +397,8 @@ export default function HubFoundationalInvitesPage() {
                         <th className="py-3 text-left font-medium">Access Code</th>
                         <th className="py-3 text-left font-medium">Email</th>
                         <th className="py-3 text-left font-medium">Status</th>
+                        <th className="py-3 text-left font-medium">Access Count</th>
+                        <th className="py-3 text-left font-medium">Last Accessed</th>
                         <th className="py-3 text-left font-medium">Paid</th>
                         <th className="py-3 text-left font-medium">Created</th>
                         <th className="py-3 text-right font-medium">Actions</th>
@@ -409,6 +413,24 @@ export default function HubFoundationalInvitesPage() {
                             <span className="inline-flex rounded-lg border border-zinc-200 px-2 py-1 text-xs capitalize">
                               {i.status}
                             </span>
+                          </td>
+                          <td className="py-3">
+                            {i.access_count ? (
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700">
+                                {i.access_count} {i.access_count === 1 ? 'time' : 'times'}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400 text-xs">Never</span>
+                            )}
+                          </td>
+                          <td className="py-3">
+                            {i.last_accessed_at ? (
+                              <span className="text-xs" title={new Date(i.last_accessed_at).toLocaleString()}>
+                                {new Date(i.last_accessed_at).toLocaleDateString()} {new Date(i.last_accessed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400 text-xs">—</span>
+                            )}
                           </td>
                           <td className="py-3">
                             {i.paid_amount_cents ? `$${(i.paid_amount_cents / 100).toFixed(2)}` : "—"}
@@ -430,7 +452,7 @@ export default function HubFoundationalInvitesPage() {
                       ))}
                       {invites.length === 0 && (
                         <tr>
-                          <td className="py-6 text-zinc-500 text-center" colSpan={6}>
+                          <td className="py-6 text-zinc-500 text-center" colSpan={8}>
                             No invites yet.
                           </td>
                         </tr>

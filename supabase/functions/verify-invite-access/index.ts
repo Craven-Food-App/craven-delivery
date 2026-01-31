@@ -64,13 +64,39 @@ serve(async (req) => {
       );
     }
 
-    // Mark as accepted if not already
+    // Mark as accepted if not already and increment access tracking
+    const now = new Date().toISOString();
+    
     if (invite.status === "invited") {
       await supabase
         .from("invites")
-        .update({ status: "accepted", accepted_at: new Date().toISOString() })
+        .update({ 
+          status: "accepted", 
+          accepted_at: now,
+          access_count: (invite.access_count || 0) + 1,
+          last_accessed_at: now
+        })
+        .eq("id", invite.id);
+    } else {
+      // Just increment access tracking for returning users
+      await supabase
+        .from("invites")
+        .update({ 
+          access_count: (invite.access_count || 0) + 1,
+          last_accessed_at: now
+        })
         .eq("id", invite.id);
     }
+
+    // Log this access for audit trail
+    await supabase
+      .from("foundational_access_logs")
+      .insert({
+        invite_id: invite.id,
+        email: invite.email,
+        page_accessed: 'access',
+        accessed_at: now
+      });
 
     // Return invite info (including strike price if available)
     return new Response(
