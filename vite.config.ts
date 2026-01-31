@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path, { resolve } from "path";
 
 const componentTagger = (): any => ({
   name: "component-tagger",
@@ -79,24 +79,41 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // Force all react-is imports to use the root version
+        "react-is": resolve(__dirname, "node_modules/react-is"),
+        // Handle nested react-is in @mui/utils
+        "@mui/utils/node_modules/react-is": resolve(__dirname, "node_modules/react-is"),
       },
-      dedupe: ["react", "react-dom"],
+      dedupe: ["react", "react-dom", "react-is"],
+      // Handle CJS/ESM interop for hoist-non-react-statics
+      conditions: ["import", "module", "browser", "default"],
     },
 
     optimizeDeps: {
       entries: ["index.html"],
+      include: [
+        "hoist-non-react-statics",
+        "prop-types",
+        "react-is",
+        "@emotion/react",
+        "@emotion/styled",
+        "deepmerge",
+        "@mui/utils",
+      ],
       exclude: [
         "@mui/material",
         "@mui/system",
         "@mui/icons-material",
         "@mui/x-data-grid",
         "@mui/x-date-pickers",
-        "@emotion/react",
-        "@emotion/styled",
         "@huggingface/transformers",
         "onnxruntime-common",
         "onnxruntime-web",
       ],
+      esbuildOptions: {
+        // Handle CommonJS modules properly
+        target: "es2020",
+      },
     },
 
     build: {

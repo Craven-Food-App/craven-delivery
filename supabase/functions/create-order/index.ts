@@ -5,8 +5,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { validateRequest, uuidSchema, centsSchema, emailSchema } from '../_shared/validation.ts';
 // Stripe helper functions (inlined to avoid _shared import issues)
 function getStripeClient(): Stripe {
   const secretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
@@ -170,15 +172,56 @@ serve(async (req) => {
       );
     }
 
-    // Get request body
+    // Validate request body with Zod schema
+    const orderSchema = z.object({
+      restaurant_id: uuidSchema,
+      cart_items: z.array(z.object({
+        menu_item_id: uuidSchema,
+        quantity: z.number().int().positive(),
+        price_cents: centsSchema,
+        special_instructions: z.string().optional(),
+      })),
+      food_subtotal_cents: centsSchema,
+      delivery_fee_cents: centsSchema.optional(),
+      service_fee_cents: centsSchema.optional(),
+      tax_cents: centsSchema.optional(),
+      tip_cents: centsSchema.optional(),
+      delivery_address: z.object({
+        street: z.string().min(1),
+        city: z.string().min(1),
+        state: z.string().length(2),
+        zip: z.string().regex(/^\d{5}(-\d{4})?$/),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+      }).optional(),
+      pickup_address: z.string().optional(),
+      delivery_method: z.enum(['delivery', 'pickup']).optional(),
+      customer_info: z.object({
+        name: z.string().min(1).optional(),
+        phone: z.string().optional(),
+        email: emailSchema.optional(),
+      }).optional(),
+      payment_method_id: z.string().min(1),
+      auto_boost_enabled: z.boolean().optional(),
+      auto_boost_cap_cents: centsSchema.optional(),
+    });
+
+    const validation = await validateRequest(orderSchema, req);
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        { status: validation.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const {
       restaurant_id,
       cart_items,
       food_subtotal_cents,
-      delivery_fee_cents,
-      service_fee_cents,
-      tax_cents,
-      tip_cents,
+      delivery_fee_cents = 0,
+      service_fee_cents = 0,
+      tax_cents = 0,
+      tip_cents = 0,
       delivery_address,
       pickup_address,
       delivery_method,
@@ -186,14 +229,7 @@ serve(async (req) => {
       payment_method_id,
       auto_boost_enabled = true,
       auto_boost_cap_cents = 600,
-    } = await req.json();
-
-    if (!restaurant_id || !cart_items || !food_subtotal_cents || !payment_method_id) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    } = validation.data;
 
     // Use service role for admin operations
     const supabaseAdmin = createClient(

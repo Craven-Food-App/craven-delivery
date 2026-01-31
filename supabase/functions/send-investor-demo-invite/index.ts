@@ -63,7 +63,11 @@ serve(async (req) => {
       );
     }
 
-    // Generate unique access token
+    // Generate unique access code (for access code + email verification)
+    const { data: codeData } = await supabase.rpc('generate_investor_demo_access_code');
+    const accessCode = codeData as string;
+
+    // Generate unique access token (for backward compatibility with magic links)
     const { data: tokenData } = await supabase.rpc('generate_investor_access_token');
     const accessToken = tokenData as string;
 
@@ -74,6 +78,7 @@ serve(async (req) => {
         email: email.toLowerCase().trim(),
         full_name: fullName || null,
         organization: organization || null,
+        access_code: accessCode,
         access_token: accessToken,
         status: 'invited',
         invited_by: user.id,
@@ -95,7 +100,10 @@ serve(async (req) => {
       );
     }
 
-    // Generate magic link
+    // Generate access URL (simple URL like foundational support - use main domain)
+    const accessUrl = Deno.env.get('INVESTOR_DEMO_ACCESS_URL') || 'https://cravenusa.com/investor-demo-access';
+    
+    // Keep magic link for backward compatibility (use HQ subdomain for management)
     const appUrl = Deno.env.get('APP_URL') || 'https://hq.cravenusa.com';
     const magicLink = `${appUrl}/investor-demo?token=${accessToken}`;
 
@@ -151,9 +159,48 @@ serve(async (req) => {
           <p style="font-size: 16px; margin: 25px 0 20px 0;">
             All data in this demo is <strong>mock data for demonstration purposes only</strong> and does not reflect actual platform activity.
           </p>
+
+          <!-- Access Code Card -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #e5e7eb;border-radius:12px;margin:0 0 16px 0;">
+            <tr>
+              <td style="padding:14px 14px 6px 14px;background-color:#f3f4f6;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#667eea;text-transform:uppercase;letter-spacing:0.6px;font-weight:700;">
+                  Demo Portal Access
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px 14px 14px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#374151;margin:0 0 8px 0;">
+                  To access the demo portal, you will need:
+                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#374151;padding:4px 0;width:40%;">
+                      Access Code
+                    </td>
+                    <td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111827;font-weight:700;padding:4px 0;letter-spacing:0.5px;">
+                      ${accessCode}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#374151;padding:4px 0;">
+                      Email Address
+                    </td>
+                    <td style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111827;font-weight:700;padding:4px 0;">
+                      ${email}
+                    </td>
+                  </tr>
+                </table>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#6b7280;margin:12px 0 0 0;line-height:18px;">
+                  Use your access code in combination with the email address listed above to gain access to the demo portal.
+                </div>
+              </td>
+            </tr>
+          </table>
           
           <div style="text-align: center; margin: 35px 0;">
-            <a href="${magicLink}" 
+            <a href="${accessUrl}" 
                style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
               Access Demo Portal
             </a>
@@ -162,7 +209,7 @@ serve(async (req) => {
           <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 6px; margin: 25px 0;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
               <strong>⏰ Access expires in 90 days</strong><br>
-              This magic link is unique to you. No password required.
+              This access is unique to you. Keep your access code secure.
             </p>
           </div>
           

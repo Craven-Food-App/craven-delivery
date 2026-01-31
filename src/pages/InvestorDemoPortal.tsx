@@ -37,10 +37,41 @@ export default function InvestorDemoPortal() {
   }, [searchParams]);
 
   async function validateAccess() {
+    // Check for verified session first (from access code + email verification)
+    const session = sessionStorage.getItem('investor_demo_session');
+    if (session) {
+      try {
+        const parsed = JSON.parse(session);
+        
+        // Check if session is expired
+        if (parsed.expiresAt && new Date(parsed.expiresAt) < new Date()) {
+          sessionStorage.removeItem('investor_demo_session');
+          setError('Your access has expired. Please request a new invitation.');
+          setLoading(false);
+          return;
+        }
+
+        setAccessRecord({
+          id: parsed.accessId,
+          email: parsed.email,
+          full_name: parsed.fullName,
+          organization: parsed.organization,
+          status: 'active',
+          expires_at: parsed.expiresAt,
+        });
+        setLoading(false);
+        return;
+      } catch (e) {
+        // Invalid session, continue to token check
+        sessionStorage.removeItem('investor_demo_session');
+      }
+    }
+
+    // Fallback to token-based access for backward compatibility
     const token = searchParams.get('token');
 
     if (!token) {
-      setError('No access token provided. Please use the link from your invitation email.');
+      setError('No access token provided. Please use the link from your invitation email or enter your access code.');
       setLoading(false);
       return;
     }

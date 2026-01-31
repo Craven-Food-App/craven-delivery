@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { checkRateLimit, RateLimitPresets, addRateLimitHeaders } from '../_shared/rateLimit.ts';
 
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { validateRequest, phoneSchema, emailSchema } from '../_shared/validation.ts';
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Get allowed origins from environment or use defaults
@@ -35,11 +37,6 @@ const getCorsHeaders = (origin: string | null) => {
   };
 };
 
-interface PhoneVerificationRequest {
-  phone: string;
-  email: string;
-}
-
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
@@ -69,14 +66,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { phone, email }: PhoneVerificationRequest = await req.json();
+    // Validate request with Zod schema
+    const phoneVerificationSchema = z.object({
+      phone: z.string().min(10, "Phone number must be at least 10 digits"),
+      email: emailSchema,
+    });
 
-    if (!phone || !email) {
+    const validation = await validateRequest(phoneVerificationSchema, req);
+    if (!validation.success) {
       return new Response(
-        JSON.stringify({ error: "Phone and email are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: validation.error }),
+        { status: validation.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const { phone, email } = validation.data;
 
     // Supabase client already initialized for rate limiting above
 

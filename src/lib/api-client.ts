@@ -71,3 +71,36 @@ export const supportApi = {
   },
 };
 
+/**
+ * Investor Demo API endpoints - uses Supabase Edge Functions
+ */
+export const investorDemoApi = {
+  async verifyAccess(accessCode: string, email: string): Promise<ApiResponse> {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-investor-demo-access', {
+        body: {
+          accessCode: accessCode.toUpperCase().trim(),
+          email: email.trim().toLowerCase(),
+        },
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          error: error.message || 'Unable to verify access',
+        };
+      }
+
+      return {
+        ok: true,
+        data,
+      };
+    } catch (error: any) {
+      return {
+        ok: false,
+        error: error.message || 'An unexpected error occurred',
+      };
+    }
+  },
+};
+
