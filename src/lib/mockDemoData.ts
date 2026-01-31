@@ -159,21 +159,42 @@ export const mockRestaurants: MockRestaurant[] = [
   },
 ];
 
-// Mock Menu Items
+// Mock Menu Items with realistic images
 export const mockMenuItems: Record<string, MockMenuItem[]> = {
   '1': [ // Bella Italia
-    { id: '1-1', name: 'Margherita Pizza', description: 'Fresh mozzarella, basil, tomato sauce', price: 14.99, category: 'Pizza', popular: true },
-    { id: '1-2', name: 'Spaghetti Carbonara', description: 'Creamy sauce, pancetta, parmesan', price: 16.99, category: 'Pasta', popular: true },
-    { id: '1-3', name: 'Chicken Parmesan', description: 'Breaded chicken, marinara, mozzarella', price: 18.99, category: 'Entrees' },
-    { id: '1-4', name: 'Caesar Salad', description: 'Romaine, parmesan, croutons, caesar dressing', price: 9.99, category: 'Salads' },
-    { id: '1-5', name: 'Tiramisu', description: 'Classic Italian coffee dessert', price: 7.99, category: 'Desserts' },
+    { id: '1-1', name: 'Margherita Pizza', description: 'Fresh mozzarella, basil, tomato sauce', price: 14.99, category: 'Pizza', imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400', popular: true },
+    { id: '1-2', name: 'Spaghetti Carbonara', description: 'Creamy sauce, pancetta, parmesan', price: 16.99, category: 'Pasta', imageUrl: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=400', popular: true },
+    { id: '1-3', name: 'Chicken Parmesan', description: 'Breaded chicken, marinara, mozzarella', price: 18.99, category: 'Entrees', imageUrl: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=400' },
+    { id: '1-4', name: 'Caesar Salad', description: 'Romaine, parmesan, croutons, caesar dressing', price: 9.99, category: 'Salads', imageUrl: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400' },
+    { id: '1-5', name: 'Tiramisu', description: 'Classic Italian coffee dessert', price: 7.99, category: 'Desserts', imageUrl: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400' },
   ],
   '2': [ // Sushi Master
-    { id: '2-1', name: 'California Roll', description: 'Crab, avocado, cucumber', price: 8.99, category: 'Rolls', popular: true },
-    { id: '2-2', name: 'Spicy Tuna Roll', description: 'Tuna, spicy mayo, cucumber', price: 10.99, category: 'Rolls', popular: true },
-    { id: '2-3', name: 'Dragon Roll', description: 'Shrimp tempura, avocado, eel sauce', price: 15.99, category: 'Specialty Rolls', popular: true },
-    { id: '2-4', name: 'Salmon Sashimi', description: '6 pieces of fresh salmon', price: 12.99, category: 'Sashimi' },
-    { id: '2-5', name: 'Miso Soup', description: 'Traditional Japanese soup', price: 3.99, category: 'Appetizers' },
+    { id: '2-1', name: 'California Roll', description: 'Crab, avocado, cucumber', price: 8.99, category: 'Rolls', imageUrl: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400', popular: true },
+    { id: '2-2', name: 'Spicy Tuna Roll', description: 'Tuna, spicy mayo, cucumber', price: 10.99, category: 'Rolls', imageUrl: 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?w=400', popular: true },
+    { id: '2-3', name: 'Dragon Roll', description: 'Shrimp tempura, avocado, eel sauce', price: 15.99, category: 'Specialty Rolls', imageUrl: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400', popular: true },
+    { id: '2-4', name: 'Salmon Sashimi', description: '6 pieces of fresh salmon', price: 12.99, category: 'Sashimi', imageUrl: 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=400' },
+    { id: '2-5', name: 'Miso Soup', description: 'Traditional Japanese soup', price: 3.99, category: 'Appetizers', imageUrl: 'https://images.unsplash.com/photo-1607301405390-d831c242f59b?w=400' },
+  ],
+  '3': [ // Burger Haven
+    { id: '3-1', name: 'Classic Burger', description: 'Beef patty, lettuce, tomato, pickles', price: 12.99, category: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', popular: true },
+    { id: '3-2', name: 'Bacon Cheeseburger', description: 'Beef, bacon, cheese, special sauce', price: 14.99, category: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400', popular: true },
+    { id: '3-3', name: 'Crispy Fries', description: 'Golden french fries', price: 4.99, category: 'Sides', imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400' },
+    { id: '3-4', name: 'Milkshake', description: 'Vanilla, chocolate, or strawberry', price: 5.99, category: 'Drinks', imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400' },
+  ],
+  '4': [ // Thai Orchid
+    { id: '4-1', name: 'Pad Thai', description: 'Rice noodles, peanuts, lime', price: 13.99, category: 'Noodles', imageUrl: 'https://images.unsplash.com/photo-1559314809-0d155014e29e?w=400', popular: true },
+    { id: '4-2', name: 'Green Curry', description: 'Coconut curry, vegetables, jasmine rice', price: 14.99, category: 'Curry', imageUrl: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400', popular: true },
+    { id: '4-3', name: 'Tom Yum Soup', description: 'Spicy and sour Thai soup', price: 8.99, category: 'Soups', imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400' },
+  ],
+  '5': [ // Mediterranean Grill
+    { id: '5-1', name: 'Lamb Gyro', description: 'Slow-roasted lamb, tzatziki, pita', price: 13.99, category: 'Gyros', imageUrl: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400', popular: true },
+    { id: '5-2', name: 'Chicken Shawarma', description: 'Marinated chicken, garlic sauce', price: 12.99, category: 'Wraps', imageUrl: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400', popular: true },
+    { id: '5-3', name: 'Falafel Plate', description: 'Crispy falafel, hummus, tahini', price: 11.99, category: 'Vegetarian', imageUrl: 'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?w=400' },
+  ],
+  '6': [ // Taco Fiesta
+    { id: '6-1', name: 'Carne Asada Tacos', description: 'Grilled steak, onions, cilantro', price: 10.99, category: 'Tacos', imageUrl: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400', popular: true },
+    { id: '6-2', name: 'Chicken Burrito', description: 'Rice, beans, cheese, sour cream', price: 11.99, category: 'Burritos', imageUrl: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400', popular: true },
+    { id: '6-3', name: 'Chips & Guacamole', description: 'Fresh tortilla chips, homemade guac', price: 6.99, category: 'Appetizers', imageUrl: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400' },
   ],
 };
 
