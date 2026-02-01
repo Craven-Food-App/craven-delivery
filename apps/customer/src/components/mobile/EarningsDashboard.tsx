@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -101,10 +101,16 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const expiryDate = '12/28';
   const cvv = '847';
   const [showCardDetails, setShowCardDetails] = useState(false);
+  
+  // Gas Money state
+  const [gasMoney, setGasMoney] = useState(0);
+  const [showGasMoneyModal, setShowGasMoneyModal] = useState(false);
+  const [transferAmount, setTransferAmount] = useState('');
 
   useEffect(() => {
     fetchEarningsData();
     fetchCardData();
+    fetchGasMoneyData();
   }, [timeRange]);
 
   const fetchCardData = async () => {
@@ -133,6 +139,78 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       }
     } catch (error) {
       console.error('Error fetching card data:', error);
+    }
+  };
+  
+  const fetchGasMoneyData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch accumulated gas money from driver_gas_money table or calculate from distance pay
+      const { data: gasMoneyData } = await supabase
+        .from('driver_gas_money')
+        .select('balance')
+        .eq('driver_id', user.id)
+        .single();
+
+      if (gasMoneyData?.balance) {
+        setGasMoney(gasMoneyData.balance / 100); // Convert cents to dollars
+      } else {
+        // If no gas money record exists, use distancePay from breakdown
+        setGasMoney(breakdown.distancePay);
+      }
+    } catch (error) {
+      console.error('Error fetching gas money:', error);
+      // Fallback to distance pay from breakdown
+      setGasMoney(breakdown.distancePay);
+    }
+  };
+  
+  const handleTransferGasMoney = async () => {
+    try {
+      const amount = parseFloat(transferAmount);
+      
+      if (isNaN(amount) || amount <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+      
+      if (amount > gasMoney) {
+        toast.error(`Amount cannot exceed your gas money balance of ${formatCurrency(gasMoney)}`);
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please sign in to transfer funds');
+        return;
+      }
+
+      // Transfer to Feeder Card via Stripe
+      const { data, error } = await supabase.functions.invoke('transfer-gas-money', {
+        body: { 
+          driver_id: user.id,
+          amount_cents: Math.round(amount * 100)
+        }
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setGasMoney(gasMoney - amount);
+      setCardBalance(cardBalance + amount);
+      setTransferAmount('');
+      setShowGasMoneyModal(false);
+      
+      toast.success(`${formatCurrency(amount)} transferred to your Feeder Card!`);
+      
+      // Refresh data
+      fetchGasMoneyData();
+      fetchCardData();
+    } catch (error) {
+      console.error('Error transferring gas money:', error);
+      toast.error('Failed to transfer funds. Please try again.');
     }
   };
 
@@ -349,30 +427,31 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-gray-50" style={{ 
+      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
-        <div className="px-4 py-3 flex items-center justify-between">
+      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px' }}>
+        <div className="flex items-center justify-between mb-1">
           <button 
             onClick={() => onOpenMenu?.()}
-            className="text-gray-700"
+            className="text-gray-700 p-2"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Earnings</h1>
+          <h1 className="text-base font-black text-gray-900" style={{ letterSpacing: '0.2px' }}>Earnings</h1>
           <button 
             onClick={() => onOpenNotifications?.()}
-            className="text-gray-700"
+            className="text-gray-700 p-2"
           >
             <Bell className="w-6 h-6" />
           </button>
         </div>
         
         {/* Time Range Selector */}
-        <div className="px-4 pb-3">
+        <div className="mt-3">
           <div className="flex gap-2">
             {(['today', 'thisWeek', 'lastWeek'] as TimeRange[]).map((range) => (
               <button
@@ -431,7 +510,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     backgroundRepeat: 'no-repeat',
                     aspectRatio: "1.586 / 1",
                     width: "100%",
-                    maxWidth: "420px",
+                    maxWidth: "480px",
                     overflow: 'hidden',
                     borderRadius: '16px',
                     paddingTop: '5px',
@@ -457,7 +536,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      marginTop: '-20px',
+                      marginTop: '-40px',
                       width: '100%',
                       overflow: 'hidden'
                     }}>
@@ -504,7 +583,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     </Box>
 
                     {/* Bottom Section - Expiry, CVV, Name */}
-                    <Group justify="space-between" align="flex-end" style={{ marginTop: '-30px' }}>
+                    <Group justify="space-between" align="flex-end" style={{ marginTop: '-50px' }}>
                       <Box style={{ flex: 1, minWidth: 0 }}>
                         <Group gap="md" mb={4}>
                           <Box>
@@ -531,11 +610,24 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </Box>
           </div>
 
-          {/* Primary Earnings Summary Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm mt-2.5">
-            <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
-            <p className="text-4xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
-            <p className="text-xs text-gray-400">Net earnings for selected period</p>
+          {/* Earnings Summary Cards - Side by Side */}
+          <div className="grid grid-cols-2 gap-3 mt-2.5">
+            {/* Primary Earnings Summary Card */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
+              <p className="text-xs text-gray-400">Net earnings</p>
+            </div>
+            
+            {/* Gas Money Card - Clickable */}
+            <div 
+              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setShowGasMoneyModal(true)}
+            >
+              <p className="text-sm text-gray-500 mb-1">Gas Money</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(gasMoney)}</p>
+              <p className="text-xs text-gray-400">Mileage earnings</p>
+            </div>
           </div>
 
           {/* Earnings Breakdown Card */}
@@ -740,6 +832,128 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Gas Money Transfer Modal */}
+      {showGasMoneyModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <Fuel className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Gas Money</h3>
+                  <p className="text-sm text-gray-500">Mileage earnings</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowGasMoneyModal(false);
+                  setTransferAmount('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            {/* Balance Display */}
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 mb-6 border-2 border-green-200">
+              <p className="text-sm text-green-700 mb-1">Available Balance</p>
+              <p className="text-4xl font-bold text-green-900">{formatCurrency(gasMoney)}</p>
+              <p className="text-xs text-green-600 mt-2">
+                Accumulated from {breakdown.distancePay > 0 ? 'distance pay' : 'mileage'}
+              </p>
+            </div>
+            
+            {/* Transfer Options */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transfer Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <input
+                    type="number"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    max={gasMoney}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => setTransferAmount((gasMoney * 0.25).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    25%
+                  </button>
+                  <button
+                    onClick={() => setTransferAmount((gasMoney * 0.5).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    50%
+                  </button>
+                  <button
+                    onClick={() => setTransferAmount((gasMoney * 0.75).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    75%
+                  </button>
+                  <button
+                    onClick={() => setTransferAmount(gasMoney.toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    All
+                  </button>
+                </div>
+              </div>
+              
+              {/* Transfer Destination */}
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-orange-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Transfer to Feeder Card</p>
+                    <p className="text-xs text-gray-600">Available instantly</p>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(cardBalance)}</p>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowGasMoneyModal(false);
+                    setTransferAmount('');
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleTransferGasMoney}
+                  disabled={!transferAmount || parseFloat(transferAmount) <= 0}
+                  className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Transfer
+                </button>
+              </div>
+              
+              {/* Info Text */}
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Gas money is accumulated from your distance pay and can be used for fuel or transferred to your Feeder Card for any purpose.
+              </p>
             </div>
           </div>
         </div>

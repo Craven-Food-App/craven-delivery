@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
-import { MobileLayout } from '@/components/layouts/MobileLayout';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -323,13 +322,20 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
   // ─── LOADING STATE ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <MobileLayout>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+        width: '100%',
+        background: C.white,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flex: 1,
-          background: C.white,
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{
@@ -350,30 +356,32 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
             }
           `}</style>
         </div>
-      </MobileLayout>
+      </div>
     );
   }
 
   // ─── MAIN RENDER ──────────────────────────────────────────────────────────
   return (
-    <MobileLayout headerHeight="56px">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100dvh',
+      width: '100%',
+      background: C.white,
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
         background: C.white,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        flexShrink: 0,
       }}>
-        {/* Header */}
-        <div style={{
-          background: C.white,
-          borderBottom: `1px solid ${C.border}`,
-          padding: '12px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexShrink: 0,
-          height: '56px', // Content-driven height
-        }}>
         <button
           onClick={onBack}
           style={{
@@ -429,7 +437,6 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
           background: C.white,
           borderTop: `1px solid ${C.border}`,
           padding: '12px 16px',
-          paddingBottom: `calc(12px + env(safe-area-inset-bottom, 0px))`,
           flexShrink: 0,
         }}>
           <div style={{
@@ -497,8 +504,7 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
             </button>
           </div>
         </div>
-      </div>
-    </MobileLayout>
+    </div>
   );
 };
 

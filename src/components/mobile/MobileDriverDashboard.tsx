@@ -11,7 +11,7 @@ import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { useIOSNotifications } from '@/hooks/useIOSNotifications';
 import { IOSNotificationBanner } from './IOSNotificationBanner';
 import { MobileMapbox } from './MobileMapbox';
-import { DriveTimeSelector } from './DriveTimeSelector';
+import { EndTimePickerSheet } from './EndTimePickerSheet';
 import LoadingScreen from './LoadingScreen';
 import MobileDriverWelcomeScreen from './MobileDriverWelcomeScreen';
 import { SpeedLimitSign } from './SpeedLimitSign';
@@ -1256,6 +1256,27 @@ export const MobileDriverDashboard: React.FC = () => {
     // TODO: Implement customer service chat functionality
     // This could open a modal or navigate to a support page
   };
+  
+  // Helper to convert time string to minutes from now
+  const convertTimeStringToMinutes = (timeString: string): number => {
+    const now = new Date();
+    const [time, period] = timeString.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    let hours24 = hours;
+    if (period === 'PM' && hours !== 12) hours24 += 12;
+    if (period === 'AM' && hours === 12) hours24 = 0;
+    
+    const selectedEnd = new Date(now);
+    selectedEnd.setHours(hours24, minutes, 0, 0);
+    
+    // If selected time is earlier today, assume it's tomorrow
+    if (selectedEnd <= now) {
+      selectedEnd.setDate(selectedEnd.getDate() + 1);
+    }
+    
+    return Math.round((selectedEnd.getTime() - now.getTime()) / (1000 * 60));
+  };
+  
   const handleSelectDriveTime = async (minutes: number) => {
     const now = new Date();
     const selectedEnd = new Date(now.getTime() + minutes * 60 * 1000);
@@ -1840,7 +1861,14 @@ export const MobileDriverDashboard: React.FC = () => {
       }} />
 
       {/* Drive Time Selector */}
-      <DriveTimeSelector open={showTimeSelector} onClose={() => setShowTimeSelector(false)} onSelect={handleSelectDriveTime} />
+      <EndTimePickerSheet 
+        open={showTimeSelector} 
+        onClose={() => setShowTimeSelector(false)} 
+        onContinue={(timeString) => {
+          const minutes = convertTimeStringToMinutes(timeString);
+          handleSelectDriveTime(minutes);
+        }}
+      />
 
 
 

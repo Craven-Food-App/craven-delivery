@@ -208,9 +208,9 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
+      <Group px="md" py="xs" justify="space-between" align="center" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #EEEEEE' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {
@@ -228,7 +228,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
         >
           <IconMenu2 size={24} />
         </ActionIcon>
-        <Title order={1} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>PROMOS</Title>
+        <Title order={1} c="dark" fw={900} size="md" style={{ letterSpacing: '0.2px' }}>PROMOS</Title>
         <ActionIcon
           onClick={() => {
             window.location.href = '/mobile?tab=messages';

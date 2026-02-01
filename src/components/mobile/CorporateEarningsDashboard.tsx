@@ -224,10 +224,11 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
   return (
     <div className="h-screen w-full overflow-y-auto" style={{ 
       background: '#ffffff',
+      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header - Level with hamburger menu */}
-      <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
+      <div className="bg-white border-b sticky top-0 z-10 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <button 
           onClick={() => {
             if (onOpenMenu) {
@@ -236,13 +237,13 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
               toast.info('Menu coming soon.');
             }
           }}
-          className="text-gray-900 text-lg"
+          className="text-gray-900 text-lg p-2"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="text-gray-900 text-xl font-bold">On Fire</h1>
+        <h1 className="text-gray-900 text-base font-black" style={{ letterSpacing: '0.2px' }}>On Fire</h1>
         <button 
           onClick={() => {
             if (onOpenNotifications) {
@@ -251,7 +252,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
               toast.info('Notifications coming soon.');
             }
           }}
-          className="text-gray-900"
+          className="text-gray-900 p-2"
         >
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
