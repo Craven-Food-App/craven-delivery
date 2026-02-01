@@ -148,22 +148,22 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       if (!user) return;
 
       // Fetch accumulated gas money from driver_gas_money table or calculate from distance pay
-      const { data: gasMoneyData } = await supabase
+      const { data: gasMoneyData, error } = await supabase
         .from('driver_gas_money')
         .select('balance')
         .eq('driver_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle no records gracefully
 
-      if (gasMoneyData?.balance) {
+      if (!error && gasMoneyData?.balance) {
         setGasMoney(gasMoneyData.balance / 100); // Convert cents to dollars
       } else {
-        // If no gas money record exists, use distancePay from breakdown
-        setGasMoney(breakdown.distancePay);
+        // If no gas money record exists yet, start at $0
+        setGasMoney(0);
       }
     } catch (error) {
       console.error('Error fetching gas money:', error);
-      // Fallback to distance pay from breakdown
-      setGasMoney(breakdown.distancePay);
+      // Fallback to $0
+      setGasMoney(0);
     }
   };
   
