@@ -723,8 +723,7 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
-        </div> {/* Close Content - Scrollable */}
-      </div>
+      </div> {/* Close Content - Scrollable */}
     </div>
   );
 };
