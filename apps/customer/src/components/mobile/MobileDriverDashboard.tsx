@@ -603,6 +603,7 @@ export const MobileDriverDashboard: React.FC = () => {
         customer_name: payload.payload.customer_name, // Include customer name
         subtotal_cents: payload.payload.subtotal_cents, // Include subtotal
         tip_cents: payload.payload.tip_cents, // Include tip
+        mileage_pay_cents: payload.payload.mileage_pay_cents || 0, // Include mileage pay
       });
       setShowOrderModal(true);
 

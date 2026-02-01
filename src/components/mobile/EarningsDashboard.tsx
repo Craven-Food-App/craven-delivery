@@ -268,6 +268,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             subtotal_cents,
             delivery_fee_cents,
             tip_cents,
+            mileage_pay_cents,
             restaurant_id,
             restaurants:restaurant_id(name),
             created_at,
@@ -291,8 +292,12 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       earnings.forEach((earning: any) => {
         basePay += (earning.amount_cents || 0) / 100;
         tips += (earning.tip_cents || 0) / 100;
-        // Distance pay would come from a separate field if available
-        // For now, we'll use amount_cents as base pay
+        
+        // Add mileage pay (distance pay) from the order
+        const order = earning.orders;
+        if (order?.mileage_pay_cents) {
+          distancePay += order.mileage_pay_cents / 100;
+        }
       });
 
       const totalEarned = basePay + distancePay + tips + bonuses + adjustments;
