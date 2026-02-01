@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS driver_gas_money (
   balance INTEGER NOT NULL DEFAULT 0, -- Balance in cents
   total_accumulated INTEGER NOT NULL DEFAULT 0, -- Total ever accumulated in cents
   total_transferred INTEGER NOT NULL DEFAULT 0, -- Total ever transferred in cents
+  last_earned_at TIMESTAMPTZ, -- Last time mileage was earned
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(driver_id)
@@ -17,9 +18,11 @@ CREATE INDEX IF NOT EXISTS idx_driver_gas_money_driver_id ON driver_gas_money(dr
 CREATE TABLE IF NOT EXISTS gas_money_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   driver_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  order_id UUID REFERENCES orders(id) ON DELETE SET NULL, -- Link to order if earned from delivery
   amount_cents INTEGER NOT NULL,
-  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('accumulate', 'transfer', 'adjustment')),
+  transaction_type TEXT NOT NULL CHECK (transaction_type IN ('accumulate', 'transfer', 'adjustment', 'earned')),
   destination TEXT, -- 'feeder_card', 'bank', etc.
+  description TEXT, -- Description of the transaction
   status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
