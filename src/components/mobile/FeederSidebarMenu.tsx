@@ -136,6 +136,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   const menuItems = [
     { icon: IconHome, label: 'Home', path: 'home' },
     { icon: IconCalendar, label: 'Schedule', path: 'schedule' },
+    { icon: IconFlame, label: 'On Fire', path: 'onfire' },
     { icon: IconCurrencyDollar, label: 'Earnings', path: 'earnings' },
     { icon: IconUser, label: 'Account', path: 'account' },
     { icon: IconStar, label: 'Ratings', path: 'ratings' },
@@ -149,6 +150,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
       const pathMap: Record<string, string> = {
         'home': 'Home',
         'schedule': 'Schedule',
+        'onfire': 'On Fire',
         'earnings': 'Earnings',
         'notifications': 'Notifications',
         'account': 'Account',

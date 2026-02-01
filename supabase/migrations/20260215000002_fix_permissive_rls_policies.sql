@@ -229,3 +229,4 @@ END $$;
 -- Add security comment
 COMMENT ON SCHEMA public IS 'Security Note: All tables with USING(true) or WITH CHECK(true) policies have been reviewed. Some may be intentionally public (e.g., marketing assets, public listings), but sensitive data is now properly restricted.';
 
+

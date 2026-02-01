@@ -229,3 +229,4 @@ GRANT EXECUTE ON FUNCTION public.security_audit_summary() TO authenticated;
 COMMENT ON FUNCTION public.security_audit_summary IS 
 'Returns a summary of security audit metrics. Review any WARNING or CRITICAL status items.';
 
+

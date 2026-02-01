@@ -34,31 +34,28 @@ export const FlashDropCard: React.FC<FlashDropCardProps> = ({ order, onClaim, is
 
   return (
     <Card
-      p="lg"
+      p="sm"
       radius="md"
       style={{
-        background: isLocked 
-          ? 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)'
-          : 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)',
-        border: `2px solid ${isLocked ? '#444' : '#FF6A00'}`,
-        boxShadow: isLocked ? 'none' : '0 0 16px rgba(255,106,0,0.6)',
+        background: '#ffffff',
+        border: `2px solid ${isLocked ? '#e0e0e0' : '#FF6A00'}`,
+        boxShadow: isLocked ? 'none' : '0 2px 8px rgba(0,0,0,0.1)',
         position: 'relative',
         overflow: 'hidden',
-        filter: isLocked ? 'blur(2px)' : 'none',
         opacity: isLocked ? 0.6 : 1,
       }}
     >
-      <Stack gap="md">
+      <Stack gap="xs">
         <Group justify="apart" align="flex-start">
-          <Stack gap="xs">
+          <Stack gap={4}>
             <Group gap="xs">
-              <Zap size={20} color={isLocked ? '#666' : '#fff'} />
-              <Text fw={700} size="lg" c={isLocked ? 'dimmed' : 'white'}>
+              <Zap size={16} color={isLocked ? '#999' : '#FF6A00'} />
+              <Text fw={700} size="sm" c={isLocked ? '#999' : '#000'}>
                 FLASH DROP
               </Text>
             </Group>
             {isDiamond && order.diamond_only_until && (
-              <Badge color="orange" variant="filled" size="sm">
+              <Badge color="orange" variant="filled" size="xs">
                 Diamond Early Access
               </Badge>
             )}
@@ -66,11 +63,11 @@ export const FlashDropCard: React.FC<FlashDropCardProps> = ({ order, onClaim, is
           
           {!isExpired && order.diamond_only_until && (
             <RingProgress
-              size={60}
-              thickness={6}
-              sections={[{ value: progress, color: isLocked ? 'gray' : 'white' }]}
+              size={48}
+              thickness={5}
+              sections={[{ value: progress, color: isLocked ? '#999' : '#FF6A00' }]}
               label={
-                <Text ta="center" c={isLocked ? 'dimmed' : 'white'} fw={700} size="xs">
+                <Text ta="center" c={isLocked ? '#999' : '#000'} fw={700} size={10}>
                   {timeRemaining}s
                 </Text>
               }
@@ -79,25 +76,22 @@ export const FlashDropCard: React.FC<FlashDropCardProps> = ({ order, onClaim, is
         </Group>
 
         <Box>
-          <Text size="sm" c={isLocked ? 'dimmed' : 'white'} mb="xs">
+          <Text size="xs" c={isLocked ? '#999' : '#666'} mb={4}>
             {order.restaurant?.name || 'Restaurant'}
           </Text>
-          <Text fw={700} size="xl" c={isLocked ? 'dimmed' : 'white'}>
+          <Text fw={700} size="lg" c={isLocked ? '#999' : '#000'}>
             ${payout.toFixed(2)}
           </Text>
         </Box>
 
         <Button
           fullWidth
-          size="lg"
+          size="sm"
           color={isLocked ? 'gray' : 'orange'}
           variant={isLocked ? 'outline' : 'filled'}
           disabled={isLocked || isExpired}
           onClick={() => onClaim(order.id)}
           style={{
-            background: isLocked 
-              ? 'transparent'
-              : 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)',
             transition: 'all 0.2s',
           }}
         >

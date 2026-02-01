@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import Stripe from "https://esm.sh/stripe@14.5.0?target=deno";
-import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
@@ -118,6 +117,29 @@ serve(async (req) => {
 
     let accountId = restaurant.stripe_connect_account_id;
 
+    // Check stripe_accounts table first (primary source of truth)
+    if (!accountId) {
+      const { data: stripeAccount } = await supabase
+        .from('stripe_accounts')
+        .select('stripe_account_id')
+        .eq('owner_type', 'restaurant')
+        .eq('owner_id', restaurant.id)
+        .maybeSingle();
+      
+      if (stripeAccount?.stripe_account_id) {
+        accountId = stripeAccount.stripe_account_id;
+        console.log('Found existing account in stripe_accounts table:', accountId);
+        
+        // Sync to restaurants table if missing
+        if (!restaurant.stripe_connect_account_id) {
+          await supabase
+            .from('restaurants')
+            .update({ stripe_connect_account_id: accountId })
+            .eq('id', restaurant.id);
+        }
+      }
+    }
+
     // Create Stripe Connect account if it doesn't exist
     if (!accountId) {
       console.log('Creating new Stripe Express account');
@@ -127,31 +149,50 @@ serve(async (req) => {
           country: 'US',
           email: restaurant.email || user.email,
           capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
+            transfers: { requested: true }, // ONLY transfers (no card_payments)
           },
           business_type: 'company',
           metadata: {
             restaurant_id: restaurant.id,
-            restaurant_name: restaurant.name
+            restaurant_name: restaurant.name,
+            owner_type: 'restaurant',
+            platform: 'cravenusa',
           }
         });
 
         accountId = account.id;
         console.log('Created Stripe account:', accountId);
 
-        // Save account ID to restaurant
+        // Save to stripe_accounts table (primary)
+        const { error: stripeAccountError } = await supabase
+          .from('stripe_accounts')
+          .insert({
+            owner_type: 'restaurant',
+            owner_id: restaurant.id,
+            stripe_account_id: accountId,
+            details_submitted: account.details_submitted || false,
+            payouts_enabled: account.payouts_enabled || false,
+            charges_enabled: account.charges_enabled || false,
+            requirements: account.requirements || {},
+          });
+
+        if (stripeAccountError && stripeAccountError.code !== '23505') {
+          console.error('Failed to save to stripe_accounts:', stripeAccountError.message);
+          // Continue - not critical, can be synced via webhook
+        }
+
+        // Also save to restaurants table (backward compatibility)
         const { error: updateError } = await supabase
           .from('restaurants')
           .update({ stripe_connect_account_id: accountId })
           .eq('id', restaurant.id);
 
         if (updateError) {
-          console.error('Failed to save Stripe account ID:', updateError.message);
+          console.error('Failed to save Stripe account ID to restaurants:', updateError.message);
           throw new Error('Failed to save Stripe account');
         }
         
-        console.log('Saved Stripe account ID to database');
+        console.log('Saved Stripe account ID to both tables');
       } catch (stripeError: any) {
         const rawMsg: string = (stripeError?.raw?.message || String(stripeError?.message || stripeError));
         console.error('Error creating Stripe account:', stripeError);

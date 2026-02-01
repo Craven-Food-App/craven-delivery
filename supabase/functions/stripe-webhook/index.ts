@@ -97,6 +97,12 @@ async function handleWebhookEvent(event: Stripe.Event) {
     case 'charge.refunded':
       await handleChargeRefunded(event.data.object as Stripe.Charge, event.id);
       break;
+    // Driver instant payout status updates
+    case 'payout.paid':
+    case 'payout.failed':
+    case 'payout.canceled':
+      await handlePayoutUpdate(event.data.object as Stripe.Payout);
+      break;
     // Keep existing CraveMore subscription handlers
     case 'checkout.session.completed':
       await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
@@ -122,6 +128,30 @@ async function handleAccountUpdated(account: Stripe.Account) {
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_account_id', account.id);
+}
+
+async function handlePayoutUpdate(payout: Stripe.Payout) {
+  console.log(`[Webhook] Payout ${payout.id}: ${payout.status}`);
+  
+  const { error } = await supabase
+    .from('driver_payouts')
+    .update({
+      status: payout.status,
+      arrival_date: payout.arrival_date 
+        ? new Date(payout.arrival_date * 1000).toISOString()
+        : null,
+      failure_code: payout.failure_code || null,
+      failure_message: payout.failure_message || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('stripe_payout_id', payout.id);
+
+  if (error) {
+    console.error(`[Webhook] Failed to update payout ${payout.id}:`, error);
+    throw error;
+  }
+
+  console.log(`[Webhook] Payout ${payout.id} updated to ${payout.status}`);
 }
 
 async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {

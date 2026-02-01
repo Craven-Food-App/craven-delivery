@@ -20,7 +20,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import FeederPromotionsTab from './FeederPromotionsTab';
 import { DeliveryZone, getZoneForLocation } from '@/data/deliveryZones';
 import FeederScheduleTab from './FeederScheduleTab';
-import CorporateEarningsDashboard from './CorporateEarningsDashboard';
+import OnFireDashboard from './CorporateEarningsDashboard';
+import EarningsDashboard from './EarningsDashboard';
 import FeederAccountPage from './FeederAccountPage';
 import FeederRatingsTab from './FeederRatingsTab';
 import CravenAppComm from './CravenAppComm';
@@ -332,7 +333,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isActiveFeedingMenuOpen, setIsActiveFeedingMenuOpen] = useState(false);
   const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
   const [ratingTrend, setRatingTrend] = useState<number>(0);
@@ -359,8 +360,8 @@ export const MobileDriverDashboard: React.FC = () => {
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['schedule', 'earnings', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
-      setActiveTab(tab as 'schedule' | 'earnings' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages');
+    if (tab && ['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
+      setActiveTab(tab as 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages');
     } else {
       setActiveTab('home');
     }
@@ -370,7 +371,7 @@ export const MobileDriverDashboard: React.FC = () => {
   useEffect(() => {
     const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
       const { tab, section } = event.detail;
-      if (['schedule', 'earnings', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
+      if (['schedule', 'earnings', 'onfire', 'notifications', 'account', 'ratings', 'promos', 'preferences', 'help', 'messages'].includes(tab)) {
         setActiveTab(tab as any);
         // Update URL without causing reload
         const newUrl = section ? `/mobile?tab=${tab}&section=${section}` : `/mobile?tab=${tab}`;
@@ -499,8 +500,12 @@ export const MobileDriverDashboard: React.FC = () => {
         setActiveTab('ratings');
         navigate('/mobile?tab=ratings');
         break;
+      case 'On Fire':
+        setActiveTab('onfire');
+        navigate('/mobile?tab=onfire');
+        break;
       case 'Earnings':
-        // Navigate to mobile earnings section
+        setActiveTab('earnings');
         navigate('/mobile?tab=earnings');
         break;
       case 'Promos':
@@ -1388,10 +1393,21 @@ export const MobileDriverDashboard: React.FC = () => {
           </div>
         )}
         
+        {activeTab === 'onfire' && (
+          <div className="fixed inset-0 z-20 overflow-hidden bg-background">
+            <div className="h-full overflow-y-auto">
+              <OnFireDashboard 
+                onOpenMenu={() => setIsMenuOpen(true)}
+                onOpenNotifications={() => setActiveTab('notifications')}
+              />
+            </div>
+          </div>
+        )}
+        
         {activeTab === 'earnings' && (
           <div className="fixed inset-0 z-20 overflow-hidden bg-background">
             <div className="h-full overflow-y-auto">
-              <CorporateEarningsDashboard 
+              <EarningsDashboard 
                 onOpenMenu={() => setIsMenuOpen(true)}
                 onOpenNotifications={() => setActiveTab('notifications')}
               />

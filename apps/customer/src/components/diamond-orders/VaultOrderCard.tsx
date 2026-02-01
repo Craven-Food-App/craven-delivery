@@ -26,35 +26,32 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
 
   return (
     <Card
-      p="lg"
+      p="sm"
       radius="md"
       style={{
-        background: isUnlocked 
-          ? 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)'
-          : 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-        border: `2px solid ${isUnlocked ? '#FF6A00' : '#444'}`,
-        boxShadow: isUnlocked ? '0 0 16px rgba(255,106,0,0.6)' : 'none',
+        background: '#ffffff',
+        border: `2px solid ${isUnlocked ? '#FF6A00' : '#e0e0e0'}`,
+        boxShadow: isUnlocked ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
         position: 'relative',
         overflow: 'hidden',
-        filter: isUnlocked ? 'none' : 'blur(1px)',
         opacity: isUnlocked ? 1 : 0.7,
       }}
     >
-      <Stack gap="md">
+      <Stack gap="xs">
         <Group justify="apart" wrap="nowrap" style={{ overflow: 'visible' }}>
           <Group gap="xs" wrap="nowrap">
             <ThemeIcon
-              size={40}
+              size={32}
               radius="xl"
               variant="gradient"
               gradient={isUnlocked 
                 ? { from: '#FF6A00', to: '#D45400', deg: 135 }
-                : { from: '#444', to: '#666', deg: 135 }
+                : { from: '#999', to: '#ccc', deg: 135 }
               }
             >
-              {isUnlocked ? <Unlock size={24} /> : <Lock size={24} />}
+              {isUnlocked ? <Unlock size={18} color="#fff" /> : <Lock size={18} color="#666" />}
             </ThemeIcon>
-            <Text fw={700} size="lg" c={isUnlocked ? 'white' : 'dimmed'} style={{ whiteSpace: 'nowrap' }}>
+            <Text fw={700} size="sm" c={isUnlocked ? '#000' : '#999'} style={{ whiteSpace: 'nowrap' }}>
               VAULT ORDER
             </Text>
           </Group>
@@ -63,10 +60,10 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
             <Badge 
               color="orange" 
               variant="filled" 
-              size="md"
+              size="xs"
               style={{
-                padding: '6px 12px',
-                fontSize: '12px',
+                padding: '4px 8px',
+                fontSize: '10px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -76,17 +73,17 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
                 overflow: 'visible'
               }}
             >
-              <Sparkles size={12} style={{ marginRight: 4 }} />
+              <Sparkles size={10} style={{ marginRight: 4 }} />
               Unlocked
             </Badge>
           )}
         </Group>
 
         <Box>
-          <Text size="sm" c={isUnlocked ? 'white' : 'dimmed'} mb="xs">
+          <Text size="xs" c={isUnlocked ? '#666' : '#999'} mb={4}>
             {order.restaurant?.name || 'Restaurant'}
           </Text>
-          <Text fw={700} size="xl" c={isUnlocked ? 'white' : 'dimmed'}>
+          <Text fw={700} size="lg" c={isUnlocked ? '#000' : '#999'}>
             ${payout.toFixed(2)}
           </Text>
         </Box>
@@ -94,12 +91,12 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
         {!isUnlocked && (
           <Button
             fullWidth
-            size="lg"
+            size="sm"
             color="gray"
             variant="outline"
             disabled={!isDiamond}
             onClick={handleUnlock}
-            leftSection={<Lock size={16} />}
+            leftSection={<Lock size={14} />}
           >
             {isDiamond ? 'Unlock Vault' : '🔒 Diamond Only'}
           </Button>
@@ -110,11 +107,10 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
             {(styles) => (
               <Button
                 fullWidth
-                size="lg"
-                style={{
-                  background: 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)',
-                  ...styles
-                }}
+                size="sm"
+                color="orange"
+                variant="filled"
+                style={styles}
                 onClick={() => onClaim(order.id)}
               >
                 Claim Order

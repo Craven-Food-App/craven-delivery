@@ -20,43 +20,43 @@ export const MysteryOrderCard: React.FC<MysteryOrderCardProps> = ({ order, onCla
 
   return (
     <Card
-      p="lg"
+      p="sm"
       radius="md"
       style={{
-        background: 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)',
+        background: '#ffffff',
         border: '2px solid #FF6A00',
-        boxShadow: '0 0 16px rgba(255,106,0,0.6)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         position: 'relative',
       }}
     >
-      <Stack gap="md">
+      <Stack gap="xs">
         <Group justify="apart">
-          <Text fw={700} size="lg" c="white">
+          <Text fw={700} size="sm" c="#000">
             MYSTERY ORDER
           </Text>
           {isDiamond && (
-            <Badge color="orange" variant="filled" size="sm">
+            <Badge color="orange" variant="filled" size="xs">
               Diamond Exclusive
             </Badge>
           )}
         </Group>
 
         <Box>
-          <Text size="sm" c="white" mb="xs">
+          <Text size="xs" c="#666" mb={4}>
             {order.restaurant?.name || 'Restaurant'}
           </Text>
           
           {!revealed ? (
             <Group gap="xs" align="center">
-              <Skeleton height={40} width={100} radius="md" />
-              <Text fw={700} size="xl" c="white">
+              <Skeleton height={32} width={80} radius="md" />
+              <Text fw={700} size="lg" c="#000">
                 ???
               </Text>
             </Group>
           ) : (
             <Transition mounted={revealed} transition="fade" duration={300}>
               {(styles) => (
-                <Text fw={700} size="xl" c="white" style={styles}>
+                <Text fw={700} size="lg" c="#000" style={styles}>
                   ${payout.toFixed(2)}
                 </Text>
               )}
@@ -67,15 +67,11 @@ export const MysteryOrderCard: React.FC<MysteryOrderCardProps> = ({ order, onCla
         {!revealed && isDiamond && (
           <Button
             fullWidth
-            size="lg"
+            size="sm"
             variant="outline"
-            color="white"
+            color="orange"
             onClick={handleReveal}
-            leftSection={<Eye size={16} />}
-            style={{
-              borderColor: 'rgba(255,255,255,0.5)',
-              color: 'white',
-            }}
+            leftSection={<Eye size={14} />}
           >
             Reveal Payout
           </Button>
@@ -84,10 +80,9 @@ export const MysteryOrderCard: React.FC<MysteryOrderCardProps> = ({ order, onCla
         {revealed && (
           <Button
             fullWidth
-            size="lg"
-            style={{
-              background: 'linear-gradient(135deg, #FF6A00 0%, #D45400 100%)',
-            }}
+            size="sm"
+            color="orange"
+            variant="filled"
             onClick={() => onClaim(order.id)}
           >
             Claim Order

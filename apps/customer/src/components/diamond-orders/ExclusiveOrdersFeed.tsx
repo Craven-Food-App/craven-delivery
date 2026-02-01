@@ -93,19 +93,11 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
   const batchOrders = orders.filter(o => o.exclusive_type === 'batch');
 
   return (
-    <Tabs defaultValue="all">
+    <Tabs defaultValue="flash">
       <Tabs.List style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
         <Tabs.Tab 
-          value="all" 
-          c="white"
-          fw={700}
-          style={{ whiteSpace: 'nowrap' }}
-        >
-          All
-        </Tabs.Tab>
-        <Tabs.Tab 
           value="flash" 
-          c="white"
+          c="#000"
           fw={700}
           style={{ whiteSpace: 'nowrap' }}
         >
@@ -113,7 +105,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Tabs.Tab>
         <Tabs.Tab 
           value="vault" 
-          c="white"
+          c="#000"
           fw={700}
           style={{ whiteSpace: 'nowrap' }}
         >
@@ -121,7 +113,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Tabs.Tab>
         <Tabs.Tab 
           value="mystery" 
-          c="white"
+          c="#000"
           fw={700}
           style={{ whiteSpace: 'nowrap' }}
         >
@@ -129,7 +121,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Tabs.Tab>
         <Tabs.Tab 
           value="batches" 
-          c="white"
+          c="#000"
           fw={700}
           style={{ whiteSpace: 'nowrap' }}
         >
@@ -137,47 +129,10 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Tabs.Tab>
       </Tabs.List>
 
-      <Tabs.Panel value="all" pt="md">
-        <Stack gap="md">
-          {orders.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
-              No exclusive orders available
-            </Text>
-          ) : (
-            <>
-              {flashDrops.map(order => (
-                <FlashDropCard
-                  key={order.id}
-                  order={order}
-                  onClaim={(id) => handleClaim(id, 'flash_drop')}
-                  isDiamond={isDiamond}
-                />
-              ))}
-              {vaultOrders.map(order => (
-                <VaultOrderCard
-                  key={order.id}
-                  order={order}
-                  onClaim={(id) => handleClaim(id, 'vault')}
-                  isDiamond={isDiamond}
-                />
-              ))}
-              {mysteryOrders.map(order => (
-                <MysteryOrderCard
-                  key={order.id}
-                  order={order}
-                  onClaim={(id) => handleClaim(id, 'mystery')}
-                  isDiamond={isDiamond}
-                />
-              ))}
-            </>
-          )}
-        </Stack>
-      </Tabs.Panel>
-
-      <Tabs.Panel value="flash" pt="md">
-        <Stack gap="md">
+      <Tabs.Panel value="flash" pt="sm">
+        <Stack gap="sm">
           {flashDrops.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
+            <Text c="#666" ta="center" py="xl">
               No flash drops available
             </Text>
           ) : (
@@ -193,10 +148,10 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Stack>
       </Tabs.Panel>
 
-      <Tabs.Panel value="vault" pt="md">
-        <Stack gap="md">
+      <Tabs.Panel value="vault" pt="sm">
+        <Stack gap="sm">
           {vaultOrders.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
+            <Text c="#666" ta="center" py="xl">
               {!isDiamond ? 'Vault orders are Diamond-only' : 'No vault orders available'}
             </Text>
           ) : (
@@ -212,10 +167,10 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Stack>
       </Tabs.Panel>
 
-      <Tabs.Panel value="mystery" pt="md">
-        <Stack gap="md">
+      <Tabs.Panel value="mystery" pt="sm">
+        <Stack gap="sm">
           {mysteryOrders.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
+            <Text c="#666" ta="center" py="xl">
               No mystery orders available
             </Text>
           ) : (
@@ -231,10 +186,10 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         </Stack>
       </Tabs.Panel>
 
-      <Tabs.Panel value="batches" pt="md">
-        <Stack gap="md">
+      <Tabs.Panel value="batches" pt="sm">
+        <Stack gap="sm">
           {batches.length === 0 ? (
-            <Text c="dimmed" ta="center" py="xl">
+            <Text c="#666" ta="center" py="xl">
               No batch orders available
             </Text>
           ) : (

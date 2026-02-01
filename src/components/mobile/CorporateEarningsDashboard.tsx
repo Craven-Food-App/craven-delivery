@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Box, Stack, Text, Group } from '@mantine/core';
 import { ExclusiveOrdersFeed } from '@/components/diamond-orders/ExclusiveOrdersFeed';
-import { DiamondPointsBadge } from '@/components/diamond-orders/DiamondPointsBadge';
+import { Flame } from 'lucide-react';
 import { useDriverTier } from '@/hooks/diamond-orders/useDriverTier';
 import { useDiamondPoints } from '@/hooks/diamond-orders/useDiamondPoints';
 import { CravingWheel } from '@/components/driver/CravingWheel';
@@ -12,12 +12,12 @@ import { useCravingWheel } from '@/hooks/useCravingWheel';
 import onfireTextImage from '@/assets/onfire-text.png';
 import onfire2ndStateImage from '@/assets/onfire2ndstate.png';
 
-type CorporateEarningsDashboardProps = {
+type OnFireDashboardProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
 };
 
-const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
+const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
@@ -33,7 +33,6 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
   const [weeklyData, setWeeklyData] = useState<Array<{ payments: number; tips: number }>>([]);
   const [availableOrder, setAvailableOrder] = useState<any>(null);
   const [cravingLevel, setCravingLevel] = useState(70); // Percentage for craving meter
-  const [isEarningsExpanded, setIsEarningsExpanded] = useState(true); // Collapsible state
   const [userId, setUserId] = useState<string>('');
   const { isDiamond } = useDriverTier();
   const { points: diamondPoints } = useDiamondPoints();
@@ -224,7 +223,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto" style={{ 
-      background: 'linear-gradient(to bottom, #dc2626 0%, #ea580c 15%, #f97316 25%, #fb923c 35%, #fdba74 45%, #fed7aa 55%, #ffedd5 65%, #fff7ed 75%, #ffffff 80%, #ffffff 100%)',
+      background: '#ffffff',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header - Level with hamburger menu */}
@@ -237,13 +236,13 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Menu coming soon.');
             }
           }}
-          className="text-white text-lg"
+          className="text-gray-900 text-lg"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="text-white text-xl font-bold">Earnings</h1>
+        <h1 className="text-gray-900 text-xl font-bold">On Fire</h1>
         <button 
           onClick={() => {
             if (onOpenNotifications) {
@@ -252,7 +251,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
               toast.info('Notifications coming soon.');
             }
           }}
-          className="text-white"
+          className="text-gray-900"
         >
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
@@ -279,13 +278,14 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
                 alt="ON FIRE" 
                 className="object-contain"
                 style={{ 
-                  height: (cravingState.currentPoints / cravingState.maxPoints >= 1.0) ? '4.75rem' : '3.5rem',
+                  height: '3.5rem',
                   width: 'auto',
-                  display: 'block'
+                  display: 'block',
+                  objectPosition: 'left bottom'
                 }}
               />
             </div>
-            <p className="text-white text-sm font-semibold whitespace-nowrap">
+            <p className="text-gray-900 text-sm font-semibold whitespace-nowrap">
               {cravingLevel > 70 ? 'Cravings spike active!' : 'Normal activity'}
             </p>
             <div className="absolute top-1 right-3 w-12 h-16 bg-gradient-to-b from-red-400 to-transparent rounded-full blur-2xl opacity-60"></div>
@@ -304,8 +304,8 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
             
             {/* Earnings Graph - Two bars per day */}
             <div className="flex-1">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2">
-                <p className="text-white text-[10px] font-semibold mb-1">Daily Earnings</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-2">
+                <p className="text-gray-900 text-[10px] font-semibold mb-1">Daily Earnings</p>
                 <div className="flex items-end gap-0.5" style={{ height: '80px', minHeight: '80px' }}>
                   {weeklyData.length > 0 ? (() => {
                     // Calculate max value across all days (use total earnings for scaling)
@@ -359,7 +359,7 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
                               }}
                             />
                           </div>
-                          <span className="text-white text-[8px] mt-0.5">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
+                          <span className="text-gray-900 text-[8px] mt-0.5">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
                         </div>
                       );
                     });
@@ -368,8 +368,8 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
                     Array.from({ length: 7 }).map((_, idx) => (
                       <div key={idx} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: '100%' }}>
                         <div className="w-full flex gap-0.5 items-end justify-center" style={{ height: '100%' }}>
-                          <div className="flex-1 bg-white/20 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
-                          <div className="flex-1 bg-white/20 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
+                          <div className="flex-1 bg-gray-300 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
+                          <div className="flex-1 bg-gray-300 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
                         </div>
                         <span className="text-white text-[8px] mt-0.5">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
                       </div>
@@ -380,109 +380,14 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
                 <div className="flex items-center justify-center gap-3 mt-1.5">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gradient-to-t from-orange-500 to-orange-600 rounded"></div>
-                    <span className="text-white text-[8px]">Daily Earnings</span>
+                    <span className="text-gray-900 text-[8px]">Daily Earnings</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gradient-to-t from-yellow-400 to-yellow-500 rounded"></div>
-                    <span className="text-white text-[8px]">Tips</span>
+                    <span className="text-gray-900 text-[8px]">Tips</span>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          {/* Action Buttons - Side by Side */}
-          <div className="flex gap-2 mb-4">
-            <button 
-              onClick={() => {
-                // Dispatch event to switch tab without full page reload
-                window.dispatchEvent(new CustomEvent('switchTab', { detail: { tab: 'account', section: 'card' } }));
-              }}
-              className="flex-1 bg-white rounded-full py-2 px-4 font-bold text-red-700 text-xs shadow-lg"
-            >
-              Manage Card
-            </button>
-            <button className="flex-1 bg-white rounded-full py-2 px-4 font-bold text-red-700 text-xs shadow-lg">
-              Payout Req
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* COLLAPSIBLE EARNINGS SECTION */}
-      <div className="px-5 mb-3">
-        {/* Collapse/Expand Header */}
-        <button 
-          onClick={() => setIsEarningsExpanded(!isEarningsExpanded)}
-          className="w-full flex items-center justify-between mb-2"
-        >
-          <h3 className="text-white text-sm font-bold tracking-wide">EARNINGS SNAPSHOT</h3>
-          <svg 
-            className={`w-5 h-5 text-white transition-transform duration-300 ${isEarningsExpanded ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        
-        {/* Collapsible Content */}
-        <div 
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isEarningsExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
-        >
-          {/* EARNINGS SNAPSHOT Card */}
-          <div className="bg-orange-50 rounded-2xl p-4 shadow-xl mb-4">
-            <h4 
-              className="font-black text-gray-900 mb-0.5 whitespace-nowrap overflow-hidden"
-              style={{ 
-                fontSize: 'clamp(1.25rem, 4vw, 1.5rem)',
-                lineHeight: '1.2'
-              }}
-            >
-              ${earnings.today.toFixed(2)}
-            </h4>
-            <p className="text-orange-800 text-xs font-semibold">Today</p>
-          </div>
-
-          {/* TODAY'S FEED FLOW */}
-          <h3 className="text-black text-sm font-bold mb-2 tracking-wide">Today's FEED FLOW</h3>
-          <div className="grid grid-cols-3 gap-0 text-center">
-            <div className="border-r border-gray-300 py-2">
-              <p 
-                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
-                style={{ 
-                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
-                  lineHeight: '1.2'
-                }}
-              >
-                {earnings.todayDeliveries}
-              </p>
-              <p className="text-black text-[10px] font-semibold">Delivered</p>
-            </div>
-            <div className="border-r border-gray-300 py-2">
-              <p 
-                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
-                style={{ 
-                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
-                  lineHeight: '1.2'
-                }}
-              >
-                {earnings.todayAcceptance}%
-              </p>
-              <p className="text-black text-[10px] font-semibold">Acceptance</p>
-            </div>
-            <div className="py-2">
-              <p 
-                className="font-black text-black mb-0.5 whitespace-nowrap overflow-hidden"
-                style={{ 
-                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
-                  lineHeight: '1.2'
-                }}
-              >
-                ${earnings.todayTips.toFixed(2)}
-              </p>
-              <p className="text-black text-[10px] font-semibold">Tips</p>
             </div>
           </div>
         </div>
@@ -492,19 +397,21 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
       <Box style={{ backgroundColor: '#ffffff', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))', marginTop: '16px' }}>
         <Box px="md" pt="md">
           <Group justify="apart" mb="xs">
-            <Text fw={700} size="sm" c="gray.8" style={{ letterSpacing: '0.05em' }}>
+            <Text fw={700} size="sm" c="#000" style={{ letterSpacing: '0.05em' }}>
               UP FOR GRABS
             </Text>
-            {isDiamond && (
-              <DiamondPointsBadge points={diamondPoints} tier="Diamond" />
-            )}
+            <Group gap="xs" align="center">
+              <Flame size={16} color="#FF6A00" />
+              <Text fw={700} size="sm" style={{ color: '#FF6A00' }}>
+                {diamondPoints || 0} POINTS
+              </Text>
+            </Group>
           </Group>
           <Box
             style={{
-              backgroundColor: 'hsl(14, 90%, 53%)', // Craven orange primary color
+              backgroundColor: '#ffffff', // Bright white
               borderRadius: '8px',
-              padding: '16px',
-              minHeight: 200,
+              padding: '12px',
             }}
           >
           <ExclusiveOrdersFeed
@@ -559,4 +466,4 @@ const CorporateEarningsDashboard: React.FC<CorporateEarningsDashboardProps> = ({
   );
 };
 
-export default CorporateEarningsDashboard;
+export default OnFireDashboard;
