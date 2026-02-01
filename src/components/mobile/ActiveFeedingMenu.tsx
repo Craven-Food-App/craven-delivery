@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, MessageSquare, Pause, ChevronRight, Home, Settings, Volume2, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import FeedPreferencesPage from './FeedPreferencesPage';
+import { SafetySettings } from '@/components/settings/SafetySettings';
 
 // Key for localStorage
 const READ_INSTRUCTIONS_KEY = 'feeder_read_instructions_out_loud';
@@ -55,10 +57,14 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
   isPaused = false,
 }) => {
   // Load saved preference from localStorage
-  const [readInstructions, setReadInstructions] = React.useState(() => {
+  const [readInstructions, setReadInstructions] = useState(() => {
     const saved = localStorage.getItem(READ_INSTRUCTIONS_KEY);
     return saved !== null ? saved === 'true' : true; // Default to true
   });
+
+  // Modal states
+  const [showFeedPreferences, setShowFeedPreferences] = useState(false);
+  const [showSafetySettings, setShowSafetySettings] = useState(false);
 
   // Save preference when it changes
   useEffect(() => {
@@ -66,6 +72,61 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
   }, [readInstructions]);
 
   if (!isOpen) return null;
+
+  // If showing a sub-page, render that instead
+  if (showFeedPreferences) {
+    return <FeedPreferencesPage onBack={() => setShowFeedPreferences(false)} />;
+  }
+
+  if (showSafetySettings) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: '#FFFFFF',
+          zIndex: 2000,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          flexShrink: 0,
+          background: '#FFFFFF',
+          borderBottom: '1px solid #EEEEEE',
+          zIndex: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+            <button onClick={() => setShowSafetySettings(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}>
+              <X className="w-6 h-6" />
+            </button>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#111111' }}>Safe Driving Features</div>
+            <div style={{ width: 40 }} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}>
+          <SafetySettings
+            userId=""
+            currentSettings={{}}
+            onSettingsUpdate={() => {
+              setShowSafetySettings(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-white" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
@@ -137,6 +198,7 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
 
           {/* Feed Preferences */}
           <button 
+            onClick={() => setShowFeedPreferences(true)}
             className="w-full flex items-center justify-between py-4 border-b border-gray-100"
           >
             <div className="flex items-center gap-3">
@@ -160,6 +222,7 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
 
           {/* Safe driving features */}
           <button 
+            onClick={() => setShowSafetySettings(true)}
             className="w-full flex items-center justify-between py-4 border-b border-gray-100"
           >
             <div className="flex items-center gap-3">

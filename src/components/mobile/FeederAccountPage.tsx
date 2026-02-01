@@ -27,6 +27,7 @@ import ProfileDetailsPage from "./ProfileDetailsPage";
 import VehicleDocumentsPage from "./VehicleDocumentsPage";
 import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
+import DriverSupportChat from "./DriverSupportChat";
 import { SafetySettings } from "@/components/settings/SafetySettings";
 import {
   Box,
@@ -509,7 +510,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [isCardLocked, setIsCardLocked] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security'>('main');
+  const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security' | 'support'>('main');
   const [loading, setLoading] = useState(true);
   const [showSafetySettings, setShowSafetySettings] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -550,7 +551,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     window.addEventListener('switchTab', handleSwitchTab as EventListener);
     return () => window.removeEventListener('switchTab', handleSwitchTab as EventListener);
   }, []);
-
+  
   const formatCardNumber = (number: string, showFull: boolean): string => {
     const digitsOnly = number.replace(/\D/g, '');
     const normalized = digitsOnly.slice(0, 16).padEnd(16, '0');
@@ -597,7 +598,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         const emailName = user.email.split('@')[0];
         fullName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
       }
-
+      
       const rating = Number(driverProfile?.rating) || 0;
       const totalDeliveries = driverProfile?.total_deliveries || 0;
       const points = Math.round((rating) * 17 + (totalDeliveries) * 0.1);
@@ -699,8 +700,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         window.location.href = 'tel:+18005551234';
         break;
       case "msgSupport":
-        navigate('/mobile?tab=help');
-        if (onOpenNotifications) onOpenNotifications();
+        setCurrentPage('support');
         break;
     }
   };
@@ -746,20 +746,31 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     return <SecuritySafetyPage onBack={() => setCurrentPage('main')} />;
   }
 
+  if (currentPage === 'support') {
+    return <DriverSupportChat onBack={() => setCurrentPage('main')} />;
+  }
+
   // If card page is open, show that instead (keeping existing card page UI)
   if (showCardPage) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-        <Paper
-          pos="sticky"
-          top={0}
-          bg="white"
-          style={{ 
-            zIndex: 10,
-            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)',
-            borderBottom: '1px solid var(--mantine-color-gray-2)'
-          }}
-        >
+      <MobileLayout headerHeight="56px">
+        <div style={{ 
+          background: 'white', 
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          <Paper
+            pos="sticky"
+            top={0}
+            bg="white"
+            style={{ 
+              zIndex: 10,
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              borderBottom: '1px solid var(--mantine-color-gray-2)',
+              flexShrink: 0,
+            }}
+          >
           <Group px="xl" pb="md" justify="space-between" align="center">
             <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
               <IconArrowLeft size={24} />
@@ -769,6 +780,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
           </Group>
         </Paper>
 
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          paddingBottom: `calc(80px + env(safe-area-inset-bottom, 0px))`,
+        }}>
         <Stack gap={0} px="xl" py="md">
           <Paper p="xl" radius="xl" style={{ background: 'linear-gradient(135deg, #E8622A 0%, #f0a060 100%)', marginBottom: '16px' }}>
             <Stack gap="md">
@@ -792,30 +809,30 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
                 </ActionIcon>
               </Group>
               <Group justify="space-between" mt="xs">
-                <Box>
+                      <Box>
                   <Text c="white" size="xs" opacity={0.8}>Expires</Text>
                   <Text c="white" fw={700} size="sm" mt={4}>{expiryDate}</Text>
-                </Box>
-                <Box>
+                      </Box>
+                      <Box>
                   <Text c="white" size="xs" opacity={0.8}>CVV</Text>
                   <Text c="white" fw={700} size="sm" mt={4}>
                     {showCardDetails ? cvv : '***'}
-                  </Text>
-                </Box>
-              </Group>
-            </Stack>
+                    </Text>
+                  </Box>
+                </Group>
+              </Stack>
           </Paper>
 
-          <Button
-            onClick={() => setShowPinDialog(true)}
-            style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-          >
-            <Box>
-              <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
-              <Text size="xs" c="dimmed">Set or update your PIN</Text>
-            </Box>
-          </Button>
-        </Stack>
+              <Button
+                onClick={() => setShowPinDialog(true)}
+                style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+              >
+                <Box>
+                  <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
+                  <Text size="xs" c="dimmed">Set or update your PIN</Text>
+                </Box>
+              </Button>
+          </Stack>
 
         <Modal
           opened={showPinDialog}
@@ -940,43 +957,70 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             </Box>
           )}
         </Box>
-      </Box>
+        </div>
+      </div>
+    </MobileLayout>
     );
   }
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100dvh',
+        width: '100%',
+        background: C.bg,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}>
         <Loader size="lg" color="orange" />
-      </Box>
+      </div>
     );
   }
 
   return (
     <div style={{
-      background: C.bg, minHeight: "100vh", color: C.text,
+      background: C.bg,
+      color: C.text,
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+      display: "flex",
+      flexDirection: "column",
+      height: "100dvh",
+      overflow: "hidden",
+      paddingTop: 'env(safe-area-inset-top, 0px)',
     }}>
 
-      {/* ── Top bar */}
-      <TopBar onMenuPress={onOpenMenu} />
+      {/* ── Fixed Header Section (everything visible in image) */}
+      <div style={{ flexShrink: 0 }}>
+        {/* ── Top bar */}
+        <TopBar onMenuPress={onOpenMenu} />
 
-      {/* ── Identity row */}
-      <IdentityRow data={accountData} status={status} />
+        {/* ── Identity row */}
+        <IdentityRow data={accountData} status={status} />
 
-      {/* ── Inline stats strip: rating | feeds | points */}
-      <StatsStrip data={accountData} />
+        {/* ── Inline stats strip: rating | feeds | points */}
+        <StatsStrip data={accountData} />
 
-      {/* ── Status section */}
-      <SectionHeader>Status</SectionHeader>
-      <StatusRow data={accountData} status={status} />
+        {/* ── Status section */}
+        <SectionHeader>Status</SectionHeader>
+        <StatusRow data={accountData} status={status} />
 
-      {/* ── Active Programs section (ON FIRE) */}
-      <SectionHeader>Active Programs</SectionHeader>
-      <OnFireCard active={accountData.onFireActive} onConfigure={handleConfigureOnFire} />
+        {/* ── Active Programs section (ON FIRE) */}
+        <SectionHeader>Active Programs</SectionHeader>
+        <OnFireCard active={accountData.onFireActive} onConfigure={handleConfigureOnFire} />
+      </div>
 
-      {/* ── Menu section — all nav items from MENU_ITEMS */}
-      <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}` }}>
+      {/* ── Scrollable Menu Section */}
+      <div style={{ 
+        flex: 1, 
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overflowX: "hidden",
+        marginTop: 14,
+        borderTop: `1px solid ${C.border}`,
+      }}>
+        {/* ── Menu section — all nav items from MENU_ITEMS */}
         {MENU_ITEMS.map((item) => (
           <NavRow
             key={item.id}
@@ -987,47 +1031,64 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             onPress={() => handleNav(item.id)}
           />
         ))}
+
+        {/* ── Sign Out */}
+        <SignOutRow onSignOut={handleSignOut} />
+
+        {/* Bottom breathing room for tab bar and extra scroll space */}
+        <div style={{ 
+          paddingBottom: `calc(100px + env(safe-area-inset-bottom, 0px))` 
+        }} />
       </div>
 
-      {/* ── Sign Out */}
-      <SignOutRow onSignOut={handleSignOut} />
-
-      {/* Bottom breathing room for tab bar */}
-      <div style={{ height: 24 }} />
-
-      {/* ON FIRE Safety Settings Modal */}
+      {/* ON FIRE Safety Settings Modal - Full Screen */}
       {showSafetySettings && userId && (
-        <Box
+        <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: C.bg,
             zIndex: 2000,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
-          <Box
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            borderBottom: `1px solid ${C.border}`,
+            flexShrink: 0,
+          }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>Safety Settings</div>
+            <button
+              type="button"
+              onClick={() => setShowSafetySettings(false)}
             style={{
-              backgroundColor: 'white',
-              borderRadius: 16,
-              maxWidth: 640,
-              width: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-            }}
-          >
-            <Group justify="space-between" align="center" px="md" py="sm" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-              <Text fw={700} size="lg">Safety Settings</Text>
-              <ActionIcon
-                variant="subtle"
-                onClick={() => setShowSafetySettings(false)}
-              >
-                <IconX size={18} />
-              </ActionIcon>
-            </Group>
+                background: 'none',
+                border: 'none',
+                padding: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <IconX size={20} style={{ color: C.text }} />
+            </button>
+          </div>
+          {/* Scrollable Content */}
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}>
             <SafetySettings
               userId={userId}
               currentSettings={gameSettings}
@@ -1036,8 +1097,8 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
                 fetchDriverData();
               }}
             />
-          </Box>
-        </Box>
+          </div>
+        </div>
       )}
     </div>
   );

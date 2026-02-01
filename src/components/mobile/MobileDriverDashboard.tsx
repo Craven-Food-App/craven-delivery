@@ -189,7 +189,7 @@ export const MobileDriverDashboard: React.FC = () => {
           .maybeSingle();
           
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 2000)
+          setTimeout(() => reject(new Error('Session check timeout')), 5000) // Increased to 5s
         );
         
         const { data: session, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
@@ -1348,7 +1348,7 @@ export const MobileDriverDashboard: React.FC = () => {
       {activeTab === 'home' && driverState !== 'on_delivery' && (
         <div 
           className={`fixed left-4 pointer-events-auto ${isMenuOpen || isActiveFeedingMenuOpen ? 'z-10' : 'z-50'}`} 
-          style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}
+          style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)` }}
         >
           <button
             onClick={() => {
@@ -1369,7 +1369,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Speed Limit & Current Speed - Under Hamburger Menu - Only on Home Tab */}
       {activeTab === 'home' && (
-        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 95px)' }}>
+        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 95px)` }}>
           <SpeedLimitSign 
             currentSpeed={location?.speed ? location.speed * 2.237 : 0} // Convert m/s to mph
             location={location ? {
@@ -1556,12 +1556,12 @@ export const MobileDriverDashboard: React.FC = () => {
         {/* ONLINE SEARCHING STATE */}
         {activeTab === 'home' && driverState === 'online_searching' && !isViewingHomeWhileFeeding && <>
             {/* Change Zone Button - Top Left */}
-            <div className="absolute left-4 z-20 pointer-events-auto py-0 my-[525px] mx-0 px-0" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 16px)' }}>
+            <div className="absolute left-4 z-20 pointer-events-auto py-0 my-[525px] mx-0 px-0" style={{ top: `calc(env(safe-area-inset-top, 0px) + 16px)` }}>
               
             </div>
 
             {/* Pause Button - Top Right - Level with menu button - LOCKED POSITION */}
-            <div className="fixed z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)', right: '66px' }}>
+            <div className="fixed z-50 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)`, right: '66px' }}>
               <Button onClick={handlePause} variant="ghost" size="sm" className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-lg hover:bg-white">
                 <Pause className="h-5 w-5 text-gray-700" />
               </Button>

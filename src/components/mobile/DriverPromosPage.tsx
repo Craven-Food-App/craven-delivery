@@ -99,6 +99,7 @@ export function DriverPromosPage({ onOpenMenu, onOpenNotifications }: DriverProm
 
       if (zonesError) {
         console.error('DriverPromosPage: error fetching surge zones', zonesError);
+        setSurgeZones([]); // Set empty array on error
       } else {
         setSurgeZones(zones || []);
       }

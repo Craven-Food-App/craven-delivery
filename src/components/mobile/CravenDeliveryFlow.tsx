@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck } from '@tabler/icons-react';
+import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck, IconVolume } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
@@ -337,6 +337,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
+  
+  // GPS tracking for automatic instruction reading
+  const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [hasSpokenInstructions, setHasSpokenInstructions] = useState(false);
 
   // Set order start time when component mounts (order is accepted)
   useEffect(() => {
@@ -344,6 +348,78 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       setOrderStartTime(new Date());
     }
   }, [orderDetails, orderStartTime]);
+
+  // GPS tracking - watch driver location continuously
+  useEffect(() => {
+    if (!orderDetails || status === DRIVER_STATUS.COMPLETE) return;
+
+    const watchId = navigator.geolocation?.watchPosition(
+      (position) => {
+        setDriverLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      (error) => {
+        console.warn('GPS tracking error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      }
+    );
+
+    return () => {
+      if (watchId !== undefined) {
+        navigator.geolocation?.clearWatch(watchId);
+      }
+    };
+  }, [orderDetails, status]);
+
+  // Check proximity to customer location and auto-read instructions
+  useEffect(() => {
+    if (!orderDetails || !driverLocation || hasSpokenInstructions) return;
+    
+    // Only check when heading to customer (after pickup)
+    if (status !== DRIVER_STATUS.TO_CUSTOMER && status !== DRIVER_STATUS.AT_CUSTOMER) {
+      return;
+    }
+
+    // Get customer coordinates
+    const customerLat = orderDetails.dropoff_address?.latitude || orderDetails.dropoff_lat;
+    const customerLng = orderDetails.dropoff_address?.longitude || orderDetails.dropoff_lng;
+    
+    if (!customerLat || !customerLng) return;
+
+    // Calculate distance using Haversine formula
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (customerLat - driverLocation.lat) * Math.PI / 180;
+    const dLng = (customerLng - driverLocation.lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(driverLocation.lat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in meters
+
+    // If within 100 meters (about 1 block), read instructions automatically
+    if (distance <= 100) {
+      const deliveryNotes = orderDetails.delivery_notes;
+      if (deliveryNotes && deliveryNotes.trim()) {
+        console.log('🎯 Within 100m of customer - reading instructions:', deliveryNotes);
+        speakDeliveryInstructions(deliveryNotes);
+        setHasSpokenInstructions(true);
+      }
+    }
+  }, [driverLocation, orderDetails, status, hasSpokenInstructions]);
+
+  // Reset hasSpokenInstructions when starting a new delivery
+  useEffect(() => {
+    if (status === DRIVER_STATUS.TO_CUSTOMER) {
+      setHasSpokenInstructions(false);
+    }
+  }, [status]);
 
   // Animate total earnings counter - must be before any early returns
   // Only run once when status changes to COMPLETE
@@ -725,8 +801,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       await updateOrderStatus('at_customer');
       
       // Read delivery instructions out loud if enabled
-      if (currentOrder.customer?.special_instructions) {
-        speakDeliveryInstructions(currentOrder.customer.special_instructions);
+      if (currentOrder.customer?.deliveryNotes) {
+        speakDeliveryInstructions(currentOrder.customer.deliveryNotes);
       }
       
       // Hide transition after a brief moment
@@ -1498,16 +1574,28 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                     content={currentOrder.customer.deliveryNotes}
                     icon={<IconBell size={20} />}
                     actionButton={
-                      <ActionIcon
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          copyToClipboard(currentOrder.customer.deliveryNotes);
-                        }} 
-                        title="Copy Instructions"
-                      >
-                        <IconCopy size={16} />
-                      </ActionIcon>
+                      <Box style={{ display: 'flex', gap: 8 }}>
+                        <ActionIcon
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            speakDeliveryInstructions(currentOrder.customer.deliveryNotes);
+                          }} 
+                          title="Read Out Loud"
+                        >
+                          <IconVolume size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            copyToClipboard(currentOrder.customer.deliveryNotes);
+                          }} 
+                          title="Copy Instructions"
+                        >
+                          <IconCopy size={16} />
+                        </ActionIcon>
+                      </Box>
                     }
                   />
                 )}

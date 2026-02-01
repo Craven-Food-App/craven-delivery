@@ -225,19 +225,32 @@ const ChatPortal: React.FC = () => {
   };
 
   if (selectedConversation) {
+    const selectedConv = conversations.find(c => c.id === selectedConversation);
     return (
       <div className="h-full">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center gap-4">
           <Button 
             variant="outline" 
             onClick={() => setSelectedConversation(null)}
           >
             ← Back to Chat Portal
           </Button>
+          {selectedConv && (
+            <div className="flex items-center gap-2">
+              <Badge className={getTypeColor(selectedConv.type)}>
+                {selectedConv.type === 'driver_support' ? '🚗 Driver Support' : 
+                 selectedConv.type === 'customer_support' ? '👤 Customer Support' : 
+                 '💬 Order Chat'}
+              </Badge>
+              <Badge className={getPriorityColor(selectedConv.priority)}>
+                {selectedConv.priority}
+              </Badge>
+            </div>
+          )}
         </div>
         <ChatInterface
           conversationId={selectedConversation}
-          conversationType="customer_support"
+          conversationType={selectedConv?.type || "customer_support"}
           currentUserType="admin"
         />
       </div>
@@ -398,6 +411,9 @@ const ChatPortal: React.FC = () => {
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="driver_support">Driver Support</SelectItem>
+                <SelectItem value="customer_support">Customer Support</SelectItem>
+                <SelectItem value="customer_driver">Order Chats</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -410,15 +426,32 @@ const ChatPortal: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-blue-100 text-blue-600">
-                          <MessageCircle className="h-6 w-6" />
+                        <AvatarFallback className={
+                          conversation.type === 'driver_support' 
+                            ? 'bg-green-100 text-green-600' 
+                            : conversation.type === 'customer_support'
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-purple-100 text-purple-600'
+                        }>
+                          {conversation.type === 'driver_support' ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
+                              <circle cx="7" cy="17" r="2" />
+                              <circle cx="17" cy="17" r="2" />
+                            </svg>
+                          ) : (
+                            <MessageCircle className="h-6 w-6" />
+                          )}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg">{conversation.subject || 'Chat Conversation'}</h3>
+                          <h3 className="font-semibold text-lg">
+                            {conversation.type === 'driver_support' ? '🚗 ' : conversation.type === 'customer_support' ? '👤 ' : ''}
+                            {conversation.subject || 'Chat Conversation'}
+                          </h3>
                           <Badge className={getTypeColor(conversation.type)}>
-                            {conversation.type.replace('_', ' ')}
+                            {conversation.type === 'driver_support' ? 'Driver' : conversation.type === 'customer_support' ? 'Customer' : 'Order Chat'}
                           </Badge>
                           <Badge className={getPriorityColor(conversation.priority)}>
                             {conversation.priority}
