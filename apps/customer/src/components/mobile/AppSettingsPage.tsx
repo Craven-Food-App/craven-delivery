@@ -1,32 +1,51 @@
+/**
+ * Crave'n Feeder App — App Settings (Enterprise Compact White)
+ * ───────────────────────────────────────────────────────────────
+ * Enterprise-grade compact white design with enhanced settings and legal access
+ */
+
 import React, { useState, useEffect } from 'react';
-import { IconArrowLeft, IconBell, IconGlobe, IconVolume, IconVolumeOff } from '@tabler/icons-react';
+import { IconArrowLeft, IconBell, IconVolume, IconVolumeOff, IconMapPin, IconWifi, IconWifiOff, IconNavigation, IconMoon, IconSun, IconShield, IconLogout, IconTrash, IconFileText, IconLock, IconUsers, IconHelp } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
-import {
-  Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  ActionIcon,
-  Card,
-  Title,
-  Switch,
-  Select,
-  ThemeIcon,
-  Divider,
-  Paper,
-} from '@mantine/core';
+import { Loader } from '@mantine/core';
+import SlideToToggle from '@/components/SlideToToggle';
+import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
+
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  bg:      "#FFFFFF",
+  bgMuted: "#F8F9FA",
+  green:   "#2E7D32",
+  red:     "#C62828",
+  blue:    "#3A7BD5",
+} as const;
 
 type AppSettingsPageProps = {
   onBack: () => void;
 };
 
 const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
+  const [loading, setLoading] = useState(true);
+  
+  // Keyboard awareness hooks (must be at top level)
+  const keyboardState = useKeyboardAware();
+  const { scrollToInput } = useScrollToInput();
+  
   const [settings, setSettings] = useState({
     pushNotifications: true,
     soundEnabled: true,
     vibrationEnabled: true,
+    locationServices: true,
+    offlineMode: false,
+    navigationApp: 'mapbox',
+    darkMode: false,
+    privacyMode: false,
     language: 'en',
   });
 
@@ -44,18 +63,42 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
         .from('driver_preferences')
         .select('*')
         .eq('driver_id', user.id)
-        .single();
+        .maybeSingle();
+
+      // Fetch from user metadata
+      const metadata = user.user_metadata || {};
+      const appSettings = metadata.app_settings || {};
 
       if (preferences) {
         setSettings({
-          pushNotifications: preferences.notification_sound ?? true,
-          soundEnabled: preferences.notification_sound ?? true,
-          vibrationEnabled: preferences.notification_sound ?? true,
-          language: 'en',
+          pushNotifications: preferences.push_notifications_enabled ?? true,
+          soundEnabled: preferences.sound_enabled ?? true,
+          vibrationEnabled: preferences.vibration_enabled ?? true,
+          locationServices: appSettings.locationServices ?? true,
+          offlineMode: appSettings.offlineMode ?? false,
+          navigationApp: appSettings.navigationApp || 'mapbox',
+          darkMode: appSettings.darkMode ?? false,
+          privacyMode: appSettings.privacyMode ?? false,
+          language: appSettings.language || 'en',
+        });
+      } else {
+        setSettings({
+          ...settings,
+          pushNotifications: appSettings.pushNotifications ?? true,
+          soundEnabled: appSettings.soundEnabled ?? true,
+          vibrationEnabled: appSettings.vibrationEnabled ?? true,
+          locationServices: appSettings.locationServices ?? true,
+          offlineMode: appSettings.offlineMode ?? false,
+          navigationApp: appSettings.navigationApp || 'mapbox',
+          darkMode: appSettings.darkMode ?? false,
+          privacyMode: appSettings.privacyMode ?? false,
+          language: appSettings.language || 'en',
         });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,8 +112,11 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
       if (key === 'soundEnabled') updates.sound_enabled = value;
       if (key === 'vibrationEnabled') updates.vibration_enabled = value;
 
-      // Update or create preferences
-      const { error } = await supabase
+      // Update driver_preferences table
+      if (updates.push_notifications_enabled !== undefined || 
+          updates.sound_enabled !== undefined || 
+          updates.vibration_enabled !== undefined) {
+        await supabase
         .from('driver_preferences')
         .upsert({
           driver_id: user.id,
@@ -78,8 +124,21 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
         }, {
           onConflict: 'driver_id'
         });
+      }
 
-      if (error) throw error;
+      // Update user metadata for app settings
+      const currentMetadata = user.user_metadata || {};
+      const currentAppSettings = currentMetadata.app_settings || {};
+      const newAppSettings = {
+        ...currentAppSettings,
+        [key]: value,
+      };
+
+      await supabase.auth.updateUser({
+        data: {
+          app_settings: newAppSettings
+        }
+      });
 
       setSettings({ ...settings, [key]: value });
       notifications.show({
@@ -97,144 +156,649 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
     }
   };
 
+  const handleLogout = async () => {
+    if (!confirm('Are you sure you want to log out?')) return;
+    await supabase.auth.signOut();
+    notifications.show({
+      title: 'Logged out',
+      message: 'You have been successfully logged out',
+      color: 'green',
+    });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+    if (!confirm('This will permanently delete all your data. Type DELETE to confirm.')) return;
+    
+    notifications.show({
+      title: 'Account deletion',
+      message: 'Please contact support to delete your account',
+      color: 'orange',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div style={{
+        background: C.bg,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Loader size="lg" color={C.orange} />
+      </div>
+    );
+  }
+
+  const navigationOptions = [
+    { value: 'mapbox', label: "Crave'N Navigation" },
+    { value: 'google', label: 'Google Maps' },
+    ...(/iPad|iPhone|iPod/.test(navigator.userAgent) ? [{ value: 'apple', label: 'Apple Maps' }] : []),
+    ...(/Android/.test(navigator.userAgent) ? [{ value: 'waze', label: 'Waze' }] : []),
+  ];
+
   return (
-    <Box h="100vh" w="100%" bg="gray.0" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <Paper
-        pos="sticky"
-        top={0}
-        bg="white"
+    <div style={{
+      background: C.bg,
+      minHeight: '100vh',
+      paddingBottom: 72,
+      color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
+      {/* ── sticky header ── */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        background: C.bg,
+        zIndex: 10,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '12px 16px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <button
+            onClick={onBack}
         style={{ 
-          zIndex: 10, 
-          borderBottom: '1px solid var(--mantine-color-gray-2)', 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
-        }}
-      >
-        <Group px="xl" py="md" justify="space-between" align="center">
-          <ActionIcon onClick={onBack} variant="subtle" color="dark">
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.text,
+            }}
+          >
             <IconArrowLeft size={24} />
-          </ActionIcon>
-          <Title order={3} fw={700} c="dark">App Settings</Title>
-          <Box w={24} />
-        </Group>
-      </Paper>
+          </button>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: C.text,
+          }}>
+            App Settings
+          </div>
+          <div style={{ width: 40 }} /> {/* Spacer */}
+        </div>
+      </div>
 
-      <Stack gap="md" p="xl">
-        {/* Notifications */}
-        <Card shadow="sm" radius="lg" p="xl" withBorder>
-          <Group gap="md" mb="md">
-            <ThemeIcon size="xl" radius="lg" color="blue" variant="light">
-              <IconBell size={24} color="var(--mantine-color-blue-6)" />
-            </ThemeIcon>
-            <Box>
-              <Title order={4} fw={700} c="dark">Notifications</Title>
-              <Text size="sm" c="dimmed">Manage notification preferences</Text>
-            </Box>
-          </Group>
+      {/* ── scrollable content ── */}
+      <div style={{
+        padding: '12px 16px',
+        paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
+      }}>
+        {/* Notifications Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Notifications
+          </div>
 
-          <Stack gap="md">
-            <Group justify="space-between" p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-              <Group gap="md">
-                <IconBell size={20} color="var(--mantine-color-gray-6)" />
-                <Box>
-                  <Text fw={700} c="dark">Push Notifications</Text>
-                  <Text size="sm" c="dimmed">Receive push notifications</Text>
-                </Box>
-              </Group>
-              <Switch
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Push Notifications */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <IconBell size={18} color={C.muted} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Push Notifications
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Receive push notifications
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
                 checked={settings.pushNotifications}
-                onChange={(e) => updateSetting('pushNotifications', e.currentTarget.checked)}
-                color="orange"
-                size="lg"
+                onChange={(checked) => updateSetting('pushNotifications', checked)}
               />
-            </Group>
+            </div>
 
-            <Group justify="space-between" p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-              <Group gap="md">
+            {/* Sound */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
                 {settings.soundEnabled ? (
-                  <IconVolume size={20} color="var(--mantine-color-gray-6)" />
+                  <IconVolume size={18} color={C.muted} />
                 ) : (
-                  <IconVolumeOff size={20} color="var(--mantine-color-gray-6)" />
+                  <IconVolumeOff size={18} color={C.muted} />
                 )}
-                <Box>
-                  <Text fw={700} c="dark">Sound</Text>
-                  <Text size="sm" c="dimmed">Notification sounds</Text>
-                </Box>
-              </Group>
-              <Switch
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Sound
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Notification sounds
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
                 checked={settings.soundEnabled}
-                onChange={(e) => updateSetting('soundEnabled', e.currentTarget.checked)}
-                color="orange"
-                size="lg"
+                onChange={(checked) => updateSetting('soundEnabled', checked)}
               />
-            </Group>
+            </div>
 
-            <Group justify="space-between" p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-              <Group gap="md">
-                <IconBell size={20} color="var(--mantine-color-gray-6)" />
-                <Box>
-                  <Text fw={700} c="dark">Vibration</Text>
-                  <Text size="sm" c="dimmed">Vibrate on notifications</Text>
-                </Box>
-              </Group>
-              <Switch
+            {/* Vibration */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <IconBell size={18} color={C.muted} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Vibration
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Vibrate on notifications
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
                 checked={settings.vibrationEnabled}
-                onChange={(e) => updateSetting('vibrationEnabled', e.currentTarget.checked)}
-                color="orange"
-                size="lg"
+                onChange={(checked) => updateSetting('vibrationEnabled', checked)}
               />
-            </Group>
-          </Stack>
-        </Card>
+            </div>
+          </div>
+        </div>
 
-        {/* Language */}
-        <Card shadow="sm" radius="lg" p="xl" withBorder>
-          <Group gap="md" mb="md">
-            <ThemeIcon size="xl" radius="lg" color="green" variant="light">
-              <IconGlobe size={24} color="var(--mantine-color-green-6)" />
-            </ThemeIcon>
-            <Box>
-              <Title order={4} fw={700} c="dark">Language</Title>
-              <Text size="sm" c="dimmed">App language preference</Text>
-            </Box>
-          </Group>
+        {/* Location & Data Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Location & Data
+          </div>
 
-          <Box p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-            <Select
-              value={settings.language}
-              onChange={(value) => updateSetting('language', value || 'en')}
-              data={[
-                { value: 'en', label: 'English' },
-                { value: 'es', label: 'Español' },
-              ]}
-              styles={{
-                input: {
-                  border: '2px solid var(--mantine-color-gray-2)',
-                  borderRadius: '12px',
-                  '&:focus': {
-                    borderColor: 'var(--mantine-color-orange-5)',
-                  },
-                },
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Location Services */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <IconMapPin size={18} color={C.muted} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Location Services
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Allow location tracking
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
+                checked={settings.locationServices}
+                onChange={(checked) => updateSetting('locationServices', checked)}
+              />
+            </div>
+
+            {/* Offline Mode */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                {settings.offlineMode ? (
+                  <IconWifiOff size={18} color={C.muted} />
+                ) : (
+                  <IconWifi size={18} color={C.muted} />
+                )}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Offline Mode
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Work without internet
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
+                checked={settings.offlineMode}
+                onChange={(checked) => updateSetting('offlineMode', checked)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Navigation
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: 10,
+              fontWeight: 600,
+              color: C.muted,
+              marginBottom: 6,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}>
+              Default Navigation App
+            </label>
+            <select
+              value={settings.navigationApp}
+              onChange={(e) => updateSetting('navigationApp', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: C.text,
+                background: C.bg,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                cursor: 'pointer',
               }}
-            />
-          </Box>
-        </Card>
-      </Stack>
+              onFocus={(e) => e.target.style.borderColor = C.orange}
+              onBlur={(e) => e.target.style.borderColor = C.border}
+            >
+              {navigationOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      {/* Android Bottom Bar */}
-      <Box 
+        {/* Display Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Display
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Dark Mode */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                {settings.darkMode ? (
+                  <IconMoon size={18} color={C.muted} />
+                ) : (
+                  <IconSun size={18} color={C.muted} />
+                )}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Dark Mode
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Dark theme appearance
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
+                checked={settings.darkMode}
+                onChange={(checked) => updateSetting('darkMode', checked)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Privacy
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Privacy Mode */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                <IconShield size={18} color={C.muted} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+                    Privacy Mode
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    Limit data sharing
+                  </div>
+                </div>
+              </div>
+              <SlideToToggle
+                checked={settings.privacyMode}
+                onChange={(checked) => updateSetting('privacyMode', checked)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Language Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Language
+          </div>
+
+          <div>
+            <select
+              value={settings.language}
+              onChange={(e) => updateSetting('language', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: C.text,
+                background: C.bg,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                cursor: 'pointer',
+              }}
+              onFocus={(e) => e.target.style.borderColor = C.orange}
+              onBlur={(e) => e.target.style.borderColor = C.border}
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Account Actions */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Account
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconLogout size={18} color={C.muted} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+                Log Out
+              </div>
+            </button>
+
+            <button
+              onClick={handleDeleteAccount}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconTrash size={18} color={C.red} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.red }}>
+                Delete Account
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Legal Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Legal & Support
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={() => window.open('https://craven.app/terms', '_blank')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconFileText size={18} color={C.muted} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+                Terms of Service
+              </div>
+            </button>
+
+            <button
+              onClick={() => window.open('https://craven.app/privacy', '_blank')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconLock size={18} color={C.muted} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+                Privacy Policy
+              </div>
+            </button>
+
+            <button
+              onClick={() => window.open('https://craven.app/driver-agreement', '_blank')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconFileText size={18} color={C.muted} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+                Driver Agreement
+              </div>
+            </button>
+
+            <button
+              onClick={() => window.open('https://craven.app/community-guidelines', '_blank')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconUsers size={18} color={C.muted} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+                Community Guidelines
+              </div>
+            </button>
+
+            <button
+              onClick={() => window.open('mailto:support@craven.app', '_blank')}
         style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: '48px', 
-          backgroundColor: '#000',
-          zIndex: 1000 
-        }} 
-      />
-    </Box>
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 6,
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <IconHelp size={18} color={C.blue} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.blue }}>
+                Contact Support
+              </div>
+            </button>
+          </div>
+        </div>
+        </div> {/* Close Content - Scrollable */}
+      </div>
+    </div>
   );
 };
 

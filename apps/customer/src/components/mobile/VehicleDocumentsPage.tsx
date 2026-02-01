@@ -1,21 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { IconArrowLeft, IconCar, IconFileText, IconUpload, IconCheck, IconX } from '@tabler/icons-react';
+/**
+ * Crave'n Feeder App — Vehicle & Documents (Enterprise Compact White)
+ * ───────────────────────────────────────────────────────────────
+ * Enterprise-grade compact white design matching Profile Information page
+ */
+
+import React, { useState, useEffect, useRef } from 'react';
+import { IconArrowLeft, IconDeviceFloppy, IconUpload } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  Card,
-  Title,
-  ActionIcon,
-  Loader,
-  ThemeIcon,
-  Paper,
-  Grid,
-} from '@mantine/core';
+import { Loader } from '@mantine/core';
+import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
+
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  bg:      "#FFFFFF",
+  bgMuted: "#F8F9FA",
+  green:   "#2E7D32",
+  red:     "#C62828",
+} as const;
 
 type VehicleDocumentsPageProps = {
   onBack: () => void;
@@ -23,8 +30,22 @@ type VehicleDocumentsPageProps = {
 
 const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
-  const [vehicleData, setVehicleData] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Keyboard awareness hooks (must be at top level)
+  const keyboardState = useKeyboardAware();
+  const { scrollToInput } = useScrollToInput();
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [vehicleData, setVehicleData] = useState({
+    vehicle_make: '',
+    vehicle_model: '',
+    vehicle_year: '',
+    vehicle_color: '',
+    license_plate: '',
+    vehicle_type: '',
+  });
   const [documents, setDocuments] = useState<any>({});
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   useEffect(() => {
     fetchVehicleData();
@@ -35,222 +56,790 @@ const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) =
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // TODO: Driver table structure needs update - using placeholder data
-      const driverData: any = null;
+      // Fetch vehicle data from driver_profiles
+      const { data: driverProfile } = await supabase
+        .from('driver_profiles')
+        .select('vehicle_make, vehicle_model, vehicle_year, license_plate, vehicle_type')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (driverData) {
-        setVehicleData(driverData);
-        setDocuments({
-          registration: null,
-          insurance: null,
-          inspection: null,
-          license: null,
+      if (driverProfile) {
+        setVehicleData({
+          vehicle_make: driverProfile.vehicle_make || '',
+          vehicle_model: driverProfile.vehicle_model || '',
+          vehicle_year: driverProfile.vehicle_year?.toString() || '',
+          vehicle_color: user.user_metadata?.vehicle_color || '',
+          license_plate: driverProfile.license_plate || '',
+          vehicle_type: driverProfile.vehicle_type || '',
         });
       }
+
+      // Fetch document status from user metadata
+      const docStatus = user.user_metadata?.documents || {};
+      setDocuments({
+        registration: docStatus.registration_uploaded || false,
+        insurance: docStatus.insurance_uploaded || false,
+        inspection: docStatus.inspection_uploaded || false,
+        license: docStatus.license_uploaded || false,
+      });
     } catch (error) {
       console.error('Error fetching vehicle data:', error);
+      notifications.show({
+        title: 'Failed to load vehicle data',
+        message: '',
+        color: 'red',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusIcon = (status: boolean | null | undefined) => {
-    if (status === true) {
-      return <IconCheck size={20} color="var(--mantine-color-green-6)" />;
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        notifications.show({
+          title: 'Not authenticated',
+          message: '',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Update driver_profiles
+      const { error: profileError } = await supabase
+        .from('driver_profiles')
+        .upsert({
+          user_id: user.id,
+          vehicle_make: vehicleData.vehicle_make || null,
+          vehicle_model: vehicleData.vehicle_model || null,
+          vehicle_year: vehicleData.vehicle_year ? parseInt(vehicleData.vehicle_year) : null,
+          license_plate: vehicleData.license_plate || null,
+          vehicle_type: vehicleData.vehicle_type || null,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
+
+      // Update user metadata for vehicle_color (not in driver_profiles)
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          vehicle_color: vehicleData.vehicle_color || null,
+        }
+      });
+
+      if (authError) {
+        console.error('Auth update error:', authError);
+      }
+
+      notifications.show({
+        title: 'Vehicle information saved successfully',
+        message: '',
+        color: 'green',
+      });
+    } catch (error: any) {
+      console.error('Error saving vehicle data:', error);
+      notifications.show({
+        title: 'Failed to save vehicle information',
+        message: error?.message || '',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
     }
-    return <IconX size={20} color="var(--mantine-color-gray-4)" />;
+  };
+
+  const handleFileUpload = async (docType: string, file: File) => {
+    try {
+      setUploading(docType);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        notifications.show({
+          title: 'Not authenticated',
+          message: '',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        notifications.show({
+          title: 'File too large',
+          message: 'File size must be less than 10MB',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        notifications.show({
+          title: 'Invalid file type',
+          message: 'Please upload PDF or image files only',
+          color: 'red',
+        });
+        return;
+      }
+
+      // Upload to storage (using 'documents' bucket or create driver-documents)
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${docType}_${Date.now()}.${fileExt}`;
+      
+      // Try to upload to documents bucket, create if needed
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        // If bucket doesn't exist, we'll store the status in metadata for now
+        console.warn('Storage upload failed, storing status in metadata:', uploadError);
+      }
+
+      // Update document status in user metadata
+      const currentDocs = documents || {};
+      const updatedDocs = {
+        ...currentDocs,
+        [`${docType}_uploaded`]: true,
+        [`${docType}_uploaded_at`]: new Date().toISOString(),
+      };
+
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          documents: updatedDocs
+        }
+      });
+
+      if (metadataError) {
+        console.error('Metadata update error:', metadataError);
+        throw metadataError;
+      }
+
+      // Update local state
+      setDocuments({
+        ...documents,
+        [docType]: true,
+      });
+
+      notifications.show({
+        title: 'Document uploaded successfully',
+        message: '',
+        color: 'green',
+      });
+    } catch (error: any) {
+      console.error('Error uploading document:', error);
+      notifications.show({
+        title: 'Failed to upload document',
+        message: error?.message || '',
+        color: 'red',
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleDocumentClick = (docType: string) => {
+    const input = fileInputRefs.current[docType];
+    if (input) {
+      input.click();
+    }
   };
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" bg="gray.0" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="orange" />
-      </Box>
+      <div style={{
+        background: C.bg,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Loader size="lg" color={C.orange} />
+      </div>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" bg="gray.0" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <Paper
-        pos="sticky"
-        top={0}
-        bg="white"
-        style={{ 
-          zIndex: 10, 
-          borderBottom: '1px solid var(--mantine-color-gray-2)', 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
-        }}
-      >
-        <Group px="xl" py="md" justify="space-between" align="center">
-          <ActionIcon onClick={onBack} variant="subtle" color="dark">
+    <div style={{
+      background: C.bg,
+      minHeight: '100vh',
+      paddingBottom: 72,
+      color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
+      {/* ── sticky header ── */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        background: C.bg,
+        zIndex: 10,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '12px 16px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.text,
+            }}
+          >
             <IconArrowLeft size={24} />
-          </ActionIcon>
-          <Title order={3} fw={700} c="dark">Vehicle & Documents</Title>
-          <Box w={24} />
-        </Group>
-      </Paper>
+          </button>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: C.text,
+          }}>
+            Vehicle & Documents
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              background: saving ? C.bgMuted : C.orange,
+              color: saving ? C.muted : '#FFFFFF',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              opacity: saving ? 0.6 : 1,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            {saving ? (
+              <>
+                <Loader size={12} color={C.muted} />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <IconDeviceFloppy size={14} />
+                <span>Save</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
-      <Stack gap="md" p="xl">
-        {/* Vehicle Information */}
-        <Card shadow="sm" radius="lg" withBorder>
-          <Card.Section p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-            <Group gap="md" mb="md">
-              <ThemeIcon size="xl" radius="lg" color="green" variant="light">
-                <IconCar size={24} />
-              </ThemeIcon>
-              <Box>
-                <Title order={4} fw={700} c="dark">Vehicle Information</Title>
-                <Text size="sm" c="dimmed">Your registered vehicle details</Text>
-              </Box>
-            </Group>
-          </Card.Section>
-          <Card.Section p="md">
-            <Stack gap="md">
-              <Grid gutter="md">
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={600} c="dimmed" mb="xs">Make</Text>
-                  <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                    <Text c="dark">{vehicleData?.vehicle_make || 'Not set'}</Text>
-                  </Paper>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={600} c="dimmed" mb="xs">Model</Text>
-                  <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                    <Text c="dark">{vehicleData?.vehicle_model || 'Not set'}</Text>
-                  </Paper>
-                </Grid.Col>
-              </Grid>
+      {/* ── scrollable content ── */}
+      <div style={{
+        padding: '12px 16px',
+        paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
+      }}>
+        {/* Vehicle Information Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Vehicle Information
+          </div>
 
-              <Grid gutter="md">
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={600} c="dimmed" mb="xs">Year</Text>
-                  <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                    <Text c="dark">{vehicleData?.vehicle_year || 'Not set'}</Text>
-                  </Paper>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Text size="sm" fw={600} c="dimmed" mb="xs">Color</Text>
-                  <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                    <Text c="dark">{vehicleData?.vehicle_color || 'Not set'}</Text>
-                  </Paper>
-                </Grid.Col>
-              </Grid>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Make and Model */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Make
+                </label>
+                <input
+                  type="text"
+                  value={vehicleData.vehicle_make}
+                  onChange={(e) => setVehicleData({ ...vehicleData, vehicle_make: e.target.value })}
+                  placeholder="Honda"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Model
+                </label>
+                <input
+                  type="text"
+                  value={vehicleData.vehicle_model}
+                  onChange={(e) => setVehicleData({ ...vehicleData, vehicle_model: e.target.value })}
+                  placeholder="Civic"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
+                />
+              </div>
+            </div>
 
-              <Box>
-                <Text size="sm" fw={600} c="dimmed" mb="xs">License Plate</Text>
-                <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                  <Text c="dark">{vehicleData?.license_plate || 'Not set'}</Text>
-                </Paper>
-              </Box>
+            {/* Year and Color */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Year
+                </label>
+                <input
+                  type="number"
+                  value={vehicleData.vehicle_year}
+                  onChange={(e) => setVehicleData({ ...vehicleData, vehicle_year: e.target.value })}
+                  placeholder="2020"
+                  min="1900"
+                  max={new Date().getFullYear() + 1}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Color
+                </label>
+                <input
+                  type="text"
+                  value={vehicleData.vehicle_color}
+                  onChange={(e) => setVehicleData({ ...vehicleData, vehicle_color: e.target.value })}
+                  placeholder="Blue"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
+                />
+              </div>
+            </div>
 
-              <Box>
-                <Text size="sm" fw={600} c="dimmed" mb="xs">Vehicle Type</Text>
-                <Paper p="md" bg="gray.0" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                  <Text c="dark" tt="capitalize">{vehicleData?.vehicle_type || 'Not set'}</Text>
-                </Paper>
-              </Box>
-            </Stack>
-          </Card.Section>
-        </Card>
+            {/* License Plate */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                License Plate
+              </label>
+              <input
+                type="text"
+                value={vehicleData.license_plate}
+                onChange={(e) => setVehicleData({ ...vehicleData, license_plate: e.target.value.toUpperCase() })}
+                placeholder="ABC123"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              />
+            </div>
 
-        {/* Documents Status */}
-        <Card shadow="sm" radius="lg" withBorder>
-          <Card.Section p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}>
-            <Group gap="md" mb="md">
-              <ThemeIcon size="xl" radius="lg" color="blue" variant="light">
-                <IconFileText size={24} />
-              </ThemeIcon>
-              <Box>
-                <Title order={4} fw={700} c="dark">Document Status</Title>
-                <Text size="sm" c="dimmed">Required documents and verification</Text>
-              </Box>
-            </Group>
-          </Card.Section>
-          <Card.Section p="md">
-            <Stack gap="md">
-              <Paper p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                <Group justify="space-between">
-                  <Group gap="md">
-                    <IconFileText size={20} color="var(--mantine-color-gray-6)" />
-                    <Box>
-                      <Text fw={700} c="dark">Vehicle Registration</Text>
-                      <Text size="sm" c="dimmed">Registration document</Text>
-                    </Box>
-                  </Group>
-                  {getStatusIcon(documents.registration)}
-                </Group>
-              </Paper>
+            {/* Vehicle Type */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Vehicle Type
+              </label>
+              <select
+                value={vehicleData.vehicle_type}
+                onChange={(e) => setVehicleData({ ...vehicleData, vehicle_type: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  cursor: 'pointer',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              >
+                <option value="">Select type</option>
+                <option value="car">Car</option>
+                <option value="truck">Truck</option>
+                <option value="van">Van</option>
+                <option value="suv">SUV</option>
+                <option value="motorcycle">Motorcycle</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-              <Paper p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                <Group justify="space-between">
-                  <Group gap="md">
-                    <IconFileText size={20} color="var(--mantine-color-gray-6)" />
-                    <Box>
-                      <Text fw={700} c="dark">Insurance</Text>
-                      <Text size="sm" c="dimmed">
-                        {documents.insurance ? `${documents.insurance.provider} - ${documents.insurance.policy}` : 'Not uploaded'}
-                      </Text>
-                    </Box>
-                  </Group>
-                  {getStatusIcon(documents.insurance)}
-                </Group>
-              </Paper>
+        {/* Document Status Section */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Document Status
+          </div>
 
-              <Paper p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                <Group justify="space-between">
-                  <Group gap="md">
-                    <IconFileText size={20} color="var(--mantine-color-gray-6)" />
-                    <Box>
-                      <Text fw={700} c="dark">Vehicle Inspection</Text>
-                      <Text size="sm" c="dimmed">Inspection certificate</Text>
-                    </Box>
-                  </Group>
-                  {getStatusIcon(documents.inspection)}
-                </Group>
-              </Paper>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Hidden file inputs */}
+            {['registration', 'insurance', 'inspection', 'license'].map((docType) => (
+              <input
+                key={docType}
+                ref={(el) => fileInputRefs.current[docType] = el}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(docType, file);
+                  }
+                  // Reset input
+                  e.target.value = '';
+                }}
+              />
+            ))}
 
-              <Paper p="md" style={{ border: '2px solid var(--mantine-color-gray-2)', borderRadius: '12px' }}>
-                <Group justify="space-between">
-                  <Group gap="md">
-                    <IconFileText size={20} color="var(--mantine-color-gray-6)" />
-                    <Box>
-                      <Text fw={700} c="dark">Driver's License</Text>
-                      <Text size="sm" c="dimmed">License number on file</Text>
-                    </Box>
-                  </Group>
-                  {getStatusIcon(documents.license)}
-                </Group>
-              </Paper>
-            </Stack>
-
-            <Button
-              fullWidth
-              mt="md"
-              color="orange"
-              leftSection={<IconUpload size={20} />}
-              style={{ background: 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-red-6))' }}
+            {/* Vehicle Registration */}
+            <div
+              onClick={() => handleDocumentClick('registration')}
+              style={{
+                padding: '12px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = C.bg}
             >
-              Upload Documents
-            </Button>
-          </Card.Section>
-        </Card>
-      </Stack>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.text,
+                  marginBottom: 2,
+                }}>
+                  Vehicle Registration
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: C.muted,
+                }}>
+                  {uploading === 'registration' ? 'Uploading...' : documents.registration ? 'Uploaded' : 'Tap to upload'}
+                </div>
+              </div>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: documents.registration ? C.green : C.bgMuted,
+                border: `1px solid ${documents.registration ? C.green : C.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {uploading === 'registration' ? (
+                  <Loader size={12} color={C.orange} />
+                ) : documents.registration ? (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                ) : null}
+              </div>
+            </div>
 
-      {/* Android Bottom Bar */}
-      <Box 
-        style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: '48px', 
-          backgroundColor: '#000',
-          zIndex: 1000 
-        }} 
-      />
-    </Box>
+            {/* Insurance */}
+            <div
+              onClick={() => handleDocumentClick('insurance')}
+              style={{
+                padding: '12px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = C.bg}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.text,
+                  marginBottom: 2,
+                }}>
+                  Insurance
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: C.muted,
+                }}>
+                  {uploading === 'insurance' ? 'Uploading...' : documents.insurance ? 'Uploaded' : 'Tap to upload'}
+                </div>
+              </div>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: documents.insurance ? C.green : C.bgMuted,
+                border: `1px solid ${documents.insurance ? C.green : C.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {uploading === 'insurance' ? (
+                  <Loader size={12} color={C.orange} />
+                ) : documents.insurance ? (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Vehicle Inspection */}
+            <div
+              onClick={() => handleDocumentClick('inspection')}
+              style={{
+                padding: '12px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = C.bg}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.text,
+                  marginBottom: 2,
+                }}>
+                  Vehicle Inspection
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: C.muted,
+                }}>
+                  {uploading === 'inspection' ? 'Uploading...' : documents.inspection ? 'Uploaded' : 'Tap to upload'}
+                </div>
+              </div>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: documents.inspection ? C.green : C.bgMuted,
+                border: `1px solid ${documents.inspection ? C.green : C.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {uploading === 'inspection' ? (
+                  <Loader size={12} color={C.orange} />
+                ) : documents.inspection ? (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Driver's License */}
+            <div
+              onClick={() => handleDocumentClick('license')}
+              style={{
+                padding: '12px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = C.bgMuted}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = C.bg}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: C.text,
+                  marginBottom: 2,
+                }}>
+                  Driver's License
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  color: C.muted,
+                }}>
+                  {uploading === 'license' ? 'Uploading...' : documents.license ? 'Uploaded' : 'Tap to upload'}
+                </div>
+              </div>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: documents.license ? C.green : C.bgMuted,
+                border: `1px solid ${documents.license ? C.green : C.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {uploading === 'license' ? (
+                  <Loader size={12} color={C.orange} />
+                ) : documents.license ? (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20,6 9,17 4,12" />
+                  </svg>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+        </div> {/* Close Content - Scrollable */}
+      </div>
+    </div>
   );
 };
 

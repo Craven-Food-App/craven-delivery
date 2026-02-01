@@ -9,7 +9,6 @@ import { IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader } from '@mantine/core';
-import { MobileLayout } from '@/components/layouts/MobileLayout';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
@@ -258,44 +257,39 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
 
   if (loading) {
     return (
-      <MobileLayout>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: 1,
-          background: C.bg,
-        }}>
-          <Loader size="lg" color={C.orange} />
-        </div>
-      </MobileLayout>
+      <div style={{
+        background: C.bg,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Loader size="lg" color={C.orange} />
+      </div>
     );
   }
 
   return (
-    <MobileLayout headerHeight="56px">
+    <div style={{
+      background: C.bg,
+      minHeight: '100vh',
+      paddingBottom: 72,
+      color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
+      {/* ── sticky header ── */}
       <div style={{
+        position: 'sticky',
+        top: 0,
         background: C.bg,
-        color: C.text,
-        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        zIndex: 10,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '12px 16px',
       }}>
-        {/* Header */}
-        <div style={{
-          flexShrink: 0,
-          background: C.bg,
-          borderBottom: `1px solid ${C.border}`,
-          zIndex: 10,
-          height: '56px', // Content-driven height
-        }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 16px',
         }}>
           <button
             onClick={onBack}
@@ -353,14 +347,11 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-        {/* Content - Scrollable */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          padding: '12px 16px',
-          paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
-        }}>
+      {/* ── scrollable content ── */}
+      <div style={{
+        padding: '12px 16px',
+        paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
+      }}>
         {/* Feeder ID Section */}
         <div style={{
           border: `1px solid ${C.border}`,
@@ -746,7 +737,7 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
         </div>
         </div> {/* Close Content - Scrollable */}
       </div>
-    </MobileLayout>
+    </div>
   );
 };
 

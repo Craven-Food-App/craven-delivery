@@ -1,22 +1,26 @@
+/**
+ * Crave'n Feeder App — Profile Information (Enterprise Compact White)
+ * ───────────────────────────────────────────────────────────────
+ * Enterprise-grade compact white design matching Account/Ratings/Schedule pages
+ */
+
 import React, { useState, useEffect } from 'react';
-import { IconArrowLeft, IconDeviceFloppy, IconUser, IconMail, IconPhone, IconMapPin, IconCalendar } from '@tabler/icons-react';
+import { IconArrowLeft, IconDeviceFloppy } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  Title,
-  ActionIcon,
-  TextInput,
-  Loader,
-  ThemeIcon,
-  Paper,
-  Grid,
-  Divider,
-} from '@mantine/core';
+import { Loader } from '@mantine/core';
+import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
+
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  bg:      "#FFFFFF",
+  bgMuted: "#F8F9FA",
+} as const;
 
 type ProfileDetailsPageProps = {
   onBack: () => void;
@@ -25,6 +29,10 @@ type ProfileDetailsPageProps = {
 const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Keyboard awareness hooks (must be at top level)
+  const keyboardState = useKeyboardAware();
+  const { scrollToInput } = useScrollToInput();
   const [profile, setProfile] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -75,10 +83,10 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
           lastName,
           email: authUser.email || driverData.email || '',
           phone: driverData.phone || '',
-          dateOfBirth: '',
-          streetAddress: '',
+          dateOfBirth: authUser.user_metadata?.date_of_birth || '',
+          streetAddress: authUser.user_metadata?.street_address || '',
           city: driverData.city || '',
-          state: '',
+          state: authUser.user_metadata?.state || '',
           zipCode: driverData.zip || '',
         });
       } else if (driverProfile) {
@@ -88,10 +96,10 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
           lastName: authUser.user_metadata?.last_name || authUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
           email: authUser.email || '',
           phone: authUser.user_metadata?.phone || '',
-          dateOfBirth: '',
-          streetAddress: '',
+          dateOfBirth: authUser.user_metadata?.date_of_birth || '',
+          streetAddress: authUser.user_metadata?.street_address || '',
           city: '',
-          state: '',
+          state: authUser.user_metadata?.state || '',
           zipCode: '',
         });
       } else {
@@ -102,10 +110,10 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
           lastName: nameParts.slice(1).join(' ') || '',
           email: authUser.email || '',
           phone: authUser.user_metadata?.phone || '',
-          dateOfBirth: '',
-          streetAddress: '',
+          dateOfBirth: authUser.user_metadata?.date_of_birth || '',
+          streetAddress: authUser.user_metadata?.street_address || '',
           city: '',
-          state: '',
+          state: authUser.user_metadata?.state || '',
           zipCode: '',
         });
       }
@@ -217,6 +225,9 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
         data: {
           full_name: fullName,
           phone: formData.phone,
+          date_of_birth: formData.dateOfBirth || null,
+          street_address: formData.streetAddress || null,
+          state: formData.state || null,
         }
       });
 
@@ -246,195 +257,487 @@ const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" bg="gray.0" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="orange" />
-      </Box>
+      <div style={{
+        background: C.bg,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Loader size="lg" color={C.orange} />
+      </div>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" bg="white" style={{ overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <Paper
-        pos="sticky"
-        top={0}
-        bg="white"
-        style={{ 
-          zIndex: 10, 
-          borderBottom: '1px solid var(--mantine-color-gray-2)', 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
-        }}
-      >
-        <Group px="xl" py="md" justify="space-between" align="center">
-          <ActionIcon onClick={onBack} variant="subtle" color="dark">
-            <IconArrowLeft size={24} />
-          </ActionIcon>
-          <Title order={3} fw={700} c="dark">Profile Information</Title>
-          <Button
-            variant="subtle"
-            color="orange"
-            onClick={handleSave}
-            loading={saving}
-            leftSection={<IconDeviceFloppy size={16} />}
+    <div style={{
+      background: C.bg,
+      minHeight: '100vh',
+      paddingBottom: 72,
+      color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
+      {/* ── sticky header ── */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        background: C.bg,
+        zIndex: 10,
+        borderBottom: `1px solid ${C.border}`,
+        padding: '12px 16px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.text,
+            }}
           >
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </Group>
-      </Paper>
+            <IconArrowLeft size={24} />
+          </button>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: C.text,
+          }}>
+            Profile Information
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              background: saving ? C.bgMuted : C.orange,
+              color: saving ? C.muted : '#FFFFFF',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 12px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              opacity: saving ? 0.6 : 1,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            {saving ? (
+              <>
+                <Loader size={12} color={C.muted} />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <IconDeviceFloppy size={14} />
+                <span>Save</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
-      {/* Form - Full Page, No Cards */}
-      <Stack gap="xl" p="xl">
+      {/* ── scrollable content ── */}
+      <div style={{
+        padding: '12px 16px',
+        paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
+      }}>
         {/* Feeder ID Section */}
-        <Box>
-          <Text size="sm" fw={600} c="dimmed" mb="xs">Feeder ID</Text>
-          <Text size="lg" fw={700} c="dark" style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '12px 14px',
+          marginBottom: 12,
+          background: C.bgMuted,
+        }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: C.muted,
+            marginBottom: 6,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+          }}>
+            Feeder ID
+          </div>
+          <div style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: C.text,
+            fontFamily: 'monospace',
+            letterSpacing: '0.05em',
+          }}>
             {user?.id ? user.id.substring(0, 8) : 'Loading...'}
-          </Text>
-        </Box>
-
-        <Divider />
+          </div>
+        </div>
 
         {/* Personal Information Section */}
-        <Box>
-          <Group gap="md" mb="md">
-            <ThemeIcon size="xl" radius="lg" color="blue" variant="light">
-              <IconUser size={24} />
-            </ThemeIcon>
-            <Box>
-              <Title order={4} fw={700} c="dark">Personal Information</Title>
-              <Text size="sm" c="dimmed">Update your personal details</Text>
-            </Box>
-          </Group>
-          <Stack gap="md">
-            <Grid gutter="md">
-              <Grid.Col span={6}>
-                <TextInput
-                  label="First Name"
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Personal Information
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Name Fields */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  First Name
+                </label>
+                <input
+                  type="text"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   placeholder="First name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
                 />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="Last Name"
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  Last Name
+                </label>
+                <input
+                  type="text"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   placeholder="Last name"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
                 />
-              </Grid.Col>
-            </Grid>
+              </div>
+            </div>
 
-            <TextInput
-              label={
-                <Group gap="xs">
-                  <IconMail size={16} />
-                  <Text>Email</Text>
-                </Group>
-              }
-              type="email"
-              value={formData.email}
-              disabled
-              styles={{
-                input: {
-                  backgroundColor: 'var(--mantine-color-gray-0)',
-                  color: 'var(--mantine-color-gray-5)',
-                },
-              }}
-            />
-            <Text size="xs" c="dimmed">Email cannot be changed</Text>
+            {/* Email */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.muted2,
+                  background: C.bgMuted,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  cursor: 'not-allowed',
+                }}
+              />
+              <div style={{
+                fontSize: 10,
+                color: C.muted,
+                marginTop: 4,
+              }}>
+                Email cannot be changed
+              </div>
+            </div>
 
-            <TextInput
-              label={
-                <Group gap="xs">
-                  <IconPhone size={16} />
-                  <Text>Phone Number</Text>
-                </Group>
-              }
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="(555) 123-4567"
-            />
+            {/* Phone */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="(555) 123-4567"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              />
+            </div>
 
-            <TextInput
-              label={
-                <Group gap="xs">
-                  <IconCalendar size={16} />
-                  <Text>Date of Birth</Text>
-                </Group>
-              }
-              type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            />
-          </Stack>
-        </Box>
-
-        <Divider />
+            {/* Date of Birth */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Address Section */}
-        <Box>
-          <Group gap="md" mb="md">
-            <ThemeIcon size="xl" radius="lg" color="green" variant="light">
-              <IconMapPin size={24} />
-            </ThemeIcon>
-            <Box>
-              <Title order={4} fw={700} c="dark">Address</Title>
-              <Text size="sm" c="dimmed">Your current address</Text>
-            </Box>
-          </Group>
-          <Stack gap="md">
-            <TextInput
-              label="Street Address"
-              value={formData.streetAddress}
-              onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
-              placeholder="123 Main St"
-            />
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '14px 12px',
+        }}>
+          <div style={{
+            fontSize: 13,
+            fontWeight: 800,
+            color: C.text,
+            marginBottom: 12,
+          }}>
+            Address
+          </div>
 
-            <Grid gutter="md">
-              <Grid.Col span={6}>
-                <TextInput
-                  label="City"
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Street Address */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Street Address
+              </label>
+              <input
+                type="text"
+                value={formData.streetAddress}
+                onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                placeholder="123 Main St"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              />
+            </div>
+
+            {/* City and State */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  City
+                </label>
+                <input
+                  type="text"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   placeholder="City"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
                 />
-              </Grid.Col>
-              <Grid.Col span={6}>
-                <TextInput
-                  label="State"
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.muted,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                }}>
+                  State
+                </label>
+                <input
+                  type="text"
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                   placeholder="State"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: C.text,
+                    background: C.bg,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = C.orange}
+                  onBlur={(e) => e.target.style.borderColor = C.border}
                 />
-              </Grid.Col>
-            </Grid>
+              </div>
+            </div>
 
-            <TextInput
-              label="Zip Code"
-              value={formData.zipCode}
-              onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-              placeholder="12345"
-            />
-          </Stack>
-        </Box>
-      </Stack>
-
-      {/* Android Bottom Bar */}
-      <Box 
-        style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: '48px', 
-          backgroundColor: '#000',
-          zIndex: 1000 
-        }} 
-      />
-    </Box>
+            {/* Zip Code */}
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 10,
+                fontWeight: 600,
+                color: C.muted,
+                marginBottom: 4,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                Zip Code
+              </label>
+              <input
+                type="text"
+                value={formData.zipCode}
+                onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                placeholder="12345"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: C.text,
+                  background: C.bg,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = C.orange}
+                onBlur={(e) => e.target.style.borderColor = C.border}
+              />
+            </div>
+          </div>
+        </div>
+        </div> {/* Close Content - Scrollable */}
+      </div>
+    </div>
   );
 };
 
