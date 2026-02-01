@@ -207,7 +207,6 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>
       {/* ── sticky top bar ── */}
-      {/* ── sticky top bar ── */}
       <div style={{
         position: "sticky", top: 0, background: C.bg, zIndex: 10,
         borderBottom: `1px solid ${C.border}`, padding: "12px 16px",
@@ -785,8 +784,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
           </div>
         </div>
-        </div> {/* Close Content - Scrollable */}
-      </div>
+      </div> {/* Close Content - Scrollable */}
     </div>
   );
 };
