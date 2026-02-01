@@ -332,6 +332,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isActiveFeedingMenuOpen, setIsActiveFeedingMenuOpen] = useState(false);
   const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
+  const [resetMapZoom, setResetMapZoom] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
@@ -1341,7 +1342,10 @@ export const MobileDriverDashboard: React.FC = () => {
       
       {/* Full Screen Map Background - Full height */}
       <div className="absolute inset-0 z-0 map-touch">
-        <MobileMapbox onZoneStatusChange={handleZoneStatusChange} />
+        <MobileMapbox 
+          onZoneStatusChange={handleZoneStatusChange}
+          resetToDefaultZoom={resetMapZoom}
+        />
       </div>
 
       {/* Hamburger Menu Button - Top Left - Only on Home Tab, but NOT during delivery */}
@@ -1867,6 +1871,10 @@ export const MobileDriverDashboard: React.FC = () => {
         onGoHome={() => {
           setIsViewingHomeWhileFeeding(true);
           setIsActiveFeedingMenuOpen(false);
+          // Reset map to default zoom when navigating to home
+          setResetMapZoom(true);
+          // Reset the flag after a short delay so it can trigger again next time
+          setTimeout(() => setResetMapZoom(false), 100);
         }}
         currentEarnings={sessionEarnings}
         isPaused={driverState === 'online_paused'}

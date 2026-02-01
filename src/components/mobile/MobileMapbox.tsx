@@ -14,6 +14,7 @@ import driverNavIcon from '@/assets/driver_nav_icon.png';
 interface MobileMapboxProps {
   className?: string;
   onZoneStatusChange?: (info: { isInZone: boolean; zone: DeliveryZone | null }) => void;
+  resetToDefaultZoom?: boolean; // When true, resets map to default zoom
 }
 
 const ZONE_SOURCE_ID = 'delivery-zones';
@@ -23,6 +24,7 @@ const ZONE_LINE_LAYER_ID = 'delivery-zones-outline';
 export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   className = '',
   onZoneStatusChange,
+  resetToDefaultZoom = false,
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
@@ -129,7 +131,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   }, []);
 
   const applyDriverLocation = useCallback(
-    (lat: number, lng: number, animate = false, heading?: number) => {
+    (lat: number, lng: number, animate = false, heading?: number, zoom?: number) => {
       if (!map.current || !marker.current) return;
 
       marker.current.setLngLat([lng, lat]);
@@ -144,9 +146,16 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       }
       
       if (animate) {
-        map.current.flyTo({ center: [lng, lat], zoom: Math.max(map.current.getZoom() || 14, 14), essential: true });
+        // Use provided zoom, or maximum zoom (20), or current zoom, or minimum 14
+        const targetZoom = zoom ?? 20; // Default to maximum zoom (20) when centering
+        const finalZoom = Math.min(targetZoom, map.current.getMaxZoom?.() || 20);
+        map.current.flyTo({ center: [lng, lat], zoom: finalZoom, essential: true });
       } else {
         map.current.setCenter([lng, lat]);
+        if (zoom !== undefined) {
+          const finalZoom = Math.min(zoom, map.current.getMaxZoom?.() || 20);
+          map.current.setZoom(finalZoom);
+        }
       }
 
       const zone = getZoneForLocation([lat, lng], zones);
@@ -315,6 +324,18 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     setShowRecenter(true);
   }, [isMapReady, location, calculateRotation, zones, onZoneStatusChange]);
 
+  // Reset map to default zoom when resetToDefaultZoom prop changes to true
+  useEffect(() => {
+    if (!isMapReady || !map.current || !resetToDefaultZoom) return;
+    
+    // Reset to default zoom from config
+    map.current.flyTo({
+      zoom: MAPBOX_CONFIG.zoom,
+      essential: true,
+      duration: 500 // Smooth animation
+    });
+  }, [resetToDefaultZoom, isMapReady]);
+
 
   const legendItems = useMemo(() => {
     return zones.map((zone) => {
@@ -344,7 +365,28 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
 
       {isMapReady && (
         <>
-          {/* Recenter button - right side */}
+          {/* Schedule button - Left side */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // TODO: Open schedule modal for future feeding times
+              console.log('Schedule future feeding times');
+            }}
+            className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
+            style={{ top: 'calc(50% + 20px)', left: '11px', transform: 'translateY(-50%)', pointerEvents: 'auto' }}
+            aria-label="Schedule future feeding times"
+            type="button"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-gray-700">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </button>
+          
+          {/* Recenter button - Right side */}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -369,7 +411,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
               
               if (lat !== null && lng !== null && map.current && marker.current) {
                 const currentHeading = location?.heading;
-                applyDriverLocation(lat, lng, true, currentHeading);
+                // Get maximum zoom from map (typically 20-22) or use 20 as fallback
+                const maxZoom = map.current.getMaxZoom?.() || 20;
+                applyDriverLocation(lat, lng, true, currentHeading, maxZoom);
               }
             }}
             className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
@@ -380,27 +424,6 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 text-gray-700">
               <path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
               <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
-          
-          {/* Schedule button - left side (opposite to attribution) */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              // TODO: Open schedule modal for future feeding times
-              console.log('Schedule future feeding times');
-            }}
-            className="absolute z-[100] w-10 h-10 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 350px)', left: '16px', pointerEvents: 'auto' }}
-            aria-label="Schedule future feeding times"
-            type="button"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-gray-700">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </button>
         </>
