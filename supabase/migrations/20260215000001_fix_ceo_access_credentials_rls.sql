@@ -97,3 +97,5 @@ COMMENT ON FUNCTION public.verify_ceo_pin IS 'Verifies CEO PIN. Uses SECURITY DE
 COMMENT ON FUNCTION public.is_ceo_authorized IS 'Checks if email is authorized CEO. Uses SECURITY DEFINER to bypass RLS.';
 
 
+
+

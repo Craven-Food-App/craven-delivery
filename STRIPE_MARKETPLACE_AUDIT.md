@@ -740,3 +740,5 @@ app.use("/api/support/webhook", bodyParser.raw({ type: "application/json" }));
 The implementation follows Stripe's recommended marketplace pattern where the platform is the merchant of record and transfers happen post-payment via webhooks. This is the correct approach for a DoorDash-style marketplace.
 
 
+
+

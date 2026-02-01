@@ -1,19 +1,66 @@
-import React from 'react';
-import { IconX, IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconTrendingUp, IconMessageCircle, IconLogout, IconFlame } from '@tabler/icons-react';
+import React, { useState } from 'react';
+import { IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconFlame, IconTrendingUp } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  ActionIcon,
-  Badge,
-  Divider,
-  Paper,
-  Title,
-  ThemeIcon,
-} from '@mantine/core';
+
+/* ─────────────────────────────────────────
+   THEME TOKENS
+   ───────────────────────────────────────── */
+const T = {
+  orange: "#E8622A",
+  orangeLight: "rgba(232,98,42,0.07)",
+  orangeGlow: "rgba(232,98,42,0.22)",
+  textPrimary: "#1A1A1A",
+  textSecondary: "#6B7280",
+  textTertiary: "#9CA3AF",
+  border: "#E8EAED",
+  bg: "#FAFBFC",
+  bgPage: "#eef0f3",
+  cardDark: "#1A1A1A",
+  cardDarkSlab: "#222",
+  cardDarkBorder: "#2e2e2e",
+  white: "#FFFFFF",
+  blue: "#3a7bd5",
+  blueBg: "#EEF4FF",
+  star: "#f0b827",
+};
+
+/* ─────────────────────────────────────────
+   ICONS
+   ───────────────────────────────────────── */
+const Icon = ({ children, size = 16, stroke = T.textTertiary, fill = "none", strokeWidth = 1.8, style = {} }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", flexShrink: 0, ...style }}>
+    {children}
+  </svg>
+);
+
+const HomeIcon     = (p) => <Icon {...p}><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></Icon>;
+const CalendarIcon = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+const FlameIcon    = (p) => <Icon {...p}><path d="M12 22c-4 0-7-2.5-7-6 0-2 1-3.5 2.5-4.5C6 9 6 6 8 4c1 3 3 4 5 4 0-2 1.5-4 4-5 1 2 1 4 0 6 1.5 1 2.5 2.5 2.5 4.5 0 3.5-3 6-7 6z"/></Icon>;
+const DollarIcon   = (p) => <Icon {...p}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></Icon>;
+const UserIcon     = (p) => <Icon {...p}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="8" r="4"/></Icon>;
+const ChevronIcon  = (p) => <Icon {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></Icon>;
+const RatingsIcon  = (p) => <Icon {...p}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></Icon>;
+const PromosIcon   = (p) => <Icon {...p}><polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/></Icon>;
+const StarIcon     = ({ size = 11 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={T.star} stroke="none" style={{ display: "block", flexShrink: 0 }}>
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+  </svg>
+);
+const DiamondIcon = ({ size = 9 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={T.blue} stroke="none" style={{ display: "block", flexShrink: 0 }}>
+    <path d="M12 2L2 9l3 13h14l3-13L12 2z"/>
+  </svg>
+);
+
+/* ─────────────────────────────────────────
+   KEYFRAMES
+   ───────────────────────────────────────── */
+const KEYFRAMES = `
+  @keyframes ctaPulse {
+    0%, 100% { transform: scale(0.8); opacity: 0.35; }
+    50%      { transform: scale(1.35); opacity: 1; }
+  }
+`;
 
 type FeederSidebarMenuProps = {
   isOpen: boolean;
@@ -133,15 +180,30 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
 
   const status = getStatus(driverPoints);
 
-  const menuItems = [
-    { icon: IconHome, label: 'Home', path: 'home' },
-    { icon: IconCalendar, label: 'Schedule', path: 'schedule' },
-    { icon: IconFlame, label: 'On Fire', path: 'onfire' },
-    { icon: IconCurrencyDollar, label: 'Earnings', path: 'earnings' },
-    { icon: IconUser, label: 'Account', path: 'account' },
-    { icon: IconStar, label: 'Ratings', path: 'ratings' },
-    { icon: IconTrendingUp, label: 'Promos', path: 'promos' }
+  // Get initials from driver name
+  const getInitials = (name: string) => {
+    if (!name) return 'DR';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Wrapper components to use Tabler icons with our Icon component style
+  const RatingsIconWrapper = (p: any) => <IconStar {...p} />;
+  const PromosIconWrapper = (p: any) => <IconTrendingUp {...p} />;
+
+  const navItems = [
+    { id: "home", label: "Home", Icon: HomeIcon },
+    { id: "schedule", label: "Schedule", Icon: CalendarIcon },
+    { id: "onfire", label: "On Fire", Icon: FlameIcon },
+    { id: "earnings", label: "Earnings", Icon: DollarIcon },
+    { id: "ratings", label: "Ratings", Icon: RatingsIconWrapper },
+    { id: "promos", label: "Promos", Icon: PromosIconWrapper },
   ];
+
+  const badgeText = `${status.name} Feeder`;
 
   const handleMenuClick = (path: string) => {
     if (onNavigate) {
@@ -177,370 +239,224 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     }
   };
 
-  return (
-    <Box
-      pos="fixed"
-      top={0}
-      left={0}
-      right={0}
-      bottom={0}
-      style={{ 
-        zIndex: 50, 
-        transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s',
-      }}
-    >
-      {/* Top Glow Effect - Matches Feeder Level */}
-      {isOpen && (
-        <Box
-          pos="absolute"
-          top={0}
-          left={0}
-          right={0}
-          h={300}
+  /* ═══════════════════════════════════════════
+     MENU HEADER
+     ═══════════════════════════════════════════ */
+  const MenuHeader = ({ name, initials, badge }: { name: string; initials: string; badge: string }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "20px 20px 16px", borderBottom: `1px solid ${T.border}`, position: "relative", zIndex: 2 }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: "50%",
+        background: `linear-gradient(135deg, ${T.orange}, #f0a060)`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: T.white, fontWeight: 700, fontSize: 14, flexShrink: 0,
+        boxShadow: "0 2px 8px rgba(232,98,42,0.3)",
+      }}>{initials}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 4, marginTop: 3,
+          background: T.blueBg, color: T.blue,
+          padding: "2px 7px", borderRadius: 10,
+          fontSize: 9, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+        }}>
+          <DiamondIcon size={9} />
+          {badge}
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ═══════════════════════════════════════════
+     STATS ROW
+     ═══════════════════════════════════════════ */
+  const Stat = ({ value, label, prefix }: { value: string | number; label: string; prefix?: React.ReactNode }) => (
+    <div style={{ flex: 1, textAlign: "center" }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+        {prefix}{value}
+      </div>
+      <div style={{ fontSize: 9, color: T.textTertiary, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500 }}>{label}</div>
+    </div>
+  );
+
+  const StatsRow = ({ rating, deliveries, perfect }: { rating: number; deliveries: number; perfect: number | string }) => (
+    <div style={{ display: "flex", padding: "12px 20px", borderBottom: `1px solid ${T.border}`, position: "relative", zIndex: 2 }}>
+      <Stat value={rating.toFixed(2)} label="Rating" prefix={<StarIcon size={11} />} />
+      <div style={{ width: 1, background: T.border, margin: "4px 0" }} />
+      <Stat value={deliveries} label="Deliveries" />
+      <div style={{ width: 1, background: T.border, margin: "4px 0" }} />
+      <Stat value={perfect} label="Perfect" />
+    </div>
+  );
+
+  /* ═══════════════════════════════════════════
+     NEW DRIVER CTA
+     ═══════════════════════════════════════════ */
+  const NewDriverCTA = () => {
+    const [h, setH] = useState(false);
+    if (!driverStatus) return null;
+    return (
+      <div style={{ padding: "12px 20px", borderBottom: `1px solid ${T.border}`, position: "relative", zIndex: 2 }}>
+        <button
+          onMouseEnter={() => setH(true)}
+          onMouseLeave={() => setH(false)}
           style={{
-            background: status.glowGradient,
-            pointerEvents: 'none',
-            zIndex: 1,
-            transition: 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-            opacity: isOpen ? 1 : 0,
+            width: "100%", background: T.cardDark, border: "none", borderRadius: 9,
+            padding: 0, cursor: "pointer", overflow: "hidden",
+            display: "flex", alignItems: "stretch", height: 42,
+            boxShadow: h ? "0 5px 18px rgba(0,0,0,0.24)" : "0 3px 12px rgba(0,0,0,0.18)",
+            transform: h ? "translateY(-1px)" : "translateY(0)",
+            transition: "transform 0.15s ease, box-shadow 0.15s ease",
           }}
-        />
-      )}
-      
-      {/* Overlay */}
-      <Box 
-        pos="absolute" 
-        inset={0} 
-        style={{ 
-          backgroundColor: 'rgba(0,0,0,0.52)', 
-          backdropFilter: 'blur(8px)',
-          transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          opacity: isOpen ? 1 : 0,
-        }} 
+        >
+          <div style={{
+            width: 42, flexShrink: 0, background: T.cardDarkSlab,
+            borderRight: `1px solid ${T.cardDarkBorder}`,
+            display: "flex", alignItems: "center", justifyContent: "center", position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", width: 26, height: 26, borderRadius: "50%",
+              background: `radial-gradient(circle, ${T.orangeGlow} 0%, transparent 70%)`,
+              animation: "ctaPulse 2.4s ease-in-out infinite",
+            }} />
+            <FlameIcon size={18} stroke={T.orange} style={{ position: "relative", zIndex: 1 }} />
+          </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 13px" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: T.white, letterSpacing: 0.3 }}>New Driver</div>
+            <div style={{ fontSize: 8.5, color: "#5a5a5a", fontWeight: 500, marginTop: 1.5 }}>Start earning today</div>
+          </div>
+          <div style={{ width: 34, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ChevronIcon size={14} stroke="#5a5a5a" strokeWidth={2.2} />
+          </div>
+        </button>
+      </div>
+    );
+  };
+
+  /* ═══════════════════════════════════════════
+     NAV ITEM
+     ═══════════════════════════════════════════ */
+  const NavItem = ({ item, isActive, onClick }: { item: typeof navItems[0]; isActive: boolean; onClick: () => void }) => {
+    const [h, setH] = useState(false);
+    const { Icon: ItemIcon } = item;
+    return (
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setH(true)}
+        onMouseLeave={() => setH(false)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10,
+          padding: "8px 10px", borderRadius: 6, border: "none",
+          background: (h && !isActive) ? "#F3F4F6" : "transparent",
+          cursor: "pointer", position: "relative", transition: "background 0.15s",
+        }}
+      >
+        {isActive && <div style={{ position: "absolute", left: 0, top: 6, bottom: 6, width: 2.5, background: T.orange, borderRadius: "0 2px 2px 0" }} />}
+        <div style={{
+          width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: isActive ? T.orangeLight : h ? "#ECEEF1" : "transparent",
+          transition: "background 0.15s",
+        }}>
+          <ItemIcon size={16} stroke={isActive ? T.orange : h ? T.textSecondary : T.textTertiary} />
+        </div>
+        <span style={{ fontSize: 12.5, fontWeight: isActive ? 600 : 500, color: isActive ? T.orange : h ? T.textPrimary : T.textSecondary, transition: "color 0.15s" }}>
+          {item.label}
+        </span>
+      </button>
+    );
+  };
+
+  /* ═══════════════════════════════════════════
+     ACCOUNT FOOTER
+     ═══════════════════════════════════════════ */
+  const AccountFooter = () => {
+    const [h, setH] = useState(false);
+    return (
+      <div style={{ padding: "10px 12px 14px", borderTop: `1px solid ${T.border}` }}>
+        <button
+          onClick={() => handleMenuClick('account')}
+          onMouseEnter={() => setH(true)}
+          onMouseLeave={() => setH(false)}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 10,
+            padding: "8px 10px", borderRadius: 6, border: "none",
+            background: h ? "#F3F4F6" : "transparent", cursor: "pointer", transition: "background 0.15s",
+          }}
+        >
+          <div style={{
+            width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: h ? "#ECEEF1" : "transparent", transition: "background 0.15s",
+          }}>
+            <UserIcon size={16} stroke={h ? T.textSecondary : T.textTertiary} />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 500, color: h ? T.textSecondary : T.textTertiary, transition: "color 0.15s" }}>Account</span>
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{KEYFRAMES}</style>
+      <div
         onClick={onClose}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.38)",
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? "auto" : "none",
+          transition: "opacity 0.3s ease", zIndex: 10,
+        }}
       />
       
-      {/* Sidebar */}
-      <Paper
-        pos="absolute"
-        left={0}
-        top={0}
-        h="100%"
-        w={320}
-        radius={0}
-        style={{ 
-          overflowY: 'auto', 
-          scrollbarWidth: 'none', 
-          msOverflowStyle: 'none', 
-          borderRadius: 0,
-          boxShadow: '2px 0 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      <div
+        style={{
+          position: "fixed", top: 0, bottom: 0, left: 0,
+          width: 260, background: T.bg,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          zIndex: 20,
+          display: "flex", flexDirection: "column", overflow: "hidden",
         }}
-        bg="white"
       >
-        <style>{`
-          [data-mantine-paper]::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-
-        {/* Header Section */}
-        <Box
-          pos="relative"
-          p="xl"
-          style={{ background: status.gradient, overflow: 'hidden', paddingTop: 'calc(1.5rem + 50px)' }}
-        >
-          {/* Sparkle effects for Diamond */}
-          {status.name === 'Diamond' && (
-            <Box pos="absolute" inset={0} style={{ opacity: 0.3 }}>
-              <Box pos="absolute" top={16} left={32} w={12} h={12} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite' }} />
-              <Box pos="absolute" top={48} right={48} w={8} h={8} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite', animationDelay: '0.3s' }} />
-              <Box pos="absolute" bottom={32} left={64} w={8} h={8} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite', animationDelay: '0.6s' }} />
-            </Box>
-          )}
-
-          {/* Close Button */}
-          <ActionIcon
-            pos="absolute"
-            top={66}
-            right={16}
-            variant="light"
-            color="gray"
-            size="lg"
-            radius="xl"
-            onClick={onClose}
-            style={{ 
-              backgroundColor: 'rgba(255,255,255,0.35)', 
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        {/* Top Glow Effect - Matches Feeder Level - Covers top of menu */}
+        {isOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 300,
+              background: status.glowGradient,
+              pointerEvents: "none",
+              zIndex: 1,
+              transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              opacity: isOpen ? 1 : 0,
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.35)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <IconX size={22} strokeWidth={2.5} />
-          </ActionIcon>
-
-          {/* Driver Info */}
-          <Box pos="relative" mt="xl" style={{ textAlign: 'center' }}>
-            <Title 
-              order={2} 
-              fw={900} 
-              c="dark" 
-              mb="md" 
-              style={{ 
-                textAlign: 'center',
-                fontSize: '28px',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
-              }}
-            >
-              {driverName}
-            </Title>
-            
-            {/* Status Badge with Icon */}
-            <Badge
-              size="lg"
-              variant="light"
-              mb="md"
-              style={{ 
-                backgroundColor: 'rgba(255,255,255,0.45)', 
-                backdropFilter: 'blur(12px)',
-                border: '1.5px solid rgba(255,255,255,0.7)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                display: 'inline-flex',
-                padding: '8px 16px',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Group gap="xs">
-                <Text size="xl" style={{ lineHeight: 1 }}>{status.icon}</Text>
-                <Text fw={800} c="dark" size="sm" style={{ letterSpacing: '0.02em' }}>{status.name} Feeder</Text>
-              </Group>
-            </Badge>
-
-            {/* Stats Row */}
-            <Paper 
-              p="md" 
-              radius="lg" 
-              shadow="none" 
-              style={{ 
-                backgroundColor: 'rgba(255,255,255,0.35)', 
-                backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.6)',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                margin: '0 auto',
-                maxWidth: '100%',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <Stack gap={4}>
-                <Group justify="space-between" gap="xs" align="baseline">
-                  <Box style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
-                    <IconStar 
-                      size={20} 
-                      fill="var(--mantine-color-yellow-6)" 
-                      color="var(--mantine-color-yellow-6)" 
-                      style={{ flexShrink: 0, alignSelf: 'baseline', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }} 
-                    />
-                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{driverRating.toFixed(2)}</Text>
-                  </Box>
-                  <Divider orientation="vertical" h={40} style={{ borderColor: 'rgba(255,255,255,0.6)', borderWidth: '1px' }} />
-                  <Box style={{ flex: 1, textAlign: 'center' }}>
-                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{deliveries}</Text>
-                  </Box>
-                  <Divider orientation="vertical" h={40} style={{ borderColor: 'rgba(255,255,255,0.6)', borderWidth: '1px' }} />
-                  <Box style={{ flex: 1, textAlign: 'center' }}>
-                    <Text size="xl" fw={900} c="dark" style={{ lineHeight: 1, letterSpacing: '-0.02em' }}>{perfection}%</Text>
-                  </Box>
-                  </Group>
-                <Group justify="space-between" gap="xs" align="center">
-                  <Box style={{ flex: 1, textAlign: 'center' }}>
-                  <Text size="xs" c="dark" fw={600}>Rating</Text>
-                  </Box>
-                  <Box style={{ width: '1px' }} />
-                  <Box style={{ flex: 1, textAlign: 'center' }}>
-                    <Text size="xs" c="dark" fw={600}>Deliveries</Text>
-                  </Box>
-                  <Box style={{ width: '1px' }} />
-                  <Box style={{ flex: 1, textAlign: 'center' }}>
-                    <Text size="xs" c="dark" fw={600}>Perfect</Text>
-                  </Box>
-                </Group>
-                </Stack>
-            </Paper>
-          </Box>
-        </Box>
-
-        {/* New Driver Badge */}
-        {driverStatus && (
-          <Box px="xl" style={{ marginTop: -16, position: 'relative', zIndex: 10, textAlign: 'center' }}>
-            <Paper
-              p="md"
-              radius="lg"
-              style={{ 
-                background: 'linear-gradient(135deg, var(--mantine-color-orange-5), var(--mantine-color-red-6))', 
-                boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3), 0 4px 8px rgba(0,0,0,0.1)',
-                display: 'inline-block',
-                width: '100%',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-              }}
-            >
-              <Group gap="md" justify="center">
-                <ThemeIcon 
-                  size="lg" 
-                  radius="xl" 
-                  style={{ 
-                    backgroundColor: 'rgba(255,255,255,0.25)',
-                    backdropFilter: 'blur(4px)',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <IconFlame size={20} color="white" strokeWidth={2.5} />
-                </ThemeIcon>
-                <Text c="white" fw={800} size="sm" style={{ letterSpacing: '0.05em' }}>{driverStatus}</Text>
-              </Group>
-            </Paper>
-          </Box>
+          />
         )}
-
-        {/* Menu Items */}
-        <Stack gap="xs" p="md" pt="xl">
-          {menuItems.map((item, idx) => {
-            const isActive = activeTab === item.path;
-            const IconComponent = item.icon;
-            const isMessagesItem = item.path === 'messages';
-            return (
-              <Button
-                key={idx}
-                onClick={() => handleMenuClick(item.path)}
-                variant={isActive ? 'filled' : 'subtle'}
-                color={isActive ? 'orange' : 'gray'}
-                fullWidth
-                justify="flex-start"
-                leftSection={
-                  <ThemeIcon
-                    size="lg"
-                    radius="md"
-                    color={isActive ? 'white' : 'orange'}
-                    variant="transparent"
-                    style={{ 
-                      backgroundColor: 'transparent',
-                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    }}
-                  >
-                    {isMessagesItem ? (
-                      <img 
-                        src="/app-chat.png" 
-                        alt="Messages" 
-                        style={{ 
-                          width: '24px', 
-                          height: '24px',
-                          filter: isActive ? 'brightness(0) invert(1)' : 'none',
-                          transition: 'filter 0.2s ease',
-                        }} 
-                      />
-                    ) : (
-                      <IconComponent 
-                        size={24} 
-                        color={isActive ? 'white' : 'var(--mantine-color-orange-6)'}
-                        strokeWidth={isActive ? 2.5 : 2}
-                      />
-                    )}
-                  </ThemeIcon>
-                }
-                size="lg"
-                style={{
-                  background: isActive 
-                    ? 'linear-gradient(135deg, var(--mantine-color-orange-5), var(--mantine-color-red-6))' 
-                    : undefined,
-                  color: isActive ? 'white' : 'var(--mantine-color-gray-7)',
-                  boxShadow: isActive 
-                    ? '0 4px 12px rgba(251, 146, 60, 0.25), 0 2px 4px rgba(0,0,0,0.1)' 
-                    : 'none',
-                  transform: isActive ? 'translateX(4px)' : 'translateX(0)',
-                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  border: isActive ? 'none' : '1px solid transparent',
-                  fontWeight: isActive ? 700 : 600,
-                  letterSpacing: '0.01em',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'rgba(251, 146, 60, 0.08)';
-                    e.currentTarget.style.transform = 'translateX(2px)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = '';
-                    e.currentTarget.style.transform = 'translateX(0)';
-                  }
-                }}
-              >
-                <Text fw={isActive ? 700 : 600} size="lg" style={{ letterSpacing: '0.01em' }}>{item.label}</Text>
-              </Button>
-            );
-          })}
-        </Stack>
-
-        {/* Logout */}
-        <Box px="md" pb="xl">
-          <Button
-            onClick={handleLogout}
-            variant="light"
-            color="red"
-            fullWidth
-            justify="flex-start"
-            leftSection={
-              <ThemeIcon 
-                size="lg" 
-                radius="md" 
-                color="red" 
-                variant="transparent" 
-                style={{ 
-                  backgroundColor: 'transparent',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                <IconLogout size={24} color="var(--mantine-color-red-6)" strokeWidth={2} />
-              </ThemeIcon>
-            }
-            size="lg"
-            style={{ 
-              border: '1.5px solid var(--mantine-color-red-2)',
-              backgroundColor: 'rgba(239, 68, 68, 0.04)',
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              fontWeight: 600,
-              letterSpacing: '0.01em',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-              e.currentTarget.style.borderColor = 'var(--mantine-color-red-3)';
-              e.currentTarget.style.transform = 'translateX(2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.04)';
-              e.currentTarget.style.borderColor = 'var(--mantine-color-red-2)';
-              e.currentTarget.style.transform = 'translateX(0)';
-            }}
-          >
-            <Text fw={600} size="lg" c="red.6" style={{ letterSpacing: '0.01em' }}>Logout</Text>
-          </Button>
-        </Box>
-
-        {/* Bottom Accent */}
-        <Box h={80} />
-      </Paper>
-    </Box>
+        <div style={{ height: 3, background: `linear-gradient(90deg, ${T.orange}, #f0a060)`, flexShrink: 0, position: "relative", zIndex: 2 }} />
+        <MenuHeader name={driverName || "Driver"} initials={getInitials(driverName)} badge={badgeText} />
+        <StatsRow rating={driverRating} deliveries={deliveries} perfect={`${perfection}%`} />
+        <NewDriverCTA />
+        <div style={{ padding: "8px 12px", flex: 1, display: "flex", flexDirection: "column", gap: 1, overflowY: "auto" }}>
+          {navItems.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              isActive={activeTab === item.id}
+              onClick={() => {
+                handleMenuClick(item.id);
+              }}
+            />
+          ))}
+        </div>
+        <AccountFooter />
+      </div>
+    </>
   );
 };
 

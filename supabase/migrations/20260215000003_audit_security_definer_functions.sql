@@ -128,3 +128,5 @@ COMMENT ON FUNCTION public.audit_security_definer_functions IS
 'Returns audit results for all SECURITY DEFINER functions, highlighting potential security risks.';
 
 
+
+
