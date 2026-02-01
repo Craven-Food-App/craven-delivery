@@ -955,8 +955,7 @@ const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
             </button>
           </div>
         </div>
-        </div> {/* Close Content - Scrollable */}
-      </div>
+      </div> {/* Close Content - Scrollable */}
     </div>
   );
 };
