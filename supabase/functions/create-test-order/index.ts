@@ -223,6 +223,10 @@ serve(async (req) => {
     const tipCents = Math.round(subtotalCents * 0.15); // 15% tip
     const totalCents = subtotalCents + taxCents + tipCents;
 
+    // Calculate mileage pay: $0.67 per mile (IRS standard rate)
+    const distanceMiles = distanceKm * 0.621371;
+    const mileagePayCents = Math.round(distanceMiles * 67); // $0.67 per mile = 67 cents
+
     // Create order as confirmed and assigned to selected driver
     const { data: order, error: orderErr } = await service
       .from("orders")
@@ -237,6 +241,7 @@ serve(async (req) => {
         tax_cents: taxCents,
         tip_cents: tipCents,
         delivery_fee_cents: 0,
+        mileage_pay_cents: mileagePayCents,
         delivery_address,
         customer_name: customerProfile?.full_name || "Test Customer",
         customer_phone: customerProfile?.phone || null,
@@ -352,6 +357,7 @@ serve(async (req) => {
       dropoff_address: delivery_address,
       customer_name: customerProfile?.full_name || "Test Customer",
       payout_cents: payoutCents,
+      mileage_pay_cents: mileagePayCents,
       distance_km: distanceKm,
       distance_mi: (distanceKm * 0.621371).toFixed(1),
       expires_at: expiresAt,
