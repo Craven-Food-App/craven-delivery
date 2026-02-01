@@ -15,7 +15,8 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const driverId: string | undefined = body.driverId;
-    const distanceKm: number = Number(body.distanceKm ?? 3.2);
+    // Default to 8 km (5 miles = $3.35) for more visible mileage pay
+    const distanceKm: number = Number(body.distanceKm ?? 8.0);
     const expiresInMs: number = Number(body.expiresInMs ?? 30_000);
 
     if (!driverId) {
@@ -242,6 +243,7 @@ serve(async (req) => {
         tip_cents: tipCents,
         delivery_fee_cents: 0,
         mileage_pay_cents: mileagePayCents,
+        distance_km: distanceKm, // Set distance_km so it shows in earnings
         delivery_address,
         customer_name: customerProfile?.full_name || "Test Customer",
         customer_phone: customerProfile?.phone || null,
