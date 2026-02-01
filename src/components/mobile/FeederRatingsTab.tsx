@@ -1,447 +1,390 @@
-import React, { useState, useEffect } from 'react';
-import { IconMenu2, IconStar, IconTrendingUp, IconThumbUp, IconClock, IconPackage } from '@tabler/icons-react';
-import { notifications } from '@mantine/notifications';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  ActionIcon,
-  Loader,
-  ThemeIcon,
-  Paper,
-  Grid,
-  Badge,
-  Progress,
-  Title,
-} from '@mantine/core';
+/**
+ * Crave'n Feeder App — Ratings Tab (Enterprise Compact White)
+ * ────────────────────────────────────────────────────────────
+ * Drop-in:  src/components/mobile/FeederRatingsTab.tsx
+ *
+ * Cursor instructions:
+ *   1) Replace src/components/mobile/FeederRatingsTab.tsx with this file.
+ *   2) Route / tab already points to <FeederRatingsTab /> — no change needed.
+ *   3) No icons, no emojis, no gradients, no orange backgrounds.
+ *   4) All layout is inline-style; no external CSS file required.
+ *   5) Mock data lives in useMockRatings() — swap for your API call there.
+ *   6) Progress bars animate fill on first mount (staggered 200ms ease-out).
+ *   7) Info icon opens a bottom-sheet modal explaining how ratings work.
+ */
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#F57C00",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  track:   "#EEEEEE",
+  starOff: "#E5E5E5",
+  bg:      "#FFFFFF",
+  bgMuted: "#FAFBFD",
+} as const;
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+interface PulseMetric {
+  label: string;
+  value: number; // 0–100
+}
+
+interface RatingRow {
+  stars: number; // 5 down to 1
+  count: number;
+}
+
+interface RatingsData {
+  score:        number;   // e.g. 5.0
+  totalFeeds:   number;
+  pulse:        PulseMetric[];
+  breakdown:    RatingRow[];
+}
 
 type FeederRatingsTabProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
 };
 
+// ─── MOCK DATA (replace with API) ───────────────────────────────────────────
+function useMockRatings(): RatingsData {
+  return useMemo(() => ({
+    score:      5.0,
+    totalFeeds: 0,
+    pulse: [
+      { label: "On-Time",     value: 0 },
+      { label: "Accuracy",    value: 0 },
+      { label: "Quality",     value: 0 },
+      { label: "Satisfaction",value: 0 },
+    ],
+    breakdown: [
+      { stars: 5, count: 0 },
+      { stars: 4, count: 0 },
+      { stars: 3, count: 0 },
+      { stars: 2, count: 0 },
+      { stars: 1, count: 0 },
+    ],
+  }), []);
+}
+
+// ─── TINY UTILS ─────────────────────────────────────────────────────────────
+/** Max count in breakdown — used to size the bars. Returns 1 if all zero to avoid div/0. */
+function maxCount(rows: RatingRow[]) {
+  return Math.max(1, ...rows.map((r) => r.count));
+}
+
+// ─── SVG: STAR ──────────────────────────────────────────────────────────────
+const STAR_PATH = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
+
+function Star({ filled, size = 14 }: { filled: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? C.orange : C.starOff}>
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+/** Renders a row of 5 stars, first `count` filled. */
+function StarRow({ count, size = 14 }: { count: number; size?: number }) {
+  return (
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star key={i} filled={i <= count} size={size} />
+      ))}
+    </div>
+  );
+}
+
+// ─── SVG: HAMBURGER ─────────────────────────────────────────────────────────
+function HamburgerIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round">
+      <line x1="3" y1="6"  x2="21" y2="6"  />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+// ─── SVG: INFO CIRCLE ───────────────────────────────────────────────────────
+function InfoIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8"  x2="12.01" y2="8" />
+    </svg>
+  );
+}
+
+// ─── SVG: OUTLINE STAR (empty state) ────────────────────────────────────────
+function OutlineStarIcon() {
+  return (
+    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={C.muted2} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+// ─── ANIMATED PROGRESS BAR ──────────────────────────────────────────────────
+/**
+ * 2px thin bar that animates from 0 → targetPct on mount.
+ * `delay` (ms) lets you stagger rows.
+ */
+function ThinBar({ targetPct, delay = 0 }: { targetPct: number; delay?: number }) {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(targetPct), delay + 60);
+    return () => clearTimeout(t);
+  }, [targetPct, delay]);
+
+  return (
+    <div style={{ flex: 1, height: 2, background: C.track, borderRadius: 1, overflow: "hidden" }}>
+      <div style={{
+        height: "100%",
+        background: C.orange,
+        borderRadius: 1,
+        width: `${width}%`,
+        transition: "width 500ms cubic-bezier(.22,.61,0,1)",
+      }} />
+    </div>
+  );
+}
+
+// ─── COMPONENT: TOP BAR ─────────────────────────────────────────────────────
+function TopBar({ onMenuPress, onInfoPress }: { onMenuPress?: () => void; onInfoPress: () => void }) {
+  return (
+    <div style={{
+      height: 56, background: C.bg,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+      flexShrink: 0,
+    }}>
+      <button 
+        type="button" 
+        onClick={onMenuPress} 
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}
+      >
+        <HamburgerIcon />
+      </button>
+      <span style={{ fontSize: 17, fontWeight: 600, color: C.text }}>Ratings</span>
+      <button type="button" onClick={onInfoPress} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}>
+        <InfoIcon />
+      </button>
+    </div>
+  );
+}
+
+// ─── COMPONENT: SUMMARY (horizontal split) ─────────────────────────────────
+function Summary({ score, totalFeeds, pulse }: { score: number; totalFeeds: number; pulse: PulseMetric[] }) {
+  // How many stars to fill (round to nearest 0.5 mapped to 0–5)
+  const filledStars = Math.round(score);
+
+  return (
+    <div style={{
+      borderBottom: `1px solid ${C.border}`,
+      padding: "14px 16px",
+      display: "flex", gap: 16, alignItems: "flex-start",
+    }}>
+      {/* Left: score + stars + base */}
+      <div style={{ flexShrink: 0 }}>
+        <div style={{ fontSize: 36, fontWeight: 800, color: C.text, lineHeight: 1 }}>
+          {score.toFixed(2)}
+        </div>
+        <div style={{ marginTop: 6 }}>
+          <StarRow count={filledStars} size={14} />
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 5, fontWeight: 500 }}>
+          Based on {totalFeeds} completed {totalFeeds === 1 ? "feed" : "feeds"}
+        </div>
+      </div>
+
+      {/* Right: metric label/value stack */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+        {pulse.map((m) => (
+          <div key={m.label} style={{ display: "flex", gap: 10, alignItems: "baseline", width: "100%", justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>{m.label}</span>
+            <span style={{ fontSize: 13, color: C.text, fontWeight: 700, width: 30, textAlign: "right" }}>{m.value}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── COMPONENT: SECTION HEADER ──────────────────────────────────────────────
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      padding: "12px 16px 0",
+      fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+      letterSpacing: 1.2, color: C.orange,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ─── COMPONENT: PERFORMANCE PULSE ──────────────────────────────────────────
+function PerformancePulse({ metrics }: { metrics: PulseMetric[] }) {
+  return (
+    <div style={{ padding: "8px 16px 0" }}>
+      {metrics.map((m, i) => (
+        <div key={m.label} style={{
+          height: 34, display: "flex", alignItems: "center", gap: 10,
+          borderBottom: i < metrics.length - 1 ? `1px solid ${C.border}` : "none",
+        }}>
+          <span style={{ fontSize: 12, color: C.text, fontWeight: 600, width: 76, flexShrink: 0 }}>{m.label}</span>
+          <ThinBar targetPct={m.value} delay={i * 80} />
+          <span style={{ fontSize: 12, fontWeight: 800, color: C.text, width: 32, textAlign: "right", flexShrink: 0 }}>{m.value}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── COMPONENT: RATING BREAKDOWN ───────────────────────────────────────────
+function RatingBreakdown({ rows }: { rows: RatingRow[] }) {
+  const max = maxCount(rows);
+
+  return (
+    <div style={{ padding: "8px 16px 0" }}>
+      {rows.map((r, i) => {
+        const pct = (r.count / max) * 100;
+        return (
+          <div key={r.stars} style={{
+            height: 32, display: "flex", alignItems: "center", gap: 10,
+            borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none",
+          }}>
+            <div style={{ width: 72, flexShrink: 0 }}>
+              <StarRow count={r.stars} size={11} />
+            </div>
+            <ThinBar targetPct={pct} delay={200 + i * 70} />
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.text, width: 22, textAlign: "right", flexShrink: 0 }}>{r.count}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── COMPONENT: EMPTY STATE ────────────────────────────────────────────────
+function EmptyState() {
+  return (
+    <div style={{
+      margin: "24px 16px 0",
+      textAlign: "center",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+    }}>
+      <OutlineStarIcon />
+      <p style={{ fontSize: 12, color: C.muted2, lineHeight: 1.45, maxWidth: 180, margin: 0 }}>
+        Complete deliveries to start building your rating
+      </p>
+    </div>
+  );
+}
+
+// ─── COMPONENT: INFO MODAL (bottom sheet) ──────────────────────────────────
+function InfoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.35)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 0.2s ease",
+          zIndex: 40,
+        }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: "fixed", left: 0, right: 0, bottom: 0,
+        background: C.bg,
+        borderRadius: "14px 14px 0 0",
+        padding: "18px 16px 28px",
+        transform: open ? "translateY(0)" : "translateY(100%)",
+        transition: "transform 0.25s cubic-bezier(.22,.61,0,1)",
+        zIndex: 50,
+      }}>
+        {/* Handle */}
+        <div style={{ width: 32, height: 3, background: C.border, borderRadius: 2, margin: "0 auto 14px" }} />
+
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+          How Ratings Work
+        </h3>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 6 }}>
+          Your Feeder Score is calculated from customer feedback after each completed delivery.
+          Scores range from 1.0 to 5.0 and update in real time.
+        </p>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 6 }}>
+          Performance Pulse tracks four operational metrics — On-Time, Accuracy, Quality, and
+          Satisfaction — independently. Consistency across all four is what separates top feeders.
+        </p>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 0 }}>
+          Ratings older than 90 days are automatically removed from your score to keep it current.
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            display: "block", margin: "16px auto 0", background: "none",
+            border: `1px solid ${C.border}`, borderRadius: 6,
+            padding: "6px 24px", fontSize: 11, fontWeight: 700, color: C.text, cursor: "pointer",
+          }}
+        >
+          Close
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── PAGE ───────────────────────────────────────────────────────────────────
 const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [overallRating, setOverallRating] = useState(0);
-  const [totalRatings, setTotalRatings] = useState(0);
-  const [stats, setStats] = useState({
-    onTime: 0,
-    accuracy: 0,
-    quality: 0,
-    satisfaction: 0
-  });
-  const [ratingBreakdown, setRatingBreakdown] = useState<Array<{ stars: number; count: number; percentage: number }>>([]);
-  const [recentReviews, setRecentReviews] = useState<Array<{
-    rating: number;
-    customer: string;
-    time: string;
-    comment: string;
-    tags: string[];
-  }>>([]);
-  const [cityPercentile, setCityPercentile] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchRatingsData();
-  }, [selectedFilter]);
-
-  const fetchRatingsData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('driver_profiles')
-        .select('rating, total_deliveries')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profile) {
-        setOverallRating(Number(profile.rating) || 0);
-        setTotalRatings(profile.total_deliveries || 0);
-      }
-
-      const { data: feedback } = await supabase
-          .from('order_feedback')
-          .select('rating, comment, created_at, customer_id')
-          .eq('driver_id', user.id)
-          .eq('feedback_type', 'customer_to_driver')
-          .not('rating', 'is', null)
-          .order('created_at', { ascending: false });
-
-        if (feedback && feedback.length > 0) {
-          const avgRating = feedback.reduce((sum, f) => sum + (f.rating || 0), 0) / feedback.length;
-          setStats({
-            onTime: Math.round(avgRating * 20),
-            accuracy: Math.round(avgRating * 20),
-            quality: Math.round(avgRating * 20),
-            satisfaction: Math.round(avgRating * 20)
-          });
-        }
-
-      const { data: allFeedback } = await supabase
-        .from('order_feedback')
-        .select('rating')
-        .eq('driver_id', user.id)
-        .eq('feedback_type', 'customer_to_driver')
-        .not('rating', 'is', null);
-
-      if (allFeedback && allFeedback.length > 0) {
-        const breakdown = [5, 4, 3, 2, 1].map(stars => {
-          const count = allFeedback.filter(f => f.rating === stars).length;
-          const percentage = (count / allFeedback.length) * 100;
-          return { stars, count, percentage: Math.round(percentage * 10) / 10 };
-        });
-        setRatingBreakdown(breakdown);
-        setTotalRatings(allFeedback.length);
-      } else {
-        setRatingBreakdown([
-          { stars: 5, count: 0, percentage: 0 },
-          { stars: 4, count: 0, percentage: 0 },
-          { stars: 3, count: 0, percentage: 0 },
-          { stars: 2, count: 0, percentage: 0 },
-          { stars: 1, count: 0, percentage: 0 }
-        ]);
-      }
-
-      let reviewsQuery = supabase
-        .from('order_feedback')
-        .select('rating, comment, created_at, customer_id, order_id, customer:users!order_feedback_customer_id_fkey(email, full_name)')
-        .eq('driver_id', user.id)
-        .eq('feedback_type', 'customer_to_driver')
-        .not('rating', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (selectedFilter === '5stars') {
-        reviewsQuery = reviewsQuery.eq('rating', 5);
-      } else if (selectedFilter === '4stars') {
-        reviewsQuery = reviewsQuery.eq('rating', 4);
-      } else if (selectedFilter === 'recent') {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        reviewsQuery = reviewsQuery.gte('created_at', weekAgo.toISOString());
-      }
-
-      const { data: reviews } = await reviewsQuery;
-
-      if (reviews) {
-        const formattedReviews = reviews.map(review => {
-          const customer = review.customer as any;
-          const customerName = customer?.full_name || customer?.email?.split('@')[0] || 'Customer';
-          const nameParts = customerName.split(' ');
-          const displayName = nameParts.length > 1 
-            ? `${nameParts[0]} ${nameParts[nameParts.length - 1].charAt(0)}.`
-            : customerName;
-
-          const timeAgo = getTimeAgo(new Date(review.created_at));
-          
-          const tags: string[] = [];
-          if (review.comment) {
-            const commentLower = review.comment.toLowerCase();
-            if (commentLower.includes('fast') || commentLower.includes('quick')) tags.push('Fast');
-            if (commentLower.includes('friendly') || commentLower.includes('nice')) tags.push('Friendly');
-            if (commentLower.includes('professional')) tags.push('Professional');
-            if (commentLower.includes('careful') || commentLower.includes('care')) tags.push('Careful');
-            if (commentLower.includes('on time') || commentLower.includes('timely')) tags.push('On Time');
-          }
-          if (tags.length === 0 && review.rating === 5) {
-            tags.push('Great Service');
-          }
-
-          return {
-            rating: review.rating || 5,
-            customer: displayName,
-            time: timeAgo,
-            comment: review.comment || 'No comment provided',
-            tags: tags.length > 0 ? tags : ['Satisfied']
-          };
-        });
-        setRecentReviews(formattedReviews);
-      }
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
-      notifications.show({
-        title: 'Failed to load ratings',
-        message: '',
-        color: 'red',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTimeAgo = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    } else if (diffDays < 7) {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
-  const getStatIconColor = (color: string) => {
-    const colors: Record<string, { bg: string; icon: string }> = {
-      blue: { bg: 'blue.1', icon: 'blue.6' },
-      green: { bg: 'green.1', icon: 'green.6' },
-      yellow: { bg: 'yellow.1', icon: 'yellow.6' },
-      purple: { bg: 'violet.1', icon: 'violet.6' }
-    };
-    return colors[color] || colors.blue;
-  };
-
-  if (loading) {
-    return (
-      <Box h="100vh" w="100%" style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader size="lg" color="orange" />
-      </Box>
-    );
-  }
+  const data          = useMockRatings();
+  const [modal, setModal] = useState(false);
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <Group px="xl" pb="md" justify="space-between" align="center" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
-        <ActionIcon
-          onClick={() => {
-            if (onOpenMenu) {
-              onOpenMenu();
-            } else {
-              notifications.show({
-                title: 'Menu coming soon.',
-                message: '',
-                color: 'blue',
-              });
-            }
-          }}
-          variant="subtle"
-          color="dark"
-        >
-          <IconMenu2 size={24} />
-        </ActionIcon>
-        <Title order={1} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>RATINGS</Title>
-        <ActionIcon
-          onClick={() => {
-            window.location.href = '/mobile?tab=messages';
-          }}
-          variant="subtle"
-          color="dark"
-        >
-          <img src="/app-chat.png" alt="Messages" style={{ width: '28px', height: '28px' }} />
-        </ActionIcon>
-      </Group>
+    <div style={{
+      background: C.bg, minHeight: "100vh", color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
 
-      {/* Hero Rating Section */}
-      <Box px="xl" mb="xl">
-        <Paper
-          p="xl"
-          radius="xl"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--mantine-color-yellow-4), var(--mantine-color-orange-4), var(--mantine-color-red-5))',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <Box style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1 }}>
-            <Text size="4xl" style={{ position: 'absolute', top: 16, left: 32 }}>⭐</Text>
-            <Text size="3xl" style={{ position: 'absolute', bottom: 32, right: 16 }}>⭐</Text>
-            <Text size="2xl" style={{ position: 'absolute', top: '50%', right: 48 }}>⭐</Text>
-          </Box>
-          
-          <Stack gap="md" align="center" style={{ position: 'relative' }}>
-            <Text c="white" size="sm" fw={600} opacity={0.9}>Your Feeder Score</Text>
-            <Title order={1} c="white" fw={900} size="5rem">{overallRating.toFixed(1)}</Title>
-            <Group gap="xs" justify="center">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <IconStar
-                  key={star}
-                  size={24}
-                  style={{
-                    color: star <= Math.round(overallRating) ? 'var(--mantine-color-yellow-2)' : 'rgba(255, 255, 255, 0.3)',
-                    fill: star <= Math.round(overallRating) ? 'currentColor' : 'none',
-                  }}
-                />
-              ))}
-            </Group>
-            <Text c="white" fw={600}>Based on {totalRatings} {totalRatings === 1 ? 'feed' : 'feeds'}</Text>
-            {cityPercentile && (
-              <Paper p="sm" radius="xl" bg="rgba(255, 255, 255, 0.2)" style={{ backdropFilter: 'blur(4px)' }}>
-                <Group gap="xs">
-                  <IconTrendingUp size={16} color="white" />
-                  <Text c="white" size="sm" fw={700}>Top {cityPercentile}% in your city</Text>
-                </Group>
-              </Paper>
-            )}
-          </Stack>
-        </Paper>
-      </Box>
+      {/* Top bar */}
+      <TopBar onMenuPress={onOpenMenu} onInfoPress={() => setModal(true)} />
 
-      {/* Performance Stats */}
-      <Box px="xl" mb="xl">
-        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>PERFORMANCE PULSE</Title>
-        <Grid gutter="md">
-          {[
-            { icon: IconClock, label: 'On Time', value: stats.onTime, color: 'blue' },
-            { icon: IconPackage, label: 'Accuracy', value: stats.accuracy, color: 'green' },
-            { icon: IconStar, label: 'Quality', value: stats.quality, color: 'yellow' },
-            { icon: IconThumbUp, label: 'Satisfaction', value: stats.satisfaction, color: 'purple' }
-          ].map((stat, idx) => {
-            const iconColors = getStatIconColor(stat.color);
-            const Icon = stat.icon;
-            return (
-              <Grid.Col span={6} key={idx}>
-                <Paper p="md" radius="xl" bg="orange.0" shadow="md">
-                  <Group gap="xs" mb="xs">
-                    <ThemeIcon size="lg" radius="md" color={iconColors.bg} variant="light">
-                      <Icon size={20} color={`var(--mantine-color-${iconColors.icon})`} />
-                    </ThemeIcon>
-                    <Text c="dark.7" size="sm" fw={600}>{stat.label}</Text>
-                  </Group>
-                  <Text size="2.5rem" fw={900} c="dark">{stat.value}%</Text>
-                </Paper>
-              </Grid.Col>
-            );
-          })}
-        </Grid>
-      </Box>
+      {/* Summary */}
+      <Summary score={data.score} totalFeeds={data.totalFeeds} pulse={data.pulse} />
+
+      {/* Performance Pulse */}
+      <SectionHeader>Performance Pulse</SectionHeader>
+      <PerformancePulse metrics={data.pulse} />
 
       {/* Rating Breakdown */}
-      <Box px="xl" mb="xl">
-        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RATING BREAKDOWN</Title>
-        <Paper p="lg" radius="xl" bg="orange.0" shadow="md">
-          {ratingBreakdown.length > 0 ? (
-            <Stack gap="md">
-              {ratingBreakdown.map((item) => (
-                <Group key={item.stars} gap="md" align="center">
-                  <Group gap="xs" w={64}>
-                    <Text c="dark" fw={700}>{item.stars}</Text>
-                    <IconStar size={16} color="var(--mantine-color-yellow-5)" fill="currentColor" />
-                  </Group>
-                  <Box style={{ flex: 1 }}>
-                    <Progress
-                      value={item.percentage}
-                      color="orange"
-                      size="sm"
-                      radius="xl"
-                      styles={{
-                        root: {
-                          backgroundColor: 'var(--mantine-color-gray-2)',
-                        },
-                        section: {
-                          background: 'linear-gradient(to right, var(--mantine-color-yellow-4), var(--mantine-color-orange-5))',
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Text c="dark.7" size="sm" fw={600} w={48} ta="right">{item.count}</Text>
-                </Group>
-              ))}
-            </Stack>
-          ) : (
-            <Text c="dimmed" ta="center" py="md">No ratings yet</Text>
-          )}
-        </Paper>
-      </Box>
+      <SectionHeader>Rating Breakdown</SectionHeader>
+      <RatingBreakdown rows={data.breakdown} />
 
-      {/* Filter Buttons */}
-      <Box px="xl" mb="md">
-        <Group gap="xs" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-          {['All', '5 Stars', '4 Stars', 'Recent'].map((filter) => {
-            const filterKey = filter.toLowerCase().replace(' ', '');
-            const isSelected = selectedFilter === filterKey;
-            return (
-              <Button
-                key={filter}
-                onClick={() => setSelectedFilter(filterKey)}
-                variant={isSelected ? 'filled' : 'light'}
-                color={isSelected ? 'orange' : 'gray'}
-                c={isSelected ? 'white' : 'dark.7'}
-                size="sm"
-                radius="xl"
-                fw={700}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                {filter}
-              </Button>
-            );
-          })}
-        </Group>
-      </Box>
+      {/* Empty state — shown when no feeds yet */}
+      {data.totalFeeds === 0 && <EmptyState />}
 
-      {/* Recent Reviews */}
-      <Box px="xl" pb="xl">
-        <Title order={3} c="orange" fw={700} mb="md" style={{ letterSpacing: '0.05em' }}>RECENT REVIEWS</Title>
-        {recentReviews.length > 0 ? (
-          <Stack gap="md">
-            {recentReviews.map((review, idx) => (
-              <Paper key={idx} p="md" radius="xl" bg="orange.0" shadow="md">
-                <Group justify="space-between" mb="xs">
-                  <Group gap="xs">
-                    <Box
-                      w={40}
-                      h={40}
-                      style={{
-                        borderRadius: '50%',
-                        background: 'linear-gradient(to bottom right, var(--mantine-color-orange-4), var(--mantine-color-red-5))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: 700,
-                      }}
-                    >
-                      {review.customer.charAt(0)}
-                    </Box>
-                    <Box>
-                      <Text c="dark" fw={700} size="sm">{review.customer}</Text>
-                      <Text c="dimmed" size="xs">{review.time}</Text>
-                    </Box>
-                  </Group>
-                  <Group gap="xs">
-                    {[...Array(review.rating)].map((_, i) => (
-                      <IconStar key={i} size={16} color="var(--mantine-color-yellow-5)" fill="currentColor" />
-                    ))}
-                  </Group>
-                </Group>
-                <Text c="dark.7" size="sm" mb="sm">{review.comment}</Text>
-                {review.tags.length > 0 && (
-                  <Group gap="xs">
-                    {review.tags.map((tag, i) => (
-                      <Badge key={i} color="orange" variant="light" size="sm" radius="xl">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </Group>
-                )}
-              </Paper>
-            ))}
-          </Stack>
-        ) : (
-          <Paper p="xl" radius="xl" bg="orange.0" shadow="md">
-            <Stack gap="xs" align="center">
-              <Text c="dimmed">No reviews yet</Text>
-              <Text size="sm" c="dimmed">Your customer reviews will appear here</Text>
-            </Stack>
-          </Paper>
-        )}
-      </Box>
-    </Box>
+      {/* Info modal */}
+      <InfoModal open={modal} onClose={() => setModal(false)} />
+    </div>
   );
 };
 

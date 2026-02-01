@@ -1346,7 +1346,10 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Hamburger Menu Button - Top Left - Only on Home Tab, but NOT during delivery */}
       {activeTab === 'home' && driverState !== 'on_delivery' && (
-        <div className="fixed left-4 z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}>
+        <div 
+          className={`fixed left-4 pointer-events-auto ${isMenuOpen || isActiveFeedingMenuOpen ? 'z-10' : 'z-50'}`} 
+          style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}
+        >
           <button
             onClick={() => {
               // Open ActiveFeedingMenu ONLY when on secondary feeding dashboard (not viewing home)

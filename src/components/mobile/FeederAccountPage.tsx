@@ -1,70 +1,538 @@
-import React, { useState, useEffect } from "react";
-import {
-  IconUser,
-  IconCar,
-  IconFileText,
-  IconCreditCard,
-  IconSettings,
-  IconShield,
-  IconPhone,
-  IconMessageCircle,
-  IconLogout,
-  IconChevronRight,
-  IconStar,
-  IconAward,
-  IconMenu,
-  IconArrowLeft,
-  IconEye,
-  IconEyeOff,
-  IconLock,
-  IconLockOpen,
-  IconKey,
-  IconPlus,
-  IconMinus,
-  IconFlame,
-  IconX,
-} from "@tabler/icons-react";
-import feederCardBackground from "@/assets/feeder-card-background.png";
-import feederCardImage from "@/assets/feeder-card-image.png";
+/**
+ * Crave'n Feeder App — Account Tab (Enterprise Compact White)
+ * ────────────────────────────────────────────────────────────
+ * Drop-in:  src/components/mobile/FeederAccountPage.tsx
+ *
+ * Cursor instructions:
+ *   1) Replace src/components/mobile/FeederAccountPage.tsx with this file.
+ *   2) Route / tab already points to <FeederAccountPage /> — no change needed.
+ *   3) No gradients on backgrounds, no emojis, no oversized cards.
+ *   4) All layout is inline-style; no external CSS file required.
+ *   5) Driver data fetched from Supabase — integrated with existing fetchDriverData.
+ *   6) Status tier thresholds match your app:
+ *        Silver   55–64 pts
+ *        Gold     65–75 pts
+ *        Platinum 76–84 pts
+ *        Diamond  85+  pts
+ *   7) Nav rows are driven by the MENU_ITEMS array — wired to existing actions.
+ *   8) ON FIRE card calls showSafetySettings — existing modal.
+ *   9) Sign Out row calls handleSignOut — existing auth logout flow.
+ */
+
+import React, { useMemo, useState, useEffect } from "react";
 import { notifications } from "@mantine/notifications";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import ProfileDetailsPage from "./ProfileDetailsPage";
 import VehicleDocumentsPage from "./VehicleDocumentsPage";
 import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
 import { SafetySettings } from "@/components/settings/SafetySettings";
-import { useNavigate } from "react-router-dom";
 import {
   Box,
-  Stack,
-  Text,
-  Button,
-  Group,
-  Card,
-  Title,
   Loader,
   ActionIcon,
   Modal,
   TextInput,
-  Paper,
-  Badge,
-  Progress,
-  Switch,
-  Divider,
+  Stack,
+  Group,
+  Button,
   ThemeIcon,
+  Paper,
+  Text,
 } from "@mantine/core";
+import {
+  IconArrowLeft,
+  IconPlus,
+  IconMinus,
+  IconX,
+  IconEye,
+  IconEyeOff,
+} from "@tabler/icons-react";
+
+// ─── THEME (shared across Crave'n enterprise pages) ────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  track:   "#EEF1F6",
+  bg:      "#FFFFFF",
+  blue:    "#3A7BD5",
+  blueBg:  "#EEF4FF",
+  green:   "#2E7D32",
+  greenBg: "#E6F4EA",
+  red:     "#C62828",
+  redBg:   "#FEF2F2",
+} as const;
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+type StatusTier = "Silver" | "Gold" | "Platinum" | "Diamond";
+
+interface StatusInfo {
+  tier:       StatusTier;
+  label:      string;   // e.g. "Diamond Feeder"
+  minPts:     number;
+  maxPts:     number | null; // null = no cap
+  barColor:   string;   // accent for the 2px progress bar
+}
+
+interface AccountData {
+  name:         string;
+  rating:       number;   // 0–5
+  totalFeeds:   number;
+  statusPoints: number;
+  memberSince:  string;   // e.g. "Oct 2025"
+  onFireActive: boolean;
+  cardBalance:  number;
+}
 
 type FeederAccountPageProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
 };
 
-const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpenNotifications }) => {
+// ─── STATUS TIERS (source of truth — edit thresholds here) ─────────────────
+const TIERS: StatusInfo[] = [
+  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: null,  barColor: "#3A7BD5" },
+  { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#78909C" },
+  { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#F9A825" },
+  { tier: "Silver",   label: "Silver Feeder",   minPts: 55,  maxPts: 64,    barColor: "#90A4AE" },
+];
+
+function getStatus(pts: number): StatusInfo {
+  // Walk highest → lowest; first match wins
+  for (const t of TIERS) {
+    if (pts >= t.minPts) return t;
+  }
+  // Below Silver floor — still render as Silver
+  return TIERS[TIERS.length - 1];
+}
+
+/** Progress 0–1 within the current tier band. */
+function tierProgress(pts: number, status: StatusInfo): number {
+  const max = status.maxPts ?? status.minPts + 15; // Diamond has no cap; use +15 as visual range
+  return Math.min(1, Math.max(0, (pts - status.minPts) / (max - status.minPts)));
+}
+
+// ─── NAV ITEMS (your real Account menu — add/remove/reorder here) ──────────
+//     Each `id` maps to the onPress switch below in NavRow.
+const MENU_ITEMS = [
+  { id: "profile",     label: "Profile Information",  desc: "Personal details & preferences" },
+  { id: "vehicle",     label: "Vehicle & Documents",  desc: "Registration, insurance, inspection" },
+  { id: "feederCard",  label: "Feeder Card",          desc: "Digital debit card & transactions" },
+  { id: "settings",    label: "App Settings",         desc: "Notifications, language, preferences" },
+  { id: "security",    label: "Security & Safety",    desc: "Password, 2FA, emergency contacts" },
+  { id: "callSupport", label: "Call Support",         desc: "24/7 support hotline" },
+  { id: "msgSupport",  label: "Message Support",      desc: "Live chat with an agent" },
+] as const;
+
+type NavId = typeof MENU_ITEMS[number]["id"];
+
+// ─── SVG ICONS (inline, no dependency) ─────────────────────────────────────
+function HamburgerIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round">
+      <line x1="3" y1="6"  x2="21" y2="6"  />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function MoreDotsIcon() {
+  return (
+    <svg width={20} height={20} viewBox="0 0 24 24" fill={C.muted}>
+      <circle cx="5"  cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.muted2} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,6 15,12 9,18" />
+    </svg>
+  );
+}
+
+function StarIcon({ size = 12, filled = true }: { size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#F5C518" : C.border}>
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+// Per-nav-item SVG icons — matched to your existing Account page icons
+function NavIcon({ id }: { id: NavId }) {
+  const s = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: C.text, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+  switch (id) {
+    case "profile":
+      return (
+        <svg {...s}>
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="8" r="4" />
+        </svg>
+      );
+    case "vehicle":
+      return (
+        <svg {...s}>
+          <rect x="1" y="3" width="15" height="13" rx="2" />
+          <path d="M16 8l5 3-5 3z" />
+        </svg>
+      );
+    case "feederCard":
+      return (
+        <svg {...s}>
+          <rect x="1" y="4" width="22" height="16" rx="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg {...s}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      );
+    case "security":
+      return (
+        <svg {...s}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      );
+    case "callSupport":
+      return (
+        <svg {...s}>
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+        </svg>
+      );
+    case "msgSupport":
+      return (
+        <svg {...s}>
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+        </svg>
+      );
+  }
+}
+
+// ─── COMPONENT: TOP BAR ─────────────────────────────────────────────────────
+function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
+  return (
+    <div style={{
+      height: 56, background: C.bg, flexShrink: 0,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+    }}>
+      <button 
+        type="button" 
+        onClick={onMenuPress} 
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}
+      >
+        <HamburgerIcon />
+      </button>
+      <span style={{ fontSize: 17, fontWeight: 600, color: C.text }}>Account</span>
+      <MoreDotsIcon />
+    </div>
+  );
+}
+
+// ─── COMPONENT: IDENTITY ROW (horizontal: avatar · name · badge · since) ───
+function IdentityRow({ data, status }: { data: AccountData; status: { tier: StatusTier; label: string } }) {
+  // Initials from first + last name
+  const initials = data.name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div style={{
+      borderBottom: `1px solid ${C.border}`,
+      padding: "14px 16px",
+      display: "flex", gap: 13, alignItems: "center",
+    }}>
+      {/* Monogram avatar */}
+      <div style={{
+        width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+        background: "linear-gradient(135deg, #E8622A, #f0a060)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#fff", fontSize: 14, fontWeight: 700,
+        boxShadow: "0 2px 8px rgba(232,98,42,0.28)",
+      }}>
+        {initials}
+      </div>
+
+      {/* Name + badge + since */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {data.name}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+          {/* Tier badge */}
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            background: C.blueBg, color: C.blue,
+            padding: "2px 7px", borderRadius: 10,
+            fontSize: 9, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+          }}>
+            {/* Small diamond / gem SVG for the badge icon */}
+            <svg width={8} height={8} viewBox="0 0 24 24" fill={C.blue}>
+              <path d="M12 2L2 9l3 13h14l3-13L12 2z" />
+            </svg>
+            {status.label}
+          </span>
+          <span style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
+            Since {data.memberSince}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── COMPONENT: INLINE STATS STRIP (rating · feeds · points) ───────────────
+function StatsStrip({ data }: { data: AccountData }) {
+  const stats = [
+    { value: <><StarIcon size={11} />{data.rating.toFixed(2)}</>, label: "Rating" },
+    { value: <>{data.totalFeeds}</>,                              label: "Feeds" },
+    { value: <>{data.statusPoints}</>,                            label: "Points" },
+  ];
+
+  return (
+    <div style={{
+      borderBottom: `1px solid ${C.border}`,
+      padding: "10px 16px",
+      display: "flex",
+    }}>
+      {stats.map((s, i) => (
+        <React.Fragment key={s.label}>
+          {i > 0 && <div style={{ width: 1, background: C.border, alignSelf: "stretch", margin: "3px 0" }} />}
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: 9, color: C.muted, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
+              {s.label}
+            </div>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
+// ─── COMPONENT: SECTION HEADER ──────────────────────────────────────────────
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      padding: "12px 16px 0",
+      fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+      letterSpacing: 1.2, color: C.orange,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ─── COMPONENT: STATUS POINTS (2px progress row) ───────────────────────────
+function StatusRow({ data, status }: { data: AccountData; status: { tier: StatusTier; label: string; barColor: string; minPts: number; maxPts: number | null } }) {
+  const progress = tierProgress(data.statusPoints, status as any);
+  const nextTierIdx = TIERS.findIndex((t) => t.tier === status.tier) - 1;
+  const nextTier = nextTierIdx >= 0 ? TIERS[nextTierIdx] : null;
+
+  return (
+    <>
+      <div style={{
+        margin: "8px 16px 0",
+        display: "flex", alignItems: "center", gap: 10, height: 34,
+      }}>
+        <span style={{ fontSize: 12, color: C.text, fontWeight: 600, width: 80, flexShrink: 0 }}>Points</span>
+        {/* 2px bar */}
+        <div style={{ flex: 1, height: 2, background: C.track, borderRadius: 1, overflow: "hidden" }}>
+          <div style={{
+            height: "100%",
+            background: status.barColor,
+            borderRadius: 1,
+            width: `${progress * 100}%`,
+            transition: "width 600ms cubic-bezier(.22,.61,0,1)",
+          }} />
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 800, color: C.text, flexShrink: 0, whiteSpace: "nowrap" }}>
+          {data.statusPoints} pts
+        </span>
+      </div>
+      {/* Operational sub-line */}
+      <div style={{ margin: "4px 16px 0", fontSize: 10.5, color: C.muted, fontWeight: 500 }}>
+        {nextTier
+          ? `${nextTier.minPts - data.statusPoints} pts to ${nextTier.label}`
+          : `${status.label} — top tier reached`}
+      </div>
+    </>
+  );
+}
+
+// ─── COMPONENT: ON FIRE CARD (flat, left orange accent bar) ────────────────
+function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () => void }) {
+  return (
+    <div style={{
+      margin: "12px 16px 0",
+      border: `1px solid ${C.border}`, borderRadius: 8,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        display: "flex", alignItems: "flex-start",
+        padding: "11px 12px",
+        borderLeft: `3px solid ${C.orange}`,
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Header: title + active pill */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>ON FIRE Game</span>
+            {active && (
+              <span style={{
+                display: "inline-block",
+                background: C.greenBg, color: C.green,
+                fontSize: 8, fontWeight: 700, letterSpacing: 0.8,
+                textTransform: "uppercase", padding: "2px 6px", borderRadius: 3,
+              }}>
+                Active
+              </span>
+            )}
+          </div>
+          {/* Description */}
+          <div style={{ fontSize: 10, color: C.muted, lineHeight: 1.4, marginTop: 3 }}>
+            Safety-first speed monitoring with gamified bonuses.
+          </div>
+          {/* CTA link */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onConfigure}
+            onKeyDown={(e) => e.key === "Enter" && onConfigure()}
+            style={{ fontSize: 10, color: C.orange, fontWeight: 700, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer" }}
+          >
+            Configure Safety &amp; Game Mode
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12,5 19,12 12,19" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── COMPONENT: NAV ROW ─────────────────────────────────────────────────────
+function NavRow({ id, label, desc, onPress, badge }: { id: NavId; label: string; desc: string; onPress: () => void; badge?: string }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onPress}
+      onKeyDown={(e) => e.key === "Enter" && onPress()}
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "11px 16px",
+        borderBottom: `1px solid ${C.border}`,
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ width: 18, height: 18, flexShrink: 0, opacity: 0.45 }}>
+        <NavIcon id={id} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{label}</div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>{desc}</div>
+      </div>
+      {badge && (
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: C.green,
+          marginRight: 4,
+        }}>
+          {badge}
+        </span>
+      )}
+      <ChevronIcon />
+    </div>
+  );
+}
+
+// ─── COMPONENT: SIGN OUT ROW ────────────────────────────────────────────────
+function SignOutRow({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSignOut}
+      onKeyDown={(e) => e.key === "Enter" && onSignOut()}
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "11px 16px",
+        borderBottom: `1px solid ${C.border}`,
+        cursor: "pointer",
+      }}
+    >
+      {/* LogOut icon */}
+      <div style={{ width: 18, height: 18, flexShrink: 0 }}>
+        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16,17 21,12 16,7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.red }}>Sign Out</div>
+        <div style={{ fontSize: 10, color: C.red, marginTop: 1, opacity: 0.7 }}>Log out of your account</div>
+      </div>
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+        <polyline points="9,6 15,12 9,18" />
+      </svg>
+    </div>
+  );
+}
+
+// ─── PAGE ───────────────────────────────────────────────────────────────────
+const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
+  onOpenMenu,
+  onOpenNotifications
+}) => {
+  const navigate = useNavigate();
   const [showCardPage, setShowCardPage] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [isCardLocked, setIsCardLocked] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [currentPage, setCurrentPage] = useState<'main' | 'profile' | 'vehicle' | 'settings' | 'security'>('main');
+  const [loading, setLoading] = useState(true);
+  const [showSafetySettings, setShowSafetySettings] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [gameSettings, setGameSettings] = useState({
+    onFireGameEnabled: false,
+    speedDetectionEnabled: false,
+  });
+  const [cardBalance, setCardBalance] = useState(0);
+  const [cardNumber] = useState('5399283309390129');
+  const [expiryDate] = useState('12/28');
+  const [cvv] = useState('847');
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  // Account data state
+  const [accountData, setAccountData] = useState<AccountData>({
+    name: '',
+    rating: 0,
+    totalFeeds: 0,
+    statusPoints: 0,
+    memberSince: '',
+    onFireActive: false,
+    cardBalance: 0,
+  });
 
   // Check URL params and listen for navigation events to auto-open card page
   useEffect(() => {
@@ -73,7 +541,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
       setShowCardPage(true);
     }
 
-    // Listen for switchTab events with section=card
     const handleSwitchTab = (event: CustomEvent<{ tab: string; section?: string }>) => {
       if (event.detail.section === 'card') {
         setShowCardPage(true);
@@ -83,45 +550,17 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     window.addEventListener('switchTab', handleSwitchTab as EventListener);
     return () => window.removeEventListener('switchTab', handleSwitchTab as EventListener);
   }, []);
-  
-  // Driver stats - will be fetched from database
-  const [driverPoints, setDriverPoints] = useState(0);
-  const [driverName, setDriverName] = useState('');
-  const [driverRating, setDriverRating] = useState(0);
-  const [totalDeliveries, setTotalDeliveries] = useState(0);
-  const [memberSince, setMemberSince] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
-  const [showSafetySettings, setShowSafetySettings] = useState(false);
-  const [gameSettings, setGameSettings] = useState({
-    onFireGameEnabled: false,
-    speedDetectionEnabled: false,
-  });
-  // Feeder Card data
-  const [cardBalance, setCardBalance] = useState(0);
-  const [cardNumber] = useState('5399283309390129'); // Store without spaces
-  const [expiryDate] = useState('12/28');
-  const [cvv] = useState('847');
 
-  // Format card number to always be exactly 16 digits in 4 groups of 4
   const formatCardNumber = (number: string, showFull: boolean): string => {
-    // Remove all non-digits
     const digitsOnly = number.replace(/\D/g, '');
-    
-    // Ensure exactly 16 digits (pad with 0s if needed, truncate if too long)
     const normalized = digitsOnly.slice(0, 16).padEnd(16, '0');
     
     if (showFull) {
-      // Format as XXXX XXXX XXXX XXXX
       return `${normalized.slice(0, 4)} ${normalized.slice(4, 8)} ${normalized.slice(8, 12)} ${normalized.slice(12, 16)}`;
     } else {
-      // Format as **** **** **** XXXX (last 4 digits visible)
       return `**** **** **** ${normalized.slice(12, 16)}`;
     }
   };
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDriverData();
@@ -133,14 +572,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
       if (!user) return;
       setUserId(user.id);
 
-      // Fetch driver profile
       const { data: driverProfile } = await supabase
         .from('driver_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      // Get full name from craver_applications table first, then fallback to user metadata
       const { data: application } = await supabase
         .from('craver_applications')
         .select('first_name, last_name')
@@ -160,60 +597,44 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         const emailName = user.email.split('@')[0];
         fullName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
       }
-      
-      if (fullName) {
-        setDriverName(fullName);
-      }
 
-      // Set driver stats
-      if (driverProfile) {
-        setDriverRating(Number(driverProfile.rating) || 0);
-        setTotalDeliveries(driverProfile.total_deliveries || 0);
-        
-        // Calculate points based on rating and deliveries
-        const points = Math.round((Number(driverProfile.rating) || 0) * 17 + (driverProfile.total_deliveries || 0) * 0.1);
-        setDriverPoints(points);
-      }
+      const rating = Number(driverProfile?.rating) || 0;
+      const totalDeliveries = driverProfile?.total_deliveries || 0;
+      const points = Math.round((rating) * 17 + (totalDeliveries) * 0.1);
 
-      // Set member since date
+      let memberSince = '';
       if (driverProfile?.created_at) {
         const date = new Date(driverProfile.created_at);
-        setMemberSince(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        memberSince = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       } else if (user.created_at) {
         const date = new Date(user.created_at);
-        setMemberSince(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+        memberSince = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       }
 
-      // Fetch earnings for transaction history and calculate wallet balance
       const { data: earnings } = await supabase
         .from('driver_earnings')
         .select('*')
         .eq('driver_id', user.id)
         .order('earned_at', { ascending: false });
 
-      // Calculate total earnings (sum of total_cents converted to dollars)
       const totalEarnings = earnings?.reduce((sum, earning) => {
         return sum + ((earning.total_cents || 0) / 100);
       }, 0) || 0;
 
-      // Fetch completed payouts
       const { data: payouts } = await supabase
         .from('driver_payouts')
         .select('amount')
         .eq('driver_id', user.id)
         .in('status', ['completed', 'sent']);
 
-      // Calculate total payouts (amount is already in dollars)
       const totalPayouts = payouts?.reduce((sum, payout) => {
         return sum + (payout.amount || 0);
       }, 0) || 0;
 
-      // Wallet balance = Total Earnings - Total Payouts
       const walletBalance = totalEarnings - totalPayouts;
-      setCardBalance(Math.max(0, walletBalance)); // Ensure balance is never negative
+      const balance = Math.max(0, walletBalance);
 
       if (earnings) {
-        // Format transactions
         const formattedTransactions = earnings.slice(0, 10).map((earning: any) => ({
           date: new Date(earning.earned_at || earning.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           description: 'Delivery Earnings',
@@ -223,19 +644,30 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
         setTransactions(formattedTransactions);
       }
 
-      // Load ON FIRE driver settings
       const { data: driverSettings } = await supabase
         .from('driver_settings')
         .select('on_fire_game_enabled, speed_detection_enabled')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      const onFireActive = driverSettings?.on_fire_game_enabled || false;
       if (driverSettings) {
         setGameSettings({
           onFireGameEnabled: driverSettings.on_fire_game_enabled || false,
           speedDetectionEnabled: driverSettings.speed_detection_enabled || false,
         });
       }
+
+      setAccountData({
+        name: fullName,
+        rating,
+        totalFeeds: totalDeliveries,
+        statusPoints: points,
+        memberSince,
+        onFireActive,
+        cardBalance: balance,
+      });
+      setCardBalance(balance);
     } catch (error) {
       console.error('Error fetching driver data:', error);
     } finally {
@@ -243,102 +675,39 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     }
   };
 
-  // Determine status based on points
-  const getStatus = (points: number) => {
-    if (points >= 85)
-      return { 
-        name: "Diamond Feeder", 
-        color: "diamond", 
-        gradient: "linear-gradient(to bottom right, var(--mantine-color-cyan-2), var(--mantine-color-blue-3), var(--mantine-color-purple-3))" 
-      };
-    if (points >= 76)
-      return { 
-        name: "Platinum Feeder", 
-        color: "platinum", 
-        gradient: "linear-gradient(to bottom right, var(--mantine-color-gray-3), var(--mantine-color-gray-1), var(--mantine-color-gray-3))" 
-      };
-    if (points >= 65)
-      return { 
-        name: "Gold Feeder", 
-        color: "gold", 
-        gradient: "linear-gradient(to bottom right, var(--mantine-color-yellow-3), var(--mantine-color-yellow-2), var(--mantine-color-yellow-4))" 
-      };
-    return { 
-      name: "Silver Feeder", 
-      color: "silver", 
-      gradient: "linear-gradient(to bottom right, var(--mantine-color-gray-4), var(--mantine-color-gray-3), var(--mantine-color-gray-5))" 
-    };
-  };
+  const status = useMemo(() => getStatus(accountData.statusPoints), [accountData.statusPoints]);
 
-  const status = getStatus(driverPoints);
-
-  const getMenuItemColors = (color: string) => {
-    const colors: Record<string, { bg: string; icon: string }> = {
-      blue: { bg: "blue", icon: "blue" },
-      green: { bg: "green", icon: "green" },
-      purple: { bg: "purple", icon: "purple" },
-      gray: { bg: "gray", icon: "gray" },
-      red: { bg: "red", icon: "red" },
-      orange: { bg: "orange", icon: "orange" },
-    };
-    return colors[color] || colors.gray;
-  };
-
-  const menuItems = [
-    { 
-      icon: IconUser, 
-      label: "Profile Information", 
-      desc: "Personal details & preferences", 
-      color: "blue",
-      action: () => setCurrentPage('profile')
-    },
-    { 
-      icon: IconCar, 
-      label: "Vehicle & Documents", 
-      desc: "Registration, insurance, inspection", 
-      color: "green",
-      action: () => setCurrentPage('vehicle')
-    },
-    {
-      icon: IconCreditCard,
-      label: "Feeder Card",
-      desc: "Digital debit card & transactions",
-      color: "purple",
-      badge: `$${cardBalance.toFixed(2)}`,
-      action: () => setShowCardPage(true),
-    },
-    { 
-      icon: IconSettings, 
-      label: "App Settings", 
-      desc: "Notifications, language, preferences", 
-      color: "gray",
-      action: () => setCurrentPage('settings')
-    },
-    { 
-      icon: IconShield, 
-      label: "Security & Safety", 
-      desc: "Password, 2FA, emergency contacts", 
-      color: "red",
-      action: () => setCurrentPage('security')
-    },
-    { 
-      icon: IconPhone, 
-      label: "Call Support", 
-      desc: "24/7 driver assistance hotline", 
-      color: "orange",
-      action: () => window.location.href = 'tel:+18005551234'
-    },
-    { 
-      icon: IconMessageCircle, 
-      label: "Message Support", 
-      desc: "Live chat with support team", 
-      color: "blue",
-      action: () => {
+  // ── Navigation / action handlers ─────────────────────────────────────────
+  const handleNav = (id: NavId) => {
+    switch (id) {
+      case "profile":
+        setCurrentPage('profile');
+        break;
+      case "vehicle":
+        setCurrentPage('vehicle');
+        break;
+      case "feederCard":
+        setShowCardPage(true);
+        break;
+      case "settings":
+        setCurrentPage('settings');
+        break;
+      case "security":
+        setCurrentPage('security');
+        break;
+      case "callSupport":
+        window.location.href = 'tel:+18005551234';
+        break;
+      case "msgSupport":
         navigate('/mobile?tab=help');
         if (onOpenNotifications) onOpenNotifications();
-      }
-    },
-  ];
+        break;
+    }
+  };
+
+  const handleConfigureOnFire = () => {
+    setShowSafetySettings(true);
+  };
 
   const handleSignOut = async () => {
     try {
@@ -377,11 +746,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     return <SecuritySafetyPage onBack={() => setCurrentPage('main')} />;
   }
 
-  // If card page is open, show that instead
+  // If card page is open, show that instead (keeping existing card page UI)
   if (showCardPage) {
     return (
       <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-        {/* Header - White Background */}
         <Paper
           pos="sticky"
           top={0}
@@ -396,220 +764,59 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
             <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
               <IconArrowLeft size={24} />
             </ActionIcon>
-            <Title order={2} fw={700} c="dark">Feeder Card</Title>
+            <Text fw={700} size="lg" c="dark">Feeder Card</Text>
             <Box w={24} />
           </Group>
         </Paper>
 
-        {/* Orange Carbon Fiber Background */}
-        <Box 
-          pos="relative" 
-          style={{ 
-            backgroundImage: `url(${feederCardBackground})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            minHeight: '280px',
-            padding: '2rem 1rem',
-            marginBottom: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Depth of field blur effect */}
-          <Box
-            pos="absolute"
-            inset={0}
-            style={{
-              background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.15) 100%)',
-              filter: 'blur(1px)',
-              pointerEvents: 'none'
-            }}
-          />
-          
-          {/* Card Display */}
-          <Box style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
-            <Box
-              pos="relative"
-              style={{ 
-                backgroundImage: `url(${feederCardImage})`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                aspectRatio: "1.586 / 1",
-                width: "100%",
-                maxWidth: "420px",
-                overflow: 'hidden',
-                borderRadius: '16px',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(255, 107, 53, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                padding: '2rem',
-                imageRendering: 'high-quality',
-                WebkitImageRendering: 'high-quality'
-              }}
-            >
-              <Stack justify="space-between" h="100%" gap="xs" style={{ position: 'relative', zIndex: 2 }}>
-                {/* Top Section - Balance */}
+        <Stack gap={0} px="xl" py="md">
+          <Paper p="xl" radius="xl" style={{ background: 'linear-gradient(135deg, #E8622A 0%, #f0a060 100%)', marginBottom: '16px' }}>
+            <Stack gap="md">
+              <Group justify="space-between">
+                <Text c="white" fw={700} size="lg">Balance</Text>
+                <Text c="white" fw={900} size="2xl">${cardBalance.toFixed(2)}</Text>
+              </Group>
+              <Group justify="space-between" mt="md">
                 <Box>
-                  <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={4}>Available Balance</Text>
-                  <Title order={2} c="white" fw={900} style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>${cardBalance.toFixed(2)}</Title>
-                </Box>
-
-                {/* Middle Section - Card Number */}
-                <Box style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  marginTop: '-20px',
-                  width: '100%',
-                  overflow: 'hidden'
-                }}>
-                  <Text 
-                    c="white" 
-                    ff="monospace" 
-                    fw={900}
-                    style={{ 
-                      fontSize: 'clamp(1rem, 4vw, 1.25rem)',
-                      letterSpacing: '0.15em',
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontFeatureSettings: '"tnum"',
-                      width: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      lineHeight: '1.3',
-                      textShadow: `
-                        -1px -1px 0 rgba(255, 255, 255, 0.4),
-                        0 -1px 0 rgba(255, 255, 255, 0.5),
-                        1px -1px 0 rgba(255, 255, 255, 0.3),
-                        -1px 0 0 rgba(255, 255, 255, 0.3),
-                        0 0 0 rgba(255, 255, 255, 0.4),
-                        1px 0 0 rgba(255, 255, 255, 0.3),
-                        -1px 1px 0 rgba(0, 0, 0, 0.2),
-                        0 1px 0 rgba(0, 0, 0, 0.3),
-                        1px 1px 0 rgba(0, 0, 0, 0.2),
-                        0 2px 2px rgba(0, 0, 0, 0.3),
-                        0 3px 3px rgba(0, 0, 0, 0.2),
-                        0 4px 4px rgba(0, 0, 0, 0.1),
-                        inset 0 -1px 1px rgba(0, 0, 0, 0.3),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.2)
-                      `,
-                      filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5))',
-                      transform: 'perspective(1000px) translateZ(2px)',
-                      WebkitFontSmoothing: 'antialiased',
-                      MozOsxFontSmoothing: 'grayscale',
-                      textRendering: 'optimizeLegibility'
-                    }}
-                  >
-                    {formatCardNumber(cardNumber, showCardDetails)}
+                  <Text c="white" size="xs" opacity={0.8}>Card Number</Text>
+                  <Text c="white" fw={700} size="md" mt={4}>
+                    {showCardDetails ? formatCardNumber(cardNumber, true) : formatCardNumber(cardNumber, false)}
                   </Text>
                 </Box>
-
-                {/* Bottom Section - Expiry, CVV, Name, Brand */}
-                <Group justify="space-between" align="flex-end" style={{ marginTop: '-30px' }}>
-                  <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Group gap="md" mb={4}>
-                      <Box>
-                        <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={2}>EXP</Text>
-                        <Text size="xs" c="white" ff="monospace" fw={600} style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>{showCardDetails ? expiryDate : "**/**"}</Text>
-                      </Box>
-                      <Box>
-                        <Text size="xs" c="white" style={{ opacity: 0.9 }} mb={2}>CVV</Text>
-                        <Text size="xs" c="white" ff="monospace" fw={600} style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>{showCardDetails ? cvv : "***"}</Text>
-                      </Box>
-                    </Group>
-                    <Text size="xs" fw={700} c="white" style={{ letterSpacing: '0.1em', textTransform: 'uppercase', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }} lineClamp={1}>
-                      {driverName}
-                    </Text>
-                  </Box>
-                </Group>
-              </Stack>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* White Background Section for Controls */}
-        <Box 
-          style={{ 
-            backgroundColor: 'white',
-            paddingTop: '1rem',
-            paddingBottom: '1rem',
-            marginTop: '-2rem',
-            position: 'relative',
-            zIndex: 2
-          }}
-        >
-          {/* Card Controls - Full Page, No Cards, Stretch End to End */}
-          <Stack gap="xs" px={0} mb="xl">
-            {/* Toggle Card Details */}
-            <Box px="xl">
-              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="sm">
-                  <ThemeIcon size="md" radius="md" color="blue" variant="light">
-                    {showCardDetails ? <IconEye size={18} /> : <IconEyeOff size={18} />}
-                  </ThemeIcon>
-                  <Box>
-                    <Text fw={700} c="dark" size="sm">Show Card Details</Text>
-                    <Text size="xs" c="dimmed">View number, expiry, CVV</Text>
-                  </Box>
-                </Group>
-                <Switch
-                  checked={showCardDetails}
-                  onChange={(e) => setShowCardDetails(e.currentTarget.checked)}
-                  color="orange"
-                  size="md"
-                />
+                <ActionIcon
+                  variant="subtle"
+                  color="white"
+                  onClick={() => setShowCardDetails(!showCardDetails)}
+                >
+                  {showCardDetails ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+                </ActionIcon>
               </Group>
-            </Box>
-
-            {/* Lock Card */}
-            <Box px="xl">
-              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="sm">
-                  <ThemeIcon size="md" radius="md" color={isCardLocked ? "red" : "green"} variant="light">
-                    {isCardLocked ? <IconLock size={18} /> : <IconLockOpen size={18} />}
-                  </ThemeIcon>
-                  <Box>
-                    <Text fw={700} c="dark" size="sm">{isCardLocked ? "Card Locked" : "Lock Card"}</Text>
-                    <Text size="xs" c="dimmed">
-                      {isCardLocked ? "Transactions blocked" : "Block all transactions"}
-                    </Text>
-                  </Box>
-                </Group>
-                <Switch
-                  checked={isCardLocked}
-                  onChange={(e) => setIsCardLocked(e.currentTarget.checked)}
-                  color="orange"
-                  size="md"
-                />
-              </Group>
-            </Box>
-
-            {/* Change PIN */}
-            <Box px="xl">
-              <Button
-                variant="subtle"
-                fullWidth
-                justify="space-between"
-                leftSection={
-                  <ThemeIcon size="md" radius="md" color="purple" variant="light">
-                    <IconKey size={18} />
-                  </ThemeIcon>
-                }
-                rightSection={<IconChevronRight size={25.4} color="var(--mantine-color-gray-4)" />}
-                onClick={() => setShowPinDialog(true)}
-                style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-              >
+              <Group justify="space-between" mt="xs">
                 <Box>
-                  <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
-                  <Text size="xs" c="dimmed">Set or update your PIN</Text>
+                  <Text c="white" size="xs" opacity={0.8}>Expires</Text>
+                  <Text c="white" fw={700} size="sm" mt={4}>{expiryDate}</Text>
                 </Box>
-              </Button>
-            </Box>
-          </Stack>
-        </Box>
+                <Box>
+                  <Text c="white" size="xs" opacity={0.8}>CVV</Text>
+                  <Text c="white" fw={700} size="sm" mt={4}>
+                    {showCardDetails ? cvv : '***'}
+                  </Text>
+                </Box>
+              </Group>
+            </Stack>
+          </Paper>
 
-        {/* PIN Dialog */}
+          <Button
+            onClick={() => setShowPinDialog(true)}
+            style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
+          >
+            <Box>
+              <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
+              <Text size="xs" c="dimmed">Set or update your PIN</Text>
+            </Box>
+          </Button>
+        </Stack>
+
         <Modal
           opened={showPinDialog}
           onClose={() => setShowPinDialog(false)}
@@ -688,7 +895,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
                   });
                 }}
                 radius="xl"
-                style={{ background: 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-red-6))' }}
               >
                 Update PIN
               </Button>
@@ -696,9 +902,8 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           </Stack>
         </Modal>
 
-        {/* Transactions List - Compact, No Separation */}
         <Box px="xl" pb="xl" style={{ backgroundColor: 'white' }}>
-          <Title order={3} fw={700} c="dark" mb="md">Transaction History</Title>
+          <Text fw={700} c="dark" size="lg" mb="md">Transaction History</Text>
           {transactions.length === 0 ? (
             <Box p="xl" style={{ textAlign: 'center' }}>
               <Text c="dimmed">No transactions yet</Text>
@@ -735,264 +940,61 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
             </Box>
           )}
         </Box>
-
-        {/* White Bottom Bar - Same height as orange/black bars */}
-        <Box 
-          style={{ 
-            position: 'fixed', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            height: '48px', 
-            backgroundColor: 'white',
-            zIndex: 1000 
-          }} 
-        />
       </Box>
     );
   }
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box h="100vh" w="100%" style={{ background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: '#ffffff', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Diamond Header */}
-      <Paper
-        px="xl"
-        pb="xl"
-        style={{ 
-          background: status.gradient, 
-          overflow: 'hidden',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)'
-        }}
-      >
-        {/* Diamond sparkle effect */}
-        <Box pos="absolute" inset={0} style={{ opacity: 0.3 }}>
-          <Box pos="absolute" top={16} left={32} w={12} h={12} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite' }} />
-          <Box pos="absolute" top={48} right={48} w={8} h={8} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite', animationDelay: '0.3s' }} />
-          <Box pos="absolute" bottom={32} left={64} w={8} h={8} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite', animationDelay: '0.6s' }} />
-          <Box pos="absolute" top="50%" right={32} w={16} h={16} bg="white" style={{ borderRadius: '50%', animation: 'pulse 2s ease-in-out infinite', animationDelay: '0.9s' }} />
-        </Box>
+    <div style={{
+      background: C.bg, minHeight: "100vh", color: C.text,
+      fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    }}>
 
-        {/* Geometric diamond pattern */}
-        <Box pos="absolute" inset={0} style={{ opacity: 0.1 }}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <polygon points="50,10 90,50 50,90 10,50" fill="white" opacity="0.3" />
-            <polygon points="50,20 80,50 50,80 20,50" fill="white" opacity="0.2" />
-          </svg>
-        </Box>
+      {/* ── Top bar */}
+      <TopBar onMenuPress={onOpenMenu} />
 
-        <Group justify="space-between" mb="md" pos="relative">
-          <ActionIcon
-            variant="subtle"
-            color="dark"
-            onClick={() => {
-              if (onOpenMenu) {
-                onOpenMenu();
-              } else {
-                notifications.show({
-                  title: "Menu coming soon.",
-                  message: '',
-                  color: "blue",
-                });
-              }
-            }}
-          >
-            <IconMenu size={24} />
-          </ActionIcon>
-          <Title order={2} fw={700} c="dark">Account</Title>
-          <ActionIcon
-            variant="subtle"
-            color="dark"
-            onClick={() => {
-              window.location.href = '/mobile?tab=messages';
-            }}
-          >
-            <img src="/app-chat.png" alt="Messages" style={{ width: '28px', height: '28px' }} />
-          </ActionIcon>
-        </Group>
+      {/* ── Identity row */}
+      <IdentityRow data={accountData} status={status} />
 
-        {/* Profile Section */}
-        <Box pos="relative" mb="md">
-          <Stack align="center" gap="md">
-            <Title order={1} fw={900} c="dark">{driverName}</Title>
+      {/* ── Inline stats strip: rating | feeds | points */}
+      <StatsStrip data={accountData} />
 
-            {/* Status Badge */}
-            <Box pos="relative" style={{ display: 'inline-block' }}>
-              <Badge
-                size="xl"
-                variant="light"
-                style={{ backgroundColor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)', border: '2px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                radius="lg"
-                p="md"
-              >
-                <Text size="xl" fw={900} c="dark">{status.name}</Text>
-              </Badge>
-            </Box>
+      {/* ── Status section */}
+      <SectionHeader>Status</SectionHeader>
+      <StatusRow data={accountData} status={status} />
 
-            <Group gap="md" justify="center">
-              <Group gap={4}>
-                <IconStar size={16} fill="var(--mantine-color-yellow-6)" color="var(--mantine-color-yellow-6)" />
-                <Text fw={700} c="dark">{driverRating}</Text>
-              </Group>
-              <Text fw={600} c="dark">{totalDeliveries} feeds</Text>
-              <Text c="dark">Since {memberSince}</Text>
-            </Group>
-          </Stack>
-        </Box>
+      {/* ── Active Programs section (ON FIRE) */}
+      <SectionHeader>Active Programs</SectionHeader>
+      <OnFireCard active={accountData.onFireActive} onConfigure={handleConfigureOnFire} />
 
-        {/* Points Progress */}
-        <Paper p="md" radius="lg" style={{ backgroundColor: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)', border: '1px solid white' }}>
-          <Group justify="space-between" mb="xs">
-            <Text fw={700} c="dark" size="sm">Status Points</Text>
-            <Text fw={900} c="dark" size="lg">{driverPoints} pts</Text>
-          </Group>
-          <Progress 
-            value={100} 
-            color="blue" 
-            size="sm" 
-            radius="xl"
-            style={{ backgroundColor: 'rgba(255,255,255,0.4)' }}
+      {/* ── Menu section — all nav items from MENU_ITEMS */}
+      <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}` }}>
+        {MENU_ITEMS.map((item) => (
+          <NavRow
+            key={item.id}
+            id={item.id}
+            label={item.label}
+            desc={item.desc}
+            badge={item.id === "feederCard" ? `$${cardBalance.toFixed(2)}` : undefined}
+            onPress={() => handleNav(item.id)}
           />
-          <Text c="dark" size="xs" mt="xs" fw={600}>
-            🎉 You've reached Diamond status! Keep being amazing!
-          </Text>
-        </Paper>
-      </Paper>
+        ))}
+      </div>
 
-      {/* ON FIRE Game Card */}
-      <Box px="xl" py="md">
-        <Card withBorder shadow="sm" radius="lg">
-          <Group justify="space-between" align="flex-start">
-            <Group gap="sm">
-              <ThemeIcon size="lg" radius="xl" color="orange" variant="light">
-                <IconFlame size={20} />
-              </ThemeIcon>
-              <Box>
-                <Text fw={700} size="sm">ON FIRE Game</Text>
-                <Text size="xs" c="dimmed">
-                  Gamified delivery with safety‑first speed monitoring and bonuses.
-                </Text>
-              </Box>
-            </Group>
-            <Badge
-              color={gameSettings.onFireGameEnabled ? "green" : "gray"}
-              variant="light"
-              size="sm"
-            >
-              {gameSettings.onFireGameEnabled ? "Active" : "Off"}
-            </Badge>
-          </Group>
-          <Button
-            mt="md"
-            fullWidth
-            size="sm"
-            color="orange"
-            onClick={() => setShowSafetySettings(true)}
-          >
-            Configure Safety & Game Mode
-          </Button>
-        </Card>
-      </Box>
+      {/* ── Sign Out */}
+      <SignOutRow onSignOut={handleSignOut} />
 
-      {/* Menu Items */}
-      <Stack gap={0} px={0} py="md">
-        {menuItems.map((item, idx) => {
-          const colors = getMenuItemColors(item.color);
-          const IconComponent = item.icon;
-          return (
-            <Button
-              key={idx}
-              onClick={item.action || (() => {})}
-              variant="subtle"
-              fullWidth
-              justify="flex-start"
-              leftSection={
-                <ThemeIcon size="md" radius="md" color={colors.bg} variant="light">
-                  <IconComponent size={20} />
-                </ThemeIcon>
-              }
-              rightSection={
-                <Group gap="xs" style={{ marginLeft: 'auto' }}>
-                  {item.badge && (
-                    <Badge color="green" variant="light" size="md" fw={700}>
-                      {item.badge}
-                    </Badge>
-                  )}
-                  <IconChevronRight size={18} color="var(--mantine-color-gray-4)" />
-                </Group>
-              }
-              size="md"
-              radius={0}
-              style={{ 
-                height: 'auto', 
-                padding: '10px 16px',
-                backgroundColor: '#ffffff',
-                borderTop: idx > 0 ? '1px solid var(--mantine-color-gray-2)' : 'none',
-                borderBottom: '1px solid var(--mantine-color-gray-2)',
-                borderRadius: 0
-              }}
-            >
-              <Box style={{ flex: 1, textAlign: 'left', width: '100%' }}>
-                <Text fw={700} c="dark" size="sm" style={{ textAlign: 'left' }}>{item.label}</Text>
-                <Text size="xs" c="dimmed" style={{ textAlign: 'left' }}>{item.desc}</Text>
-              </Box>
-            </Button>
-          );
-        })}
+      {/* Bottom breathing room for tab bar */}
+      <div style={{ height: 24 }} />
 
-        {/* Sign Out Button */}
-        <Button
-          variant="subtle"
-          color="red"
-          fullWidth
-          justify="flex-start"
-          leftSection={
-            <ThemeIcon size="md" radius="md" color="red" variant="light">
-              <IconLogout size={20} />
-            </ThemeIcon>
-          }
-          rightSection={<IconChevronRight size={25.4} color="var(--mantine-color-red-4)" style={{ marginLeft: 'auto' }} />}
-          onClick={handleSignOut}
-          size="md"
-          radius={0}
-          style={{ 
-            height: 'auto', 
-            padding: '10px 16px',
-            backgroundColor: '#ffffff',
-            borderTop: '1px solid var(--mantine-color-gray-2)',
-            borderBottom: '1px solid var(--mantine-color-gray-2)',
-            borderRadius: 0
-          }}
-        >
-          <Box style={{ flex: 1, textAlign: 'left', width: '100%' }}>
-            <Text fw={700} c="red.6" size="sm" style={{ textAlign: 'left' }}>Sign Out</Text>
-            <Text size="xs" c="red.5" style={{ textAlign: 'left' }}>Log out of your account</Text>
-          </Box>
-        </Button>
-      </Stack>
-
-      <Box h={96} />
-
-      {/* Android Bottom Bar */}
-      <Box 
-        style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: '48px', 
-          backgroundColor: '#000',
-          zIndex: 1000 
-        }} 
-      />
-      
       {/* ON FIRE Safety Settings Modal */}
       {showSafetySettings && userId && (
         <Box
@@ -1037,7 +1039,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
           </Box>
         </Box>
       )}
-    </Box>
+    </div>
   );
 };
 
