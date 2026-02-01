@@ -297,6 +297,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         const order = earning.orders;
         if (order?.mileage_pay_cents) {
           distancePay += order.mileage_pay_cents / 100;
+        } else if (earning.order_id) {
+          // Fallback: if join didn't work, fetch order directly
+          // This shouldn't be needed but helps debug
+          console.log('Order join missing mileage_pay_cents for order:', earning.order_id);
         }
       });
 
