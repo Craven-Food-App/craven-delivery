@@ -15,8 +15,10 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const driverId: string | undefined = body.driverId;
-    // Default to 8 km (5 miles = $3.35) for more visible mileage pay
-    const distanceKm: number = Number(body.distanceKm ?? 8.0);
+    
+    // Randomize distance: 1-3 miles ($0.67-$2.00 mileage pay cap)
+    const distanceMiles = Math.random() * 2 + 1; // 1-3 miles
+    const distanceKm: number = Number(body.distanceKm ?? (distanceMiles / 0.621371)); // Convert to km
     const expiresInMs: number = Number(body.expiresInMs ?? 30_000);
 
     if (!driverId) {
@@ -221,14 +223,20 @@ serve(async (req) => {
     }
 
     const taxCents = Math.round(subtotalCents * 0.08); // 8% tax
-    const tipCents = Math.round(subtotalCents * 0.15); // 15% tip
+    // Randomize tip: 10-25%
+    const tipPercentage = Math.random() * 0.15 + 0.10; // 10-25%
+    const tipCents = Math.round(subtotalCents * tipPercentage);
     const totalCents = subtotalCents + taxCents + tipCents;
 
     // Calculate mileage pay: $0.67 per mile (IRS standard rate)
-    const distanceMiles = distanceKm * 0.621371;
-    const mileagePayCents = Math.round(distanceMiles * 67); // $0.67 per mile = 67 cents
+    const distanceMilesActual = distanceKm * 0.621371;
+    const mileagePayCents = Math.round(distanceMilesActual * 67); // $0.67 per mile = 67 cents
+    
+    // Test orders pay $5 base + mileage
+    const basePayCents = 500; // $5.00 base
+    const totalDriverPayCents = basePayCents + mileagePayCents;
 
-    // Create order as confirmed and assigned to selected driver
+    // Create order as delivered (immediately complete for test orders)
     const { data: order, error: orderErr } = await service
       .from("orders")
       .insert({
@@ -236,7 +244,7 @@ serve(async (req) => {
         customer_id: callerId,
         driver_id: driverId,
         is_test: true,
-        order_status: "confirmed",
+        order_status: "delivered", // Mark as delivered immediately to trigger mileage accumulation
         total_cents: totalCents,
         subtotal_cents: subtotalCents,
         tax_cents: taxCents,
@@ -291,6 +299,24 @@ serve(async (req) => {
       }
     }
 
+    // Create driver_earnings record immediately for test orders
+    // This ensures earnings show up right away without needing to complete the order flow
+    const { error: earningsErr } = await service
+      .from("driver_earnings")
+      .insert({
+        driver_id: driverId,
+        order_id: order.id,
+        amount_cents: basePayCents, // $5 base pay
+        tip_cents: tipCents,
+        total_cents: totalDriverPayCents, // $5 + mileage
+        payout_cents: totalDriverPayCents,
+      });
+
+    if (earningsErr) {
+      console.error("Failed to create driver_earnings:", earningsErr.message);
+      // Non-fatal but log it
+    }
+
     const { data: assignment, error: assignErr } = await service
       .from("order_assignments")
       .insert({
@@ -333,10 +359,8 @@ serve(async (req) => {
       special_instructions: item.special_instructions,
     }));
 
-    // Calculate realistic payout based on order value (typically 15-25% of subtotal)
-    const payoutPercentage = 0.20; // 20% of subtotal
-    const basePayout = Math.round(subtotalCents * payoutPercentage);
-    const payoutCents = Math.max(500, basePayout); // Minimum $5.00
+    // Test orders pay $5 base + mileage as compensation for participation
+    const payoutCents = totalDriverPayCents; // $5.00 + mileage
 
     const notificationPayload = {
       type: "order_assignment",
