@@ -277,20 +277,12 @@ const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) =
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>
       {/* ── sticky header ── */}
+      {/* ── sticky top bar ── */}
       <div style={{
-        position: 'sticky',
-        top: 0,
-        background: C.bg,
-        zIndex: 10,
-        borderBottom: `1px solid ${C.border}`,
-        padding: '12px 16px',
+        position: "sticky", top: 0, background: C.bg, zIndex: 10,
+        borderBottom: `1px solid ${C.border}`, padding: "12px 16px",
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-        }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button
             onClick={onBack}
             style={{
@@ -306,11 +298,7 @@ const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) =
           >
             <IconArrowLeft size={24} />
           </button>
-          <div style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: C.text,
-          }}>
+          <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0 }}>
             Vehicle & Documents
           </div>
           <button

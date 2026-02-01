@@ -617,10 +617,24 @@ const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
         borderBottom: `1px solid ${C.border}`, padding: "12px 16px",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.text }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.text,
+            }}
+          >
             <IconArrowLeft size={24} />
           </button>
-          <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0 }}>Security & Safety</div>
+          <div style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0 }}>
+            Security & Safety
+          </div>
           <div style={{ width: 40 }} />
         </div>
       </div>
