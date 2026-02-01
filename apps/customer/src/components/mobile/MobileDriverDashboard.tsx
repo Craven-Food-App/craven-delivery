@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { OrderAssignmentModal } from './OrderAssignmentModal';
+import { NewDeliveryRequest } from './NewDeliveryRequest';
+import { DeliveryMap } from './DeliveryMap';
 import ActiveDeliveryFlow from './ActiveDeliveryFlow';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
 import { useIOSNotifications } from '@/hooks/useIOSNotifications';
@@ -189,7 +190,7 @@ export const MobileDriverDashboard: React.FC = () => {
           .maybeSingle();
           
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 2000)
+          setTimeout(() => reject(new Error('Session check timeout')), 5000) // Increased to 5s
         );
         
         const { data: session, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
@@ -332,6 +333,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isActiveFeedingMenuOpen, setIsActiveFeedingMenuOpen] = useState(false);
   const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
+  const [resetMapZoom, setResetMapZoom] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
@@ -527,6 +529,7 @@ export const MobileDriverDashboard: React.FC = () => {
     }
   };
   const [currentOrderAssignment, setCurrentOrderAssignment] = useState<OrderAssignment | null>(null);
+  const [orderTimeLeft, setOrderTimeLeft] = useState<number>(33);
   const [activeDelivery, setActiveDelivery] = useState<any>(null);
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [tripCount, setTripCount] = useState(0);
@@ -677,6 +680,35 @@ export const MobileDriverDashboard: React.FC = () => {
       supabase.removeChannel(dbChannel);
     };
   };
+
+  // Timer effect for order modal countdown
+  useEffect(() => {
+    if (!showOrderModal || !currentOrderAssignment) {
+      setOrderTimeLeft(33);
+      return;
+    }
+
+    const updateTimer = () => {
+      const expiresAt = new Date(currentOrderAssignment.expires_at);
+      const now = new Date();
+      const timeLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
+      setOrderTimeLeft(timeLeft);
+
+      if (timeLeft <= 0) {
+        // Auto-decline when timer hits 0
+        setShowOrderModal(false);
+        setCurrentOrderAssignment(null);
+      }
+    };
+
+    // Update immediately
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [showOrderModal, currentOrderAssignment]);
 
   // Check session persistence and onboarding on component mount
   useEffect(() => {
@@ -1362,12 +1394,18 @@ export const MobileDriverDashboard: React.FC = () => {
       
       {/* Full Screen Map Background - Full height */}
       <div className="absolute inset-0 z-0 map-touch">
-        <MobileMapbox onZoneStatusChange={handleZoneStatusChange} />
+        <MobileMapbox 
+          onZoneStatusChange={handleZoneStatusChange}
+          resetToDefaultZoom={resetMapZoom}
+        />
       </div>
 
       {/* Hamburger Menu Button - Top Left - Only on Home Tab, but NOT during delivery */}
       {activeTab === 'home' && driverState !== 'on_delivery' && (
-        <div className="fixed left-4 z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)' }}>
+        <div 
+          className={`fixed left-4 pointer-events-auto ${isMenuOpen || isActiveFeedingMenuOpen ? 'z-10' : 'z-50'}`} 
+          style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)` }}
+        >
           <button
             onClick={() => {
               // Open ActiveFeedingMenu ONLY when on secondary feeding dashboard (not viewing home)
@@ -1387,7 +1425,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Speed Limit & Current Speed - Under Hamburger Menu - Only on Home Tab */}
       {activeTab === 'home' && (
-        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 95px)' }}>
+        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 95px)` }}>
           <SpeedLimitSign 
             currentSpeed={location?.speed ? location.speed * 2.237 : 0} // Convert m/s to mph
             location={location ? {
@@ -1574,12 +1612,12 @@ export const MobileDriverDashboard: React.FC = () => {
         {/* ONLINE SEARCHING STATE */}
         {activeTab === 'home' && driverState === 'online_searching' && !isViewingHomeWhileFeeding && <>
             {/* Change Zone Button - Top Left */}
-            <div className="absolute left-4 z-20 pointer-events-auto py-0 my-[525px] mx-0 px-0" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 16px)' }}>
+            <div className="absolute left-4 z-20 pointer-events-auto py-0 my-[525px] mx-0 px-0" style={{ top: `calc(env(safe-area-inset-top, 0px) + 16px)` }}>
               
             </div>
 
             {/* Pause Button - Top Right - Level with menu button - LOCKED POSITION */}
-            <div className="fixed z-50 pointer-events-auto" style={{ top: 'calc(env(safe-area-inset-top, 150px) + 43px)', right: '66px' }}>
+            <div className="fixed z-50 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)`, right: '66px' }}>
               <Button onClick={handlePause} variant="ghost" size="sm" className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-lg hover:bg-white">
                 <Pause className="h-5 w-5 text-gray-700" />
               </Button>
@@ -1765,93 +1803,162 @@ export const MobileDriverDashboard: React.FC = () => {
 
       </div>
 
-      {/* Order Assignment Modal */}
-      <OrderAssignmentModal isOpen={showOrderModal} onClose={() => {
-        setShowOrderModal(false);
-        setCurrentOrderAssignment(null);
-      }} assignment={currentOrderAssignment} onAccept={async (assignment) => {
-        // Fetch order details including items when accepting
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select(`
-            id,
-            subtotal_cents,
-            customer_name,
-            customer_id,
-            customer_phone,
-            delivery_notes
-          `)
-          .eq('id', assignment.order_id)
-          .maybeSingle();
+      {/* New Delivery Request Modal */}
+      {showOrderModal && currentOrderAssignment && (() => {
+        // Calculate total seconds from assignment (default to 33 if not available)
+        const totalSeconds = 33; // Default timeout from create-test-order
 
-        // If customer_name is not in order, try to fetch from user_profiles
-        let resolvedCustomerName = orderData?.customer_name;
-        if (!resolvedCustomerName && orderData?.customer_id) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('full_name')
-            .eq('user_id', orderData.customer_id)
-            .maybeSingle();
-          
-          if (profile?.full_name) {
-            resolvedCustomerName = profile.full_name;
-          }
-        }
+        // Extract merchant info
+        const pickupAddr = currentOrderAssignment.pickup_address;
+        const merchantName = currentOrderAssignment.restaurant_name || (typeof pickupAddr === 'object' ? pickupAddr?.name : 'Restaurant');
+        const merchantAddress = typeof pickupAddr === 'string' 
+          ? pickupAddr 
+          : pickupAddr?.address || [pickupAddr?.street, pickupAddr?.city, pickupAddr?.state, pickupAddr?.zip_code].filter(Boolean).join(', ');
 
-        // Fetch order items
-        const { data: orderItemsData } = await supabase
-          .from('order_items')
-          .select(`
-            id,
-            quantity,
-            price_cents,
-            special_instructions,
-            menu_items (
-              name,
-              image_url
-            )
-          `)
-          .eq('order_id', assignment.order_id);
+        // Extract customer info
+        const dropoffAddr = currentOrderAssignment.dropoff_address;
+        const customerName = (typeof dropoffAddr === 'object' && dropoffAddr?.name) 
+          ? dropoffAddr.name 
+          : (currentOrderAssignment as any).customer_name || 'Customer';
+        const customerAddress = typeof dropoffAddr === 'string'
+          ? dropoffAddr
+          : dropoffAddr?.address || [dropoffAddr?.street, dropoffAddr?.city, dropoffAddr?.state, dropoffAddr?.zip_code].filter(Boolean).join(', ');
 
-        // Format items for activeDelivery
-        const formattedItems = (orderItemsData || []).map((item: any) => ({
-          id: item.id,
-          name: item.menu_items?.name || 'Menu Item',
-          quantity: item.quantity,
-          price_cents: item.price_cents,
-          special_instructions: item.special_instructions,
-          image_url: item.menu_items?.image_url,
-        }));
+        // Calculate earnings
+        const subtotalCents = (currentOrderAssignment as any).subtotal_cents || 0;
+        const tipCents = (currentOrderAssignment as any).tip_cents || 0;
+        const payoutCents = currentOrderAssignment.payout_cents || 0;
+        const earnings = payoutCents / 100;
+        
+        // Calculate fee percentage (if subtotal > 0)
+        const feePercentage = subtotalCents > 0 
+          ? Math.round((payoutCents / subtotalCents) * 100)
+          : 70; // Default 70%
 
-        // Use items from assignment payload if available, otherwise use fetched items
-        const itemsToUse = assignment.items && assignment.items.length > 0 
-          ? assignment.items 
-          : formattedItems;
+        // Distance and ETA
+        const distance = parseFloat(currentOrderAssignment.distance_mi || '0') || 0;
+        const eta = currentOrderAssignment.estimated_time || Math.ceil(distance * 2.5);
 
-        setActiveDelivery({
-          ...assignment,
-          order_id: assignment.order_id,
-          assignment_id: assignment.assignment_id,
-          restaurant_name: assignment.restaurant_name,
-          pickup_address: assignment.pickup_address,
-          dropoff_address: assignment.dropoff_address,
-          payout_cents: assignment.payout_cents,
-          distance_mi: assignment.distance_mi,
-          isTestOrder: assignment.isTestOrder, // Pass through test order flag
-          items: itemsToUse, // Include order items
-          subtotal_cents: orderData?.subtotal_cents || (assignment as any).subtotal_cents || assignment.payout_cents || 0,
-          tip_cents: orderData?.tip_cents || (assignment as any).tip_cents || 0,
-          customer_name: resolvedCustomerName || orderData?.customer_name || (assignment as any).customer_name,
-          customer_phone: orderData?.customer_phone,
-          delivery_notes: orderData?.delivery_notes,
-        });
-        setDriverState('on_delivery');
-        setShowOrderModal(false);
-        setCurrentOrderAssignment(null);
-      }} onDecline={() => {
-        setShowOrderModal(false);
-        setCurrentOrderAssignment(null);
-      }} />
+        // Order ID (last 6 chars)
+        const orderId = currentOrderAssignment.order_id.slice(-6);
+
+        return (
+          <NewDeliveryRequest
+            orderId={orderId}
+            timeLeft={orderTimeLeft}
+            totalSeconds={totalSeconds}
+            merchant={{
+              name: merchantName,
+              address: merchantAddress || 'Address unavailable'
+            }}
+            customer={{
+              name: customerName,
+              address: customerAddress || 'Address unavailable'
+            }}
+            distance={distance}
+            eta={eta}
+            earnings={earnings}
+            subtotal={subtotalCents / 100}
+            tip={tipCents / 100}
+            feePercentage={feePercentage}
+            mapComponent={
+              <DeliveryMap
+                pickupAddress={currentOrderAssignment.pickup_address}
+                dropoffAddress={currentOrderAssignment.dropoff_address}
+                showRoute={true}
+              />
+            }
+            onAccept={async () => {
+              // Fetch order details including items when accepting
+              const { data: orderData } = await supabase
+                .from('orders')
+                .select(`
+                  id,
+                  subtotal_cents,
+                  customer_name,
+                  customer_id,
+                  customer_phone,
+                  delivery_notes
+                `)
+                .eq('id', currentOrderAssignment.order_id)
+                .maybeSingle();
+
+              // If customer_name is not in order, try to fetch from user_profiles
+              let resolvedCustomerName = orderData?.customer_name;
+              if (!resolvedCustomerName && orderData?.customer_id) {
+                const { data: profile } = await supabase
+                  .from('user_profiles')
+                  .select('full_name')
+                  .eq('user_id', orderData.customer_id)
+                  .maybeSingle();
+                
+                if (profile?.full_name) {
+                  resolvedCustomerName = profile.full_name;
+                }
+              }
+
+              // Fetch order items
+              const { data: orderItemsData } = await supabase
+                .from('order_items')
+                .select(`
+                  id,
+                  quantity,
+                  price_cents,
+                  special_instructions,
+                  menu_items (
+                    name,
+                    image_url
+                  )
+                `)
+                .eq('order_id', currentOrderAssignment.order_id);
+
+              // Format items for activeDelivery
+              const formattedItems = (orderItemsData || []).map((item: any) => ({
+                id: item.id,
+                name: item.menu_items?.name || 'Menu Item',
+                quantity: item.quantity,
+                price_cents: item.price_cents,
+                special_instructions: item.special_instructions,
+                image_url: item.menu_items?.image_url,
+              }));
+
+              // Use items from assignment payload if available, otherwise use fetched items
+              const itemsToUse = (currentOrderAssignment as any).items && (currentOrderAssignment as any).items.length > 0 
+                ? (currentOrderAssignment as any).items 
+                : formattedItems;
+
+              setActiveDelivery({
+                ...currentOrderAssignment,
+                order_id: currentOrderAssignment.order_id,
+                assignment_id: currentOrderAssignment.assignment_id,
+                restaurant_name: currentOrderAssignment.restaurant_name,
+                pickup_address: currentOrderAssignment.pickup_address,
+                dropoff_address: currentOrderAssignment.dropoff_address,
+                payout_cents: currentOrderAssignment.payout_cents,
+                distance_mi: currentOrderAssignment.distance_mi,
+                isTestOrder: currentOrderAssignment.isTestOrder,
+                items: itemsToUse,
+                subtotal_cents: orderData?.subtotal_cents || (currentOrderAssignment as any).subtotal_cents || currentOrderAssignment.payout_cents || 0,
+                tip_cents: orderData?.tip_cents || (currentOrderAssignment as any).tip_cents || 0,
+                customer_name: resolvedCustomerName || orderData?.customer_name || (currentOrderAssignment as any).customer_name,
+                customer_phone: orderData?.customer_phone,
+                delivery_notes: orderData?.delivery_notes,
+              });
+              setDriverState('on_delivery');
+              setShowOrderModal(false);
+              setCurrentOrderAssignment(null);
+            }}
+            onDecline={() => {
+              setShowOrderModal(false);
+              setCurrentOrderAssignment(null);
+            }}
+            onClose={() => {
+              setShowOrderModal(false);
+              setCurrentOrderAssignment(null);
+            }}
+          />
+        );
+      })()}
 
       {/* Drive Time Selector */}
       <EndTimePickerSheet 
@@ -1892,6 +1999,10 @@ export const MobileDriverDashboard: React.FC = () => {
         onGoHome={() => {
           setIsViewingHomeWhileFeeding(true);
           setIsActiveFeedingMenuOpen(false);
+          // Reset map to default zoom when navigating to home
+          setResetMapZoom(true);
+          // Reset the flag after a short delay so it can trigger again next time
+          setTimeout(() => setResetMapZoom(false), 100);
         }}
         currentEarnings={sessionEarnings}
         isPaused={driverState === 'online_paused'}
