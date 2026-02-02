@@ -762,25 +762,23 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
           flexDirection: 'column',
           overflow: 'hidden',
         }}>
-          <Paper
-            pos="sticky"
-            top={0}
-            bg="white"
-            style={{ 
-              zIndex: 10,
-              paddingTop: 'env(safe-area-inset-top, 0px)',
-              borderBottom: '1px solid var(--mantine-color-gray-2)',
-              flexShrink: 0,
-            }}
-          >
-          <Group px="xl" pb="md" justify="space-between" align="center">
-            <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
-              <IconArrowLeft size={24} />
-            </ActionIcon>
-            <Text fw={700} size="lg" c="dark">Transaction History</Text>
-            <Box w={24} />
-          </Group>
-        </Paper>
+          <div style={{
+            position: 'sticky',
+            top: 0,
+            background: 'white',
+            zIndex: 10,
+            borderBottom: '1px solid #EEEEEE',
+            padding: '12px 16px',
+            flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <button onClick={() => setShowCardPage(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <IconArrowLeft size={24} color="#111111" />
+              </button>
+              <h1 style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0, color: '#111111' }}>Transaction History</h1>
+              <div style={{ width: 24 }} />
+            </div>
+          </div>
 
         <div style={{ 
           flex: 1, 
