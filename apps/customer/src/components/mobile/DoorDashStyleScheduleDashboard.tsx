@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { Check, Menu, Bell, Filter, Plus } from 'lucide-react';
+import { Check, Menu, Info, Filter, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ const CravenDriverSchedule: React.FC<CravenDriverScheduleProps> = ({
   const [loading, setLoading] = useState(true);
   const [processingShiftId, setProcessingShiftId] = useState<string | null>(null);
   const [authWarningShown, setAuthWarningShown] = useState(false);
+  const [showPageInfo, setShowPageInfo] = useState(false);
 
   const today = useMemo(() => new Date(), []);
 
@@ -296,16 +297,10 @@ const CravenDriverSchedule: React.FC<CravenDriverScheduleProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => {
-                if (onOpenNotifications) {
-                  onOpenNotifications();
-                } else {
-                  toast.info('Notifications coming soon.');
-                }
-              }}
+              onClick={() => setShowPageInfo(true)}
               className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow flex items-center justify-center hover:bg-white transition"
             >
-              <Bell className="w-6 h-6 text-gray-700" />
+              <Info className="w-6 h-6 text-gray-700" />
             </button>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Schedule</h1>
@@ -420,6 +415,87 @@ const CravenDriverSchedule: React.FC<CravenDriverScheduleProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Page Info Modal */}
+      {showPageInfo && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPageInfo(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">Schedule Page Guide</h2>
+                <button
+                  onClick={() => setShowPageInfo(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  📅 Your Weekly Schedule
+                </h3>
+                <p className="text-xs text-gray-600">
+                  View and manage your feeding schedule across the week. Select any day at the top to see available time slots.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  ⏰ Time Slots
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Choose from preset time blocks throughout the day. Tap any slot to add it to your schedule.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  ✅ Active Shifts
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Green badges show "Active" slots that are live. Once scheduled, they show "Scheduled" in orange.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🔄 Recurring Shifts
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Schedule shifts that repeat weekly. Perfect for setting your regular feeding times.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🎯 Flexible Scheduling
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Add or remove shifts anytime. Changes sync instantly so you're always in control of when you feed.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  💡 Pro Tip
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Schedule during peak meal times (lunch: 11am-2pm, dinner: 5pm-9pm) for maximum earning potential!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

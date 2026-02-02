@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Box, Stack, Text, Group } from '@mantine/core';
 import { ExclusiveOrdersFeed } from '@/components/diamond-orders/ExclusiveOrdersFeed';
-import { Flame } from 'lucide-react';
+import { Flame, Info, X } from 'lucide-react';
 import { useDriverTier } from '@/hooks/diamond-orders/useDriverTier';
 import { useDiamondPoints } from '@/hooks/diamond-orders/useDiamondPoints';
 import { CravingWheel } from '@/components/driver/CravingWheel';
@@ -34,6 +34,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
   const [availableOrder, setAvailableOrder] = useState<any>(null);
   const [cravingLevel, setCravingLevel] = useState(70); // Percentage for craving meter
   const [userId, setUserId] = useState<string>('');
+  const [showPageInfo, setShowPageInfo] = useState(false);
   const { isDiamond } = useDriverTier();
   const { points: diamondPoints } = useDiamondPoints();
   
@@ -245,18 +246,10 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
         </button>
         <h1 className="text-gray-900 text-base font-black" style={{ letterSpacing: '0.2px' }}>On Fire</h1>
         <button 
-          onClick={() => {
-            if (onOpenNotifications) {
-              onOpenNotifications();
-            } else {
-              toast.info('Notifications coming soon.');
-            }
-          }}
+          onClick={() => setShowPageInfo(true)}
           className="text-gray-900 p-2"
         >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-          </svg>
+          <Info className="w-6 h-6" />
         </button>
       </div>
 
@@ -463,6 +456,97 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
           </Box>
         </Box>
       </Box>
+
+      {/* Page Info Modal */}
+      {showPageInfo && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPageInfo(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">On Fire Page Guide</h2>
+                <button
+                  onClick={() => setShowPageInfo(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-orange-600" />
+                  The ON FIRE Game
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Get "On Fire" by completing deliveries quickly and consistently. The more you deliver, the higher your flame meter rises!
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🎯 Craving Wheel
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Your activity fuels the craving wheel. As you complete orders, the wheel fills up, unlocking exclusive bonuses and high-value orders.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🚗 Speed Detection
+                </h3>
+                <p className="text-xs text-gray-600">
+                  The app tracks your movement speed to detect when you're actively delivering, helping optimize order assignments.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  💎 Diamond Orders
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Exclusive high-value orders for top performers. Build your streak, earn diamond points, and unlock premium deliveries.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  📊 Weekly Performance
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Track your earnings across the week with the bar chart. See daily payments and tips to optimize your feeding schedule.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  ⚡ Real-Time Orders
+                </h3>
+                <p className="text-xs text-gray-600">
+                  When ON FIRE, you get priority access to incoming orders with instant notifications for maximum earnings.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🏆 Pro Tip
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Stay ON FIRE by maintaining a high acceptance rate and completing deliveries quickly. Consistency is key to unlocking the best orders!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
