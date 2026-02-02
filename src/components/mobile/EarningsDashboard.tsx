@@ -64,7 +64,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
-  const [timeRange, setTimeRange] = useState<TimeRange>('thisWeek');
+  const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const [loading, setLoading] = useState(true);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [breakdown, setBreakdown] = useState<EarningsBreakdown>({
