@@ -122,7 +122,7 @@ function tierProgress(pts: number, status: StatusInfo): number {
 const MENU_ITEMS = [
   { id: "profile",     label: "Profile Information",  desc: "Personal details & preferences" },
   { id: "vehicle",     label: "Vehicle & Documents",  desc: "Registration, insurance, inspection" },
-  { id: "feederCard",  label: "Feeder Card",          desc: "Digital debit card & transactions" },
+  { id: "feederCard",  label: "Transaction History",  desc: "View all Feeder Card transactions" },
   { id: "settings",    label: "App Settings",         desc: "Notifications, language, preferences" },
   { id: "security",    label: "Security & Safety",    desc: "Password, 2FA, emergency contacts" },
   { id: "callSupport", label: "Call Support",         desc: "24/7 support hotline" },
@@ -775,7 +775,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
               <IconArrowLeft size={24} />
             </ActionIcon>
-            <Text fw={700} size="lg" c="dark">Feeder Card</Text>
+            <Text fw={700} size="lg" c="dark">Transaction History</Text>
             <Box w={24} />
           </Group>
         </Paper>
@@ -786,53 +786,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
           WebkitOverflowScrolling: 'touch',
           paddingBottom: `calc(80px + env(safe-area-inset-bottom, 0px))`,
         }}>
-        <Stack gap={0} px="xl" py="md">
-          <Paper p="xl" radius="xl" style={{ background: 'linear-gradient(135deg, #E8622A 0%, #f0a060 100%)', marginBottom: '16px' }}>
-            <Stack gap="md">
-              <Group justify="space-between">
-                <Text c="white" fw={700} size="lg">Balance</Text>
-                <Text c="white" fw={900} size="2xl">${cardBalance.toFixed(2)}</Text>
-              </Group>
-              <Group justify="space-between" mt="md">
-                <Box>
-                  <Text c="white" size="xs" opacity={0.8}>Card Number</Text>
-                  <Text c="white" fw={700} size="md" mt={4}>
-                    {showCardDetails ? formatCardNumber(cardNumber, true) : formatCardNumber(cardNumber, false)}
-                  </Text>
-                </Box>
-                <ActionIcon
-                  variant="subtle"
-                  color="white"
-                  onClick={() => setShowCardDetails(!showCardDetails)}
-                >
-                  {showCardDetails ? <IconEyeOff size={20} /> : <IconEye size={20} />}
-                </ActionIcon>
-              </Group>
-              <Group justify="space-between" mt="xs">
-                      <Box>
-                  <Text c="white" size="xs" opacity={0.8}>Expires</Text>
-                  <Text c="white" fw={700} size="sm" mt={4}>{expiryDate}</Text>
-                      </Box>
-                      <Box>
-                  <Text c="white" size="xs" opacity={0.8}>CVV</Text>
-                  <Text c="white" fw={700} size="sm" mt={4}>
-                    {showCardDetails ? cvv : '***'}
-                    </Text>
-                  </Box>
-                </Group>
-              </Stack>
-          </Paper>
-
-              <Button
-                onClick={() => setShowPinDialog(true)}
-                style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-              >
-                <Box>
-                  <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
-                  <Text size="xs" c="dimmed">Set or update your PIN</Text>
-                </Box>
-              </Button>
-          </Stack>
 
         <Modal
           opened={showPinDialog}
@@ -919,8 +872,8 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
           </Stack>
         </Modal>
 
-        <Box px="xl" pb="xl" style={{ backgroundColor: 'white' }}>
-          <Text fw={700} c="dark" size="lg" mb="md">Transaction History</Text>
+        <Box px="xl" py="md" style={{ backgroundColor: 'white' }}>
+          <Text fw={700} c="dark" size="xl" mb="lg">Feeder Card Transactions</Text>
           {transactions.length === 0 ? (
             <Box p="xl" style={{ textAlign: 'center' }}>
               <Text c="dimmed">No transactions yet</Text>
@@ -1027,7 +980,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             id={item.id}
             label={item.label}
             desc={item.desc}
-            badge={item.id === "feederCard" ? `$${cardBalance.toFixed(2)}` : undefined}
+            badge={undefined}
             onPress={() => handleNav(item.id)}
           />
         ))}
