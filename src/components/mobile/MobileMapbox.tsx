@@ -15,6 +15,7 @@ interface MobileMapboxProps {
   className?: string;
   onZoneStatusChange?: (info: { isInZone: boolean; zone: DeliveryZone | null }) => void;
   resetToDefaultZoom?: boolean; // When true, resets map to default zoom
+  onScheduleClick?: () => void; // Open schedule page
 }
 
 const ZONE_SOURCE_ID = 'delivery-zones';
@@ -25,6 +26,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   className = '',
   onZoneStatusChange,
   resetToDefaultZoom = false,
+  onScheduleClick,
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
@@ -370,8 +372,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              // TODO: Open schedule modal for future feeding times
-              console.log('Schedule future feeding times');
+              if (onScheduleClick) {
+                onScheduleClick();
+              }
             }}
             className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
             style={{ top: 'calc(50% + 20px)', left: '11px', transform: 'translateY(-50%)', pointerEvents: 'auto' }}

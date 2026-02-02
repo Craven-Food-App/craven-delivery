@@ -1504,6 +1504,7 @@ export const MobileDriverDashboard: React.FC = () => {
         <MobileMapbox 
           onZoneStatusChange={handleZoneStatusChange}
           resetToDefaultZoom={resetMapZoom}
+          onScheduleClick={() => setActiveTab('schedule')}
         />
       </div>
 
