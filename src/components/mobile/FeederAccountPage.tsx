@@ -753,12 +753,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   // If card page is open, show that instead (keeping existing card page UI)
   if (showCardPage) {
     return (
-      <MobileLayout headerHeight="56px">
         <div style={{ 
           background: 'white', 
-          height: '100%',
+          height: '100dvh',
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
         }}>
           <Paper
             pos="sticky"
@@ -912,7 +912,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         </Box>
         </div>
       </div>
-    </MobileLayout>
     );
   }
 
