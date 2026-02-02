@@ -149,14 +149,6 @@ function SegTabs({ value, onChange }: { value: Tab; onChange: (v: Tab) => void }
           </button>
         );
       })}
-      {/* spacer */}
-      <div style={{ flex: 1 }} />
-      <button type="button" onClick={() => onChange("Available")} style={{
-        background: "none", border: `1px solid ${C.border}`, borderRadius: 7,
-        color: C.text, fontWeight: 700, fontSize: 11, padding: "6px 10px", cursor: "pointer",
-      }}>
-        Clear
-      </button>
     </div>
   );
 }
