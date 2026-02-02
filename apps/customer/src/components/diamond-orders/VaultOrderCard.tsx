@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, ThemeIcon, Badge, Button, Group, Stack, Text, Box, Transition } from '@mantine/core';
+import { Card, ThemeIcon, Button, Group, Stack, Text, Box, Transition } from '@mantine/core';
 import { Lock, Unlock, Sparkles } from 'lucide-react';
 import { ExclusiveOrder } from '@/types/diamond-orders';
 
