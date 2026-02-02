@@ -289,6 +289,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       let bonuses = 0;
       let adjustments = 0;
 
+      let totalMiles = 0; // Track total miles driven
+      
       earnings.forEach((earning: any) => {
         basePay += (earning.amount_cents || 0) / 100;
         tips += (earning.tip_cents || 0) / 100;
@@ -301,6 +303,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           // Fallback: if join didn't work, fetch order directly
           // This shouldn't be needed but helps debug
           console.log('Order join missing mileage_pay_cents for order:', earning.order_id);
+        }
+        
+        // Track distance for earnings per mile calculation
+        if (order?.distance_km) {
+          totalMiles += order.distance_km * 0.621371; // Convert km to miles
         }
       });
 
@@ -346,11 +353,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         paid: paidTotal,
       });
 
-      // Calculate metrics (simplified - would need more data)
+      // Calculate metrics
       const totalTrips = earnings.length;
       const activeTime = totalTrips * 0.5; // Estimate 30 min per trip
       const earningsPerHour = activeTime > 0 ? totalEarned / activeTime : 0;
-      const earningsPerMile = 0; // Would need distance data
+      const earningsPerMile = totalMiles > 0 ? totalEarned / totalMiles : 0;
 
       setMetrics({
         earningsPerHour,
