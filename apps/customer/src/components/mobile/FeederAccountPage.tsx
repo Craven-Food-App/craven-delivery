@@ -392,13 +392,13 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
             borderBottom: '1px solid var(--mantine-color-gray-2)'
           }}
         >
-          <Group px="xl" pb="md" justify="space-between" align="center">
-            <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
-              <IconArrowLeft size={24} />
-            </ActionIcon>
-            <Title order={2} fw={700} c="dark">Transaction History</Title>
-            <Box w={24} />
-          </Group>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+              <button onClick={() => setShowCardPage(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <IconArrowLeft size={24} color="#111111" />
+              </button>
+              <h1 style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0, color: '#111111' }}>Transaction History</h1>
+              <div style={{ width: 24 }} />
+            </div>
         </Paper>
           {/* Depth of field blur effect */}
           <Box
