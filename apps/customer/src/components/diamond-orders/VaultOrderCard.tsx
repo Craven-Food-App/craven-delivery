@@ -57,11 +57,10 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
           </Group>
           
           {isUnlocked && (
-            <Badge 
-              color="orange" 
-              variant="filled" 
-              size="xs"
+            <Box
               style={{
+                backgroundColor: '#FF6A00',
+                color: '#ffffff',
                 padding: '4px 8px',
                 fontSize: '10px',
                 fontWeight: 700,
@@ -70,12 +69,16 @@ export const VaultOrderCard: React.FC<VaultOrderCardProps> = ({ order, onClaim, 
                 whiteSpace: 'nowrap',
                 minWidth: 'fit-content',
                 flexShrink: 0,
-                overflow: 'visible'
+                overflow: 'visible',
+                borderRadius: '2px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
               }}
             >
-              <Sparkles size={10} style={{ marginRight: 4 }} />
+              <Sparkles size={10} />
               Unlocked
-            </Badge>
+            </Box>
           )}
         </Group>
 
