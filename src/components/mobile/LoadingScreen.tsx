@@ -57,7 +57,7 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
         left={0}
         right={0}
         bottom={0}
-        style={{ zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: 'linear-gradient(to bottom right, var(--mantine-color-orange-5), var(--mantine-color-orange-6))' }}
+        style={{ zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: '#FFFFFF' }}
       >
       {/* Logo container - fixed dimensions, doesn't shift */}
       <Box 
@@ -93,8 +93,8 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
           <Loader
             size="xl"
             type="bars"
-            color="white"
-            style={{ opacity: 0.3 }}
+            color="orange"
+            style={{ opacity: 0.8 }}
           />
         )}
         {/* Dots below logo - fixed position */}
@@ -108,19 +108,19 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
             <Box
               w={8}
               h={8}
-              bg="white"
+              bg="#E8622A"
               style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0s' }}
             />
             <Box
               w={8}
               h={8}
-              bg="white"
+              bg="#E8622A"
               style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.2s' }}
             />
             <Box
               w={8}
               h={8}
-              bg="white"
+              bg="#E8622A"
               style={{ borderRadius: '50%', animation: 'pulse 1.4s ease-in-out infinite', animationDelay: '0.4s' }}
             />
           </Group>
@@ -132,22 +132,23 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
         gap="xs" 
         style={{ 
           textAlign: 'center', 
-          color: 'white',
+          color: '#111111',
           minHeight: 80,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
         }}
       >
-        <Text size="2xl" fw={700} style={{ lineHeight: 1.2 }}>CRAVE'N</Text>
+        <Text size="2xl" fw={700} style={{ lineHeight: 1.2, color: '#111111' }}>CRAVE'N</Text>
         <Text 
           size="lg" 
-          opacity={0.9}
+          opacity={0.7}
           style={{ 
             minHeight: 24,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            color: '#111111'
           }}
         >
           {loadingText}
