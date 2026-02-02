@@ -606,15 +606,20 @@ const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
   return (
     <div style={{
       background: C.bg,
-      minHeight: '100vh',
-      paddingBottom: 72,
+      height: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
       color: C.text,
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>
-      {/* ── sticky top bar ── */}
+      {/* ── fixed header ── */}
       <div style={{
-        position: "sticky", top: 0, background: C.bg, zIndex: 10,
-        borderBottom: `1px solid ${C.border}`, padding: "12px 16px",
+        flexShrink: 0,
+        background: C.bg,
+        zIndex: 10,
+        borderBottom: `1px solid ${C.border}`,
+        padding: "12px 16px",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button
@@ -641,8 +646,11 @@ const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
 
       {/* ── scrollable content ── */}
       <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         padding: '12px 16px',
-        paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
+        paddingBottom: `calc(72px + env(safe-area-inset-bottom, 0px) + ${keyboardState.isOpen ? keyboardState.height : 0}px)`,
       }}>
         
         {/* Password Section */}
