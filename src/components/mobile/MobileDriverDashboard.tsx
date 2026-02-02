@@ -181,21 +181,59 @@ export const MobileDriverDashboard: React.FC = () => {
           return;
         }
         
+        // Get driver_profile id first (driver_sessions.driver_id references driver_profiles.id, not auth user.id)
+        const { data: driverProfile } = await supabase
+          .from('driver_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (!driverProfile) {
+          console.log('No driver profile found');
+          setIsSessionRestored(true);
+          return;
+        }
+        
         // Check for active session with timeout
         const sessionPromise = supabase
           .from('driver_sessions')
           .select('session_data, is_online')
-          .eq('driver_id', user.id)
+          .eq('driver_id', driverProfile.id) // Use driver_profile.id, not user.id
           .eq('is_online', true)
           .maybeSingle();
           
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 5000) // Increased to 5s
+          setTimeout(() => reject(new Error('Session check timeout')), 5000)
         );
         
         const { data: session, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
           
         if (session && !error && session.session_data?.online_since) {
+          // Check if session has expired based on end_time
+          if (session.session_data?.end_time) {
+            const endTime = new Date(session.session_data.end_time);
+            const now = new Date();
+            if (now >= endTime) {
+              console.log('⏰ Session expired - ending session');
+              // Session expired, clear it
+              await supabase.from('driver_sessions').update({
+                is_online: false,
+                session_data: {}
+              }).eq('driver_id', driverProfile.id);
+              
+              await supabase.from('driver_profiles').update({
+                status: 'offline',
+                is_available: false
+              }).eq('id', driverProfile.id);
+              
+              setIsSessionRestored(true);
+              toast.info('Your feeding session has ended');
+              return;
+            }
+            setEndTime(endTime);
+          }
+          
+          console.log('✅ Restoring active feeding session');
           setSessionData(session.session_data);
           setDriverState('online_searching');
           
@@ -203,17 +241,14 @@ export const MobileDriverDashboard: React.FC = () => {
           const onlineSince = new Date(session.session_data.online_since).getTime();
           setOnlineTime(Math.max(0, Date.now() - onlineSince));
           
-          // Restore end time if set
-          if (session.session_data?.end_time) {
-            setEndTime(new Date(session.session_data.end_time));
-          }
-          
           // Start background tasks after UI is ready
           setTimeout(() => {
             setupRealtimeListener(user.id);
             const interval = startSessionHeartbeat(user.id);
             setHeartbeatInterval(interval);
           }, 100);
+          
+          toast.success('Welcome back! Your feeding session is still active.');
         }
         
         setIsSessionRestored(true);
@@ -232,6 +267,60 @@ export const MobileDriverDashboard: React.FC = () => {
     
     return () => clearTimeout(fallbackTimer);
   }, []);
+  
+  // Continuous end_time monitoring - automatically end session when time is up
+  useEffect(() => {
+    if (!endTime || driverState === 'offline') {
+      return;
+    }
+    
+    const checkEndTime = async () => {
+      const now = new Date();
+      if (now >= endTime) {
+        console.log('⏰ Feeding time ended - automatically ending session');
+        toast.info('Your scheduled feeding time has ended');
+        
+        // End the session
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: driverProfile } = await supabase
+              .from('driver_profiles')
+              .select('id')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            if (driverProfile) {
+              await supabase.from('driver_sessions').update({
+                is_online: false,
+                session_data: {}
+              }).eq('driver_id', driverProfile.id);
+              
+              await supabase.from('driver_profiles').update({
+                status: 'offline',
+                is_available: false
+              }).eq('id', driverProfile.id);
+            }
+          }
+          
+          setDriverState('offline');
+          setEndTime(null);
+          setOnlineTime(0);
+          setSessionData(null);
+        } catch (error) {
+          console.error('Error ending session:', error);
+        }
+      }
+    };
+    
+    // Check immediately
+    checkEndTime();
+    
+    // Then check every 30 seconds
+    const interval = setInterval(checkEndTime, 30000);
+    
+    return () => clearInterval(interval);
+  }, [endTime, driverState]);
   
   // Session heartbeat to keep driver online when app is backgrounded
   const startSessionHeartbeat = (userId: string) => {
@@ -856,10 +945,22 @@ export const MobileDriverDashboard: React.FC = () => {
       
       const user = session.user;
 
+      // Get driver_profile id first (driver_sessions.driver_id references driver_profiles.id)
+      const { data: driverProfile } = await supabase
+        .from('driver_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!driverProfile) {
+        console.log('No driver profile found');
+        return;
+      }
+
       // Check if driver was previously online
       const {
         data: driverSession
-      } = await supabase.from('driver_sessions').select('*').eq('driver_id', user.id).maybeSingle();
+      } = await supabase.from('driver_sessions').select('*').eq('driver_id', driverProfile.id).maybeSingle();
       if (driverSession?.is_online && driverSession.session_data) {
         const sessionData = driverSession.session_data as any;
 
@@ -872,7 +973,12 @@ export const MobileDriverDashboard: React.FC = () => {
             await supabase.from('driver_sessions').update({
               is_online: false,
               session_data: {}
-            }).eq('driver_id', user.id);
+            }).eq('driver_id', driverProfile.id);
+            
+            await supabase.from('driver_profiles').update({
+              status: 'offline',
+              is_available: false
+            }).eq('id', driverProfile.id);
             return;
           }
 
@@ -896,12 +1002,12 @@ export const MobileDriverDashboard: React.FC = () => {
           status: 'online',
           is_available: true,
           last_location_update: new Date().toISOString()
-        }).eq('user_id', user.id);
+        }).eq('id', driverProfile.id);
 
         // Update last activity
         await supabase.from('driver_sessions').update({
           last_activity: new Date().toISOString()
-        }).eq('driver_id', user.id);
+        }).eq('driver_id', driverProfile.id);
 
         // Setup realtime listener
         setupRealtimeListener(user.id);
