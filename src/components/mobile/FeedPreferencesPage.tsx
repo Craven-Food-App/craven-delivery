@@ -32,6 +32,8 @@ type FeedPreferencesPageProps = {
 const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isUltimateTier, setIsUltimateTier] = useState(false);
+  const [statusPoints, setStatusPoints] = useState(0);
 
   // Preferences state
   const [preferences, setPreferences] = useState({
@@ -70,6 +72,22 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Check tier status first
+      const { data: profileData } = await supabase
+        .from('driver_profiles')
+        .select('total_deliveries, total_earnings, rating')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const totalDeliveries = profileData?.total_deliveries || 0;
+      const rating = profileData?.rating || 0;
+      const points = Math.round((totalDeliveries * 0.5) + (rating * 10));
+      setStatusPoints(points);
+
+      // Ultimate Feeder tier requires 95+ points
+      const isUltimate = points >= 95;
+      setIsUltimateTier(isUltimate);
+
       // Fetch from driver_preferences table
       const { data: prefs } = await supabase
         .from('driver_preferences')
@@ -106,6 +124,14 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
   };
 
   const handleSave = async () => {
+    if (!isUltimateTier) {
+      notifications.show({
+        title: 'Ultimate Feeder Required',
+        message: 'Upgrade to Ultimate Feeder (95+ points) to customize your feed',
+        color: 'red',
+      });
+      return;
+    }
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -231,6 +257,29 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         paddingBottom: `calc(24px + env(safe-area-inset-bottom, 0px))` 
       }}>
         
+        {/* Tier Status Banner */}
+        <div style={{ 
+          border: `2px solid ${isUltimateTier ? '#000000' : C.border}`, 
+          borderRadius: 8, 
+          padding: '16px', 
+          marginBottom: 16,
+          background: isUltimateTier ? '#000000' : C.bgMuted,
+          color: isUltimateTier ? '#FFFFFF' : C.text 
+        }}>
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 6 }}>
+            {isUltimateTier ? '🔓 Ultimate Feeder' : '🔒 Ultimate Feeder Required'}
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: isUltimateTier ? '#FFFFFF' : C.muted, lineHeight: 1.4 }}>
+            {isUltimateTier 
+              ? 'You have full access to customize your order feed preferences'
+              : `You need ${95 - statusPoints} more points to unlock Feed Preferences. Reach 95+ points to become an Ultimate Feeder.`
+            }
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: isUltimateTier ? '#FFFFFF' : C.muted2, marginTop: 8 }}>
+            Your Status: {statusPoints} points {isUltimateTier && '(Ultimate Feeder)'}
+          </div>
+        </div>
+        
         {/* Distance Section */}
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 12px', marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>Distance Preferences</div>
@@ -242,21 +291,22 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
             <input 
               type="number" 
               value={preferences.maxDistance} 
-              onChange={(e) => updatePreference('maxDistance', parseInt(e.target.value) || 1)}
+              onChange={(e) => isUltimateTier && updatePreference('maxDistance', parseInt(e.target.value) || 1)}
               min="1"
               max="50"
-              style={{ width: '100%', padding: '10px 12px', fontSize: 14, fontWeight: 500, color: C.text, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, outline: 'none', transition: 'border-color 0.2s' }}
-              onFocus={(e) => e.target.style.borderColor = C.orange}
+              disabled={!isUltimateTier}
+              style={{ width: '100%', padding: '10px 12px', fontSize: 14, fontWeight: 500, color: isUltimateTier ? C.text : C.muted, background: isUltimateTier ? C.bg : C.bgMuted, border: `1px solid ${C.border}`, borderRadius: 6, outline: 'none', transition: 'border-color 0.2s', opacity: isUltimateTier ? 1 : 0.5, cursor: isUltimateTier ? 'text' : 'not-allowed' }}
+              onFocus={(e) => isUltimateTier && (e.target.style.borderColor = C.orange)}
               onBlur={(e) => e.target.style.borderColor = C.border}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Prefer Short Trips</div>
               <div style={{ fontSize: 11, color: C.muted }}>Prioritize deliveries under 3 miles</div>
             </div>
-            <SlideToToggle width={100} enabled={preferences.preferShortTrips} onToggle={() => updatePreference('preferShortTrips', !preferences.preferShortTrips)} />
+            <SlideToToggle width={100} enabled={preferences.preferShortTrips} onToggle={() => isUltimateTier && updatePreference('preferShortTrips', !preferences.preferShortTrips)} />
           </div>
         </div>
 
@@ -271,22 +321,23 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
             <input 
               type="number" 
               value={preferences.minOrderValue} 
-              onChange={(e) => updatePreference('minOrderValue', parseInt(e.target.value) || 0)}
+              onChange={(e) => isUltimateTier && updatePreference('minOrderValue', parseInt(e.target.value) || 0)}
               min="0"
               max="100"
               step="0.5"
-              style={{ width: '100%', padding: '10px 12px', fontSize: 14, fontWeight: 500, color: C.text, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, outline: 'none', transition: 'border-color 0.2s' }}
-              onFocus={(e) => e.target.style.borderColor = C.orange}
+              disabled={!isUltimateTier}
+              style={{ width: '100%', padding: '10px 12px', fontSize: 14, fontWeight: 500, color: isUltimateTier ? C.text : C.muted, background: isUltimateTier ? C.bg : C.bgMuted, border: `1px solid ${C.border}`, borderRadius: 6, outline: 'none', transition: 'border-color 0.2s', opacity: isUltimateTier ? 1 : 0.5, cursor: isUltimateTier ? 'text' : 'not-allowed' }}
+              onFocus={(e) => isUltimateTier && (e.target.style.borderColor = C.orange)}
               onBlur={(e) => e.target.style.borderColor = C.border}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Prefer High Value Orders</div>
               <div style={{ fontSize: 11, color: C.muted }}>Prioritize orders with higher payouts</div>
             </div>
-            <SlideToToggle width={100} enabled={preferences.preferHighValue} onToggle={() => updatePreference('preferHighValue', !preferences.preferHighValue)} />
+            <SlideToToggle width={100} enabled={preferences.preferHighValue} onToggle={() => isUltimateTier && updatePreference('preferHighValue', !preferences.preferHighValue)} />
           </div>
         </div>
 
@@ -294,13 +345,13 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 12px', marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>Delivery Type Preferences</div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Avoid Stairs</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Skip deliveries with stairs</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferNoStairs} onToggle={() => updatePreference('preferNoStairs', !preferences.preferNoStairs)} />
+              <SlideToToggle width={100} enabled={preferences.preferNoStairs} onToggle={() => isUltimateTier && updatePreference('preferNoStairs', !preferences.preferNoStairs)} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -308,7 +359,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Prefer Apartments</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Show apartment deliveries</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferApartments} onToggle={() => updatePreference('preferApartments', !preferences.preferApartments)} />
+              <SlideToToggle width={100} enabled={preferences.preferApartments} onToggle={() => isUltimateTier && updatePreference('preferApartments', !preferences.preferApartments)} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -316,7 +367,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Prefer Businesses</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Show business deliveries</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferBusinesses} onToggle={() => updatePreference('preferBusinesses', !preferences.preferBusinesses)} />
+              <SlideToToggle width={100} enabled={preferences.preferBusinesses} onToggle={() => isUltimateTier && updatePreference('preferBusinesses', !preferences.preferBusinesses)} />
             </div>
           </div>
         </div>
@@ -325,13 +376,13 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 12px', marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>Time Preferences</div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Avoid Rush Hour</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Skip peak traffic times</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.avoidRushHour} onToggle={() => updatePreference('avoidRushHour', !preferences.avoidRushHour)} />
+              <SlideToToggle width={100} enabled={preferences.avoidRushHour} onToggle={() => isUltimateTier && updatePreference('avoidRushHour', !preferences.avoidRushHour)} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -339,7 +390,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Quick Pickup</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Prefer ready-to-go orders</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferQuickPickup} onToggle={() => updatePreference('preferQuickPickup', !preferences.preferQuickPickup)} />
+              <SlideToToggle width={100} enabled={preferences.preferQuickPickup} onToggle={() => isUltimateTier && updatePreference('preferQuickPickup', !preferences.preferQuickPickup)} />
             </div>
           </div>
         </div>
@@ -348,13 +399,13 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 12px', marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>Customer Preferences</div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>High-Rated Customers</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Prefer customers with 4+ stars</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferHighRatedCustomers} onToggle={() => updatePreference('preferHighRatedCustomers', !preferences.preferHighRatedCustomers)} />
+              <SlideToToggle width={100} enabled={preferences.preferHighRatedCustomers} onToggle={() => isUltimateTier && updatePreference('preferHighRatedCustomers', !preferences.preferHighRatedCustomers)} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -362,7 +413,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Show Tip Estimates</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Display estimated tip amounts</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.showCustomerTips} onToggle={() => updatePreference('showCustomerTips', !preferences.showCustomerTips)} />
+              <SlideToToggle width={100} enabled={preferences.showCustomerTips} onToggle={() => isUltimateTier && updatePreference('showCustomerTips', !preferences.showCustomerTips)} />
             </div>
           </div>
         </div>
@@ -371,13 +422,13 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 12px', marginBottom: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginBottom: 12 }}>Route Preferences</div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, opacity: isUltimateTier ? 1 : 0.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Familiar Areas</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Stay in areas you know well</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.preferFamiliarAreas} onToggle={() => updatePreference('preferFamiliarAreas', !preferences.preferFamiliarAreas)} />
+              <SlideToToggle width={100} enabled={preferences.preferFamiliarAreas} onToggle={() => isUltimateTier && updatePreference('preferFamiliarAreas', !preferences.preferFamiliarAreas)} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -385,7 +436,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Batch Deliveries</div>
                 <div style={{ fontSize: 11, color: C.muted }}>Accept multiple orders at once</div>
               </div>
-              <SlideToToggle width={100} enabled={preferences.batchDeliveries} onToggle={() => updatePreference('batchDeliveries', !preferences.batchDeliveries)} />
+              <SlideToToggle width={100} enabled={preferences.batchDeliveries} onToggle={() => isUltimateTier && updatePreference('batchDeliveries', !preferences.batchDeliveries)} />
             </div>
           </div>
         </div>

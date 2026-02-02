@@ -13,7 +13,8 @@
  *        Silver   55–64 pts
  *        Gold     65–75 pts
  *        Platinum 76–84 pts
- *        Diamond  85+  pts
+ *        Diamond  85–94 pts
+ *        Ultimate 95+  pts
  *   7) Nav rows are driven by the MENU_ITEMS array — wired to existing actions.
  *   8) ON FIRE card calls showSafetySettings — existing modal.
  *   9) Sign Out row calls handleSignOut — existing auth logout flow.
@@ -69,7 +70,7 @@ const C = {
 } as const;
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
-type StatusTier = "Silver" | "Gold" | "Platinum" | "Diamond";
+type StatusTier = "Silver" | "Gold" | "Platinum" | "Diamond" | "Ultimate";
 
 interface StatusInfo {
   tier:       StatusTier;
@@ -96,7 +97,8 @@ type FeederAccountPageProps = {
 
 // ─── STATUS TIERS (source of truth — edit thresholds here) ─────────────────
 const TIERS: StatusInfo[] = [
-  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: null,  barColor: "#3A7BD5" },
+  { tier: "Ultimate", label: "Ultimate Feeder", minPts: 95,  maxPts: null,  barColor: "#000000" },
+  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: 94,    barColor: "#3A7BD5" },
   { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#78909C" },
   { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#F9A825" },
   { tier: "Silver",   label: "Silver Feeder",   minPts: 55,  maxPts: 64,    barColor: "#90A4AE" },
