@@ -316,24 +316,35 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       });
 
 
-      // Fetch payout status from Stripe balance API
-      try {
-        const { data: balanceData } = await supabase.functions.invoke('get-driver-balance', {
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-        });
+      // Calculate payout status from database
+      // Available = total earnings - paid out earnings
+      const { data: payoutsData } = await supabase
+        .from('driver_payouts')
+        .select('amount_cents, status')
+        .eq('driver_id', user.id);
 
-        if (balanceData) {
-          setPayoutStatus({
-            available: parseFloat(balanceData.available_dollars || '0'),
-            pending: parseFloat(balanceData.pending_dollars || '0'),
-            paid: 0, // Would calculate from completed payouts
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching balance:', error);
+      let paidTotal = 0;
+      let pendingTotal = 0;
+
+      if (payoutsData) {
+        payoutsData.forEach((payout: any) => {
+          const amountDollars = (payout.amount_cents || 0) / 100;
+          if (payout.status === 'completed' || payout.status === 'paid') {
+            paidTotal += amountDollars;
+          } else if (payout.status === 'pending' || payout.status === 'processing') {
+            pendingTotal += amountDollars;
+          }
+        });
       }
+
+      // Available = total earned - (paid + pending)
+      const availableForPayout = Math.max(0, totalEarned - paidTotal - pendingTotal);
+
+      setPayoutStatus({
+        available: availableForPayout,
+        pending: pendingTotal,
+        paid: paidTotal,
+      });
 
       // Calculate metrics (simplified - would need more data)
       const totalTrips = earnings.length;
