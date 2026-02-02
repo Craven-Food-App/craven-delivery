@@ -301,10 +301,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
     },
     {
       icon: IconCreditCard,
-      label: "Feeder Card",
-      desc: "Digital debit card & transactions",
+      label: "Transaction History",
+      desc: "View all Feeder Card transactions",
       color: "purple",
-      badge: `$${cardBalance.toFixed(2)}`,
+      badge: undefined,
       action: () => setShowCardPage(true),
     },
     { 
@@ -396,26 +396,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
             <ActionIcon onClick={() => setShowCardPage(false)} variant="subtle" color="dark">
               <IconArrowLeft size={24} />
             </ActionIcon>
-            <Title order={2} fw={700} c="dark">Feeder Card</Title>
+            <Title order={2} fw={700} c="dark">Transaction History</Title>
             <Box w={24} />
           </Group>
         </Paper>
-
-        {/* Orange Carbon Fiber Background */}
-        <Box 
-          pos="relative" 
-          style={{ 
-            backgroundImage: `url(${feederCardBackground})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            minHeight: '280px',
-            padding: '2rem 1rem',
-            marginBottom: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-        >
           {/* Depth of field blur effect */}
           <Box
             pos="absolute"
@@ -526,179 +510,10 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({ onOpenMenu, onOpe
               </Stack>
             </Box>
           </Box>
-        </Box>
-
-        {/* White Background Section for Controls */}
-        <Box 
-          style={{ 
-            backgroundColor: 'white',
-            paddingTop: '1rem',
-            paddingBottom: '1rem',
-            marginTop: '-2rem',
-            position: 'relative',
-            zIndex: 2
-          }}
-        >
-          {/* Card Controls - Full Page, No Cards, Stretch End to End */}
-          <Stack gap="xs" px={0} mb="xl">
-            {/* Toggle Card Details */}
-            <Box px="xl">
-              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="sm">
-                  <ThemeIcon size="md" radius="md" color="blue" variant="light">
-                    {showCardDetails ? <IconEye size={18} /> : <IconEyeOff size={18} />}
-                  </ThemeIcon>
-                  <Box>
-                    <Text fw={700} c="dark" size="sm">Show Card Details</Text>
-                    <Text size="xs" c="dimmed">View number, expiry, CVV</Text>
-                  </Box>
-                </Group>
-                <Switch
-                  checked={showCardDetails}
-                  onChange={(e) => setShowCardDetails(e.currentTarget.checked)}
-                  color="orange"
-                  size="md"
-                />
-              </Group>
-            </Box>
-
-            {/* Lock Card */}
-            <Box px="xl">
-              <Group justify="space-between" p="sm" style={{ borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', backgroundColor: 'white' }}>
-                <Group gap="sm">
-                  <ThemeIcon size="md" radius="md" color={isCardLocked ? "red" : "green"} variant="light">
-                    {isCardLocked ? <IconLock size={18} /> : <IconLockOpen size={18} />}
-                  </ThemeIcon>
-                  <Box>
-                    <Text fw={700} c="dark" size="sm">{isCardLocked ? "Card Locked" : "Lock Card"}</Text>
-                    <Text size="xs" c="dimmed">
-                      {isCardLocked ? "Transactions blocked" : "Block all transactions"}
-                    </Text>
-                  </Box>
-                </Group>
-                <Switch
-                  checked={isCardLocked}
-                  onChange={(e) => setIsCardLocked(e.currentTarget.checked)}
-                  color="orange"
-                  size="md"
-                />
-              </Group>
-            </Box>
-
-            {/* Change PIN */}
-            <Box px="xl">
-              <Button
-                variant="subtle"
-                fullWidth
-                justify="space-between"
-                leftSection={
-                  <ThemeIcon size="md" radius="md" color="purple" variant="light">
-                    <IconKey size={18} />
-                  </ThemeIcon>
-                }
-                rightSection={<IconChevronRight size={18} color="var(--mantine-color-gray-4)" />}
-                onClick={() => setShowPinDialog(true)}
-                style={{ height: 'auto', padding: '8px 12px', backgroundColor: 'white', borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-              >
-                <Box>
-                  <Text fw={700} c="dark" size="sm">Change Card PIN</Text>
-                  <Text size="xs" c="dimmed">Set or update your PIN</Text>
-                </Box>
-              </Button>
-            </Box>
-          </Stack>
-        </Box>
-
-        {/* PIN Dialog */}
-        <Modal
-          opened={showPinDialog}
-          onClose={() => setShowPinDialog(false)}
-          title="Change Card PIN"
-          centered
-          radius="xl"
-        >
-          <Stack gap="md">
-            <TextInput
-              label="Current PIN"
-              type="password"
-              maxLength={4}
-              placeholder="****"
-              styles={{
-                input: {
-                  textAlign: 'center',
-                  fontSize: '24px',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.2em',
-                  border: '2px solid var(--mantine-color-gray-2)',
-                  borderRadius: '12px',
-                },
-              }}
-            />
-            <TextInput
-              label="New PIN"
-              type="password"
-              maxLength={4}
-              placeholder="****"
-              styles={{
-                input: {
-                  textAlign: 'center',
-                  fontSize: '24px',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.2em',
-                  border: '2px solid var(--mantine-color-gray-2)',
-                  borderRadius: '12px',
-                },
-              }}
-            />
-            <TextInput
-              label="Confirm New PIN"
-              type="password"
-              maxLength={4}
-              placeholder="****"
-              styles={{
-                input: {
-                  textAlign: 'center',
-                  fontSize: '24px',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.2em',
-                  border: '2px solid var(--mantine-color-gray-2)',
-                  borderRadius: '12px',
-                },
-              }}
-            />
-            <Group gap="md" mt="md">
-              <Button
-                variant="light"
-                color="gray"
-                flex={1}
-                onClick={() => setShowPinDialog(false)}
-                radius="xl"
-              >
-                Cancel
-              </Button>
-              <Button
-                flex={1}
-                color="orange"
-                onClick={() => {
-                  setShowPinDialog(false);
-                  notifications.show({
-                    title: "PIN updated successfully",
-                    message: '',
-                    color: "green",
-                  });
-                }}
-                radius="xl"
-                style={{ background: 'linear-gradient(to right, var(--mantine-color-orange-5), var(--mantine-color-red-6))' }}
-              >
-                Update PIN
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
 
         {/* Transactions List - Compact, No Separation */}
         <Box px="xl" pb="xl" style={{ backgroundColor: 'white' }}>
-          <Title order={3} fw={700} c="dark" mb="md">Transaction History</Title>
+          <Title order={3} fw={700} c="dark" mb="lg">Feeder Card Transactions</Title>
           {transactions.length === 0 ? (
             <Box p="xl" style={{ textAlign: 'center' }}>
               <Text c="dimmed">No transactions yet</Text>
