@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -90,6 +90,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [transactionDetail, setTransactionDetail] = useState<TransactionDetail | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showPageInfo, setShowPageInfo] = useState(false);
   
   // Feeder Card state
   const [cardExpanded, setCardExpanded] = useState(false); // Start collapsed (peeking)
@@ -470,10 +471,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           </button>
           <h1 className="text-base font-black text-gray-900" style={{ letterSpacing: '0.2px' }}>Earnings</h1>
           <button 
-            onClick={() => onOpenNotifications?.()}
+            onClick={() => setShowPageInfo(true)}
             className="text-gray-700 p-2"
           >
-            <Bell className="w-6 h-6" />
+            <Info className="w-6 h-6" />
           </button>
         </div>
         
@@ -981,6 +982,103 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               <p className="text-xs text-gray-500 text-center mt-4">
                 Gas money is accumulated from your distance pay and can be used for fuel or transferred to your Feeder Card for any purpose.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Page Info Modal */}
+      {showPageInfo && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPageInfo(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">Earnings Page Guide</h2>
+                <button
+                  onClick={() => setShowPageInfo(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  Your Earnings
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Your total earnings for the selected time period, including base pay, distance pay, tips, and bonuses.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Fuel className="w-4 h-4 text-blue-600" />
+                  Gas Money
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Accumulated mileage pay from your deliveries. Tap to transfer funds to your Feeder Card for gas or other expenses.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-purple-600" />
+                  Feeder Card
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Your virtual debit card for instant access to earnings. Funds can be used anywhere Visa is accepted.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                  Earnings Breakdown
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Detailed split of your earnings: base pay, distance/mileage pay, customer tips, bonuses, and adjustments.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-indigo-600" />
+                  Payout Status
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Available for Payout: Ready to transfer. Pending: Being processed. Paid: Successfully transferred to your account.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-red-600" />
+                  Earnings Metrics
+                </h3>
+                <p className="text-xs text-gray-600">
+                  Performance insights: earnings per hour, earnings per mile, active time, and total trips completed.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-teal-600" />
+                  Transaction History
+                </h3>
+                <p className="text-xs text-gray-600">
+                  View all completed deliveries with details: restaurant, earnings, tips, and payout status. Tap any transaction for full details.
+                </p>
+              </div>
             </div>
           </div>
         </div>
