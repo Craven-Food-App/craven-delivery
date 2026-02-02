@@ -320,7 +320,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       // Available = total earnings - paid out earnings
       const { data: payoutsData } = await supabase
         .from('driver_payouts')
-        .select('amount_cents, status')
+        .select('amount, status')
         .eq('driver_id', user.id);
 
       let paidTotal = 0;
@@ -328,10 +328,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
       if (payoutsData) {
         payoutsData.forEach((payout: any) => {
-          const amountDollars = (payout.amount_cents || 0) / 100;
-          if (payout.status === 'completed' || payout.status === 'paid') {
+          const amountDollars = parseFloat(payout.amount || '0');
+          if (payout.status === 'completed' || payout.status === 'sent') {
             paidTotal += amountDollars;
-          } else if (payout.status === 'pending' || payout.status === 'processing') {
+          } else if (payout.status === 'pending') {
             pendingTotal += amountDollars;
           }
         });
