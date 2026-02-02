@@ -259,6 +259,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "accounts_receivable_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ach_transfers: {
@@ -1124,6 +1131,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arena_competitions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
           {
@@ -2226,6 +2240,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
         ]
@@ -3809,6 +3830,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "chat_conversations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
         ]
       }
       chat_messages: {
@@ -4377,6 +4405,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contribution_orders_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "foundational_invite_analytics"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contribution_orders_invite_id_fkey"
             columns: ["invite_id"]
@@ -6686,6 +6721,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customer_reviews_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
@@ -8231,6 +8273,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "diamond_points_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dispute_messages: {
@@ -8323,6 +8372,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
           {
@@ -8705,6 +8761,54 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "driver_earnings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_gas_money: {
+        Row: {
+          balance: number
+          created_at: string
+          driver_id: string
+          id: string
+          last_earned_at: string | null
+          total_accumulated: number
+          total_transferred: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          last_earned_at?: string | null
+          total_accumulated?: number
+          total_transferred?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          last_earned_at?: string | null
+          total_accumulated?: number
+          total_transferred?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_gas_money_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       driver_identity: {
@@ -8934,51 +9038,53 @@ export type Database = {
       driver_payouts: {
         Row: {
           amount: number
-          batch_id: string
+          amount_cents: number
+          arrival_date: string | null
           created_at: string | null
+          currency: string
           driver_id: string
-          error_message: string | null
-          external_transaction_id: string | null
+          failure_code: string | null
+          failure_message: string | null
           id: string
-          payment_method_id: string
-          processed_at: string | null
+          payout_type: string
           status: string
+          stripe_account_id: string
+          stripe_payout_id: string
           updated_at: string | null
         }
         Insert: {
-          amount: number
-          batch_id: string
+          amount?: number
+          amount_cents: number
+          arrival_date?: string | null
           created_at?: string | null
+          currency?: string
           driver_id: string
-          error_message?: string | null
-          external_transaction_id?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
           id?: string
-          payment_method_id: string
-          processed_at?: string | null
-          status?: string
+          payout_type: string
+          status: string
+          stripe_account_id: string
+          stripe_payout_id: string
           updated_at?: string | null
         }
         Update: {
           amount?: number
-          batch_id?: string
+          amount_cents?: number
+          arrival_date?: string | null
           created_at?: string | null
+          currency?: string
           driver_id?: string
-          error_message?: string | null
-          external_transaction_id?: string | null
+          failure_code?: string | null
+          failure_message?: string | null
           id?: string
-          payment_method_id?: string
-          processed_at?: string | null
+          payout_type?: string
           status?: string
+          stripe_account_id?: string
+          stripe_payout_id?: string
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "driver_payouts_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "daily_payout_batches"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "driver_payouts_driver_id_fkey"
             columns: ["driver_id"]
@@ -8986,55 +9092,99 @@ export type Database = {
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
           },
-          {
-            foreignKeyName: "driver_payouts_payment_method_id_fkey"
-            columns: ["payment_method_id"]
-            isOneToOne: false
-            referencedRelation: "driver_payment_methods"
-            referencedColumns: ["id"]
-          },
         ]
       }
       driver_preferences: {
         Row: {
+          app_lock_enabled: boolean | null
+          app_lock_pin_hash: string | null
+          app_lock_type: string | null
           auto_accept_orders: boolean | null
+          auto_logout_minutes: number | null
+          auto_logout_on_inactive: boolean | null
+          auto_share_location_on_delivery: boolean | null
           avoid_highways: boolean | null
           avoid_tolls: boolean | null
           created_at: string
+          data_export_completed: boolean | null
+          data_export_last_request_at: string | null
+          data_export_requested: boolean | null
           driver_id: string
           id: string
           map_style: string | null
           notification_sound: boolean | null
+          panic_button_enabled: boolean | null
           preferred_nav_app: string | null
+          require_reauth_for_sensitive: boolean | null
+          security_alert_location_access: boolean | null
+          security_alert_new_device: boolean | null
+          security_alert_password_change: boolean | null
+          security_alert_suspicious_activity: boolean | null
+          share_location_with_emergency: boolean | null
           show_earnings_summary: boolean | null
+          two_factor_enabled: boolean | null
           updated_at: string
           voice_navigation: boolean | null
         }
         Insert: {
+          app_lock_enabled?: boolean | null
+          app_lock_pin_hash?: string | null
+          app_lock_type?: string | null
           auto_accept_orders?: boolean | null
+          auto_logout_minutes?: number | null
+          auto_logout_on_inactive?: boolean | null
+          auto_share_location_on_delivery?: boolean | null
           avoid_highways?: boolean | null
           avoid_tolls?: boolean | null
           created_at?: string
+          data_export_completed?: boolean | null
+          data_export_last_request_at?: string | null
+          data_export_requested?: boolean | null
           driver_id: string
           id?: string
           map_style?: string | null
           notification_sound?: boolean | null
+          panic_button_enabled?: boolean | null
           preferred_nav_app?: string | null
+          require_reauth_for_sensitive?: boolean | null
+          security_alert_location_access?: boolean | null
+          security_alert_new_device?: boolean | null
+          security_alert_password_change?: boolean | null
+          security_alert_suspicious_activity?: boolean | null
+          share_location_with_emergency?: boolean | null
           show_earnings_summary?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           voice_navigation?: boolean | null
         }
         Update: {
+          app_lock_enabled?: boolean | null
+          app_lock_pin_hash?: string | null
+          app_lock_type?: string | null
           auto_accept_orders?: boolean | null
+          auto_logout_minutes?: number | null
+          auto_logout_on_inactive?: boolean | null
+          auto_share_location_on_delivery?: boolean | null
           avoid_highways?: boolean | null
           avoid_tolls?: boolean | null
           created_at?: string
+          data_export_completed?: boolean | null
+          data_export_last_request_at?: string | null
+          data_export_requested?: boolean | null
           driver_id?: string
           id?: string
           map_style?: string | null
           notification_sound?: boolean | null
+          panic_button_enabled?: boolean | null
           preferred_nav_app?: string | null
+          require_reauth_for_sensitive?: boolean | null
+          security_alert_location_access?: boolean | null
+          security_alert_new_device?: boolean | null
+          security_alert_password_change?: boolean | null
+          security_alert_suspicious_activity?: boolean | null
+          share_location_with_emergency?: boolean | null
           show_earnings_summary?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           voice_navigation?: boolean | null
         }
@@ -13993,6 +14143,54 @@ export type Database = {
           },
         ]
       }
+      foundational_access_logs: {
+        Row: {
+          accessed_at: string | null
+          created_at: string | null
+          email: string
+          id: string
+          invite_id: string | null
+          ip_address: string | null
+          page_accessed: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          invite_id?: string | null
+          ip_address?: string | null
+          page_accessed?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          invite_id?: string | null
+          ip_address?: string | null
+          page_accessed?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foundational_access_logs_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "foundational_invite_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foundational_access_logs_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foundational_documents: {
         Row: {
           certificate_number: string | null
@@ -14059,6 +14257,67 @@ export type Database = {
             columns: ["equity_issuance_id"]
             isOneToOne: false
             referencedRelation: "equity_issuances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gas_money_transactions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          description: string | null
+          destination: string | null
+          driver_id: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          status: string
+          transaction_type: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          description?: string | null
+          destination?: string | null
+          driver_id: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          status?: string
+          transaction_type: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          description?: string | null
+          destination?: string | null
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          status?: string
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gas_money_transactions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "gas_money_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gas_money_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
         ]
@@ -14440,6 +14699,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotspots_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
         ]
@@ -16054,6 +16320,7 @@ export type Database = {
       }
       investor_demo_access: {
         Row: {
+          access_code: string | null
           access_count: number | null
           access_token: string
           created_at: string | null
@@ -16070,6 +16337,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          access_code?: string | null
           access_count?: number | null
           access_token: string
           created_at?: string | null
@@ -16086,6 +16354,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          access_code?: string | null
           access_count?: number | null
           access_token?: string
           created_at?: string | null
@@ -16454,11 +16723,13 @@ export type Database = {
         Row: {
           accepted_at: string | null
           access_code: string
+          access_count: number | null
           created_at: string | null
           email: string
           expires_at: string | null
           full_name: string | null
           id: string
+          last_accessed_at: string | null
           max_amount_cents: number
           min_amount_cents: number
           paid_amount_cents: number | null
@@ -16470,11 +16741,13 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           access_code: string
+          access_count?: number | null
           created_at?: string | null
           email: string
           expires_at?: string | null
           full_name?: string | null
           id?: string
+          last_accessed_at?: string | null
           max_amount_cents?: number
           min_amount_cents?: number
           paid_amount_cents?: number | null
@@ -16486,11 +16759,13 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           access_code?: string
+          access_count?: number | null
           created_at?: string | null
           email?: string
           expires_at?: string | null
           full_name?: string | null
           id?: string
+          last_accessed_at?: string | null
           max_amount_cents?: number
           min_amount_cents?: number
           paid_amount_cents?: number | null
@@ -17271,6 +17546,60 @@ export type Database = {
           },
         ]
       }
+      ledger_entries: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          currency: string
+          entry_type: string
+          id: string
+          memo: string | null
+          order_id: string | null
+          owner_id: string | null
+          owner_type: string
+          stripe_object_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          currency?: string
+          entry_type: string
+          id?: string
+          memo?: string | null
+          order_id?: string | null
+          owner_id?: string | null
+          owner_type: string
+          stripe_object_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          currency?: string
+          entry_type?: string
+          id?: string
+          memo?: string | null
+          order_id?: string | null
+          owner_id?: string | null
+          owner_type?: string
+          stripe_object_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_documents: {
         Row: {
           category: string
@@ -17402,6 +17731,65 @@ export type Database = {
           {
             foreignKeyName: "legal_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      login_activity: {
+        Row: {
+          created_at: string | null
+          device_id: string | null
+          device_name: string | null
+          device_type: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          location_city: string | null
+          location_country: string | null
+          location_region: string | null
+          login_type: string
+          success: boolean | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          device_type?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          login_type: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          device_type?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          login_type?: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_activity_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
@@ -18890,6 +19278,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
         ]
       }
       order_batches: {
@@ -18967,6 +19362,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
         ]
@@ -19077,6 +19479,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
         ]
       }
       order_notifications: {
@@ -19116,6 +19525,7 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_driver_id: string | null
+          amount_total_cents: number | null
           assigned_craver_id: string | null
           auto_boost_cap_cents: number
           auto_boost_enabled: boolean
@@ -19124,6 +19534,7 @@ export type Database = {
           batch_id: string | null
           broadcast_started_at: string | null
           created_at: string | null
+          currency: string | null
           customer_boost_required: boolean
           customer_id: string | null
           customer_name: string | null
@@ -19141,6 +19552,7 @@ export type Database = {
           driver_delivery_fee_share_bps: number
           driver_fee_share_cents: number
           driver_id: string | null
+          driver_pay_cents: number | null
           driver_payout_cents: number
           dropoff_address: Json | null
           dropoff_location: Json | null
@@ -19155,10 +19567,12 @@ export type Database = {
           is_test: boolean | null
           merchant_commission_cents: number
           merchant_payout_cents: number
+          mileage_pay_cents: number | null
           next_escalation_at: string | null
           next_escalation_step: number
           order_number: string | null
           order_status: string | null
+          paid_at: string | null
           payment_intent_id: string | null
           payment_provider: string | null
           payment_status: string | null
@@ -19170,6 +19584,7 @@ export type Database = {
           pickup_location: Json | null
           pickup_photo_url: string | null
           platform_delivery_share_cents: number
+          platform_fee_cents: number | null
           platform_food_commission_cents: number
           promo_applied: boolean | null
           promo_applied_at: string | null
@@ -19179,9 +19594,13 @@ export type Database = {
           promo_service_credit_applied_cents: number | null
           promo_step: number | null
           restaurant_id: string | null
+          restaurant_net_cents: number | null
           route_geometry: Json | null
           service_fee: number | null
           service_fee_cents: number | null
+          stripe_payment_intent_id: string | null
+          stripe_transfer_driver_id: string | null
+          stripe_transfer_restaurant_id: string | null
           subtotal_cents: number
           tax_cents: number | null
           time_fee_cents: number
@@ -19189,11 +19608,16 @@ export type Database = {
           tip_cents: number | null
           total_amount: number | null
           total_cents: number
+          transfers_error: string | null
+          transfers_lease_expires_at: string | null
+          transfers_lease_id: string | null
+          transfers_status: string | null
           updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
           accepted_driver_id?: string | null
+          amount_total_cents?: number | null
           assigned_craver_id?: string | null
           auto_boost_cap_cents?: number
           auto_boost_enabled?: boolean
@@ -19202,6 +19626,7 @@ export type Database = {
           batch_id?: string | null
           broadcast_started_at?: string | null
           created_at?: string | null
+          currency?: string | null
           customer_boost_required?: boolean
           customer_id?: string | null
           customer_name?: string | null
@@ -19219,6 +19644,7 @@ export type Database = {
           driver_delivery_fee_share_bps?: number
           driver_fee_share_cents?: number
           driver_id?: string | null
+          driver_pay_cents?: number | null
           driver_payout_cents?: number
           dropoff_address?: Json | null
           dropoff_location?: Json | null
@@ -19233,10 +19659,12 @@ export type Database = {
           is_test?: boolean | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
+          mileage_pay_cents?: number | null
           next_escalation_at?: string | null
           next_escalation_step?: number
           order_number?: string | null
           order_status?: string | null
+          paid_at?: string | null
           payment_intent_id?: string | null
           payment_provider?: string | null
           payment_status?: string | null
@@ -19248,6 +19676,7 @@ export type Database = {
           pickup_location?: Json | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
+          platform_fee_cents?: number | null
           platform_food_commission_cents?: number
           promo_applied?: boolean | null
           promo_applied_at?: string | null
@@ -19257,9 +19686,13 @@ export type Database = {
           promo_service_credit_applied_cents?: number | null
           promo_step?: number | null
           restaurant_id?: string | null
+          restaurant_net_cents?: number | null
           route_geometry?: Json | null
           service_fee?: number | null
           service_fee_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_driver_id?: string | null
+          stripe_transfer_restaurant_id?: string | null
           subtotal_cents: number
           tax_cents?: number | null
           time_fee_cents?: number
@@ -19267,11 +19700,16 @@ export type Database = {
           tip_cents?: number | null
           total_amount?: number | null
           total_cents: number
+          transfers_error?: string | null
+          transfers_lease_expires_at?: string | null
+          transfers_lease_id?: string | null
+          transfers_status?: string | null
           updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
           accepted_driver_id?: string | null
+          amount_total_cents?: number | null
           assigned_craver_id?: string | null
           auto_boost_cap_cents?: number
           auto_boost_enabled?: boolean
@@ -19280,6 +19718,7 @@ export type Database = {
           batch_id?: string | null
           broadcast_started_at?: string | null
           created_at?: string | null
+          currency?: string | null
           customer_boost_required?: boolean
           customer_id?: string | null
           customer_name?: string | null
@@ -19297,6 +19736,7 @@ export type Database = {
           driver_delivery_fee_share_bps?: number
           driver_fee_share_cents?: number
           driver_id?: string | null
+          driver_pay_cents?: number | null
           driver_payout_cents?: number
           dropoff_address?: Json | null
           dropoff_location?: Json | null
@@ -19311,10 +19751,12 @@ export type Database = {
           is_test?: boolean | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
+          mileage_pay_cents?: number | null
           next_escalation_at?: string | null
           next_escalation_step?: number
           order_number?: string | null
           order_status?: string | null
+          paid_at?: string | null
           payment_intent_id?: string | null
           payment_provider?: string | null
           payment_status?: string | null
@@ -19326,6 +19768,7 @@ export type Database = {
           pickup_location?: Json | null
           pickup_photo_url?: string | null
           platform_delivery_share_cents?: number
+          platform_fee_cents?: number | null
           platform_food_commission_cents?: number
           promo_applied?: boolean | null
           promo_applied_at?: string | null
@@ -19335,9 +19778,13 @@ export type Database = {
           promo_service_credit_applied_cents?: number | null
           promo_step?: number | null
           restaurant_id?: string | null
+          restaurant_net_cents?: number | null
           route_geometry?: Json | null
           service_fee?: number | null
           service_fee_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_driver_id?: string | null
+          stripe_transfer_restaurant_id?: string | null
           subtotal_cents?: number
           tax_cents?: number | null
           time_fee_cents?: number
@@ -19345,6 +19792,10 @@ export type Database = {
           tip_cents?: number | null
           total_amount?: number | null
           total_cents?: number
+          transfers_error?: string | null
+          transfers_lease_expires_at?: string | null
+          transfers_lease_id?: string | null
+          transfers_status?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -19389,6 +19840,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      panic_button_logs: {
+        Row: {
+          authorities_notified: boolean | null
+          device_info: string | null
+          emergency_contact_notified: boolean | null
+          id: string
+          latitude: number | null
+          location_accuracy: number | null
+          longitude: number | null
+          notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          triggered_at: string | null
+          user_id: string
+        }
+        Insert: {
+          authorities_notified?: boolean | null
+          device_info?: string | null
+          emergency_contact_notified?: boolean | null
+          id?: string
+          latitude?: number | null
+          location_accuracy?: number | null
+          longitude?: number | null
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          triggered_at?: string | null
+          user_id: string
+        }
+        Update: {
+          authorities_notified?: boolean | null
+          device_info?: string | null
+          emergency_contact_notified?: boolean | null
+          id?: string
+          latitude?: number | null
+          location_accuracy?: number | null
+          longitude?: number | null
+          notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          triggered_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "panic_button_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -20616,6 +21120,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "promo_code_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "promo_code_usage_promo_code_id_fkey"
             columns: ["promo_code_id"]
             isOneToOne: false
@@ -20748,6 +21259,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
           {
@@ -22015,6 +22533,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
           {
@@ -24082,6 +24607,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "store_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "store_orders_store_location_id_fkey"
             columns: ["store_location_id"]
             isOneToOne: false
@@ -24089,6 +24621,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_accounts: {
+        Row: {
+          charges_enabled: boolean | null
+          created_at: string | null
+          details_submitted: boolean | null
+          id: string
+          owner_id: string
+          owner_type: string
+          payouts_enabled: boolean | null
+          requirements: Json | null
+          stripe_account_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          details_submitted?: boolean | null
+          id?: string
+          owner_id: string
+          owner_type: string
+          payouts_enabled?: boolean | null
+          requirements?: Json | null
+          stripe_account_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          charges_enabled?: boolean | null
+          created_at?: string | null
+          details_submitted?: boolean | null
+          id?: string
+          owner_id?: string
+          owner_type?: string
+          payouts_enabled?: boolean | null
+          requirements?: Json | null
+          stripe_account_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stripe_events: {
+        Row: {
+          created: string
+          error: string | null
+          event_id: string
+          metadata: Json | null
+          processed_at: string | null
+          received_at: string | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          created: string
+          error?: string | null
+          event_id: string
+          metadata?: Json | null
+          processed_at?: string | null
+          received_at?: string | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          created?: string
+          error?: string | null
+          event_id?: string
+          metadata?: Json | null
+          processed_at?: string | null
+          received_at?: string | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: []
       }
       subscription_plans: {
         Row: {
@@ -24154,6 +24758,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
           {
@@ -25165,6 +25776,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tester_credit_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tester_credit_ledger_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -25577,6 +26195,97 @@ export type Database = {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          device_id: string
+          device_name: string
+          device_type: string
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          last_used_at: string | null
+          location_city: string | null
+          location_country: string | null
+          location_region: string | null
+          trusted_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          device_id: string
+          device_name: string
+          device_type: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_used_at?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          trusted_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          device_id?: string
+          device_name?: string
+          device_type?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          last_used_at?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          trusted_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trusted_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      two_factor_backup_codes: {
+        Row: {
+          code_hash: string
+          created_at: string | null
+          id: string
+          used: boolean | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string | null
+          id?: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string | null
+          id?: string
+          used?: boolean | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "two_factor_backup_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       unified_audit_trail: {
         Row: {
           action_category: string
@@ -25985,39 +26694,57 @@ export type Database = {
       user_sessions: {
         Row: {
           created_at: string | null
-          current_location: string | null
+          device_id: string | null
+          device_name: string | null
+          device_type: string | null
           expires_at: string | null
           id: string
           ip_address: string | null
           is_active: boolean | null
+          is_current_session: boolean | null
           last_activity_at: string | null
-          portal_type: string
+          location_city: string | null
+          location_country: string | null
+          location_region: string | null
+          portal_type: string | null
           session_token: string
           user_agent: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
-          current_location?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          device_type?: string | null
           expires_at?: string | null
           id?: string
           ip_address?: string | null
           is_active?: boolean | null
+          is_current_session?: boolean | null
           last_activity_at?: string | null
-          portal_type: string
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          portal_type?: string | null
           session_token: string
           user_agent?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
-          current_location?: string | null
+          device_id?: string | null
+          device_name?: string | null
+          device_type?: string | null
           expires_at?: string | null
           id?: string
           ip_address?: string | null
           is_active?: boolean | null
+          is_current_session?: boolean | null
           last_activity_at?: string | null
-          portal_type?: string
+          location_city?: string | null
+          location_country?: string | null
+          location_region?: string | null
+          portal_type?: string | null
           session_token?: string
           user_agent?: string | null
           user_id?: string
@@ -26542,6 +27269,28 @@ export type Database = {
           },
         ]
       }
+      foundational_invite_analytics: {
+        Row: {
+          accepted_at: string | null
+          access_code: string | null
+          access_count: number | null
+          email: string | null
+          expires_at: string | null
+          first_access_at: string | null
+          full_name: string | null
+          id: string | null
+          invited_at: string | null
+          last_accessed_at: string | null
+          most_recent_access_at: string | null
+          paid_amount_cents: number | null
+          paid_at: string | null
+          relationship_note: string | null
+          status: string | null
+          total_page_views: number | null
+          unique_days_accessed: number | null
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -26602,6 +27351,328 @@ export type Database = {
         }
         Relationships: []
       }
+      orders_needs_attention: {
+        Row: {
+          accepted_at: string | null
+          accepted_driver_id: string | null
+          amount_total_cents: number | null
+          assigned_craver_id: string | null
+          attention_reason: string | null
+          auto_boost_cap_cents: number | null
+          auto_boost_enabled: boolean | null
+          base_delivery_fee_cents: number | null
+          base_pay: number | null
+          batch_id: string | null
+          broadcast_started_at: string | null
+          created_at: string | null
+          currency: string | null
+          customer_boost_required: boolean | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          delivery_address: Json | null
+          delivery_fee: number | null
+          delivery_fee_cents: number | null
+          delivery_fees_total_cents: number | null
+          delivery_method: string | null
+          demand_fee_cents: number | null
+          diamond_only_until: string | null
+          distance_fee_cents: number | null
+          distance_km: number | null
+          driver_base_pay_cents: number | null
+          driver_delivery_fee_share_bps: number | null
+          driver_fee_share_cents: number | null
+          driver_id: string | null
+          driver_pay_cents: number | null
+          driver_payout_cents: number | null
+          dropoff_address: Json | null
+          dropoff_location: Json | null
+          escalated_total_cents: number | null
+          escalation_fee_cents: number | null
+          estimated_delivery_time: string | null
+          estimated_distance_meters: number | null
+          estimated_duration_seconds: number | null
+          exclusive_type: string | null
+          food_subtotal_cents: number | null
+          id: string | null
+          is_test: boolean | null
+          merchant_commission_cents: number | null
+          merchant_payout_cents: number | null
+          next_escalation_at: string | null
+          next_escalation_step: number | null
+          order_number: string | null
+          order_status: string | null
+          paid_at: string | null
+          payment_intent_id: string | null
+          payment_provider: string | null
+          payment_status: string | null
+          payout_cents: number | null
+          payout_hidden: boolean | null
+          pickup_address: Json | null
+          pickup_code: string | null
+          pickup_confirmed_at: string | null
+          pickup_location: Json | null
+          pickup_photo_url: string | null
+          platform_delivery_share_cents: number | null
+          platform_fee_cents: number | null
+          platform_food_commission_cents: number | null
+          promo_applied: boolean | null
+          promo_applied_at: string | null
+          promo_credit_applied_cents: number | null
+          promo_delivery_credit_applied_cents: number | null
+          promo_id: string | null
+          promo_service_credit_applied_cents: number | null
+          promo_step: number | null
+          restaurant_id: string | null
+          restaurant_net_cents: number | null
+          route_geometry: Json | null
+          service_fee: number | null
+          service_fee_cents: number | null
+          stripe_payment_intent_id: string | null
+          stripe_transfer_driver_id: string | null
+          stripe_transfer_restaurant_id: string | null
+          subtotal_cents: number | null
+          tax_cents: number | null
+          time_fee_cents: number | null
+          tip: number | null
+          tip_cents: number | null
+          total_amount: number | null
+          total_cents: number | null
+          transfers_error: string | null
+          transfers_lease_expires_at: string | null
+          transfers_lease_id: string | null
+          transfers_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_driver_id?: string | null
+          amount_total_cents?: number | null
+          assigned_craver_id?: string | null
+          attention_reason?: never
+          auto_boost_cap_cents?: number | null
+          auto_boost_enabled?: boolean | null
+          base_delivery_fee_cents?: number | null
+          base_pay?: number | null
+          batch_id?: string | null
+          broadcast_started_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_boost_required?: boolean | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_fee_cents?: number | null
+          delivery_fees_total_cents?: number | null
+          delivery_method?: string | null
+          demand_fee_cents?: number | null
+          diamond_only_until?: string | null
+          distance_fee_cents?: number | null
+          distance_km?: number | null
+          driver_base_pay_cents?: number | null
+          driver_delivery_fee_share_bps?: number | null
+          driver_fee_share_cents?: number | null
+          driver_id?: string | null
+          driver_pay_cents?: number | null
+          driver_payout_cents?: number | null
+          dropoff_address?: Json | null
+          dropoff_location?: Json | null
+          escalated_total_cents?: number | null
+          escalation_fee_cents?: number | null
+          estimated_delivery_time?: string | null
+          estimated_distance_meters?: number | null
+          estimated_duration_seconds?: number | null
+          exclusive_type?: string | null
+          food_subtotal_cents?: number | null
+          id?: string | null
+          is_test?: boolean | null
+          merchant_commission_cents?: number | null
+          merchant_payout_cents?: number | null
+          next_escalation_at?: string | null
+          next_escalation_step?: number | null
+          order_number?: string | null
+          order_status?: string | null
+          paid_at?: string | null
+          payment_intent_id?: string | null
+          payment_provider?: string | null
+          payment_status?: string | null
+          payout_cents?: number | null
+          payout_hidden?: boolean | null
+          pickup_address?: Json | null
+          pickup_code?: string | null
+          pickup_confirmed_at?: string | null
+          pickup_location?: Json | null
+          pickup_photo_url?: string | null
+          platform_delivery_share_cents?: number | null
+          platform_fee_cents?: number | null
+          platform_food_commission_cents?: number | null
+          promo_applied?: boolean | null
+          promo_applied_at?: string | null
+          promo_credit_applied_cents?: number | null
+          promo_delivery_credit_applied_cents?: number | null
+          promo_id?: string | null
+          promo_service_credit_applied_cents?: number | null
+          promo_step?: number | null
+          restaurant_id?: string | null
+          restaurant_net_cents?: number | null
+          route_geometry?: Json | null
+          service_fee?: number | null
+          service_fee_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_driver_id?: string | null
+          stripe_transfer_restaurant_id?: string | null
+          subtotal_cents?: number | null
+          tax_cents?: number | null
+          time_fee_cents?: number | null
+          tip?: number | null
+          tip_cents?: number | null
+          total_amount?: number | null
+          total_cents?: number | null
+          transfers_error?: string | null
+          transfers_lease_expires_at?: string | null
+          transfers_lease_id?: string | null
+          transfers_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_driver_id?: string | null
+          amount_total_cents?: number | null
+          assigned_craver_id?: string | null
+          attention_reason?: never
+          auto_boost_cap_cents?: number | null
+          auto_boost_enabled?: boolean | null
+          base_delivery_fee_cents?: number | null
+          base_pay?: number | null
+          batch_id?: string | null
+          broadcast_started_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_boost_required?: boolean | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number | null
+          delivery_fee_cents?: number | null
+          delivery_fees_total_cents?: number | null
+          delivery_method?: string | null
+          demand_fee_cents?: number | null
+          diamond_only_until?: string | null
+          distance_fee_cents?: number | null
+          distance_km?: number | null
+          driver_base_pay_cents?: number | null
+          driver_delivery_fee_share_bps?: number | null
+          driver_fee_share_cents?: number | null
+          driver_id?: string | null
+          driver_pay_cents?: number | null
+          driver_payout_cents?: number | null
+          dropoff_address?: Json | null
+          dropoff_location?: Json | null
+          escalated_total_cents?: number | null
+          escalation_fee_cents?: number | null
+          estimated_delivery_time?: string | null
+          estimated_distance_meters?: number | null
+          estimated_duration_seconds?: number | null
+          exclusive_type?: string | null
+          food_subtotal_cents?: number | null
+          id?: string | null
+          is_test?: boolean | null
+          merchant_commission_cents?: number | null
+          merchant_payout_cents?: number | null
+          next_escalation_at?: string | null
+          next_escalation_step?: number | null
+          order_number?: string | null
+          order_status?: string | null
+          paid_at?: string | null
+          payment_intent_id?: string | null
+          payment_provider?: string | null
+          payment_status?: string | null
+          payout_cents?: number | null
+          payout_hidden?: boolean | null
+          pickup_address?: Json | null
+          pickup_code?: string | null
+          pickup_confirmed_at?: string | null
+          pickup_location?: Json | null
+          pickup_photo_url?: string | null
+          platform_delivery_share_cents?: number | null
+          platform_fee_cents?: number | null
+          platform_food_commission_cents?: number | null
+          promo_applied?: boolean | null
+          promo_applied_at?: string | null
+          promo_credit_applied_cents?: number | null
+          promo_delivery_credit_applied_cents?: number | null
+          promo_id?: string | null
+          promo_service_credit_applied_cents?: number | null
+          promo_step?: number | null
+          restaurant_id?: string | null
+          restaurant_net_cents?: number | null
+          route_geometry?: Json | null
+          service_fee?: number | null
+          service_fee_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          stripe_transfer_driver_id?: string | null
+          stripe_transfer_restaurant_id?: string | null
+          subtotal_cents?: number | null
+          tax_cents?: number | null
+          time_fee_cents?: number | null
+          tip?: number | null
+          tip_cents?: number | null
+          total_amount?: number | null
+          total_cents?: number | null
+          transfers_error?: string | null
+          transfers_lease_expires_at?: string | null
+          transfers_lease_id?: string | null
+          transfers_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_accepted_driver_id_fkey"
+            columns: ["accepted_driver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_assigned_craver_id_fkey"
+            columns: ["assigned_craver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "orders_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_summary: {
         Row: {
           department_id: string | null
@@ -26622,6 +27693,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_accounts_summary: {
+        Row: {
+          charges_enabled: boolean | null
+          created_at: string | null
+          details_submitted: boolean | null
+          id: string | null
+          owner_id: string | null
+          owner_name: string | null
+          owner_type: string | null
+          payouts_enabled: boolean | null
+          requirements: Json | null
+          stripe_account_id: string | null
+          updated_at: string | null
+        }
+        Relationships: []
       }
       unified_driver_applications: {
         Row: {
@@ -26754,6 +27841,10 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      accumulate_gas_money: {
+        Args: { p_amount_cents: number; p_driver_id: string }
+        Returns: undefined
+      }
       add_diamond_points: {
         Args: {
           p_driver_id: string
@@ -26907,6 +27998,20 @@ export type Database = {
           merchant_commission_cents: number
           merchant_payout_cents: number
           platform_food_commission_cents: number
+        }[]
+      }
+      calculate_order_splits: {
+        Args: {
+          p_delivery_fee_cents: number
+          p_subtotal_cents: number
+          p_tax_cents: number
+          p_tip_cents: number
+        }
+        Returns: {
+          amount_total_cents: number
+          driver_pay_cents: number
+          platform_fee_cents: number
+          restaurant_net_cents: number
         }[]
       }
       calculate_waitlist_position: {
@@ -27140,12 +28245,22 @@ export type Database = {
       }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       expire_old_investor_tokens: { Args: never; Returns: undefined }
+      finalize_order_transfers: {
+        Args: {
+          p_driver_transfer_id: string
+          p_order_id: string
+          p_restaurant_transfer_id: string
+          p_transfers_lease_id: string
+        }
+        Returns: boolean
+      }
       generate_certificate_number: { Args: never; Returns: string }
       generate_code_request_number: { Args: never; Returns: string }
       generate_employee_number: { Args: never; Returns: string }
       generate_expense_number: { Args: never; Returns: string }
       generate_governance_resolution_number: { Args: never; Returns: string }
       generate_investor_access_token: { Args: never; Returns: string }
+      generate_investor_demo_access_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_journal_entry_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
@@ -27478,6 +28593,24 @@ export type Database = {
         Args: { doc_id: string; resolution_id: string }
         Returns: undefined
       }
+      lock_order_for_transfers: {
+        Args: { p_order_id: string; p_stripe_payment_intent_id: string }
+        Returns: {
+          amount_total_cents: number
+          currency: string
+          driver_id: string
+          driver_pay_cents: number
+          order_id: string
+          platform_fee_cents: number
+          restaurant_id: string
+          restaurant_net_cents: number
+          status_code: string
+          stripe_transfer_driver_id: string
+          stripe_transfer_restaurant_id: string
+          tip_cents: number
+          transfers_lease_id: string
+        }[]
+      }
       log_audit_trail: {
         Args: {
           p_action_category: string
@@ -27560,6 +28693,20 @@ export type Database = {
         }
         Returns: string
       }
+      log_login_activity: {
+        Args: {
+          p_device_id: string
+          p_device_name: string
+          p_device_type: string
+          p_failure_reason?: string
+          p_ip_address: string
+          p_login_type: string
+          p_success?: boolean
+          p_user_agent: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       log_tester_activity_day: { Args: { p_user_id: string }; Returns: Json }
       longtransactionsenabled: { Args: never; Returns: boolean }
       lookup_user_by_email: {
@@ -27576,6 +28723,16 @@ export type Database = {
       }
       mark_expired_tester_credits: { Args: never; Returns: number }
       mark_inactive_sessions: { Args: never; Returns: undefined }
+      mark_transfer_failed: {
+        Args: {
+          p_driver_transfer_id?: string
+          p_error_message: string
+          p_order_id: string
+          p_restaurant_transfer_id?: string
+          p_transfers_lease_id: string
+        }
+        Returns: boolean
+      }
       merge_duplicate_resolutions: {
         Args: {
           p_delete_resolution_number: string

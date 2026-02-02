@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { ArrowLeft, DollarSign, Activity, Eye, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,15 +22,39 @@ type Invite = {
   last_accessed_at: string | null;
 };
 
+type AccessLog = {
+  id: string;
+  invite_id: string;
+  email: string;
+  accessed_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  page_accessed: string | null;
+};
+
+// Helper to parse user agent string into readable format
+function parseUserAgent(ua: string): string {
+  if (ua.includes('Chrome') && !ua.includes('Edge')) return 'Chrome';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+  if (ua.includes('Edge')) return 'Edge';
+  if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+  if (ua.includes('Mobile')) return 'Mobile Browser';
+  return 'Browser';
+}
+
 export default function HubFoundationalInvitesPage() {
   const navigate = useNavigate();
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [relationshipNote, setRelationshipNote] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [selectedInviteId, setSelectedInviteId] = useState<string | null>(null);
+  const [showAccessLogs, setShowAccessLogs] = useState(false);
   
   // Email tester state
   const [testEmail, setTestEmail] = useState("");
@@ -76,8 +100,36 @@ export default function HubFoundationalInvitesPage() {
     }
   }
 
+  async function loadAccessLogs(inviteId?: string) {
+    try {
+      console.log('[HubFoundationalInvites] Loading access logs');
+      let query = supabase
+        .from('foundational_access_logs')
+        .select('id, invite_id, email, accessed_at, ip_address, user_agent, page_accessed')
+        .order('accessed_at', { ascending: false })
+        .limit(100);
+
+      if (inviteId) {
+        query = query.eq('invite_id', inviteId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('[HubFoundationalInvites] Access logs error:', error);
+        return;
+      }
+
+      console.log('[HubFoundationalInvites] Loaded access logs:', data?.length || 0);
+      setAccessLogs(data || []);
+    } catch (e: any) {
+      console.error('[HubFoundationalInvites] Access logs load error:', e);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadAccessLogs();
   }, []);
 
   async function createInvite() {
@@ -436,7 +488,20 @@ export default function HubFoundationalInvitesPage() {
                             {i.paid_amount_cents ? `$${(i.paid_amount_cents / 100).toFixed(2)}` : "—"}
                           </td>
                           <td className="py-3">{new Date(i.created_at).toLocaleString()}</td>
-                          <td className="py-3 text-right">
+                          <td className="py-3 text-right space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedInviteId(i.id);
+                                loadAccessLogs(i.id);
+                                setShowAccessLogs(true);
+                              }}
+                              className="rounded-xl"
+                              title="View access history"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             {i.status !== "revoked" && (
                               <Button
                                 variant="outline"
@@ -452,7 +517,7 @@ export default function HubFoundationalInvitesPage() {
                       ))}
                       {invites.length === 0 && (
                         <tr>
-                          <td className="py-6 text-zinc-500 text-center" colSpan={8}>
+                          <td className="py-6 text-muted-foreground text-center" colSpan={8}>
                             No invites yet.
                           </td>
                         </tr>
@@ -461,9 +526,118 @@ export default function HubFoundationalInvitesPage() {
                   </table>
                 </div>
 
-                <div className="mt-4 text-xs text-zinc-500">
+                <div className="mt-4 text-xs text-muted-foreground">
                   Share access codes directly with trusted contacts. Do not post codes publicly or in any marketing.
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Access Activity Log Panel */}
+          <div className="mt-8">
+            <div className="rounded-2xl border border-border bg-card shadow-sm">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Activity className="h-5 w-5 text-primary" />
+                    <div>
+                      <h2 className="text-sm font-semibold">Access Activity Log</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Track who has accessed their invite codes and when.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedInviteId && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedInviteId(null);
+                          loadAccessLogs();
+                        }}
+                        className="rounded-xl text-xs"
+                      >
+                        Show All
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadAccessLogs(selectedInviteId || undefined)}
+                      className="rounded-xl text-xs"
+                    >
+                      Refresh
+                    </Button>
+                  </div>
+                </div>
+
+                {selectedInviteId && (
+                  <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                    <p className="text-xs font-medium text-primary">
+                      Filtering by invite: {invites.find(inv => inv.id === selectedInviteId)?.email || selectedInviteId}
+                    </p>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-xs text-muted-foreground">
+                      <tr className="border-b border-border">
+                        <th className="py-3 text-left font-medium">Email</th>
+                        <th className="py-3 text-left font-medium">Accessed At</th>
+                        <th className="py-3 text-left font-medium">Page</th>
+                        <th className="py-3 text-left font-medium">IP Address</th>
+                        <th className="py-3 text-left font-medium">Browser</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {accessLogs.map((log) => (
+                        <tr key={log.id} className="border-b border-border/50">
+                          <td className="py-3 font-medium">{log.email}</td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span>
+                                {new Date(log.accessed_at).toLocaleDateString()}{' '}
+                                {new Date(log.accessed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <span className="inline-flex rounded-lg border border-border px-2 py-1 text-xs capitalize">
+                              {log.page_accessed || 'access'}
+                            </span>
+                          </td>
+                          <td className="py-3 font-mono text-xs">
+                            {log.ip_address || '—'}
+                          </td>
+                          <td className="py-3 text-xs max-w-[200px] truncate" title={log.user_agent || ''}>
+                            {log.user_agent ? parseUserAgent(log.user_agent) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                      {accessLogs.length === 0 && (
+                        <tr>
+                          <td className="py-8 text-muted-foreground text-center" colSpan={5}>
+                            <div className="flex flex-col items-center gap-2">
+                              <Activity className="h-8 w-8 text-muted-foreground/50" />
+                              <p>No access activity recorded yet.</p>
+                              <p className="text-xs">Access events will appear here when invitees use their codes.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {accessLogs.length > 0 && (
+                  <div className="mt-4 text-xs text-muted-foreground">
+                    Showing {accessLogs.length} access event{accessLogs.length !== 1 ? 's' : ''}.
+                    {selectedInviteId ? ' Click "Show All" to see all invites.' : ''}
+                  </div>
+                )}
               </div>
             </div>
           </div>
