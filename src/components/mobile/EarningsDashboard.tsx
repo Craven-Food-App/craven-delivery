@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -65,6 +65,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   onOpenNotifications
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
+  const [showPageInfo, setShowPageInfo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [breakdown, setBreakdown] = useState<EarningsBreakdown>({
@@ -470,12 +471,67 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
           </button>
           <h1 className="text-base font-black text-gray-900" style={{ letterSpacing: '0.2px' }}>Earnings</h1>
           <button 
-            onClick={() => onOpenNotifications?.()}
+            onClick={() => setShowPageInfo(true)}
             className="text-gray-700 p-2"
           >
-            <Bell className="w-6 h-6" />
+            <Info className="w-6 h-6" />
           </button>
         </div>
+        
+        {/* Page Info Modal */}
+        {showPageInfo && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+            onClick={() => setShowPageInfo(false)}
+            style={{ padding: '20px' }}
+          >
+            <div 
+              className="bg-white rounded-lg p-6 max-w-md w-full" 
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxHeight: '80vh', overflowY: 'auto' }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Earnings Dashboard</h2>
+                </div>
+                <button onClick={() => setShowPageInfo(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="space-y-4 text-gray-700">
+                <p className="text-sm leading-relaxed">
+                  <strong className="text-gray-900">Your Complete Earnings Overview</strong><br />
+                  Track all your delivery earnings in one place. View your income breakdown, payout status, and performance metrics.
+                </p>
+                <div className="border-t pt-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">💰 Earnings Breakdown</p>
+                    <p className="text-xs text-gray-600">See your base pay, distance pay (gas money), tips, bonuses, and total earnings.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">⚡ Payout Status</p>
+                    <p className="text-xs text-gray-600">Monitor available balance, pending payouts, and total paid earnings.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">📊 Performance Metrics</p>
+                    <p className="text-xs text-gray-600">Track your earnings per hour, earnings per mile, total active time, and trip count.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">⛽ Gas Money</p>
+                    <p className="text-xs text-gray-600">Accumulated mileage pay that can be transferred to your Feeder Card for gas expenses.</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">💳 Feeder Card</p>
+                    <p className="text-xs text-gray-600">Your digital debit card showing available balance. Tap to view full card details and transaction history.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Time Range Selector */}
         <div className="mt-3">
