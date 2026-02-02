@@ -50,6 +50,21 @@ const DRIVER_STATUS = {
 
 // ===== UTILITY FUNCTIONS =====
 
+const formatAddress = (address: any): string => {
+  if (!address) return 'Address not available';
+  if (typeof address === 'string') return address;
+  if (typeof address === 'object') {
+    const parts = [
+      address.street || address.address,
+      address.city,
+      address.state,
+      address.zip || address.zip_code
+    ].filter(Boolean);
+    return parts.join(', ');
+  }
+  return String(address);
+};
+
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -471,12 +486,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 8, fontWeight: 800, color: C.muted, letterSpacing: '0.3px', marginBottom: 3 }}>PICKUP</div>
                 <div style={{ fontSize: 11, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
-                  {orderDetails.pickup_address}
+                  {formatAddress(orderDetails.pickup_address)}
                 </div>
               </div>
               <button
                 onClick={() => {
-                  const address = encodeURIComponent(orderDetails.pickup_address || '');
+                  const address = encodeURIComponent(formatAddress(orderDetails.pickup_address));
                   window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
                 }}
                 style={{
@@ -533,12 +548,12 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 8, fontWeight: 800, color: C.muted, letterSpacing: '0.3px', marginBottom: 3 }}>DROP-OFF</div>
                 <div style={{ fontSize: 11, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
-                  {orderDetails.dropoff_address}
+                  {formatAddress(orderDetails.dropoff_address)}
                 </div>
               </div>
               <button
                 onClick={() => {
-                  const address = encodeURIComponent(orderDetails.dropoff_address || '');
+                  const address = encodeURIComponent(formatAddress(orderDetails.dropoff_address));
                   window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
                 }}
                 style={{
