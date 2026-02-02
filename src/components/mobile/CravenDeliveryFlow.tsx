@@ -68,23 +68,22 @@ const formatAddress = (address: any): string => {
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
-    toast.success('Copied!');
+    toast.success('Copied to clipboard!');
   } catch (err) {
     toast.error('Failed to copy');
   }
 };
 
-// ===== COMPACT THEME =====
+// ===== THEME =====
 
 const C = {
   orange: "#FF6A00",
   text: "#111111",
-  muted: "#666666",
-  border: "#E0E0E0",
+  muted: "#777777",
+  border: "#EEEEEE",
   bg: "#FFFFFF",
-  bgMuted: "#F5F5F5",
+  bgMuted: "#F8F9FA",
   green: "#2E7D32",
-  blue: "#1976D2",
 } as const;
 
 // ===== MAIN COMPONENT =====
@@ -217,16 +216,16 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
 
   const handleConfirmItems = () => {
     if (checkedItems.size !== orderItems.length) {
-      toast.error('Please confirm all items');
+      toast.error('Please confirm all items before proceeding');
       return;
     }
     setStatus(DRIVER_STATUS.TO_CUSTOMER);
-    toast.success('Heading to customer');
+    toast.success('Order confirmed! Head to customer.');
   };
 
   const handleArrivedAtCustomer = () => {
     setStatus(DRIVER_STATUS.AT_CUSTOMER);
-    toast.success('Arrived at drop-off!');
+    toast.success('Arrived at drop-off location!');
   };
 
   const handleCompleteDelivery = () => {
@@ -256,15 +255,15 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const getStatusText = () => {
     switch (status) {
       case DRIVER_STATUS.TO_STORE:
-        return 'En Route';
+        return 'Routing to Kitchen';
       case DRIVER_STATUS.AT_STORE:
-        return 'At Kitchen';
+        return 'Awaiting Hand-off';
       case DRIVER_STATUS.TO_CUSTOMER:
-        return 'Delivering';
+        return 'En Route to Customer';
       case DRIVER_STATUS.AT_CUSTOMER:
-        return 'At Drop-off';
+        return 'At Drop-off Location';
       default:
-        return 'Active';
+        return 'In Progress';
     }
   };
 
@@ -298,41 +297,41 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         background: C.bg,
-        padding: '0 20px',
+        padding: '0 24px',
       }}>
         <div style={{
-          width: 64,
-          height: 64,
+          width: 80,
+          height: 80,
           borderRadius: '50%',
-          background: C.green,
+          background: '#2E7D32',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: 16,
+          marginBottom: 24,
         }}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
         <h1 style={{
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: 900,
           color: C.text,
-          marginBottom: 6,
+          marginBottom: 8,
           textAlign: 'center',
         }}>
           Delivery Complete!
         </h1>
         <p style={{
-          fontSize: 12,
+          fontSize: 14,
           color: C.muted,
           textAlign: 'center',
-          marginBottom: 16,
+          marginBottom: 24,
         }}>
-          Ready for next order
+          Great job! Ready for your next order.
         </p>
         <div style={{
-          fontSize: 28,
+          fontSize: 32,
           fontWeight: 900,
           color: C.green,
         }}>
@@ -350,43 +349,48 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       background: C.bg,
       overflow: 'hidden',
     }}>
-      {/* Ultra-Compact Header */}
+      {/* Header with status */}
       <div style={{
-        background: `linear-gradient(135deg, ${C.orange} 0%, #FF8533 100%)`,
+        background: C.orange,
         color: 'white',
-        padding: '8px 10px',
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+        padding: '48px 16px 16px 16px',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 48px)',
         flexShrink: 0,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 8,
+          marginBottom: 12,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: 6,
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
               background: 'rgba(255,255,255,0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                 {status === DRIVER_STATUS.TO_STORE || status === DRIVER_STATUS.AT_STORE ? (
-                  <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 5m5 4h7m-7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                  <>
+                    <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 7h14M7 13h10m0 0l1 4M7 13l-1 4" />
+                    <circle cx="9" cy="20" r="1" />
+                    <circle cx="16" cy="20" r="1" />
+                  </>
                 ) : (
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <>
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </>
                 )}
               </svg>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, opacity: 0.85, marginBottom: 1, fontWeight: 600 }}>{getStatusText()}</div>
-              <div style={{ fontSize: 13, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div>
+              <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 2 }}>{getStatusText()}</div>
+              <div style={{ fontSize: 16, fontWeight: 900 }}>
                 {status === DRIVER_STATUS.TO_STORE || status === DRIVER_STATUS.AT_STORE
                   ? orderDetails.restaurant_name
                   : getCustomerDisplayName()}
@@ -395,263 +399,281 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           </div>
           <div style={{
             background: 'rgba(255,255,255,0.2)',
-            borderRadius: 5,
-            padding: '4px 10px',
-            fontSize: 11,
-            fontWeight: 800,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
+            borderRadius: 8,
+            padding: '6px 12px',
+            fontSize: 13,
+            fontWeight: 700,
           }}>
-            <span>🔥</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#FFE500' }}>
-              {formatMoney(orderDetails.payout_cents)}
-            </span>
+            ON FIRE 🔥
           </div>
-        </div>
-        
-        {/* Order ID row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 6,
-          paddingTop: 6,
-          borderTop: '1px solid rgba(255,255,255,0.2)',
-        }}>
-          <div style={{ fontSize: 10, opacity: 0.85 }}>
-            Order #{orderDetails.order_number || orderDetails.id.slice(-6).toUpperCase()}
-          </div>
-          {orderDetails.isTestOrder && (
-            <div style={{
-              border: '1px solid rgba(255,255,255,0.4)',
-              borderRadius: 3,
-              padding: '2px 6px',
-              fontSize: 8,
-              fontWeight: 800,
-            }}>
-              TEST
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Ultra-Compact Scrollable Content */}
+      {/* Scrollable Content */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '8px',
-        paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+        padding: '16px',
+        paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
       }}>
-        {/* Address Card - Ultra Compact */}
+        {/* Customer Name & Order Number */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.muted,
+            letterSpacing: '0.5px',
+            marginBottom: 4,
+          }}>
+            {getCustomerDisplayName()}
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <h1 style={{
+              fontSize: 20,
+              fontWeight: 900,
+              color: C.text,
+              margin: 0,
+            }}>
+              Order #{orderDetails.order_number || orderDetails.id.slice(-8)}
+            </h1>
+            {orderDetails.isTestOrder && (
+              <div style={{
+                border: '1px solid #FF6A00',
+                color: '#FF6A00',
+                borderRadius: 4,
+                padding: '4px 8px',
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                TEST ORDER
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Address Card */}
         {(status === DRIVER_STATUS.TO_STORE || status === DRIVER_STATUS.AT_STORE) && (
           <div style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 6,
-            padding: '8px',
-            marginBottom: 6,
-            background: C.bgMuted,
+            borderRadius: 8,
+            padding: '12px',
+            marginBottom: 12,
           }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: C.muted,
+              letterSpacing: '0.5px',
+              marginBottom: 8,
+            }}>
+              PICKUP ADDRESS
+            </div>
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 8,
+              gap: 12,
+              marginBottom: 12,
             }}>
               {restaurantLogo ? (
                 <img src={restaurantLogo} alt="" style={{
-                  width: 24,
-                  height: 24,
+                  width: 32,
+                  height: 32,
                   borderRadius: 4,
                   objectFit: 'cover',
-                  flexShrink: 0,
                 }} />
               ) : (
                 <div style={{
-                  width: 24,
-                  height: 24,
+                  width: 32,
+                  height: 32,
                   borderRadius: 4,
-                  background: C.bg,
+                  background: C.bgMuted,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                 </div>
               )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 8, fontWeight: 800, color: C.muted, letterSpacing: '0.3px', marginBottom: 3 }}>PICKUP</div>
-                <div style={{ fontSize: 11, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
-                  {formatAddress(orderDetails.pickup_address)}
-                </div>
+              <div style={{ flex: 1, fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                {formatAddress(orderDetails.pickup_address)}
               </div>
-              <button
-                onClick={() => {
-                  const address = encodeURIComponent(formatAddress(orderDetails.pickup_address));
-                  window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
-                }}
-                style={{
-                  padding: '6px 10px',
-                  border: `1px solid ${C.blue}`,
-                  borderRadius: 4,
-                  background: C.blue,
-                  color: 'white',
-                  fontSize: 10,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  flexShrink: 0,
-                }}
-              >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
-                </svg>
-                NAV
-              </button>
             </div>
+            <button
+              onClick={() => {
+                const address = encodeURIComponent(formatAddress(orderDetails.pickup_address));
+                window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
+              }}
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                background: C.bg,
+                fontSize: 13,
+                fontWeight: 700,
+                color: C.text,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+              </svg>
+              Navigate
+            </button>
           </div>
         )}
 
         {(status === DRIVER_STATUS.TO_CUSTOMER || status === DRIVER_STATUS.AT_CUSTOMER) && (
           <div style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 6,
-            padding: '8px',
-            marginBottom: 6,
-            background: C.bgMuted,
+            borderRadius: 8,
+            padding: '12px',
+            marginBottom: 12,
           }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: C.muted,
+              letterSpacing: '0.5px',
+              marginBottom: 8,
+            }}>
+              CUSTOMER ADDRESS
+            </div>
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 8,
+              gap: 12,
+              marginBottom: 12,
             }}>
               <div style={{
-                width: 24,
-                height: 24,
+                width: 32,
+                height: 32,
                 borderRadius: 4,
-                background: C.bg,
+                background: C.bgMuted,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 8, fontWeight: 800, color: C.muted, letterSpacing: '0.3px', marginBottom: 3 }}>DROP-OFF</div>
-                <div style={{ fontSize: 11, color: C.text, lineHeight: 1.3, marginBottom: 6 }}>
-                  {formatAddress(orderDetails.dropoff_address)}
-                </div>
+              <div style={{ flex: 1, fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                {formatAddress(orderDetails.dropoff_address)}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const address = encodeURIComponent(formatAddress(orderDetails.dropoff_address));
+                window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
+              }}
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                background: C.bg,
+                fontSize: 13,
+                fontWeight: 700,
+                color: C.text,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+              </svg>
+              Navigate
+            </button>
+          </div>
+        )}
+
+        {/* Pickup Code */}
+        {pickupCode && (status === DRIVER_STATUS.TO_STORE || status === DRIVER_STATUS.AT_STORE) && (
+          <div style={{
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '12px',
+            marginBottom: 12,
+          }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: C.muted,
+              letterSpacing: '0.5px',
+              marginBottom: 8,
+            }}>
+              ORDER CODE (FOR KITCHEN)
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <div style={{
+                fontSize: 24,
+                fontWeight: 900,
+                color: C.text,
+                letterSpacing: '2px',
+              }}>
+                {pickupCode}
               </div>
               <button
-                onClick={() => {
-                  const address = encodeURIComponent(formatAddress(orderDetails.dropoff_address));
-                  window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
-                }}
+                onClick={() => copyToClipboard(pickupCode)}
                 style={{
-                  padding: '6px 10px',
-                  border: `1px solid ${C.blue}`,
-                  borderRadius: 4,
-                  background: C.blue,
-                  color: 'white',
-                  fontSize: 10,
-                  fontWeight: 800,
+                  padding: '8px',
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  background: C.bg,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  flexShrink: 0,
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
-                NAV
               </button>
             </div>
           </div>
         )}
 
-        {/* Pickup Code - Horizontal Compact */}
-        {pickupCode && (status === DRIVER_STATUS.TO_STORE || status === DRIVER_STATUS.AT_STORE) && (
-          <div style={{
-            border: `2px solid ${C.orange}`,
-            borderRadius: 6,
-            padding: '8px',
-            marginBottom: 6,
-            background: '#FFF4E6',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 8, fontWeight: 800, color: C.orange, letterSpacing: '0.3px', marginBottom: 2 }}>ORDER CODE</div>
-              <div style={{
-                fontSize: 20,
-                fontWeight: 900,
-                color: C.text,
-                letterSpacing: '3px',
-              }}>
-                {pickupCode}
-              </div>
-            </div>
-            <button
-              onClick={() => copyToClipboard(pickupCode)}
-              style={{
-                padding: '8px',
-                border: `1px solid ${C.orange}`,
-                borderRadius: 4,
-                background: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Order Items - Ultra Compact List */}
+        {/* Order Items (when at store) */}
         {status === DRIVER_STATUS.AT_STORE && orderItems.length > 0 && (
           <div style={{
             border: `1px solid ${C.border}`,
-            borderRadius: 6,
-            padding: '8px',
-            marginBottom: 6,
-            background: C.bg,
+            borderRadius: 8,
+            padding: '12px',
+            marginBottom: 12,
           }}>
             <div style={{
-              fontSize: 9,
+              fontSize: 13,
               fontWeight: 800,
-              color: C.muted,
-              marginBottom: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              color: C.text,
+              marginBottom: 12,
             }}>
-              <span>CONFIRM ITEMS</span>
-              <span style={{ color: checkedItems.size === orderItems.length ? C.green : C.orange }}>
-                {checkedItems.size}/{orderItems.length}
-              </span>
+              Order Items ({orderItems.length})
             </div>
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 4,
+              gap: 8,
             }}>
               {orderItems.map((item, index) => (
                 <div
@@ -660,43 +682,43 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 8px',
-                    border: `1px solid ${checkedItems.has(item.name) ? C.green : C.border}`,
-                    borderRadius: 4,
+                    gap: 12,
+                    padding: '10px',
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
                     cursor: 'pointer',
-                    background: checkedItems.has(item.name) ? '#F0F9F4' : C.bgMuted,
+                    background: checkedItems.has(item.name) ? '#F0F9FF' : C.bg,
                   }}
                 >
                   <div style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 3,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
                     border: `2px solid ${checkedItems.has(item.name) ? C.green : C.border}`,
-                    background: checkedItems.has(item.name) ? C.green : 'white',
+                    background: checkedItems.has(item.name) ? C.green : C.bg,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}>
                     {checkedItems.has(item.name) && (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
                   </div>
-                  <div style={{ flex: 1, fontSize: 11, color: C.text, fontWeight: 500 }}>
+                  <div style={{ flex: 1, fontSize: 13, color: C.text }}>
                     {item.name}
                   </div>
                   <div style={{
-                    fontSize: 10,
-                    fontWeight: 800,
+                    fontSize: 11,
+                    fontWeight: 700,
                     color: C.muted,
-                    background: 'white',
-                    borderRadius: 3,
-                    padding: '2px 6px',
+                    background: C.bgMuted,
+                    borderRadius: 4,
+                    padding: '4px 8px',
                   }}>
-                    ×{item.quantity}
+                    x{item.quantity}
                   </div>
                 </div>
               ))}
@@ -704,57 +726,58 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           </div>
         )}
 
-        {/* Special Instructions - Compact Horizontal */}
+        {/* Special Instructions */}
         {orderDetails.delivery_notes && (status === DRIVER_STATUS.TO_CUSTOMER || status === DRIVER_STATUS.AT_CUSTOMER) && (
           <div style={{
-            border: `1px solid #FFAB00`,
-            borderRadius: 6,
-            padding: '8px',
-            marginBottom: 6,
-            background: '#FFF8E1',
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            padding: '12px',
+            marginBottom: 12,
           }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 800,
+              color: C.muted,
+              letterSpacing: '0.5px',
+              marginBottom: 8,
+            }}>
+              SPECIAL INSTRUCTIONS
+            </div>
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 8,
+              gap: 12,
             }}>
               <div style={{
-                width: 24,
-                height: 24,
+                width: 32,
+                height: 32,
                 borderRadius: 4,
-                background: '#FFD54F',
+                background: '#FFF4E6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
               }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F57C00" strokeWidth="2.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" strokeWidth="2">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 8, fontWeight: 800, color: '#F57C00', marginBottom: 3 }}>INSTRUCTIONS</div>
-                <div style={{ fontSize: 11, color: C.text, lineHeight: 1.3 }}>
-                  {orderDetails.delivery_notes}
-                </div>
+              <div style={{ flex: 1, fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                {orderDetails.delivery_notes}
               </div>
               <button
                 onClick={() => speakDeliveryInstructions(orderDetails.delivery_notes || '')}
                 style={{
-                  padding: '6px',
-                  border: '1px solid #FFD54F',
-                  borderRadius: 4,
-                  background: 'white',
+                  padding: '8px',
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  background: C.bg,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F57C00" strokeWidth="2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                 </svg>
@@ -762,36 +785,64 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             </div>
           </div>
         )}
+
+        {/* Estimated Pay */}
+        <div style={{
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          padding: '12px',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: C.muted,
+            }}>
+              $ Estimated Pay
+            </div>
+            <div style={{
+              fontSize: 20,
+              fontWeight: 900,
+              color: C.green,
+            }}>
+              {formatMoney(orderDetails.payout_cents)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Ultra-Compact Bottom Action Button */}
+      {/* Bottom Action Button */}
       <div style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
-        padding: '8px',
-        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+        padding: '12px 16px',
+        paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
         background: C.bg,
         borderTop: `1px solid ${C.border}`,
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
       }}>
         {status === DRIVER_STATUS.TO_STORE && (
           <button
             onClick={handleArrivedAtStore}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: 6,
+              padding: '16px',
+              borderRadius: 8,
               border: 'none',
               background: '#5A6C7D',
               color: 'white',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 900,
               cursor: 'pointer',
             }}
           >
-            Arrived at Kitchen
+            Arrived at Craven Kitchen
           </button>
         )}
 
@@ -801,17 +852,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             disabled={checkedItems.size !== orderItems.length}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: 6,
+              padding: '16px',
+              borderRadius: 8,
               border: 'none',
               background: checkedItems.size === orderItems.length ? '#5A6C7D' : C.bgMuted,
               color: checkedItems.size === orderItems.length ? 'white' : C.muted,
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 900,
               cursor: checkedItems.size === orderItems.length ? 'pointer' : 'not-allowed',
             }}
           >
-            {checkedItems.size === orderItems.length ? 'Head to Customer' : `Confirm ${orderItems.length} Items First`}
+            Confirm {orderItems.length} item(s) first
           </button>
         )}
 
@@ -820,17 +871,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             onClick={handleArrivedAtCustomer}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: 6,
+              padding: '16px',
+              borderRadius: 8,
               border: 'none',
               background: '#5A6C7D',
               color: 'white',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 900,
               cursor: 'pointer',
             }}
           >
-            Arrived at Customer
+            Arrived at Customer's Location
           </button>
         )}
 
@@ -839,17 +890,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             onClick={handleCompleteDelivery}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: 6,
+              padding: '16px',
+              borderRadius: 8,
               border: 'none',
-              background: C.green,
+              background: '#5A6C7D',
               color: 'white',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 900,
               cursor: 'pointer',
             }}
           >
-            Complete Delivery
+            Drop-off & Complete Delivery
           </button>
         )}
       </div>
