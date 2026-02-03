@@ -107,6 +107,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [gasMoney, setGasMoney] = useState(0);
   const [showGasMoneyModal, setShowGasMoneyModal] = useState(false);
   const [transferAmount, setTransferAmount] = useState('');
+  
+  // Earnings Cashout state
+  const [showEarningsModal, setShowEarningsModal] = useState(false);
+  const [earningsCashoutAmount, setEarningsCashoutAmount] = useState('');
 
   useEffect(() => {
     fetchEarningsData();
@@ -211,6 +215,56 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       fetchCardData();
     } catch (error) {
       console.error('Error transferring gas money:', error);
+      toast.error('Failed to transfer funds. Please try again.');
+    }
+  };
+  
+  const handleTransferEarnings = async () => {
+    try {
+      const amount = parseFloat(earningsCashoutAmount);
+      
+      if (isNaN(amount) || amount <= 0) {
+        toast.error('Please enter a valid amount');
+        return;
+      }
+      
+      if (amount > payoutStatus.available) {
+        toast.error(`Amount cannot exceed your available balance of ${formatCurrency(payoutStatus.available)}`);
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please sign in to transfer funds');
+        return;
+      }
+
+      // Transfer earnings to Feeder Card via Stripe
+      const { data, error } = await supabase.functions.invoke('transfer-earnings', {
+        body: { 
+          driver_id: user.id,
+          amount_cents: Math.round(amount * 100)
+        }
+      });
+
+      if (error) throw error;
+
+      // Update local state
+      setPayoutStatus({
+        ...payoutStatus,
+        available: payoutStatus.available - amount
+      });
+      setCardBalance(cardBalance + amount);
+      setEarningsCashoutAmount('');
+      setShowEarningsModal(false);
+      
+      toast.success(`${formatCurrency(amount)} transferred to your Feeder Card!`);
+      
+      // Refresh data
+      fetchEarningsData();
+      fetchCardData();
+    } catch (error) {
+      console.error('Error transferring earnings:', error);
       toast.error('Failed to transfer funds. Please try again.');
     }
   };
@@ -695,8 +749,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Earnings Summary Cards - Side by Side */}
           <div className="grid grid-cols-2 gap-3 mt-2.5">
-            {/* Primary Earnings Summary Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            {/* Primary Earnings Summary Card - Clickable */}
+            <div 
+              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setShowEarningsModal(true)}
+            >
               <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
               <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
               <p className="text-xs text-gray-400">Net earnings</p>
@@ -1036,6 +1093,128 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               {/* Info Text */}
               <p className="text-xs text-gray-500 text-center mt-4">
                 Gas money is accumulated from your distance pay and can be used for fuel or transferred to your Feeder Card for any purpose.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Earnings Cashout Modal */}
+      {showEarningsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Cash Out Earnings</h3>
+                  <p className="text-sm text-gray-500">Available balance</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEarningsModal(false);
+                  setEarningsCashoutAmount('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            {/* Balance Display */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border-2 border-orange-200">
+              <p className="text-sm text-orange-700 mb-1">Available to Cash Out</p>
+              <p className="text-4xl font-bold text-orange-900">{formatCurrency(payoutStatus.available)}</p>
+              <p className="text-xs text-orange-600 mt-2">
+                From {metrics.totalTrips} {metrics.totalTrips === 1 ? 'delivery' : 'deliveries'}
+              </p>
+            </div>
+            
+            {/* Transfer Options */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cash Out Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <input
+                    type="number"
+                    value={earningsCashoutAmount}
+                    onChange={(e) => setEarningsCashoutAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    max={payoutStatus.available}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => setEarningsCashoutAmount((payoutStatus.available * 0.25).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    25%
+                  </button>
+                  <button
+                    onClick={() => setEarningsCashoutAmount((payoutStatus.available * 0.5).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    50%
+                  </button>
+                  <button
+                    onClick={() => setEarningsCashoutAmount((payoutStatus.available * 0.75).toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    75%
+                  </button>
+                  <button
+                    onClick={() => setEarningsCashoutAmount(payoutStatus.available.toFixed(2))}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    All
+                  </button>
+                </div>
+              </div>
+              
+              {/* Transfer Destination */}
+              <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-purple-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Transfer to Feeder Card</p>
+                    <p className="text-xs text-gray-600">Available instantly</p>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(cardBalance)}</p>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowEarningsModal(false);
+                    setEarningsCashoutAmount('');
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleTransferEarnings}
+                  disabled={!earningsCashoutAmount || parseFloat(earningsCashoutAmount) <= 0}
+                  className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cash Out
+                </button>
+              </div>
+              
+              {/* Info Text */}
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Cash out your available earnings instantly to your Feeder Card. Funds can be used anywhere Visa is accepted.
               </p>
             </div>
           </div>

@@ -60,6 +60,7 @@ import {
   IconPill,
   IconPaw,
   IconReceipt,
+  IconShirt,
 } from "@tabler/icons-react";
 import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
@@ -341,6 +342,7 @@ const RestaurantMenuPage = () => {
         { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
         { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
         { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
+        { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
         { id: 'pets', label: 'Animals', icon: IconPaw, active: activeCategory === 'pets' },
         { id: 'health', label: 'Self Care', icon: IconPill, active: activeCategory === 'health' },
         { id: 'browse', label: 'Browse All', icon: IconSearch, active: activeCategory === 'browse' },
@@ -442,7 +444,7 @@ const RestaurantMenuPage = () => {
         }
         
         // For restaurant categories, navigate back to restaurants page
-        if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'pets', 'health'].includes(categoryId)) {
+        if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
             navigate('/restaurants');
         }
     };

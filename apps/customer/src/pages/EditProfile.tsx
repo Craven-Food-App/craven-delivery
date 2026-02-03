@@ -255,12 +255,12 @@ const EditProfile: React.FC = () => {
       {/* Header - Fixed at Top matching Chat Header Structure */}
       <div className="flex items-center gap-3 px-4 py-3 bg-background border-b border-border" style={{
         position: 'fixed',
-        top: 0,
+        top: 'env(safe-area-inset-top, 0px)',
         left: 0,
         right: 0,
         width: '100%',
         zIndex: 1000,
-        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        paddingTop: '1rem',
         flexShrink: 0
       }}>
           <Button

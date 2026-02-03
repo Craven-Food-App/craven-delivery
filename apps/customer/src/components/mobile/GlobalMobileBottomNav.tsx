@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Group, Text, Badge, ActionIcon } from '@mantine/core';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconHome, IconHeart, IconPackage, IconUser, IconShoppingCart } from '@tabler/icons-react';
+import { IconShoppingBag, IconHeart, IconPackage, IconUser, IconShoppingCart } from '@tabler/icons-react';
 import { useCart } from '@/contexts/CartContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,9 +53,9 @@ const GlobalMobileBottomNav: React.FC = () => {
 
   const navItems = [
     {
-      id: 'home',
-      label: 'Home',
-      icon: IconHome,
+      id: 'shop',
+      label: 'Shop',
+      icon: IconShoppingBag,
       path: '/restaurants',
       isActive: location.pathname === '/restaurants' || location.pathname === '/',
     },
@@ -129,7 +129,15 @@ const GlobalMobileBottomNav: React.FC = () => {
             return (
             <ActionIcon
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  if (item.id === 'shop') {
+                    // Set flag to browse as guest and navigate
+                    sessionStorage.setItem('browse_as_guest', 'true');
+                    navigate('/restaurants?browse=guest');
+                  } else {
+                    navigate(item.path);
+                  }
+                }}
                 variant="subtle"
               size="xl"
                 style={{

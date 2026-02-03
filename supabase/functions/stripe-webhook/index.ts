@@ -112,6 +112,21 @@ async function handleWebhookEvent(event: Stripe.Event) {
     case 'customer.subscription.deleted':
       await handleSubscriptionEvent(event.data.object as Stripe.Subscription, event.type);
       break;
+    
+    // ========================================================================
+    // STRIPE ISSUING EVENTS (Crave'n Wallet Feeder Cards)
+    // ========================================================================
+    case 'issuing_authorization.request':
+      // SYNCHRONOUS: Must return approval decision immediately
+      await handleIssuingAuthorizationRequest(event.data.object as Stripe.Issuing.Authorization);
+      break;
+    case 'issuing_authorization.updated':
+      await handleIssuingAuthorizationUpdated(event.data.object as Stripe.Issuing.Authorization);
+      break;
+    case 'issuing_transaction.created':
+      await handleIssuingTransactionCreated(event.data.object as Stripe.Issuing.Transaction);
+      break;
+    
     default:
       console.log(`[Webhook] Unhandled: ${event.type}`);
   }
@@ -536,5 +551,185 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription, eventT
       }, {
         onConflict: 'user_id'
       });
+  }
+}
+
+// ============================================================================
+// STRIPE ISSUING AUTHORIZATION REQUEST HANDLER
+// ============================================================================
+
+async function handleIssuingAuthorizationRequest(auth: Stripe.Issuing.Authorization) {
+  const issuingEnabled = Deno.env.get('STRIPE_ISSUING_ENABLED') !== 'false';
+  
+  if (!issuingEnabled) {
+    console.log('[Issuing] Issuing disabled via env flag');
+    return; // Webhook will return 200 OK but not process
+  }
+
+  // Handle card as string ID or expanded object
+  const cardId = typeof auth.card === 'string' ? auth.card : auth.card.id;
+  
+  console.log(`[Issuing Auth] Request: ${auth.id}, Amount: ${auth.amount}, Card: ${cardId}`);
+
+  try {
+    // FAIL-CLOSED: Lookup driver from card mapping
+    const { data: cardMapping, error: cardError } = await supabase
+      .from('driver_cards')
+      .select('driver_id, status')
+      .eq('issuing_card_id', cardId)
+      .single();
+
+    if (cardError || !cardMapping) {
+      console.error(`[Issuing Auth] Card ${cardId} not mapped to driver`);
+      await declineAuthorization(auth.id, 'card_not_mapped');
+      return;
+    }
+
+    if (cardMapping.status !== 'active') {
+      console.error(`[Issuing Auth] Card ${cardId} status: ${cardMapping.status}`);
+      await declineAuthorization(auth.id, 'card_inactive');
+      return;
+    }
+
+    const driverId = cardMapping.driver_id;
+
+    // ATOMIC: Reserve wallet funds
+    const { data: approved, error: reserveError } = await supabase.rpc(
+      'reserve_wallet_for_card_auth',
+      {
+        p_driver_id: driverId,
+        p_amount_cents: auth.amount,
+        p_stripe_auth_id: auth.id
+      }
+    );
+
+    if (reserveError) {
+      console.error(`[Issuing Auth] Reserve error:`, reserveError);
+      await declineAuthorization(auth.id, 'system_error');
+      return;
+    }
+
+    if (approved) {
+      console.log(`[Issuing Auth] APPROVED: ${auth.id} for driver ${driverId}`);
+      await approveAuthorization(auth.id);
+    } else {
+      console.log(`[Issuing Auth] DECLINED: ${auth.id} - insufficient funds`);
+      await declineAuthorization(auth.id, 'insufficient_funds');
+    }
+
+  } catch (error: any) {
+    console.error(`[Issuing Auth] Error:`, error);
+    // FAIL-CLOSED: Any error = decline
+    await declineAuthorization(auth.id, 'processing_error');
+  }
+}
+
+// ============================================================================
+// STRIPE ISSUING AUTHORIZATION UPDATED HANDLER (Reversals/Expirations)
+// ============================================================================
+
+async function handleIssuingAuthorizationUpdated(auth: Stripe.Issuing.Authorization) {
+  const issuingEnabled = Deno.env.get('STRIPE_ISSUING_ENABLED') !== 'false';
+  if (!issuingEnabled) return;
+
+  console.log(`[Issuing Auth Updated] ${auth.id}, Status: ${auth.status}`);
+
+  // Release hold if authorization was reversed or closed (not captured)
+  if (auth.status === 'reversed' || auth.status === 'closed') {
+    try {
+      // Handle card as string ID or expanded object
+      const cardId = typeof auth.card === 'string' ? auth.card : auth.card.id;
+      
+      const { data: cardMapping } = await supabase
+        .from('driver_cards')
+        .select('driver_id')
+        .eq('issuing_card_id', cardId)
+        .single();
+
+      if (!cardMapping) {
+        console.warn(`[Issuing Auth Updated] Card ${cardId} not found`);
+        return;
+      }
+
+      // Release the hold
+      await supabase.rpc('release_wallet_hold', {
+        p_driver_id: cardMapping.driver_id,
+        p_amount_cents: auth.amount,
+        p_stripe_auth_id: auth.id
+      });
+
+      console.log(`[Issuing Auth Updated] Hold released for ${auth.id}`);
+    } catch (error: any) {
+      console.error(`[Issuing Auth Updated] Error:`, error);
+    }
+  }
+}
+
+// ============================================================================
+// STRIPE ISSUING TRANSACTION CREATED HANDLER (Clearing)
+// ============================================================================
+
+async function handleIssuingTransactionCreated(txn: Stripe.Issuing.Transaction) {
+  const issuingEnabled = Deno.env.get('STRIPE_ISSUING_ENABLED') !== 'false';
+  if (!issuingEnabled) return;
+
+  // Handle card as string ID or expanded object
+  const cardId = typeof txn.card === 'string' ? txn.card : txn.card.id;
+  
+  console.log(`[Issuing Transaction] ${txn.id}, Auth: ${txn.authorization}, Amount: ${txn.amount}`);
+
+  try {
+    const { data: cardMapping } = await supabase
+      .from('driver_cards')
+      .select('driver_id')
+      .eq('issuing_card_id', cardId)
+      .single();
+
+    if (!cardMapping) {
+      console.warn(`[Issuing Transaction] Card ${cardId} not found`);
+      return;
+    }
+
+    // Get original authorization amount (held amount may differ from cleared amount)
+    let heldAmount = txn.amount; // Default to transaction amount
+    
+    if (txn.authorization) {
+      const auth = await stripe.issuing.authorizations.retrieve(txn.authorization as string);
+      heldAmount = auth.amount;
+    }
+
+    // Finalize clearing: release hold and debit available balance
+    await supabase.rpc('finalize_wallet_clearing', {
+      p_driver_id: cardMapping.driver_id,
+      p_held_amount_cents: heldAmount,
+      p_cleared_amount_cents: txn.amount,
+      p_stripe_auth_id: txn.authorization as string,
+      p_stripe_txn_id: txn.id
+    });
+
+    console.log(`[Issuing Transaction] Cleared: ${txn.id}`);
+  } catch (error: any) {
+    console.error(`[Issuing Transaction] Error:`, error);
+  }
+}
+
+// ============================================================================
+// HELPER FUNCTIONS: Approve/Decline Authorization
+// ============================================================================
+
+async function approveAuthorization(authId: string) {
+  try {
+    await stripe.issuing.authorizations.approve(authId);
+  } catch (error: any) {
+    console.error(`[Issuing] Failed to approve ${authId}:`, error);
+  }
+}
+
+async function declineAuthorization(authId: string, reason: string) {
+  try {
+    await stripe.issuing.authorizations.decline(authId);
+    console.log(`[Issuing] Declined ${authId}: ${reason}`);
+  } catch (error: any) {
+    console.error(`[Issuing] Failed to decline ${authId}:`, error);
   }
 }

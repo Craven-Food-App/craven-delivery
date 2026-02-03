@@ -85,7 +85,8 @@ import {
   IconList,
   IconLayersLinked,
   IconCompass,
-  IconPackage
+  IconPackage,
+  IconShirt
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -890,6 +891,7 @@ const Restaurants = () => {
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
+    { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
     { id: 'health', label: 'Self Care', icon: IconShield, active: activeCategory === 'health' },
     { id: 'browse', label: 'Browse All', icon: IconSearch, active: activeCategory === 'browse' },
@@ -903,7 +905,7 @@ const Restaurants = () => {
     // Handle different category types
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
-    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setCuisineFilter(categoryId);
     } else if (categoryId === 'orders') {
       // Navigate to orders page
@@ -916,7 +918,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
@@ -1112,6 +1114,16 @@ const Restaurants = () => {
         return;
       }
 
+      // Check if user wants to browse as guest (from shop button or URL param)
+      const browseAsGuest = searchParams.get('browse') === 'guest' || 
+                           sessionStorage.getItem('browse_as_guest') === 'true';
+      
+      if (browseAsGuest) {
+        setShowMain(true);
+        setCheckingAuth(false);
+        return;
+      }
+
       // Always check auth state, but use cache as initial state
       // This ensures we re-check on page load even with cache
       const initialShowMain = cachedAuth === true;
@@ -1210,8 +1222,9 @@ const Restaurants = () => {
         // User logged in - show main view
         if (isMobile) {
         setShowMain(true);
-        // Cache auth state
+        // Clear guest browsing flag
         if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('browse_as_guest');
           sessionStorage.setItem('craven_auth_state', JSON.stringify({
             isAuthenticated: true,
             timestamp: Date.now()
@@ -1399,7 +1412,7 @@ const Restaurants = () => {
                 cursor: 'pointer',
                 textAlign: 'center',
                 display: 'block',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 fontSize: '13px',
                 color: '#3b82f6',
                 textDecoration: 'underline'
@@ -1413,6 +1426,30 @@ const Restaurants = () => {
             >
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </Text>
+
+            {/* Browse as Guest Button */}
+            <Button
+              onClick={() => {
+                sessionStorage.setItem('browse_as_guest', 'true');
+                setShowMain(true);
+              }}
+              fullWidth
+              variant="light"
+              size="lg"
+              style={{
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: '15px',
+                height: '48px',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                border: '2px solid rgba(255, 255, 255, 0.5)',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              Browse as Guest
+            </Button>
 
             {/* Terms and Privacy Policy */}
             <Text
@@ -1467,15 +1504,14 @@ const Restaurants = () => {
         <Box component="header" style={{ 
           backgroundColor: 'white', 
           position: 'fixed',
-          top: 0,
+          top: 'env(safe-area-inset-top, 0px)',
           left: 0,
           right: 0,
           width: '100%',
           zIndex: 1000, 
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
           borderBottom: '1px solid #e5e7eb', 
-          padding: '8px 16px 12px',
-          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          padding: '1rem 16px 12px',
           flexShrink: 0
         }}>
           {/* Address and Account */}

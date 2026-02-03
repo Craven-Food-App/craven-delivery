@@ -353,15 +353,14 @@ export default function MyCredits() {
         shadow="xs"
         style={{
           position: 'fixed',
-          top: 0,
+          top: 'env(safe-area-inset-top, 0px)',
           left: 0,
           right: 0,
           width: '100%',
           zIndex: 1000,
-          padding: '20px 24px',
+          padding: '1rem 24px 20px',
           borderBottom: '1px solid #E5E7EB',
           backgroundColor: 'white',
-          paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
           flexShrink: 0
         }}
       >

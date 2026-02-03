@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
@@ -117,6 +116,18 @@ serve(async (req) => {
 
     if (earnErr) throw earnErr;
 
+    // NEW: Credit driver wallet with earnings (for feeder card spends)
+    const { error: walletErr } = await supabase.rpc('credit_wallet_from_earnings', {
+      p_driver_id: resolvedDriverId,
+      p_amount_cents: driverPayoutCents,
+      p_order_id: orderId
+    });
+
+    if (walletErr) {
+      console.error('Failed to credit wallet:', walletErr);
+      // Non-fatal: earnings record is still created
+    }
+
     console.log('Delivery finalized:', {
       orderId,
       driverId: resolvedDriverId,
@@ -124,6 +135,7 @@ serve(async (req) => {
       basePay: driverBeforeTipCents / 100,
       tip: tip / 100,
       totalEarnings: driverPayoutCents / 100,
+      walletCredited: !walletErr,
       hasPickupPhoto: !!pickupPhotoUrl,
       hasDeliveryPhoto: !!deliveryPhotoUrl
     });

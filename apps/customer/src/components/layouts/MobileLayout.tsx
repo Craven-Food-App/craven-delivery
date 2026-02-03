@@ -40,8 +40,8 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
         minHeight: '100dvh',
         width: '100%',
         position: 'relative',
-        // Top safe area for status bar, notch, camera
-        paddingTop: 'env(safe-area-inset-top, 0px)',
+        // No top padding - let individual headers position themselves below safe area
+        paddingTop: 0,
         // No bottom padding - handled by fixed nav
         paddingBottom: 0,
         overflow: 'hidden',

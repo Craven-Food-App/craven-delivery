@@ -46,10 +46,10 @@ import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
-import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance";
+import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance.tsx";
 import { useTesterActivityTracking } from "@/hooks/useTesterActivityTracking";
 import { useTesterActivation } from "@/hooks/useTesterActivation";
-import { useTesterFeedbackPrompts } from "@/hooks/useTesterFeedbackPrompts";
+import { useTesterFeedbackPrompts } from "@/hooks/useTesterFeedbackPrompts.tsx";
 import TesterHub from "@/components/TesterHub";
 import TesterReferMerchant from "@/pages/TesterReferMerchant";
 import TesterDriverInterest from "@/pages/TesterDriverInterest";
@@ -58,6 +58,7 @@ import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 import { MobileLayout } from "@/components/layouts/MobileLayout";
 import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,44 +142,57 @@ function App() {
                     
                     <MobileLayout>
                     <Routes>
+                    {/* Public Routes - Guest browsing allowed */}
                     <Route path="/" element={<Navigate to="/restaurants" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/restaurants" element={<Restaurants />} />
                     <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
-                    <Route path="/favorites" element={<Favorites />} />
                     <Route path="/restaurant/:id" element={<RestaurantDetail />} />
                     <Route path="/restaurant/:id/menu" element={<RestaurantMenuPage />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/track-order/:orderId" element={<TrackOrder />} />
-                    <Route path="/payment-success" element={<PaymentSuccess />} />
-                    <Route path="/payment-canceled" element={<PaymentCanceled />} />
-                    <Route path="/order-history" element={<OrderHistory />} />
-                    <Route path="/account" element={<CustomerDashboard />} />
-                    <Route path="/account/edit-profile" element={<EditProfile />} />
-                    <Route path="/account/payment-methods" element={<PaymentMethods />} />
-                    <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
-                    <Route path="/account/my-credits" element={<MyCredits />} />
-                    <Route path="/my-credits" element={<MyCredits />} />
-                    <Route path="/account/tester-hub" element={<TesterHub />} />
-                    <Route path="/tester-hub" element={<TesterHub />} />
-                    <Route path="/tester/refer-merchant" element={<TesterReferMerchant />} />
-                    <Route path="/tester/driver-interest" element={<TesterDriverInterest />} />
-                    <Route path="/tester/invite-friends" element={<TesterInviteFriends />} />
-                    <Route path="/invite-friends" element={<InviteFriends />} />
-                    <Route path="/customer-support" element={<CustomerSupportChat />} />
-                    <Route path="/promotion-details" element={<PromotionDetails />} />
-                    <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/notification-settings" element={<NotificationSettings />} />
-                    <Route path="/admin/promo" element={<PromoManagement />} />
-                    <Route path="/crave-more" element={<CraveMore />} />
-                    <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
-                    <Route path="/cravemore" element={<CraveMore />} />
-                    <Route path="/cravemore/success" element={<CraveMoreSuccess />} />
-                    <Route path="/account/cravemore" element={<CraveMoreAccount />} />
                     <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/legal/terms" element={<TermsOfServicePage />} />
                     <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
+                    <Route path="/promotion-details" element={<PromotionDetails />} />
+                    
+                    {/* Protected Routes - Require authentication */}
+                    <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                    <Route path="/track-order/:orderId" element={<ProtectedRoute><TrackOrder /></ProtectedRoute>} />
+                    <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+                    <Route path="/payment-canceled" element={<ProtectedRoute><PaymentCanceled /></ProtectedRoute>} />
+                    <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+                    <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+                    
+                    {/* Account & Settings - Protected */}
+                    <Route path="/account" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
+                    <Route path="/account/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                    <Route path="/account/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
+                    <Route path="/account/delivery-addresses" element={<ProtectedRoute><DeliveryAddresses /></ProtectedRoute>} />
+                    <Route path="/account/my-credits" element={<ProtectedRoute><MyCredits /></ProtectedRoute>} />
+                    <Route path="/my-credits" element={<ProtectedRoute><MyCredits /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                    <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+                    
+                    {/* Tester Program - Protected */}
+                    <Route path="/account/tester-hub" element={<ProtectedRoute><TesterHub /></ProtectedRoute>} />
+                    <Route path="/tester-hub" element={<ProtectedRoute><TesterHub /></ProtectedRoute>} />
+                    <Route path="/tester/refer-merchant" element={<ProtectedRoute><TesterReferMerchant /></ProtectedRoute>} />
+                    <Route path="/tester/driver-interest" element={<ProtectedRoute><TesterDriverInterest /></ProtectedRoute>} />
+                    <Route path="/tester/invite-friends" element={<ProtectedRoute><TesterInviteFriends /></ProtectedRoute>} />
+                    <Route path="/invite-friends" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
+                    
+                    {/* Crave More Subscription - Protected */}
+                    <Route path="/crave-more" element={<ProtectedRoute><CraveMore /></ProtectedRoute>} />
+                    <Route path="/crave-more-subscription" element={<ProtectedRoute><CraveMoreSubscription /></ProtectedRoute>} />
+                    <Route path="/cravemore" element={<ProtectedRoute><CraveMore /></ProtectedRoute>} />
+                    <Route path="/cravemore/success" element={<ProtectedRoute><CraveMoreSuccess /></ProtectedRoute>} />
+                    <Route path="/account/cravemore" element={<ProtectedRoute><CraveMoreAccount /></ProtectedRoute>} />
+                    
+                    {/* Support & Admin - Protected */}
+                    <Route path="/customer-support" element={<ProtectedRoute><CustomerSupportChat /></ProtectedRoute>} />
+                    <Route path="/admin/promo" element={<ProtectedRoute><PromoManagement /></ProtectedRoute>} />
+                    
+                    {/* Redirects & Fallback */}
+                    <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                     </MobileLayout>
