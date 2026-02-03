@@ -3140,12 +3140,38 @@ const Restaurants = () => {
                 </div>
               )}
 
-              {/* Restaurant Grid */}
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
-                cuisineFilter={cuisineFilter}
-              />
+              {/* Show separate sections when filter is 'all' or no filter */}
+              {(!cuisineFilter || cuisineFilter === 'all') && !searchQuery ? (
+                <>
+                  {/* Restaurants Section (excluding apparel) */}
+                  <div className="mb-12">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter={cuisineFilter}
+                      excludeCuisine="apparel"
+                      sectionTitle="Restaurants"
+                    />
+                  </div>
+                  
+                  {/* Apparel Section */}
+                  <div className="mt-8">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="apparel"
+                      sectionTitle="Apparel"
+                    />
+                  </div>
+                </>
+              ) : (
+                /* Single section when filtering by specific cuisine or searching */
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={cuisineFilter}
+                />
+              )}
             </div>
           </div>
         </div>

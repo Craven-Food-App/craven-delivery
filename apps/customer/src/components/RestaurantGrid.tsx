@@ -20,11 +20,15 @@ interface RestaurantGridProps {
   searchQuery?: string;
   deliveryAddress?: string;
   cuisineFilter?: string;
+  excludeCuisine?: string; // Exclude specific cuisine type (e.g., 'apparel')
+  sectionTitle?: string; // Optional section title
 }
 const RestaurantGrid = ({
   searchQuery,
   deliveryAddress,
-  cuisineFilter
+  cuisineFilter,
+  excludeCuisine,
+  sectionTitle
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +102,13 @@ const RestaurantGrid = ({
         );
       }
 
+      // Exclude specific cuisine type if provided
+      if (excludeCuisine) {
+        filteredData = filteredData.filter((restaurant: Restaurant) =>
+          restaurant.cuisine_type?.toLowerCase() !== excludeCuisine.toLowerCase()
+        );
+      }
+
       // Filter by search query if provided
       if (searchQuery) {
         filteredData = filteredData.filter((restaurant: Restaurant) =>
@@ -159,7 +170,12 @@ const RestaurantGrid = ({
   });
   return <section className="py-6 bg-muted/30">
       <div className="container mx-auto px-4">
-        {!searchQuery && !deliveryAddress && <div className="text-center mb-8">
+        {sectionTitle && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+          </div>
+        )}
+        {!searchQuery && !deliveryAddress && !sectionTitle && <div className="text-center mb-8">
             
             
           </div>}

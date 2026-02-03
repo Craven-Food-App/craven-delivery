@@ -475,7 +475,8 @@ const Checkout: React.FC = () => {
     }
     
     // Redirect if cart is still empty after trying both sources
-    if (loadedCart.length === 0 && contextCartItems.length === 0) {
+    // But don't redirect if we have a completed order (order just succeeded)
+    if (loadedCart.length === 0 && contextCartItems.length === 0 && !completedOrderId) {
       console.warn('Cart is empty, redirecting to restaurants');
       toast({
         title: "Cart is Empty",
@@ -486,7 +487,7 @@ const Checkout: React.FC = () => {
         navigate('/restaurants');
       }, 2000);
     }
-  }, [contextCartItems, contextRestaurantId, navigate, toast]);
+  }, [contextCartItems, contextRestaurantId, navigate, toast, completedOrderId]);
 
   // Fetch menu item images when cart changes
   useEffect(() => {
@@ -653,11 +654,16 @@ const Checkout: React.FC = () => {
           .order('is_default', { ascending: false })
           .order('created_at', { ascending: false });
 
-        if (!pmError && paymentMethods && paymentMethods.length > 0) {
+        if (pmError) {
+          console.error('Error loading payment methods:', pmError);
+          setHasPaymentMethods(false);
+        } else if (paymentMethods && paymentMethods.length > 0) {
+          console.log('Loaded payment methods:', paymentMethods);
           setHasPaymentMethods(true);
           // Auto-select the default payment method or the first one
           const defaultMethod = paymentMethods.find((m: any) => m.is_default) || paymentMethods[0];
           if (defaultMethod) {
+            console.log('Selected payment method:', defaultMethod);
             setSelectedPaymentMethod({
               id: defaultMethod.id,
               type: (defaultMethod as any).type || 'card',
@@ -669,6 +675,7 @@ const Checkout: React.FC = () => {
             });
           }
         } else {
+          console.log('No payment methods found for user');
           setHasPaymentMethods(false);
         }
 
@@ -1069,10 +1076,24 @@ const Checkout: React.FC = () => {
 
       // Prepare order data for create-order Edge Function
       // This function handles: promo reserve, order creation, payment, promo redeem
-      const orderData = {
+      
+      // Validate delivery address format if delivery method
+      if (formData.deliveryMethod === 'delivery') {
+        if (!formData.address || !formData.city || !formData.state || !formData.zip) {
+          throw new Error('Delivery address is incomplete. Please fill in all address fields.');
+        }
+        if (formData.state.length !== 2) {
+          throw new Error('State must be a 2-letter abbreviation (e.g., CA, NY)');
+        }
+        if (!/^\d{5}(-\d{4})?$/.test(formData.zip)) {
+          throw new Error('ZIP code must be in format 12345 or 12345-6789');
+        }
+      }
+      
+      const orderData: any = {
         restaurant_id: restaurant.id,
         cart_items: cart.map(item => ({
-          id: item.id,
+          menu_item_id: item.id, // Changed from 'id' to 'menu_item_id' to match schema
           quantity: item.quantity,
           price_cents: item.price_cents,
           special_instructions: item.special_instructions || null,
@@ -1082,22 +1103,6 @@ const Checkout: React.FC = () => {
         service_fee_cents: processingFeeCents || 0,
         tax_cents: tax,
         tip_cents: tipAmount,
-        delivery_address: formData.deliveryMethod === 'delivery' ? {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.zip}`,
-          special_instructions: userDeliveryPreferences.instructions || null,
-          apt_suite: formData.aptSuite,
-          leave_at_door: userDeliveryPreferences.leaveAtDoor || false,
-          scheduled_time: 'ASAP'
-        } : null,
-        pickup_address: {
-          name: restaurant.name,
-          address: restaurant.address || 'Restaurant address',
-          lat: restaurant.latitude,
-          lng: restaurant.longitude
-        },
         delivery_method: formData.deliveryMethod,
         customer_info: {
           name: formData.name,
@@ -1106,15 +1111,135 @@ const Checkout: React.FC = () => {
         },
         payment_method_id: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id,
       };
+      
+      // Add delivery_address only if delivery method and all fields are valid
+      if (formData.deliveryMethod === 'delivery' && formData.address && formData.city && formData.state && formData.zip) {
+        orderData.delivery_address = {
+          street: formData.address,
+          city: formData.city,
+          state: formData.state.toUpperCase().slice(0, 2), // Ensure exactly 2 chars, uppercase
+          zip: formData.zip,
+        };
+      }
+      
+      // Add pickup_address if restaurant has address
+      if (restaurant.address) {
+        orderData.pickup_address = restaurant.address;
+      }
 
-      // Call create-order Edge Function (handles everything server-side)
-      const { data: orderResult, error: orderError } = await supabase.functions.invoke('create-order', {
-        body: orderData
-      });
+      // Call create-order Edge Function using direct fetch to get better error details
+      let orderResult, orderError;
+      try {
+        console.log('Sending order data:', JSON.stringify(orderData, null, 2));
+        
+        // Use direct fetch to get the actual error response body
+        // Get URL and key from environment or use hardcoded values
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xaxbucnjlrfkccsfiddq.supabase.co';
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGJ1Y25qbHJma2Njc2ZpZGRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyODMyODAsImV4cCI6MjA3Mjg1OTI4MH0.3ETuLETgSEj6W8gYi7WAoUFDPNo4IwTjuSnVtt1BCFE';
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.access_token) {
+          throw new Error('You must be logged in to place an order');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': supabaseAnonKey
+          },
+          body: JSON.stringify(orderData)
+        });
+        
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
+        console.log('Response status:', response.status, response.statusText);
+        
+        let responseData: any = null;
+        
+        try {
+          responseData = JSON.parse(responseText);
+          console.log('Parsed response data:', JSON.stringify(responseData, null, 2));
+        } catch (e) {
+          // Response might not be JSON
+          console.log('Response is not JSON:', responseText);
+        }
+        
+        if (!response.ok) {
+          // Extract error from response
+          let errorMessage = 'Unknown error';
+          if (responseData?.error) {
+            errorMessage = typeof responseData.error === 'string' 
+              ? responseData.error 
+              : JSON.stringify(responseData.error);
+          }
+          if (responseData?.details) {
+            const details = typeof responseData.details === 'string' 
+              ? responseData.details 
+              : JSON.stringify(responseData.details);
+            errorMessage = errorMessage + (errorMessage !== 'Unknown error' ? ' - ' : '') + details;
+          }
+          if (!errorMessage || errorMessage === 'Unknown error') {
+            if (responseText) {
+              errorMessage = responseText;
+            } else {
+              errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+          }
+          
+          console.error('Order creation failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: responseData,
+            rawText: responseText
+          });
+          
+          orderError = { 
+            message: errorMessage, 
+            error: errorMessage,
+            status: response.status
+          };
+        } else {
+          orderResult = responseData;
+          console.log('Order creation successful:', JSON.stringify(responseData, null, 2));
+        }
+      } catch (fetchError: any) {
+        console.error('Edge function invocation error:', fetchError);
+        // Handle network/CORS/connectivity errors
+        if (fetchError?.message?.includes('Failed to fetch') || 
+            fetchError?.message?.includes('network') ||
+            fetchError?.code === 'ECONNREFUSED' ||
+            fetchError?.code === 'ENOTFOUND') {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again. If the problem persists, the service may be temporarily unavailable.');
+        }
+        throw new Error(`Failed to create order: ${fetchError?.message || 'Unknown error'}`);
+      }
 
       if (orderError) {
-        console.error('Order creation error:', orderError);
-        throw new Error(`Failed to create order: ${orderError.message || 'Unknown error'}`);
+        console.error('Order creation error (full):', JSON.stringify(orderError, null, 2));
+        // Extract detailed error message from response
+        let errorMessage = 'Unknown error';
+        if ((orderError as any).context?.body) {
+          const contextBody = (orderError as any).context.body;
+          const parsedBody = typeof contextBody === 'string' ? JSON.parse(contextBody) : contextBody;
+          errorMessage = parsedBody?.error || errorMessage;
+        } else if ((orderError as any).error) {
+          errorMessage = (orderError as any).error;
+        } else if (orderError.message) {
+          errorMessage = orderError.message;
+        } else if (typeof orderError === 'string') {
+          errorMessage = orderError;
+        }
+        
+        // Provide more specific error messages
+        if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+          errorMessage = 'Your session has expired. Please log in again and try placing your order.';
+        } else if (errorMessage.includes('Validation error') || errorMessage.includes('validation')) {
+          // Show the actual validation error details
+          errorMessage = errorMessage;
+        }
+        throw new Error(`Failed to create order: ${errorMessage}`);
       }
 
       if (!orderResult || !orderResult.success) {
@@ -1167,8 +1292,8 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Show delivery details view if payment method exists
-  const showDeliveryDetailsView = hasPaymentMethods && selectedPaymentMethod;
+  // Show delivery details view (mobile view) - always show, payment methods can be added
+  const showDeliveryDetailsView = true; // Always show checkout form, even without payment methods
 
   return (
     <div className="min-h-screen bg-white">
@@ -1614,6 +1739,50 @@ const Checkout: React.FC = () => {
               <p className="text-xs text-gray-500">100% of the tip goes to your Feeder.</p>
             </div>
 
+            {/* Payment Method Section */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-semibold text-gray-900">Payment Method</span>
+              </div>
+              
+              {hasPaymentMethods && selectedPaymentMethod ? (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {selectedPaymentMethod.type === 'card' 
+                        ? `${selectedPaymentMethod.brand || 'Card'} •••• ${selectedPaymentMethod.last4}`
+                        : `Bank Account •••• ${selectedPaymentMethod.last4}`
+                      }
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {selectedPaymentMethod.is_default ? 'Default payment method' : 'Payment method'}
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-gray-600 hover:text-orange-500"
+                >
+                  <IconPlus size={20} />
+                  <span className="font-medium">Add Payment Method</span>
+                </button>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                You won't be charged until the order is accepted.
+              </p>
+            </div>
+
             {/* Total Section */}
             <div className="mb-6 pb-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -1634,10 +1803,10 @@ const Checkout: React.FC = () => {
             {/* Place Order Button */}
             <button
               onClick={processOrder}
-              disabled={isProcessing}
+              disabled={isProcessing || !selectedPaymentMethod}
               className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-4 text-base font-semibold mb-6"
             >
-              {isProcessing ? 'Processing...' : 'Place order'}
+              {isProcessing ? 'Processing...' : !selectedPaymentMethod ? 'Select Payment Method' : 'Place order'}
             </button>
           </div>
         </div>

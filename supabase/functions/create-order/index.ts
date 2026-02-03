@@ -91,16 +91,13 @@ async function createPaymentIntent(params: {
 
 // REMOVED: confirmPaymentIntent function (client-side confirmation only)
 
-const corsHeaders = {
-  ...getCorsHeaders(req.headers.get('origin')),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
 serve(async (req) => {
+  // Get CORS headers based on request origin
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -138,7 +135,7 @@ serve(async (req) => {
         menu_item_id: uuidSchema,
         quantity: z.number().int().positive(),
         price_cents: centsSchema,
-        special_instructions: z.string().optional(),
+        special_instructions: z.string().nullish(), // Allow null, undefined, or string
       })),
       food_subtotal_cents: centsSchema,
       delivery_fee_cents: centsSchema.optional(),
@@ -165,11 +162,29 @@ serve(async (req) => {
       auto_boost_cap_cents: centsSchema.optional(),
     });
 
-    const validation = await validateRequest(orderSchema, req);
-    if (!validation.success) {
+    // Read request body once for validation and logging
+    let requestBody: any;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      console.error('Failed to parse request body:', e);
       return new Response(
-        JSON.stringify({ error: validation.error }),
-        { status: validation.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid request body format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('Received request body:', JSON.stringify(requestBody, null, 2));
+    
+    // Validate using the parsed body
+    const validation = orderSchema.safeParse(requestBody);
+    if (!validation.success) {
+      const errorMessage = validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      console.error('Validation failed:', errorMessage);
+      console.error('Validation errors:', JSON.stringify(validation.error.errors, null, 2));
+      return new Response(
+        JSON.stringify({ error: `Validation error: ${errorMessage}`, details: validation.error.errors }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -285,15 +300,15 @@ serve(async (req) => {
 
     const snapshotBasePayCents = Number(payoutSettings?.driver_base_pay_cents ?? 250);
     const snapshotShareBps = Number(payoutSettings?.driver_delivery_fee_share_bps ?? 7000);
-    const deliveryFeesTotalCents = delivery_method === 'delivery' ? finalDeliveryFee : 0;
+    const initialDeliveryFeesTotalCents = delivery_method === 'delivery' ? finalDeliveryFee : 0;
 
     // Calculate driver payout using SQL function (single source of truth)
     let driverPayoutSnapshot = { driver_payout_cents: 0, platform_delivery_share_cents: 0 };
-    if (deliveryFeesTotalCents > 0) {
+    if (initialDeliveryFeesTotalCents > 0) {
       const { data: payoutResult, error: payoutError } = await supabaseAdmin.rpc(
         'calculate_driver_payout_cents',
         {
-          p_delivery_fees_total_cents: deliveryFeesTotalCents,
+          p_delivery_fees_total_cents: initialDeliveryFeesTotalCents,
           p_tip_cents: finalTip,
           p_base_pay_cents: snapshotBasePayCents,
           p_share_bps: snapshotShareBps
@@ -329,7 +344,6 @@ serve(async (req) => {
     const deliveryFeesTotalCents = computedDeliveryFees || base_delivery_fee_cents;
 
     // Recalculate driver payout with correct delivery fees
-    let driverPayoutSnapshot = { driver_payout_cents: 0, platform_delivery_share_cents: 0, driver_fee_share_cents: 0 };
     if (deliveryFeesTotalCents > 0) {
       const { data: payoutResult } = await supabaseAdmin.rpc(
         'calculate_driver_payout_cents',
@@ -341,7 +355,7 @@ serve(async (req) => {
         }
       );
       if (payoutResult && payoutResult.length > 0) {
-        driverPayoutSnapshot = payoutResult[0];
+        driverPayoutSnapshot = { ...payoutResult[0], driver_fee_share_cents: payoutResult[0].driver_fee_share_cents || 0 };
       }
     }
 
@@ -406,10 +420,6 @@ serve(async (req) => {
         auto_boost_cap_cents: auto_boost_cap_cents,
         escalated_total_cents: 0,
         customer_boost_required: false,
-        tester_credit_applied_cents: totalTesterCreditApplied,
-        tester_service_credit_applied_cents: testerServiceCredit,
-        tester_delivery_credit_applied_cents: testerDeliveryCredit,
-        tester_platform_credit_applied_cents: testerPlatformCredit,
         service_fee_cents: finalServiceFee,
         tax_cents: finalTax,
         total_cents: finalTotal,
