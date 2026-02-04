@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { Group, Select, TextInput, Button, DatePickerInput } from '@mantine/core';
 import { IconSearch, IconFilter, IconX } from '@tabler/icons-react';

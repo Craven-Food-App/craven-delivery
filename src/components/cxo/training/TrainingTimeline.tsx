@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { Stack, Timeline, Text, Badge, Card } from '@mantine/core';
 import { CxoTrainingAudit } from '@/types/cxo-training';

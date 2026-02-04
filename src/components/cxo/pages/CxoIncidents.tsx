@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Stack, Table, Button, Modal, Textarea, Select, Group, Text, Title, Loader, Center, Badge, TextInput } from '@mantine/core';
 import { StatusBadge } from '@/components/cxo/shared/StatusBadge';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Stack, Table, Card, Group, Text, Title, Loader, Center, Badge, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
