@@ -1,61 +1,92 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { Box } from '@mantine/core';
+import { useLocation } from 'react-router-dom';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
-  headerHeight?: string; // Optional header height for pages with fixed headers
 }
 
 /**
- * Global Mobile Layout for Driver App
+ * Global Mobile Layout
  * - Ensures top safe area (status bar, notch, camera)
  * - Ensures bottom safe area (home indicator, nav buttons)
  * - Provides consistent spacing across all pages
  * - Responsive to any mobile screen size
- * - No hardcoded heights - all constraint-driven
+ * - No background colors - transparent layout
  */
-export function MobileLayout({ 
-  children, 
-  showBottomNav = false,
-  headerHeight 
-}: MobileLayoutProps) {
-  // Calculate bottom padding based on navigation and safe area
-  const bottomPadding = showBottomNav 
-    ? `calc(64px + env(safe-area-inset-bottom, 0px))`
-    : 'env(safe-area-inset-bottom, 0px)';
-
+export function MobileLayout({ children, showBottomNav = true }: MobileLayoutProps) {
+  const location = useLocation();
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Pages where we hide bottom navigation
+  const hideNavPaths = [
+    '/auth',
+    '/checkout',
+    '/driver',
+    '/enhanced-onboarding',
+    '/restaurant-dashboard',
+    '/merchant',
+    '/admin',
+    '/ceo',
+    '/cfo',
+    '/coo',
+    '/cto',
+    '/cxo',
+    '/hub',
+    '/finance',
+    '/hr-portal',
+    '/marketing-portal',
+  ];
+  
+  const shouldShowNav = showBottomNav && !hideNavPaths.some(path => 
+    location.pathname.startsWith(path)
+  );
+  
+  // Bottom navigation height including safe area
+  const bottomNavHeight = shouldShowNav ? '64px' : '0px';
+  
+  // Scroll to top on route change
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [location.pathname]);
+  
   return (
-    <div
+    <Box
       style={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100dvh', // Use dvh (dynamic viewport height) instead of vh
+        minHeight: '100dvh',
         width: '100%',
         position: 'relative',
-        // Top safe area for status bar, notch, camera
-        paddingTop: headerHeight 
-          ? `calc(${headerHeight} + env(safe-area-inset-top, 0px))`
-          : 'env(safe-area-inset-top, 0px)',
-        // Bottom safe area
-        paddingBottom: bottomPadding,
+        // No top padding - let individual headers position themselves below safe area
+        paddingTop: 0,
+        // No bottom padding - handled by fixed nav
+        paddingBottom: 0,
         overflow: 'hidden',
       }}
     >
       {/* Main scrollable content */}
-      <main
+      <Box
+        ref={mainScrollRef}
+        component="main"
         style={{
           flex: 1,
           width: '100%',
           overflowY: 'auto',
-          overflowX: 'hidden',
+          overflowX: 'auto', // Allow horizontal scrolling for horizontal restaurant rows
           WebkitOverflowScrolling: 'touch',
-          // Additional bottom spacing if needed
-          paddingBottom: showBottomNav ? 0 : 'env(safe-area-inset-bottom, 0px)',
+          // Space for bottom navigation
+          paddingBottom: shouldShowNav 
+            ? `calc(${bottomNavHeight} + env(safe-area-inset-bottom, 0px))`
+            : 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         {children}
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }
 

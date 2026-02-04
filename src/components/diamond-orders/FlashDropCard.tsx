@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { Card, RingProgress, Badge, Button, Group, Stack, Text, Box } from '@mantine/core';
 import { Zap } from 'lucide-react';

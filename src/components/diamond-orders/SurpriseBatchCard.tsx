@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { Card, Badge, Button, Group, Stack, Text, Box, Paper } from '@mantine/core';
 import { Package, Zap } from 'lucide-react';

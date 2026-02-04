@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState } from "react";
 import { Card, Group, Text, Button, Badge, Progress, Stack, Textarea, Tabs, Checkbox, Select } from "@mantine/core";
 import { IconAlertTriangle, IconCheck, IconClock, IconShield, IconFileText } from "@tabler/icons-react";

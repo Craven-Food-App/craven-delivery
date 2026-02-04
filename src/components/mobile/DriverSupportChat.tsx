@@ -423,10 +423,9 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
             overflowY: 'auto',
             background: C.white,
             paddingTop: 12,
-            paddingBottom: 12,
-            WebkitOverflowScrolling: 'touch',
-            // Adjust for keyboard
+            // Adjust for keyboard - single paddingBottom value
             paddingBottom: keyboardState.isOpen ? `${keyboardState.height}px` : 12,
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {messages.map(renderMessage)}

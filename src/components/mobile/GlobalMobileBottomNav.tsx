@@ -1,12 +1,18 @@
-import React from 'react';
-import { Box, Group, Text, Badge, Button } from '@mantine/core';
+import React, { useState, useEffect } from 'react';
+import { Box, Group, Text, Badge, ActionIcon } from '@mantine/core';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconHome, IconHeart, IconPackage, IconUser, IconShoppingCart } from '@tabler/icons-react';
+import { IconShoppingBag, IconHeart, IconPackage, IconUser, IconShoppingCart } from '@tabler/icons-react';
 import { useCart } from '@/contexts/CartContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect } from 'react';
 
+/**
+ * Global Mobile Bottom Navigation
+ * - Always positioned at absolute bottom
+ * - Respects safe area (Android/iOS)
+ * - Responsive to all screen sizes
+ * - Persistent across app (except certain pages)
+ */
 const GlobalMobileBottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,19 +34,38 @@ const GlobalMobileBottomNav: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Only show on mobile
   if (!isMobile) return null;
 
-  // Don't show on certain pages
-  const hideOnPaths = ['/mobile', '/driver', '/enhanced-onboarding', '/restaurant-dashboard', '/merchant'];
+  // Hide on specific paths
+  const hideOnPaths = [
+    '/driver',
+    '/enhanced-onboarding',
+    '/restaurant-dashboard',
+    '/merchant',
+    '/auth',
+    '/customer-support',
+    '/admin',
+    '/ceo',
+    '/cfo',
+    '/coo',
+    '/cto',
+    '/cxo',
+    '/hub',
+    '/finance',
+    '/hr-portal',
+    '/marketing-portal',
+  ];
+  
   if (hideOnPaths.some(path => location.pathname.startsWith(path))) {
     return null;
   }
 
   const navItems = [
     {
-      id: 'home',
-      label: 'Home',
-      icon: IconHome,
+      id: 'shop',
+      label: 'Shop',
+      icon: IconShoppingBag,
       path: '/restaurants',
       isActive: location.pathname === '/restaurants' || location.pathname === '/',
     },
@@ -76,7 +101,6 @@ const GlobalMobileBottomNav: React.FC = () => {
   ];
 
   return (
-    <>
       <Box
         component="nav"
         style={{
@@ -84,69 +108,112 @@ const GlobalMobileBottomNav: React.FC = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          maxWidth: '430px',
-          margin: '0 auto',
+          width: '100%',
+          maxWidth: '100vw',
           backgroundColor: 'white',
           borderTop: '1px solid #e5e7eb',
           boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-          zIndex: 1000,
-          visibility: 'hidden',
+          zIndex: 9999,
+          // Safe area for bottom (Android nav buttons, iOS home indicator)
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+          paddingTop: '8px',
+          // Ensure it's always visible and sticky
+          visibility: 'visible',
+          display: 'flex',
+          pointerEvents: 'auto',
         }}
       >
-        <Group justify="space-around" py="xs" px="xs" gap={0}>
+      <Group
+        justify="space-around"
+        gap={0}
+        style={{
+          width: '100%',
+          margin: '0 auto',
+          maxWidth: '100%',
+        }}
+      >
           {navItems.map((item) => {
             const IconComponent = item.icon;
             const isActive = item.isActive;
 
             return (
-              <Button
+            <ActionIcon
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  if (item.id === 'shop') {
+                    // Set flag to browse as guest and navigate
+                    sessionStorage.setItem('browse_as_guest', 'true');
+                    navigate('/restaurants?browse=guest');
+                  } else {
+                    navigate(item.path);
+                  }
+                }}
                 variant="subtle"
+              size="xl"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '2px',
-                  padding: '2px 4px',
-                  minWidth: 'auto',
+                justifyContent: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                minWidth: '60px',
+                minHeight: '48px',
                   flex: '1 1 0',
-                  color: isActive ? '#b91c1c' : '#737373',
+                color: isActive ? '#ff6b35' : '#737373',
                   position: 'relative',
+                backgroundColor: 'transparent',
+                borderRadius: 0,
+                // Touch-friendly size
+                touchAction: 'manipulation',
                 }}
               >
                 <Box style={{ position: 'relative' }}>
-                  <IconComponent size={18} style={{ color: isActive ? '#b91c1c' : '#737373' }} />
+                <IconComponent 
+                  size={24} 
+                  stroke={isActive ? 2.5 : 2}
+                  style={{ color: isActive ? '#ff6b35' : '#737373' }} 
+                />
                   {item.showBadge && cartCount > 0 && (
                     <Badge
                       size="xs"
                       color="red"
                       style={{
                         position: 'absolute',
-                        top: -4,
-                        right: -4,
-                        minWidth: '14px',
-                        height: '14px',
-                        padding: '0 3px',
-                        fontSize: '9px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      top: -6,
+                      right: -6,
+                      minWidth: '18px',
+                      height: '18px',
+                      padding: '0 4px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      borderRadius: '9px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                       }}
                     >
                       {cartCount > 9 ? '9+' : cartCount}
                     </Badge>
                   )}
                 </Box>
-                <Text size="10px" fw={isActive ? 600 : 500} c={isActive ? 'red.7' : 'gray.6'} style={{ lineHeight: 1 }}>
+              <Text 
+                size="11px" 
+                fw={isActive ? 600 : 500}
+                style={{ 
+                  color: isActive ? '#ff6b35' : '#737373',
+                  lineHeight: 1,
+                  marginTop: '2px',
+                }}
+              >
                   {item.label}
                 </Text>
-              </Button>
+            </ActionIcon>
             );
           })}
         </Group>
       </Box>
-      {/* Spacing for nav */}
-      <Box style={{ height: '64px' }} />
-    </>
   );
 };
 
