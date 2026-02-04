@@ -191,8 +191,17 @@ const CraveMoreSubscription: React.FC = () => {
         <Box style={{ width: '36px' }} /> {/* Spacer for centering */}
       </Group>
 
-      {/* Main Content */}
-      <Stack gap="lg" p="md" style={{ maxWidth: '600px', margin: '0 auto', paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
+      {/* Main Content - offset below fixed header */}
+      <Stack
+        gap="lg"
+        p="md"
+        style={{
+          maxWidth: '600px',
+          margin: '0 auto',
+          // Ensure content always starts fully below the fixed header + safe area
+          paddingTop: 'calc(100px + env(safe-area-inset-top, 0px))',
+        }}
+      >
         {/* Main Headline */}
         <Title
           order={2}

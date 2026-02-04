@@ -287,3 +287,6 @@ handleContinueAsGuest() → navigate('/restaurants', { replace: true })
 
 The "Continue as Guest" feature provides a frictionless browsing experience while encouraging account creation at the right moment (checkout), leading to better user engagement and conversion rates.
 
+
+
+

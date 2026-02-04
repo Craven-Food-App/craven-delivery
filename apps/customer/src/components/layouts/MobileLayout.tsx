@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box } from '@mantine/core';
 import { useLocation } from 'react-router-dom';
 
@@ -17,6 +17,7 @@ interface MobileLayoutProps {
  */
 export function MobileLayout({ children, showBottomNav = true }: MobileLayoutProps) {
   const location = useLocation();
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   
   // Pages where we hide bottom navigation
   const hideNavPaths = [
@@ -30,6 +31,13 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
   
   // Bottom navigation height including safe area
   const bottomNavHeight = shouldShowNav ? '64px' : '0px';
+  
+  // Scroll to top on route change
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [location.pathname]);
   
   return (
     <Box
@@ -48,6 +56,7 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
     >
       {/* Main scrollable content */}
       <Box
+        ref={mainScrollRef}
         component="main"
         style={{
           flex: 1,

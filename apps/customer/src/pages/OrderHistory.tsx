@@ -470,7 +470,7 @@ export default function OrderHistory() {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))', paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}>
+    <Box style={{ minHeight: '100vh', backgroundColor: 'white', paddingBottom: cartCount > 0 ? 'calc(220px + env(safe-area-inset-bottom, 0px))' : 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header - Fixed at Top matching Chat Header Structure */}
       <Box style={{
         position: 'fixed',
@@ -486,7 +486,7 @@ export default function OrderHistory() {
         flexShrink: 0
       }}>
             {isMobile && (
-              <Group mb="md" align="center">
+              <Group align="center" gap="md" mb="xs">
                 <ActionIcon
                   variant="subtle"
                   onClick={() => navigate(-1)}
@@ -494,16 +494,21 @@ export default function OrderHistory() {
                 >
                   <IconArrowLeft size={24} />
                 </ActionIcon>
+                <Text fw={900} size="xl" c="#171717" style={{ margin: 0 }}>
+                  Order History
+                </Text>
               </Group>
             )}
-            <Text fw={900} size="xl" mb="xs" c="#171717">
-              Order History
-            </Text>
+            {!isMobile && (
+              <Text fw={900} size="xl" mb="xs" c="#171717">
+                Order History
+              </Text>
+            )}
             <Text size="sm" c="#737373">
               Your recent orders
             </Text>
           </Box>
-      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? '16px' : '24px' }}>
+      <Box style={{ maxWidth: isMobile ? '100%' : '768px', margin: '0 auto', padding: '16px', paddingTop: isMobile ? 'calc(140px + env(safe-area-inset-top, 0px))' : 'calc(140px + env(safe-area-inset-top, 0px))' }}>
         <Stack gap="lg">
 
           {/* Orders List */}

@@ -135,12 +135,20 @@ const InviteFriends: React.FC = () => {
             : 'calc(100px + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      {/* Top Navigation */}
+      {/* Top Navigation - Fixed Header */}
       <Group
         p="md"
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 1000,
+          backgroundColor: 'white',
           borderBottom: '1px solid #e5e7eb',
           paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+          flexShrink: 0,
         }}
       >
         <Button
@@ -164,8 +172,16 @@ const InviteFriends: React.FC = () => {
         </Button>
       </Group>
 
-      {/* Content */}
-      <Stack gap="lg" p="md" style={{ maxWidth: '600px', margin: '0 auto' }}>
+      {/* Content - offset below fixed header */}
+      <Stack
+        gap="lg"
+        p="md"
+        style={{
+          maxWidth: '600px',
+          margin: '0 auto',
+          paddingTop: 'calc(140px + env(safe-area-inset-top, 0px))',
+        }}
+      >
         {/* Hero image + headline / subhead */}
         <Stack gap="md">
           <Box

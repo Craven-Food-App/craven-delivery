@@ -846,3 +846,6 @@ const availableBalance = totalEarnings - totalPaidOut; // Calculated, not stored
 - `transfer-gas-money` function: No idempotency keys
 - Both functions could create duplicate payout records on retry
 
+
+
+

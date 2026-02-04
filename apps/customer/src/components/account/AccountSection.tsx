@@ -346,9 +346,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
-              </div>
+              <User className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Account Details</p>
                 <p className="text-sm text-gray-600">Edit your personal information</p>
@@ -363,9 +361,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-white" />
-              </div>
+              <CreditCard className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Payment Methods</p>
                 <p className="text-sm text-gray-600">{paymentMethods.length > 0 ? `${paymentMethods.length} saved` : 'Add payment method'}</p>
@@ -380,9 +376,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
+              <MapPin className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Delivery Addresses</p>
                 <p className="text-sm text-gray-600">{addresses.length > 0 ? `${addresses.length} saved` : 'Add delivery address'}</p>
@@ -397,9 +391,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <Package className="w-5 h-5 text-purple-600" />
-              </div>
+              <Package className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Order History</p>
                 <p className="text-sm text-gray-600">{orderHistory.length > 0 ? `${orderHistory.length} orders` : 'No orders yet'}</p>
@@ -414,9 +406,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" />
-              </div>
+              <Star className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">CraveMore/Get More with $0 delivery</p>
                 <p className="text-sm text-gray-600">Unlock exclusive benefits</p>
@@ -431,9 +421,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
+              <DollarSign className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">My Credits</p>
                 <p className="text-sm text-gray-600">View and redeem your credits</p>
@@ -448,12 +436,10 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" />
-              </div>
+              <Star className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Invite friends to earn credits</p>
-                <p className="text-sm text-gray-600">Share Crave’n and get rewarded</p>
+                <p className="text-sm text-gray-600">Share Crave'n and get rewarded</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -465,9 +451,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Bell className="w-5 h-5 text-yellow-600" />
-              </div>
+              <Bell className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Notifications</p>
                 <p className="text-sm text-gray-600">Manage your preferences</p>
@@ -482,9 +466,7 @@ export const AccountSection = () => {
             className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-indigo-600" />
-              </div>
+              <MessageCircle className="w-5 h-5 text-orange-500" />
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Help & Support</p>
                 <p className="text-sm text-gray-600">Get help with your orders</p>
@@ -525,9 +507,7 @@ export const AccountSection = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
+                <User className="w-5 h-5 text-orange-500" />
                 <span>Account Details</span>
               </CardTitle>
               <CardDescription>Edit your personal information</CardDescription>
@@ -547,9 +527,7 @@ export const AccountSection = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
+                <CreditCard className="w-5 h-5 text-orange-500" />
                 <span>Payment Methods</span>
               </CardTitle>
               <CardDescription>{paymentMethods.length > 0 ? `${paymentMethods.length} saved` : 'Add payment method'}</CardDescription>
@@ -569,9 +547,7 @@ export const AccountSection = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-white" />
-                </div>
+                <MapPin className="w-5 h-5 text-orange-500" />
                 <span>Delivery Addresses</span>
               </CardTitle>
               <CardDescription>{addresses.length > 0 ? `${addresses.length} saved` : 'Add delivery address'}</CardDescription>
@@ -591,9 +567,7 @@ export const AccountSection = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Package className="w-5 h-5 text-purple-600" />
-                </div>
+                <Package className="w-5 h-5 text-orange-500" />
                 <span>Order History</span>
               </CardTitle>
               <CardDescription>{orderHistory.length > 0 ? `${orderHistory.length} orders` : 'No orders yet'}</CardDescription>
@@ -613,9 +587,7 @@ export const AccountSection = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-white" />
-                </div>
+                <Smartphone className="w-5 h-5 text-orange-500" />
                 <span>Early Access Hub</span>
               </CardTitle>
               <CardDescription>Track your tester progress and rewards</CardDescription>

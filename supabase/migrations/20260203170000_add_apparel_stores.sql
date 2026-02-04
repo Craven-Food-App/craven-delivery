@@ -44,7 +44,7 @@ BEGIN
     ON CONFLICT (user_id) DO NOTHING;
     
     INSERT INTO public.restaurants (id, owner_id, name, description, address, city, state, zip_code, phone, email, cuisine_type, is_active, rating, total_reviews, image_url, header_image_url, created_at, updated_at)
-    VALUES (v_restaurant_id, owner_id, 'Crave''n Merch', 'Official Crave''n branded merchandise and apparel. Exclusive hoodies, t-shirts, accessories, and branded items featuring our iconic designs.', '6759 Nebraska Ave', 'Toledo', 'OH', '43615', '555-1001', 'apparel1@crave-n.shop', 'apparel', true, 4.9, 523, 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=600&fit=crop', NOW(), NOW())
+    VALUES (v_restaurant_id, owner_id, 'Crave''n Merch', 'Official Crave''n branded merchandise and apparel. Exclusive hoodies, t-shirts, accessories, and branded items featuring our iconic designs.', '6759 Nebraska Ave', 'Toledo', 'OH', '43615', '555-1001', 'apparel1@crave-n.shop', 'apparel', true, 4.9, 523, 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800&h=600&fit=crop', NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
     
     -- Create menu categories
@@ -58,17 +58,17 @@ BEGIN
     SELECT id INTO category_accessories_id FROM public.menu_categories mc WHERE mc.restaurant_id = v_restaurant_id AND mc.name = 'Accessories' LIMIT 1;
     
     INSERT INTO public.menu_items (id, restaurant_id, name, description, price_cents, category_id, image_url, is_available, created_at) VALUES
-    (gen_random_uuid(), v_restaurant_id, 'Crave''n Signature Hoodie', 'Official Crave''n branded hoodie, premium quality cotton blend', 7999, category_apparel_id, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Crave''n Logo T-Shirt', 'Classic Crave''n logo t-shirt, multiple colors available', 3999, category_apparel_id, 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Feeder Hoodie', 'Premium feeder hoodie with Crave''n branding', 8999, category_apparel_id, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Feeder Hat', 'Official Crave''n feeder hat, adjustable', 2999, category_accessories_id, 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Heated Delivery Bag', 'Insulated heated bag for food delivery, Crave''n branded', 4999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Car Window Decal', 'Crave''n logo car window decal, weatherproof', 999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Bumper Sticker - "I''m Always Crave''n Something"', 'Official Crave''n bumper sticker, vinyl', 499, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Key Chain', 'Metal key chain with Crave''n logo', 1299, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Mouse Pad', 'Premium mouse pad with Crave''n branding', 1999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, '50-Piece Puzzle', 'Crave''n branded 50-piece jigsaw puzzle', 2499, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, '100-Piece Puzzle', 'Crave''n branded 100-piece jigsaw puzzle', 3499, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW())
+    (gen_random_uuid(), v_restaurant_id, 'Crave''n Signature Hoodie', 'Official Crave''n branded hoodie with C logo, premium quality cotton blend', 7999, category_apparel_id, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Crave''n Logo T-Shirt', 'Classic Crave''n logo t-shirt with C logo, multiple colors available', 3999, category_apparel_id, 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Feeder Hoodie', 'Premium feeder hoodie with Crave''n C logo branding', 8999, category_apparel_id, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Feeder Hat', 'Official Crave''n feeder hat with C logo, adjustable', 2999, category_accessories_id, 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Heated Delivery Bag', 'Insulated heated bag for food delivery, Crave''n branded with logo', 4999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Car Window Decal', 'Crave''n C logo car window decal, weatherproof vinyl', 999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Bumper Sticker - "I''m Always Crave''n Something"', 'Official Crave''n bumper sticker with logo, vinyl', 499, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Key Chain', 'Metal key chain with Crave''n C logo', 1299, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Mouse Pad', 'Premium mouse pad with Crave''n logo branding', 1999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, '50-Piece Puzzle', 'Crave''n branded 50-piece jigsaw puzzle with logo', 2499, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, '100-Piece Puzzle', 'Crave''n branded 100-piece jigsaw puzzle with logo', 3499, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW())
     ON CONFLICT DO NOTHING;
   END IF;
 
@@ -98,7 +98,7 @@ BEGIN
     ON CONFLICT (user_id) DO NOTHING;
     
     INSERT INTO public.restaurants (id, owner_id, name, description, address, city, state, zip_code, phone, email, cuisine_type, is_active, rating, total_reviews, image_url, header_image_url, created_at, updated_at)
-    VALUES (v_restaurant_id, owner_id, 'Elite Couture', 'Luxury fashion house specializing in designer apparel, accessories, and footwear. Exclusive branded collections for the discerning shopper.', '123 Main Street', 'Sylvania', 'OH', '43560', '555-1002', 'apparel2@crave-n.shop', 'apparel', true, 4.9, 287, 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop', NOW(), NOW())
+    VALUES (v_restaurant_id, owner_id, 'Elite Couture', 'Luxury fashion house specializing in designer apparel, accessories, and footwear. Exclusive branded collections for the discerning shopper.', '123 Main Street', 'Sylvania', 'OH', '43560', '555-1002', 'apparel2@crave-n.shop', 'apparel', true, 4.9, 287, 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=800&h=600&fit=crop', NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
     
     -- Create menu categories
@@ -116,8 +116,8 @@ BEGIN
     INSERT INTO public.menu_items (id, restaurant_id, name, description, price_cents, category_id, image_url, is_available, created_at) VALUES
     (gen_random_uuid(), v_restaurant_id, 'Designer Blazer', 'Tailored wool blazer, premium quality', 24999, category_apparel_id, 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Designer Dress', 'Elegant evening dress, exclusive design', 19999, category_apparel_id, 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Cashmere Coat', 'Premium cashmere coat, timeless elegance', 39999, category_apparel_id, 'https://images.unsplash.com/photo-1594633313593-bab3825d0caf?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Silk Scarf', 'Luxury silk scarf, designer pattern', 8999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Cashmere Coat', 'Premium cashmere coat, timeless elegance', 39999, category_apparel_id, 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Silk Scarf', 'Luxury silk scarf, designer pattern', 8999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Leather Handbag', 'Premium leather handbag, designer brand', 34999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Luxury Watch', 'Swiss timepiece, premium craftsmanship', 49999, category_accessories_id, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Designer Sunglasses', 'Luxury sunglasses, UV protection', 12999, category_accessories_id, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop', true, NOW()),
@@ -167,12 +167,12 @@ BEGIN
     INSERT INTO public.menu_items (id, restaurant_id, name, description, price_cents, category_id, image_url, is_available, created_at) VALUES
     (gen_random_uuid(), v_restaurant_id, 'Premium Sneakers', 'Limited edition athletic sneakers', 12999, category_shoes_id, 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Running Shoes', 'High-performance running shoes', 9999, category_shoes_id, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Basketball Shoes', 'High-top basketball shoes, excellent grip', 11999, category_shoes_id, 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Basketball Shoes', 'High-top basketball shoes, excellent grip', 11999, category_shoes_id, 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Training Shoes', 'Multi-purpose training shoes, excellent grip', 10999, category_shoes_id, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Casual Sneakers', 'Comfortable everyday sneakers, stylish design', 6999, category_shoes_id, 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Casual Sneakers', 'Comfortable everyday sneakers, stylish design', 6999, category_shoes_id, 'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Shoe Laces', 'Premium replacement shoe laces, multiple colors', 999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Shoe Cleaner Kit', 'Complete shoe cleaning and care kit', 2499, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Shoe Insoles', 'Premium cushioned insoles for comfort', 1999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW())
+    (gen_random_uuid(), v_restaurant_id, 'Shoe Cleaner Kit', 'Complete shoe cleaning and care kit', 2499, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Shoe Insoles', 'Premium cushioned insoles for comfort', 1999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW())
     ON CONFLICT DO NOTHING;
   END IF;
 
@@ -320,12 +320,12 @@ BEGIN
     INSERT INTO public.menu_items (id, restaurant_id, name, description, price_cents, category_id, image_url, is_available, created_at) VALUES
     (gen_random_uuid(), v_restaurant_id, 'Designer Handbag', 'Premium leather handbag, multiple colors', 27999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Leather Belt', 'Genuine leather belt, classic buckle', 4999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Silver Necklace', 'Sterling silver necklace, elegant design', 8999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Silver Necklace', 'Sterling silver necklace, elegant design', 8999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Designer Watch', 'Luxury timepiece, Swiss movement', 34999, category_accessories_id, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Sunglasses', 'Premium sunglasses, UV protection', 5999, category_accessories_id, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Leather Wallet', 'Genuine leather wallet, RFID blocking', 3999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Gold Earrings', '14k gold earrings, elegant design', 12999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Designer Backpack', 'Premium leather backpack, multiple compartments', 19999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW())
+    (gen_random_uuid(), v_restaurant_id, 'Leather Wallet', 'Genuine leather wallet, RFID blocking', 3999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Gold Earrings', '14k gold earrings, elegant design', 12999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW()),
+    (gen_random_uuid(), v_restaurant_id, 'Designer Backpack', 'Premium leather backpack, multiple compartments', 19999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW())
     ON CONFLICT DO NOTHING;
   END IF;
 
@@ -376,7 +376,7 @@ BEGIN
     (gen_random_uuid(), v_restaurant_id, 'Designer Cap', 'Premium snapback with embroidered logo', 3499, category_accessories_id, 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Crossbody Bag', 'Leather crossbody with signature logo', 5999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Branded Beanie', 'Warm beanie with embroidered logo', 2499, category_accessories_id, 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Streetwear Backpack', 'Urban backpack with signature branding', 7999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW())
+    (gen_random_uuid(), v_restaurant_id, 'Streetwear Backpack', 'Urban backpack with signature branding', 7999, category_accessories_id, 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop', true, NOW())
     ON CONFLICT DO NOTHING;
   END IF;
 
@@ -406,7 +406,7 @@ BEGIN
     ON CONFLICT (user_id) DO NOTHING;
     
     INSERT INTO public.restaurants (id, owner_id, name, description, address, city, state, zip_code, phone, email, cuisine_type, is_active, rating, total_reviews, image_url, header_image_url, created_at, updated_at)
-    VALUES (v_restaurant_id, owner_id, 'Style Studio', 'Contemporary fashion for every occasion. Trendy apparel, shoes, and accessories. Mix of designer and affordable fashion.', '234 Fashion Plaza', 'Bowling Green', 'OH', '43402', '555-1008', 'apparel8@crave-n.shop', 'apparel', true, 4.6, 267, 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=600&fit=crop', NOW(), NOW())
+    VALUES (v_restaurant_id, owner_id, 'Style Studio', 'Contemporary fashion for every occasion. Trendy apparel, shoes, and accessories. Mix of designer and affordable fashion.', '234 Fashion Plaza', 'Bowling Green', 'OH', '43402', '555-1008', 'apparel8@crave-n.shop', 'apparel', true, 4.6, 267, 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=400&fit=crop', 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop', NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
     
     -- Create menu categories
@@ -429,7 +429,7 @@ BEGIN
     (gen_random_uuid(), v_restaurant_id, 'Casual Sneakers', 'Comfortable everyday sneakers, stylish design', 6999, category_shoes_id, 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Ankle Boots', 'Stylish ankle boots, comfortable heel', 8999, category_shoes_id, 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&h=400&fit=crop', true, NOW()),
     (gen_random_uuid(), v_restaurant_id, 'Crossbody Purse', 'Stylish crossbody purse, multiple colors', 4999, category_accessories_id, 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop', true, NOW()),
-    (gen_random_uuid(), v_restaurant_id, 'Statement Necklace', 'Bold statement necklace, eye-catching design', 3999, category_accessories_id, 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop', true, NOW())
+    (gen_random_uuid(), v_restaurant_id, 'Statement Necklace', 'Bold statement necklace, eye-catching design', 3999, category_accessories_id, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop', true, NOW())
     ON CONFLICT DO NOTHING;
   END IF;
 

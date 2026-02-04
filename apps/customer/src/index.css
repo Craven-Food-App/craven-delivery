@@ -345,6 +345,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    background-color: #ffffff !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
@@ -356,6 +357,11 @@ All colors MUST be HSL.
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    background-color: #ffffff !important;
+  }
+  
+  html {
+    background-color: #ffffff !important;
   }
 
   html {

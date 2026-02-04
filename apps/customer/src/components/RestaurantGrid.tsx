@@ -25,6 +25,7 @@ interface RestaurantGridProps {
   horizontal?: boolean; // Display as horizontal scrollable row
   categoryFilter?: string; // For filtering by menu category (e.g., 'Accessories', 'Shoes')
   customRestaurants?: Restaurant[]; // Pre-fetched restaurants to display (skips fetch)
+  columns?: number; // Number of columns for grid layout (default: responsive)
 }
 const RestaurantGrid = ({
   searchQuery,
@@ -34,7 +35,8 @@ const RestaurantGrid = ({
   sectionTitle,
   horizontal = false,
   categoryFilter,
-  customRestaurants
+  customRestaurants,
+  columns
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +219,7 @@ const RestaurantGrid = ({
     return null;
   }
 
-  return <section className="py-6 bg-muted/30">
+  return <section className="py-6" style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}>
       {horizontal ? (
         <>
           {sectionTitle && (
@@ -279,7 +281,7 @@ const RestaurantGrid = ({
                     : "No restaurants available right now. Be the first to register your restaurant!"}
             </p>
           </div> : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className={`grid gap-4 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
               {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
                 animationDelay: `${index * 100}ms`
               }}>

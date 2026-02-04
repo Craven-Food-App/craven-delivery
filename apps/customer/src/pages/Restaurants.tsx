@@ -300,6 +300,8 @@ const Restaurants = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [addressSuggestionsData, setAddressSuggestionsData] = useState<any[]>([]); // Store full address data
+  const [addressSearchQuery, setAddressSearchQuery] = useState<string>('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
@@ -347,6 +349,7 @@ const Restaurants = () => {
   const retailSectionRef = useRef<HTMLDivElement>(null);
   const lateNateHungerSectionRef = useRef<HTMLDivElement>(null);
   const kidsSectionRef = useRef<HTMLDivElement>(null);
+  const addressSelectorRef = useRef<HTMLDivElement | null>(null);
 
   const toggleLike = useCallback((id: string) => {
     setLikedItems(prev => {
@@ -499,27 +502,231 @@ const Restaurants = () => {
 
   // Address selector functionality
   const handleAddressSearch = async (query: string) => {
-    if (query.length < 3) return;
+    setAddressSearchQuery(query);
     
-    // Mock address suggestions - in real app, this would call a geocoding API
-    const mockSuggestions = [
-      `${query} Street, Toledo, OH`,
-      `${query} Avenue, Toledo, OH`,
-      `${query} Boulevard, Toledo, OH`,
-      `${query} Drive, Toledo, OH`,
-      `${query} Lane, Toledo, OH`
-    ];
-    setAddressSuggestions(mockSuggestions);
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressSuggestionsData([]);
+      return;
+    }
+    
+    try {
+      let mapboxToken = '';
+      
+      // Try to get token from edge function first (production)
+      try {
+        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        if (data?.token) {
+          mapboxToken = data.token;
+        }
+      } catch (edgeFunctionError) {
+        console.warn('Edge function not available, using fallback token for development');
+      }
+
+      // Fallback to development token if edge function fails
+      if (!mapboxToken) {
+        mapboxToken = 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw';
+      }
+
+      if (!mapboxToken) {
+        throw new Error('Mapbox token not available');
+      }
+
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?` +
+        `access_token=${mapboxToken}&` +
+        `country=US&` + // Limit to US addresses
+        `autocomplete=true&` +
+        `types=address,poi&` + // Focus on addresses and points of interest
+        `limit=5`
+      );
+
+      const result = await response.json();
+
+      let formatted: string[] = [];
+      let formattedData: any[] = [];
+      if (response.ok && Array.isArray(result?.features)) {
+        formatted = result.features.map((feature: any) => feature.place_name);
+        formattedData = result.features.map((feature: any) => ({
+          place_name: feature.place_name,
+          center: feature.center,
+          context: feature.context,
+          address: feature.address,
+          text: feature.text,
+          properties: feature.properties,
+          source: 'mapbox'
+        }));
+      }
+
+      // Fallback: use Nominatim (OpenStreetMap) if Mapbox fails or returns no features
+      if (!formatted.length) {
+        try {
+          const nominatimResp = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`
+          );
+          const nomiJson = await nominatimResp.json();
+          if (Array.isArray(nomiJson)) {
+            formatted = nomiJson.map((item: any) => item.display_name);
+            formattedData = nomiJson.map((item: any) => ({
+              place_name: item.display_name,
+              center: [Number(item.lon), Number(item.lat)],
+              addressdetails: item.addressdetails,
+              source: 'nominatim'
+            }));
+          }
+        } catch (fallbackErr) {
+          console.warn('Nominatim fallback failed:', fallbackErr);
+        }
+      }
+
+      setAddressSuggestions(formatted);
+      setAddressSuggestionsData(formattedData);
+    } catch (error) {
+      console.error('Address search failed:', error);
+      setAddressSuggestions([]);
+      setAddressSuggestionsData([]);
+    }
   };
 
-  const selectAddress = (address: string) => {
-    setLocation(address);
-    setShowAddressSelector(false);
-    notifications.show({
-      title: "Location Updated",
-      message: `Delivery address set to ${address}`,
-      color: 'orange',
-    });
+  // Parse address from Mapbox or Nominatim response
+  const parseAddress = (addressData: any): { street_address: string; city: string; state: string; zip_code: string } => {
+    if (addressData.source === 'mapbox') {
+      const context = addressData.context || [];
+      const street = addressData.address ? `${addressData.address} ${addressData.text}` : addressData.text || '';
+      const city = context.find((c: any) => c.id?.startsWith('place'))?.text || '';
+      const state = context.find((c: any) => c.id?.startsWith('region'))?.text || '';
+      const zip = context.find((c: any) => c.id?.startsWith('postcode'))?.text || '';
+      
+      return {
+        street_address: street.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zip_code: zip.trim()
+      };
+    } else if (addressData.source === 'nominatim') {
+      const addr = addressData.addressdetails || {};
+      return {
+        street_address: `${addr.house_number || ''} ${addr.road || ''}`.trim(),
+        city: addr.city || addr.town || addr.village || '',
+        state: addr.state || '',
+        zip_code: addr.postcode || ''
+      };
+    }
+    
+    // Fallback: try to parse from place_name
+    const parts = addressData.place_name?.split(',') || [];
+    return {
+      street_address: parts[0]?.trim() || '',
+      city: parts[1]?.trim() || '',
+      state: parts[2]?.trim() || '',
+      zip_code: parts[3]?.trim() || ''
+    };
+  };
+
+  const selectAddress = async (address: string, index?: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // If not logged in, just set location without saving
+        setLocation(address);
+        setAddressSearchQuery('');
+        setAddressSuggestions([]);
+        setAddressSuggestionsData([]);
+        setShowAddressSelector(false);
+        notifications.show({
+          title: "Location Updated",
+          message: `Delivery address set to ${address}`,
+          color: 'orange',
+        });
+        return;
+      }
+
+      // Get the full address data for this selection
+      const addressData = index !== undefined && addressSuggestionsData[index] 
+        ? addressSuggestionsData[index] 
+        : null;
+
+      if (addressData) {
+        // Parse the address components
+        const parsed = parseAddress(addressData);
+        
+        // Check if address already exists
+        const { data: existingAddresses } = await supabase
+          .from('delivery_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('street_address', parsed.street_address)
+          .eq('city', parsed.city)
+          .eq('state', parsed.state)
+          .eq('zip_code', parsed.zip_code);
+
+        // Only save if it doesn't already exist
+        if (!existingAddresses || existingAddresses.length === 0) {
+          // Save the address
+          const { error: saveError } = await supabase
+            .from('delivery_addresses')
+            .insert({
+              user_id: user.id,
+              label: 'Other', // Default label for manually entered addresses
+              street_address: parsed.street_address,
+              city: parsed.city,
+              state: parsed.state,
+              zip_code: parsed.zip_code,
+              is_default: false
+            });
+
+          if (saveError) {
+            console.error('Error saving address:', saveError);
+            notifications.show({
+              title: "Address Saved",
+              message: `Location updated. Note: Address could not be saved to your saved addresses.`,
+              color: 'orange',
+            });
+          } else {
+            // Refresh saved addresses
+            await fetchSavedAddresses();
+            notifications.show({
+              title: "Address Saved",
+              message: `Delivery address saved and set to ${address}`,
+              color: 'green',
+            });
+          }
+        } else {
+          notifications.show({
+            title: "Location Updated",
+            message: `Delivery address set to ${address}`,
+            color: 'orange',
+          });
+        }
+      } else {
+        // If we don't have full data, just set the location
+        notifications.show({
+          title: "Location Updated",
+          message: `Delivery address set to ${address}`,
+          color: 'orange',
+        });
+      }
+
+      setLocation(address);
+      setAddressSearchQuery('');
+      setAddressSuggestions([]);
+      setAddressSuggestionsData([]);
+      setShowAddressSelector(false);
+    } catch (error) {
+      console.error('Error selecting address:', error);
+      // Still set the location even if save fails
+      setLocation(address);
+      setAddressSearchQuery('');
+      setAddressSuggestions([]);
+      setAddressSuggestionsData([]);
+      setShowAddressSelector(false);
+      notifications.show({
+        title: "Location Updated",
+        message: `Delivery address set to ${address}`,
+        color: 'orange',
+      });
+    }
   };
 
   // Fetch saved delivery addresses
@@ -552,6 +759,9 @@ const Restaurants = () => {
   const selectSavedAddress = (address: any) => {
     const fullAddress = `${address.street_address}, ${address.city}, ${address.state} ${address.zip_code}`;
     setLocation(fullAddress);
+    setAddressSearchQuery('');
+    setAddressSuggestions([]);
+    setAddressSuggestionsData([]);
     setShowAddressSelector(false);
     notifications.show({
       title: "Location Updated",
@@ -879,7 +1089,15 @@ const Restaurants = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('[data-dropdown]')) {
+      // Check if click is inside any dropdown or the address selector button
+      const isInsideDropdown = target.closest('[data-dropdown]');
+      const isAddressButton = target.closest('button[onclick*="setShowAddressSelector"]') || 
+                              target.closest('.address-selector-button') ||
+                              target.closest('[class*="address-selector"]');
+      // Also check if click is inside the address selector ref
+      const isInsideAddressSelector = addressSelectorRef.current?.contains(target);
+      
+      if (!isInsideDropdown && !isAddressButton && !isInsideAddressSelector) {
         setShowAddressSelector(false);
         setShowNotifications(false);
         setShowCart(false);
@@ -1553,6 +1771,10 @@ const Restaurants = () => {
               {/* Address Selector Dropdown - Mobile */}
               {showAddressSelector && (
                 <Box
+                  ref={addressSelectorRef}
+                  data-dropdown
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     position: 'absolute',
                     top: '100%',
@@ -1617,7 +1839,11 @@ const Restaurants = () => {
                       </Text>
                       <TextInput
                         placeholder="Search for an address"
+                        value={addressSearchQuery}
                         onChange={(e) => handleAddressSearch(e.target.value)}
+                        onFocus={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                       />
                       {addressSuggestions.length > 0 && (
                         <Stack gap="xs">
@@ -1625,7 +1851,7 @@ const Restaurants = () => {
                             <Button
                               key={index}
                               variant="subtle"
-                              onClick={() => selectAddress(address)}
+                              onClick={() => selectAddress(address, index)}
                               style={{ justifyContent: 'flex-start', textAlign: 'left' }}
                               fullWidth
                             >
@@ -2428,6 +2654,7 @@ const Restaurants = () => {
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
                   cuisineFilter={cuisineFilter}
+                  columns={2}
                 />
               </Box>
             </Box>
@@ -2610,7 +2837,7 @@ const Restaurants = () => {
               <div className="relative">
                 <button 
                   onClick={() => setShowAddressSelector(!showAddressSelector)}
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="address-selector-button flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <IconMapPin className="w-4 h-4" />
                   <span className="text-sm font-medium max-w-32 truncate">{location}</span>
@@ -2619,8 +2846,14 @@ const Restaurants = () => {
                 
                 {/* Address Selector Dropdown */}
                 {showAddressSelector && (
-                  <div data-dropdown className="absolute top-full left-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-                    <div className="p-4">
+                  <div 
+                    ref={addressSelectorRef}
+                    data-dropdown 
+                    className="absolute top-full left-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-4" onMouseDown={(e) => e.stopPropagation()}>
                       <h3 className="font-semibold text-gray-900 mb-3">Select delivery address</h3>
                       
                       {/* Saved Addresses */}
@@ -2675,17 +2908,22 @@ const Restaurants = () => {
                         <Text size="xs" fw={600} c="dimmed" mb="xs" style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                           {savedAddresses.length > 0 ? 'Search Address' : 'Enter Address'}
                         </Text>
-                        <TextInput
-                          placeholder="Search for an address"
-                          onChange={(e) => handleAddressSearch(e.target.value)}
-                          className="w-full"
-                        />
+                        <div onMouseDown={(e) => e.stopPropagation()}>
+                          <TextInput
+                            placeholder="Search for an address"
+                            value={addressSearchQuery}
+                            onChange={(e) => handleAddressSearch(e.target.value)}
+                            className="w-full"
+                            onFocus={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                         {addressSuggestions.length > 0 && (
                           <div className="space-y-1">
                             {addressSuggestions.map((address, index) => (
                               <button
                                 key={index}
-                                onClick={() => selectAddress(address)}
+                                onClick={() => selectAddress(address, index)}
                                 className="w-full text-left p-2 hover:bg-white rounded-md text-sm"
                               >
                                 {address}
@@ -2986,7 +3224,7 @@ const Restaurants = () => {
               )}
 
               {/* Show organized sections when filter is 'all' or no filter */}
-              {(!cuisineFilter || cuisineFilter === 'all') && !searchQuery ? (
+              {(!cuisineFilter || cuisineFilter === 'all') ? (
                 <>
                   {/* Craven Quick Picks - Promoted Restaurants */}
                   {weeklyDeals.length > 0 && (

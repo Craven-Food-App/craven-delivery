@@ -59,6 +59,7 @@ import { MobileLayout } from "@/components/layouts/MobileLayout";
 import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +137,7 @@ function App() {
                   v7_relativeSplatPath: true,
                 }}
               >
+                <ScrollToTop />
                 <CartProvider>
                   <SafeAreaProvider>
                     <InstallAppBanner />

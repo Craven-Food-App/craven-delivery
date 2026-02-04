@@ -50,6 +50,10 @@ const muiTheme = createMUITheme({
     secondary: {
       main: '#ff8147',
     },
+    background: {
+      default: '#ffffff',
+      paper: '#ffffff',
+    },
   },
   typography: {
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
