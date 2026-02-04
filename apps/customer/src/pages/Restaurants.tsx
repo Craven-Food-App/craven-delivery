@@ -2079,125 +2079,149 @@ const Restaurants = () => {
           </Box>
         )}
 
+        {/* Cuisine Categories - Fixed position directly under search header */}
+        <Box 
+          style={{ 
+            position: 'fixed',
+            top: showMenuIcons 
+              ? 'calc(120px + 100px + env(safe-area-inset-top, 0px))' 
+              : 'calc(120px + env(safe-area-inset-top, 0px))',
+            left: 0,
+            right: 0,
+            width: '100%',
+            zIndex: 998,
+            borderBottom: '1px solid #e5e7eb', 
+            backgroundColor: 'white',
+            paddingTop: '12px',
+            paddingBottom: '12px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            transition: 'top 0.2s ease',
+          }}
+        >
+          {availableCuisines.length > 0 ? (
+            <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Row 1 */}
+              <Box style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                overflowX: 'auto', 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none', 
+                WebkitOverflowScrolling: 'touch', 
+                paddingBottom: '4px' 
+              }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                  const IconComponent = getCuisineIcon(cuisine);
+                  const isActive = cuisineFilter === cuisine.toLowerCase();
+                  return (
+                    <Button
+                      key={cuisine}
+                      variant={isActive ? "filled" : "outline"}
+                      size="xs"
+                      radius="md"
+                      onClick={() => {
+                        const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/restaurants/cuisine/${cuisineSlug}`);
+                      }}
+                      leftSection={
+                        <IconComponent 
+                          size={14} 
+                          style={{ 
+                            color: isActive ? 'white' : '#ff5f1f',
+                            strokeWidth: 2.5
+                          }} 
+                        />
+                      }
+                      style={{ 
+                        backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                        borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                        color: isActive ? 'white' : '#404040',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        height: 'auto',
+                        fontSize: '11px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      {cuisine}
+                    </Button>
+                  );
+                })}
+              </Box>
+              {/* Row 2 */}
+              <Box style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                overflowX: 'auto', 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none', 
+                WebkitOverflowScrolling: 'touch', 
+                paddingBottom: '4px' 
+              }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
+                {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                  const IconComponent = getCuisineIcon(cuisine);
+                  const isActive = cuisineFilter === cuisine.toLowerCase();
+                  return (
+                    <Button
+                      key={cuisine}
+                      variant={isActive ? "filled" : "outline"}
+                      size="xs"
+                      radius="md"
+                      onClick={() => {
+                        const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/restaurants/cuisine/${cuisineSlug}`);
+                      }}
+                      leftSection={
+                        <IconComponent 
+                          size={14} 
+                          style={{ 
+                            color: isActive ? 'white' : '#ff5f1f',
+                            strokeWidth: 2.5
+                          }} 
+                        />
+                      }
+                      style={{ 
+                        backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                        borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                        color: isActive ? 'white' : '#404040',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        height: 'auto',
+                        fontSize: '11px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      {cuisine}
+                    </Button>
+                  );
+                })}
+              </Box>
+            </Box>
+          ) : (
+            <Text size="sm" c="gray.6" ta="center" py="md">
+              Loading cuisines...
+            </Text>
+          )}
+        </Box>
+
         {/* Scrollable Content */}
         <Box style={{ 
           flex: 1, 
           overflowY: 'auto', 
           backgroundColor: 'white',
+          paddingTop: showMenuIcons 
+            ? 'calc(120px + 100px + 110px + env(safe-area-inset-top, 0px))' 
+            : 'calc(120px + 110px + env(safe-area-inset-top, 0px))',
           paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
         }}>
           <Box component="main">
-            {/* Cuisine Types - 2 Rows Grid with Horizontal Scroll */}
-            <Box 
-              style={{ 
-                borderBottom: '1px solid #e5e7eb', 
-                backgroundColor: 'white',
-                minHeight: '110px',
-                paddingTop: '10px',
-                paddingBottom: '10px',
-                padding: '16px',
-                marginTop: '35px',
-                marginRight: '35px',
-                marginBottom: '35px',
-                marginLeft: '5px',
-                width: '385px'
-              }}
-            >
-              {availableCuisines.length > 0 ? (
-                <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '90px' }}>
-                      {/* Row 1 */}
-                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
-                        {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                          const IconComponent = getCuisineIcon(cuisine);
-                          const isActive = cuisineFilter === cuisine.toLowerCase();
-                          return (
-                            <Button
-                              key={cuisine}
-                              variant={isActive ? "filled" : "outline"}
-                              size="xs"
-                              radius="md"
-                              onClick={() => {
-                                const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
-                                navigate(`/restaurants/cuisine/${cuisineSlug}`);
-                              }}
-                          leftSection={
-                            <IconComponent 
-                              size={14} 
-                              style={{ 
-                                color: isActive ? 'white' : '#ff5f1f',
-                                strokeWidth: 2.5
-                              }} 
-                            />
-                          }
-                          style={{ 
-                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                            color: isActive ? 'white' : '#404040',
-                            fontWeight: 600,
-                            padding: '6px 12px',
-                            height: 'auto',
-                            fontSize: '11px',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            transition: 'all 0.2s ease',
-                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          {cuisine}
-                        </Button>
-                      );
-                    })}
-                  </Box>
-                      {/* Row 2 */}
-                      <Box style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }} sx={{ '&::-webkit-scrollbar': { display: 'none' } }}>
-                        {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                          const IconComponent = getCuisineIcon(cuisine);
-                          const isActive = cuisineFilter === cuisine.toLowerCase();
-                          return (
-                            <Button
-                              key={cuisine}
-                              variant={isActive ? "filled" : "outline"}
-                              size="xs"
-                              radius="md"
-                              onClick={() => {
-                                const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
-                                navigate(`/restaurants/cuisine/${cuisineSlug}`);
-                              }}
-                          leftSection={
-                            <IconComponent 
-                              size={14} 
-                              style={{ 
-                                color: isActive ? 'white' : '#ff5f1f',
-                                strokeWidth: 2.5
-                              }} 
-                            />
-                          }
-                          style={{ 
-                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                            color: isActive ? 'white' : '#404040',
-                            fontWeight: 600,
-                            padding: '6px 12px',
-                            height: 'auto',
-                            fontSize: '11px',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            transition: 'all 0.2s ease',
-                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
-                          }}
-                        >
-                          {cuisine}
-                        </Button>
-                      );
-                    })}
-                  </Box>
-                </Box>
-              ) : (
-                <Text size="sm" c="gray.6" ta="center" py="md">
-                  Loading cuisines...
-                </Text>
-              )}
-            </Box>
 
             {/* Craven Quick Picks - Promoted Restaurants */}
             {weeklyDeals.length > 0 && (
