@@ -92,6 +92,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import cravenLogo from "@/assets/craven-logo.png";
+import cravenCLogo from "@/assets/craven-c-new.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
 
 // Professional Rating Icon Component
@@ -262,6 +263,7 @@ const Restaurants = () => {
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
+  const [showMenuIcons, setShowMenuIcons] = useState(false);
   
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -856,23 +858,52 @@ const Restaurants = () => {
   // Mobile App Main Interface
   if (isMobile && showMain) {
     return (
-      <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', backgroundColor: 'white', display: 'flex', flexDirection: 'column' }}>
-        {/* Search & Address Bar (Sticky Header) */}
-        <Box component="header" style={{ backgroundColor: 'white', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderBottom: '1px solid #e5e7eb', padding: '8px 16px 12px' }}>
+      <Box style={{ 
+        width: '100%', 
+        maxWidth: '430px', 
+        margin: '0 auto', 
+        minHeight: '100vh', 
+        backgroundColor: 'white', 
+        display: 'flex', 
+        flexDirection: 'column',
+        paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
+      }}>
+        {/* Search & Address Bar (Fixed Header - Matching Customer App) */}
+        <Box component="header" style={{ 
+          backgroundColor: 'white', 
+          position: 'fixed',
+          top: 'env(safe-area-inset-top, 0px)',
+          left: 0,
+          right: 0,
+          width: '100%',
+          zIndex: 1000, 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
+          borderBottom: '1px solid #e5e7eb', 
+          padding: '1rem 16px 12px',
+          flexShrink: 0
+        }}>
           {/* Address and Account */}
-          <Group justify="space-between" mb="md">
-            <Button
-              variant="subtle"
-              leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-              rightSection={<IconChevronRight size={28} style={{ color: '#a3a3a3' }} />}
-              onClick={() => setShowMain(false)}
-              style={{ padding: '8px', borderRadius: '12px' }}
-            >
-              <Stack gap={0} align="flex-start">
-                <Text size="xs" c="gray.5" fw={500} style={{ lineHeight: 1 }}>Deliver to</Text>
-                <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
-              </Stack>
-            </Button>
+          <Group justify="space-between" mb="md" gap="xs">
+            {/* C-Logo - Small to the left of address button */}
+            <MantineImage 
+              src={cravenCLogo} 
+              alt="CRAVE'N" 
+              style={{ height: '24px', width: '24px', flexShrink: 0 }} 
+            />
+            
+            <Box style={{ position: 'relative', flex: 1 }}>
+              <Button
+                variant="subtle"
+                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
+                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
+                onClick={() => setShowAddressSelector(!showAddressSelector)}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+              >
+                <Stack gap={0} align="flex-start">
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                </Stack>
+              </Button>
+            </Box>
 
             <Group gap="xs">
               <ActionIcon
@@ -895,6 +926,40 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
+              {/* Cart Icon with Quantity Badge */}
+              {cartCount > 0 && (
+                <ActionIcon
+                  onClick={() => navigate('/checkout')}
+                  variant="subtle"
+                  size="lg"
+                  radius="xl"
+                  style={{ position: 'relative' }}
+                >
+                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      minWidth: '18px',
+                      height: '18px',
+                      backgroundColor: '#ff5f1f',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'white',
+                      lineHeight: 1
+                    }}
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </Box>
+                </ActionIcon>
+              )}
             </Group>
           </Group>
 
@@ -908,44 +973,245 @@ const Restaurants = () => {
               styles={{ 
                 input: { 
                   paddingLeft: '44px', 
-                  paddingRight: '16px', 
+                  paddingRight: '48px', 
                   paddingTop: '12px', 
                   paddingBottom: '12px', 
                   fontSize: '16px', 
-                  backgroundColor: '#fafafa', 
+                  backgroundColor: 'white', 
                   border: 'none', 
                   borderRadius: '12px',
                   fontWeight: 500
                 }
               }}
             />
+            {/* Menu Hamburger Icon - Bottom Right */}
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => setShowMenuIcons(!showMenuIcons)}
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                zIndex: 2,
+                backgroundColor: 'transparent',
+                color: '#a3a3a3',
+              }}
+            >
+              <IconMenu2 
+                size={16} 
+              />
+            </ActionIcon>
           </Box>
         </Box>
+
+        {/* Menu Icons Dropdown - Fixed (appears below header when open) */}
+        {showMenuIcons && (
+          <Box 
+            px={0}
+            py="md"
+            style={{ 
+              position: 'fixed',
+              top: 'calc(120px + env(safe-area-inset-top, 0px))',
+              left: 0,
+              right: 0,
+              width: '100%',
+              zIndex: 999,
+              borderBottom: '1px solid #e5e7eb', 
+              backgroundColor: 'white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              margin: 0,
+            }}
+          >
+            <Box
+              style={{
+                width: '100%',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'smooth',
+                paddingLeft: '16px',
+                paddingRight: '16px',
+              }}
+              className="scrollbar-hide"
+            >
+              <Group gap="md" style={{ flexWrap: 'nowrap', width: 'max-content', paddingBottom: '8px' }}>
+                {navCategories.map((category) => {
+                  const IconComponent = category.icon;
+                  return (
+                    <Box
+                      key={category.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleCategoryClick(category.id);
+                        setShowMenuIcons(false); // Close menu after clicking
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        minWidth: '60px',
+                      }}
+                    >
+                      <Box
+                        style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '12px',
+                          backgroundColor: category.active ? '#ff5f1f' : 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s',
+                          border: category.active ? 'none' : '1px solid #e5e7eb',
+                        }}
+                      >
+                        <IconComponent 
+                          size={24} 
+                          style={{ 
+                            color: category.active ? 'white' : '#4b5563',
+                            strokeWidth: 2
+                          }} 
+                        />
+                      </Box>
+                      <Text 
+                        size="xs" 
+                        fw={500} 
+                        c={category.active ? 'orange' : 'gray.7'}
+                        style={{ textAlign: 'center' }}
+                      >
+                        {category.label}
+                      </Text>
+                    </Box>
+                  );
+                })}
+              </Group>
+            </Box>
+          </Box>
+        )}
 
         {/* Scrollable Content */}
         <Box style={{ flex: 1, overflowY: 'auto', backgroundColor: '#fafafa' }}>
           <Box component="main">
-            {/* Quick Filters/Categories */}
-            <Group gap="xs" style={{ overflowX: 'auto', whiteSpace: 'nowrap', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white', padding: '10px 16px', scrollbarWidth: 'none' }}>
-              {['Fast Delivery', 'High Rated', 'Breakfast', 'Deals', 'Grocery', 'Dessert'].map((item) => (
-                <Button
-                  key={item}
-                  variant="outline"
-                  size="sm"
-                  radius="xl"
-                  style={{ 
-                    backgroundColor: 'white', 
-                    borderColor: '#e5e7eb',
-                    color: '#404040',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  {item}
-                </Button>
-              ))}
-            </Group>
+            {/* Cuisine Filter Buttons - Mobile */}
+            <Box
+              component="nav"
+              style={{
+                backgroundColor: 'white',
+                borderBottom: '1px solid #e5e7eb',
+                paddingTop: '13px',
+                paddingBottom: '12px',
+                paddingLeft: '16px',
+                paddingRight: '16px',
+              }}
+            >
+              {availableCuisines.length > 0 ? (
+                <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* Row 1 */}
+                  <Box style={{ 
+                    display: 'flex', 
+                    gap: '8px', 
+                    overflowX: 'auto', 
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none', 
+                    WebkitOverflowScrolling: 'touch', 
+                    paddingBottom: '4px'
+                  }} className="scrollbar-hide">
+                    {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                      const cuisineEmoji = getCuisineEmoji(cuisine);
+                      const isActive = cuisineFilter === cuisine.toLowerCase();
+                      return (
+                        <Button
+                          key={cuisine}
+                          variant={isActive ? "filled" : "outline"}
+                          size="xs"
+                          radius="md"
+                          onClick={() => {
+                            setCuisineFilter(cuisine.toLowerCase());
+                            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          style={{ 
+                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                            color: isActive ? 'white' : '#404040',
+                            fontWeight: 600,
+                            padding: '6px 12px',
+                            height: 'auto',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'all 0.2s ease',
+                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                          <span>{cuisine}</span>
+                        </Button>
+                      );
+                    })}
+                  </Box>
+                  {/* Row 2 */}
+                  <Box style={{ 
+                    display: 'flex', 
+                    gap: '8px', 
+                    overflowX: 'auto', 
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none', 
+                    WebkitOverflowScrolling: 'touch', 
+                    paddingBottom: '4px'
+                  }} className="scrollbar-hide">
+                    {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                      const cuisineEmoji = getCuisineEmoji(cuisine);
+                      const isActive = cuisineFilter === cuisine.toLowerCase();
+                      return (
+                        <Button
+                          key={cuisine}
+                          variant={isActive ? "filled" : "outline"}
+                          size="xs"
+                          radius="md"
+                          onClick={() => {
+                            setCuisineFilter(cuisine.toLowerCase());
+                            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          style={{ 
+                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                            color: isActive ? 'white' : '#404040',
+                            fontWeight: 600,
+                            padding: '6px 12px',
+                            height: 'auto',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                            transition: 'all 0.2s ease',
+                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                          <span>{cuisine}</span>
+                        </Button>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              ) : (
+                <Text size="sm" c="gray.6" ta="center" py="md">
+                  Loading cuisines...
+                </Text>
+              )}
+            </Box>
 
             {/* Promo Carousel */}
             {loadingBanners ? (
@@ -979,7 +1245,7 @@ const Restaurants = () => {
             ) : null}
 
             {/* Fastest near you */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '16px', paddingBottom: '16px' }}>
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '4px', paddingBottom: '4px', height: '345px' }}>
               <Group justify="space-between" mb="md">
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Craven Quick Picks</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl">
@@ -1090,7 +1356,7 @@ const Restaurants = () => {
               </Box>
 
             {/* Premium Selections */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '10px', paddingBottom: '16px', height: '46.8px' }}>
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '0px', paddingBottom: '0px' }}>
               <Group justify="space-between" mb="md">
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Premium Selections</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl">
@@ -1109,6 +1375,103 @@ const Restaurants = () => {
                 ))}
               </Stack>
             </Box>
+
+            {/* Show organized sections when filter is 'all' or no filter */}
+            {(!cuisineFilter || cuisineFilter === 'all') ? (
+              <>
+                {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter={undefined}
+                    excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
+                    sectionTitle="Restaurants"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* Premium Selections - Apparel */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="apparel"
+                    sectionTitle="Apparel"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* Premium Selections - Retail */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="retail"
+                    sectionTitle="Retail"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* Premium Selections - Late Nate Hunger */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="late nate hunger"
+                    sectionTitle="Late Nate Hunger"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* Premium Selections - Kids */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="kids"
+                    sectionTitle="Kids"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* Browse All Section */}
+                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }} ref={resultsRef}>
+                  <Box mb="md">
+                    <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Browse All</Title>
+                  </Box>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter={cuisineFilter}
+                    columns={2}
+                  />
+                </Box>
+              </>
+            ) : (
+              /* Single section when filtering by specific cuisine or searching */
+              <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }} ref={resultsRef}>
+                {(searchQuery || location || cuisineFilter !== 'all') && (
+                  <Box mb="md">
+                    <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>
+                      {searchQuery ? `Results for "${searchQuery}"` : 'Restaurants Near You'}
+                    </Title>
+                    {location && (
+                      <Text size="sm" c="gray.6" mt="xs" style={{ display: 'flex', alignItems: 'center' }}>
+                        <IconMapPin size={16} style={{ marginRight: '8px' }} />
+                        Delivering to: {location}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={cuisineFilter}
+                  columns={2}
+                />
+              </Box>
+            )}
 
             {/* Spacing for Nav */}
             <Box style={{ height: '64px' }} />
