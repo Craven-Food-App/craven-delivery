@@ -655,16 +655,17 @@ const Checkout: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (pmError) {
-          console.error('Error loading payment methods:', pmError);
+          console.error('❌ Error loading payment methods:', pmError);
           setHasPaymentMethods(false);
+          setSelectedPaymentMethod(null);
         } else if (paymentMethods && paymentMethods.length > 0) {
-          console.log('Loaded payment methods:', paymentMethods);
+          console.log('✅ Loaded payment methods:', paymentMethods.length, paymentMethods);
           setHasPaymentMethods(true);
           // Auto-select the default payment method or the first one
           const defaultMethod = paymentMethods.find((m: any) => m.is_default) || paymentMethods[0];
           if (defaultMethod) {
-            console.log('Selected payment method:', defaultMethod);
-            setSelectedPaymentMethod({
+            console.log('✅ Selected payment method:', defaultMethod);
+            const selectedMethod = {
               id: defaultMethod.id,
               type: (defaultMethod as any).type || 'card',
               stripe_payment_method_id: (defaultMethod as any).stripe_payment_method_id,
@@ -672,11 +673,14 @@ const Checkout: React.FC = () => {
               brand: defaultMethod.brand,
               last4: defaultMethod.last4,
               is_default: defaultMethod.is_default
-            });
+            };
+            setSelectedPaymentMethod(selectedMethod);
+            console.log('✅ Payment method state updated - hasPaymentMethods:', true, 'selectedPaymentMethod:', selectedMethod);
           }
         } else {
-          console.log('No payment methods found for user');
+          console.log('⚠️ No payment methods found for user');
           setHasPaymentMethods(false);
+          setSelectedPaymentMethod(null);
         }
 
         // Extract delivery preferences from profile
@@ -1539,6 +1543,55 @@ const Checkout: React.FC = () => {
               </button>
             </div>
 
+            {/* Payment Method Section - Moved up for visibility */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-semibold text-gray-900">Payment Method</span>
+              </div>
+              
+              {(() => {
+                console.log('Payment method render - hasPaymentMethods:', hasPaymentMethods, 'selectedPaymentMethod:', selectedPaymentMethod);
+                return null;
+              })()}
+              
+              {hasPaymentMethods && selectedPaymentMethod ? (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">
+                      {selectedPaymentMethod.type === 'card' 
+                        ? `${selectedPaymentMethod.brand || 'Card'} •••• ${selectedPaymentMethod.last4}`
+                        : `Bank Account •••• ${selectedPaymentMethod.last4}`
+                      }
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {selectedPaymentMethod.is_default ? 'Default payment method' : 'Payment method'}
+                    </div>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-gray-600 hover:text-orange-500"
+                >
+                  <IconPlus size={20} />
+                  <span className="font-medium">Add Payment Method</span>
+                </button>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                You won't be charged until the order is accepted.
+              </p>
+            </div>
+
             {/* Gift Option */}
             <div className="mb-6">
               <button
@@ -1737,50 +1790,6 @@ const Checkout: React.FC = () => {
               </div>
               
               <p className="text-xs text-gray-500">100% of the tip goes to your Feeder.</p>
-            </div>
-
-            {/* Payment Method Section */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <CreditCard className="w-5 h-5 text-gray-600" />
-                <span className="text-sm font-semibold text-gray-900">Payment Method</span>
-              </div>
-              
-              {hasPaymentMethods && selectedPaymentMethod ? (
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-gray-600" />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-medium text-sm text-gray-900 truncate">
-                      {selectedPaymentMethod.type === 'card' 
-                        ? `${selectedPaymentMethod.brand || 'Card'} •••• ${selectedPaymentMethod.last4}`
-                        : `Bank Account •••• ${selectedPaymentMethod.last4}`
-                      }
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {selectedPaymentMethod.is_default ? 'Default payment method' : 'Payment method'}
-                    </div>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors text-gray-600 hover:text-orange-500"
-                >
-                  <IconPlus size={20} />
-                  <span className="font-medium">Add Payment Method</span>
-                </button>
-              )}
-              <p className="text-xs text-gray-500 mt-2">
-                You won't be charged until the order is accepted.
-              </p>
             </div>
 
             {/* Total Section */}

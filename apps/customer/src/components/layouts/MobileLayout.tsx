@@ -36,7 +36,6 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
       style={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100vh',
         minHeight: '100dvh',
         width: '100%',
         position: 'relative',
@@ -54,7 +53,7 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
           flex: 1,
           width: '100%',
           overflowY: 'auto',
-          overflowX: 'hidden',
+          overflowX: 'auto', // Allow horizontal scrolling for horizontal restaurant rows
           WebkitOverflowScrolling: 'touch',
           // Space for bottom navigation
           paddingBottom: shouldShowNav 

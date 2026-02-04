@@ -20,15 +20,21 @@ interface RestaurantGridProps {
   searchQuery?: string;
   deliveryAddress?: string;
   cuisineFilter?: string;
-  excludeCuisine?: string; // Exclude specific cuisine type (e.g., 'apparel')
+  excludeCuisine?: string; // Exclude specific cuisine type (e.g., 'apparel') or comma-separated list
   sectionTitle?: string; // Optional section title
+  horizontal?: boolean; // Display as horizontal scrollable row
+  categoryFilter?: string; // For filtering by menu category (e.g., 'Accessories', 'Shoes')
+  customRestaurants?: Restaurant[]; // Pre-fetched restaurants to display (skips fetch)
 }
 const RestaurantGrid = ({
   searchQuery,
   deliveryAddress,
   cuisineFilter,
   excludeCuisine,
-  sectionTitle
+  sectionTitle,
+  horizontal = false,
+  categoryFilter,
+  customRestaurants
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,8 +70,20 @@ const RestaurantGrid = ({
   };
 
   useEffect(() => {
-    fetchRestaurants();
-  }, [searchQuery, deliveryAddress, cuisineFilter, userLocation]);
+    if (customRestaurants) {
+      // Use custom restaurants if provided - format them
+      const formatted = customRestaurants.map((restaurant: any) => ({
+        ...restaurant,
+        min_delivery_time: restaurant.min_delivery_time || 20,
+        max_delivery_time: restaurant.max_delivery_time || 30,
+        is_promoted: restaurant.is_promoted || false
+      }));
+      setRestaurants(formatted);
+      setLoading(false);
+    } else {
+      fetchRestaurants();
+    }
+  }, [searchQuery, deliveryAddress, cuisineFilter, userLocation, categoryFilter, customRestaurants]);
   const fetchRestaurants = async () => {
     try {
       let query = (supabase as any)
@@ -102,11 +120,13 @@ const RestaurantGrid = ({
         );
       }
 
-      // Exclude specific cuisine type if provided
+      // Exclude specific cuisine types if provided (supports comma-separated list)
       if (excludeCuisine) {
-        filteredData = filteredData.filter((restaurant: Restaurant) =>
-          restaurant.cuisine_type?.toLowerCase() !== excludeCuisine.toLowerCase()
-        );
+        const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
+        filteredData = filteredData.filter((restaurant: Restaurant) => {
+          const restaurantCuisine = restaurant.cuisine_type?.toLowerCase();
+          return !restaurantCuisine || !excludeList.includes(restaurantCuisine);
+        });
       }
 
       // Filter by search query if provided
@@ -135,6 +155,30 @@ const RestaurantGrid = ({
           
           return distance <= restaurant.delivery_radius_miles;
         });
+      }
+
+      // Filter by menu category if categoryFilter is provided
+      if (categoryFilter && categoryFilter !== 'all' && filteredData.length > 0) {
+        try {
+          // Fetch restaurants with menu items in the specified category
+          const { data: categoryData } = await supabase
+            .from('menu_categories')
+            .select('restaurant_id')
+            .eq('name', categoryFilter)
+            .eq('is_active', true);
+          
+          if (categoryData && categoryData.length > 0) {
+            const restaurantIds = categoryData.map((cat: any) => cat.restaurant_id);
+            filteredData = filteredData.filter((restaurant: Restaurant) =>
+              restaurantIds.includes(restaurant.id)
+            );
+          } else {
+            filteredData = []; // No restaurants with this category
+          }
+        } catch (error) {
+          console.error('Error filtering by category:', error);
+          // Continue with unfiltered data if category filter fails
+        }
       }
 
       setRestaurants(filteredData);
@@ -168,19 +212,63 @@ const RestaurantGrid = ({
     cuisine: restaurant.cuisine_type,
     isPromoted: restaurant.is_promoted
   });
+  // Don't render if no restaurants (conditional rendering)
+  if (restaurants.length === 0 && !loading) {
+    return null;
+  }
+
   return <section className="py-6 bg-muted/30">
-      <div className="container mx-auto px-4">
-        {sectionTitle && (
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+      {horizontal ? (
+        <>
+          {sectionTitle && (
+            <div className="container mx-auto px-4 mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+            </div>
+          )}
+          <div className="w-full overflow-x-auto scrollbar-hide" style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth'
+          }}>
+            <div className="flex space-x-4 px-4 pb-4" style={{ minWidth: 'max-content' }}>
+              {restaurants.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <p className="text-muted-foreground text-lg">
+                    {cuisineFilter && cuisineFilter !== 'all' 
+                      ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
+                      : searchQuery 
+                        ? `No restaurants found for "${searchQuery}"${deliveryAddress ? ` near ${deliveryAddress}` : ''}` 
+                        : deliveryAddress 
+                          ? `No restaurants found within ${deliveryAddress}` 
+                          : "No restaurants available right now. Be the first to register your restaurant!"}
+                  </p>
+                </div>
+              ) : (
+                restaurants.map((restaurant, index) => (
+                  <div key={restaurant.id} className="flex-shrink-0 w-[280px] animate-slide-up" style={{
+                    animationDelay: `${index * 100}ms`
+                  }}>
+                    <RestaurantCard {...formatRestaurantData(restaurant)} />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        )}
-        {!searchQuery && !deliveryAddress && !sectionTitle && <div className="text-center mb-8">
+        </>
+      ) : (
+        <div className="container mx-auto px-4">
+          {sectionTitle && (
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
+            </div>
+          )}
+          {!searchQuery && !deliveryAddress && !sectionTitle && <div className="text-center mb-8">
             
             
           </div>}
 
-        {restaurants.length === 0 ? <div className="text-center py-12">
+          {restaurants.length === 0 ? <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">
               {cuisineFilter && cuisineFilter !== 'all' 
                 ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
@@ -190,14 +278,17 @@ const RestaurantGrid = ({
                     ? `No restaurants found within ${deliveryAddress}` 
                     : "No restaurants available right now. Be the first to register your restaurant!"}
             </p>
-          </div> : <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
-          animationDelay: `${index * 100}ms`
-        }}>
+          </div> : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
+                animationDelay: `${index * 100}ms`
+              }}>
                 <RestaurantCard {...formatRestaurantData(restaurant)} />
               </div>)}
-          </div>}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
     </section>;
 };
 export default RestaurantGrid;

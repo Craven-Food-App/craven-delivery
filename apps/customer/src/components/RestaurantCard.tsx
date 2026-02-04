@@ -31,7 +31,7 @@ const RestaurantCard = ({
 
   return (
     <div className="group cursor-pointer" onClick={handleClick}>
-      <div className="bg-card rounded-lg shadow-card hover:shadow-hover transition-all duration-300 transform hover:scale-105 overflow-hidden w-full">
+      <div className="bg-card rounded-lg shadow-card hover:shadow-hover transition-all duration-300 transform hover:scale-105 overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
         {/* Image */}
         <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-lg">
           <img 

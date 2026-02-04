@@ -260,6 +260,7 @@ const Restaurants = () => {
   const [showMenuIcons, setShowMenuIcons] = useState(false); // Start collapsed
   const [activeCategory, setActiveCategory] = useState('all');
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
+  const [apparelCategoryFilter, setApparelCategoryFilter] = useState<string>('all'); // 'all', 'Apparel', 'Accessories', 'Shoes'
   
   // Mobile app states
   // Check cached auth state first to prevent flash
@@ -341,6 +342,11 @@ const Restaurants = () => {
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const weeklyDealsScrollRef = useRef<HTMLDivElement>(null);
   const featuredScrollRef = useRef<HTMLDivElement>(null);
+  const apparelSectionRef = useRef<HTMLDivElement>(null);
+  const restaurantsSectionRef = useRef<HTMLDivElement>(null);
+  const retailSectionRef = useRef<HTMLDivElement>(null);
+  const lateNateHungerSectionRef = useRef<HTMLDivElement>(null);
+  const kidsSectionRef = useRef<HTMLDivElement>(null);
 
   const toggleLike = useCallback((id: string) => {
     setLikedItems(prev => {
@@ -905,8 +911,11 @@ const Restaurants = () => {
     // Handle different category types
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
+      setApparelCategoryFilter('all'); // Reset apparel filter when switching away
     } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
-      setCuisineFilter(categoryId);
+      // Don't change cuisineFilter for menu clicks - just scroll to the section
+      // The sections are always visible in the mobile layout
+      setApparelCategoryFilter('all');
     } else if (categoryId === 'orders') {
       // Navigate to orders page
       navigate('/order-history');
@@ -919,7 +928,19 @@ const Restaurants = () => {
     
     // Scroll to results section for restaurant categories
     if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => {
+        if (categoryId === 'apparel' && apparelSectionRef.current) {
+          apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            window.scrollBy({ top: -100, behavior: 'smooth' });
+          }, 300);
+        } else if (resultsRef.current) {
+          resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            window.scrollBy({ top: -100, behavior: 'smooth' });
+          }, 300);
+        }
+      }, 100);
     }
   };
 
@@ -1776,8 +1797,11 @@ const Restaurants = () => {
                   return (
                     <Box
                       key={category.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         handleCategoryClick(category.id);
+                        setShowMenuIcons(false); // Close menu after clicking
                       }}
                       style={{
                         display: 'flex',
@@ -1948,164 +1972,175 @@ const Restaurants = () => {
               )}
             </Box>
 
-            {/* Fastest near you */}
-            <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
-                  <IconChevronRight size={18} />
-                </ActionIcon>
-              </Group>
-              
-              <Group gap="md" style={{ overflowX: 'auto' }}>
-                {RESTAURANTS_DATA.fastest.map((restaurant) => (
-                  <RestaurantCard 
-                    key={restaurant.id} 
-                    restaurant={restaurant} 
-                    likedItems={likedItems} 
-                    toggleLike={toggleLike} 
-                  />
-                ))}
-              </Group>
-            </Box>
+            {/* Craven Quick Picks - Promoted Restaurants */}
+            {weeklyDeals.length > 0 && (
+              <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
+                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                    <IconChevronRight size={18} />
+                  </ActionIcon>
+                </Group>
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={undefined}
+                  excludeCuisine={undefined}
+                  sectionTitle={undefined}
+                  horizontal={true}
+                  customRestaurants={weeklyDeals}
+                />
+              </Box>
+            )}
 
-            {/* Great Deals Section */}
-            <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
-              <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
-                  Great Deals
-                </Title>
-                {/* Hyper-realistic animated flame */}
-                <Box
-                  component="span"
-                  style={{
-                    position: 'relative',
-                    display: 'inline-block',
-                    width: '20px',
-                    height: '24px',
-                    marginLeft: '6px',
-                    verticalAlign: 'middle',
-                  }}
-                >
-                  {/* Main flame - center tongue */}
-                  <Box
-                    component="span"
-                    className="flame-main"
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: '50%',
-                      width: '6px',
-                      height: '20px',
-                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 30%, #ff8c42 60%, #ffd700 90%, #fff 100%)',
-                      clipPath: 'polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%)',
-                      borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-                      animation: 'flameMain 0.3s ease-in-out infinite',
-                      transformOrigin: 'bottom center',
-                      filter: 'blur(0.3px)',
-                      boxShadow: '0 0 8px rgba(255, 107, 53, 0.9), 0 0 16px rgba(255, 69, 0, 0.6)',
-                    }}
-                  />
-                  {/* Left flame tongue */}
-                  <Box
-                    component="span"
-                    className="flame-left"
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: '15%',
-                      width: '5px',
-                      height: '16px',
-                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
-                      clipPath: 'polygon(50% 100%, 0% 85%, 0% 60%, 30% 40%, 40% 20%, 50% 0%, 60% 15%, 70% 35%, 100% 55%, 100% 80%)',
-                      animation: 'flameLeft 0.4s ease-in-out infinite',
-                      transformOrigin: 'bottom center',
-                      filter: 'blur(0.4px)',
-                    }}
-                  />
-                  {/* Right flame tongue */}
-                  <Box
-                    component="span"
-                    className="flame-right"
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: '15%',
-                      width: '5px',
-                      height: '16px',
-                      background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
-                      clipPath: 'polygon(50% 100%, 0% 80%, 0% 55%, 30% 35%, 40% 15%, 50% 0%, 60% 20%, 70% 40%, 100% 60%, 100% 85%)',
-                      animation: 'flameRight 0.5s ease-in-out infinite',
-                      transformOrigin: 'bottom center',
-                      filter: 'blur(0.4px)',
-                    }}
-                  />
-                  {/* Top flicker - small tongue */}
-                  <Box
-                    component="span"
-                    className="flame-top"
-                    style={{
-                      position: 'absolute',
-                      bottom: '14px',
-                      left: '50%',
-                      width: '4px',
-                      height: '10px',
-                      background: 'linear-gradient(to top, transparent 0%, #ff8c42 20%, #ffd700 60%, #fff 100%)',
-                      clipPath: 'polygon(50% 100%, 20% 80%, 30% 60%, 40% 40%, 50% 0%, 60% 40%, 70% 60%, 80% 80%)',
-                      animation: 'flameTop 0.25s ease-in-out infinite',
-                      transformOrigin: 'bottom center',
-                      filter: 'blur(0.5px)',
-                    }}
-                  />
-                  {/* Spark particles */}
-                  <Box
-                    component="span"
-                    className="flame-spark-1"
-                    style={{
-                      position: 'absolute',
-                      bottom: '16px',
-                      left: '25%',
-                      width: '1.5px',
-                      height: '1.5px',
-                      background: '#ffd700',
-                      borderRadius: '50%',
-                      animation: 'spark1 1s ease-out infinite',
-                      boxShadow: '0 0 3px rgba(255, 215, 0, 1)',
-                    }}
-                  />
-                  <Box
-                    component="span"
-                    className="flame-spark-2"
-                    style={{
-                      position: 'absolute',
-                      bottom: '18px',
-                      right: '25%',
-                      width: '1.5px',
-                      height: '1.5px',
-                      background: '#fff',
-                      borderRadius: '50%',
-                      animation: 'spark2 1.3s ease-out infinite',
-                      boxShadow: '0 0 3px rgba(255, 255, 255, 0.9)',
-                    }}
-                  />
-                  {/* Base glow */}
+            {/* Great Deals - Restaurants with Promotions */}
+            {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
+              <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
+                <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
+                    Great Deals
+                  </Title>
+                  {/* Hyper-realistic animated flame */}
                   <Box
                     component="span"
                     style={{
-                      position: 'absolute',
-                      bottom: '-1px',
-                      left: '50%',
-                      width: '12px',
-                      height: '6px',
-                      background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.5) 0%, transparent 70%)',
-                      animation: 'flameBaseGlow 0.6s ease-in-out infinite alternate',
-                      transform: 'translateX(-50%)',
-                      pointerEvents: 'none',
+                      position: 'relative',
+                      display: 'inline-block',
+                      width: '20px',
+                      height: '24px',
+                      marginLeft: '6px',
+                      verticalAlign: 'middle',
                     }}
-                  />
-                </Box>
-              </Group>
-            </Box>
+                  >
+                    {/* Main flame - center tongue */}
+                    <Box
+                      component="span"
+                      className="flame-main"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '50%',
+                        width: '6px',
+                        height: '20px',
+                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 30%, #ff8c42 60%, #ffd700 90%, #fff 100%)',
+                        clipPath: 'polygon(50% 100%, 0% 80%, 0% 50%, 20% 30%, 30% 10%, 50% 0%, 70% 10%, 80% 30%, 100% 50%, 100% 80%)',
+                        borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                        animation: 'flameMain 0.3s ease-in-out infinite',
+                        transformOrigin: 'bottom center',
+                        filter: 'blur(0.3px)',
+                        boxShadow: '0 0 8px rgba(255, 107, 53, 0.9), 0 0 16px rgba(255, 69, 0, 0.6)',
+                      }}
+                    />
+                    {/* Left flame tongue */}
+                    <Box
+                      component="span"
+                      className="flame-left"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '15%',
+                        width: '5px',
+                        height: '16px',
+                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
+                        clipPath: 'polygon(50% 100%, 0% 85%, 0% 60%, 30% 40%, 40% 20%, 50% 0%, 60% 15%, 70% 35%, 100% 55%, 100% 80%)',
+                        animation: 'flameLeft 0.4s ease-in-out infinite',
+                        transformOrigin: 'bottom center',
+                        filter: 'blur(0.4px)',
+                      }}
+                    />
+                    {/* Right flame tongue */}
+                    <Box
+                      component="span"
+                      className="flame-right"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: '15%',
+                        width: '5px',
+                        height: '16px',
+                        background: 'linear-gradient(to top, #ff4500 0%, #ff6b35 40%, #ff8c42 70%, transparent 100%)',
+                        clipPath: 'polygon(50% 100%, 0% 80%, 0% 55%, 30% 35%, 40% 15%, 50% 0%, 60% 20%, 70% 40%, 100% 60%, 100% 85%)',
+                        animation: 'flameRight 0.5s ease-in-out infinite',
+                        transformOrigin: 'bottom center',
+                        filter: 'blur(0.4px)',
+                      }}
+                    />
+                    {/* Top flicker - small tongue */}
+                    <Box
+                      component="span"
+                      className="flame-top"
+                      style={{
+                        position: 'absolute',
+                        bottom: '14px',
+                        left: '50%',
+                        width: '4px',
+                        height: '10px',
+                        background: 'linear-gradient(to top, transparent 0%, #ff8c42 20%, #ffd700 60%, #fff 100%)',
+                        clipPath: 'polygon(50% 100%, 20% 80%, 30% 60%, 40% 40%, 50% 0%, 60% 40%, 70% 60%, 80% 80%)',
+                        animation: 'flameTop 0.25s ease-in-out infinite',
+                        transformOrigin: 'bottom center',
+                        filter: 'blur(0.5px)',
+                      }}
+                    />
+                    {/* Spark particles */}
+                    <Box
+                      component="span"
+                      className="flame-spark-1"
+                      style={{
+                        position: 'absolute',
+                        bottom: '16px',
+                        left: '25%',
+                        width: '1.5px',
+                        height: '1.5px',
+                        background: '#ffd700',
+                        borderRadius: '50%',
+                        animation: 'spark1 1s ease-out infinite',
+                        boxShadow: '0 0 3px rgba(255, 215, 0, 1)',
+                      }}
+                    />
+                    <Box
+                      component="span"
+                      className="flame-spark-2"
+                      style={{
+                        position: 'absolute',
+                        bottom: '18px',
+                        right: '25%',
+                        width: '1.5px',
+                        height: '1.5px',
+                        background: '#fff',
+                        borderRadius: '50%',
+                        animation: 'spark2 1.3s ease-out infinite',
+                        boxShadow: '0 0 3px rgba(255, 255, 255, 0.9)',
+                      }}
+                    />
+                    {/* Base glow */}
+                    <Box
+                      component="span"
+                      style={{
+                        position: 'absolute',
+                        bottom: '-1px',
+                        left: '50%',
+                        width: '12px',
+                        height: '6px',
+                        background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.5) 0%, transparent 70%)',
+                        animation: 'flameBaseGlow 0.6s ease-in-out infinite alternate',
+                        transform: 'translateX(-50%)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </Box>
+                </Group>
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={undefined}
+                  excludeCuisine={undefined}
+                  sectionTitle={undefined}
+                  horizontal={true}
+                  customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
+                />
+              </Box>
+            )}
 
             {/* Advertisement Banner - Auto-Rotating Carousel */}
             <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -2317,7 +2352,7 @@ const Restaurants = () => {
               </Box>
             ) : null}
 
-            {/* Premium Selections */}
+            {/* Premium Selections Header */}
             <Box px="md" py="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
               <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Premium Selections</Title>
@@ -2325,22 +2360,70 @@ const Restaurants = () => {
                   <IconChevronRight size={18} />
                 </ActionIcon>
               </Group>
-              
-              <Group gap="md" style={{ overflowX: 'auto' }}>
-                {RESTAURANTS_DATA.premium.map((restaurant) => (
-                  <RestaurantCard 
-                    key={restaurant.id} 
-                    restaurant={restaurant} 
-                    likedItems={likedItems} 
-                    toggleLike={toggleLike} 
-                  />
-                ))}
-              </Group>
             </Box>
+
+            {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+            <Box ref={restaurantsSectionRef} id="restaurants-section" data-section="restaurants">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter={undefined}
+                excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
+                sectionTitle="Restaurants"
+                horizontal={true}
+              />
+            </Box>
+
+            {/* Premium Selections - Apparel */}
+            <Box ref={apparelSectionRef} id="apparel-section" data-section="apparel">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="apparel"
+                sectionTitle="Apparel"
+                horizontal={true}
+              />
+            </Box>
+
+            {/* Premium Selections - Retail */}
+            <div ref={retailSectionRef} id="retail-section" data-section="retail">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="retail"
+                sectionTitle="Retail"
+                horizontal={true}
+              />
+            </div>
+
+            {/* Premium Selections - Late Nate Hunger */}
+            <div ref={lateNateHungerSectionRef}>
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="late nate hunger"
+                sectionTitle="Late Nate Hunger"
+                horizontal={true}
+              />
+            </div>
+
+            {/* Premium Selections - Kids */}
+            <div ref={kidsSectionRef} id="kids-section" data-section="kids">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="kids"
+                sectionTitle="Kids"
+                horizontal={true}
+              />
+            </div>
 
             {/* All Restaurants Section - Mobile */}
             <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Box ref={resultsRef}>
+              <Box ref={resultsRef} id="browse-all-section" data-section="browse-all">
+                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Browse All</Title>
+                </Group>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
@@ -2884,252 +2967,14 @@ const Restaurants = () => {
             </div>
           </div>
 
-          {/* National Favorites Section */}
-          <div className="bg-white py-8">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">National favorites</h2>
-                <div className="hidden lg:flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">See All</span>
-                  <div className="flex space-x-1">
-                    <button 
-                      onClick={scrollFeaturedLeft}
-                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
-                    >
-                      <IconChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={scrollFeaturedRight}
-                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
-                    >
-                      <IconChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <button className="lg:hidden text-sm text-primary font-semibold">
-                  See All
-                </button>
-              </div>
-
-              {/* Featured Restaurant Cards */}
-              <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4" ref={featuredScrollRef}>
-                {[
-                  {
-                    name: "Chick-fil-A",
-                    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=300&h=200&fit=crop",
-                    rating: 4.7,
-                    reviews: "10k+",
-                    distance: "2.0 mi",
-                    time: "23 min",
-                    deliveryFee: "$4.49",
-                    freeDelivery: "$0 delivery fee over $12",
-                    badge: "Customer favorite"
-                  },
-                  {
-                    name: "Domino's",
-                    image: "https://placehold.co/300x200/FF6B35/ffffff?text=Domino%27s",
-                    rating: 4.4,
-                    reviews: "50+",
-                    distance: "1.9 mi",
-                    time: "40 min",
-                    deliveryFee: "$0.99",
-                    freeDelivery: "40% off select items",
-                    badge: null
-                  },
-                  {
-                    name: "Starbucks",
-                    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop",
-                    rating: 4.6,
-                    reviews: "200+",
-                    distance: "1.9 mi",
-                    time: "31 min",
-                    deliveryFee: "$0.49",
-                    freeDelivery: "Customer favorite",
-                    badge: "Customer favorite"
-                  },
-                  {
-                    name: "McDonald's",
-                    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop",
-                    rating: 4.0,
-                    reviews: "1k+",
-                    distance: "1.9 mi",
-                    time: "26 min",
-                    deliveryFee: "$3.99",
-                    freeDelivery: "$0 delivery fee over $12",
-                    badge: "Free item on $15+"
-                  }
-                ].map((restaurant, index) => (
-                  <div key={index} className="flex-shrink-0 w-56 sm:w-64 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div className="h-48 overflow-hidden rounded-t-xl">
-                      <img
-                        src={restaurant.image}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-gray-900 text-sm">{restaurant.name}</h3>
-                        <IconChevronRight className="w-4 h-4 text-green-500" />
-                      </div>
-                      <div className="flex items-center text-xs text-gray-600 mb-1">
-                        <IconStar className="w-3 h-3 text-yellow-500 fill-yellow-500 mr-1" />
-                        <span>{restaurant.rating} ★ ({restaurant.reviews}) • {restaurant.distance} • {restaurant.time}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-semibold text-gray-900">{restaurant.deliveryFee}</p>
-                        <p className="text-xs text-gray-600">{restaurant.freeDelivery}</p>
-                        {restaurant.badge && (
-                          <div className="flex items-center text-orange-600 font-semibold text-xs">
-                            <IconPlus className="w-3 h-3 mr-1" />
-                            <span>{restaurant.badge}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Deals for You Section */}
-          <div className="bg-white py-8">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Deals for you</h2>
-                <div className="hidden lg:flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">See All</span>
-                  <div className="flex space-x-1">
-                    <button 
-                      onClick={scrollWeeklyDealsLeft}
-                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
-                    >
-                      <IconChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={scrollWeeklyDealsRight}
-                      className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-white transition-colors"
-                    >
-                      <IconChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <button className="lg:hidden text-sm text-primary font-semibold">
-                  See All
-                </button>
-              </div>
-
-              {/* Weekly Deals Cards */}
-              {loadingDeals ? (
-                <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-                  {[...Array(6)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0 w-64 bg-white rounded-xl animate-pulse">
-                      <div className="h-48 bg-white"></div>
-                      <div className="p-3">
-                        <div className="h-3 bg-white rounded mb-1"></div>
-                        <div className="h-2 bg-white rounded mb-1"></div>
-                        <div className="h-2 bg-white rounded mb-1"></div>
-                        <div className="h-2 bg-white rounded"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filteredWeeklyDeals.length > 0 ? (
-                <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4" ref={weeklyDealsScrollRef}>
-                  {filteredWeeklyDeals.map((restaurant) => {
-                    const formatPromotionTitle = () => {
-                      if (restaurant.promotion_title) return restaurant.promotion_title;
-                      
-                      if (restaurant.promotion_discount_percentage) {
-                        const maxDiscount = restaurant.promotion_maximum_discount_cents 
-                          ? `, up to $${(restaurant.promotion_maximum_discount_cents / 100).toFixed(0)}`
-                          : '';
-                        return `${restaurant.promotion_discount_percentage}% off${maxDiscount}`;
-                      }
-                      
-                      if (restaurant.promotion_discount_amount_cents) {
-                        return `$${(restaurant.promotion_discount_amount_cents / 100).toFixed(2)} off`;
-                      }
-                      
-                      return '+ Featured Deal';
-                    };
-
-                    const formatPromotionDescription = () => {
-                      if (restaurant.promotion_description) return restaurant.promotion_description;
-                      
-                      if (restaurant.promotion_minimum_order_cents) {
-                        return `Valid on orders over $${(restaurant.promotion_minimum_order_cents / 100).toFixed(0)}`;
-                      }
-                      
-                      return 'Special promotion available';
-                    };
-
-                    return (
-                      <div key={restaurant.id} className="flex-shrink-0 w-64 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                        <div className="h-48 overflow-hidden rounded-t-xl">
-                          <img
-                            src={restaurant.promotion_image_url || restaurant.image_url || `https://placehold.co/320x192/FF6B35/ffffff?text=${encodeURIComponent(restaurant.name)}`}
-                            alt={restaurant.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://placehold.co/320x192/FF6B35/ffffff?text=${encodeURIComponent(restaurant.name)}`;
-                            }}
-                          />
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-semibold text-gray-900 mb-1 text-sm">{restaurant.name}</h3>
-                          <div className="flex items-center text-xs text-gray-600 mb-1">
-                            <IconStar className="w-3 h-3 text-yellow-500 fill-yellow-500 mr-1" />
-                            <span>{restaurant.rating.toFixed(1)} ★ • {restaurant.min_delivery_time}-{restaurant.max_delivery_time} min</span>
-                          </div>
-                          <p className="text-xs font-semibold text-gray-900 mb-1">
-                            ${(restaurant.delivery_fee_cents / 100).toFixed(2)} delivery fee
-                          </p>
-                          <p className="text-xs text-gray-500 mb-1">Sponsored</p>
-                          <div className="flex items-center text-orange-600 font-semibold text-xs">
-                            <IconPlus className="w-3 h-3 mr-1" />
-                            <span>{formatPromotionTitle()}</span>
-                          </div>
-                          {restaurant.promotion_description && (
-                            <p className="text-xs text-gray-600 mt-0.5">{formatPromotionDescription()}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">
-                    {quickFilter 
-                      ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
-                      : 'No weekly deals available at the moment.'}
-                  </p>
-                  {quickFilter && (
-                    <button
-                      onClick={() => {
-                        setQuickFilter(null);
-                        setCuisineFilter('all');
-                      }}
-                      className="mt-4 text-primary font-semibold hover:underline"
-                    >
-                      Clear filter
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Results Section */}
           <div className="bg-white py-8" ref={resultsRef}>
             <div className="max-w-7xl mx-auto px-4">
-              {/* Results Header */}
-              {(searchQuery || location || cuisineFilter !== 'all') && (
+              {/* Results Header - Only show when searching or filtering */}
+              {(searchQuery || (cuisineFilter && cuisineFilter !== 'all')) && (
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {searchQuery ? `Results for "${searchQuery}"` : 'Restaurants Near You'}
+                    {searchQuery ? `Results for "${searchQuery}"` : 'Filtered Results'}
                   </h2>
                   {location && (
                     <p className="text-gray-600 flex items-center">
@@ -3140,29 +2985,167 @@ const Restaurants = () => {
                 </div>
               )}
 
-              {/* Show separate sections when filter is 'all' or no filter */}
+              {/* Show organized sections when filter is 'all' or no filter */}
               {(!cuisineFilter || cuisineFilter === 'all') && !searchQuery ? (
                 <>
-                  {/* Restaurants Section (excluding apparel) */}
-                  <div className="mb-12">
+                  {/* Craven Quick Picks - Promoted Restaurants */}
+                  {weeklyDeals.length > 0 && (
+                    <div className="mb-8">
+                      <div className="mb-4">
+                        <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Craven Quick Picks</h2>
+                      </div>
+                      <RestaurantGrid 
+                        searchQuery={searchQuery} 
+                        deliveryAddress={location} 
+                        cuisineFilter={undefined}
+                        excludeCuisine={undefined}
+                        sectionTitle={undefined}
+                        horizontal={true}
+                        customRestaurants={weeklyDeals}
+                      />
+                    </div>
+                  )}
+
+                  {/* Great Deals - Restaurants with Promotions */}
+                  {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
+                    <div className="mb-8">
+                      <div className="mb-4">
+                        <h2 className="text-2xl font-bold text-gray-900">Great Deals</h2>
+                      </div>
+                      <RestaurantGrid 
+                        searchQuery={searchQuery} 
+                        deliveryAddress={location} 
+                        cuisineFilter={undefined}
+                        excludeCuisine={undefined}
+                        sectionTitle={undefined}
+                        horizontal={true}
+                        customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Premium Selections Header */}
+                  <div className="mb-6 px-4">
+                    <h2 className="text-2xl font-bold text-gray-900">Premium Selections</h2>
+                  </div>
+
+                  {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+                  <div className="mb-8">
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
                       deliveryAddress={location} 
-                      cuisineFilter={cuisineFilter}
-                      excludeCuisine="apparel"
+                      cuisineFilter={undefined}
+                      excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                       sectionTitle="Restaurants"
+                      horizontal={true}
                     />
                   </div>
-                  
-                  {/* Apparel Section */}
-                  <div className="mt-8">
+
+                  {/* Premium Selections - Apparel */}
+                  <div className="mb-8">
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
                       deliveryAddress={location} 
                       cuisineFilter="apparel"
                       sectionTitle="Apparel"
+                      horizontal={true}
                     />
                   </div>
+
+                  {/* Premium Selections - Retail */}
+                  <div className="mb-8">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="retail"
+                      sectionTitle="Retail"
+                      horizontal={true}
+                    />
+                  </div>
+
+                  {/* Premium Selections - Late Nate Hunger */}
+                  <div className="mb-8">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="late nate hunger"
+                      sectionTitle="Late Nate Hunger"
+                      horizontal={true}
+                    />
+                  </div>
+
+                  {/* Premium Selections - Kids */}
+                  <div className="mb-8">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="kids"
+                      sectionTitle="Kids"
+                      horizontal={true}
+                    />
+                  </div>
+                </>
+              ) : cuisineFilter === 'apparel' ? (
+                <>
+                  {/* Apparel Category Submenu */}
+                  <div className="mb-6 px-4">
+                    <div className="flex space-x-3 overflow-x-auto scrollbar-hide pb-2" style={{
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch'
+                    }}>
+                      <button
+                        onClick={() => setApparelCategoryFilter('all')}
+                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          apparelCategoryFilter === 'all'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        All
+                      </button>
+                      <button
+                        onClick={() => setApparelCategoryFilter('Apparel')}
+                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          apparelCategoryFilter === 'Apparel'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Apparel
+                      </button>
+                      <button
+                        onClick={() => setApparelCategoryFilter('Accessories')}
+                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          apparelCategoryFilter === 'Accessories'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Accessories
+                      </button>
+                      <button
+                        onClick={() => setApparelCategoryFilter('Shoes')}
+                        className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          apparelCategoryFilter === 'Shoes'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Shoes
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Apparel Stores - Horizontal Scrollable Row */}
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="apparel"
+                    sectionTitle="Apparel Stores"
+                    horizontal={true}
+                    categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
+                  />
                 </>
               ) : (
                 /* Single section when filtering by specific cuisine or searching */
@@ -3170,6 +3153,7 @@ const Restaurants = () => {
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
                   cuisineFilter={cuisineFilter}
+                  horizontal={true}
                 />
               )}
             </div>
