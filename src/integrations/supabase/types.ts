@@ -8662,6 +8662,41 @@ export type Database = {
           },
         ]
       }
+      driver_cards: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          issuing_card_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          issuing_card_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          issuing_card_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_cards_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       driver_consents: {
         Row: {
           created_at: string | null
@@ -9956,6 +9991,35 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "zones"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_wallet: {
+        Row: {
+          available_cents: number
+          driver_id: string
+          reserved_cents: number
+          updated_at: string
+        }
+        Insert: {
+          available_cents?: number
+          driver_id: string
+          reserved_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          available_cents?: number
+          driver_id?: string
+          reserved_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_wallet_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -26976,6 +27040,64 @@ export type Database = {
           },
         ]
       }
+      wallet_ledger: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          driver_id: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          stripe_auth_id: string | null
+          stripe_txn_id: string | null
+          type: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          stripe_auth_id?: string | null
+          stripe_txn_id?: string | null
+          type: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          stripe_auth_id?: string | null
+          stripe_txn_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_ledger_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wallet_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wire_transfers: {
         Row: {
           amount: number
@@ -28184,6 +28306,14 @@ export type Database = {
         Args: { p_invite_code: string; p_restaurant_id: string }
         Returns: string
       }
+      credit_wallet_from_earnings: {
+        Args: {
+          p_amount_cents: number
+          p_driver_id: string
+          p_order_id: string
+        }
+        Returns: undefined
+      }
       daitch_mokotoff: { Args: { "": string }; Returns: string[] }
       decrypt_driver_identity: {
         Args: { p_driver_id: string; p_encryption_key: string }
@@ -28253,6 +28383,16 @@ export type Database = {
           p_transfers_lease_id: string
         }
         Returns: boolean
+      }
+      finalize_wallet_clearing: {
+        Args: {
+          p_cleared_amount_cents: number
+          p_driver_id: string
+          p_held_amount_cents: number
+          p_stripe_auth_id: string
+          p_stripe_txn_id: string
+        }
+        Returns: undefined
       }
       generate_certificate_number: { Args: never; Returns: string }
       generate_code_request_number: { Args: never; Returns: string }
@@ -28814,6 +28954,14 @@ export type Database = {
         Args: { p_actor_id?: string; p_comment?: string; p_queue_id: string }
         Returns: undefined
       }
+      release_wallet_hold: {
+        Args: {
+          p_amount_cents: number
+          p_driver_id: string
+          p_stripe_auth_id: string
+        }
+        Returns: undefined
+      }
       reserve_promo_for_checkout: {
         Args: {
           p_delivery_fee_cents: number
@@ -28822,6 +28970,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      reserve_wallet_for_card_auth: {
+        Args: {
+          p_amount_cents: number
+          p_driver_id: string
+          p_stripe_auth_id: string
+        }
+        Returns: boolean
       }
       revoke_expired_reservations: { Args: never; Returns: number }
       rpc_has_finance_permission: {
