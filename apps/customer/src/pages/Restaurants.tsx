@@ -1726,19 +1726,20 @@ const Restaurants = () => {
     );
   }
 
-  // Mobile App Main Interface
-  if (isMobile && showMain) {
-    return (
-      <Box style={{ 
-        width: '100%', 
-        maxWidth: '430px', 
-        margin: '0 auto', 
-        minHeight: '100vh', 
-        backgroundColor: 'white', 
-        display: 'flex', 
-        flexDirection: 'column',
-        paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))'
-      }}>
+  // Mobile App Main Interface - Always show mobile UI when on mobile (web browser or native app)
+  if (isMobile) {
+    if (showMain) {
+      return (
+        <Box style={{ 
+          width: '100%', 
+          maxWidth: '430px', 
+          margin: '0 auto', 
+          minHeight: '100vh', 
+          backgroundColor: 'white', 
+          display: 'flex', 
+          flexDirection: 'column',
+          paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))'
+        }}>
         {/* Search & Address Bar (Fixed Header - Matching Chat Header Structure) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
@@ -2682,10 +2683,12 @@ const Restaurants = () => {
         />
       </Box>
     );
+    }
   }
 
-  // Desktop Layout (existing code - keep as is)
-  return (
+  // Desktop Layout - Only show when NOT on mobile
+  if (!isMobile) {
+    return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       {/* Mobile Header - Mantine UI */}
       <Box 
@@ -3612,7 +3615,11 @@ const Restaurants = () => {
         }
       `}</style>
     </div>
-  );
+    );
+  }
+
+  // Fallback: If somehow neither mobile nor desktop conditions match, return null
+  return null;
 };
 
 export default Restaurants;

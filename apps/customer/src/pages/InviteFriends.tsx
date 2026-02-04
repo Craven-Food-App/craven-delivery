@@ -179,7 +179,7 @@ const InviteFriends: React.FC = () => {
         style={{
           maxWidth: '600px',
           margin: '0 auto',
-          paddingTop: 'calc(140px + env(safe-area-inset-top, 0px))',
+          paddingTop: 'calc(100px + env(safe-area-inset-top, 0px))',
         }}
       >
         {/* Hero image + headline / subhead */}
