@@ -49,6 +49,7 @@ import {
   IconCoffee,
   IconBuildingStore,
   IconHeart,
+  IconShirt,
   IconUser,
   IconSettings,
   IconChevronRight,
@@ -241,6 +242,7 @@ const Restaurants = () => {
   const [activeFilter, setActiveFilter] = useState('deals');
   const [showMobileNav, setShowMobileNav] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
   
   // Mobile app states
   // Web version: Always show main view, never show landing page
@@ -266,8 +268,6 @@ const Restaurants = () => {
   const currentLocation = useLocation();
   const mobile = useMediaQuery('(max-width: 48em)');
   const resultsRef = useRef<HTMLDivElement | null>(null);
-  const weeklyDealsScrollRef = useRef<HTMLDivElement>(null);
-  const featuredScrollRef = useRef<HTMLDivElement>(null);
 
   const toggleLike = useCallback((id: string) => {
     setLikedItems(prev => {
@@ -380,30 +380,6 @@ const Restaurants = () => {
     });
   };
 
-  // Scroll functions for horizontal sections
-  const scrollWeeklyDealsLeft = () => {
-    if (weeklyDealsScrollRef.current) {
-      weeklyDealsScrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
-    }
-  };
-
-  const scrollWeeklyDealsRight = () => {
-    if (weeklyDealsScrollRef.current) {
-      weeklyDealsScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
-    }
-  };
-
-  const scrollFeaturedLeft = () => {
-    if (featuredScrollRef.current) {
-      featuredScrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
-    }
-  };
-
-  const scrollFeaturedRight = () => {
-    if (featuredScrollRef.current) {
-      featuredScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
-    }
-  };
 
   // Fetch promoted restaurants for weekly deals
   const fetchWeeklyDeals = async () => {
@@ -443,6 +419,7 @@ const Restaurants = () => {
     fetchNotifications();
     fetchPromotionalBanners();
     fetchHeroImage();
+    fetchAvailableCuisines();
     fetchAdPlacements();
   }, []);
 
@@ -477,6 +454,7 @@ const Restaurants = () => {
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
+    { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
     { id: 'health', label: 'Self Care', icon: IconShield, active: activeCategory === 'health' },
     { id: 'browse', label: 'Browse All', icon: IconSearch, active: activeCategory === 'browse' },
@@ -490,7 +468,7 @@ const Restaurants = () => {
     // Handle different category types
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
-    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setCuisineFilter(categoryId);
     } else if (categoryId === 'orders') {
       // Navigate to orders page
@@ -503,7 +481,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
@@ -517,6 +495,85 @@ const Restaurants = () => {
     { id: 'price', label: 'Price' },
     { id: 'dashpass', label: 'CravePass' }
   ];
+
+  // Common cuisine types - always show these
+  const commonCuisines = [
+    'American',
+    'Italian',
+    'Chinese',
+    'Mexican',
+    'Japanese',
+    'Indian',
+    'Thai',
+    'Mediterranean',
+    'Korean',
+    'Vietnamese',
+    'French',
+    'Greek',
+    'BBQ',
+    'Seafood',
+    'Breakfast',
+    'Dessert',
+    'Pizza',
+    'Burgers',
+    'Sushi',
+    'Steakhouse'
+  ];
+
+  // Emoji mapping for cuisine types
+  const getCuisineEmoji = (cuisine: string) => {
+    const cuisineLower = cuisine.toLowerCase();
+    if (cuisineLower.includes('pizza') || cuisineLower.includes('italian')) return '🍕';
+    if (cuisineLower.includes('burger') || cuisineLower.includes('american')) return '🍔';
+    if (cuisineLower.includes('sushi') || cuisineLower.includes('japanese')) return '🍣';
+    if (cuisineLower.includes('chinese') || cuisineLower.includes('asian')) return '🍜';
+    if (cuisineLower.includes('mexican') || cuisineLower.includes('taco')) return '🌮';
+    if (cuisineLower.includes('indian')) return '🍛';
+    if (cuisineLower.includes('thai')) return '🍲';
+    if (cuisineLower.includes('bbq') || cuisineLower.includes('barbecue') || cuisineLower.includes('steakhouse')) return '🥩';
+    if (cuisineLower.includes('breakfast') || cuisineLower.includes('brunch')) return '🥞';
+    if (cuisineLower.includes('dessert') || cuisineLower.includes('bakery') || cuisineLower.includes('sweet')) return '🍰';
+    if (cuisineLower.includes('seafood')) return '🦞';
+    if (cuisineLower.includes('mediterranean') || cuisineLower.includes('greek')) return '🥙';
+    if (cuisineLower.includes('korean')) return '🍱';
+    if (cuisineLower.includes('vietnamese')) return '🍜';
+    if (cuisineLower.includes('french')) return '🥐';
+    if (cuisineLower.includes('grocery') || cuisineLower.includes('market')) return '🛒';
+    return '🍽️'; // Default
+  };
+
+  // Fetch available cuisine types
+  const fetchAvailableCuisines = async () => {
+    // Always set to common cuisines for now
+    setAvailableCuisines(commonCuisines);
+    
+    // Optional: Also fetch from database to see what's available
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('cuisine_type')
+        .eq('is_active', true)
+        .not('cuisine_type', 'is', null);
+
+      if (!error && data) {
+        // Get unique cuisine types from database
+        const uniqueCuisines = Array.from(
+          new Set(
+            (data || [])
+              .map((r: any) => r.cuisine_type)
+              .filter((c: string | null) => c && c.trim() !== '')
+          )
+        ) as string[];
+        
+        // Merge with common cuisines, prioritizing database cuisines
+        const allCuisines = [...new Set([...uniqueCuisines, ...commonCuisines])].sort();
+        setAvailableCuisines(allCuisines);
+      }
+    } catch (error) {
+      console.error('Error fetching cuisine types:', error);
+      // Keep common cuisines on error
+    }
+  };
 
   // Fetch promotional banners from database
   const fetchPromotionalBanners = async () => {
@@ -1189,7 +1246,7 @@ const Restaurants = () => {
       </Box>
 
       {/* Desktop Header - Hidden on Mobile */}
-      <div className="hidden lg:block sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="hidden lg:block sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm" style={{ height: '80px' }}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Left: Logo */}
@@ -1400,6 +1457,130 @@ const Restaurants = () => {
         </div>
       </div>
 
+      {/* Cuisine Filter Buttons - Sticky below header */}
+      <Box
+        component="nav"
+        style={{
+          position: 'sticky',
+          top: isMobile ? '100px' : '80px',
+          left: 0,
+          right: 0,
+          width: '100%',
+          height: '100px',
+          zIndex: 998,
+          borderBottom: '1px solid #e5e7eb', 
+          backgroundColor: 'white',
+          marginTop: '0px',
+          marginBottom: '0px',
+          paddingTop: '13px',
+          paddingBottom: '12px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          transition: 'top 0.2s ease',
+        }}
+      >
+        {availableCuisines.length > 0 ? (
+          <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Row 1 */}
+            <Box style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              overflowX: 'auto', 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch', 
+              paddingBottom: '4px'
+            }} className="scrollbar-hide">
+              {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                const cuisineEmoji = getCuisineEmoji(cuisine);
+                const isActive = cuisineFilter === cuisine.toLowerCase();
+                return (
+                  <Button
+                    key={cuisine}
+                    variant={isActive ? "filled" : "outline"}
+                    size="xs"
+                    radius="md"
+                    onClick={() => {
+                      setCuisineFilter(cuisine.toLowerCase());
+                      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    style={{ 
+                      backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                      borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                      color: isActive ? 'white' : '#404040',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      height: 'auto',
+                      fontSize: '11px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span>{cuisine}</span>
+                  </Button>
+                );
+              })}
+            </Box>
+            {/* Row 2 */}
+            <Box style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              overflowX: 'auto', 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none', 
+              WebkitOverflowScrolling: 'touch', 
+              paddingBottom: '4px'
+            }} className="scrollbar-hide">
+              {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
+                const cuisineEmoji = getCuisineEmoji(cuisine);
+                const isActive = cuisineFilter === cuisine.toLowerCase();
+                return (
+                  <Button
+                    key={cuisine}
+                    variant={isActive ? "filled" : "outline"}
+                    size="xs"
+                    radius="md"
+                    onClick={() => {
+                      setCuisineFilter(cuisine.toLowerCase());
+                      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    style={{ 
+                      backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                      borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                      color: isActive ? 'white' : '#404040',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      height: 'auto',
+                      fontSize: '11px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span>{cuisine}</span>
+                  </Button>
+                );
+              })}
+            </Box>
+          </Box>
+        ) : (
+          <Text size="sm" c="gray.6" ta="center" py="md">
+            Loading cuisines...
+          </Text>
+        )}
+      </Box>
+
       {/* Mobile Filter Pills - Mantine UI */}
       <Box
         component="nav"
@@ -1495,255 +1676,162 @@ const Restaurants = () => {
             </div>
           </div>
 
-          {/* National Favorites Section */}
-          <div className="bg-white py-8">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">National favorites</h2>
-                <div className="hidden lg:flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">See All</span>
-                  <div className="flex space-x-1">
-                    <button 
-                      onClick={scrollFeaturedLeft}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                    >
-                      <IconChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={scrollFeaturedRight}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                    >
-                      <IconChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <button className="lg:hidden text-sm text-primary font-semibold">
-                  See All
-                </button>
-              </div>
-
-              {/* Featured Restaurant Cards */}
-              <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4" ref={featuredScrollRef}>
-                {[
-                  {
-                    name: "Chick-fil-A",
-                    image: "https://images.unsplash.com/photo-1562967914-608f82629710?w=300&h=200&fit=crop",
-                    rating: 4.7,
-                    reviews: "10k+",
-                    distance: "2.0 mi",
-                    time: "23 min",
-                    deliveryFee: "$4.49",
-                    freeDelivery: "$0 delivery fee over $12",
-                    badge: "Customer favorite"
-                  },
-                  {
-                    name: "Domino's",
-                    image: "https://placehold.co/300x200/FF6B35/ffffff?text=Domino%27s",
-                    rating: 4.4,
-                    reviews: "50+",
-                    distance: "1.9 mi",
-                    time: "40 min",
-                    deliveryFee: "$0.99",
-                    freeDelivery: "40% off select items",
-                    badge: null
-                  },
-                  {
-                    name: "Starbucks",
-                    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop",
-                    rating: 4.6,
-                    reviews: "200+",
-                    distance: "1.9 mi",
-                    time: "31 min",
-                    deliveryFee: "$0.49",
-                    freeDelivery: "Customer favorite",
-                    badge: "Customer favorite"
-                  },
-                  {
-                    name: "McDonald's",
-                    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=300&h=200&fit=crop",
-                    rating: 4.0,
-                    reviews: "1k+",
-                    distance: "1.9 mi",
-                    time: "26 min",
-                    deliveryFee: "$3.99",
-                    freeDelivery: "$0 delivery fee over $12",
-                    badge: "Free item on $15+"
-                  }
-                ].map((restaurant, index) => (
-                  <div key={index} className="flex-shrink-0 w-56 sm:w-64 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div className="h-48 overflow-hidden rounded-t-xl">
-                      <img
-                        src={restaurant.image}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover"
-                      />
+          {/* Show organized sections when filter is 'all' or no filter */}
+          {(!cuisineFilter || cuisineFilter === 'all') ? (
+            <>
+              {/* Craven Quick Picks - Promoted Restaurants */}
+              {weeklyDeals.length > 0 && (
+                <div className="bg-white py-8 mb-8" style={{ height: '440px' }}>
+                  <div className="max-w-7xl mx-auto px-4">
+                    <div className="mb-4">
+                      <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Craven Quick Picks</h2>
                     </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-gray-900 text-sm">{restaurant.name}</h3>
-                        <IconChevronRight className="w-4 h-4 text-green-500" />
-                      </div>
-                      <div className="flex items-center text-xs text-gray-600 mb-1">
-                        <IconStar className="w-3 h-3 text-yellow-500 fill-yellow-500 mr-1" />
-                        <span>{restaurant.rating} ★ ({restaurant.reviews}) • {restaurant.distance} • {restaurant.time}</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-semibold text-gray-900">{restaurant.deliveryFee}</p>
-                        <p className="text-xs text-gray-600">{restaurant.freeDelivery}</p>
-                        {restaurant.badge && (
-                          <div className="flex items-center text-orange-600 font-semibold text-xs">
-                            <IconPlus className="w-3 h-3 mr-1" />
-                            <span>{restaurant.badge}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter={undefined}
+                      excludeCuisine={undefined}
+                      sectionTitle={undefined}
+                      horizontal={true}
+                      customRestaurants={weeklyDeals}
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Deals for You Section */}
-          <div className="bg-gray-50 py-8">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Deals for you</h2>
-                <div className="hidden lg:flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">See All</span>
-                  <div className="flex space-x-1">
-                    <button 
-                      onClick={scrollWeeklyDealsLeft}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                    >
-                      <IconChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={scrollWeeklyDealsRight}
-                      className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                    >
-                      <IconChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <button className="lg:hidden text-sm text-primary font-semibold">
-                  See All
-                </button>
-              </div>
-
-              {/* Weekly Deals Cards */}
-              {loadingDeals ? (
-                <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4">
-                  {[...Array(6)].map((_, index) => (
-                    <div key={index} className="flex-shrink-0 w-64 bg-gray-200 rounded-xl animate-pulse">
-                      <div className="h-48 bg-gray-300"></div>
-                      <div className="p-3">
-                        <div className="h-3 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded mb-1"></div>
-                        <div className="h-2 bg-gray-300 rounded"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : weeklyDeals.length > 0 ? (
-                <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4" ref={weeklyDealsScrollRef}>
-                  {weeklyDeals.map((restaurant) => {
-                    const formatPromotionTitle = () => {
-                      if (restaurant.promotion_title) return restaurant.promotion_title;
-                      
-                      if (restaurant.promotion_discount_percentage) {
-                        const maxDiscount = restaurant.promotion_maximum_discount_cents 
-                          ? `, up to $${(restaurant.promotion_maximum_discount_cents / 100).toFixed(0)}`
-                          : '';
-                        return `${restaurant.promotion_discount_percentage}% off${maxDiscount}`;
-                      }
-                      
-                      if (restaurant.promotion_discount_amount_cents) {
-                        return `$${(restaurant.promotion_discount_amount_cents / 100).toFixed(2)} off`;
-                      }
-                      
-                      return '+ Featured Deal';
-                    };
-
-                    const formatPromotionDescription = () => {
-                      if (restaurant.promotion_description) return restaurant.promotion_description;
-                      
-                      if (restaurant.promotion_minimum_order_cents) {
-                        return `Valid on orders over $${(restaurant.promotion_minimum_order_cents / 100).toFixed(0)}`;
-                      }
-                      
-                      return 'Special promotion available';
-                    };
-
-                    return (
-                      <div key={restaurant.id} className="flex-shrink-0 w-64 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                        <div className="h-48 overflow-hidden rounded-t-xl">
-                          <img
-                            src={restaurant.promotion_image_url || restaurant.image_url || `https://placehold.co/320x192/FF6B35/ffffff?text=${encodeURIComponent(restaurant.name)}`}
-                            alt={restaurant.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://placehold.co/320x192/FF6B35/ffffff?text=${encodeURIComponent(restaurant.name)}`;
-                            }}
-                          />
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-semibold text-gray-900 mb-1 text-sm">{restaurant.name}</h3>
-                          <div className="flex items-center text-xs text-gray-600 mb-1">
-                            <IconStar className="w-3 h-3 text-yellow-500 fill-yellow-500 mr-1" />
-                            <span>{restaurant.rating.toFixed(1)} ★ • {restaurant.min_delivery_time}-{restaurant.max_delivery_time} min</span>
-                          </div>
-                          <p className="text-xs font-semibold text-gray-900 mb-1">
-                            ${(restaurant.delivery_fee_cents / 100).toFixed(2)} delivery fee
-                          </p>
-                          <p className="text-xs text-gray-500 mb-1">Sponsored</p>
-                          <div className="flex items-center text-orange-600 font-semibold text-xs">
-                            <IconPlus className="w-3 h-3 mr-1" />
-                            <span>{formatPromotionTitle()}</span>
-                          </div>
-                          {restaurant.promotion_description && (
-                            <p className="text-xs text-gray-600 mt-0.5">{formatPromotionDescription()}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No weekly deals available at the moment.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Results Section */}
-          <div className="bg-white py-8" ref={resultsRef}>
-            <div className="max-w-7xl mx-auto px-4">
-              {/* Results Header */}
-              {(searchQuery || location || cuisineFilter !== 'all') && (
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {searchQuery ? `Results for "${searchQuery}"` : 'Restaurants Near You'}
-                  </h2>
-                  {location && (
-                    <p className="text-gray-600 flex items-center">
-                      <IconMapPin className="w-4 h-4 mr-2" />
-                      Delivering to: {location}
-                    </p>
-                  )}
                 </div>
               )}
 
-              {/* Restaurant Grid */}
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
-                cuisineFilter={cuisineFilter}
-              />
+              {/* Great Deals - Restaurants with Promotions */}
+              {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
+                <div className="bg-gray-50 py-8 mb-8">
+                  <div className="max-w-7xl mx-auto px-4">
+                    <div className="mb-4">
+                      <h2 className="text-2xl font-bold text-gray-900">Great Deals</h2>
+                    </div>
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter={undefined}
+                      excludeCuisine={undefined}
+                      sectionTitle={undefined}
+                      horizontal={true}
+                      customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Premium Selections Header */}
+              <div className="bg-white py-0" style={{ marginTop: '0px', marginBottom: '0px' }}>
+                <div className="max-w-7xl mx-auto px-4">
+                  <h2 className="text-2xl font-bold text-gray-900">Premium Selections</h2>
+                </div>
+              </div>
+
+              {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+              <div className="bg-white py-8 mb-8">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter={undefined}
+                    excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
+                    sectionTitle="Restaurants"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Premium Selections - Apparel */}
+              <div className="bg-white py-8 mb-8">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="apparel"
+                    sectionTitle="Apparel"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Premium Selections - Retail */}
+              <div className="bg-white py-8 mb-8">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="retail"
+                    sectionTitle="Retail"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Premium Selections - Late Nate Hunger */}
+              <div className="bg-white py-8 mb-8">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="late nate hunger"
+                    sectionTitle="Late Nate Hunger"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Premium Selections - Kids */}
+              <div className="bg-white py-8 mb-8">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="kids"
+                    sectionTitle="Kids"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Browse All Section */}
+              <div className="bg-white py-8" ref={resultsRef}>
+                <div className="max-w-7xl mx-auto px-4">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">Browse All</h2>
+                  </div>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter={cuisineFilter}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Single section when filtering by specific cuisine or searching */
+            <div className="bg-white py-8" ref={resultsRef}>
+              <div className="max-w-7xl mx-auto px-4">
+                {/* Results Header */}
+                {(searchQuery || location || cuisineFilter !== 'all') && (
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {searchQuery ? `Results for "${searchQuery}"` : 'Restaurants Near You'}
+                    </h2>
+                    {location && (
+                      <p className="text-gray-600 flex items-center">
+                        <IconMapPin className="w-4 h-4 mr-2" />
+                        Delivering to: {location}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <RestaurantGrid 
+                  searchQuery={searchQuery} 
+                  deliveryAddress={location} 
+                  cuisineFilter={cuisineFilter}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
