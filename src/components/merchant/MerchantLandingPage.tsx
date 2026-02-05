@@ -88,18 +88,18 @@ export default function MerchantLandingPage() {
               console.error('Reverse geocoding failed:', error);
             }
             
-            // If geolocation succeeded but reverse geocoding failed, try IP fallback
+            // If geolocation succeeded but reverse geocoding failed, try IP fallback for estimate only
             try {
               const ipLocation = await detectLocationFromIP();
               if (ipLocation) {
-                console.log('IP-based location (fallback):', ipLocation);
+                console.log('IP-based location (reverse geocode failed, for estimate only):', ipLocation);
                 setDetectedLocation(ipLocation);
                 const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
                 if (population) {
                   const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
                   if (estimate) {
                     setEarningsEstimate(estimate);
-                    setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+                    // DO NOT auto-fill form - IP location is inaccurate
                   }
                 }
               } else {
@@ -116,17 +116,20 @@ export default function MerchantLandingPage() {
           async (error) => {
             console.warn('Geolocation permission denied or failed:', error);
             // Method 2: Fallback to IP-based location detection if geolocation fails
+            // NOTE: IP-based location is inaccurate, so we only use it for earnings estimate display
+            // We do NOT auto-fill the form with IP-based location
             try {
               const ipLocation = await detectLocationFromIP();
               if (ipLocation) {
-                console.log('IP-based location (geolocation failed):', ipLocation);
+                console.log('IP-based location (geolocation failed, for estimate only):', ipLocation);
                 setDetectedLocation(ipLocation);
                 const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
                 if (population) {
                   const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
                   if (estimate) {
                     setEarningsEstimate(estimate);
-                    setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+                    // DO NOT auto-fill form - IP location is inaccurate
+                    // User will enter their actual address manually
                   }
                 }
               } else {
@@ -143,18 +146,18 @@ export default function MerchantLandingPage() {
           { timeout: 10000, enableHighAccuracy: true, maximumAge: 300000 } // 10s timeout, high accuracy, 5min cache
         );
       } else {
-        // No geolocation support, use IP-based detection
+        // No geolocation support, use IP-based detection for estimate only
         try {
           const ipLocation = await detectLocationFromIP();
           if (ipLocation) {
-            console.log('IP-based location (no geolocation support):', ipLocation);
+            console.log('IP-based location (no geolocation support, for estimate only):', ipLocation);
             setDetectedLocation(ipLocation);
             const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
             if (population) {
               const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
               if (estimate) {
                 setEarningsEstimate(estimate);
-                setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+                // DO NOT auto-fill form - IP location is inaccurate
               }
             }
           } else {
@@ -525,7 +528,8 @@ export default function MerchantLandingPage() {
     'Coffee',
   ];
 
-  const cityName = detectedLocation?.city || formData.city || 'your area';
+  // Prioritize user-entered city, then detected location, then fallback
+  const cityName = formData.city || detectedLocation?.city || 'your area';
   const earningsRange = earningsEstimate ? formatEarningsRange(earningsEstimate) : '$55,000 – $75,000';
 
   return (
