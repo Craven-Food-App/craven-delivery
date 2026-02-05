@@ -8,6 +8,7 @@ const RestaurantRegister = () => {
   const [checking, setChecking] = useState(true);
   const [signupData, setSignupData] = useState<any>(null);
 
+  // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
   useEffect(() => {
     const checkExistingRestaurant = async () => {
       try {
@@ -77,17 +78,6 @@ const RestaurantRegister = () => {
     checkExistingRestaurant();
   }, [navigate]);
 
-  if (checking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Checking your restaurant...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Clear signup data from localStorage after wizard is mounted
   useEffect(() => {
     if (signupData) {
@@ -98,6 +88,18 @@ const RestaurantRegister = () => {
       return () => clearTimeout(timer);
     }
   }, [signupData]);
+
+  // CONDITIONAL RENDERING MUST BE AFTER ALL HOOKS
+  if (checking) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking your restaurant...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
