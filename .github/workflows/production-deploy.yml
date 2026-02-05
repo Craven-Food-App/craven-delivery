@@ -212,7 +212,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
+      - name: Install customer app dependencies
+        working-directory: ./apps/customer
+        run: npm ci
+
+      - name: Build customer web application
+        working-directory: ./apps/customer
         run: npm run build
         env:
           NODE_ENV: production
@@ -226,15 +231,15 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          vercel-args: '--prod --cwd apps/customer'
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2.0
         with:
-          publish-dir: './dist'
+          publish-dir: './apps/customer/dist'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: 'Production deployment'
+          deploy-message: 'Production deployment - Customer web app'
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
