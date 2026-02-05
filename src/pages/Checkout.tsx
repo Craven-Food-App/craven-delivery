@@ -6,6 +6,8 @@ import { useCart } from '@/contexts/CartContext';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
 import { PromoCodeInput } from '@/components/checkout/PromoCodeInput';
+import { SplitPayment } from '@/components/checkout/SplitPayment';
+import { StackOrderModal } from '@/components/checkout/StackOrderModal';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { CreditCard } from 'lucide-react';
@@ -372,6 +374,10 @@ const Checkout: React.FC = () => {
   const [selectedScheduleTime, setSelectedScheduleTime] = useState<string>('');
   const [isAdjustingPin, setIsAdjustingPin] = useState(false);
   const [pinLocation, setPinLocation] = useState<{ lng: number; lat: number } | null>(null);
+  const [splitPaymentMethods, setSplitPaymentMethods] = useState<Array<{ paymentMethodId: string; amount: number }>>([]);
+  const [showStackOrderModal, setShowStackOrderModal] = useState(false);
+  const [completedOrderId, setCompletedOrderId] = useState<string>('');
+  const [completedOrderItems, setCompletedOrderItems] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -881,8 +887,14 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // Show payment method selection modal
-    setShowPaymentModal(true);
+    // Validate payment method (either single or split)
+    if (splitPaymentMethods.length === 0 && !selectedPaymentMethod) {
+      toast({ title: "Error", description: "Please select a payment method", variant: "destructive" });
+      return;
+    }
+
+    // Process order directly (payment methods now visible on page)
+    await processOrder();
   };
 
   const processOrder = async () => {
@@ -1000,29 +1012,56 @@ const Checkout: React.FC = () => {
         }
       }
 
-      // Create payment with Stripe
-      if (!selectedPaymentMethod) {
-        toast({ title: "Error", description: "Please select a payment method", variant: "destructive" });
-        setIsProcessing(false);
-        return;
+      // Create payment with Stripe (single or split)
+      let paymentData;
+      let paymentError;
+
+      if (splitPaymentMethods.length > 1) {
+        // Split payment between 2 cards
+        const { data, error } = await supabase.functions.invoke('create-split-payment', {
+          body: {
+            orderTotal: total,
+            orderId: newOrder.id,
+            customerInfo: {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone
+            },
+            payments: splitPaymentMethods,
+            provider: 'stripe'
+          }
+        });
+        paymentData = data;
+        paymentError = error;
+      } else {
+        // Single payment method
+        if (!selectedPaymentMethod && splitPaymentMethods.length === 0) {
+          toast({ title: "Error", description: "Please select a payment method", variant: "destructive" });
+          setIsProcessing(false);
+          return;
+        }
+
+        const paymentMethodId = splitPaymentMethods.length === 1 
+          ? splitPaymentMethods[0].paymentMethodId 
+          : (selectedPaymentMethod?.stripe_payment_method_id || selectedPaymentMethod?.moov_payment_method_id);
+
+        const { data, error } = await supabase.functions.invoke('create-payment', {
+          body: {
+            orderTotal: total,
+            orderId: newOrder.id,
+            customerInfo: {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone
+            },
+            paymentMethodId: paymentMethodId,
+            paymentMethodType: selectedPaymentMethod?.type || 'card',
+            provider: 'stripe'
+          }
+        });
+        paymentData = data;
+        paymentError = error;
       }
-
-      const paymentBody: any = {
-        orderTotal: total,
-        orderId: newOrder.id,
-        customerInfo: {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone
-        },
-        paymentMethodId: selectedPaymentMethod.stripe_payment_method_id || selectedPaymentMethod.moov_payment_method_id, // Support both during migration
-        paymentMethodType: selectedPaymentMethod.type,
-        provider: 'stripe' // Explicitly set provider
-      };
-
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
-        body: paymentBody
-      });
 
       if (paymentError) {
         console.error('Payment error:', paymentError);
@@ -1045,16 +1084,21 @@ const Checkout: React.FC = () => {
             : "Your payment is being processed. Order confirmed.",
         });
 
+        // Store order info for stack order modal
+        setCompletedOrderId(newOrder.id);
+        setCompletedOrderItems(cart);
+
         // Clear cart
         localStorage.removeItem('checkout_cart');
         localStorage.removeItem('checkout_restaurant');
         localStorage.removeItem('checkout_delivery_method');
         localStorage.removeItem('pending_order_id');
 
-        // Redirect to payment success page
-        setTimeout(() => {
-          navigate(`/payment-success?order_id=${newOrder.id}&payment_id=${paymentData.payment_id}`);
-        }, 1500);
+        // Show stack order modal (5-minute window to add more)
+        setShowStackOrderModal(true);
+
+        // If user doesn't stack, redirect after modal closes
+        // Modal will handle navigation
       } else {
         throw new Error(`Payment failed with status: ${paymentData.status}`);
       }
@@ -1824,6 +1868,17 @@ const Checkout: React.FC = () => {
                         ))}
                       </div>
                     </div>
+
+                    {/* Payment Method Section - Always Visible */}
+                    <div className="border-t pt-4">
+                      <h3 className="text-sm font-semibold mb-3">Payment Method</h3>
+                      <SplitPayment
+                        totalAmount={total}
+                        onPaymentMethodsChange={setSplitPaymentMethods}
+                        selectedMethod={selectedPaymentMethod}
+                      />
+                    </div>
+
                     <div className="border-t pt-3 space-y-2 text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>${(subtotal / 100).toFixed(2)}</span></div>
                   {promoDiscount > 0 && (
@@ -2847,6 +2902,21 @@ const Checkout: React.FC = () => {
           />
         </SheetContent>
       </Sheet>
+
+      {/* Stack Order Modal - After Payment Success */}
+      <StackOrderModal
+        isOpen={showStackOrderModal}
+        onClose={() => {
+          setShowStackOrderModal(false);
+          // Redirect to order tracking when modal closes
+          if (completedOrderId) {
+            navigate(`/order-tracking/${completedOrderId}`);
+          }
+        }}
+        orderId={completedOrderId}
+        orderItems={completedOrderItems}
+        orderCategory={restaurant?.cuisine_type}
+      />
     </div>
   );
 };
