@@ -545,24 +545,6 @@ const Restaurants = () => {
   ];
 
   // Emoji mapping for cuisine types
-  const getCuisineIcon = (cuisine: string) => {
-    const cuisineLower = cuisine.toLowerCase();
-    if (cuisineLower.includes('pizza') || cuisineLower.includes('italian')) return IconToolsKitchen2;
-    if (cuisineLower.includes('chinese') || cuisineLower.includes('asian')) return IconToolsKitchen2;
-    if (cuisineLower.includes('mexican') || cuisineLower.includes('taco')) return IconToolsKitchen2;
-    if (cuisineLower.includes('burger') || cuisineLower.includes('american')) return IconToolsKitchen2;
-    if (cuisineLower.includes('sushi') || cuisineLower.includes('japanese')) return IconToolsKitchen2;
-    if (cuisineLower.includes('indian')) return IconToolsKitchen2;
-    if (cuisineLower.includes('thai')) return IconToolsKitchen2;
-    if (cuisineLower.includes('breakfast') || cuisineLower.includes('brunch')) return IconCoffee;
-    if (cuisineLower.includes('dessert') || cuisineLower.includes('bakery') || cuisineLower.includes('sweet')) return IconSparkles;
-    if (cuisineLower.includes('grocery') || cuisineLower.includes('market')) return IconBuildingStore;
-    if (cuisineLower.includes('seafood')) return IconToolsKitchen2;
-    if (cuisineLower.includes('mediterranean')) return IconToolsKitchen2;
-    if (cuisineLower.includes('bbq') || cuisineLower.includes('barbecue')) return IconFlame;
-    return IconToolsKitchen2; // Default icon
-  };
-
   const getCuisineEmoji = (cuisine: string) => {
     const cuisineLower = cuisine.toLowerCase();
     if (cuisineLower.includes('pizza') || cuisineLower.includes('italian')) return '🍕';
@@ -1213,7 +1195,7 @@ const Restaurants = () => {
                       paddingBottom: '4px'
                     }} className="scrollbar-hide">
                       {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                        const IconComponent = getCuisineIcon(cuisine);
+                        const cuisineEmoji = getCuisineEmoji(cuisine);
                         const isActive = cuisineFilter === cuisine.toLowerCase();
                         return (
                           <Button
@@ -1225,15 +1207,6 @@ const Restaurants = () => {
                               setCuisineFilter(cuisine.toLowerCase());
                               resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }}
-                            leftSection={
-                              <IconComponent 
-                                size={14} 
-                                style={{ 
-                                  color: isActive ? 'white' : '#ff5f1f',
-                                  strokeWidth: 2.5
-                                }} 
-                              />
-                            }
                             style={{ 
                               backgroundColor: isActive ? '#ff5f1f' : 'white', 
                               borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
@@ -1245,10 +1218,14 @@ const Restaurants = () => {
                               whiteSpace: 'nowrap',
                               flexShrink: 0,
                               transition: 'all 0.2s ease',
-                              boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
                             }}
                           >
-                            {cuisine}
+                            <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                            <span>{cuisine}</span>
                           </Button>
                         );
                       })}
@@ -1264,7 +1241,7 @@ const Restaurants = () => {
                       paddingBottom: '4px'
                     }} className="scrollbar-hide">
                       {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                        const IconComponent = getCuisineIcon(cuisine);
+                        const cuisineEmoji = getCuisineEmoji(cuisine);
                         const isActive = cuisineFilter === cuisine.toLowerCase();
                         return (
                           <Button
@@ -1276,15 +1253,6 @@ const Restaurants = () => {
                               setCuisineFilter(cuisine.toLowerCase());
                               resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }}
-                            leftSection={
-                              <IconComponent 
-                                size={14} 
-                                style={{ 
-                                  color: isActive ? 'white' : '#ff5f1f',
-                                  strokeWidth: 2.5
-                                }} 
-                              />
-                            }
                             style={{ 
                               backgroundColor: isActive ? '#ff5f1f' : 'white', 
                               borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
@@ -1296,10 +1264,14 @@ const Restaurants = () => {
                               whiteSpace: 'nowrap',
                               flexShrink: 0,
                               transition: 'all 0.2s ease',
-                              boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                              boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
                             }}
                           >
-                            {cuisine}
+                            <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                            <span>{cuisine}</span>
                           </Button>
                         );
                       })}
@@ -2182,7 +2154,7 @@ const Restaurants = () => {
               paddingBottom: '4px'
             }} className="scrollbar-hide">
               {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                const IconComponent = getCuisineIcon(cuisine);
+                const cuisineEmoji = getCuisineEmoji(cuisine);
                 const isActive = cuisineFilter === cuisine.toLowerCase();
                 return (
                   <Button
@@ -2194,15 +2166,6 @@ const Restaurants = () => {
                       setCuisineFilter(cuisine.toLowerCase());
                       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    leftSection={
-                      <IconComponent 
-                        size={14} 
-                        style={{ 
-                          color: isActive ? 'white' : '#ff5f1f',
-                          strokeWidth: 2.5
-                        }} 
-                      />
-                    }
                     style={{ 
                       backgroundColor: isActive ? '#ff5f1f' : 'white', 
                       borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
@@ -2214,10 +2177,14 @@ const Restaurants = () => {
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       transition: 'all 0.2s ease',
-                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
                     }}
                   >
-                    {cuisine}
+                    <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span>{cuisine}</span>
                   </Button>
                 );
               })}
@@ -2233,7 +2200,7 @@ const Restaurants = () => {
               paddingBottom: '4px'
             }} className="scrollbar-hide">
               {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                const IconComponent = getCuisineIcon(cuisine);
+                const cuisineEmoji = getCuisineEmoji(cuisine);
                 const isActive = cuisineFilter === cuisine.toLowerCase();
                 return (
                   <Button
@@ -2245,15 +2212,6 @@ const Restaurants = () => {
                       setCuisineFilter(cuisine.toLowerCase());
                       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    leftSection={
-                      <IconComponent 
-                        size={14} 
-                        style={{ 
-                          color: isActive ? 'white' : '#ff5f1f',
-                          strokeWidth: 2.5
-                        }} 
-                      />
-                    }
                     style={{ 
                       backgroundColor: isActive ? '#ff5f1f' : 'white', 
                       borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
@@ -2265,10 +2223,14 @@ const Restaurants = () => {
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       transition: 'all 0.2s ease',
-                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)'
+                      boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
                     }}
                   >
-                    {cuisine}
+                    <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span>{cuisine}</span>
                   </Button>
                 );
               })}
