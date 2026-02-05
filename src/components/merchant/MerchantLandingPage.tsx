@@ -8,6 +8,7 @@ import { calculateEarnings, formatEarningsRange, type EarningsEstimate, MARKET_T
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from '@/assets/craven-logo.png';
+import { AddressAutocomplete } from '@/components/common/AddressAutocomplete';
 import {
   Select,
   SelectContent,
@@ -572,31 +573,42 @@ export default function MerchantLandingPage() {
                       required
                     />
 
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        value={formData.storeAddress}
-                        onChange={(e) => {
-                          const address = e.target.value;
-                          handleInputChange('storeAddress', address);
-                          isAutoDetectingRef.current = false;
-                          const cityStateMatch = address.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
-                          if (cityStateMatch && cityStateMatch.length >= 3) {
-                            const city = cityStateMatch[1].trim();
-                            const state = cityStateMatch[2].trim().toUpperCase();
-                            setFormData(prev => {
-                              if (prev.city !== city || prev.state !== state) {
-                                return { ...prev, city, state };
+                    <AddressAutocomplete
+                      value={formData.storeAddress}
+                      onChange={(value) => {
+                        handleInputChange('storeAddress', value);
+                        isAutoDetectingRef.current = false;
+                      }}
+                      onAddressParsed={(parsed) => {
+                        // Update form data with parsed address components
+                        setFormData(prev => ({
+                          ...prev,
+                          storeAddress: parsed.street,
+                          city: parsed.city,
+                          state: parsed.state,
+                          zipCode: parsed.zipCode,
+                        }));
+                        
+                        // Trigger earnings calculation for the new city/state
+                        if (parsed.city && parsed.state) {
+                          setIsCalculating(true);
+                          fetchCityPopulation(parsed.city, parsed.state).then(population => {
+                            if (population) {
+                              const estimate = calculateEarnings(population, parsed.city, parsed.state);
+                              if (estimate) {
+                                setEarningsEstimate(estimate);
                               }
-                              return prev;
-                            });
-                          }
-                        }}
-                        placeholder="Store address"
-                        className="pl-10 h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        required
-                      />
-                    </div>
+                            }
+                            setIsCalculating(false);
+                          }).catch(() => {
+                            setIsCalculating(false);
+                          });
+                        }
+                      }}
+                      placeholder="Store address"
+                      className="h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
 
                     <Select
                       value={formData.businessType}
