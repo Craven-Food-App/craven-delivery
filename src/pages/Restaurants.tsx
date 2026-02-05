@@ -1019,7 +1019,7 @@ const Restaurants = () => {
                     {cartCount > 99 ? '99+' : cartCount}
                   </Text>
                 )}
-                <IconShoppingCart size={32} style={{ color: '#ff5f1f' }} />
+                <IconShoppingCart size={38} style={{ color: '#ff5f1f' }} />
               </ActionIcon>
             </Group>
           </Group>
