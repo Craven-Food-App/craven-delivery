@@ -209,22 +209,22 @@ const Header = () => {
         {/* Mobile Header - Match Image Design */}
         <div className="md:hidden">
           {/* Single Row: Logo + Location + Bell + Account + Cart */}
-          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-border flex-nowrap">
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
               <img src={cravenCLogo} alt="C" className="h-8 w-8" />
             </Link>
             
-            {/* Location Selector - 145px width */}
+            {/* Location Selector - centered, flexible */}
             {user ? (
               <>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[145px]"
+                  className="flex items-center gap-1 text-foreground hover:bg-background p-0 h-auto min-w-0 flex-1 justify-center max-w-[160px]"
                   onClick={() => setShowAddressDialog(true)}
                 >
-                  <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <MapPin className="h-4 w-4 text-destructive flex-shrink-0" />
                   <span className="text-sm font-medium truncate">
                     {selectedAddress 
                       ? selectedAddress.street_address.length > 15 
@@ -232,7 +232,7 @@ const Header = () => {
                         : selectedAddress.street_address
                       : '6759 Nebraska Ave'}
                   </span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 </Button>
                 <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
                   <DialogContent className="max-w-md">
@@ -255,51 +255,54 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[145px]"
+                className="flex items-center gap-1 text-foreground hover:bg-background p-0 h-auto min-w-0 flex-1 justify-center max-w-[160px]"
                 onClick={() => setIsAuthModalOpen(true)}
               >
-                <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-destructive flex-shrink-0" />
                 <span className="text-sm font-medium truncate">6759 Nebraska Ave</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               </Button>
             )}
             
-            {/* Notification Bell */}
-            {user && (
+            {/* Right side: Bell + Account + Cart */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Notification Bell */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
+                  onClick={() => navigate('/notifications')}
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute top-0 right-0 h-2 w-2 bg-destructive rounded-full border-2 border-background" />
+                  )}
+                </Button>
+              )}
+              
+              {/* Account Icon */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
-                onClick={() => navigate('/notifications')}
+                className="h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
+                onClick={() => user ? navigate('/account') : setIsAuthModalOpen(true)}
               >
-                <Bell className="h-4 w-4" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
-                )}
+                <User className="h-4 w-4" />
               </Button>
-            )}
-            
-            {/* Account Icon */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
-              onClick={() => user ? navigate('/account') : setIsAuthModalOpen(true)}
-            >
-              <User className="h-4 w-4" />
-            </Button>
-            
-            {/* Cart Button - 75px width, 40px height */}
-            {user && (
-              <Button
-                variant="default"
-                className="bg-primary text-primary-foreground flex-shrink-0 rounded-md flex items-center justify-center"
-                style={{ width: '75px', height: '40px' }}
-                onClick={() => navigate('/checkout')}
-              >
-                <span className="font-semibold text-sm">{cartCount}</span>
-              </Button>
-            )}
+              
+              {/* Cart Button */}
+              {user && (
+                <Button
+                  variant="default"
+                  className="bg-primary text-primary-foreground flex-shrink-0 rounded-md flex items-center justify-center h-10 px-4"
+                  style={{ minWidth: '75px' }}
+                  onClick={() => navigate('/checkout')}
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
           </div>
           
           {/* Search Bar Row */}
