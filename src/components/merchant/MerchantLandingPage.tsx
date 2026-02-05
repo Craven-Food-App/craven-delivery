@@ -101,7 +101,6 @@ export default function MerchantLandingPage() {
               }
             } catch (error) {
               console.error('Reverse geocoding failed:', error);
-              // Fallback to default
               setDefaultEarnings();
             } finally {
               setIsCalculating(false);
@@ -110,7 +109,6 @@ export default function MerchantLandingPage() {
           },
           (error) => {
             console.warn('Geolocation permission denied or failed:', error);
-            // Fallback to default
             setDefaultEarnings();
             setIsCalculating(false);
             isAutoDetectingRef.current = false;
@@ -118,7 +116,6 @@ export default function MerchantLandingPage() {
           { timeout: 5000, enableHighAccuracy: false }
         );
       } else {
-        // No geolocation support, use default
         setDefaultEarnings();
         setIsCalculating(false);
         isAutoDetectingRef.current = false;
@@ -130,7 +127,7 @@ export default function MerchantLandingPage() {
 
   // Set default earnings (national average) as fallback
   const setDefaultEarnings = () => {
-    const defaultPopulation = 500000; // National average
+    const defaultPopulation = 500000;
     const defaultEstimate = calculateEarnings(defaultPopulation, '', '');
     if (defaultEstimate) {
       setEarningsEstimate({
@@ -145,7 +142,6 @@ export default function MerchantLandingPage() {
   // Detect location from IP address using free API
   const detectLocationFromIP = async (): Promise<{ city: string; state: string } | null> => {
     try {
-      // Use ipapi.co free tier (1000 requests/day)
       const response = await fetch('https://ipapi.co/json/');
       if (!response.ok) throw new Error('IP API failed');
       
@@ -153,7 +149,7 @@ export default function MerchantLandingPage() {
       if (data.city && data.region_code) {
         return {
           city: data.city,
-          state: data.region_code, // State code like "MI", "CA", etc.
+          state: data.region_code,
         };
       }
     } catch (error) {
@@ -169,7 +165,7 @@ export default function MerchantLandingPage() {
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'CravenDelivery/1.0', // Required by Nominatim
+            'User-Agent': 'CravenDelivery/1.0',
           },
         }
       );
@@ -196,14 +192,12 @@ export default function MerchantLandingPage() {
     return null;
   };
 
-  // Handle city/state change with debounce for population lookup (when user manually enters address)
+  // Handle city/state change with debounce for population lookup
   useEffect(() => {
-    // Skip if this is the initial automatic detection
     if (isAutoDetectingRef.current || !formData.city || !formData.state) {
       return;
     }
 
-    // Only recalculate if user manually changed city/state (not from automatic detection)
     const timer = setTimeout(async () => {
       setIsCalculating(true);
       try {
@@ -214,7 +208,6 @@ export default function MerchantLandingPage() {
             setEarningsEstimate(estimate);
           }
         } else {
-          // Fallback: use state average if city population not found
           const stateAverage = await fetchStateAveragePopulation(formData.state);
           if (stateAverage) {
             const estimate = calculateEarnings(stateAverage, formData.city, formData.state);
@@ -228,7 +221,7 @@ export default function MerchantLandingPage() {
       } finally {
         setIsCalculating(false);
       }
-    }, 1000); // Debounce 1 second
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [formData.city, formData.state]);
@@ -337,7 +330,6 @@ export default function MerchantLandingPage() {
 
   // Fetch city population from Supabase edge function with client-side fallback
   const fetchCityPopulation = async (city: string, state: string): Promise<number | null> => {
-    // Try edge function first
     try {
       const { data, error } = await supabase.functions.invoke('get-city-population', {
         body: { city, state },
@@ -350,7 +342,6 @@ export default function MerchantLandingPage() {
       console.warn('Edge function unavailable, using client-side fallback:', error);
     }
 
-    // Client-side fallback
     const cityKey = `${city.toLowerCase().trim()},${state.toUpperCase().trim()}`;
     const population = CITY_POPULATIONS[cityKey];
     
@@ -358,13 +349,11 @@ export default function MerchantLandingPage() {
       return population;
     }
 
-    // Try state average
     const stateAvg = STATE_AVERAGES[state.toUpperCase().trim()];
-    return stateAvg || 400000; // Default fallback
+    return stateAvg || 400000;
   };
 
   const fetchStateAveragePopulation = async (state: string): Promise<number | null> => {
-    // Try edge function first
     try {
       const { data, error } = await supabase.functions.invoke('get-city-population', {
         body: { city: '', state },
@@ -377,7 +366,6 @@ export default function MerchantLandingPage() {
       console.warn('Edge function unavailable, using client-side fallback:', error);
     }
 
-    // Client-side fallback
     return STATE_AVERAGES[state.toUpperCase().trim()] || 400000;
   };
 
@@ -396,12 +384,10 @@ export default function MerchantLandingPage() {
       return;
     }
 
-    // Try to extract city/state from address if not already set
     let finalCity = formData.city;
     let finalState = formData.state;
     
     if (!finalCity || !finalState) {
-      // Try to parse from address field
       const cityStateMatch = formData.storeAddress.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
       if (cityStateMatch && cityStateMatch.length >= 3) {
         finalCity = cityStateMatch[1].trim();
@@ -418,7 +404,6 @@ export default function MerchantLandingPage() {
     setIsLoading(true);
 
     try {
-      // Try to get earnings estimate if not already calculated
       let finalEarningsEstimate = earningsEstimate;
       if (!finalEarningsEstimate && finalCity && finalState) {
         setIsCalculating(true);
@@ -437,7 +422,6 @@ export default function MerchantLandingPage() {
         }
       }
 
-      // Store form data in localStorage to pass to onboarding wizard
       const signupData = {
         ...formData,
         city: finalCity,
@@ -449,10 +433,8 @@ export default function MerchantLandingPage() {
       localStorage.setItem('merchant_signup_data', JSON.stringify(signupData));
       console.log('Navigating to /restaurant/register');
 
-      // Small delay to ensure localStorage is written
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Navigate to onboarding wizard
       navigate('/restaurant/register', { replace: true });
     } catch (error) {
       console.error('Error starting signup:', error);
@@ -463,277 +445,259 @@ export default function MerchantLandingPage() {
 
   const businessTypes = [
     'Restaurant',
-    'Cafe',
-    'Fast Food',
-    'Pizza',
+    'Retail',
+    'Convenience store',
+    'Grocery',
     'Bakery',
-    'Food Truck',
-    'Catering',
-    'Grocery Store',
-    'Other',
+    'Coffee',
   ];
 
-  // Format earnings for display in heading
-  const getEarningsHeading = () => {
-    if (isCalculating) {
-      return 'CALCULATING EARNINGS...';
-    }
-    if (earningsEstimate) {
-      const cityName = earningsEstimate.city || 'YOUR AREA';
-      const range = formatEarningsRange(earningsEstimate);
-      // Format: "YOUR BUSINESS AROUND DETROIT COULD EARN $52,000 - $98,000 PER YEAR"
-      return `YOUR BUSINESS AROUND ${cityName.toUpperCase()} COULD EARN ${range} PER YEAR`;
-    }
-    return 'YOUR BUSINESS COULD EARN SIGNIFICANT REVENUE PER YEAR';
-  };
+  const cityName = detectedLocation?.city || formData.city || 'your area';
+  const earningsRange = earningsEstimate ? formatEarningsRange(earningsEstimate) : '$55,000 – $75,000';
 
   return (
-    <div className="min-h-screen bg-red-800">
-      {/* Header */}
-      <header className="bg-red-800 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/">
-              <img src={cravenLogo} alt="CRAVE'N" className="h-10" />
-            </Link>
-          </div>
-          <Button variant="ghost" size="sm" className="text-white hover:bg-red-700" onClick={() => navigate('/restaurant/auth')}>
+    <div className="min-h-screen bg-gray-100">
+      {/* Top Bar - Sticky Header */}
+      <header className="sticky top-0 z-50 bg-[#8B1A1A] h-[92px] flex items-center">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-[980px] flex items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={cravenLogo} alt="CRAVE'N" className="h-8 sm:h-10" style={{ filter: 'brightness(0) saturate(100%) invert(70%) sepia(100%) saturate(500%) hue-rotate(0deg)' }} />
+          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-white hover:bg-[#6B1414] hover:text-white" 
+            onClick={() => navigate('/restaurant/auth')}
+          >
             Sign In
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="bg-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-lg mx-auto">
-          {/* Hero Section with Earnings Estimate */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold uppercase text-red-700 mb-3 leading-tight">
-              {getEarningsHeading()}
-            </h1>
-            <button
-              type="button"
-              onClick={() => setShowEarningsExplanation(true)}
-              className="text-sm text-gray-700 underline hover:text-red-600 cursor-pointer"
-            >
-              How we estimate earnings
-            </button>
-          </div>
+      <div className="bg-gray-100 py-8 sm:py-12 lg:py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full max-w-[980px]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-[22px]">
+            
+            {/* LEFT HERO PANEL */}
+            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-[18px] p-6 sm:p-8 lg:p-10 text-white relative overflow-hidden">
+              {/* Subtle orange glow accent */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-400/5 rounded-full blur-2xl"></div>
+              
+              <div className="relative z-10">
+                {/* Kicker */}
+                <div className="text-xs sm:text-sm uppercase tracking-wider text-gray-400 mb-4">
+                  Merchant onboarding • {cityName}
+                </div>
 
-          {/* Signup Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Store Name */}
-            <div>
-              <Input
-                value={formData.storeName}
-                onChange={(e) => handleInputChange('storeName', e.target.value)}
-                placeholder="Store name"
-                className="h-12 bg-gray-50 border-gray-300 rounded-md"
-                required
-              />
+                {/* Headline */}
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight">
+                  Businesses in {cityName} are keeping more of every order.
+                </h1>
+
+                {/* Subline */}
+                <p className="text-sm sm:text-base text-gray-300 mb-8 leading-relaxed">
+                  Crave'n charges 15%. No contracts. No forced promos. Built for restaurants, retail, and local operators who care about margin.
+                </p>
+
+                {/* Trust Pills */}
+                <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
+                  <div className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-xs sm:text-sm border border-white/20">
+                    <span className="font-bold">15%</span> commission
+                  </div>
+                  <div className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-xs sm:text-sm border border-white/20">
+                    No exclusivity
+                  </div>
+                  <div className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-xs sm:text-sm border border-white/20">
+                    Leave anytime
+                  </div>
+                  <div className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg text-xs sm:text-sm border border-white/20">
+                    Local support
+                  </div>
+                </div>
+
+                {/* Estimate Block */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-[12px] p-4 sm:p-5 mb-6 border border-white/20">
+                  <div className="text-xs sm:text-sm text-gray-300 mb-3">
+                    Estimated annual delivery revenue for similar businesses in {cityName}.
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setShowEarningsExplanation(true)}
+                      className="text-xs sm:text-sm text-orange-400 hover:text-orange-300 underline"
+                    >
+                      See how the math works
+                    </button>
+                    <div className="text-right">
+                      {isCalculating ? (
+                        <div className="text-lg sm:text-xl font-bold text-gray-400">Calculating...</div>
+                      ) : (
+                        <div className="text-lg sm:text-xl font-bold">{earningsRange}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hero Footer */}
+                <div className="pt-6 border-t border-white/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm text-gray-400">
+                  <div>Location-based estimate. Actual results vary by area and hours.</div>
+                  <div>Setup takes ~60 seconds.</div>
+                </div>
+              </div>
             </div>
 
-            {/* Store Address */}
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                value={formData.storeAddress}
-                onChange={(e) => {
-                  const address = e.target.value;
-                  handleInputChange('storeAddress', address);
-                  
-                  // Mark that user is manually entering address (not auto-detecting)
-                  isAutoDetectingRef.current = false;
-                  
-                  // Extract city/state from address - handles formats like:
-                  // "123 Main St, Detroit, MI 48201"
-                  // "Detroit, MI"
-                  // "Detroit, MI 48201"
-                  const cityStateMatch = address.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
-                  if (cityStateMatch && cityStateMatch.length >= 3) {
-                    const city = cityStateMatch[1].trim();
-                    const state = cityStateMatch[2].trim().toUpperCase();
-                    setFormData(prev => {
-                      if (prev.city !== city || prev.state !== state) {
-                        return { ...prev, city, state };
-                      }
-                      return prev;
-                    });
-                  }
-                }}
-                placeholder="Store address"
-                className="pl-10 h-12 bg-gray-50 border-gray-300 rounded-md"
-                required
-              />
+            {/* RIGHT FORM CARD */}
+            <div className="bg-white rounded-[18px] p-6 sm:p-8 shadow-lg">
+              <div className="mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                  Start merchant onboarding
+                </h2>
+                <p className="text-sm sm:text-base text-gray-600">
+                  Create your merchant profile and begin onboarding. No long-term contract. If it doesn't make sense, you walk.
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Business Section */}
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-3 block">Business</Label>
+                  <div className="space-y-4">
+                    <Input
+                      value={formData.storeName}
+                      onChange={(e) => handleInputChange('storeName', e.target.value)}
+                      placeholder="Store name"
+                      className="h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
+
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        value={formData.storeAddress}
+                        onChange={(e) => {
+                          const address = e.target.value;
+                          handleInputChange('storeAddress', address);
+                          isAutoDetectingRef.current = false;
+                          const cityStateMatch = address.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
+                          if (cityStateMatch && cityStateMatch.length >= 3) {
+                            const city = cityStateMatch[1].trim();
+                            const state = cityStateMatch[2].trim().toUpperCase();
+                            setFormData(prev => {
+                              if (prev.city !== city || prev.state !== state) {
+                                return { ...prev, city, state };
+                              }
+                              return prev;
+                            });
+                          }
+                        }}
+                        placeholder="Store address"
+                        className="pl-10 h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        required
+                      />
+                    </div>
+
+                    <Select
+                      value={formData.businessType}
+                      onValueChange={(value) => handleInputChange('businessType', value)}
+                      required
+                    >
+                      <SelectTrigger className="h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        <SelectValue placeholder="Select your business type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {businessTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Contact Section */}
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-3 block">Contact</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="Email"
+                      className="h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
+                    <Input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="Phone"
+                      className="h-11 border-gray-300 rounded-[12px] focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Legal Line */}
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  By clicking "Start Onboarding", you agree to receive operational updates and onboarding messages from Crave'n.
+                </p>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-[12px] transition-all shadow-md"
+                  disabled={isLoading || isCalculating}
+                >
+                  {isLoading ? 'Starting...' : 'Start Onboarding'}
+                </Button>
+
+                {/* Under-button note */}
+                <p className="text-xs text-center text-gray-500">
+                  Takes about 60 seconds to get started.
+                </p>
+
+                {/* Bottom assurance */}
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs sm:text-sm text-gray-600 text-center">
+                    <span className="font-bold">No long-term contract.</span> If Crave'n doesn't make sense for your operation, you walk.
+                  </p>
+                </div>
+              </form>
             </div>
-
-            {/* Email and Phone - Side by Side */}
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Email Address"
-                className="h-12 bg-gray-50 border-gray-300 rounded-md"
-                required
-              />
-              <Input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="Store phone"
-                className="h-12 bg-gray-50 border-gray-300 rounded-md"
-                required
-              />
-            </div>
-
-            {/* Business Type Dropdown */}
-            <Select
-              value={formData.businessType}
-              onValueChange={(value) => handleInputChange('businessType', value)}
-              required
-            >
-              <SelectTrigger className="h-12 bg-gray-50 border-gray-300 rounded-md">
-                <SelectValue placeholder="Select your business type" />
-              </SelectTrigger>
-              <SelectContent>
-                {businessTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-
-            {/* Legal Disclaimer */}
-            <p className="text-xs text-gray-600 leading-relaxed">
-              By clicking "Start Free Trial," I agree to receive marketing electronic communications from Crave'n.
-            </p>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold bg-[#d93c00] hover:bg-[#b83200] text-white rounded-md transition-colors"
-              disabled={isLoading || isCalculating}
-            >
-              {isLoading ? 'Starting...' : 'Start Free Trial'}
-            </Button>
-          </form>
           </div>
         </div>
       </div>
-      {/* Bottom red background */}
-      <div className="bg-red-800 h-16"></div>
 
       {/* Earnings Explanation Dialog */}
       <Dialog open={showEarningsExplanation} onOpenChange={setShowEarningsExplanation}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">How We Estimate Earnings</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">How we estimate earnings</DialogTitle>
             <DialogDescription>
-              Our earnings estimates are based on market data and operating metrics from similar businesses in your area.
+              This estimate is calculated using local market data and operating metrics.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 mt-4">
-            {/* Overview */}
+          <div className="space-y-4 mt-4">
             <div>
-              <h3 className="font-semibold text-lg mb-2">Overview</h3>
               <p className="text-sm text-gray-700 leading-relaxed">
-                We calculate potential annual earnings by analyzing your city's population and comparing it to our market tier system. 
-                Each tier represents different market characteristics that affect order volume and average order value.
+                This estimate is calculated using:
               </p>
-            </div>
-
-            {/* Calculation Formula */}
-            <div>
-              <h3 className="font-semibold text-lg mb-2">Calculation Formula</h3>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="text-sm font-mono text-gray-800 mb-2">
-                  Base Annual Revenue = Average Orders Per Day × Average Order Value × 360 Operating Days
-                </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  We then apply conservative multipliers to account for utilization rates and provide realistic estimates. 
-                  The final estimates shown are rounded to the nearest thousand dollars.
-                </p>
-              </div>
-            </div>
-
-            {/* Market Tiers */}
-            <div>
-              <h3 className="font-semibold text-lg mb-3">Market Tiers</h3>
-              <div className="space-y-3">
-                {MARKET_TIERS.map((tier) => {
-                  const populationRange = tier.populationMax === Infinity 
-                    ? `${tier.populationMin.toLocaleString()}+`
-                    : `${tier.populationMin.toLocaleString()} - ${tier.populationMax.toLocaleString()}`;
-                  
-                  const exampleEstimate = calculateEarnings(
-                    tier.populationMin === 0 ? 100000 : tier.populationMin,
-                    '',
-                    ''
-                  );
-                  
-                  return (
-                    <div key={tier.tier} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className="font-bold text-lg text-gray-900">Tier {tier.tier}</span>
-                          <span className="ml-2 text-sm text-gray-600">({tier.label})</span>
-                        </div>
-                        {exampleEstimate && (
-                          <span className="text-sm font-semibold text-[#d93c00]">
-                            {formatEarningsRange(exampleEstimate)}/year
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Population:</span>
-                          <span className="ml-2 font-medium">{populationRange}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Avg Orders/Day:</span>
-                          <span className="ml-2 font-medium">{tier.avgOrdersPerDay}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Avg Order Value:</span>
-                          <span className="ml-2 font-medium">${tier.avgOrderValue}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Operating Days:</span>
-                          <span className="ml-2 font-medium">360 days/year</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Important Notes */}
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <h3 className="font-semibold text-lg mb-2 text-orange-900">Important Notes</h3>
-              <ul className="space-y-2 text-sm text-orange-800">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>These are <strong>estimates</strong> based on market data and may vary based on your specific business performance, location, and operational factors.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Actual earnings depend on factors such as menu pricing, customer demand, marketing efforts, and service quality.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>We use conservative multipliers to provide realistic expectations rather than optimistic projections.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Minimum estimates are set at $25,000 for low estimates and $50,000 for high estimates to ensure reasonable projections.</span>
-                </li>
+              <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-gray-700">
+                <li>Local order volume trends in {cityName}</li>
+                <li>Typical average ticket size for your category</li>
+                <li>Crave'n's 15% commission (no forced promos)</li>
+                <li>Operating hours and distance coverage assumptions</li>
               </ul>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <p className="text-sm text-orange-900">
+                <strong>It's an estimate, not a guarantee.</strong> Actual performance varies by area, menu pricing, hours, and demand.
+              </p>
             </div>
           </div>
         </DialogContent>
@@ -741,10 +705,3 @@ export default function MerchantLandingPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
