@@ -938,21 +938,20 @@ const Restaurants = () => {
           flexShrink: 0
         }}>
           {/* Address and Account */}
-          <Group justify="space-between" mb="md" gap="xs">
-            {/* C-Logo - Small to the left of address button */}
-            <MantineImage 
-              src={cravenCLogo} 
-              alt="CRAVE'N" 
-              style={{ height: '24px', width: '24px', flexShrink: 0 }} 
-            />
-            
+          <Group justify="flex-start" mb="md" gap="xs" align="center">
             <Box style={{ position: 'relative', flex: 1 }}>
               <Button
                 variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
+                leftSection={
+                  <MantineImage
+                    src={cravenCLogo}
+                    alt="CRAVE'N"
+                    style={{ height: '24px', width: '24px', flexShrink: 0 }}
+                  />
+                }
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%', textAlign: 'left' }}
               >
                 <Stack gap={0} align="flex-start">
                   <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
@@ -981,40 +980,39 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
-              {/* Cart Icon with Quantity Badge */}
-              {cartCount > 0 && (
-                <ActionIcon
-                  onClick={() => navigate('/checkout')}
-                  variant="subtle"
-                  size="lg"
-                  radius="xl"
-                  style={{ position: 'relative' }}
-                >
-                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
-                  <Box
+              {/* Cart Icon with Quantity Badge - Always visible in orange pill */}
+              <ActionIcon
+                onClick={() => navigate('/checkout')}
+                variant="filled"
+                size="lg"
+                radius="xl"
+                style={{ 
+                  backgroundColor: '#ff5f1f',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  minWidth: cartCount > 0 ? 'auto' : '64px',
+                  height: '40px'
+                }}
+              >
+                {cartCount > 0 && (
+                  <Text
                     style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      minWidth: '18px',
-                      height: '18px',
-                      backgroundColor: '#ff5f1f',
-                      borderRadius: '50%',
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0 4px',
-                      fontSize: '11px',
-                      fontWeight: 600,
+                      fontSize: '14px',
+                      fontWeight: 700,
                       color: 'white',
                       lineHeight: 1
                     }}
                   >
                     {cartCount > 99 ? '99+' : cartCount}
-                  </Box>
-                </ActionIcon>
-              )}
+                  </Text>
+                )}
+                <IconShoppingCart size={22} style={{ color: 'white' }} />
+              </ActionIcon>
             </Group>
           </Group>
 
