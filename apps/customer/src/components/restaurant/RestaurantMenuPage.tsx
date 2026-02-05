@@ -1729,22 +1729,24 @@ const RestaurantMenuPage = () => {
             {/* Right: Location, Delivery/Pickup, Notifications, Cart */}
             <Group gap="md">
               {/* Location Selector */}
-              <Menu
-                opened={showAddressSelector}
-                onClose={() => setShowAddressSelector(false)}
-                position="bottom-start"
-                width={320}
-              >
-                <Menu.Target>
-                  <Button
-                    variant="subtle"
-                    leftSection={<IconMapPin size={16} />}
-                    rightSection={<IconChevronLeft size={16} style={{ transform: 'rotate(-90deg)' }} />}
-                    onClick={() => setShowAddressSelector(!showAddressSelector)}
-                  >
-                    <Text size="sm" fw={500} truncate style={{ maxWidth: '128px' }}>{location}</Text>
-                  </Button>
-                </Menu.Target>
+              <Box style={{ position: 'relative', flex: 1, width: '100px' }}>
+                <Menu
+                  opened={showAddressSelector}
+                  onClose={() => setShowAddressSelector(false)}
+                  position="bottom-start"
+                  width={320}
+                >
+                  <Menu.Target>
+                    <Button
+                      variant="subtle"
+                      leftSection={<IconMapPin size={16} />}
+                      rightSection={<IconChevronLeft size={16} style={{ transform: 'rotate(-90deg)' }} />}
+                      onClick={() => setShowAddressSelector(!showAddressSelector)}
+                      style={{ width: '74px' }}
+                    >
+                      <Text size="sm" fw={500} truncate style={{ maxWidth: '128px' }}>{location}</Text>
+                    </Button>
+                  </Menu.Target>
                 <Menu.Dropdown>
                   <Stack gap="sm" p="md">
                     <Title order={5}>Select delivery address</Title>
@@ -1775,6 +1777,7 @@ const RestaurantMenuPage = () => {
                   </Stack>
                 </Menu.Dropdown>
               </Menu>
+              </Box>
 
               {/* Delivery/Pickup Toggle */}
               <Button.Group>
