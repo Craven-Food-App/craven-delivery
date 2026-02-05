@@ -992,15 +992,13 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
-              {/* Cart Icon with Quantity Badge - Always visible in orange pill */}
+              {/* Cart Icon with Quantity Badge */}
               <ActionIcon
                 onClick={() => navigate('/checkout')}
-                variant="filled"
+                variant="subtle"
                 size="lg"
                 radius="xl"
                 style={{ 
-                  backgroundColor: '#ff5f1f',
-                  color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-start',
@@ -1017,7 +1015,6 @@ const Restaurants = () => {
                     style={{
                       fontSize: '14px',
                       fontWeight: 700,
-                      color: 'white',
                       lineHeight: 1
                     }}
                   >
