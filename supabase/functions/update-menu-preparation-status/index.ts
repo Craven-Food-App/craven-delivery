@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
@@ -33,11 +32,13 @@ serve(async (req) => {
       .select('role')
       .eq('user_id', user.id);
 
-    const isAdmin = roles?.some(r => r.role === 'admin');
+    // Allow core leadership and admins to update menu status
+    const allowedRoles = ['admin', 'ceo', 'super_admin', 'CRAVEN_CEO', 'CRAVEN_CFO'];
+    const hasAccess = roles?.some((r: { role: string }) => allowedRoles.includes(r.role));
     
-    if (!isAdmin) {
+    if (!hasAccess) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized - Admin access required' }),
+        JSON.stringify({ error: 'Unauthorized - Admin or executive access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
