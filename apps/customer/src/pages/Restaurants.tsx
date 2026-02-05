@@ -1756,7 +1756,7 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Box style={{ position: 'relative', width: '114px', marginLeft: '-100px' }}>
+            <Box style={{ position: 'relative', width: '300px', marginLeft: '-100px' }}>
               <Button
                 variant="subtle"
                 leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
@@ -1765,11 +1765,19 @@ const Restaurants = () => {
                 style={{ 
                   padding: '8px', 
                   borderRadius: '12px', 
-                  width: '160px',
+                  width: '70px',
                   textAlign: 'left',
-                  backgroundColor: 'rgba(255, 255, 255, 0.12)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                  alignItems: 'flex-start'
                 }}
-                styles={{ inner: { width: '124px', textAlign: 'left' } }}
+                styles={{ 
+                  inner: { 
+                    width: '124px', 
+                    textAlign: 'left',
+                    justifyContent: 'flex-start',
+                    alignItems: 'flex-start'
+                  } 
+                }}
               >
                 <Stack gap={0} align="flex-start">
                   <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
