@@ -1756,14 +1756,20 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Box style={{ position: 'relative', width: '114px' }}>
+            <Box style={{ position: 'relative', width: '114px', marginLeft: '-100px' }}>
               <Button
                 variant="subtle"
                 leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={handleAddressButtonClick}
-                style={{ padding: '8px', borderRadius: '12px', width: '150px' }}
-                styles={{ inner: { width: '124px' } }}
+                style={{ 
+                  padding: '8px', 
+                  borderRadius: '12px', 
+                  width: '160px',
+                  textAlign: 'left',
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)'
+                }}
+                styles={{ inner: { width: '124px', textAlign: 'left' } }}
               >
                 <Stack gap={0} align="flex-start">
                   <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
@@ -2841,28 +2847,11 @@ const Restaurants = () => {
       <div className="hidden lg:block sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Left: Logo */}
-            <div className="flex items-center space-x-4">
+            {/* Left: Logo and Location */}
+            <div className="flex items-center space-x-2">
               <img src={cravenLogo} alt="CRAVE'N" className="h-10" />
-            </div>
-
-            {/* Center: Search */}
-            <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <TextInput 
-                  placeholder="Search Crave'N" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            {/* Right: Location, Delivery/Pickup, Notifications, Cart */}
-            <div className="flex items-center space-x-4">
               {/* Location Selector */}
-              <div className="relative">
+              <div className="relative" style={{ marginLeft: '-100px' }}>
                 <button 
                   onClick={() => setShowAddressSelector(!showAddressSelector)}
                   className="address-selector-button flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
@@ -2978,7 +2967,23 @@ const Restaurants = () => {
                   </div>
                 )}
               </div>
+            </div>
 
+            {/* Center: Search */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <div className="relative">
+                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <TextInput 
+                  placeholder="Search Crave'N" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* Right: Delivery/Pickup, Notifications, Cart */}
+            <div className="flex items-center space-x-4">
               {/* Delivery/Pickup Toggle */}
               <div className="flex bg-white rounded-lg p-1">
                 <button 
