@@ -275,7 +275,6 @@ const CustomerDashboard = () => {
     { id: 'restaurants', label: 'Restaurants', icon: Store },
     { id: 'grocery', label: 'Grocery', icon: Store },
     { id: 'convenience', label: 'Quick Stops', icon: Coffee },
-    { id: 'cravenz', label: "Craven'Z", icon: Store },
     { id: 'beauty', label: 'Cosmetics', icon: Heart },
     { id: 'pets', label: 'Animals', icon: Heart },
     { id: 'health', label: 'Self Care', icon: Shield },
@@ -290,8 +289,6 @@ const CustomerDashboard = () => {
     if (categoryId === 'home') {
       navigate('?tab=home');
     } else if (categoryId === 'restaurants') {
-      navigate('/restaurants');
-    } else if (categoryId === 'cravenz') {
       navigate('/restaurants');
     } else if (categoryId === 'cravemore') {
       navigate('/cravemore');
