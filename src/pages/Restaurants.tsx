@@ -330,7 +330,7 @@ const Restaurants = () => {
         title: "Order Update",
         message: "Your order from CMIH Kitchen is being prepared",
         time: "2 min ago",
-        read: false,
+        read: true,
         type: "order"
       },
       {
@@ -338,7 +338,7 @@ const Restaurants = () => {
         title: "New Deal Available",
         message: "20% off your next order at McDonald's",
         time: "1 hour ago",
-        read: false,
+        read: true,
         type: "promotion"
       },
       {
