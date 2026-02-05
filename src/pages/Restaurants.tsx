@@ -171,14 +171,14 @@ const RestaurantCard = ({
     >
       {/* Image with rounded corners */}
       <Box style={{ position: 'relative', height: '200px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
-      <MantineImage
-        src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
-        alt={restaurant.name}
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={(e) => { 
-          e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
-        }}
-      />
+        <MantineImage
+          src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
+          alt={restaurant.name}
+          style={{ width: '100%', height: '145px', objectFit: 'cover' }}
+          onError={(e) => { 
+            e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
+          }}
+        />
       </Box>
 
       {/* Restaurant name and rating info on same line */}
