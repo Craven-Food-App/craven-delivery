@@ -938,7 +938,14 @@ const Restaurants = () => {
           flexShrink: 0
         }}>
           {/* Address and Account */}
-          <Group justify="flex-start" mb="md" gap="xs" align="center">
+          <Group
+            justify="flex-start"
+            mb="md"
+            gap="xs"
+            align="center"
+            wrap="nowrap"
+            style={{ flexWrap: 'nowrap', overflow: 'hidden' }}
+          >
             <Box style={{ position: 'relative', width: '180px', flexShrink: 0 }}>
               <Button
                 variant="subtle"
@@ -959,13 +966,17 @@ const Restaurants = () => {
               </Button>
             </Box>
 
-            <Group gap="xs">
+            <Group
+              gap="xs"
+              wrap="nowrap"
+              style={{ flexWrap: 'nowrap', flexShrink: 0 }}
+            >
               <ActionIcon
                 onClick={() => navigate('/notifications')}
                 variant="subtle"
                 size="lg"
                 radius="xl"
-                style={{ position: 'relative' }}
+                style={{ position: 'relative', flexShrink: 0 }}
               >
                 <IconBell size={24} style={{ color: '#737373' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
@@ -977,6 +988,7 @@ const Restaurants = () => {
                 variant="subtle"
                 size="lg"
                 radius="xl"
+                style={{ flexShrink: 0 }}
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
@@ -996,7 +1008,8 @@ const Restaurants = () => {
                   padding: '8px 12px',
                   borderRadius: '8px',
                   width: '70px',
-                  height: '40px'
+                  height: '40px',
+                  flexShrink: 0
                 }}
               >
                 {cartCount > 0 && (
