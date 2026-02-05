@@ -1954,30 +1954,29 @@ const Restaurants = () => {
           </Group>
 
           {/* Search Bar with Hamburger Menu */}
-          <Group gap="xs">
-            <TextInput
-              placeholder="Search Craven, Restaurants, or Food"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              leftSection={<IconSearch size={16} style={{ color: '#9ca3af' }} />}
-              style={{ flex: 1 }}
-              styles={{
-                input: {
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  fontSize: '14px'
-                }
-              }}
-              radius="md"
-            />
-            <ActionIcon
-              onClick={() => setShowMobileNav(!showMobileNav)}
-              variant="subtle"
-              size="lg"
-            >
-              <IconMenu2 size={24} style={{ color: '#171717' }} />
-            </ActionIcon>
-          </Group>
+          <TextInput
+            placeholder="Search Craven, Restaurants, or Food"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.currentTarget.value)}
+            leftSection={<IconSearch size={16} style={{ color: '#9ca3af' }} />}
+            rightSection={
+              <ActionIcon
+                onClick={() => setShowMenuIcons(!showMenuIcons)}
+                variant="subtle"
+                size="sm"
+              >
+                <IconMenu2 size={20} style={{ color: '#171717' }} />
+              </ActionIcon>
+            }
+            styles={{
+              input: {
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                fontSize: '14px'
+              }
+            }}
+            radius="md"
+          />
         </Box>
 
         {/* Menu Icons Dropdown - Fixed (appears below header when open) */}
