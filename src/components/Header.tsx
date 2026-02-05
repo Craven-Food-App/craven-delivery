@@ -214,13 +214,13 @@ const Header = () => {
               <img src={cravenCLogo} alt="C" className="h-8 w-8" />
             </Link>
             
-            {/* Location Selector - Smaller width, normal text */}
+            {/* Location Selector - 145px width */}
             {user ? (
               <>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[120px]"
+                  className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[145px]"
                   onClick={() => setShowAddressDialog(true)}
                 >
                   <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
@@ -254,7 +254,7 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[120px]"
+                className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[145px]"
                 onClick={() => setIsAuthModalOpen(true)}
               >
                 <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
@@ -288,12 +288,12 @@ const Header = () => {
               <User className="h-4 w-4" />
             </Button>
             
-            {/* Cart Button - Exact 65px width, 40px height */}
+            {/* Cart Button - 75px width, 40px height */}
             {user && (
               <Button
                 variant="default"
                 className="bg-primary text-primary-foreground flex-shrink-0 rounded-md flex items-center justify-center"
-                style={{ width: '65px', height: '40px' }}
+                style={{ width: '75px', height: '40px' }}
                 onClick={() => navigate('/checkout')}
               >
                 <span className="font-semibold text-sm">{cartCount}</span>
