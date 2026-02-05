@@ -61,9 +61,7 @@ const Index = () => {
       }
 
       // Show modal for Android users after a short delay
-      // For testing: show for all users, but in production only show for Android
-      // Change isAndroidDevice to true for production
-      if (isAndroidDevice || true) { // TODO: Remove "|| true" for production
+      if (isAndroidDevice) {
         setTimeout(() => {
           setShowEnrollmentModal(true);
         }, 1500); // Show after 1.5 seconds

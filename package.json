@@ -49,7 +49,7 @@
     "performance:budget": "bundlesize",
     "analyze": "vite-bundle-analyzer",
     "clean": "rm -rf dist node_modules/.vite",
-    "postinstall": "cd apps/feeder && cap sync",
+    "postinstall": "node -e \"try{require('child_process').execSync('cd apps/feeder && npx cap sync',{stdio:'ignore'})}catch(e){}\"",
     "load:pre-incorporation-template": "tsx scripts/load-pre-incorporation-template.ts",
     "reset-exec-password": "tsx scripts/reset-executive-password.ts",
     "cleanup:report": "tsx scripts/cleanup-codebase.ts",

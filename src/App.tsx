@@ -416,13 +416,13 @@ const App = () => {
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Department" />}><DepartmentHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
-                  <Route path="/admin" element={<Suspense fallback={<SuspenseLoader message="Loading Admin" />}><Admin /></Suspense>} />
-                  <Route path="/merchant-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MerchantOperationsPortal /></Suspense>} />
-                  <Route path="/driver-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverOperationsPortal /></Suspense>} />
-                  <Route path="/customer-success" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><CustomerSuccessPortal /></Suspense>} />
-                  <Route path="/support-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><SupportOperationsPortal /></Suspense>} />
-                  <Route path="/testing" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense>} />
-                    <Route path="/marketing-portal" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MarketingPortal /></Suspense>} />
+                  <Route path="/admin" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Admin" />}><Admin /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/merchant-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MerchantOperationsPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/driver-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverOperationsPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/customer-success" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><CustomerSuccessPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/support-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><SupportOperationsPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/testing" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense></BusinessAuthGuard>} />
+                    <Route path="/marketing-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MarketingPortal /></Suspense></BusinessAuthGuard>} />
                     <Route path="/hr-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading HR Portal" />}><HRPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
                   <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
@@ -753,7 +753,7 @@ const App = () => {
           <Route path="/enhanced-onboarding/payout" element={<PayoutSetup />} />
           <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
           <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
-          <Route path="/admin/waitlist" element={<AdminDriverWaitlist />} />
+          <Route path="/admin/waitlist" element={<BusinessAuthGuard><AdminDriverWaitlist /></BusinessAuthGuard>} />
           <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />
           <Route path="/account" element={<CustomerDashboard />} />
           <Route path="/account/edit-profile" element={<EditProfile />} />
@@ -771,7 +771,7 @@ const App = () => {
           <Route path="/promotion-details" element={<PromotionDetails />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/notification-settings" element={<NotificationSettings />} />
-          <Route path="/admin/promo" element={<PromoManagement />} />
+          <Route path="/admin/promo" element={<BusinessAuthGuard><PromoManagement /></BusinessAuthGuard>} />
           <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
           <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/legal/terms" element={<TermsOfServicePage />} />
@@ -789,12 +789,12 @@ const App = () => {
           <Route path="/restaurant/request-delivery" element={<RequestDelivery />} />
           <Route path="/restaurant/solutions" element={<SolutionsCenter />} />
           <Route path="/restaurant/most-loved" element={<MostLovedProgram />} />
-          <Route path="/admin" element={<Suspense fallback={<SuspenseLoader message="Loading Admin" />}><Admin /></Suspense>} />
-          <Route path="/merchant-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MerchantOperationsPortal /></Suspense>} />
-          <Route path="/driver-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverOperationsPortal /></Suspense>} />
-          <Route path="/customer-success" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><CustomerSuccessPortal /></Suspense>} />
-          <Route path="/support-operations" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><SupportOperationsPortal /></Suspense>} />
-          <Route path="/testing" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense>} />
+          <Route path="/admin" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Admin" />}><Admin /></Suspense></BusinessAuthGuard>} />
+          <Route path="/merchant-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MerchantOperationsPortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/driver-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverOperationsPortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/customer-success" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><CustomerSuccessPortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/support-operations" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><SupportOperationsPortal /></Suspense></BusinessAuthGuard>} />
+          <Route path="/testing" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><HubFoundationalInvites /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
@@ -816,14 +816,14 @@ const App = () => {
           <Route path="/driver-compensation-portal/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><DriverCompensationPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/executive/discipline" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><ExecutiveAccountability /></Suspense></BusinessAuthGuard>} />
           {/* Company Portal - New Structure */}
-          <Route path="/company/*" element={<CompanyPortalRoutes />} />
+          <Route path="/company/*" element={<BusinessAuthGuard><CompanyPortalRoutes /></BusinessAuthGuard>} />
           
           {/* SOP Portal - Standalone */}
-          <Route path="/sop/*" element={<SOPPortalRoutes />} />
+          <Route path="/sop/*" element={<BusinessAuthGuard><SOPPortalRoutes /></BusinessAuthGuard>} />
           
           {/* Templates Portal - Standalone */}
-          <Route path="/templates/*" element={<TemplatesPortalRoutes />} />
-          <Route path="/intern/*" element={<Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense>}>
+          <Route path="/templates/*" element={<BusinessAuthGuard><TemplatesPortalRoutes /></BusinessAuthGuard>} />
+          <Route path="/intern/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Intern Portal" />}><InternPortalLayout /></Suspense></BusinessAuthGuard>}>
             <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternDashboard /></Suspense>} />
             <Route path="training" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternTraining /></Suspense>} />
             <Route path="work" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternWork /></Suspense>} />
@@ -832,18 +832,18 @@ const App = () => {
             <Route path="conversion" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternConversion /></Suspense>} />
             <Route path="exit" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternExit /></Suspense>} />
           </Route>
-          <Route path="/manager/*" element={<Suspense fallback={<SuspenseLoader message="Loading Manager Portal" />}><ManagerPortalLayout /></Suspense>}>
+          <Route path="/manager/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Manager Portal" />}><ManagerPortalLayout /></Suspense></BusinessAuthGuard>}>
             <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerDashboard /></Suspense>} />
             <Route path="interns/:internId" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerInternDetail /></Suspense>} />
             <Route path="reviews" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerReviews /></Suspense>} />
             <Route path="approvals" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ManagerApprovals /></Suspense>} />
           </Route>
-          <Route path="/executive-sponsor/*" element={<Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayout /></Suspense>}>
+          <Route path="/executive-sponsor/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayout /></Suspense></BusinessAuthGuard>}>
             <Route path="pipeline" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorPipeline /></Suspense>} />
             <Route path="interns/:internId" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorInternDetail /></Suspense>} />
             <Route path="approvals" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorApprovals /></Suspense>} />
           </Route>
-          <Route path="/admin/intern-program/*" element={<Suspense fallback={<SuspenseLoader message="Loading Admin Portal" />}><AdminInternProgramLayout /></Suspense>}>
+          <Route path="/admin/intern-program/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Admin Portal" />}><AdminInternProgramLayout /></Suspense></BusinessAuthGuard>}>
             <Route path="dashboard" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternProgramDashboard /></Suspense>} />
             <Route path="interns" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternsTable /></Suspense>} />
             <Route path="test-modules" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><TestModuleLibrary /></Suspense>} />
@@ -854,7 +854,7 @@ const App = () => {
             <Route path="templates" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><InternProgramTemplates /></Suspense>} />
             <Route path="audit-log" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><AuditLog /></Suspense>} />
           </Route>
-          <Route path="/sponsor/*" element={<Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayoutV2 /></Suspense>}>
+          <Route path="/sponsor/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Sponsor Portal" />}><SponsorPortalLayoutV2 /></Suspense></BusinessAuthGuard>}>
             <Route index element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorOverview /></Suspense>} />
             <Route path="overview" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorOverview /></Suspense>} />
             <Route path="approval-queue" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><ApprovalQueue /></Suspense>} />
@@ -862,7 +862,7 @@ const App = () => {
             <Route path="enforcement" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><EnforcementApprovals /></Suspense>} />
             <Route path="audit-log" element={<Suspense fallback={<SuspenseLoader message="Loading..." />}><SponsorAuditLog /></Suspense>} />
           </Route>
-          <Route path="/marketing-portal" element={<Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MarketingPortal /></Suspense>} />
+          <Route path="/marketing-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><MarketingPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/track-order/:orderId" element={<TrackOrder />} />
@@ -879,10 +879,10 @@ const App = () => {
           <Route path="/investor-demo/merchant" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Demo" />}><InvestorDemoMerchant /></Suspense>} />
           <Route path="/investor-demo/driver" element={<Suspense fallback={<SuspenseLoader message="Loading Driver Demo" />}><InvestorDemoDriver /></Suspense>} />
           {/* Executive signature route */}
-          <Route path="/executive/sign" element={<ExecutiveSigningPortal />} />
-          <Route path="/executive/profile" element={<ExecutiveProfile />} />
+          <Route path="/executive/sign" element={<BusinessAuthGuard><ExecutiveSigningPortal /></BusinessAuthGuard>} />
+          <Route path="/executive/profile" element={<BusinessAuthGuard><ExecutiveProfile /></BusinessAuthGuard>} />
           <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-          <Route path="/executive-portal/documents" element={<ExecutiveDocumentPortal />} />
+          <Route path="/executive-portal/documents" element={<BusinessAuthGuard><ExecutiveDocumentPortal /></BusinessAuthGuard>} />
           <Route path="/thank-you" element={<ThankYou />} />
 
           {/* Footer pages */}
