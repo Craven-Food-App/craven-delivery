@@ -1923,32 +1923,26 @@ const Restaurants = () => {
               </ActionIcon>
               
               <ActionIcon
-                onClick={() => navigate('/cart')}
-                variant="subtle"
+                onClick={() => navigate('/checkout')}
+                variant="filled"
                 size="lg"
-                style={{ position: 'relative' }}
+                style={{ 
+                  backgroundColor: '#ff5f1f',
+                  color: 'white',
+                  width: '65px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px'
+                }}
               >
-                <IconShoppingCart size={20} style={{ color: '#4b5563' }} />
-                {cartCount > 0 && (
-                  <Badge
-                    size="xs"
-                    style={{
-                      position: 'absolute',
-                      top: -4,
-                      right: -4,
-                      minWidth: '18px',
-                      height: '18px',
-                      backgroundColor: '#ff6b35',
-                      color: 'white',
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      borderRadius: '50%',
-                      border: '2px solid white'
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </Badge>
-                )}
+                <Text size="sm" fw={700} c="white" style={{ fontSize: '14px', lineHeight: 1 }}>
+                  {cartCount}
+                </Text>
+                <IconShoppingCart size={22} style={{ color: 'white' }} />
               </ActionIcon>
             </Group>
           </Group>
@@ -2766,26 +2760,49 @@ const Restaurants = () => {
           </Group>
           
           {/* Location & Delivery Mode */}
-          <Group gap="xs">
-            <Button
-              onClick={() => setShowAddressSelector(!showAddressSelector)}
-              variant="subtle"
-              leftSection={<IconMapPin size={16} style={{ color: '#4b5563' }} />}
-              rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
-              style={{ 
-                flex: 1,
-                backgroundColor: 'white',
-                color: '#111827',
-                fontWeight: 500,
-                justifyContent: 'space-between',
-                paddingLeft: '12px',
-                paddingRight: '12px'
-              }}
-            >
-              <Text size="sm" fw={500} lineClamp={1} style={{ flex: 1, textAlign: 'left' }}>
+          <Group gap="xs" style={{ alignItems: 'center' }}>
+            <Box style={{ 
+              width: '150px', 
+              maxWidth: '150px', 
+              minWidth: '150px', 
+              flex: '0 0 150px'
+            }}>
+              <Button
+                onClick={() => setShowAddressSelector(!showAddressSelector)}
+                variant="subtle"
+                leftSection={<IconMapPin size={16} style={{ color: '#4b5563' }} />}
+                rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
+                styles={{
+                  root: {
+                    width: '150px !important',
+                    maxWidth: '150px !important',
+                    minWidth: '150px !important',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                    fontWeight: 500,
+                    justifyContent: 'space-between',
+                    paddingLeft: '12px',
+                    paddingRight: '12px',
+                    flexShrink: 0
+                  }
+                }}
+              >
+              <Text 
+                size="sm" 
+                fw={500} 
+                lineClamp={1} 
+                style={{ 
+                  maxWidth: '100px',
+                  textAlign: 'left',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
                 {location}
               </Text>
             </Button>
+            </Box>
             
             <SegmentedControl
               value={deliveryMode}

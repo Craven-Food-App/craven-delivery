@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Search, User, ShoppingCart, ChevronDown, LogOut, Menu, X, Gift, Store, Building2, Plus, Minus } from "lucide-react";
+import { MapPin, Search, User, ShoppingCart, ChevronDown, LogOut, Menu, X, Gift, Store, Building2, Plus, Minus, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import cravenLogo from "@/assets/craven-logo.png";
+import cravenCLogo from "@/assets/craven-c-new.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -48,6 +49,8 @@ const Header = () => {
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   const { toast } = useToast();
   const { isMerchant, merchantLoading } = useMerchantStatus(user?.id || null);
   const restaurantsVisible = useFeatureFlag('feature_restaurants_visible');
@@ -83,6 +86,78 @@ const Header = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch unread notification count and default address
+  useEffect(() => {
+    if (user) {
+      const fetchUnreadNotifications = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('read', false);
+          
+          if (!error && data) {
+            setUnreadNotificationCount(data.length);
+          }
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+        }
+      };
+      
+      const fetchDefaultAddress = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('delivery_addresses')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_default', true)
+            .limit(1)
+            .single();
+          
+          if (!error && data) {
+            setSelectedAddress(data);
+          } else {
+            // If no default, get the first address
+            const { data: addresses } = await supabase
+              .from('delivery_addresses')
+              .select('*')
+              .eq('user_id', user.id)
+              .limit(1)
+              .single();
+            
+            if (addresses) {
+              setSelectedAddress(addresses);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching address:', error);
+        }
+      };
+      
+      fetchUnreadNotifications();
+      fetchDefaultAddress();
+      
+      // Set up real-time subscription for notifications
+      const { data: { subscription } } = supabase
+        .channel('notifications')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchUnreadNotifications();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    } else {
+      setUnreadNotificationCount(0);
+      setSelectedAddress(null);
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -130,7 +205,129 @@ const Header = () => {
   return (
     <>
       <header className="bg-background border-b border-border sticky top-0 z-50 shadow-card">
-        <div className="container mx-auto px-4">
+        {/* Mobile Header - Match Image Design */}
+        <div className="md:hidden">
+          {/* Single Row: Logo + Location + Bell + Account + Cart */}
+          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border">
+            {/* Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <img src={cravenCLogo} alt="C" className="h-8 w-8" />
+            </Link>
+            
+            {/* Location Selector - Smaller width, normal text */}
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[120px]"
+                  onClick={() => setShowAddressDialog(true)}
+                >
+                  <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {selectedAddress 
+                      ? selectedAddress.street_address.length > 15 
+                        ? `${selectedAddress.street_address.substring(0, 12)}...`
+                        : selectedAddress.street_address
+                      : '6759 Nebraska Ave'}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                </Button>
+                <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Select Delivery Address</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-4">
+                      <AddressSelector 
+                        userId={user.id} 
+                        onAddressChange={(address) => {
+                          setSelectedAddress(address);
+                          setShowAddressDialog(false);
+                        }} 
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1.5 text-foreground hover:bg-background p-0 h-auto min-w-0 w-[120px]"
+                onClick={() => setIsAuthModalOpen(true)}
+              >
+                <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+                <span className="text-sm font-medium truncate">6759 Nebraska Ave</span>
+                <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              </Button>
+            )}
+            
+            {/* Notification Bell */}
+            {user && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
+                onClick={() => navigate('/notifications')}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
+                )}
+              </Button>
+            )}
+            
+            {/* Account Icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex-shrink-0 text-foreground hover:bg-background"
+              onClick={() => user ? navigate('/account') : setIsAuthModalOpen(true)}
+            >
+              <User className="h-4 w-4" />
+            </Button>
+            
+            {/* Cart Button - Exact 65px width, 40px height */}
+            {user && (
+              <Button
+                variant="default"
+                className="bg-primary text-primary-foreground flex-shrink-0 rounded-md flex items-center justify-center"
+                style={{ width: '65px', height: '40px' }}
+                onClick={() => navigate('/checkout')}
+              >
+                <span className="font-semibold text-sm">{cartCount}</span>
+              </Button>
+            )}
+          </div>
+          
+          {/* Search Bar Row */}
+          <div className="px-4 py-3 bg-muted/50">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search Craven, Restaurants, or Food"
+                className="pl-10 pr-10 bg-background border-0 focus:ring-2 focus:ring-primary/20 rounded-md"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    navigate(`/restaurants?search=${e.currentTarget.value}`);
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 h-8 w-8 text-foreground hover:bg-background"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:block container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
@@ -414,18 +611,6 @@ const Header = () => {
                   </DialogContent>
                 </Dialog>
               )}
-            </div>
-
-            {/* Mobile Burger Menu */}
-            <div className="flex md:hidden items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-foreground hover:bg-background"
-              >
-                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </Button>
             </div>
           </div>
         </div>
