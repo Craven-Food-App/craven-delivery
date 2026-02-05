@@ -18,9 +18,10 @@ const RestaurantRegister = () => {
         if (storedSignupData) {
           try {
             const parsed = JSON.parse(storedSignupData);
+            console.log('Found signup data:', parsed);
             setSignupData(parsed);
             hasSignupData = true;
-            localStorage.removeItem('merchant_signup_data'); // Clear after reading
+            // Don't remove immediately - keep it until wizard is fully loaded
           } catch (e) {
             console.error('Error parsing signup data:', e);
           }
@@ -30,15 +31,19 @@ const RestaurantRegister = () => {
         
         // If not logged in and no signup data, redirect to landing page
         if (!user && !hasSignupData) {
-          navigate('/merchant/signup');
+          console.log('No user and no signup data, redirecting to signup');
+          navigate('/merchant/signup', { replace: true });
           return;
         }
         
-        if (!user) {
+        // If not logged in but has signup data, proceed with onboarding
+        if (!user && hasSignupData) {
+          console.log('No user but has signup data, proceeding with onboarding');
           setChecking(false);
           return;
         }
 
+        // User is logged in - check if they already have a restaurant
         // Use a non-single query to handle users with multiple restaurants
         const { data, error } = await supabase
           .from('restaurants')
@@ -55,10 +60,13 @@ const RestaurantRegister = () => {
 
         if (data && data.length > 0) {
           // Restaurant exists - redirect to merchant portal
-          navigate('/merchant-portal');
+          console.log('Restaurant exists, redirecting to portal');
+          navigate('/merchant-portal', { replace: true });
           return;
         }
 
+        // User is logged in but no restaurant - proceed with onboarding
+        console.log('User logged in but no restaurant, proceeding with onboarding');
         setChecking(false);
       } catch (error) {
         console.error('Error checking restaurant:', error);
@@ -79,6 +87,17 @@ const RestaurantRegister = () => {
       </div>
     );
   }
+
+  // Clear signup data from localStorage after wizard is mounted
+  useEffect(() => {
+    if (signupData) {
+      // Clear after wizard has had time to read the data
+      const timer = setTimeout(() => {
+        localStorage.removeItem('merchant_signup_data');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [signupData]);
 
   return (
     <div className="w-full">

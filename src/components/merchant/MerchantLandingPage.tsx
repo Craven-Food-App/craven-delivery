@@ -387,50 +387,76 @@ export default function MerchantLandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Form submission started', formData);
     
     if (!formData.storeName || !formData.storeAddress || !formData.email || !formData.phone || !formData.businessType) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    if (!formData.city || !formData.state) {
-      toast.error('Please enter your city and state to continue');
-      return;
+    // Try to extract city/state from address if not already set
+    let finalCity = formData.city;
+    let finalState = formData.state;
+    
+    if (!finalCity || !finalState) {
+      // Try to parse from address field
+      const cityStateMatch = formData.storeAddress.match(/([^,]+),\s*([A-Z]{2})(?:\s+\d{5})?/i);
+      if (cityStateMatch && cityStateMatch.length >= 3) {
+        finalCity = cityStateMatch[1].trim();
+        finalState = cityStateMatch[2].trim().toUpperCase();
+        console.log('Extracted city/state from address:', finalCity, finalState);
+      }
     }
 
-    // Try to get earnings estimate if not already calculated
-    if (!earningsEstimate && formData.city && formData.state) {
-      setIsCalculating(true);
-      try {
-        const population = await fetchCityPopulation(formData.city, formData.state);
-        if (population) {
-          const estimate = calculateEarnings(population, formData.city, formData.state);
-          if (estimate) {
-            setEarningsEstimate(estimate);
-          }
-        }
-      } catch (error) {
-        console.error('Error calculating earnings:', error);
-      } finally {
-        setIsCalculating(false);
-      }
+    if (!finalCity || !finalState) {
+      toast.error('Please enter your city and state in the address (e.g., "123 Main St, Detroit, MI")');
+      return;
     }
 
     setIsLoading(true);
 
     try {
-      // Store form data in localStorage to pass to onboarding wizard
-      localStorage.setItem('merchant_signup_data', JSON.stringify({
-        ...formData,
-        earningsEstimate,
-      }));
+      // Try to get earnings estimate if not already calculated
+      let finalEarningsEstimate = earningsEstimate;
+      if (!finalEarningsEstimate && finalCity && finalState) {
+        setIsCalculating(true);
+        try {
+          const population = await fetchCityPopulation(finalCity, finalState);
+          if (population) {
+            const estimate = calculateEarnings(population, finalCity, finalState);
+            if (estimate) {
+              finalEarningsEstimate = estimate;
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating earnings:', error);
+        } finally {
+          setIsCalculating(false);
+        }
+      }
 
+      // Store form data in localStorage to pass to onboarding wizard
+      const signupData = {
+        ...formData,
+        city: finalCity,
+        state: finalState,
+        earningsEstimate: finalEarningsEstimate,
+      };
+      
+      console.log('Storing signup data:', signupData);
+      localStorage.setItem('merchant_signup_data', JSON.stringify(signupData));
+      console.log('Navigating to /restaurant/register');
+
+      // Small delay to ensure localStorage is written
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Navigate to onboarding wizard
-      navigate('/restaurant/register');
+      navigate('/restaurant/register', { replace: true });
     } catch (error) {
       console.error('Error starting signup:', error);
       toast.error('Failed to start signup process. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
