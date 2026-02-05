@@ -1249,7 +1249,6 @@ const Restaurants = () => {
             </Stack>
           </Box>
         )}
-        )}
 
         {/* Category Filter Buttons - Mobile (Sticky, Conditional based on active category) */}
         {(activeCategory === 'all' || activeCategory === 'restaurants') ? (
