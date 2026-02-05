@@ -1014,9 +1014,6 @@ const Checkout: React.FC = () => {
         }
 
         // If this is a stacked order, alert feeders
-        const stackParentId = localStorage.getItem('stack_parent_order_id');
-        const isStackMode = localStorage.getItem('stack_mode') === 'true';
-        
         if (isStackMode && stackParentId && newOrder?.id) {
           console.log('Alerting feeders about stacked order...');
           const { error: alertError } = await supabase.functions.invoke('alert-feeder-stack-order', {
