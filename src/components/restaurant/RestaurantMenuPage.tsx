@@ -22,6 +22,8 @@ import {
   RingProgress,
   Avatar,
   Grid,
+  Textarea,
+  Rating,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -219,6 +221,10 @@ const RestaurantMenuPage = () => {
   const cartButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isRestaurantLiked, setIsRestaurantLiked] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
   
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
@@ -253,6 +259,67 @@ const RestaurantMenuPage = () => {
         if (reviewsScrollRef.current) {
             reviewsScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
         }
+    };
+
+    const handleOpenReviewModal = () => {
+      setIsReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async () => {
+      if (!restaurant) {
+        notifications.show({
+          title: "Unable to submit review",
+          message: "Restaurant details are not loaded yet.",
+          color: "red",
+        });
+        return;
+      }
+
+      if (!reviewText.trim()) {
+        notifications.show({
+          title: "Add a few words",
+          message: "Please add a short review before submitting.",
+          color: "orange",
+        });
+        return;
+      }
+
+      setSubmittingReview(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const { error } = await supabase
+          .from('restaurant_reviews')
+          .insert({
+            restaurant_id: restaurant.id,
+            rating: reviewRating,
+            comment: reviewText.trim(),
+            user_id: user?.id ?? null,
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        notifications.show({
+          title: "Review submitted",
+          message: "Thanks for rating this merchant.",
+          color: "green",
+        });
+
+        setIsReviewModalOpen(false);
+        setReviewText('');
+        setReviewRating(5);
+      } catch (error: any) {
+        console.error('Error submitting review', error);
+        notifications.show({
+          title: "Error submitting review",
+          message: "We couldn't save your review. Please try again in a moment.",
+          color: "red",
+        });
+      } finally {
+        setSubmittingReview(false);
+      }
     };
 
     // Navigation categories for side menu
@@ -1103,6 +1170,7 @@ const RestaurantMenuPage = () => {
         };
 
         return (
+            <>
             <Modal
                 opened={showItemModal}
                 onClose={closeItemModal}
@@ -1301,6 +1369,53 @@ const RestaurantMenuPage = () => {
                     </Box>
                 </Box>
             </Modal>
+
+            <Modal
+              opened={isReviewModalOpen}
+              onClose={() => setIsReviewModalOpen(false)}
+              title={restaurant ? `Rate ${restaurant.name}` : 'Add Review'}
+              centered
+            >
+              <Stack gap="md">
+                <Stack gap={4}>
+                  <Text size="sm" fw={600}>
+                    Overall rating
+                  </Text>
+                  <Rating
+                    value={reviewRating}
+                    onChange={setReviewRating}
+                    size="lg"
+                  />
+                </Stack>
+
+                <Textarea
+                  label="Share your experience"
+                  placeholder="What did you like? How was the food, delivery, and service?"
+                  minRows={4}
+                  value={reviewText}
+                  onChange={(event) => setReviewText(event.currentTarget.value)}
+                />
+
+                <Group justify="flex-end" mt="md">
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => setIsReviewModalOpen(false)}
+                    disabled={submittingReview}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    color="orange"
+                    onClick={handleSubmitReview}
+                    loading={submittingReview}
+                  >
+                    Submit Review
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
+            </>
         );
     };
 
@@ -2344,7 +2459,12 @@ const RestaurantMenuPage = () => {
                           <Title order={2} size="xl" fw={700}>Reviews</Title>
                           <Text size="sm" c="dimmed">3k+ ratings • 80+ public reviews</Text>
                         </Stack>
-                        <Button variant="subtle" color="orange" size="sm">
+                        <Button
+                          variant="subtle"
+                          color="orange"
+                          size="sm"
+                          onClick={handleOpenReviewModal}
+                        >
                           Add Review
                         </Button>
                       </Group>
@@ -2898,7 +3018,12 @@ const RestaurantMenuPage = () => {
                         <Text size="sm" c="dimmed">3k+ ratings • 80+ public reviews</Text>
                       </Stack>
                       <Group gap="xs">
-                        <Button variant="subtle" color="orange" size="sm">
+                        <Button
+                          variant="subtle"
+                          color="orange"
+                          size="sm"
+                          onClick={handleOpenReviewModal}
+                        >
                           Add Review
                         </Button>
                         <Group gap="xs">
