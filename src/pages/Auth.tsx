@@ -387,7 +387,7 @@ const Auth: React.FC = () => {
               </Button>
             </form>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <button
                 type="button"
                 onClick={() => {
@@ -399,6 +399,24 @@ const Auth: React.FC = () => {
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </button>
+              
+              <div className="pt-4 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    localStorage.setItem('guest_mode', 'true');
+                    toast({
+                      title: "Browsing as Guest",
+                      description: "You can view restaurants. Sign in to place orders.",
+                    });
+                    navigate('/restaurants');
+                  }}
+                  className="w-full h-12 text-base"
+                >
+                  Continue as Guest
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -537,10 +555,28 @@ const Auth: React.FC = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="text-center mt-4">
+          <div className="text-center mt-4 space-y-2">
             <Button variant="ghost" onClick={() => navigate('/')}>
               ← Back to Home
             </Button>
+            
+            <div className="pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  localStorage.setItem('guest_mode', 'true');
+                  toast({
+                    title: "Browsing as Guest",
+                    description: "You can view restaurants. Sign in to place orders.",
+                  });
+                  navigate('/restaurants');
+                }}
+                className="w-full"
+              >
+                Continue as Guest
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

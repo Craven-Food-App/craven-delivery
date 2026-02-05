@@ -246,11 +246,12 @@ const Restaurants = () => {
   const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
   
   // Mobile app states
-  // Web version: Always show main view, never show landing page
-  const [showMain, setShowMain] = useState(true);
-  const [checkingAuth, setCheckingAuth] = useState(false); // Web doesn't need auth check for landing page
+  // Web version: Check auth on mobile, allow guest browsing
+  const [showMain, setShowMain] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true); // Check auth on mobile
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const { cartCount } = useCart(); // Use actual cart count from context, not hardcoded
+  const [isGuest, setIsGuest] = useState(false); // Track guest mode
   
   // New state for enhanced functionality
   const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>('delivery');
@@ -804,17 +805,41 @@ const Restaurants = () => {
     }
   };
 
-  // Web version: Always show main view, never show landing page
-  // Landing page logic is disabled for web - only used in customer app
+  // Check authentication on mobile devices (both app and web)
   useEffect(() => {
-    // Web always shows main view
-    setShowMain(true);
-    setCheckingAuth(false);
-  }, []);
+    const checkAuth = async () => {
+      // Check if user is guest (from localStorage)
+      const guestMode = localStorage.getItem('guest_mode') === 'true';
+      if (guestMode) {
+        setIsGuest(true);
+        setShowMain(true);
+        setCheckingAuth(false);
+        return;
+      }
 
-  // Web version: Never show landing page or loading state
-  // Show loading state while checking auth (prevents flash of landing page) - DISABLED FOR WEB
-  if (false && isMobile && checkingAuth) {
+      // On mobile, check if user is authenticated
+      if (isMobile) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // User is logged in, show main view
+          setShowMain(true);
+        } else {
+          // User is not logged in, redirect to auth page
+          navigate('/auth?redirect=/restaurants');
+          return;
+        }
+      } else {
+        // Desktop: always show main view
+        setShowMain(true);
+      }
+      setCheckingAuth(false);
+    };
+    
+    checkAuth();
+  }, [isMobile, navigate]);
+
+  // Show loading state while checking auth (prevents flash)
+  if (isMobile && checkingAuth) {
     return (
       <Box style={{ width: '100%', maxWidth: '430px', margin: '0 auto', minHeight: '100vh', background: 'linear-gradient(to bottom right, #fef2f2, white, #fafafa)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />

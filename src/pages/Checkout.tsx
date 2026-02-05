@@ -313,6 +313,38 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Check authentication on mobile - guests cannot checkout
+  useEffect(() => {
+    const checkMobileAuth = async () => {
+      const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      if (isMobile) {
+        const isGuest = localStorage.getItem('guest_mode') === 'true';
+        if (isGuest) {
+          toast({
+            title: "Sign in Required",
+            description: "Please sign in to place an order.",
+            variant: "destructive",
+          });
+          navigate('/auth?redirect=/checkout');
+          return;
+        }
+
+        // Check if user is authenticated
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast({
+            title: "Sign in Required",
+            description: "Please sign in to place an order.",
+            variant: "destructive",
+          });
+          navigate('/auth?redirect=/checkout');
+        }
+      }
+    };
+    
+    checkMobileAuth();
+  }, [navigate, toast]);
+  
   // Safety check for Stripe
   useEffect(() => {
     if (!stripePromise && import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
