@@ -991,11 +991,11 @@ const Restaurants = () => {
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'flex-start',
                   gap: '6px',
                   padding: '8px 16px',
                   borderRadius: '8px',
-                  minWidth: cartCount > 0 ? 'auto' : '64px',
+                  width: '100px',
                   height: '40px'
                 }}
               >
