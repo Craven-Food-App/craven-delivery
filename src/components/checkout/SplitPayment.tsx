@@ -11,7 +11,6 @@ interface PaymentMethod {
   brand?: string;
   last4: string;
   stripe_payment_method_id?: string;
-  moov_payment_method_id?: string;
   is_default: boolean;
 }
 
@@ -68,7 +67,7 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
     if (!splitEnabled && primaryMethod) {
       // Single payment
       onPaymentMethodsChange([{
-        paymentMethodId: primaryMethod.stripe_payment_method_id || primaryMethod.moov_payment_method_id || '',
+        paymentMethodId: primaryMethod.stripe_payment_method_id || '',
         amount: totalAmount
       }]);
     } else if (splitEnabled && primaryMethod && secondaryMethod) {
@@ -78,11 +77,11 @@ export const SplitPayment: React.FC<SplitPaymentProps> = ({
       
       onPaymentMethodsChange([
         {
-          paymentMethodId: primaryMethod.stripe_payment_method_id || primaryMethod.moov_payment_method_id || '',
+          paymentMethodId: primaryMethod.stripe_payment_method_id || '',
           amount: primaryAmount
         },
         {
-          paymentMethodId: secondaryMethod.stripe_payment_method_id || secondaryMethod.moov_payment_method_id || '',
+          paymentMethodId: secondaryMethod.stripe_payment_method_id || '',
           amount: secondaryAmount
         }
       ]);

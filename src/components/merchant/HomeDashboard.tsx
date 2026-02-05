@@ -90,10 +90,9 @@ export const HomeDashboard = ({ restaurantId, restaurant, readiness }: HomeDashb
     return <div className="p-6">Loading dashboard...</div>;
   }
 
-  // Check for incomplete tasks
+  // Check for incomplete tasks (Stripe + general readiness only)
   const hasIncompleteTasks = !restaurant?.banking_complete || 
-    !restaurant?.stripe_onboarding_complete || 
-    !restaurant?.moov_onboarding_complete ||
+    !restaurant?.stripe_onboarding_complete ||
     (readiness && (readiness.blockers.length > 0 || readiness.missing_items.length > 0));
 
   return (
@@ -133,22 +132,6 @@ export const HomeDashboard = ({ restaurantId, restaurant, readiness }: HomeDashb
                     onClick={() => navigate('/merchant-portal?tab=settings&section=bank')}
                   >
                     Complete Setup
-                  </Button>
-                </div>
-              </div>
-            )}
-            {!restaurant?.moov_onboarding_complete && (
-              <div className="flex items-start gap-3 p-3 bg-background rounded-lg">
-                <DollarSign className="h-5 w-5 text-orange-600 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-sm">Moov Account Setup Required</p>
-                  <p className="text-sm text-muted-foreground">Complete Moov onboarding to enable payment processing</p>
-                  <Button 
-                    size="sm" 
-                    className="mt-2"
-                    onClick={() => navigate('/merchant-portal?tab=settings&subtab=bank-account')}
-                  >
-                    Complete Moov Setup
                   </Button>
                 </div>
               </div>

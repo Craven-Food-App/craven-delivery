@@ -7,7 +7,6 @@ import { CheckCircle2, AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
-import { MoovOnboardingCard } from "./MoovOnboardingCard";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -168,7 +167,7 @@ const BankAccountDashboard = () => {
     <div className="space-y-6 pb-8">
       {/* Description */}
       <p className="text-muted-foreground">
-        Here is where you will find a summary of your banking information. Crave'N uses Moov to securely manage your payouts.
+        Here is where you will find a summary of your banking information and payout status.
       </p>
 
       {/* Toggle for Stripe section */}
@@ -319,12 +318,6 @@ const BankAccountDashboard = () => {
       </Card>
       )}
 
-      {/* Moov Onboarding - FIXED: Now passing restaurantId prop */}
-      {restaurant?.id && (
-        <div className="mt-6">
-          <MoovOnboardingCard restaurantId={restaurant.id} />
-        </div>
-      )}
     </div>
   );
 };
