@@ -954,16 +954,16 @@ const Restaurants = () => {
               style={{ height: '30px', width: '30px', flexShrink: 0 }} 
             />
             
-            <Box style={{ position: 'relative', flex: 1 }}>
+            <Box style={{ position: 'relative', width: '145px', flexShrink: 0 }}>
               <Button
                 variant="subtle"
                 leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+                style={{ padding: '8px', borderRadius: '12px', width: '145px' }}
               >
                 <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '100px' }}>{location.split(',')[0]}...</Text>
                 </Stack>
               </Button>
             </Box>
@@ -1002,9 +1002,9 @@ const Restaurants = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '6px',
-                  padding: '8px 16px',
+                padding: '8px 12px',
                   borderRadius: '8px',
-                  minWidth: cartCount > 0 ? 'auto' : '64px',
+                width: '75px',
                   height: '40px'
                 }}
               >
