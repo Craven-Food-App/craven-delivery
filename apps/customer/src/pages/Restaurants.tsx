@@ -1747,7 +1747,7 @@ const Restaurants = () => {
           top: 'env(safe-area-inset-top, 0px)',
           left: 0,
           right: 0,
-          width: '145px',
+          width: '100%',
           zIndex: 1000, 
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
           borderBottom: '1px solid #e5e7eb', 
@@ -1901,31 +1901,42 @@ const Restaurants = () => {
                 size="lg"
                 radius="xl"
               >
-                <IconUser size={20} style={{ color: '#4b5563' }} />
+                <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
-              
-              <ActionIcon
-                onClick={() => navigate('/checkout')}
-                variant="filled"
-                size="lg"
-                style={{ 
-                  backgroundColor: '#ff5f1f',
-                  color: 'white',
-                  width: '155px',
-                  height: '40px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '8px'
-                }}
-              >
-                <Text size="sm" fw={700} c="white" style={{ fontSize: '14px', lineHeight: 1 }}>
-                  {cartCount}
-                </Text>
-                <IconShoppingCart size={22} style={{ color: 'white' }} />
-              </ActionIcon>
+              {/* Cart Icon with Quantity Badge */}
+              {cartCount > 0 && (
+                <ActionIcon
+                  onClick={() => navigate('/checkout')}
+                  variant="subtle"
+                  size="lg"
+                  radius="xl"
+                  style={{ position: 'relative' }}
+                >
+                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      minWidth: '18px',
+                      height: '18px',
+                      backgroundColor: '#ff5f1f',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'white',
+                      lineHeight: 1
+                    }}
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </Box>
+                </ActionIcon>
+              )}
             </Group>
           </Group>
 
@@ -2758,46 +2769,23 @@ const Restaurants = () => {
           </Group>
           
           {/* Location & Delivery Mode */}
-          <Group gap="xs" style={{ alignItems: 'center' }}>
-            <Box style={{ 
-              width: '152px', 
-              maxWidth: '152px', 
-              minWidth: '152px', 
-              flex: '0 0 152px',
-              position: 'static'
-            }}>
-              <Button
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                variant="subtle"
-                leftSection={<IconMapPin size={16} style={{ color: '#4b5563' }} />}
-                rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
-                styles={{
-                  root: {
-                    width: '64px !important',
-                    maxWidth: '64px !important',
-                    minWidth: '64px !important',
-                    backgroundColor: 'white',
-                    color: '#111827',
-                    fontWeight: 500,
-                    justifyContent: 'space-between',
-                    paddingLeft: '12px',
-                    paddingRight: '12px',
-                    flexShrink: 0
-                  }
-                }}
-              >
-              <Text 
-                size="sm" 
-                fw={500} 
-                lineClamp={1} 
-                style={{ 
-                  maxWidth: '100px',
-                  textAlign: 'left',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
+          <Group gap="xs">
+            <Button
+              onClick={() => setShowAddressSelector(!showAddressSelector)}
+              variant="subtle"
+              leftSection={<IconMapPin size={16} style={{ color: '#4b5563' }} />}
+              rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
+              style={{ 
+                flex: 1,
+                backgroundColor: 'white',
+                color: '#111827',
+                fontWeight: 500,
+                justifyContent: 'space-between',
+                paddingLeft: '12px',
+                paddingRight: '12px'
+              }}
+            >
+              <Text size="sm" fw={500} lineClamp={1} style={{ flex: 1, textAlign: 'left' }}>
                 {location}
               </Text>
             </Button>

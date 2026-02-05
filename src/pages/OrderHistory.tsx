@@ -486,24 +486,19 @@ export default function OrderHistory() {
         flexShrink: 0
       }}>
             {isMobile && (
-              <Group align="center" gap="md" mb="xs" wrap="nowrap" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+              <Group mb="md" align="center">
                 <ActionIcon
                   variant="subtle"
                   onClick={() => navigate(-1)}
-                  style={{ color: '#171717', flexShrink: 0 }}
+                  style={{ color: '#171717' }}
                 >
                   <IconArrowLeft size={24} />
                 </ActionIcon>
-                <Text fw={900} size="xl" c="#171717" style={{ margin: 0, flex: 1 }}>
-                  Order History
-                </Text>
               </Group>
             )}
-            {!isMobile && (
-              <Text fw={900} size="xl" mb="xs" c="#171717">
-                Order History
-              </Text>
-            )}
+            <Text fw={900} size="xl" mb="xs" c="#171717">
+              Order History
+            </Text>
             <Text size="sm" c="#737373">
               Your recent orders
             </Text>
