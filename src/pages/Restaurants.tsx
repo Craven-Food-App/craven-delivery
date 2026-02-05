@@ -978,7 +978,7 @@ const Restaurants = () => {
                 radius="xl"
                 style={{ position: 'relative', flexShrink: 0 }}
               >
-                <IconBell size={24} style={{ color: '#737373' }} />
+                <IconBell size={24} style={{ color: '#000000' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
                   <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
                 )}
