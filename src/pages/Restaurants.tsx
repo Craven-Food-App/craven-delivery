@@ -259,6 +259,7 @@ const Restaurants = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const [mobileAddressSearch, setMobileAddressSearch] = useState(''); // Mobile web address input
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
@@ -1181,6 +1182,74 @@ const Restaurants = () => {
               </Group>
             </Box>
           </Box>
+
+        {/* Mobile Address Selector Overlay */}
+        {showAddressSelector && (
+          <Box
+            style={{
+              position: 'fixed',
+              top: 'calc(120px + env(safe-area-inset-top, 0px))',
+              left: 0,
+              right: 0,
+              width: '100%',
+              maxWidth: '430px',
+              margin: '0 auto',
+              zIndex: 1100,
+              backgroundColor: 'white',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+              borderBottom: '1px solid #e5e7eb',
+              padding: '16px'
+            }}
+          >
+            <Stack gap="sm">
+              <Group justify="space-between" align="center">
+                <Text fw={600} c="gray.9">
+                  Select delivery address
+                </Text>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  onClick={() => setShowAddressSelector(false)}
+                >
+                  Close
+                </Button>
+              </Group>
+
+              <TextInput
+                placeholder="Search for an address"
+                value={mobileAddressSearch}
+                onChange={(e) => {
+                  const value = e.currentTarget.value;
+                  setMobileAddressSearch(value);
+                  handleAddressSearch(value);
+                }}
+              />
+
+              {addressSuggestions.length > 0 && (
+                <Stack gap={4}>
+                  {addressSuggestions.map((addr, index) => (
+                    <Button
+                      key={index}
+                      variant="subtle"
+                      fullWidth
+                      style={{ justifyContent: 'flex-start' }}
+                      onClick={() => {
+                        selectAddress(addr);
+                        setMobileAddressSearch('');
+                      }}
+                    >
+                      {addr}
+                    </Button>
+                  ))}
+                </Stack>
+              )}
+
+              <Button variant="outline" size="xs">
+                Add new address
+              </Button>
+            </Stack>
+          </Box>
+        )}
         )}
 
         {/* Category Filter Buttons - Mobile (Sticky, Conditional based on active category) */}
