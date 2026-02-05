@@ -1183,7 +1183,6 @@ const Restaurants = () => {
             </Box>
           </Box>
 
-        {/* Mobile Address Selector Overlay */}
         {showAddressSelector && (
           <Box
             style={{
