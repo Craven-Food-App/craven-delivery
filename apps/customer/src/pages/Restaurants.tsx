@@ -1111,6 +1111,7 @@ const Restaurants = () => {
   // Navigation categories
   const navCategories = [
     { id: 'all', label: 'All', icon: IconHome, active: activeCategory === 'all' },
+    { id: 'restaurants', label: 'Restaurants', icon: IconToolsKitchen2, active: activeCategory === 'restaurants' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
@@ -1126,7 +1127,7 @@ const Restaurants = () => {
     setActiveCategory(categoryId);
     
     // Handle different category types
-    if (categoryId === 'all' || categoryId === 'browse') {
+    if (categoryId === 'all' || categoryId === 'browse' || categoryId === 'restaurants') {
       setCuisineFilter('all');
       setApparelCategoryFilter('all'); // Reset apparel filter when switching away
     } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
@@ -1144,7 +1145,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'restaurants', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setTimeout(() => {
         if (categoryId === 'apparel' && apparelSectionRef.current) {
           apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
