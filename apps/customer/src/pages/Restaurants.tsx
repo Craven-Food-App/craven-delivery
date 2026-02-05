@@ -1756,32 +1756,28 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Box style={{ position: 'relative', width: '300px', marginLeft: '-100px' }}>
+            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
               <Button
                 variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
+                leftSection={<IconMapPin size={16} style={{ color: '#b91c1c' }} />}
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={handleAddressButtonClick}
                 style={{ 
-                  padding: '8px', 
-                  borderRadius: '12px', 
-                  width: '70px',
-                  textAlign: 'left',
-                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                  alignItems: 'flex-start'
+                  padding: '8px 12px',
+                  backgroundColor: 'transparent',
+                  color: '#111827',
+                  fontWeight: 500
                 }}
-                styles={{ 
-                  inner: { 
-                    width: '124px', 
-                    textAlign: 'left',
+                styles={{
+                  inner: {
                     justifyContent: 'flex-start',
-                    alignItems: 'flex-start'
-                  } 
+                    textAlign: 'left'
+                  }
                 }}
               >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
-                </Stack>
+                <Text size="sm" fw={500} lineClamp={1}>
+                  {location.split(',')[0]}...
+                </Text>
               </Button>
               
               {/* Address Selector Dropdown - Mobile */}
@@ -1897,104 +1893,91 @@ const Restaurants = () => {
               )}
             </Box>
 
-            <Group gap="xs" style={{ width: '162px' }}>
+            <Group gap="xs">
               <ActionIcon
                 onClick={() => navigate('/notifications')}
                 variant="subtle"
                 size="lg"
-                radius="xl"
                 style={{ position: 'relative' }}
               >
-                <IconBell size={24} style={{ color: '#737373' }} />
+                <IconBell size={20} style={{ color: '#4b5563' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
-                  <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
+                  <Box style={{ 
+                    position: 'absolute', 
+                    top: 4, 
+                    right: 4, 
+                    width: '8px', 
+                    height: '8px', 
+                    backgroundColor: '#ff6b35', 
+                    borderRadius: '50%' 
+                  }} />
                 )}
               </ActionIcon>
+              
               <ActionIcon
                 onClick={() => navigate('/account')}
                 variant="subtle"
                 size="lg"
-                radius="xl"
               >
-                <IconUser size={24} style={{ color: '#171717' }} />
+                <IconUser size={20} style={{ color: '#4b5563' }} />
               </ActionIcon>
-              {/* Cart Icon with Quantity Badge */}
-              {cartCount > 0 && (
-                <ActionIcon
-                  onClick={() => navigate('/checkout')}
-                  variant="subtle"
-                  size="lg"
-                  radius="xl"
-                  style={{ position: 'relative' }}
-                >
-                  <IconShoppingCart size={24} style={{ color: '#171717', width: '100px', height: '34px' }} />
-                  <Box
+              
+              <ActionIcon
+                onClick={() => navigate('/cart')}
+                variant="subtle"
+                size="lg"
+                style={{ position: 'relative' }}
+              >
+                <IconShoppingCart size={20} style={{ color: '#4b5563' }} />
+                {cartCount > 0 && (
+                  <Badge
+                    size="xs"
                     style={{
                       position: 'absolute',
-                      top: 2,
-                      right: 2,
+                      top: -4,
+                      right: -4,
                       minWidth: '18px',
                       height: '18px',
-                      backgroundColor: '#ff5f1f',
-                      borderRadius: '50%',
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0 4px',
-                      fontSize: '11px',
-                      fontWeight: 600,
+                      backgroundColor: '#ff6b35',
                       color: 'white',
-                      lineHeight: 1
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      borderRadius: '50%',
+                      border: '2px solid white'
                     }}
                   >
                     {cartCount > 99 ? '99+' : cartCount}
-                  </Box>
-                </ActionIcon>
-              )}
+                  </Badge>
+                )}
+              </ActionIcon>
             </Group>
           </Group>
 
-          {/* Search Bar */}
-          <Box style={{ position: 'relative' }}>
-            <IconSearch size={20} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#a3a3a3', zIndex: 1 }} />
+          {/* Search Bar with Hamburger Menu */}
+          <Group gap="xs">
             <TextInput
               placeholder="Search Craven, Restaurants, or Food"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              styles={{ 
-                input: { 
-                  paddingLeft: '44px', 
-                  paddingRight: '48px', 
-                  paddingTop: '12px', 
-                  paddingBottom: '12px', 
-                  fontSize: '16px', 
-                  backgroundColor: 'white', 
-                  border: 'none', 
-                  borderRadius: '12px',
-                  fontWeight: 500
+              leftSection={<IconSearch size={16} style={{ color: '#9ca3af' }} />}
+              style={{ flex: 1 }}
+              styles={{
+                input: {
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  fontSize: '14px'
                 }
               }}
+              radius="md"
             />
-            {/* Menu Hamburger Icon - Bottom Right */}
             <ActionIcon
+              onClick={() => setShowMobileNav(!showMobileNav)}
               variant="subtle"
-              size="sm"
-              onClick={() => setShowMenuIcons(!showMenuIcons)}
-              style={{
-                position: 'absolute',
-                right: 8,
-                bottom: 8,
-                zIndex: 2,
-                backgroundColor: 'transparent',
-                color: '#a3a3a3',
-              }}
+              size="lg"
             >
-              <IconMenu2 
-                size={16} 
-              />
+              <IconMenu2 size={24} style={{ color: '#171717' }} />
             </ActionIcon>
-          </Box>
+          </Group>
         </Box>
 
         {/* Menu Icons Dropdown - Fixed (appears below header when open) */}
