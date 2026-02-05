@@ -939,7 +939,7 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="flex-start" mb="md" gap="xs" align="center">
-            <Box style={{ position: 'relative', flex: 1 }}>
+            <Box style={{ position: 'relative', width: '180px', flexShrink: 0 }}>
               <Button
                 variant="subtle"
                 leftSection={
@@ -954,7 +954,7 @@ const Restaurants = () => {
                 style={{ padding: '8px', borderRadius: '12px', width: '100%', textAlign: 'left' }}
               >
                 <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '120px' }}>{location.split(',')[0]}...</Text>
                 </Stack>
               </Button>
             </Box>
