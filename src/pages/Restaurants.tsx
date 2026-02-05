@@ -170,11 +170,11 @@ const RestaurantCard = ({
       onClick={() => navigate(`/restaurant/${restaurant.id}/menu`)}
     >
       {/* Image with rounded corners */}
-      <Box style={{ position: 'relative', height: '200px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
+      <Box style={{ position: 'relative', height: '160px', backgroundColor: '#f5f5f5', overflow: 'hidden', borderRadius: '12px', marginBottom: '12px' }}>
         <MantineImage
           src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
           alt={restaurant.name}
-          style={{ width: '100%', height: '145px', objectFit: 'cover' }}
+          style={{ width: '100%', height: '160px', objectFit: 'cover' }}
           onError={(e) => { 
             e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
           }}
