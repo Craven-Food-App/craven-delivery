@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -110,7 +111,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
     p="xl"
     radius="md"
     style={{
-      height: '350px',
+      height: '250px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -128,7 +129,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
         backgroundImage: 'linear-gradient(105deg, var(--mantine-color-black) 20%, #312f2f 50%, var(--mantine-color-gray-4) 100%)'
       }}
     />
-    <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '250px' }}>
       <Box>
         <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)' }}>
           {title}
@@ -174,7 +175,7 @@ const RestaurantCard = ({
       <MantineImage
         src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
         alt={restaurant.name}
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        style={{ width: '100%', height: '175px', objectFit: 'cover' }}
         onError={(e) => { 
           e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
         }}
@@ -204,7 +205,7 @@ const RestaurantCard = ({
         <Box style={{ flex: 1, minWidth: 0 }}>
           {/* Restaurant promo */}
           {restaurant.restaurantPromo && (
-            <Text size="sm" c="gray.8" lineClamp={1}>
+            <Text size="sm" c="gray.8" lineClamp={1} style={{ verticalAlign: 'top' }}>
               {restaurant.restaurantPromo}
             </Text>
           )}
@@ -258,6 +259,12 @@ const Restaurants = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [addressSuggestions, setAddressSuggestions] = useState<string[]>([]);
+  const cartButtonRef = useRef<HTMLButtonElement>(null);
+  const [cartDropdownPosition, setCartDropdownPosition] = useState({ top: 0, right: 0 });
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null);
+  const [notificationsDropdownPosition, setNotificationsDropdownPosition] = useState({ top: 0, right: 0 });
+  const addressSelectorButtonRef = useRef<HTMLButtonElement>(null);
+  const [addressSelectorDropdownPosition, setAddressSelectorDropdownPosition] = useState({ top: 0, left: 0 });
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
@@ -367,6 +374,10 @@ const Restaurants = () => {
     setCartItems(prev => prev.filter(item => item.id !== itemId));
   };
 
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => total + (item.price || 0), 0);
   };
@@ -455,7 +466,6 @@ const Restaurants = () => {
     { id: 'restaurants', label: 'Restaurants', icon: IconToolsKitchen2, active: activeCategory === 'restaurants' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
-    { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
@@ -482,7 +492,7 @@ const Restaurants = () => {
       // Scroll to the Restaurants section
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
-    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setCuisineFilter(categoryId);
     } else if (categoryId === 'orders') {
       // Navigate to orders page
@@ -495,7 +505,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
@@ -565,8 +575,6 @@ const Restaurants = () => {
         return ['Produce', 'Dairy', 'Meat', 'Bakery', 'Frozen', 'Pantry', 'Beverages', 'Snacks', 'Organic', 'Deli', 'Seafood', 'International'];
       case 'convenience':
         return ['Snacks', 'Beverages', 'Candy', 'Ice Cream', 'Quick Meals', 'Sandwiches', 'Salads', 'Soups', 'Breakfast', 'Coffee', 'Energy Drinks', 'Chips'];
-      case 'dashmart':
-        return ['Electronics', 'Home', 'Beauty', 'Health', 'Baby', 'Pet', 'Office', 'Garden', 'Kitchen', 'Bedding', 'Decor', 'Storage'];
       case 'beauty':
         return ['Makeup', 'Skincare', 'Hair Care', 'Fragrance', 'Tools', 'Bath & Body', 'Nails', 'Men\'s Grooming', 'Sunscreen', 'Anti-Aging', 'Acne Care', 'Hair Styling'];
       case 'pets':
@@ -943,7 +951,7 @@ const Restaurants = () => {
             <MantineImage 
               src={cravenCLogo} 
               alt="CRAVE'N" 
-              style={{ height: '24px', width: '24px', flexShrink: 0 }} 
+              style={{ height: '30px', width: '30px', flexShrink: 0 }} 
             />
             
             <Box style={{ position: 'relative', flex: 1 }}>
@@ -981,40 +989,39 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
-              {/* Cart Icon with Quantity Badge */}
-              {cartCount > 0 && (
-                <ActionIcon
-                  onClick={() => navigate('/checkout')}
-                  variant="subtle"
-                  size="lg"
-                  radius="xl"
-                  style={{ position: 'relative' }}
-                >
-                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
-                  <Box
+              {/* Cart Icon with Quantity Badge - Always visible in orange pill */}
+              <ActionIcon
+                onClick={() => navigate('/checkout')}
+                variant="filled"
+                size="lg"
+                radius="xl"
+                style={{ 
+                  backgroundColor: '#ff5f1f',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  minWidth: cartCount > 0 ? 'auto' : '64px',
+                  height: '40px'
+                }}
+              >
+                {cartCount > 0 && (
+                  <Text
                     style={{
-                      position: 'absolute',
-                      top: 2,
-                      right: 2,
-                      minWidth: '18px',
-                      height: '18px',
-                      backgroundColor: '#ff5f1f',
-                      borderRadius: '50%',
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0 4px',
-                      fontSize: '11px',
-                      fontWeight: 600,
+                      fontSize: '14px',
+                      fontWeight: 700,
                       color: 'white',
                       lineHeight: 1
                     }}
                   >
                     {cartCount > 99 ? '99+' : cartCount}
-                  </Box>
-                </ActionIcon>
-              )}
+                  </Text>
+                )}
+                <IconShoppingCart size={22} style={{ color: 'white' }} />
+              </ActionIcon>
             </Group>
           </Group>
 
@@ -1217,7 +1224,7 @@ const Restaurants = () => {
                               gap: '6px'
                             }}
                           >
-                            <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                            <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
                             <span>{cuisine}</span>
                           </Button>
                         );
@@ -1263,7 +1270,7 @@ const Restaurants = () => {
                               gap: '6px'
                             }}
                           >
-                            <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                            <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
                             <span>{cuisine}</span>
                           </Button>
                         );
@@ -1276,7 +1283,7 @@ const Restaurants = () => {
                   </Text>
                 )}
               </Box>
-            ) : ['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory) ? (
+            ) : ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory) ? (
               <Box
                 component="nav"
                 style={{
@@ -1344,7 +1351,7 @@ const Restaurants = () => {
                                 gap: '6px'
                               }}
                             >
-                              <span style={{ fontSize: '16px', lineHeight: 1 }}>{filterEmoji}</span>
+                              <span style={{ fontSize: '24px', lineHeight: 1 }}>{filterEmoji}</span>
                               <span>{filter}</span>
                             </Button>
                           );
@@ -1391,7 +1398,7 @@ const Restaurants = () => {
                                   gap: '6px'
                                 }}
                               >
-                                <span style={{ fontSize: '16px', lineHeight: 1 }}>{filterEmoji}</span>
+                                <span style={{ fontSize: '24px', lineHeight: 1 }}>{filterEmoji}</span>
                                 <span>{filter}</span>
                               </Button>
                             );
@@ -1410,7 +1417,7 @@ const Restaurants = () => {
           overflowY: 'auto', 
           backgroundColor: '#fafafa',
           paddingTop: (() => {
-            const hasFilters = (activeCategory === 'all' || activeCategory === 'restaurants' || ['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory));
+            const hasFilters = (activeCategory === 'all' || activeCategory === 'restaurants' || ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory));
             if (showMenuIcons && hasFilters) {
               return '220px'; // Menu + filters
             } else if (showMenuIcons) {
@@ -1454,7 +1461,7 @@ const Restaurants = () => {
             ) : null}
 
             {/* Fastest near you */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '4px', paddingBottom: '4px', height: '345px' }}>
+            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, height: '345px' }}>
               <Group justify="space-between" mb="md">
                 <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Craven Quick Picks</Title>
                 <ActionIcon variant="subtle" color="red" radius="xl">
@@ -1848,17 +1855,37 @@ const Restaurants = () => {
               {/* Location Selector */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowAddressSelector(!showAddressSelector)}
+                  ref={addressSelectorButtonRef}
+                  onClick={() => {
+                    if (addressSelectorButtonRef.current) {
+                      const rect = addressSelectorButtonRef.current.getBoundingClientRect();
+                      setAddressSelectorDropdownPosition({
+                        top: rect.bottom + 8,
+                        left: rect.left
+                      });
+                    }
+                    setShowAddressSelector(!showAddressSelector);
+                  }}
                   className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <IconMapPin className="w-4 h-4" />
                   <span className="text-sm font-medium max-w-32 truncate">{location}</span>
                   <IconChevronRight className="w-4 h-4" />
                 </button>
-                
-                {/* Address Selector Dropdown */}
-                {showAddressSelector && (
-                  <div data-dropdown className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              </div>
+              
+              {/* Address Selector Dropdown - Portal to body for top layer */}
+              {showAddressSelector && typeof document !== 'undefined' ? createPortal(
+                <div 
+                  data-dropdown 
+                  className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[99999]"
+                  style={{
+                    top: `${addressSelectorDropdownPosition.top}px`,
+                    left: `${addressSelectorDropdownPosition.left}px`,
+                    maxWidth: 'calc(100vw - 32px)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 mb-3">Select delivery address</h3>
                       <div className="space-y-2">
@@ -1887,9 +1914,9 @@ const Restaurants = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  </div>,
+                document.body
+              ) : null}
 
               {/* Delivery/Pickup Toggle */}
               <div className="flex bg-gray-100 rounded-lg p-1">
@@ -1918,7 +1945,17 @@ const Restaurants = () => {
               {/* Notifications */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  ref={notificationsButtonRef}
+                  onClick={() => {
+                    if (notificationsButtonRef.current) {
+                      const rect = notificationsButtonRef.current.getBoundingClientRect();
+                      setNotificationsDropdownPosition({
+                        top: rect.bottom + 8,
+                        right: window.innerWidth - rect.right
+                      });
+                    }
+                    setShowNotifications(!showNotifications);
+                  }}
                   className="relative"
                 >
                   <IconBell className="w-6 h-6 text-gray-600 hover:text-gray-900 transition-colors" />
@@ -1928,10 +1965,20 @@ const Restaurants = () => {
                     </span>
                   )}
                 </button>
-                
-                {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div data-dropdown className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              </div>
+              
+              {/* Notifications Dropdown - Portal to body for top layer */}
+              {showNotifications && typeof document !== 'undefined' && createPortal(
+                <div 
+                  data-dropdown 
+                  className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[99999]"
+                  style={{
+                    top: `${notificationsDropdownPosition.top}px`,
+                    right: `${notificationsDropdownPosition.right}px`,
+                    maxWidth: 'calc(100vw - 32px)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-gray-900">Notifications</h3>
@@ -1959,15 +2006,26 @@ const Restaurants = () => {
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  </div>,
+                document.body
+              )}
 
               {/* Cart */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowCart(!showCart)}
+                  ref={cartButtonRef}
+                  onClick={() => {
+                    if (cartButtonRef.current) {
+                      const rect = cartButtonRef.current.getBoundingClientRect();
+                      setCartDropdownPosition({
+                        top: rect.bottom + 8,
+                        right: window.innerWidth - rect.right
+                      });
+                    }
+                    setShowCart(!showCart);
+                  }}
                   className="relative"
+                  id="cart-button"
                 >
                   <IconShoppingCart className="w-6 h-6 text-gray-600 hover:text-gray-900 transition-colors" />
                   {cartItems.length > 0 && (
@@ -1976,50 +2034,78 @@ const Restaurants = () => {
                     </span>
                   )}
                 </button>
-                
-                {/* Cart Dropdown */}
-                {showCart && (
-                  <div data-dropdown className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-gray-900">Your Cart</h3>
-                        <button className="text-sm text-orange-600">Clear all</button>
-                      </div>
-                      {cartItems.length > 0 ? (
-                        <div className="space-y-3 max-h-64 overflow-y-auto">
-                          {cartItems.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm text-gray-900">{item.name}</h4>
-                                <p className="text-xs text-gray-600">${item.price?.toFixed(2) || '0.00'}</p>
-                              </div>
-                              <button 
-                                onClick={() => removeFromCart(item.id)}
-                                className="text-primary hover:text-primary"
-                              >
-                                <IconX className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                          <div className="pt-3 border-t">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="font-semibold">Total: ${getCartTotal().toFixed(2)}</span>
-                            </div>
-                            <Button className="w-full bg-orange-500 hover:bg-orange-600">
-                              Checkout
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <IconShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500 text-sm">Your cart is empty</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
+              
+              {/* Cart Dropdown - Portal to body for top layer */}
+              {showCart && typeof document !== 'undefined' && createPortal(
+                <div 
+                  data-dropdown 
+                  className="fixed w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[99999]"
+                  style={{
+                    top: `${cartDropdownPosition.top}px`,
+                    right: `${cartDropdownPosition.right}px`,
+                    maxWidth: 'calc(100vw - 32px)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900">Your Cart</h3>
+                      <button 
+                        onClick={() => {
+                          clearCart();
+                          notifications.show({
+                            title: "Cart cleared",
+                            message: "All items removed from cart",
+                            color: "green",
+                          });
+                        }}
+                        className="text-sm text-orange-600"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    {cartItems.length > 0 ? (
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {cartItems.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm text-gray-900">{item.name}</h4>
+                              <p className="text-xs text-gray-600">${item.price?.toFixed(2) || '0.00'}</p>
+                            </div>
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-primary hover:text-primary"
+                            >
+                              <IconX className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <div className="pt-3 border-t">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-semibold">Total: ${getCartTotal().toFixed(2)}</span>
+                          </div>
+                          <Button 
+                            className="w-full bg-orange-500 hover:bg-orange-600"
+                            onClick={() => {
+                              setShowCart(false);
+                              navigate('/checkout');
+                            }}
+                          >
+                            Checkout
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <IconShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">Your cart is empty</p>
+                      </div>
+                    )}
+                  </div>
+                </div>,
+                document.body
+              )}
 
               {/* Mobile Menu */}
               <button 
@@ -2097,7 +2183,7 @@ const Restaurants = () => {
                       gap: '6px'
                     }}
                   >
-                    <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
                     <span>{cuisine}</span>
                   </Button>
                 );
@@ -2143,7 +2229,7 @@ const Restaurants = () => {
                       gap: '6px'
                     }}
                   >
-                    <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
+                    <span style={{ fontSize: '24px', lineHeight: 1 }}>{cuisineEmoji}</span>
                     <span>{cuisine}</span>
                   </Button>
                 );

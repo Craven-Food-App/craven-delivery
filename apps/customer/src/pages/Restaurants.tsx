@@ -111,7 +111,7 @@ const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtit
       p="xl"
       radius="md"
       style={{
-        height: '440px',
+        height: '250px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -129,7 +129,7 @@ const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtit
           backgroundImage: 'linear-gradient(105deg, var(--mantine-color-black) 20%, #312f2f 50%, var(--mantine-color-gray-4) 100%)'
         }}
       />
-      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '250px' }}>
         <Box>
           <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
             {title}
@@ -177,7 +177,7 @@ const RestaurantCard = ({
         <MantineImage
           src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
           alt={restaurant.name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ width: '100%', height: '175px', objectFit: 'cover' }}
           onError={(e) => { 
             e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
           }}
@@ -215,7 +215,7 @@ const RestaurantCard = ({
         {/* Promo text on left */}
         <Box style={{ flex: 1, minWidth: 0 }}>
           {restaurant.restaurantPromo && (
-            <Text size="sm" c="gray.8" lineClamp={1}>
+            <Text size="sm" c="gray.8" lineClamp={1} style={{ verticalAlign: 'top' }}>
               {restaurant.restaurantPromo}
             </Text>
           )}
@@ -1756,13 +1756,14 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Box style={{ position: 'relative', flex: 1 }}>
+            <Box style={{ position: 'relative', width: '114px' }}>
               <Button
                 variant="subtle"
                 leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={handleAddressButtonClick}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+                style={{ padding: '8px', borderRadius: '12px', width: '150px' }}
+                styles={{ inner: { width: '124px' } }}
               >
                 <Stack gap={0} align="flex-start">
                   <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
@@ -1882,7 +1883,7 @@ const Restaurants = () => {
               )}
             </Box>
 
-            <Group gap="xs">
+            <Group gap="xs" style={{ width: '162px' }}>
               <ActionIcon
                 onClick={() => navigate('/notifications')}
                 variant="subtle"
@@ -1912,7 +1913,7 @@ const Restaurants = () => {
                   radius="xl"
                   style={{ position: 'relative' }}
                 >
-                  <IconShoppingCart size={24} style={{ color: '#171717' }} />
+                  <IconShoppingCart size={24} style={{ color: '#171717', width: '100px', height: '34px' }} />
                   <Box
                     style={{
                       position: 'absolute',
