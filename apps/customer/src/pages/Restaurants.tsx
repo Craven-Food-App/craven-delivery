@@ -111,7 +111,7 @@ const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtit
       p="xl"
       radius="md"
       style={{
-        height: '250px',
+        height: '440px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -129,7 +129,7 @@ const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtit
           backgroundImage: 'linear-gradient(105deg, var(--mantine-color-black) 20%, #312f2f 50%, var(--mantine-color-gray-4) 100%)'
         }}
       />
-      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '250px' }}>
+      <Box style={{ position: 'absolute', inset: 0, padding: 'var(--mantine-spacing-xl)', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <Box>
           <Title order={3} c="white" fw={600} style={{ lineHeight: 1.2, fontSize: '32px', marginTop: 'var(--mantine-spacing-xs)', whiteSpace: 'nowrap' }}>
             {title}
@@ -177,7 +177,7 @@ const RestaurantCard = ({
         <MantineImage
           src={restaurant.image || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=Craven`}
           alt={restaurant.name}
-          style={{ width: '100%', height: '175px', objectFit: 'cover' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => { 
             e.currentTarget.src = "https://placehold.co/600x400/f5f5f5/333?text=Craven"; 
           }}
@@ -215,7 +215,7 @@ const RestaurantCard = ({
         {/* Promo text on left */}
         <Box style={{ flex: 1, minWidth: 0 }}>
           {restaurant.restaurantPromo && (
-            <Text size="sm" c="gray.8" lineClamp={1} style={{ verticalAlign: 'top' }}>
+            <Text size="sm" c="gray.8" lineClamp={1}>
               {restaurant.restaurantPromo}
             </Text>
           )}
@@ -1111,9 +1111,9 @@ const Restaurants = () => {
   // Navigation categories
   const navCategories = [
     { id: 'all', label: 'All', icon: IconHome, active: activeCategory === 'all' },
-    { id: 'restaurants', label: 'Restaurants', icon: IconToolsKitchen2, active: activeCategory === 'restaurants' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
+    { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
@@ -1127,10 +1127,10 @@ const Restaurants = () => {
     setActiveCategory(categoryId);
     
     // Handle different category types
-    if (categoryId === 'all' || categoryId === 'browse' || categoryId === 'restaurants') {
+    if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
       setApparelCategoryFilter('all'); // Reset apparel filter when switching away
-    } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       // Don't change cuisineFilter for menu clicks - just scroll to the section
       // The sections are always visible in the mobile layout
       setApparelCategoryFilter('all');
@@ -1145,7 +1145,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'restaurants', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setTimeout(() => {
         if (categoryId === 'apparel' && apparelSectionRef.current) {
           apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1756,28 +1756,17 @@ const Restaurants = () => {
         }}>
           {/* Address and Account */}
           <Group justify="space-between" mb="md">
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <Box style={{ position: 'relative', flex: 1 }}>
               <Button
                 variant="subtle"
-                leftSection={<IconMapPin size={16} style={{ color: '#b91c1c' }} />}
+                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={handleAddressButtonClick}
-                style={{ 
-                  padding: '8px 12px',
-                  backgroundColor: 'transparent',
-                  color: '#111827',
-                  fontWeight: 500
-                }}
-                styles={{
-                  inner: {
-                    justifyContent: 'flex-start',
-                    textAlign: 'left'
-                  }
-                }}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
               >
-                <Text size="sm" fw={500} lineClamp={1}>
-                  {location.split(',')[0]}...
-                </Text>
+                <Stack gap={0} align="flex-start">
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                </Stack>
               </Button>
               
               {/* Address Selector Dropdown - Mobile */}
@@ -1898,26 +1887,19 @@ const Restaurants = () => {
                 onClick={() => navigate('/notifications')}
                 variant="subtle"
                 size="lg"
+                radius="xl"
                 style={{ position: 'relative' }}
               >
-                <IconBell size={20} style={{ color: '#4b5563' }} />
+                <IconBell size={24} style={{ color: '#737373' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
-                  <Box style={{ 
-                    position: 'absolute', 
-                    top: 4, 
-                    right: 4, 
-                    width: '8px', 
-                    height: '8px', 
-                    backgroundColor: '#ff6b35', 
-                    borderRadius: '50%' 
-                  }} />
+                  <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
                 )}
               </ActionIcon>
-              
               <ActionIcon
                 onClick={() => navigate('/account')}
                 variant="subtle"
                 size="lg"
+                radius="xl"
               >
                 <IconUser size={20} style={{ color: '#4b5563' }} />
               </ActionIcon>
@@ -1947,30 +1929,46 @@ const Restaurants = () => {
             </Group>
           </Group>
 
-          {/* Search Bar with Hamburger Menu */}
-          <TextInput
-            placeholder="Search Craven, Restaurants, or Food"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            leftSection={<IconSearch size={16} style={{ color: '#9ca3af' }} />}
-            rightSection={
-              <ActionIcon
-                onClick={() => setShowMenuIcons(!showMenuIcons)}
-                variant="subtle"
-                size="sm"
-              >
-                <IconMenu2 size={20} style={{ color: '#171717' }} />
-              </ActionIcon>
-            }
-            styles={{
-              input: {
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                fontSize: '14px'
-              }
-            }}
-            radius="md"
-          />
+          {/* Search Bar */}
+          <Box style={{ position: 'relative' }}>
+            <IconSearch size={20} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#a3a3a3', zIndex: 1 }} />
+            <TextInput
+              placeholder="Search Craven, Restaurants, or Food"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              styles={{ 
+                input: { 
+                  paddingLeft: '44px', 
+                  paddingRight: '48px', 
+                  paddingTop: '12px', 
+                  paddingBottom: '12px', 
+                  fontSize: '16px', 
+                  backgroundColor: 'white', 
+                  border: 'none', 
+                  borderRadius: '12px',
+                  fontWeight: 500
+                }
+              }}
+            />
+            {/* Menu Hamburger Icon - Bottom Right */}
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              onClick={() => setShowMenuIcons(!showMenuIcons)}
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                zIndex: 2,
+                backgroundColor: 'transparent',
+                color: '#a3a3a3',
+              }}
+            >
+              <IconMenu2 
+                size={16} 
+              />
+            </ActionIcon>
+          </Box>
         </Box>
 
         {/* Menu Icons Dropdown - Fixed (appears below header when open) */}
@@ -2803,7 +2801,6 @@ const Restaurants = () => {
                 {location}
               </Text>
             </Button>
-            </Box>
             
             <SegmentedControl
               value={deliveryMode}
@@ -2855,11 +2852,28 @@ const Restaurants = () => {
       <div className="hidden lg:block sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Left: Logo and Location */}
-            <div className="flex items-center space-x-2">
+            {/* Left: Logo */}
+            <div className="flex items-center space-x-4">
               <img src={cravenLogo} alt="CRAVE'N" className="h-10" />
+            </div>
+
+            {/* Center: Search */}
+            <div className="flex-1 max-w-2xl mx-8">
+              <div className="relative">
+                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <TextInput 
+                  placeholder="Search Crave'N" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* Right: Location, Delivery/Pickup, Notifications, Cart */}
+            <div className="flex items-center space-x-4">
               {/* Location Selector */}
-              <div className="relative" style={{ marginLeft: '-100px' }}>
+              <div className="relative">
                 <button 
                   onClick={() => setShowAddressSelector(!showAddressSelector)}
                   className="address-selector-button flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
@@ -2975,23 +2989,7 @@ const Restaurants = () => {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Center: Search */}
-            <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <TextInput 
-                  placeholder="Search Crave'N" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            {/* Right: Delivery/Pickup, Notifications, Cart */}
-            <div className="flex items-center space-x-4">
               {/* Delivery/Pickup Toggle */}
               <div className="flex bg-white rounded-lg p-1">
                 <button 
