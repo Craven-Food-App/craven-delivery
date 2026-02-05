@@ -242,7 +242,7 @@ const RestaurantAuth: React.FC = () => {
       <Box
         style={{
           minHeight: '100vh',
-          backgroundColor: 'rgba(255, 255, 255, 0.95)', // Semi-transparent overlay for readability
+          backgroundColor: 'rgba(255, 255, 255, 0.85)', // Semi-transparent overlay for readability
         }}
       >
         <Container size="xl" py="xl">
