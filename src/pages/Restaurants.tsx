@@ -110,7 +110,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
     p="xl"
     radius="md"
     style={{
-      height: '350px',
+      height: '300px',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
@@ -1425,7 +1425,7 @@ const Restaurants = () => {
               <Box py="xl" px="md">
                 <Group gap="md">
                   {[...Array(4)].map((_, i) => (
-                    <Card key={i} style={{ height: '440px', width: '100%' }}>
+                  <Card key={i} style={{ height: '300px', width: '100%' }}>
                       <Loader />
                     </Card>
                   ))}
