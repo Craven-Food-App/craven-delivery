@@ -1747,7 +1747,7 @@ const Restaurants = () => {
           top: 'env(safe-area-inset-top, 0px)',
           left: 0,
           right: 0,
-          width: '100%',
+          width: '145px',
           zIndex: 1000, 
           boxShadow: '0 1px 3px rgba(0,0,0,0.1)', 
           borderBottom: '1px solid #e5e7eb', 
@@ -1929,7 +1929,7 @@ const Restaurants = () => {
                 style={{ 
                   backgroundColor: '#ff5f1f',
                   color: 'white',
-                  width: '65px',
+                  width: '155px',
                   height: '40px',
                   display: 'flex',
                   alignItems: 'center',
@@ -2762,10 +2762,11 @@ const Restaurants = () => {
           {/* Location & Delivery Mode */}
           <Group gap="xs" style={{ alignItems: 'center' }}>
             <Box style={{ 
-              width: '150px', 
-              maxWidth: '150px', 
-              minWidth: '150px', 
-              flex: '0 0 150px'
+              width: '152px', 
+              maxWidth: '152px', 
+              minWidth: '152px', 
+              flex: '0 0 152px',
+              position: 'static'
             }}>
               <Button
                 onClick={() => setShowAddressSelector(!showAddressSelector)}
@@ -2774,9 +2775,9 @@ const Restaurants = () => {
                 rightSection={<IconChevronDown size={16} style={{ color: '#4b5563' }} />}
                 styles={{
                   root: {
-                    width: '150px !important',
-                    maxWidth: '150px !important',
-                    minWidth: '150px !important',
+                    width: '64px !important',
+                    maxWidth: '64px !important',
+                    minWidth: '64px !important',
                     backgroundColor: 'white',
                     color: '#111827',
                     fontWeight: 500,
