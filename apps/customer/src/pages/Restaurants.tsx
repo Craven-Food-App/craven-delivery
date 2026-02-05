@@ -1755,17 +1755,31 @@ const Restaurants = () => {
           flexShrink: 0
         }}>
           {/* Address and Account */}
-          <Group justify="space-between" mb="md">
+          <Group justify="flex-start" mb="md" gap="xs" align="center">
             <Box style={{ position: 'relative', flex: 1 }}>
               <Button
                 variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
+                leftSection={
+                  <MantineImage 
+                    src={cravenLogo} 
+                    alt="CRAVE'N" 
+                    style={{ height: '24px', width: '24px', flexShrink: 0 }} 
+                  />
+                }
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
                 onClick={handleAddressButtonClick}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
+                style={{ padding: '8px', borderRadius: '12px', width: '100%', textAlign: 'left' }}
               >
                 <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
+                  <Text 
+                    size="sm" 
+                    fw={700} 
+                    c="gray.9" 
+                    lineClamp={1} 
+                    style={{ maxWidth: '150px' }}
+                  >
+                    {location.split(',')[0]}...
+                  </Text>
                 </Stack>
               </Button>
               
