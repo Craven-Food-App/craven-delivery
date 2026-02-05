@@ -24,6 +24,7 @@ import {
   IconTrendingUp,
   IconLoader2,
 } from '@tabler/icons-react';
+import merchantSignupBg from '@/assets/merchant-signup-bg.png';
 
 const RestaurantAuth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -229,8 +230,22 @@ const RestaurantAuth: React.FC = () => {
   }
 
   return (
-    <Box style={{ minHeight: '100vh', background: 'linear-gradient(to bottom right, var(--mantine-color-orange-0), var(--mantine-color-red-0))' }}>
-      <Container size="xl" py="xl">
+    <Box 
+      style={{ 
+        minHeight: '100vh', 
+        backgroundImage: `url(${merchantSignupBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <Box
+        style={{
+          minHeight: '100vh',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)', // Semi-transparent overlay for readability
+        }}
+      >
+        <Container size="xl" py="xl">
         {/* Header */}
         <Stack align="center" gap="md" mb="xl">
           <Group gap="xs">
@@ -408,7 +423,8 @@ const RestaurantAuth: React.FC = () => {
             </Box>
           </Grid.Col>
         </Grid>
-      </Container>
+        </Container>
+      </Box>
     </Box>
   );
 };
