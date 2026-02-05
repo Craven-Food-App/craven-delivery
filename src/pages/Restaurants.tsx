@@ -1182,6 +1182,7 @@ const Restaurants = () => {
               </Group>
             </Box>
           </Box>
+        )}
 
         {showAddressSelector && (
           <Box
