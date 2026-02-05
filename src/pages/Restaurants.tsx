@@ -946,7 +946,7 @@ const Restaurants = () => {
                   <MantineImage
                     src={cravenCLogo}
                     alt="CRAVE'N"
-                    style={{ height: '24px', width: '24px', flexShrink: 0 }}
+                    style={{ height: '30px', width: '30px', flexShrink: 0 }}
                   />
                 }
                 rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
