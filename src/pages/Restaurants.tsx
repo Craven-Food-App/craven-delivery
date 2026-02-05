@@ -993,9 +993,9 @@ const Restaurants = () => {
                   alignItems: 'center',
                   justifyContent: 'flex-start',
                   gap: '6px',
-                  padding: '8px 16px',
+                  padding: '8px 12px',
                   borderRadius: '8px',
-                  width: '100px',
+                  width: '70px',
                   height: '40px'
                 }}
               >
