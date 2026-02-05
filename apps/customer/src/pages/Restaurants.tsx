@@ -1113,7 +1113,6 @@ const Restaurants = () => {
     { id: 'all', label: 'All', icon: IconHome, active: activeCategory === 'all' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
     { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
-    { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
@@ -1130,7 +1129,7 @@ const Restaurants = () => {
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
       setApparelCategoryFilter('all'); // Reset apparel filter when switching away
-    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       // Don't change cuisineFilter for menu clicks - just scroll to the section
       // The sections are always visible in the mobile layout
       setApparelCategoryFilter('all');
@@ -1145,7 +1144,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setTimeout(() => {
         if (categoryId === 'apparel' && apparelSectionRef.current) {
           apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
