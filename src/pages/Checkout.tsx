@@ -927,6 +927,25 @@ const Checkout: React.FC = () => {
         newOrder = existingOrder;
         console.log('Using existing order from CartSidebar:', newOrder.id);
       } else {
+        // Check if this is a stacked order
+        const stackParentId = localStorage.getItem('stack_parent_order_id');
+        const isStackMode = localStorage.getItem('stack_mode') === 'true';
+
+        // Determine stack order number if stacking
+        let stackOrderNumber = 1;
+        if (stackParentId && isStackMode) {
+          const { data: existingStacks } = await supabase
+            .from('orders')
+            .select('stack_order_number')
+            .or(`id.eq.${stackParentId},stack_parent_order_id.eq.${stackParentId}`)
+            .order('stack_order_number', { ascending: false })
+            .limit(1);
+          
+          if (existingStacks && existingStacks.length > 0) {
+            stackOrderNumber = (existingStacks[0].stack_order_number || 1) + 1;
+          }
+        }
+
         // Create new order
         const { data: createdOrder, error: orderError } = await supabase
           .from('orders')
@@ -957,7 +976,10 @@ const Checkout: React.FC = () => {
               lat: restaurant.latitude,
               lng: restaurant.longitude
             },
-            estimated_delivery_time: new Date(Date.now() + 45 * 60000).toISOString()
+            estimated_delivery_time: new Date(Date.now() + 45 * 60000).toISOString(),
+            is_stacked: isStackMode,
+            stack_parent_order_id: stackParentId || null,
+            stack_order_number: stackOrderNumber
           })
           .select()
           .single();
@@ -989,6 +1011,29 @@ const Checkout: React.FC = () => {
         if (orderItemsError) {
           console.error('Order items error:', orderItemsError);
           throw new Error(`Failed to create order items: ${orderItemsError.message}`);
+        }
+
+        // If this is a stacked order, alert feeders
+        const stackParentId = localStorage.getItem('stack_parent_order_id');
+        const isStackMode = localStorage.getItem('stack_mode') === 'true';
+        
+        if (isStackMode && stackParentId && newOrder?.id) {
+          console.log('Alerting feeders about stacked order...');
+          const { error: alertError } = await supabase.functions.invoke('alert-feeder-stack-order', {
+            body: {
+              parentOrderId: stackParentId,
+              stackedOrderId: newOrder.id
+            }
+          });
+
+          if (alertError) {
+            console.error('Feeder alerting error:', alertError);
+            // Don't throw - alerting failure shouldn't stop the order
+          }
+
+          // Clear stack mode flags
+          localStorage.removeItem('stack_parent_order_id');
+          localStorage.removeItem('stack_mode');
         }
       }
       

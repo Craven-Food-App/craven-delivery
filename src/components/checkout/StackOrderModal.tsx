@@ -113,10 +113,13 @@ export const StackOrderModal: React.FC<StackOrderModalProps> = ({
       await supabase
         .from('orders')
         .update({ 
-          is_stacked: true,
-          stack_parent_order_id: orderId
+          is_stacked: true
         })
         .eq('id', orderId);
+
+      // Store stack info in localStorage for the next order
+      localStorage.setItem('stack_parent_order_id', orderId);
+      localStorage.setItem('stack_mode', 'true');
 
       // Navigate to restaurant to add items for stacking
       navigate(`/restaurant/${restaurantId}?stack=${orderId}`);
