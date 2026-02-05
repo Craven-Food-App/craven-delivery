@@ -954,26 +954,7 @@ const Restaurants = () => {
               style={{ height: '30px', width: '30px', flexShrink: 0 }} 
             />
             
-            <Box style={{ position: 'relative', width: '145px', flexShrink: 0 }}>
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '145px' }}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '100px' }}>{location.split(',')[0]}...</Text>
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-            />
-            
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <Box style={{ position: 'relative', flex: 1 }}>
               <Button
                 variant="subtle"
                 leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
@@ -982,66 +963,7 @@ const Restaurants = () => {
                 style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
               >
                 <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-
-            <Group gap="xs">
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-
-            <Group gap="xs">
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-
-            <Group gap="xs">
-              <ActionIcon
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
+                  <Text size="sm" fw={700} c="gray.9" lineClamp={1} style={{ maxWidth: '150px' }}>{location.split(',')[0]}...</Text>
                 </Stack>
               </Button>
             </Box>
@@ -1080,149 +1002,9 @@ const Restaurants = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '6px',
-                padding: '8px 12px',
+                  padding: '8px 16px',
                   borderRadius: '8px',
-                width: '75px',
-                  height: '40px'
-                }}
-              >
-                {cartCount > 0 && (
-                  <Text
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      color: 'white',
-                      lineHeight: 1
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </Text>
-                )}
-                <IconShoppingCart size={22} style={{ color: 'white' }} />
-              </ActionIcon>
-            </Group>
-          </Group>
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-
-            <Group gap="xs">
-              <ActionIcon
-                onClick={() => navigate('/notifications')}
-                variant="subtle"
-                size="lg"
-                radius="xl"
-                style={{ position: 'relative' }}
-              >
-                <IconBell size={24} style={{ color: '#737373' }} />
-                {notificationsList.filter(n => !n.read).length > 0 && (
-                  <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
-                )}
-              </ActionIcon>
-              <ActionIcon
-                onClick={() => navigate('/account')}
-                variant="subtle"
-                size="lg"
-                radius="xl"
-              >
-                <IconUser size={24} style={{ color: '#171717' }} />
-              </ActionIcon>
-              <ActionIcon
-                onClick={() => navigate('/checkout')}
-                variant="filled"
-                size="lg"
-                radius="xl"
-                style={{ 
-                  backgroundColor: '#ff5f1f',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  minWidth: '75px',
-                  height: '40px'
-                }}
-              >
-                {cartCount > 0 && (
-                  <Text
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      color: 'white',
-                      lineHeight: 1
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </Text>
-                )}
-                <IconShoppingCart size={22} style={{ color: 'white' }} />
-              </ActionIcon>
-            </Group>
-          </Group>
-
-          {/* Search Bar */}
-            <Box style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-              <Button
-                variant="subtle"
-                leftSection={<IconMapPin size={20} style={{ color: '#b91c1c' }} />}
-                rightSection={<IconChevronRight size={16} style={{ color: '#a3a3a3' }} />}
-                onClick={() => setShowAddressSelector(!showAddressSelector)}
-                style={{ padding: '8px', borderRadius: '12px', width: '100%' }}
-              >
-                <Stack gap={0} align="flex-start">
-                  <Text size="sm" fw={700} c="gray.9" lineClamp={1}>{location.split(',')[0]}</Text>
-                </Stack>
-              </Button>
-            </Box>
-
-            <Group gap="xs">
-              <ActionIcon
-                onClick={() => navigate('/notifications')}
-                variant="subtle"
-                size="lg"
-                radius="xl"
-                style={{ position: 'relative' }}
-              >
-                <IconBell size={24} style={{ color: '#737373' }} />
-                {notificationsList.filter(n => !n.read).length > 0 && (
-                  <Box style={{ position: 'absolute', top: 4, right: 4, width: '10px', height: '10px', backgroundColor: '#b91c1c', borderRadius: '50%', border: '2px solid white' }} />
-                )}
-              </ActionIcon>
-              <ActionIcon
-                onClick={() => navigate('/account')}
-                variant="subtle"
-                size="lg"
-                radius="xl"
-              >
-                <IconUser size={24} style={{ color: '#171717' }} />
-              </ActionIcon>
-              <ActionIcon
-                onClick={() => navigate('/checkout')}
-                variant="filled"
-                size="lg"
-                radius="xl"
-                style={{ 
-                  backgroundColor: '#ff5f1f',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  minWidth: '75px',
+                  minWidth: cartCount > 0 ? 'auto' : '64px',
                   height: '40px'
                 }}
               >
