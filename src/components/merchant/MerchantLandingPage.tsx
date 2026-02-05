@@ -61,35 +61,16 @@ export default function MerchantLandingPage() {
       setIsCalculating(true);
       isAutoDetectingRef.current = true;
       
-      try {
-        // Method 1: Try IP-based location detection first (works without permission)
-        const ipLocation = await detectLocationFromIP();
-        if (ipLocation) {
-          setDetectedLocation(ipLocation);
-          const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
-          if (population) {
-            const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
-            if (estimate) {
-              setEarningsEstimate(estimate);
-              setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
-            }
-          }
-          setIsCalculating(false);
-          isAutoDetectingRef.current = false;
-          return;
-        }
-      } catch (error) {
-        console.warn('IP-based location detection failed:', error);
-      }
-
-      // Method 2: Try browser geolocation API (requires permission)
+      // Method 1: Try browser geolocation API first (most accurate, requires permission)
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
             try {
               const { latitude, longitude } = position.coords;
+              console.log('GPS coordinates:', latitude, longitude);
               const location = await reverseGeocode(latitude, longitude);
               if (location) {
+                console.log('Reverse geocoded location:', location);
                 setDetectedLocation(location);
                 const population = await fetchCityPopulation(location.city, location.state);
                 if (population) {
@@ -99,27 +80,93 @@ export default function MerchantLandingPage() {
                     setFormData(prev => ({ ...prev, city: location.city, state: location.state }));
                   }
                 }
+                setIsCalculating(false);
+                isAutoDetectingRef.current = false;
+                return;
               }
             } catch (error) {
               console.error('Reverse geocoding failed:', error);
+            }
+            
+            // If geolocation succeeded but reverse geocoding failed, try IP fallback
+            try {
+              const ipLocation = await detectLocationFromIP();
+              if (ipLocation) {
+                console.log('IP-based location (fallback):', ipLocation);
+                setDetectedLocation(ipLocation);
+                const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
+                if (population) {
+                  const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
+                  if (estimate) {
+                    setEarningsEstimate(estimate);
+                    setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+                  }
+                }
+              } else {
+                setDefaultEarnings();
+              }
+            } catch (ipError) {
+              console.warn('IP-based location detection failed:', ipError);
               setDefaultEarnings();
             } finally {
               setIsCalculating(false);
               isAutoDetectingRef.current = false;
             }
           },
-          (error) => {
+          async (error) => {
             console.warn('Geolocation permission denied or failed:', error);
-            setDefaultEarnings();
-            setIsCalculating(false);
-            isAutoDetectingRef.current = false;
+            // Method 2: Fallback to IP-based location detection if geolocation fails
+            try {
+              const ipLocation = await detectLocationFromIP();
+              if (ipLocation) {
+                console.log('IP-based location (geolocation failed):', ipLocation);
+                setDetectedLocation(ipLocation);
+                const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
+                if (population) {
+                  const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
+                  if (estimate) {
+                    setEarningsEstimate(estimate);
+                    setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+                  }
+                }
+              } else {
+                setDefaultEarnings();
+              }
+            } catch (ipError) {
+              console.warn('IP-based location detection failed:', ipError);
+              setDefaultEarnings();
+            } finally {
+              setIsCalculating(false);
+              isAutoDetectingRef.current = false;
+            }
           },
-          { timeout: 5000, enableHighAccuracy: false }
+          { timeout: 10000, enableHighAccuracy: true, maximumAge: 300000 } // 10s timeout, high accuracy, 5min cache
         );
       } else {
-        setDefaultEarnings();
-        setIsCalculating(false);
-        isAutoDetectingRef.current = false;
+        // No geolocation support, use IP-based detection
+        try {
+          const ipLocation = await detectLocationFromIP();
+          if (ipLocation) {
+            console.log('IP-based location (no geolocation support):', ipLocation);
+            setDetectedLocation(ipLocation);
+            const population = await fetchCityPopulation(ipLocation.city, ipLocation.state);
+            if (population) {
+              const estimate = calculateEarnings(population, ipLocation.city, ipLocation.state);
+              if (estimate) {
+                setEarningsEstimate(estimate);
+                setFormData(prev => ({ ...prev, city: ipLocation.city, state: ipLocation.state }));
+              }
+            }
+          } else {
+            setDefaultEarnings();
+          }
+        } catch (ipError) {
+          console.warn('IP-based location detection failed:', ipError);
+          setDefaultEarnings();
+        } finally {
+          setIsCalculating(false);
+          isAutoDetectingRef.current = false;
+        }
       }
     };
 
@@ -162,8 +209,9 @@ export default function MerchantLandingPage() {
   // Reverse geocode coordinates to city/state using free Nominatim API
   const reverseGeocode = async (lat: number, lng: number): Promise<{ city: string; state: string } | null> => {
     try {
+      // Use higher zoom level (18) for more precise location
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
         {
           headers: {
             'User-Agent': 'CravenDelivery/1.0',
@@ -177,13 +225,37 @@ export default function MerchantLandingPage() {
       const address = data.address;
       
       if (address) {
-        const city = address.city || address.town || address.village || address.municipality || '';
-        const state = address.state_code || address.state || '';
+        // Try multiple city fields in order of preference
+        // For areas like Sylvania, it might be in "suburb" or "city" field
+        const city = address.city || 
+                     address.town || 
+                     address.village || 
+                     address.municipality || 
+                     address.suburb || // Sylvania might be here
+                     address.county || // Fallback to county if no city
+                     '';
+        
+        // State should be in state_code (2-letter) or state (full name)
+        let state = address.state_code || address.state || '';
+        
+        // Convert full state name to abbreviation if needed
+        if (state && state.length > 2) {
+          const stateNameMap: Record<string, string> = {
+            'Ohio': 'OH',
+            'Michigan': 'MI',
+            'Indiana': 'IN',
+            'Pennsylvania': 'PA',
+            'Kentucky': 'KY',
+            'West Virginia': 'WV',
+          };
+          state = stateNameMap[state] || state;
+        }
         
         if (city && state) {
+          console.log('Reverse geocoded:', { city, state, fullAddress: address });
           return {
-            city,
-            state: state.length === 2 ? state.toUpperCase() : state,
+            city: city.trim(),
+            state: state.length === 2 ? state.toUpperCase() : state.toUpperCase(),
           };
         }
       }
