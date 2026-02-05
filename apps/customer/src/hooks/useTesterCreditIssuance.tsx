@@ -41,20 +41,21 @@ export const useTesterCreditIssuance = () => {
         }
 
         // Issue credits if user is enrolled
-        const { data, error } = await supabase.rpc('issue_tester_credits', {
-          p_user_id: user.id,
-          p_enrollment_email: user.email,
-        });
+        // Use get_available_tester_credits first to check enrollment
+        const { data: availableCredits, error: checkError } = await supabase.rpc(
+          'get_available_tester_credits' as any,
+          { p_user_id: user.id }
+        );
 
-        if (error) {
-          // Silently handle errors (user might not be enrolled, which is fine)
-          if (!error.message.includes('enrollment_not_found')) {
-            console.warn('Tester credit issuance error:', error);
-          }
-        } else if (data?.success) {
-          // Credits were just issued - show modal (Phase B reveal)
-          const totalAmount = data.issued_credits_total_cents || 0;
-          setRewardAmount(totalAmount);
+        if (checkError) {
+          // Function may not exist yet — silently skip
+          if (checkError.code === 'PGRST202') return;
+          console.warn('Tester credit check error:', checkError);
+          return;
+        }
+
+        if (availableCredits && typeof availableCredits === 'number' && availableCredits > 0) {
+          setRewardAmount(availableCredits);
           setShowRewardModal(true);
           sessionStorage.setItem(`tester_reward_modal_shown_${user.id}`, 'true');
         }

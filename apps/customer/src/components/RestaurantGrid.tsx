@@ -1,6 +1,37 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import RestaurantCard from "./RestaurantCard";
+
+// Module-level geolocation cache — request location once, share across all instances
+let _geoCache: { lat: number; lng: number } | null = null;
+let _geoRequested = false;
+let _geoCallbacks: Array<(loc: { lat: number; lng: number } | null) => void> = [];
+
+function getSharedUserLocation(cb: (loc: { lat: number; lng: number } | null) => void) {
+  if (_geoCache) { cb(_geoCache); return; }
+  _geoCallbacks.push(cb);
+  if (_geoRequested) return; // already in-flight
+  _geoRequested = true;
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        _geoCache = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        _geoCallbacks.forEach((fn) => fn(_geoCache));
+        _geoCallbacks = [];
+      },
+      () => {
+        // Denied / unavailable — log once, resolve all waiters with null
+        console.log('Location access denied or unavailable');
+        _geoCallbacks.forEach((fn) => fn(null));
+        _geoCallbacks = [];
+      }
+    );
+  } else {
+    _geoCallbacks.forEach((fn) => fn(null));
+    _geoCallbacks = [];
+  }
+}
+
 interface Restaurant {
   id: string;
   name: string;
@@ -42,21 +73,11 @@ const RestaurantGrid = ({
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
 
-  // Get user's current location for delivery radius filtering
+  // Get user's current location for delivery radius filtering (shared across instances)
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Location access denied or unavailable:', error);
-        }
-      );
-    }
+    getSharedUserLocation((loc) => {
+      if (loc) setUserLocation(loc);
+    });
   }, []);
   // Helper function to calculate distance between two points
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
