@@ -992,36 +992,15 @@ const Restaurants = () => {
               >
                 <IconUser size={24} style={{ color: '#171717' }} />
               </ActionIcon>
-              {/* Cart Icon with Quantity Badge */}
+              {/* Cart Icon only (no pill background) */}
               <ActionIcon
                 onClick={() => navigate('/checkout')}
                 variant="subtle"
                 size="lg"
                 radius="xl"
-                style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  width: '70px',
-                  height: '40px',
-                  flexShrink: 0
-                }}
+                style={{ flexShrink: 0 }}
               >
-                {cartCount > 0 && (
-                  <Text
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      lineHeight: 1
-                    }}
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </Text>
-                )}
-                <IconShoppingCart size={22} style={{ color: 'white' }} />
+                <IconShoppingCart size={22} style={{ color: '#ff5f1f' }} />
               </ActionIcon>
             </Group>
           </Group>
