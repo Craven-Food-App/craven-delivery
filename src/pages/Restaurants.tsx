@@ -116,7 +116,7 @@ const PromoCard = ({ title, subtitle, image }: { title: string; subtitle: string
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      backgroundPosition: 'center top',
       backgroundImage: `url(${image})`,
       position: 'relative'
     }}
