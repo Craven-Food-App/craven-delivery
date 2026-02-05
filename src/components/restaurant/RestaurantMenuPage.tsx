@@ -1170,7 +1170,6 @@ const RestaurantMenuPage = () => {
         };
 
         return (
-            <>
             <Modal
                 opened={showItemModal}
                 onClose={closeItemModal}
@@ -1369,53 +1368,6 @@ const RestaurantMenuPage = () => {
                     </Box>
                 </Box>
             </Modal>
-
-            <Modal
-              opened={isReviewModalOpen}
-              onClose={() => setIsReviewModalOpen(false)}
-              title={restaurant ? `Rate ${restaurant.name}` : 'Add Review'}
-              centered
-            >
-              <Stack gap="md">
-                <Stack gap={4}>
-                  <Text size="sm" fw={600}>
-                    Overall rating
-                  </Text>
-                  <Rating
-                    value={reviewRating}
-                    onChange={setReviewRating}
-                    size="lg"
-                  />
-                </Stack>
-
-                <Textarea
-                  label="Share your experience"
-                  placeholder="What did you like? How was the food, delivery, and service?"
-                  minRows={4}
-                  value={reviewText}
-                  onChange={(event) => setReviewText(event.currentTarget.value)}
-                />
-
-                <Group justify="flex-end" mt="md">
-                  <Button
-                    variant="subtle"
-                    color="gray"
-                    onClick={() => setIsReviewModalOpen(false)}
-                    disabled={submittingReview}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="orange"
-                    onClick={handleSubmitReview}
-                    loading={submittingReview}
-                  >
-                    Submit Review
-                  </Button>
-                </Group>
-              </Stack>
-            </Modal>
-            </>
         );
     };
 
@@ -3399,6 +3351,53 @@ const RestaurantMenuPage = () => {
             
             {/* Triple Dipper Modal */}
             <TripleDipperModal />
+
+            {/* Review Modal */}
+            <Modal
+              opened={isReviewModalOpen}
+              onClose={() => setIsReviewModalOpen(false)}
+              title={restaurant ? `Rate ${restaurant.name}` : 'Add Review'}
+              centered
+            >
+              <Stack gap="md">
+                <Stack gap={4}>
+                  <Text size="sm" fw={600}>
+                    Overall rating
+                  </Text>
+                  <Rating
+                    value={reviewRating}
+                    onChange={setReviewRating}
+                    size="lg"
+                  />
+                </Stack>
+
+                <Textarea
+                  label="Share your experience"
+                  placeholder="What did you like? How was the food, delivery, and service?"
+                  minRows={4}
+                  value={reviewText}
+                  onChange={(event) => setReviewText(event.currentTarget.value)}
+                />
+
+                <Group justify="flex-end" mt="md">
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => setIsReviewModalOpen(false)}
+                    disabled={submittingReview}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    color="orange"
+                    onClick={handleSubmitReview}
+                    loading={submittingReview}
+                  >
+                    Submit Review
+                  </Button>
+                </Group>
+              </Stack>
+            </Modal>
 
             {/* Mapbox CSS */}
             <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
