@@ -217,7 +217,7 @@ const RestaurantGrid = ({
 
   // Determine padding and height based on props
   const sectionPadding = (excludeCuisine && sectionTitle === "Restaurants") ? "py-1" : "py-6";
-  const sectionHeight = (customRestaurants && horizontal) ? "345px" : undefined;
+  const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
 
   return <section className={sectionPadding} style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
       {horizontal ? (

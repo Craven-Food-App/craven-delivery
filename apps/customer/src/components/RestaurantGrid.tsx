@@ -256,7 +256,9 @@ const RestaurantGrid = ({
     return null;
   }
 
-  return <section className="py-6" style={{ backgroundColor: 'rgba(255, 255, 255, 1)' }}>
+  const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
+
+  return <section className="py-6" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
       {horizontal ? (
         <>
           {sectionTitle && (
