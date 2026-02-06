@@ -90,6 +90,7 @@ import {
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { Capacitor } from '@capacitor/core';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravenCLogo from "@/assets/craven-c-new.png";
 import heroPromoImage from "@/assets/20251116_0529_Crave'n Delivery Promo_remix_01ka63adc2e2et6qwwt2p909xn.png";
@@ -112,7 +113,7 @@ const PromoCard = ({ title, subtitle, image, bannerId }: { title: string; subtit
       p="xl"
       radius="md"
       style={{
-        height: '440px',
+        height: '340px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -2752,7 +2753,7 @@ const Restaurants = () => {
               <Box py="xl" px="md">
                 <Group gap="md">
                   {[...Array(4)].map((_, i) => (
-                    <Card key={i} style={{ height: '440px', width: '100%' }}>
+                    <Card key={i} style={{ height: '340px', width: '100%' }}>
                       <Loader />
                     </Card>
                   ))}
@@ -2779,15 +2780,17 @@ const Restaurants = () => {
               </Box>
             ) : null}
 
-            {/* Premium Selections Header */}
-            <Box px="md" py="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Premium Selections</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
-                  <IconChevronRight size={18} />
-                </ActionIcon>
-              </Group>
-            </Box>
+            {/* Premium Selections Header - Hidden in native mobile app, shown in mobile web */}
+            {!Capacitor.isNativePlatform() && (
+              <Box px="md" py="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Premium Selections</Title>
+                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                    <IconChevronRight size={18} />
+                  </ActionIcon>
+                </Group>
+              </Box>
+            )}
 
             {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
             <Box ref={restaurantsSectionRef} id="restaurants-section" data-section="restaurants">
