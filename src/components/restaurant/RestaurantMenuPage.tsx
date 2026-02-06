@@ -1561,6 +1561,7 @@ const RestaurantMenuPage = () => {
                                 );
                             })()}
                         </Box>
+                        </Box>
                     </ScrollArea>
 
                     {/* Add to Order Button - Fixed at Bottom */}
