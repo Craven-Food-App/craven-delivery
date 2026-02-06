@@ -1169,19 +1169,30 @@ const RestaurantMenuPage = () => {
             );
         };
 
+        // Sort modifier entries: required first, then by type priority
+        const typeOrder = ['size', 'preparation', 'side', 'addon', 'beverage', 'dessert', 'app', 'removal', 'substitution'];
+        const sortedModifierEntries = Object.entries(modifiersByType).sort(([typeA, modsA], [typeB, modsB]) => {
+            const aRequired = (modsA as any[])[0]?.is_required ? 0 : 1;
+            const bRequired = (modsB as any[])[0]?.is_required ? 0 : 1;
+            if (aRequired !== bRequired) return aRequired - bRequired;
+            return (typeOrder.indexOf(typeA) === -1 ? 99 : typeOrder.indexOf(typeA)) - (typeOrder.indexOf(typeB) === -1 ? 99 : typeOrder.indexOf(typeB));
+        });
+
         return (
             <Modal
                 opened={showItemModal}
                 onClose={closeItemModal}
                 fullScreen
+                withCloseButton={false}
                 styles={{
-                    body: { padding: 0 },
+                    body: { padding: 0, height: '100%' },
+                    header: { display: 'none' },
                     content: { height: '100%', maxHeight: '100%' },
                 }}
             >
                 <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white' }}>
-                    {/* Food Image with Back Button */}
-                    <Box style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden' }}>
+                    {/* Food Image with Back/Share Buttons - flush at top, no header */}
+                    <Box style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden', flexShrink: 0 }}>
                         <MantineImage
                             src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Item'}
                             alt={selectedItem.name}
@@ -1193,11 +1204,11 @@ const RestaurantMenuPage = () => {
                             variant="filled"
                             color="white"
                             onClick={closeItemModal}
-                                    style={{ 
+                            style={{ 
                                 position: 'absolute',
                                 top: '16px',
                                 left: '16px',
-                                                        backgroundColor: 'white',
+                                backgroundColor: 'white',
                                 color: 'var(--mantine-color-gray-9)',
                                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                             }}
@@ -1206,7 +1217,29 @@ const RestaurantMenuPage = () => {
                         >
                             <IconChevronLeft size={24} />
                         </ActionIcon>
-                                        </Box>
+                        {/* Share Button Overlay */}
+                        <ActionIcon
+                            variant="filled"
+                            color="white"
+                            onClick={() => {
+                                if (navigator.share) {
+                                    navigator.share({ title: selectedItem.name, text: selectedItem.description || '' });
+                                }
+                            }}
+                            style={{ 
+                                position: 'absolute',
+                                top: '16px',
+                                right: '16px',
+                                backgroundColor: 'white',
+                                color: 'var(--mantine-color-gray-9)',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                            }}
+                            size="lg"
+                            radius="xl"
+                        >
+                            <IconShare size={20} />
+                        </ActionIcon>
+                    </Box>
 
                     {/* Scrollable Content */}
                     <ScrollArea 
@@ -1214,29 +1247,130 @@ const RestaurantMenuPage = () => {
                         ref={modalScrollRef}
                     >
                         <Box p="md" pb="120px">
-                            {/* Dynamically render modifier sections based on modifier_type */}
-                            {Object.entries(modifiersByType).map(([type, modifiers]) => {
-                                // Get display name for modifier type
+                            {/* 1. Item Name, Description & Price */}
+                            <Stack gap="xs" mb="lg">
+                                <Title order={2} fw={700} style={{ fontSize: '24px', lineHeight: 1.2 }}>
+                                    {selectedItem.name}
+                                </Title>
+                                {selectedItem.description && (
+                                    <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>
+                                        {selectedItem.description}
+                                    </Text>
+                                )}
+                                <Group gap="xs" mt="xs">
+                                    {selectedItem.is_vegetarian && <Badge variant="light" color="green" size="sm">Vegetarian</Badge>}
+                                    {selectedItem.is_vegan && <Badge variant="light" color="green" size="sm">Vegan</Badge>}
+                                    {selectedItem.is_gluten_free && <Badge variant="light" color="blue" size="sm">Gluten Free</Badge>}
+                                </Group>
+                            </Stack>
+
+                            {/* 2. Your Recommended Options - popular combos */}
+                            {sortedModifierEntries.length > 0 && (
+                                <Box mb="lg">
+                                    <Title order={4} fw={700} mb="sm" style={{ fontSize: '18px' }}>
+                                        Your recommended options
+                                    </Title>
+                                    <ScrollArea scrollbars="x" type="never">
+                                        <Group gap="sm" style={{ flexWrap: 'nowrap' }} pb="xs">
+                                            {/* Recommended option #1 - auto-generate from required modifiers */}
+                                            {(() => {
+                                                const requiredEntries = sortedModifierEntries.filter(([, mods]) => (mods as any[])[0]?.is_required);
+                                                if (requiredEntries.length === 0) return null;
+                                                
+                                                const firstOptions = requiredEntries.map(([, mods]) => (mods as any[])[0]?.name).filter(Boolean);
+                                                const firstPrice = requiredEntries.reduce((sum, [, mods]) => sum + ((mods as any[])[0]?.price_cents || 0), 0);
+                                                const recTotalPrice = ((selectedItem.price_cents + firstPrice) / 100).toFixed(2);
+                                                
+                                                return (
+                                                    <Card
+                                                        withBorder
+                                                        p="md"
+                                                        radius="md"
+                                                        style={{ minWidth: '280px', maxWidth: '320px', flexShrink: 0, cursor: 'pointer' }}
+                                                        onClick={() => {
+                                                            const newModifiers: string[] = [];
+                                                            requiredEntries.forEach(([, mods]) => {
+                                                                if ((mods as any[])[0]?.id) newModifiers.push((mods as any[])[0].id);
+                                                            });
+                                                            setSelectedModifiers(newModifiers);
+                                                        }}
+                                                    >
+                                                        <Text size="sm" fw={700} mb="xs">#1 • Most Popular</Text>
+                                                        <Text size="xs" c="dimmed" lineClamp={2} mb="xs">
+                                                            {[selectedItem.name, ...firstOptions].join(' • ')}
+                                                        </Text>
+                                                        <Text size="sm" fw={600}>${recTotalPrice}</Text>
+                                                    </Card>
+                                                );
+                                            })()}
+                                            {/* Recommended option #2 - last option of each required group */}
+                                            {(() => {
+                                                const requiredEntries = sortedModifierEntries.filter(([, mods]) => (mods as any[])[0]?.is_required);
+                                                if (requiredEntries.length === 0) return null;
+                                                
+                                                const lastOptions = requiredEntries.map(([, mods]) => {
+                                                    const modArr = mods as any[];
+                                                    return modArr[modArr.length - 1]?.name;
+                                                }).filter(Boolean);
+                                                const lastPrice = requiredEntries.reduce((sum, [, mods]) => {
+                                                    const modArr = mods as any[];
+                                                    return sum + (modArr[modArr.length - 1]?.price_cents || 0);
+                                                }, 0);
+                                                const recTotalPrice = ((selectedItem.price_cents + lastPrice) / 100).toFixed(2);
+                                                
+                                                return (
+                                                    <Card
+                                                        withBorder
+                                                        p="md"
+                                                        radius="md"
+                                                        style={{ minWidth: '280px', maxWidth: '320px', flexShrink: 0, cursor: 'pointer' }}
+                                                        onClick={() => {
+                                                            const newModifiers: string[] = [];
+                                                            requiredEntries.forEach(([, mods]) => {
+                                                                const modArr = mods as any[];
+                                                                if (modArr[modArr.length - 1]?.id) newModifiers.push(modArr[modArr.length - 1].id);
+                                                            });
+                                                            setSelectedModifiers(newModifiers);
+                                                        }}
+                                                    >
+                                                        <Text size="sm" fw={700} mb="xs">#2 • Premium Pick</Text>
+                                                        <Text size="xs" c="dimmed" lineClamp={2} mb="xs">
+                                                            {[selectedItem.name, ...lastOptions].join(' • ')}
+                                                        </Text>
+                                                        <Text size="sm" fw={600}>${recTotalPrice}</Text>
+                                                    </Card>
+                                                );
+                                            })()}
+                                        </Group>
+                                    </ScrollArea>
+                                </Box>
+                            )}
+
+                            <Divider mb="lg" />
+
+                            {/* 3. Customization Sections - required first, then optional */}
+                            {sortedModifierEntries.map(([type, modifiers]) => {
                                 const typeDisplayNames: Record<string, string> = {
                                     'side': 'Sides',
                                     'addon': 'Add-ons',
                                     'beverage': 'Recommended Beverages',
                                     'dessert': 'Recommended Desserts',
                                     'app': 'Recommended Sides And Apps',
-                                    'size': 'Size',
+                                    'size': 'Choose Your Size:',
                                     'preparation': 'Preparation',
                                     'removal': 'Remove Items',
                                     'substitution': 'Substitutions',
                                 };
                                 
                                 const displayName = typeDisplayNames[type] || type.charAt(0).toUpperCase() + type.slice(1);
-                                const maxSelections = modifiers[0]?.max_selections;
-                                const isRequired = modifiers[0]?.is_required || false;
+                                const maxSelections = (modifiers as any[])[0]?.max_selections;
                                 
                                 return renderModifierSection(type, displayName, maxSelections);
                             })}
 
-                            {/* Special Instructions */}
+                            <Divider mb="lg" />
+
+                            {/* 4. Special Instructions */}
                             <Box mb="lg">
                                 <Button
                                     variant="light"
@@ -1244,7 +1378,7 @@ const RestaurantMenuPage = () => {
                                     fullWidth
                                     leftSection={<IconMessageCircle size={18} />}
                                     onClick={() => setShowSpecialInstructions(!showSpecialInstructions)}
-                                                                style={{ 
+                                    style={{ 
                                         backgroundColor: 'var(--mantine-color-gray-0)',
                                         border: '1px solid var(--mantine-color-gray-3)',
                                     }}
@@ -1254,36 +1388,30 @@ const RestaurantMenuPage = () => {
                                 {showSpecialInstructions && (
                                     <TextInput
                                         mt="sm"
-                                        placeholder="Add special instructions..."
+                                        placeholder="E.g. no onions, extra sauce on the side..."
                                         value={specialInstructions}
                                         onChange={(e) => setSpecialInstructions(e.target.value)}
-                                        multiline
-                                        rows={3}
                                     />
                                 )}
                             </Box>
 
-                            {/* Quantity Selector */}
+                            <Divider mb="lg" />
+
+                            {/* 5. Quantity Selector */}
                             <Group justify="center" mb="lg">
-                        <ActionIcon
+                                <ActionIcon
                                     variant="light"
-                            color="gray"
-                            radius="xl"
+                                    color="gray"
+                                    radius="xl"
                                     type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                        // Find the scroll viewport element
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
                                         const scrollPosition = scrollContainer?.scrollTop || 0;
-                                        
                                         setModalQuantity((prev) => Math.max(1, prev - 1));
-                                        
-                                        // Restore scroll position after render
                                         requestAnimationFrame(() => {
-                                            if (scrollContainer) {
-                                                scrollContainer.scrollTop = scrollPosition;
-                                            }
+                                            if (scrollContainer) scrollContainer.scrollTop = scrollPosition;
                                         });
                                     }}
                                     size="lg"
@@ -1293,29 +1421,23 @@ const RestaurantMenuPage = () => {
                                     }}
                                 >
                                     <IconMinus size={18} />
-                        </ActionIcon>
+                                </ActionIcon>
                                 <Text size="xl" fw={700} style={{ minWidth: '40px', textAlign: 'center' }}>
                                     {modalQuantity}
                                 </Text>
-                        <ActionIcon
+                                <ActionIcon
                                     variant="light"
-                            color="gray"
-                            radius="xl"
+                                    color="gray"
+                                    radius="xl"
                                     type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                        // Find the scroll viewport element
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
                                         const scrollPosition = scrollContainer?.scrollTop || 0;
-                                        
                                         setModalQuantity((prev) => prev + 1);
-                                        
-                                        // Restore scroll position after render
                                         requestAnimationFrame(() => {
-                                            if (scrollContainer) {
-                                                scrollContainer.scrollTop = scrollPosition;
-                                            }
+                                            if (scrollContainer) scrollContainer.scrollTop = scrollPosition;
                                         });
                                     }}
                                     size="lg"
@@ -1325,8 +1447,39 @@ const RestaurantMenuPage = () => {
                                     }}
                                 >
                                     <IconPlus size={18} />
-                        </ActionIcon>
-                    </Group>
+                                </ActionIcon>
+                            </Group>
+
+                            <Divider mb="lg" />
+
+                            {/* 6. Stack Section - order stacking */}
+                            <Box mb="lg">
+                                <Group gap="sm" mb="xs">
+                                    <IconShoppingCart size={20} style={{ color: 'var(--mantine-color-orange-6)' }} />
+                                    <Text size="md" fw={600}>Stack your order</Text>
+                                </Group>
+                                <Text size="sm" c="dimmed" mb="sm">
+                                    Add more items from this restaurant to save on delivery
+                                </Text>
+                                <Button
+                                    variant="light"
+                                    color="orange"
+                                    fullWidth
+                                    radius="md"
+                                    onClick={() => {
+                                        addToCartFromModal();
+                                    }}
+                                    style={{
+                                        backgroundColor: 'var(--mantine-color-orange-0)',
+                                        border: '1px solid var(--mantine-color-orange-3)',
+                                    }}
+                                >
+                                    <Group gap="xs">
+                                        <IconPlus size={16} />
+                                        <Text size="sm" fw={500}>Add & keep browsing</Text>
+                                    </Group>
+                                </Button>
+                            </Box>
                         </Box>
                     </ScrollArea>
 
