@@ -1,5 +1,4 @@
-import { Star, Clock, Truck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface RestaurantCardProps {
@@ -10,6 +9,7 @@ interface RestaurantCardProps {
   deliveryTime: string;
   deliveryFee: string;
   cuisine: string;
+  distance?: string;
   isPromoted?: boolean;
 }
 
@@ -21,6 +21,7 @@ const RestaurantCard = ({
   deliveryTime, 
   deliveryFee, 
   cuisine,
+  distance,
   isPromoted = false 
 }: RestaurantCardProps) => {
   const navigate = useNavigate();
@@ -31,54 +32,40 @@ const RestaurantCard = ({
 
   return (
     <div className="group cursor-pointer" onClick={handleClick}>
-      <div className="bg-card rounded-lg shadow-card hover:shadow-hover transition-all duration-300 transform hover:scale-105 overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
-        {/* Image */}
-        <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-lg">
+      <div className="bg-white rounded-xl overflow-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+        {/* Image — clean, no overlay badges */}
+        <div className="relative h-44 sm:h-52 overflow-hidden rounded-xl">
           <img 
             src={image} 
             alt={name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          
-          {/* Overlay tags */}
-          <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
-            {/* Promoted Badge */}
-            {isPromoted && (
-              <div className="bg-[#ff5f1f] text-white px-2 py-1 rounded text-xs font-semibold">
-                Promoted
-              </div>
-            )}
-            
-            {/* Delivery Fee Badge */}
-            {deliveryFee === "Free" && (
-              <div className="bg-[#10b981] text-white px-2 py-1 rounded text-xs font-semibold">
-                Free Delivery
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Content */}
-        <div className="p-3 sm:p-4">
-          {/* Row 1: Star rating (left) and Restaurant name (right) */}
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center space-x-1 text-sm flex-shrink-0">
-              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium">{rating}</span>
-            </div>
-            <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0 text-right">
+        <div className="pt-2.5 pb-1 px-0.5">
+          {/* Row 1: Name · ⭐ Rating · Distance · Time */}
+          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+            <h3 className="font-bold text-base text-gray-900 line-clamp-1">
               {name}
             </h3>
+            <div className="flex items-center gap-1 text-sm text-gray-700">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="font-semibold">{rating}</span>
+            </div>
+            <span className="text-sm text-gray-500">
+              {distance ? `· ${distance}` : ""} · {deliveryTime}
+            </span>
           </div>
 
-          {/* Row 2: Promo text (left) and Distance/time (right) */}
-          <div className="flex justify-between items-center mb-1">
-            <p className="text-muted-foreground text-xs sm:text-sm line-clamp-1 flex-1 min-w-0">
-              {deliveryFee === "Free" ? "$0 delivery fee, first order" : (isPromoted ? "Sponsored" : cuisine)}
+          {/* Row 2: Delivery fee (left) + Sponsored label (right) */}
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500">
+              {deliveryFee === "Free" ? "$0 delivery fee, first order" : `${deliveryFee} delivery fee`}
             </p>
-            <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0 ml-2">
-              - {deliveryTime}
-            </span>
+            {isPromoted && (
+              <span className="text-sm font-medium text-blue-600">Sponsored</span>
+            )}
           </div>
         </div>
       </div>

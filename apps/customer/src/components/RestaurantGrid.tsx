@@ -228,16 +228,29 @@ const RestaurantGrid = ({
         </div>
       </section>;
   }
-  const formatRestaurantData = (restaurant: Restaurant) => ({
-    id: restaurant.id,
-    name: restaurant.name,
-    image: restaurant.image_url || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop",
-    rating: restaurant.rating,
-    deliveryTime: `${restaurant.min_delivery_time}-${restaurant.max_delivery_time} min`,
-    deliveryFee: restaurant.delivery_fee_cents === 0 ? "Free" : `$${(restaurant.delivery_fee_cents / 100).toFixed(2)}`,
-    cuisine: restaurant.cuisine_type,
-    isPromoted: restaurant.is_promoted
-  });
+  const formatRestaurantData = (restaurant: Restaurant) => {
+    // Calculate distance from user if location available
+    let distanceStr: string | undefined;
+    if (userLocation && restaurant.latitude && restaurant.longitude) {
+      const miles = calculateDistance(
+        userLocation.lat, userLocation.lng,
+        restaurant.latitude, restaurant.longitude
+      );
+      distanceStr = `${miles.toFixed(1)} mi`;
+    }
+
+    return {
+      id: restaurant.id,
+      name: restaurant.name,
+      image: restaurant.image_url || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop",
+      rating: restaurant.rating,
+      deliveryTime: `${restaurant.min_delivery_time} min`,
+      deliveryFee: restaurant.delivery_fee_cents === 0 ? "Free" : `$${(restaurant.delivery_fee_cents / 100).toFixed(2)}`,
+      cuisine: restaurant.cuisine_type,
+      distance: distanceStr,
+      isPromoted: restaurant.is_promoted
+    };
+  };
   // Don't render if no restaurants (conditional rendering)
   if (restaurants.length === 0 && !loading) {
     return null;
