@@ -2392,16 +2392,14 @@ const Restaurants = () => {
           flex: 1, 
           overflowY: 'auto', 
           backgroundColor: 'white',
-          paddingTop: showMenuIcons 
-            ? 'calc(120px + 100px + 110px + env(safe-area-inset-top, 0px))' 
-            : '130px',
+          paddingTop: '125px',
           paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
         }}>
           <Box component="main">
 
             {/* Craven Quick Picks - Promoted Restaurants */}
             {weeklyDeals.length > 0 && (
-              <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', height: '323px' }}>
                 <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
                   <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
                   <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
