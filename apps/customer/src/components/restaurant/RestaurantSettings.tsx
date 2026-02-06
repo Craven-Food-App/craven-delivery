@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ImageCropper from "@/components/common/ImageCropper";
 import { removeBackground, loadImage } from "@/utils/BackgroundRemovalService";
 import { AddressAutocomplete } from "@/components/common/AddressAutocomplete";
+import { getLogoBackgroundColor } from "@/utils/logoUtils";
 
 interface Restaurant {
   id: string;
@@ -455,7 +456,7 @@ export const RestaurantSettings = ({ restaurant, onUpdate }: RestaurantSettingsP
                       </Group>
                     )}
                     {formData.logo_url && (
-                      <Box style={{ position: 'relative', width: '128px', height: '128px' }}>
+                      <Box style={{ position: 'relative', width: '128px', height: '128px', backgroundColor: getLogoBackgroundColor(formData.logo_url), borderRadius: '8px' }}>
                         <MantineImage
                           src={formData.logo_url}
                           alt="Restaurant logo"

@@ -12,6 +12,7 @@ import ImageCropper from "@/components/common/ImageCropper";
 import RestaurantHours from "@/components/restaurant/RestaurantHours";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
+import { isPngLogo } from "@/utils/logoUtils";
 import { toast } from "sonner";
 
 const StoreSettingsDashboard = () => {
@@ -603,7 +604,7 @@ const StoreSettingsDashboard = () => {
                   <div className="border-2 rounded-lg overflow-hidden">
                     <div className="relative flex justify-center p-6 bg-muted">
                       <div className="relative">
-                        <img src={logoPhoto} alt="Logo" className="w-32 h-32 rounded-full object-cover" />
+                        <img src={logoPhoto} alt="Logo" className={`w-32 h-32 rounded-full object-cover ${isPngLogo(logoPhoto) ? 'bg-white' : ''}`} />
                         <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
                           <Button 
                             type="button"
@@ -732,9 +733,9 @@ const StoreSettingsDashboard = () => {
                 
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="relative w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                    <div className={`relative w-16 h-16 rounded-full ${isPngLogo(logoPhoto) ? 'bg-white' : 'bg-gray-300'} flex items-center justify-center overflow-hidden`}>
                       {logoPhoto ? (
-                        <img src={logoPhoto} alt="Logo" className="w-full h-full object-cover" />
+                        <img src={logoPhoto} alt="Logo" className={`w-full h-full object-cover ${isPngLogo(logoPhoto) ? 'bg-white' : ''}`} />
                       ) : (
                         <span className="text-xs">Logo</span>
                       )}
