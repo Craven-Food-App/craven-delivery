@@ -51,6 +51,12 @@ const GlobalMobileBottomNav: React.FC = () => {
     return null;
   }
 
+  // Hide when item modal is open (body class added by RestaurantMenuPage)
+  const isItemModalOpen = document.body.classList.contains('item-modal-open');
+  if (isItemModalOpen) {
+    return null;
+  }
+
   const navItems = [
     {
       id: 'shop',

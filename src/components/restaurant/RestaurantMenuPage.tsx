@@ -437,6 +437,18 @@ const RestaurantMenuPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Hide bottom navigation when item modal is open
+  useEffect(() => {
+    if (showItemModal) {
+      document.body.classList.add('item-modal-open');
+    } else {
+      document.body.classList.remove('item-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('item-modal-open');
+    };
+  }, [showItemModal]);
+
   // Cleanup cart button timer on unmount
   useEffect(() => {
     return () => {
@@ -1190,63 +1202,66 @@ const RestaurantMenuPage = () => {
                     content: { height: '100%', maxHeight: '100%' },
                 }}
             >
-                <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white' }}>
-                    {/* Food Image with Back/Share Buttons - flush at top, no header */}
-                    <Box style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden', flexShrink: 0 }}>
-                        <MantineImage
-                            src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Item'}
-                            alt={selectedItem.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            fit="cover"
-                        />
-                        {/* Back Button Overlay */}
-                        <ActionIcon
-                            variant="filled"
-                            color="white"
-                            onClick={closeItemModal}
-                            style={{ 
-                                position: 'absolute',
-                                top: '16px',
-                                left: '16px',
-                                backgroundColor: 'white',
-                                color: 'var(--mantine-color-gray-9)',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                            }}
-                            size="lg"
-                            radius="xl"
-                        >
-                            <IconChevronLeft size={24} />
-                        </ActionIcon>
-                        {/* Share Button Overlay */}
-                        <ActionIcon
-                            variant="filled"
-                            color="white"
-                            onClick={() => {
-                                if (navigator.share) {
-                                    navigator.share({ title: selectedItem.name, text: selectedItem.description || '' });
-                                }
-                            }}
-                            style={{ 
-                                position: 'absolute',
-                                top: '16px',
-                                right: '16px',
-                                backgroundColor: 'white',
-                                color: 'var(--mantine-color-gray-9)',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                            }}
-                            size="lg"
-                            radius="xl"
-                        >
-                            <IconShare size={20} />
-                        </ActionIcon>
-                    </Box>
+                <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white', position: 'relative' }}>
+                    {/* Fixed Back/Share Buttons - static position */}
+                    <ActionIcon
+                        variant="filled"
+                        color="white"
+                        onClick={closeItemModal}
+                        style={{ 
+                            position: 'fixed',
+                            top: '16px',
+                            left: '16px',
+                            backgroundColor: 'white',
+                            color: 'var(--mantine-color-gray-9)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                            zIndex: 10001,
+                        }}
+                        size="lg"
+                        radius="xl"
+                    >
+                        <IconChevronLeft size={24} />
+                    </ActionIcon>
+                    <ActionIcon
+                        variant="filled"
+                        color="white"
+                        onClick={() => {
+                            if (navigator.share) {
+                                navigator.share({ title: selectedItem.name, text: selectedItem.description || '' });
+                            }
+                        }}
+                        style={{ 
+                            position: 'fixed',
+                            top: '16px',
+                            right: '16px',
+                            backgroundColor: 'white',
+                            color: 'var(--mantine-color-gray-9)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                            zIndex: 10001,
+                        }}
+                        size="lg"
+                        radius="xl"
+                    >
+                        <IconShare size={20} />
+                    </ActionIcon>
 
-                    {/* Scrollable Content */}
+                    {/* Scrollable Content - image scrolls with content */}
                     <ScrollArea 
                         style={{ flex: 1 }}
                         ref={modalScrollRef}
                     >
-                        <Box p="md" pb="120px">
+                        <Box>
+                            {/* Food Image - scrolls with content */}
+                            <Box style={{ width: '100%', height: '300px', overflow: 'hidden' }}>
+                                <MantineImage
+                                    src={selectedItem.image_url || 'https://placehold.co/600x300/CCCCCC/666666?text=Item'}
+                                    alt={selectedItem.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    fit="cover"
+                                />
+                            </Box>
+
+                            <Box p="md" pb="120px">
                             {/* 1. Item Name, Description & Price */}
                             <Stack gap="xs" mb="lg">
                                 <Title order={2} fw={700} style={{ fontSize: '24px', lineHeight: 1.2 }}>
