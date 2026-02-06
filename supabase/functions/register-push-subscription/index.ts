@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get('origin'));
@@ -26,15 +25,58 @@ serve(async (req) => {
     console.log("Registering push subscription for user:", userId);
     console.log("Subscription endpoint:", subscription.endpoint);
 
-    // Extract keys from subscription
+    const isNative = deviceInfo?.isNative === true;
+
+    // ── Native push (FCM/APNS token from Capacitor) ────────────────────
+    if (isNative) {
+      const pushToken = deviceInfo?.pushToken || '';
+      const platform = deviceInfo?.platform || 'unknown';
+
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .upsert({
+          user_id: userId,
+          endpoint: subscription.endpoint,
+          p256dh_key: 'native',
+          auth_key: 'native',
+          device_type: platform,
+          is_native: true,
+          push_token: pushToken,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,endpoint'
+        })
+        .select();
+
+      if (error) {
+        console.error("Database error (native):", error);
+        throw error;
+      }
+
+      console.log("Native push subscription registered:", data);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Native push subscription registered successfully",
+          subscription: data?.[0]
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // ── Web push (Service Worker / Web Push API) ───────────────────────
     const p256dhKey = subscription.keys?.p256dh || '';
     const authKey = subscription.keys?.auth || '';
 
     if (!p256dhKey || !authKey) {
-      throw new Error("Invalid subscription: missing keys");
+      throw new Error("Invalid subscription: missing keys (p256dh, auth)");
     }
 
-    // Store push subscription in database
     const { data, error } = await supabase
       .from("push_subscriptions")
       .upsert({
@@ -44,6 +86,7 @@ serve(async (req) => {
         auth_key: authKey,
         user_agent: deviceInfo?.userAgent || req.headers.get("user-agent"),
         device_type: deviceInfo?.platform || "web",
+        is_native: false,
         is_active: true,
         updated_at: new Date().toISOString()
       }, {
@@ -52,17 +95,17 @@ serve(async (req) => {
       .select();
 
     if (error) {
-      console.error("Database error:", error);
+      console.error("Database error (web):", error);
       throw error;
     }
 
-    console.log("Push subscription registered successfully:", data);
+    console.log("Web push subscription registered successfully:", data);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Push subscription registered successfully",
-        subscription: data?.[0] 
+        subscription: data?.[0]
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,9 +115,9 @@ serve(async (req) => {
   } catch (error) {
     console.error("Register push subscription error:", error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: (error as Error).message || 'Unknown error',
-        success: false 
+        success: false
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

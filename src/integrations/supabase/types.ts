@@ -19041,6 +19041,45 @@ export type Database = {
           },
         ]
       }
+      notification_dispatch_log: {
+        Row: {
+          id: string
+          user_id: string
+          category: string
+          channel: string
+          title: string
+          body: string | null
+          status: string
+          error_message: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          category: string
+          channel: string
+          title: string
+          body?: string | null
+          status?: string
+          error_message?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          category?: string
+          channel?: string
+          title?: string
+          body?: string | null
+          status?: string
+          error_message?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       notification_settings: {
         Row: {
           created_at: string
@@ -22002,7 +22041,9 @@ export type Database = {
           endpoint: string
           id: string
           is_active: boolean
+          is_native: boolean
           p256dh_key: string
+          push_token: string | null
           updated_at: string
           user_agent: string | null
           user_id: string
@@ -22014,7 +22055,9 @@ export type Database = {
           endpoint: string
           id?: string
           is_active?: boolean
+          is_native?: boolean
           p256dh_key: string
+          push_token?: string | null
           updated_at?: string
           user_agent?: string | null
           user_id: string
@@ -22026,7 +22069,9 @@ export type Database = {
           endpoint?: string
           id?: string
           is_active?: boolean
+          is_native?: boolean
           p256dh_key?: string
+          push_token?: string | null
           updated_at?: string
           user_agent?: string | null
           user_id?: string
@@ -26590,25 +26635,34 @@ export type Database = {
           created_at: string
           id: string
           is_enabled: boolean
-          notification_setting_id: string
+          notification_setting_id: string | null
           updated_at: string
           user_id: string
+          category: string | null
+          push_enabled: boolean
+          sms_enabled: boolean
         }
         Insert: {
           created_at?: string
           id?: string
           is_enabled?: boolean
-          notification_setting_id: string
+          notification_setting_id?: string | null
           updated_at?: string
           user_id: string
+          category?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
         }
         Update: {
           created_at?: string
           id?: string
           is_enabled?: boolean
-          notification_setting_id?: string
+          notification_setting_id?: string | null
           updated_at?: string
           user_id?: string
+          category?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
         }
         Relationships: [
           {

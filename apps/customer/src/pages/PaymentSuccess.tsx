@@ -36,7 +36,7 @@ const PaymentSuccess = () => {
         if (data.success) {
           // Fetch order details
           const { data: orderData, error: orderError } = await supabase
-            .from('customer_orders')
+            .from('orders')
             .select(`
               *,
               restaurants (

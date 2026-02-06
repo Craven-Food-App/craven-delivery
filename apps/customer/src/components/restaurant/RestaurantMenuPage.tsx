@@ -1498,14 +1498,10 @@ const RestaurantMenuPage = () => {
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
-                                        const scrollPosition = scrollContainer?.scrollTop || 0;
                                         setModalQuantity((prev) => Math.max(1, prev - 1));
-                                        requestAnimationFrame(() => {
-                                            if (scrollContainer) scrollContainer.scrollTop = scrollPosition;
-                                        });
                                     }}
                                     size="lg"
+                                    disabled={modalQuantity <= 1}
                                     style={{
                                         backgroundColor: 'var(--mantine-color-gray-0)',
                                         border: '1px solid var(--mantine-color-gray-3)',
@@ -1524,12 +1520,7 @@ const RestaurantMenuPage = () => {
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        const scrollContainer = modalScrollRef.current?.querySelector('.mantine-ScrollArea-viewport') as HTMLElement;
-                                        const scrollPosition = scrollContainer?.scrollTop || 0;
                                         setModalQuantity((prev) => prev + 1);
-                                        requestAnimationFrame(() => {
-                                            if (scrollContainer) scrollContainer.scrollTop = scrollPosition;
-                                        });
                                     }}
                                     size="lg"
                                     style={{
@@ -3685,8 +3676,8 @@ const RestaurantMenuPage = () => {
                 }
             `}</style>
             
-            {/* Triple Dipper Modal */}
-            <TripleDipperModal />
+            {/* Item Detail Modal — called as function to avoid remount on state change */}
+            {TripleDipperModal()}
 
             {/* Mapbox CSS */}
             <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />

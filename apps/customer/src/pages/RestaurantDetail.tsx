@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { toast as showToast } from 'sonner';
+import { useCart } from '@/contexts/CartContext';
 
 // Enhanced Types
 interface Restaurant {
@@ -55,13 +56,6 @@ interface MenuItem {
   spice_level?: number;
   calories?: number;
   chef_recommended?: boolean;
-}
-
-interface CartItem extends MenuItem {
-  key: string;
-  quantity: number;
-  special_instructions?: string;
-  modifiers?: any[];
 }
 
 // Premium Button Component
@@ -274,10 +268,10 @@ const PremiumBadge = ({ children, variant = 'default', icon = null }) => {
 const RestaurantDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { addToCart: globalAddToCart, cartItems, cartCount, getCartTotal: globalGetCartTotal } = useCart();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     vegetarian: false,
@@ -286,7 +280,6 @@ const RestaurantDetail = () => {
     priceRange: 'all' as 'all' | 'under10' | 'under20' | 'under30'
   });
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [showCart, setShowCart] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -356,32 +349,89 @@ const RestaurantDetail = () => {
     }
   };
 
+  // Wire to global CartContext so items persist across navigation
   const addToCart = useCallback((item: MenuItem, quantity: number = 1) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.id === item.id
-          ? { ...cartItem, quantity: cartItem.quantity + quantity }
-          : cartItem
-      ));
-    } else {
-      setCart([...cart, { ...item, quantity, key: item.id }]);
-    }
-    
-    showToast.success(`${item.name} added to cart!`);
-  }, [cart]);
+    if (!restaurant?.id) return;
+    globalAddToCart({
+      id: item.id,
+      name: item.name,
+      price_cents: item.price_cents,
+      quantity,
+      image_url: item.image_url,
+      restaurant_id: restaurant.id,
+    }, restaurant.id);
+  }, [restaurant?.id, globalAddToCart]);
 
   const getCartTotal = () => {
-    const subtotal = cart.reduce((total, item) => total + (item.price_cents * item.quantity), 0);
+    const subtotal = globalGetCartTotal();
     const deliveryFee = deliveryMethod === 'delivery' ? (restaurant?.delivery_fee_cents || 0) : 0;
     const tax = Math.round(subtotal * 0.08);
-    
-    return {
-      subtotal,
-      deliveryFee,
-      tax,
-      total: subtotal + deliveryFee + tax
+    return { subtotal, deliveryFee, tax, total: subtotal + deliveryFee + tax };
+  };
+
+  // Persist favorite status to database
+  useEffect(() => {
+    const checkFavorite = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !id) return;
+      const { data } = await supabase
+        .from('customer_favorites')
+        .select('id')
+        .eq('customer_id', user.id)
+        .eq('restaurant_id', id)
+        .maybeSingle();
+      setIsFavorited(!!data);
     };
+    if (id) checkFavorite();
+  }, [id]);
+
+  const toggleFavorite = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      showToast.error('Please sign in to save favorites');
+      return;
+    }
+    try {
+      if (isFavorited) {
+        await supabase
+          .from('customer_favorites')
+          .delete()
+          .eq('customer_id', user.id)
+          .eq('restaurant_id', id);
+        setIsFavorited(false);
+        showToast.success('Removed from favorites');
+      } else {
+        await supabase
+          .from('customer_favorites')
+          .insert({ customer_id: user.id, restaurant_id: id });
+        setIsFavorited(true);
+        showToast.success('Added to favorites!');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showToast.error('Failed to update favorites');
+    }
+  };
+
+  const handleShareRestaurant = async () => {
+    const shareData = {
+      title: restaurant?.name || 'Check out this restaurant',
+      text: `Check out ${restaurant?.name} on Crave'n!`,
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast.success('Link copied to clipboard!');
+      }
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        await navigator.clipboard.writeText(window.location.href);
+        showToast.success('Link copied to clipboard!');
+      }
+    }
   };
 
   const getItemsByCategory = (categoryId: string) => {
@@ -489,25 +539,29 @@ const RestaurantDetail = () => {
             size="sm"
             onClick={() => navigate(-1)}
             icon={<ChevronLeft style={{ width: '20px', height: '20px' }} />}
-            style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }} children={undefined}          />
+            style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }}
+          >{null}</PremiumButton>
           
           <div style={{ display: 'flex', gap: '1rem' }}>
             <PremiumButton
               variant="secondary"
               size="sm"
-              onClick={() => setIsFavorited(!isFavorited)}
+              onClick={toggleFavorite}
               icon={<Heart style={{
                 width: '20px',
                 height: '20px',
                 fill: isFavorited ? '#ff6b35' : 'transparent',
                 color: isFavorited ? '#ff6b35' : '#666'
               }} />}
-              style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }} children={undefined}            />
+              style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }}
+            >{null}</PremiumButton>
             <PremiumButton
               variant="secondary"
               size="sm"
+              onClick={handleShareRestaurant}
               icon={<Share2 style={{ width: '20px', height: '20px' }} />}
-              style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }} children={undefined} onClick={undefined}            />
+              style={{ borderRadius: '50%', width: '50px', height: '50px', padding: 0 }}
+            >{null}</PremiumButton>
           </div>
         </div>
 
@@ -688,12 +742,12 @@ const RestaurantDetail = () => {
             </PremiumButton>
             
             <PremiumButton
-              variant={cart.length > 0 ? 'primary' : 'secondary'}
-              onClick={() => setShowCart(true)}
+              variant={cartCount > 0 ? 'primary' : 'secondary'}
+              onClick={() => navigate('/checkout')}
               icon={<ShoppingCart style={{ width: '18px', height: '18px' }} />}
             >
               Cart
-              {cart.length > 0 && (
+              {cartCount > 0 && (
                 <span style={{
                   position: 'absolute',
                   top: '-8px',
@@ -709,7 +763,7 @@ const RestaurantDetail = () => {
                   fontSize: '0.8rem',
                   fontWeight: '700'
                 }}>
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  {cartCount}
                 </span>
               )}
             </PremiumButton>
@@ -825,7 +879,7 @@ const RestaurantDetail = () => {
       </div>
 
       {/* Floating Cart Summary */}
-      {cart.length > 0 && (
+      {cartCount > 0 && (
         <div style={{
           position: 'fixed',
           bottom: '2rem',
@@ -836,14 +890,14 @@ const RestaurantDetail = () => {
           <PremiumButton
             variant="primary"
             size="lg"
-            onClick={() => setShowCart(true)}
+            onClick={() => navigate('/checkout')}
             icon={<ShoppingCart style={{ width: '24px', height: '24px' }} />}
             style={{
               animation: 'bounce 2s infinite',
               boxShadow: '0 20px 60px rgba(255, 107, 53, 0.4)'
             }}
           >
-            {cart.reduce((sum, item) => sum + item.quantity, 0)} items • ${(getCartTotal().total / 100).toFixed(2)}
+            {cartCount} items • ${(getCartTotal().total / 100).toFixed(2)}
           </PremiumButton>
         </div>
       )}
@@ -1137,7 +1191,7 @@ const MenuItemCard = ({ item, onAddToCart }: { item: MenuItem; onAddToCart: (ite
           onClick={(e) => {
             e?.stopPropagation();
             onAddToCart(item);
-          } }
+          }}
           icon={<Plus style={{ width: '20px', height: '20px' }} />}
           style={{
             position: 'absolute',
@@ -1147,7 +1201,8 @@ const MenuItemCard = ({ item, onAddToCart }: { item: MenuItem; onAddToCart: (ite
             width: '45px',
             height: '45px',
             padding: 0
-          }} children={undefined}        />
+          }}
+        >{null}</PremiumButton>
       </div>
 
       {/* Item Details */}

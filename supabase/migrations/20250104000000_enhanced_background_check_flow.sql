@@ -23,15 +23,19 @@ CREATE TABLE IF NOT EXISTS public.admin_settings (
 ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
 
 -- Admin settings RLS policies
-CREATE POLICY "Admins can view settings"
-ON public.admin_settings
-FOR SELECT
-USING (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Admins can manage settings"
-ON public.admin_settings
-FOR ALL
-USING (public.has_role(auth.uid(), 'admin'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='admin_settings' AND policyname='Admins can view settings'
+  ) THEN
+    CREATE POLICY "Admins can view settings" ON public.admin_settings FOR SELECT USING (public.has_role(auth.uid(), 'admin'));
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='admin_settings' AND policyname='Admins can manage settings'
+  ) THEN
+    CREATE POLICY "Admins can manage settings" ON public.admin_settings FOR ALL USING (public.has_role(auth.uid(), 'admin'));
+  END IF;
+END $$;
 
 -- Insert default background check delay setting
 INSERT INTO public.admin_settings (setting_key, setting_value, description)
