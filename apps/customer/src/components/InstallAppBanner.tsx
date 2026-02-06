@@ -51,7 +51,7 @@ export const InstallAppBanner = () => {
   if (!showBanner || !isIOS || isStandalone) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-safe animate-slide-up">
+    <div className="fixed left-0 right-0 z-50 p-4 pb-safe animate-slide-up" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
       <Card className="relative bg-gradient-to-r from-primary to-primary-glow text-white shadow-2xl border-0">
         <button
           onClick={handleDismiss}

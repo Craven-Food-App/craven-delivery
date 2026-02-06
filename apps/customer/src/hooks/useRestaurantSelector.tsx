@@ -45,21 +45,16 @@ export const useRestaurantSelector = () => {
         console.log('Fetched restaurants for user:', user.id, 'data:', data);
         setRestaurants(data || []);
 
-        // Load selected restaurant from localStorage or use CMIH Kitchen or first one
+        // Load selected restaurant from localStorage or default to first owned restaurant
         const stored = localStorage.getItem('selected_restaurant_id');
         const validStored = stored && data?.find(r => r.id === stored);
         
         if (validStored) {
           setSelectedRestaurantId(stored);
-        } else {
-          // Prefer CMIH Kitchen if it exists, otherwise use first restaurant
-          const cmihKitchen = data?.find(r => r.name === 'CMIH Kitchen');
-          if (cmihKitchen) {
-            setSelectedRestaurantId(cmihKitchen.id);
-            localStorage.setItem('selected_restaurant_id', cmihKitchen.id);
-          } else if (data && data.length > 0) {
-            setSelectedRestaurantId(data[0].id);
-          }
+        } else if (data && data.length > 0) {
+          // Default to the most recently created restaurant the user owns
+          setSelectedRestaurantId(data[0].id);
+          localStorage.setItem('selected_restaurant_id', data[0].id);
         }
       } catch (error) {
         console.error('Error fetching restaurants:', error);

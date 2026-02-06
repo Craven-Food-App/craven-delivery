@@ -80,7 +80,7 @@ export const NewDeliveryRequestExample: React.FC = () => {
       timeLeft={timeLeft}
       totalSeconds={33}
       merchant={{
-        name: 'CMIH Kitchen',
+        name: 'Sample Merchant',
         address: '6759 Nebraska Avenue',
       }}
       customer={{

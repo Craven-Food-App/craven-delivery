@@ -217,13 +217,24 @@ export const RestaurantOrderManagement = ({ restaurantId }: RestaurantOrderManag
   const createTestOrder = async () => {
     try {
       console.log('Creating test order for restaurant:', restaurantId);
+
+      // Fetch the actual restaurant data — never hardcode a store name
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('name, address, latitude, longitude')
+        .eq('id', restaurantId)
+        .single();
+
+      if (restaurantError || !restaurant) {
+        throw new Error('Could not fetch restaurant details for test order');
+      }
       
       const orderData = {
         restaurant_id: restaurantId,
-        pickup_name: 'CMIH Kitchen',
-        pickup_address: '6759 Nebraska Ave, Toledo, OH 43615',
-        pickup_lat: 41.6528,
-        pickup_lng: -83.6982,
+        pickup_name: restaurant.name,
+        pickup_address: restaurant.address || 'Address not set',
+        pickup_lat: restaurant.latitude || 0,
+        pickup_lng: restaurant.longitude || 0,
         dropoff_name: 'Test Customer',
         dropoff_address: '123 Test St, Toledo, OH 43604',
         dropoff_lat: 41.6639,

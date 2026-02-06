@@ -22,6 +22,8 @@ import {
   RingProgress,
   Avatar,
   Grid,
+  Progress,
+  Tooltip,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -61,6 +63,10 @@ import {
   IconPaw,
   IconReceipt,
   IconShirt,
+  IconThumbUp,
+    IconShieldCheck,
+    IconStarFilled,
+    IconChevronRight,
 } from "@tabler/icons-react";
 import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
@@ -296,6 +302,8 @@ const RestaurantMenuPage = () => {
   const cartButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [isRestaurantLiked, setIsRestaurantLiked] = useState(false);
+  const [reviewSlideIndex, setReviewSlideIndex] = useState(0);
+  const [mobileReviewSlideIndex, setMobileReviewSlideIndex] = useState(0);
   
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
@@ -2741,139 +2749,177 @@ const RestaurantMenuPage = () => {
                     </Box>
                   )}
 
-                  {/* Reviews Section - Mobile */}
+                  {/* Reviews Section - Mobile — Crave'n Community Ratings */}
                   {!isSearchMode && (
                     <Box id="reviews-mobile" mb="xl" style={{ scrollMarginTop: '96px' }}>
-                      <Group justify="space-between" align="center" mb="md">
-                        <Stack gap={4}>
-                          <Title order={2} size="xl" fw={700}>Reviews</Title>
-                          <Text size="sm" c="dimmed">3k+ ratings • 80+ public reviews</Text>
-                        </Stack>
-                        <Button variant="subtle" color="orange" size="sm">
-                          Add Review
+                      {/* Section Header */}
+                      <Group justify="space-between" align="center" mb="sm">
+                        <Group gap={6} align="center">
+                          <Title order={2} size="md" fw={800} style={{ letterSpacing: '-0.02em' }}>Community Ratings</Title>
+                          <Badge size="xs" variant="light" color="teal" leftSection={<IconShieldCheck size={9} />} style={{ cursor: 'help', textTransform: 'none' }}>
+                            Verified
+                          </Badge>
+                        </Group>
+                        <Button variant="outline" color="orange" size="xs" radius="xl">
+                          Write Review
                         </Button>
                       </Group>
 
-                      {/* Overall Rating Card */}
-                      <Card
-                        p="md"
-                        withBorder
-                        shadow="lg"
-                        mb="md"
+                      {/* Rating Summary — Compact Inline */}
+                      <Box
+                        mb="sm"
+                        p="sm"
+                        style={{
+                          background: 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%)',
+                          borderRadius: 10,
+                          border: '1px solid var(--mantine-color-orange-1)',
+                        }}
                       >
-                        <Stack align="center" gap="sm">
-                          <RingProgress
-                            size={80}
-                            thickness={8}
-                            sections={[{ value: 88, color: 'yellow' }]}
-                            label={
-                              <Stack align="center" gap={2}>
-                                <Text size="xl" fw={700}>4.4</Text>
-                                <IconStar size={14} style={{ color: 'var(--mantine-color-gray-4)' }} />
-                              </Stack>
-                            }
-                          />
-                          <Text size="sm" c="dimmed" ta="center">of 5 stars</Text>
-                        </Stack>
-                      </Card>
+                        <Group align="flex-start" gap="md" wrap="nowrap">
+                          <Stack align="center" gap={2} style={{ flexShrink: 0, minWidth: 56 }}>
+                            <Text style={{ fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.03em' }}>4.4</Text>
+                            <Group gap={1}>
+                              {[1,2,3,4].map(i => <IconStarFilled key={i} size={10} style={{ color: '#F97316' }} />)}
+                              <IconStar size={10} style={{ color: '#F97316' }} />
+                            </Group>
+                            <Text size="9px" c="dimmed" fw={500}>3.2k</Text>
+                          </Stack>
 
-                      {/* Individual Review Cards - Horizontal Scroll */}
-                      <ScrollArea scrollbars="x" ref={reviewsScrollRef}>
-                        <Group gap="md" style={{ flexWrap: 'nowrap' }} pb="md">
-                          {/* Review Card 1 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '280px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="blue" radius="xl">M</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                  <Group gap="xs">
-                                  <Text size="sm" fw={600}>Marcus T</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
-                                  </Group>
-                                <Text size="xs" c="dimmed">Regular Customer • 12 orders</Text>
-                              </Stack>
-                                </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
+                          <Stack gap={4} style={{ flex: 1 }}>
+                            {[
+                              { stars: 5, pct: 68 },
+                              { stars: 4, pct: 20 },
+                              { stars: 3, pct: 7 },
+                              { stars: 2, pct: 3 },
+                              { stars: 1, pct: 2 },
+                            ].map(row => (
+                              <Group key={row.stars} gap={4} wrap="nowrap" align="center">
+                                <Text size="10px" fw={600} c="gray.7" style={{ width: 8, textAlign: 'right' }}>{row.stars}</Text>
+                                <Progress value={row.pct} size={5} radius="xl" color="orange" style={{ flex: 1 }} />
+                                <Text size="9px" c="dimmed" style={{ width: 22, textAlign: 'right' }}>{row.pct}%</Text>
                               </Group>
-                              <Text size="xs" c="dimmed">11/15/23</Text>
-                              <Text size="xs" c="dimmed">• Craven order</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7">
-                              This place never disappoints! <Text component="span" fw={600}>Classic Burger</Text> is always fresh and the delivery is super quick. Highly recommend!
-                            </Text>
-                          </Card>
-                          
-                          {/* Review Card 2 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '280px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="violet" radius="xl">S</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                <Group gap="xs">
-                                  <Text size="sm" fw={600}>Sarah K</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
-                                </Group>
-                                <Text size="xs" c="dimmed">Food Lover • 8 reviews</Text>
-                              </Stack>
-                            </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
-                              </Group>
-                              <Text size="xs" c="dimmed">10/28/23</Text>
-                              <Text size="xs" c="dimmed">• Craven order</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7">
-                              Amazing food! <Text component="span" fw={600}>Chicken Sandwich</Text> was perfectly cooked and the <Text component="span" fw={600}>seasoned fries</Text> were incredible. Will definitely order again!
-                            </Text>
-                          </Card>
-                          
-                          {/* Review Card 3 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '280px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="orange" radius="xl">D</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                <Group gap="xs">
-                                  <Text size="sm" fw={600}>David M</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
-                                </Group>
-                                <Text size="xs" c="dimmed">New Customer • 3 orders</Text>
-                              </Stack>
-                            </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={14} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
-                              </Group>
-                              <Text size="xs" c="dimmed">12/02/23</Text>
-                              <Text size="xs" c="dimmed">• Craven order</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7">
-                              First time ordering and I'm impressed! <Text component="span" fw={600}>Fish Sandwich</Text> was crispy and fresh. The <Text component="span" fw={600}>onion rings</Text> were the perfect side. Great value!
-                            </Text>
-                          </Card>
+                            ))}
+                          </Stack>
                         </Group>
-                      </ScrollArea>
+
+                        {/* Quality Metrics — Inline chips */}
+                        <Group gap={6} mt="xs" justify="center">
+                          {[
+                            { label: 'Food', score: '4.6' },
+                            { label: 'Delivery', score: '4.3' },
+                            { label: 'Value', score: '4.5' },
+                          ].map(metric => (
+                            <Badge key={metric.label} size="sm" variant="light" color="gray" radius="sm" style={{ textTransform: 'none' }}>
+                              {metric.label} {metric.score}★
+                            </Badge>
+                          ))}
+                        </Group>
+                      </Box>
+
+                      {/* Review Slider — One at a time */}
+                      {(() => {
+                        const mobileReviews = [
+                          {
+                            name: 'Marcus T',
+                            initial: 'M',
+                            color: 'blue' as const,
+                            stars: 5,
+                            date: 'Nov 15',
+                            orders: 12,
+                            items: ['Classic Burger'],
+                            text: 'This place never disappoints! Classic Burger is always fresh and the delivery is super quick. Highly recommend!',
+                            helpful: 24,
+                          },
+                          {
+                            name: 'Sarah K',
+                            initial: 'S',
+                            color: 'violet' as const,
+                            stars: 5,
+                            date: 'Oct 28',
+                            orders: 8,
+                            items: ['Chicken Sandwich', 'Seasoned Fries'],
+                            text: 'Amazing food! Chicken Sandwich was perfectly cooked and the seasoned fries were incredible. Will definitely order again!',
+                            helpful: 18,
+                          },
+                          {
+                            name: 'David M',
+                            initial: 'D',
+                            color: 'orange' as const,
+                            stars: 5,
+                            date: 'Dec 2',
+                            orders: 3,
+                            items: ['Fish Sandwich', 'Onion Rings'],
+                            text: 'First time ordering and I\'m impressed! Fish Sandwich was crispy and fresh. The onion rings were the perfect side. Great value!',
+                            helpful: 11,
+                          },
+                        ];
+                        const review = mobileReviews[mobileReviewSlideIndex];
+                        return (
+                          <>
+                            <Box
+                              p="sm"
+                              style={{
+                                borderRadius: 10,
+                                border: '1px solid var(--mantine-color-gray-2)',
+                                borderLeft: '3px solid #F97316',
+                                background: 'white',
+                              }}
+                            >
+                              <Group justify="space-between" align="flex-start" mb={6}>
+                                <Group gap="xs" wrap="nowrap">
+                                  <Avatar color={review.color} radius="xl" size="xs">{review.initial}</Avatar>
+                                  <Stack gap={0}>
+                                    <Group gap={4}>
+                                      <Text size="xs" fw={600}>{review.name}</Text>
+                                      <Badge size="xs" variant="dot" color="teal" style={{ textTransform: 'none' }}>Verified</Badge>
+                                    </Group>
+                                    <Text size="10px" c="dimmed">{review.orders} orders · {review.date}</Text>
+                                  </Stack>
+                                </Group>
+                                <Group gap={1}>
+                                  {[...Array(5)].map((_, i) => (
+                                    <IconStarFilled key={i} size={10} style={{ color: i < review.stars ? '#F97316' : 'var(--mantine-color-gray-3)' }} />
+                                  ))}
+                                </Group>
+                              </Group>
+
+                              <Text size="xs" c="gray.7" lh={1.5} mb={6}>"{review.text}"</Text>
+
+                              <Group justify="space-between" align="center">
+                                <Group gap={4}>
+                                  {review.items.map(item => (
+                                    <Badge key={item} size="xs" variant="light" color="gray" radius="sm" style={{ textTransform: 'none' }}>{item}</Badge>
+                                  ))}
+                                </Group>
+                                <Group gap={3}>
+                                  <ActionIcon variant="subtle" color="gray" size="xs" radius="xl"><IconThumbUp size={10} /></ActionIcon>
+                                  <Text size="10px" c="dimmed">{review.helpful}</Text>
+                                </Group>
+                              </Group>
+                            </Box>
+
+                            {/* Slider Controls */}
+                            <Group justify="space-between" align="center" mt={8}>
+                              <Group gap={4}>
+                                <ActionIcon variant="subtle" color="gray" size="xs" radius="xl" disabled={mobileReviewSlideIndex === 0} onClick={() => setMobileReviewSlideIndex(i => Math.max(0, i - 1))}>
+                                  <IconChevronLeft size={14} />
+                                </ActionIcon>
+                                <Group gap={3}>
+                                  {mobileReviews.map((_, i) => (
+                                    <Box key={i} onClick={() => setMobileReviewSlideIndex(i)} style={{ width: i === mobileReviewSlideIndex ? 14 : 5, height: 5, borderRadius: 3, background: i === mobileReviewSlideIndex ? '#F97316' : 'var(--mantine-color-gray-3)', cursor: 'pointer', transition: 'all 0.2s ease' }} />
+                                  ))}
+                                </Group>
+                                <ActionIcon variant="subtle" color="gray" size="xs" radius="xl" disabled={mobileReviewSlideIndex === mobileReviews.length - 1} onClick={() => setMobileReviewSlideIndex(i => Math.min(mobileReviews.length - 1, i + 1))}>
+                                  <IconChevronRight size={14} />
+                                </ActionIcon>
+                              </Group>
+                              <Button variant="subtle" color="gray" size="xs" compact="true">
+                                All reviews
+                              </Button>
+                            </Group>
+                          </>
+                        );
+                      })()}
                     </Box>
                   )}
 
@@ -3295,161 +3341,230 @@ const RestaurantMenuPage = () => {
                     </Box>
                   )}
 
-                  {/* Reviews Section - Desktop */}
+                  {/* Reviews Section - Desktop — Crave'n Community Ratings */}
                   <Box id="reviews" mb="xl" style={{ scrollMarginTop: '80px', marginTop: '-80px', paddingTop: '80px' }}>
-                    <Group justify="space-between" align="center" mb="lg">
-                      <Stack gap={4}>
-                        <Title order={2} size="2xl" fw={700} c="gray.8">Reviews</Title>
-                        <Text size="sm" c="dimmed">3k+ ratings • 80+ public reviews</Text>
-                      </Stack>
-                      <Group gap="xs">
-                        <Button variant="subtle" color="orange" size="sm">
-                          Add Review
-                        </Button>
-                        <Group gap="xs">
-                          <ActionIcon
+                    {/* Section Header */}
+                    <Group justify="space-between" align="center" mb="md">
+                      <Group gap={10} align="center">
+                        <Title order={2} size="h4" fw={800} c="gray.9" style={{ letterSpacing: '-0.02em' }}>Community Ratings</Title>
+                        <Tooltip label="All reviews verified from Crave'n orders" position="right">
+                          <Badge
+                            size="xs"
                             variant="light"
-                            color="gray"
-                            radius="xl"
-                            onClick={scrollReviewsLeft}
+                            color="teal"
+                            leftSection={<IconShieldCheck size={10} />}
+                            style={{ cursor: 'help', textTransform: 'none' }}
                           >
-                            <IconChevronLeft size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="light"
-                            color="gray"
-                            radius="xl"
-                            onClick={scrollReviewsRight}
-                          >
-                            <IconChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
-                          </ActionIcon>
-                        </Group>
+                            Verified
+                          </Badge>
+                        </Tooltip>
                       </Group>
+                      <Button variant="outline" color="orange" size="xs" radius="xl">
+                        Write a Review
+                      </Button>
                     </Group>
 
-                    <Group align="flex-start" gap="lg">
-                      {/* Overall Rating Card */}
-                      <Card
-                        p="xl"
-                        withBorder
-                        shadow="lg"
-                        style={{ flexShrink: 0, width: '192px' }}
+                    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16 }}>
+                      {/* Rating Summary Panel — Compact */}
+                      <Box
+                        p="md"
+                        style={{
+                          background: 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%)',
+                          borderRadius: 12,
+                          border: '1px solid var(--mantine-color-orange-1)',
+                        }}
                       >
-                        <Stack align="center" gap="md">
-                          {/* Circular Rating Display */}
-                          <RingProgress
-                            size={96}
-                            thickness={8}
-                            sections={[{ value: 88, color: 'yellow' }]}
-                            label={
-                              <Stack align="center" gap={4}>
-                                <Text size="2xl" fw={700}>4.4</Text>
-                                <IconStar size={16} style={{ color: 'var(--mantine-color-gray-4)' }} />
-                              </Stack>
-                            }
-                          />
-                          <Text size="sm" c="dimmed" ta="center">of 5 stars</Text>
-                        </Stack>
-                      </Card>
+                        <Stack align="center" gap="sm">
+                          <Stack align="center" gap={2}>
+                            <Text style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.04em' }}>4.4</Text>
+                            <Group gap={2}>
+                              {[1,2,3,4].map(i => <IconStarFilled key={i} size={13} style={{ color: '#F97316' }} />)}
+                              <IconStar size={13} style={{ color: '#F97316' }} />
+                            </Group>
+                            <Text size="xs" c="dimmed" fw={500}>3,241 ratings</Text>
+                          </Stack>
 
-                      {/* Individual Review Cards - Horizontal Scroll */}
-                      <ScrollArea scrollbars="x" ref={reviewsScrollRef} style={{ flex: 1 }}>
-                        <Group gap="md" style={{ flexWrap: 'nowrap' }} pb="md">
-                          {/* Review Card 1 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '320px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="blue" radius="xl">M</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                <Group gap="xs">
-                                  <Text size="sm" fw={600}>Marcus T</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
-                                </Group>
-                                <Text size="xs" c="dimmed">Regular Customer • 12 orders</Text>
-                              </Stack>
-                            </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={16} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
+                          <Divider w="100%" color="orange.1" />
+
+                          <Stack gap={5} w="100%">
+                            {[
+                              { stars: 5, pct: 68 },
+                              { stars: 4, pct: 20 },
+                              { stars: 3, pct: 7 },
+                              { stars: 2, pct: 3 },
+                              { stars: 1, pct: 2 },
+                            ].map(row => (
+                              <Group key={row.stars} gap={6} wrap="nowrap" align="center">
+                                <Text size="xs" fw={600} c="gray.7" style={{ width: 10, textAlign: 'right' }}>{row.stars}</Text>
+                                <IconStarFilled size={9} style={{ color: '#F97316', flexShrink: 0 }} />
+                                <Progress value={row.pct} size={6} radius="xl" color="orange" style={{ flex: 1 }} />
+                                <Text size="10px" c="dimmed" style={{ width: 26, textAlign: 'right' }}>{row.pct}%</Text>
                               </Group>
-                              <Text size="sm" c="dimmed">11/15/23</Text>
-                              <Text size="sm" c="dimmed">• Craven order</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7">
-                              This place never disappoints! <Text component="span" fw={600}>Classic Burger</Text> is always fresh and the delivery is super quick. Highly recommend!
-                            </Text>
-                          </Card>
-                          
-                          {/* Review Card 2 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '320px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="violet" radius="xl">S</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                <Group gap="xs">
-                                  <Text size="sm" fw={600}>Sarah K</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
+                            ))}
+                          </Stack>
+
+                          <Divider w="100%" color="orange.1" />
+
+                          <Stack gap={5} w="100%">
+                            {[
+                              { label: 'Food Quality', score: 4.6 },
+                              { label: 'Delivery', score: 4.3 },
+                              { label: 'Value', score: 4.5 },
+                              { label: 'Packaging', score: 4.4 },
+                            ].map(metric => (
+                              <Group key={metric.label} justify="space-between" wrap="nowrap">
+                                <Text size="xs" c="gray.6">{metric.label}</Text>
+                                <Group gap={3}>
+                                  <Text size="xs" fw={700} c="gray.8">{metric.score}</Text>
+                                  <IconStarFilled size={9} style={{ color: '#F97316' }} />
                                 </Group>
-                                <Text size="xs" c="dimmed">Food Lover • 8 reviews</Text>
-                              </Stack>
-                            </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={16} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
                               </Group>
-                              <Text size="sm" c="dimmed">10/28/23</Text>
-                              <Text size="sm" c="dimmed">• Craven order</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7">
-                              Amazing food! <Text component="span" fw={600}>Chicken Sandwich</Text> was perfectly cooked and the <Text component="span" fw={600}>seasoned fries</Text> were incredible. Will definitely order again!
-                            </Text>
-                          </Card>
-                          
-                          {/* Review Card 3 */}
-                          <Card
-                            p="md"
-                            withBorder
-                            shadow="lg"
-                            style={{ minWidth: '320px', flexShrink: 0 }}
-                          >
-                            <Group align="flex-start" gap="sm" mb="sm">
-                              <Avatar color="orange" radius="xl">D</Avatar>
-                              <Stack gap={4} style={{ flex: 1 }}>
-                                <Group gap="xs">
-                                  <Text size="sm" fw={600}>David M</Text>
-                                  <IconChevronLeft size={12} style={{ color: 'var(--mantine-color-gray-4)', transform: 'rotate(90deg)' }} />
+                            ))}
+                          </Stack>
+                        </Stack>
+                      </Box>
+
+                      {/* Review Cards — Slide one at a time */}
+                      {(() => {
+                        const reviewsData = [
+                          {
+                            name: 'Marcus T',
+                            initial: 'M',
+                            color: 'blue' as const,
+                            stars: 5,
+                            date: 'Nov 15, 2023',
+                            orders: 12,
+                            badge: 'Regular',
+                            items: ['Classic Burger'],
+                            text: 'This place never disappoints! Classic Burger is always fresh and the delivery is super quick. Highly recommend!',
+                            helpful: 24,
+                          },
+                          {
+                            name: 'Sarah K',
+                            initial: 'S',
+                            color: 'violet' as const,
+                            stars: 5,
+                            date: 'Oct 28, 2023',
+                            orders: 8,
+                            badge: 'Top Reviewer',
+                            items: ['Chicken Sandwich', 'Seasoned Fries'],
+                            text: 'Amazing food! Chicken Sandwich was perfectly cooked and the seasoned fries were incredible. Will definitely order again!',
+                            helpful: 18,
+                          },
+                          {
+                            name: 'David M',
+                            initial: 'D',
+                            color: 'orange' as const,
+                            stars: 5,
+                            date: 'Dec 2, 2023',
+                            orders: 3,
+                            badge: 'New',
+                            items: ['Fish Sandwich', 'Onion Rings'],
+                            text: 'First time ordering and I\'m impressed! Fish Sandwich was crispy and fresh. The onion rings were the perfect side. Great value!',
+                            helpful: 11,
+                          },
+                        ];
+                        const review = reviewsData[reviewSlideIndex];
+                        return (
+                          <Stack gap="xs" justify="space-between">
+                            <Box
+                              p="md"
+                              style={{
+                                borderRadius: 10,
+                                border: '1px solid var(--mantine-color-gray-2)',
+                                borderLeft: '3px solid #F97316',
+                                background: 'white',
+                                position: 'relative',
+                                minHeight: 140,
+                              }}
+                            >
+                              {/* Header */}
+                              <Group justify="space-between" align="flex-start" mb={8}>
+                                <Group gap="xs" wrap="nowrap">
+                                  <Avatar color={review.color} radius="xl" size="sm">{review.initial}</Avatar>
+                                  <Stack gap={0}>
+                                    <Group gap={6}>
+                                      <Text size="sm" fw={700}>{review.name}</Text>
+                                      <Badge size="xs" variant="dot" color="teal" style={{ textTransform: 'none' }}>Verified</Badge>
+                                      {review.badge === 'Top Reviewer' && (
+                                        <Badge size="xs" variant="light" color="orange" style={{ textTransform: 'none' }}>{review.badge}</Badge>
+                                      )}
+                                    </Group>
+                                    <Text size="xs" c="dimmed">{review.orders} orders · {review.date}</Text>
+                                  </Stack>
                                 </Group>
-                                <Text size="xs" c="dimmed">New Customer • 3 orders</Text>
-                              </Stack>
-                            </Group>
-                            <Group gap="xs" mb="xs">
-                              <Group gap={2}>
-                                {[...Array(5)].map((_, i) => (
-                                  <IconStar key={i} size={16} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
-                                ))}
+                                <Group gap={2}>
+                                  {[...Array(5)].map((_, i) => (
+                                    <IconStarFilled key={i} size={12} style={{ color: i < review.stars ? '#F97316' : 'var(--mantine-color-gray-3)' }} />
+                                  ))}
+                                </Group>
                               </Group>
-                              <Text size="sm" c="dimmed">12/02/23</Text>
-                              <Text size="sm" c="dimmed">• Craven order</Text>
+
+                              {/* Review Text */}
+                              <Text size="sm" c="gray.7" lh={1.55} mb={8}>"{review.text}"</Text>
+
+                              {/* Footer: Items + Helpful */}
+                              <Group justify="space-between" align="center">
+                                <Group gap={4}>
+                                  {review.items.map(item => (
+                                    <Badge key={item} size="xs" variant="light" color="gray" radius="sm" style={{ textTransform: 'none' }}>{item}</Badge>
+                                  ))}
+                                </Group>
+                                <Group gap={4}>
+                                  <ActionIcon variant="subtle" color="gray" size="xs" radius="xl"><IconThumbUp size={12} /></ActionIcon>
+                                  <Text size="xs" c="dimmed">Helpful ({review.helpful})</Text>
+                                </Group>
+                              </Group>
+                            </Box>
+
+                            {/* Slide Controls */}
+                            <Group justify="space-between" align="center">
+                              <Group gap={6}>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="gray"
+                                  size="sm"
+                                  radius="xl"
+                                  disabled={reviewSlideIndex === 0}
+                                  onClick={() => setReviewSlideIndex(i => Math.max(0, i - 1))}
+                                >
+                                  <IconChevronLeft size={16} />
+                                </ActionIcon>
+                                <Group gap={4}>
+                                  {reviewsData.map((_, i) => (
+                                    <Box
+                                      key={i}
+                                      onClick={() => setReviewSlideIndex(i)}
+                                      style={{
+                                        width: i === reviewSlideIndex ? 16 : 6,
+                                        height: 6,
+                                        borderRadius: 3,
+                                        background: i === reviewSlideIndex ? '#F97316' : 'var(--mantine-color-gray-3)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                      }}
+                                    />
+                                  ))}
+                                </Group>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="gray"
+                                  size="sm"
+                                  radius="xl"
+                                  disabled={reviewSlideIndex === reviewsData.length - 1}
+                                  onClick={() => setReviewSlideIndex(i => Math.min(reviewsData.length - 1, i + 1))}
+                                >
+                                  <IconChevronRight size={16} />
+                                </ActionIcon>
+                              </Group>
+                              <Button variant="subtle" color="gray" size="xs" compact="true">
+                                See all 80+ reviews
+                              </Button>
                             </Group>
-                            <Text size="sm" c="gray.7">
-                              First time ordering and I'm impressed! <Text component="span" fw={600}>Fish Sandwich</Text> was crispy and fresh. The <Text component="span" fw={600}>onion rings</Text> were the perfect side. Great value!
-                            </Text>
-                          </Card>
-                        </Group>
-                      </ScrollArea>
-                    </Group>
+                          </Stack>
+                        );
+                      })()}
+                    </div>
                   </Box>
 
                   {/* Frequently Ordered Section - Desktop */}
@@ -3551,13 +3666,13 @@ const RestaurantMenuPage = () => {
               </Grid>
             </Box>
 
-            {/* Floating Cart Button - Mobile (DoorDash Style) */}
-            {cartItems.length > 0 && (
+            {/* Floating Cart Button - Mobile (DoorDash Style) - Hidden when item modal is open */}
+            {cartItems.length > 0 && !showItemModal && (
               <Box
                 className="block lg:hidden"
                 style={{
                   position: 'fixed',
-                  bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+                  bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
                   left: 16,
                   right: 16,
                   zIndex: 1001,
@@ -3616,8 +3731,8 @@ const RestaurantMenuPage = () => {
               </Box>
             )}
 
-            {/* Floating Cart Button - Desktop */}
-            {cartItems.length > 0 && showCartButton && (
+            {/* Floating Cart Button - Desktop - Hidden when item modal is open */}
+            {cartItems.length > 0 && showCartButton && !showItemModal && (
               <Box
                 className="hidden lg:block"
                 style={{
@@ -3685,7 +3800,7 @@ const RestaurantMenuPage = () => {
         </Box>
       </Box>
       
-      {/* White Bar at Bottom */}
+      {/* White Bar at Bottom — sized to match bottom nav */}
       <Box
         style={{
           position: 'fixed',
@@ -3694,10 +3809,9 @@ const RestaurantMenuPage = () => {
           right: 0,
           width: '100%',
           backgroundColor: '#ffffff',
-          height: '56px',
+          height: 'calc(76px + env(safe-area-inset-bottom, 0px))',
           zIndex: 1000,
           borderTop: '1px solid #e5e7eb',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       />
     </Box>

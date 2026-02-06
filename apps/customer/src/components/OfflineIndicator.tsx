@@ -71,10 +71,14 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
 
   const positionClasses = position === 'top' 
     ? 'top-0 left-0 right-0' 
-    : 'bottom-0 left-0 right-0';
+    : 'left-0 right-0';
+
+  const bottomNavOffset = position === 'bottom' 
+    ? { bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' } 
+    : {};
 
   return (
-    <div className={`fixed ${positionClasses} z-50 ${className}`}>
+    <div className={`fixed ${positionClasses} z-50 ${className}`} style={bottomNavOffset}>
       <div className={`${statusInfo.bgColor} ${statusInfo.textColor} px-4 py-2 shadow-lg`}>
         <div className="flex items-center justify-center space-x-2">
           <Icon className="h-4 w-4" />

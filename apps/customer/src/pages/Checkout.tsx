@@ -7,6 +7,7 @@ import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
 import { PromoCodeInput } from '@/components/checkout/PromoCodeInput';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -883,8 +884,8 @@ const Checkout: React.FC = () => {
                 restaurant_id: restaurant.id,
                 customer_id: user?.id,
                 delivery_address: {
-                  lat: 0, // Would need geocoding
-                  lng: 0,
+                  lat: pinLocation?.lat || 0,
+                  lng: pinLocation?.lng || 0,
                 },
                 pickup_address: {
                   lat: restaurant.latitude,
@@ -1123,6 +1124,9 @@ const Checkout: React.FC = () => {
           city: formData.city,
           state: formData.state.toUpperCase().slice(0, 2), // Ensure exactly 2 chars, uppercase
           zip: formData.zip,
+          // Exact pin-drop coordinates from the customer's adjusted map pin
+          lat: pinLocation?.lat || null,
+          lng: pinLocation?.lng || null,
         };
       }
       
@@ -1346,45 +1350,70 @@ const Checkout: React.FC = () => {
                 className="w-full h-48 rounded-lg overflow-hidden mb-2"
                 editable={isAdjustingPin}
                 customPinIcon={feederNavIcon}
-                onLocationChange={async (lng, lat) => {
+                onLocationChange={(lng, lat) => {
+                  // Store pending pin location — only committed on "Save pin"
                   setPinLocation({ lng, lat });
-                  // Reverse geocode to get address
-                  try {
-                    const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
-                    if (tokenData?.token) {
-                      const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${tokenData.token}&limit=1`
-                      );
-                      const data = await response.json();
-                      if (data.features && data.features.length > 0) {
-                        const feature = data.features[0];
-                        const context = feature.context || [];
-                        const street = feature.text || '';
-                        const city = context.find((c: any) => c.id.startsWith('place'))?.text || '';
-                        const state = context.find((c: any) => c.id.startsWith('region'))?.text || '';
-                        const zip = context.find((c: any) => c.id.startsWith('postcode'))?.text || '';
-                        
-                        // Update form data with new address
-                        setFormData({
-                          ...formData,
-                          address: feature.properties?.address || street,
-                          city: city,
-                          state: state,
-                          zip: zip
-                        });
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Reverse geocoding error:', error);
-                  }
                 }}
               />
-              <button 
-                onClick={() => setIsAdjustingPin(!isAdjustingPin)}
-                className="w-full bg-white border border-gray-200 hover:border-orange-500 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
-              >
-                {isAdjustingPin ? 'Done adjusting' : 'Adjust pin'}
-              </button>
+              {isAdjustingPin ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      // Cancel — discard pending pin
+                      setPinLocation(null);
+                      setIsAdjustingPin(false);
+                    }}
+                    className="flex-1 bg-white border border-gray-300 px-3 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Save the pin — reverse geocode and lock coordinates
+                      if (pinLocation) {
+                        try {
+                          const { data: tokenData } = await supabase.functions.invoke('get-mapbox-token');
+                          if (tokenData?.token) {
+                            const response = await fetch(
+                              `https://api.mapbox.com/geocoding/v5/mapbox.places/${pinLocation.lng},${pinLocation.lat}.json?access_token=${tokenData.token}&limit=1`
+                            );
+                            const data = await response.json();
+                            if (data.features && data.features.length > 0) {
+                              const feature = data.features[0];
+                              const context = feature.context || [];
+                              const street = feature.text || '';
+                              const city = context.find((c: any) => c.id.startsWith('place'))?.text || '';
+                              const state = context.find((c: any) => c.id.startsWith('region'))?.text || '';
+                              const zip = context.find((c: any) => c.id.startsWith('postcode'))?.text || '';
+
+                              setFormData({
+                                ...formData,
+                                address: feature.properties?.address || street,
+                                city: city,
+                                state: state,
+                                zip: zip
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Reverse geocoding error:', error);
+                        }
+                      }
+                      setIsAdjustingPin(false);
+                    }}
+                    className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors hover:bg-orange-600"
+                  >
+                    Save pin
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsAdjustingPin(true)}
+                  className="w-full bg-white border border-gray-200 hover:border-orange-500 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
+                >
+                  Adjust pin
+                </button>
+              )}
             </div>
 
             {/* Delivery Time */}
@@ -1633,27 +1662,39 @@ const Checkout: React.FC = () => {
                 {restaurant?.name || 'Restaurant'} • {cart.length} {cart.length === 1 ? 'item' : 'items'}
               </div>
               
-              {/* Cart Items */}
-              <div className="space-y-3">
+              {/* Cart Items - Swipe left to delete */}
+              <div className="space-y-1">
                 {cart.map((item, i) => {
                   const modifierTotal = item.modifiers?.reduce((sum: number, mod: any) => sum + (mod.price_cents || 0), 0) || 0;
                   const itemTotal = ((item.price_cents + modifierTotal) * item.quantity) / 100;
                   const modifiersText = item.modifiers?.map((m: any) => m.name).join(', ') || '';
                   
                   return (
-                    <div key={i} className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {item.quantity} x {item.name}
+                    <SwipeToDelete
+                      key={item.id || i}
+                      onDelete={() => {
+                        const newCart = cart.filter((_, idx) => idx !== i);
+                        setCart(newCart);
+                        localStorage.setItem('checkout_cart', JSON.stringify(newCart));
+                        if (removeFromCart) {
+                          removeFromCart(item.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between py-2">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.quantity} x {item.name}
+                          </div>
+                          {modifiersText && (
+                            <div className="text-xs text-gray-600 mt-0.5">{modifiersText}</div>
+                          )}
                         </div>
-                        {modifiersText && (
-                          <div className="text-xs text-gray-600 mt-0.5">{modifiersText}</div>
-                        )}
+                        <div className="text-sm font-semibold text-gray-900">
+                          ${itemTotal.toFixed(2)}
+                        </div>
                       </div>
-                      <div className="text-sm font-semibold text-gray-900">
-                        ${itemTotal.toFixed(2)}
-                      </div>
-                    </div>
+                    </SwipeToDelete>
                   );
                 })}
               </div>
@@ -1859,60 +1900,73 @@ const Checkout: React.FC = () => {
                 const itemImage = menuItemImages[item.id] || item.image_url || null;
                 
                 return (
-                  <div key={i} className="flex items-start gap-2.5 pb-3 border-b last:border-0">
-                    {/* Image with quantity badge */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
-                        {itemImage ? (
-                          <img 
-                            src={itemImage} 
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://placehold.co/80x80/CCCCCC/666666?text=Item';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No image
-                          </div>
-                        )}
-                      </div>
-                      {/* Quantity badge */}
-                      <div className="absolute bottom-0 left-0 bg-black text-white text-[10px] font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-                        {item.quantity}×
-                      </div>
-                    </div>
-                    
-                    {/* Item details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
-                          {modifiersText && (
-                            <p className="text-xs text-gray-600 mt-0.5">{modifiersText}</p>
+                  <SwipeToDelete
+                    key={item.id || i}
+                    onDelete={() => {
+                      const newCart = cart.filter((_, idx) => idx !== i);
+                      setCart(newCart);
+                      localStorage.setItem('checkout_cart', JSON.stringify(newCart));
+                      if (removeFromCart) {
+                        removeFromCart(item.id);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start gap-2.5 pb-3 border-b last:border-0">
+                      {/* Image with quantity badge */}
+                      <div className="relative flex-shrink-0">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                          {itemImage ? (
+                            <img 
+                              src={itemImage} 
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://placehold.co/80x80/CCCCCC/666666?text=Item';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                              No image
+                            </div>
                           )}
-                          <p className="text-base font-bold text-gray-900 mt-0.5">${itemTotal.toFixed(2)}</p>
                         </div>
-                        {/* Trash icon */}
-                        <button
-                          onClick={() => {
-                            const newCart = cart.filter((_, idx) => idx !== i);
-                            setCart(newCart);
-                            localStorage.setItem('checkout_cart', JSON.stringify(newCart));
-                            if (removeFromCart) {
-                              removeFromCart(item.id);
-                            }
-                          }}
-                          className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <IconTrash size={16} />
-                        </button>
+                        {/* Quantity badge */}
+                        <div className="absolute bottom-0 left-0 bg-black text-white text-[10px] font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+                          {item.quantity}×
+                        </div>
+                      </div>
+                      
+                      {/* Item details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                            {modifiersText && (
+                              <p className="text-xs text-gray-600 mt-0.5">{modifiersText}</p>
+                            )}
+                            <p className="text-base font-bold text-gray-900 mt-0.5">${itemTotal.toFixed(2)}</p>
+                          </div>
+                          {/* Trash icon - also available as tap target */}
+                          <button
+                            onClick={() => {
+                              const newCart = cart.filter((_, idx) => idx !== i);
+                              setCart(newCart);
+                              localStorage.setItem('checkout_cart', JSON.stringify(newCart));
+                              if (removeFromCart) {
+                                removeFromCart(item.id);
+                              }
+                            }}
+                            className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <IconTrash size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </SwipeToDelete>
                 );
-              })}
+              })
+}
               
               {/* Add more items button */}
               <button
@@ -2231,7 +2285,7 @@ const Checkout: React.FC = () => {
           setSelectedPaymentType(null);
         }
       }}>
-        <SheetContent side="top" className="h-auto max-h-[70vh] rounded-b-2xl p-4">
+        <SheetContent side="top" className="h-auto max-h-[90vh] overflow-y-auto rounded-b-2xl p-4">
           <div className="flex items-center justify-center mb-2">
             <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
           </div>
@@ -2665,31 +2719,31 @@ const Checkout: React.FC = () => {
 
       {/* Deals Modal */}
       <Sheet open={showDealsModal} onOpenChange={setShowDealsModal}>
-        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl p-4">
-          <div className="flex items-center justify-center mb-2">
-            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+        <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl px-4 pt-3 pb-4 overflow-hidden">
+          <div className="flex items-center justify-center mb-1.5">
+            <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
           </div>
-          <SheetHeader className="mb-4">
-            <SheetTitle className="text-center text-lg font-semibold">Your Deals & Perks</SheetTitle>
-            <SheetDescription className="text-center text-sm text-gray-500">
-              Apply your earned rewards and perks to this order
+          <SheetHeader className="mb-2">
+            <SheetTitle className="text-center text-base font-semibold">Deals & Perks</SheetTitle>
+            <SheetDescription className="text-center text-xs text-gray-500">
+              Apply rewards to this order
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-3 overflow-y-auto max-h-[60vh] pb-4">
+          <div className="space-y-2 overflow-y-auto max-h-[40vh] pb-2">
             {availableDeals.length === 0 ? (
-              <div className="text-center py-8">
-                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              <div className="text-center py-6">
+                <svg className="w-10 h-10 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <p className="text-gray-500 text-sm">No deals available</p>
-                <p className="text-gray-400 text-xs mt-1">Earn perks by referring friends, completing orders, and more!</p>
+                <p className="text-gray-500 text-sm font-medium">No deals available</p>
+                <p className="text-gray-400 text-xs mt-0.5">Earn perks by ordering, referring friends, and more</p>
               </div>
             ) : (
               availableDeals.map((deal) => (
                 <div
                   key={deal.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
                     appliedDeal?.id === deal.id
                       ? 'border-orange-500 bg-orange-50'
                       : 'border-gray-200 hover:border-orange-300'
@@ -2706,31 +2760,28 @@ const Checkout: React.FC = () => {
                     }
                   }}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{deal.title}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-sm text-gray-900 truncate">{deal.title}</h3>
                         {appliedDeal?.id === deal.id && (
-                          <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">Applied</span>
+                          <span className="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">Applied</span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{deal.description}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-orange-500">
-                          ${((deal.discount_amount_cents || 0) / 100).toFixed(2)}
-                        </span>
-                        <span className="text-xs text-gray-500">off</span>
-                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{deal.description}</p>
                     </div>
-                    <div className="ml-4">
+                    <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                      <span className="text-sm font-bold text-orange-500">
+                        -${((deal.discount_amount_cents || 0) / 100).toFixed(2)}
+                      </span>
                       {appliedDeal?.id === deal.id ? (
-                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                       ) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
                       )}
                     </div>
                   </div>
@@ -2739,12 +2790,12 @@ const Checkout: React.FC = () => {
             )}
           </div>
 
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-3 pt-3 border-t">
             <button
               onClick={() => setShowDealsModal(false)}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg py-3 text-sm font-semibold"
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-2.5 text-sm font-medium transition-colors"
             >
-              {appliedDeal ? 'Done' : 'Close'}
+              {appliedDeal ? 'Apply & Close' : 'Close'}
             </button>
           </div>
         </SheetContent>
@@ -3100,14 +3151,14 @@ const Checkout: React.FC = () => {
 
       {/* Gift It Modal */}
       <Sheet open={showGiftModal} onOpenChange={setShowGiftModal}>
-        <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-2xl p-4">
-          <div className="flex items-center justify-center mb-2">
-            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+        <SheetContent side="bottom" className="h-auto max-h-[75vh] rounded-t-2xl px-4 pt-3 pb-4 overflow-hidden">
+          <div className="flex items-center justify-center mb-1.5">
+            <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
           </div>
-          <SheetHeader className="mb-4">
-            <SheetTitle className="text-center text-lg font-semibold">Send as a Gift</SheetTitle>
-            <SheetDescription className="text-center text-sm text-gray-500">
-              Enter recipient details to send this order as a gift
+          <SheetHeader className="mb-2">
+            <SheetTitle className="text-center text-base font-semibold">Send as a Gift</SheetTitle>
+            <SheetDescription className="text-center text-xs text-gray-500">
+              Recipient details for gift delivery
             </SheetDescription>
           </SheetHeader>
 
@@ -3430,111 +3481,82 @@ const GiftForm: React.FC<{
     onSave({ ...formData, isGift: true });
   };
 
+  const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none";
+  const labelCls = "block text-xs font-medium text-gray-600 mb-0.5";
+
   return (
-    <div className="space-y-4 overflow-y-auto max-h-[60vh] pb-4">
+    <div className="overflow-y-auto max-h-[55vh] pb-2">
       <button
         onClick={onCancel}
-        className="flex items-center gap-2 text-sm text-gray-600 mb-2"
+        className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-2"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </button>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Name *</label>
-          <input
-            type="text"
-            placeholder="John Doe"
-            value={formData.recipientName}
-            onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div>
+            <label className={labelCls}>Name *</label>
+            <input type="text" placeholder="John Doe" value={formData.recipientName}
+              onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
+              required className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Phone *</label>
+            <input type="tel" placeholder="(567) 225-1495" value={formData.recipientPhone}
+              onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
+              required className={inputCls} />
+          </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Phone *</label>
-          <input
-            type="tel"
-            placeholder="(567) 225-1495"
-            value={formData.recipientPhone}
-            onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
-          <input
-            type="text"
-            placeholder="123 Main St"
-            value={formData.recipientAddress}
+          <label className={labelCls}>Delivery Address *</label>
+          <input type="text" placeholder="123 Main St" value={formData.recipientAddress}
             onChange={(e) => setFormData({...formData, recipientAddress: e.target.value})}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
+            required className={inputCls} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-            <input
-              type="text"
-              placeholder="Toledo"
-              value={formData.recipientCity}
+            <label className={labelCls}>City *</label>
+            <input type="text" placeholder="Toledo" value={formData.recipientCity}
               onChange={(e) => setFormData({...formData, recipientCity: e.target.value})}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            />
+              required className={inputCls} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
-            <input
-              type="text"
-              placeholder="OH"
-              value={formData.recipientState}
+            <label className={labelCls}>State *</label>
+            <input type="text" placeholder="OH" value={formData.recipientState}
               onChange={(e) => setFormData({...formData, recipientState: e.target.value})}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-            />
+              required className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>ZIP *</label>
+            <input type="text" placeholder="43615" value={formData.recipientZip}
+              onChange={(e) => setFormData({...formData, recipientZip: e.target.value})}
+              required className={inputCls} />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code *</label>
-          <input
-            type="text"
-            placeholder="43615"
-            value={formData.recipientZip}
-            onChange={(e) => setFormData({...formData, recipientZip: e.target.value})}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Gift Message (Optional)</label>
+          <label className={labelCls}>Gift Message <span className="text-gray-400 font-normal">(Optional)</span></label>
           <textarea
             placeholder="Happy Birthday! Enjoy your meal!"
             value={formData.giftMessage}
             onChange={(e) => setFormData({...formData, giftMessage: e.target.value})}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[80px] resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm min-h-[56px] resize-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none"
             maxLength={200}
           />
-          <div className="text-xs text-gray-500 mt-1 text-right">
-            {formData.giftMessage.length}/200
-          </div>
+          <div className="text-[10px] text-gray-400 text-right">{formData.giftMessage.length}/200</div>
         </div>
 
-        <div className="pt-4 border-t">
+        <div className="pt-2.5 border-t">
           <button
             type="submit"
             disabled={!formData.recipientName || !formData.recipientPhone || !formData.recipientAddress || !formData.recipientCity || !formData.recipientState || !formData.recipientZip}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-3 text-sm font-semibold"
+            className="w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-medium transition-colors"
           >
             Save Gift Details
           </button>

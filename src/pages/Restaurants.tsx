@@ -323,36 +323,41 @@ const Restaurants = () => {
     });
   };
 
-  // Notifications functionality
+  // Notifications functionality — fetch from DB, not mock data
   const fetchNotifications = async () => {
-    // Mock notifications - in real app, this would fetch from database
-    const mockNotifications = [
-      {
-        id: 1,
-        title: "Order Update",
-        message: "Your order from CMIH Kitchen is being prepared",
-        time: "2 min ago",
-        read: true,
-        type: "order"
-      },
-      {
-        id: 2,
-        title: "New Deal Available",
-        message: "20% off your next order at McDonald's",
-        time: "1 hour ago",
-        read: true,
-        type: "promotion"
-      },
-      {
-        id: 3,
-        title: "Delivery Complete",
-        message: "Your order has been delivered successfully",
-        time: "3 hours ago",
-        read: true,
-        type: "delivery"
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setNotificationsList([]);
+        return;
       }
-    ];
-    setNotificationsList(mockNotifications);
+
+      const { data: orderNotifs, error } = await supabase
+        .from('order_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error || !orderNotifs) {
+        console.error('Error fetching notifications:', error);
+        setNotificationsList([]);
+        return;
+      }
+
+      const formatted = orderNotifs.map((n: any) => ({
+        id: n.id,
+        title: n.title || 'Notification',
+        message: n.message || '',
+        time: new Date(n.created_at).toLocaleString(),
+        read: n.read ?? true,
+        type: n.notification_type || 'order',
+      }));
+      setNotificationsList(formatted);
+    } catch (err) {
+      console.error('Notification fetch error:', err);
+      setNotificationsList([]);
+    }
   };
 
   // Cart functionality

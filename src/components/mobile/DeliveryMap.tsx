@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin } from 'lucide-react';
 
@@ -26,6 +26,50 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   const marker = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const prevEditableRef = useRef(editable);
+
+  // When editable changes, update map interactivity without full re-init
+  useEffect(() => {
+    if (!map.current) return;
+    if (prevEditableRef.current === editable) return;
+    prevEditableRef.current = editable;
+
+    if (editable) {
+      // Enable map dragging; hide the actual marker so the CSS overlay pin is the only one visible
+      map.current.dragPan.enable();
+      map.current.scrollZoom.enable();
+      map.current.touchZoomRotate.enable();
+      if (marker.current) {
+        marker.current.getElement().style.display = 'none';
+      }
+    } else {
+      // Lock the map again; show the real marker at the current center
+      const center = map.current.getCenter();
+      if (marker.current) {
+        marker.current.setLngLat([center.lng, center.lat]);
+        marker.current.getElement().style.display = '';
+      }
+      map.current.dragPan.disable();
+      map.current.scrollZoom.disable();
+      map.current.touchZoomRotate.disable();
+    }
+  }, [editable]);
+
+  // Fire onLocationChange whenever the map stops moving while in editable mode
+  const handleMoveEnd = useCallback(() => {
+    if (!map.current || !editable || !onLocationChange) return;
+    const center = map.current.getCenter();
+    onLocationChange(center.lng, center.lat);
+  }, [editable, onLocationChange]);
+
+  // Attach / detach moveend listener
+  useEffect(() => {
+    if (!map.current) return;
+    map.current.on('moveend', handleMoveEnd);
+    return () => {
+      map.current?.off('moveend', handleMoveEnd);
+    };
+  }, [handleMoveEnd]);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -72,7 +116,13 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           if (!addr) return '';
           if (typeof addr === 'string') return addr;
           if (addr.address) return addr.address;
-          const parts = [addr.street, addr.city, addr.state, addr.zip_code].filter(Boolean);
+          // Build from parts: street_address or street, city, state, zip_code or zip
+          const parts = [
+            addr.street_address || addr.street,
+            addr.city,
+            addr.state,
+            addr.zip_code || addr.zip
+          ].filter(Boolean);
           return parts.join(', ');
         };
 
@@ -121,26 +171,31 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
         } else if (dropoffCoords && !pickupCoords) {
           center = dropoffCoords;
         } else if (pickupCoords && dropoffCoords) {
-          // Center between pickup and dropoff
           center = [
             (pickupCoords[0] + dropoffCoords[0]) / 2,
             (pickupCoords[1] + dropoffCoords[1]) / 2
           ];
         }
 
-        // Initialize map
+        // Initialize map — always interactive so we can toggle drag later
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/streets-v12',
-          center: center,
-          zoom: 13,
-          interactive: editable || showRoute // Make interactive if editable or showing route
+          center: dropoffCoords || center,
+          zoom: 15,
+          interactive: true
         });
 
+        // Start locked (non-editable) — only panning/zooming when editable
+        if (!editable) {
+          map.current.dragPan.disable();
+          map.current.scrollZoom.disable();
+          map.current.touchZoomRotate.disable();
+        }
+
         map.current.on('load', async () => {
-          // If we have a custom pin icon and dropoff coordinates, use it for the dropoff marker
+          // Place the main delivery pin (visible when NOT adjusting; hidden during adjust)
           if (dropoffCoords && customPinIcon) {
-            // Create custom marker element
             const el = document.createElement('div');
             el.className = 'custom-delivery-pin';
             el.style.cssText = `
@@ -150,40 +205,35 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               background-size: contain;
               background-repeat: no-repeat;
               background-position: center;
-              cursor: ${editable ? 'move' : 'pointer'};
+              cursor: pointer;
             `;
             
             marker.current = new mapboxgl.Marker({
               element: el,
-              draggable: editable,
+              draggable: false, // Never draggable — we use the fixed-center pattern instead
               anchor: 'bottom'
             })
               .setLngLat(dropoffCoords)
               .addTo(map.current);
 
-            // Handle drag end to update location
-            if (editable && onLocationChange) {
-              marker.current.on('dragend', () => {
-                const lngLat = marker.current.getLngLat();
-                onLocationChange(lngLat.lng, lngLat.lat);
-              });
+            // If starting in editable mode, hide the real marker
+            if (editable) {
+              el.style.display = 'none';
             }
           } else {
-            // Add current location marker (blue) - only if not editable
+            // Fallback: standard markers
             if (!editable) {
               new mapboxgl.Marker({ color: '#3b82f6' })
                 .setLngLat(currentLocation)
                 .addTo(map.current);
             }
 
-            // Add pickup marker (red)
             if (pickupCoords) {
               new mapboxgl.Marker({ color: '#ef4444' })
                 .setLngLat(pickupCoords)
                 .addTo(map.current);
             }
 
-            // Add dropoff marker (green) - only if not editable (editable uses custom pin)
             if (dropoffCoords && !editable) {
               new mapboxgl.Marker({ color: '#22c55e' })
                 .setLngLat(dropoffCoords)
@@ -191,7 +241,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             }
           }
 
-          // Draw route if requested and we have coordinates
+          // Draw route if requested
           if (showRoute && pickupCoords && dropoffCoords) {
             try {
               const waypoints = `${currentLocation[0]},${currentLocation[1]};${pickupCoords[0]},${pickupCoords[1]};${dropoffCoords[0]},${dropoffCoords[1]}`;
@@ -226,7 +276,6 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                   }
                 });
 
-                // Fit map to show all markers
                 const bounds = new mapboxgl.LngLatBounds();
                 bounds.extend(currentLocation);
                 if (pickupCoords) bounds.extend(pickupCoords);
@@ -238,18 +287,21 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               console.error('Route fetch error:', routeErr);
             }
           } else {
-            // Just fit to markers
-            const bounds = new mapboxgl.LngLatBounds();
-            if (!editable) bounds.extend(currentLocation);
-            if (pickupCoords) bounds.extend(pickupCoords);
-            if (dropoffCoords) bounds.extend(dropoffCoords);
-            
-            if (bounds.isEmpty()) {
-              // If no bounds, just center on dropoff or current location
-              map.current.setCenter(editable && dropoffCoords ? dropoffCoords : center);
+            // Center on dropoff for delivery details view
+            if (dropoffCoords) {
+              map.current.setCenter(dropoffCoords);
               map.current.setZoom(15);
             } else {
-              map.current.fitBounds(bounds, { padding: 50 });
+              const bounds = new mapboxgl.LngLatBounds();
+              bounds.extend(currentLocation);
+              if (pickupCoords) bounds.extend(pickupCoords);
+              
+              if (bounds.isEmpty()) {
+                map.current.setCenter(center);
+                map.current.setZoom(15);
+              } else {
+                map.current.fitBounds(bounds, { padding: 50 });
+              }
             }
           }
 
@@ -314,9 +366,33 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
         className="w-full h-full"
         style={{ minHeight: '256px' }}
       />
+
+      {/* Fixed center pin overlay — visible only when adjusting */}
+      {editable && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          style={{ zIndex: 10 }}
+        >
+          <div className="flex flex-col items-center">
+            {customPinIcon ? (
+              <img
+                src={customPinIcon}
+                alt="Delivery pin"
+                style={{ width: 44, height: 44, marginBottom: -4 }}
+              />
+            ) : (
+              <MapPin className="h-10 w-10 text-orange-600 drop-shadow-lg" style={{ marginBottom: -4 }} />
+            )}
+            {/* Shadow dot beneath the pin tip */}
+            <div
+              className="rounded-full bg-black/20"
+              style={{ width: 8, height: 4 }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default DeliveryMap;
-

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Group, Text, Badge, ActionIcon } from '@mantine/core';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconShoppingBag, IconHeart, IconPackage, IconUser, IconShoppingCart } from '@tabler/icons-react';
+import { IconCurrencyDollar, IconHeart, IconShoppingBag, IconUser, IconShoppingCart } from '@tabler/icons-react';
 import { useCart } from '@/contexts/CartContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +45,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     '/merchant',
     '/auth',
     '/customer-support',
+    '/checkout',
     '/admin',
     '/ceo',
     '/cfo',
@@ -71,7 +72,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     {
       id: 'shop',
       label: 'Shop',
-      icon: IconShoppingBag,
+      icon: IconCurrencyDollar,
       path: '/restaurants',
       isActive: location.pathname === '/restaurants' || location.pathname === '/',
     },
@@ -85,7 +86,7 @@ const GlobalMobileBottomNav: React.FC = () => {
     {
       id: 'orders',
       label: 'Orders',
-      icon: IconPackage,
+      icon: IconShoppingBag,
       path: '/order-history',
       isActive: location.pathname === '/order-history',
     },

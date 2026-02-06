@@ -729,12 +729,16 @@ export const MobileDriverDashboard: React.FC = () => {
       // Fetch order summary to populate modal
       const {
         data: order
-      } = await supabase.from('orders').select('pickup_address, dropoff_address, payout_cents, distance_km').eq('id', assignment.order_id).maybeSingle();
+      } = await supabase.from('orders').select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name)').eq('id', assignment.order_id).maybeSingle();
       if (order) {
+        // Resolve actual restaurant name from the joined restaurants table
+        const restaurantName = (order as any).restaurants?.name
+          || (typeof order.pickup_address === 'object' && order.pickup_address !== null ? (order.pickup_address as any).name : null)
+          || 'New Order';
         setCurrentOrderAssignment({
           assignment_id: assignment.id,
           order_id: assignment.order_id,
-          restaurant_name: 'New Order',
+          restaurant_name: restaurantName,
           pickup_address: order.pickup_address,
           dropoff_address: order.dropoff_address,
           payout_cents: order.payout_cents || 0,
