@@ -1452,34 +1452,99 @@ const RestaurantMenuPage = () => {
 
                             <Divider mb="lg" />
 
-                            {/* 6. Stack Section - order stacking */}
-                            <Box mb="lg">
-                                <Group gap="sm" mb="xs">
-                                    <IconShoppingCart size={20} style={{ color: 'var(--mantine-color-orange-6)' }} />
-                                    <Text size="md" fw={600}>Stack your order</Text>
-                                </Group>
-                                <Text size="sm" c="dimmed" mb="sm">
-                                    Add more items from this restaurant to save on delivery
-                                </Text>
-                                <Button
-                                    variant="light"
-                                    color="orange"
-                                    fullWidth
-                                    radius="md"
-                                    onClick={() => {
-                                        addToCartFromModal();
-                                    }}
-                                    style={{
-                                        backgroundColor: 'var(--mantine-color-orange-0)',
-                                        border: '1px solid var(--mantine-color-orange-3)',
-                                    }}
-                                >
-                                    <Group gap="xs">
-                                        <IconPlus size={16} />
-                                        <Text size="sm" fw={500}>Add & keep browsing</Text>
-                                    </Group>
-                                </Button>
-                            </Box>
+                            {/* 6. Stack Section - suggest drinks/desserts from this restaurant */}
+                            {(() => {
+                                // Find drink & dessert categories from the restaurant's menu
+                                const drinkKeywords = ['drink', 'beverage', 'juice', 'smoothie', 'shake', 'coffee', 'tea', 'soda', 'water'];
+                                const dessertKeywords = ['dessert', 'sweet', 'cake', 'cookie', 'ice cream', 'pastry', 'pie'];
+                                const stackKeywords = [...drinkKeywords, ...dessertKeywords, 'side', 'appetizer', 'app'];
+
+                                // Get categories that look like drinks/desserts/sides
+                                const stackCategoryIds = categories
+                                    .filter(cat => stackKeywords.some(kw => cat.name.toLowerCase().includes(kw)))
+                                    .map(cat => cat.id);
+
+                                // Get items from those categories, excluding the current item
+                                let stackItems = menuItems.filter(item => 
+                                    item.id !== selectedItem.id && 
+                                    item.is_available &&
+                                    stackCategoryIds.includes(item.category_id)
+                                );
+
+                                // If no category-matched items, fall back to random available items from the restaurant
+                                if (stackItems.length === 0) {
+                                    stackItems = menuItems.filter(item => 
+                                        item.id !== selectedItem.id && item.is_available
+                                    );
+                                }
+
+                                // Shuffle and take up to 6
+                                const shuffled = [...stackItems].sort(() => Math.random() - 0.5).slice(0, 6);
+
+                                if (shuffled.length === 0) return null;
+
+                                return (
+                                    <Box mb="lg">
+                                        <Group gap="sm" mb="xs">
+                                            <IconShoppingCart size={20} style={{ color: 'var(--mantine-color-orange-6)' }} />
+                                            <Text size="md" fw={700}>Stack your order</Text>
+                                        </Group>
+                                        <Text size="sm" c="dimmed" mb="sm">
+                                            Add a drink or dessert — save on delivery
+                                        </Text>
+                                        <ScrollArea scrollbars="x" type="never">
+                                            <Group gap="sm" style={{ flexWrap: 'nowrap' }} pb="xs">
+                                                {shuffled.map((item) => (
+                                                    <Card
+                                                        key={item.id}
+                                                        withBorder
+                                                        p={0}
+                                                        radius="md"
+                                                        style={{ minWidth: '140px', maxWidth: '160px', flexShrink: 0, cursor: 'pointer', overflow: 'hidden' }}
+                                                        onClick={() => {
+                                                            // Quick-add this item to cart with quantity 1
+                                                            if (restaurant?.id) {
+                                                                addToCartContext({
+                                                                    id: item.id,
+                                                                    name: item.name,
+                                                                    price_cents: item.price_cents,
+                                                                    quantity: 1,
+                                                                    modifiers: [],
+                                                                    restaurant_id: restaurant.id,
+                                                                }, restaurant.id);
+                                                                notifications.show({
+                                                                    title: 'Added to order',
+                                                                    message: `${item.name} added`,
+                                                                    color: 'green',
+                                                                    autoClose: 2000,
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Box style={{ width: '100%', height: '100px', overflow: 'hidden' }}>
+                                                            <MantineImage
+                                                                src={item.image_url || 'https://placehold.co/160x100/CCCCCC/666666?text=Item'}
+                                                                alt={item.name}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                fit="cover"
+                                                            />
+                                                        </Box>
+                                                        <Box p="xs">
+                                                            <Text size="xs" fw={600} lineClamp={2} mb="4px">{item.name}</Text>
+                                                            <Group justify="space-between" align="center">
+                                                                <Text size="xs" fw={700} c="orange">${(item.price_cents / 100).toFixed(2)}</Text>
+                                                                <ActionIcon size="xs" variant="light" color="orange" radius="xl">
+                                                                    <IconPlus size={12} />
+                                                                </ActionIcon>
+                                                            </Group>
+                                                        </Box>
+                                                    </Card>
+                                                ))}
+                                            </Group>
+                                        </ScrollArea>
+                                    </Box>
+                                );
+                            })()}
                         </Box>
                     </ScrollArea>
 
@@ -1690,8 +1755,8 @@ const RestaurantMenuPage = () => {
 
   return (
     <Box style={{ minHeight: '100vh', backgroundColor: 'white' }}>
-      {/* Mobile Header - DoorDash Style */}
-      <MobileHeader 
+      {/* Mobile Header - DoorDash Style — hidden when item modal is open */}
+      {!showItemModal && <MobileHeader 
         restaurant={restaurant}
         onBack={() => navigate('/restaurants')}
         onShare={() => {
@@ -1756,7 +1821,7 @@ const RestaurantMenuPage = () => {
           }
         }}
         isLiked={isRestaurantLiked}
-      />
+      />}
 
       {/* Desktop Header - Hidden on Mobile */}
       <Box
