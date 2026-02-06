@@ -19,9 +19,12 @@ function getSharedUserLocation(cb: (loc: { lat: number; lng: number } | null) =>
         _geoCallbacks.forEach((fn) => fn(_geoCache));
         _geoCallbacks = [];
       },
-      () => {
-        // Denied / unavailable — log once, resolve all waiters with null
-        console.log('Location access denied or unavailable');
+      (error) => {
+        // Denied / unavailable — resolve all waiters with null
+        // Only log if not a user denial (error.code !== 1)
+        if (error.code !== 1) {
+          console.warn('Location access unavailable:', error.message || 'Unknown error');
+        }
         _geoCallbacks.forEach((fn) => fn(null));
         _geoCallbacks = [];
       }
