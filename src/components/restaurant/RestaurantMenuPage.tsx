@@ -1573,7 +1573,8 @@ const RestaurantMenuPage = () => {
                             right: 0,
                             backgroundColor: 'white',
                             borderTop: '1px solid var(--mantine-color-gray-3)',
-                            padding: '16px',
+                            padding: '0px 16px',
+                            height: '140px',
                             zIndex: 10,
                         }}
                     >
@@ -1587,6 +1588,8 @@ const RestaurantMenuPage = () => {
                                 height: '56px',
                                 fontSize: '16px',
                                 fontWeight: 600,
+                                marginTop: '10px',
+                                marginBottom: '10px',
                             }}
                         >
                             <Group justify="space-between" style={{ width: '100%' }}>
