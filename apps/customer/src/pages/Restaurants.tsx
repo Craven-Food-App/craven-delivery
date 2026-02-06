@@ -346,8 +346,6 @@ const Restaurants = () => {
         return ['Produce', 'Dairy', 'Meat', 'Bakery', 'Frozen', 'Pantry', 'Beverages', 'Snacks', 'Organic', 'Deli', 'Seafood', 'International'];
       case 'convenience':
         return ['Snacks', 'Beverages', 'Candy', 'Ice Cream', 'Quick Meals', 'Sandwiches', 'Salads', 'Soups', 'Breakfast', 'Coffee', 'Energy Drinks', 'Chips'];
-      case 'dashmart':
-        return ['Electronics', 'Home', 'Beauty', 'Health', 'Baby', 'Pet', 'Office', 'Garden', 'Kitchen', 'Bedding', 'Decor', 'Storage'];
       case 'beauty':
         return ['Makeup', 'Skincare', 'Hair Care', 'Fragrance', 'Tools', 'Bath & Body', 'Nails', 'Men\'s Grooming', 'Sunscreen', 'Anti-Aging', 'Acne Care', 'Hair Styling'];
       case 'pets':
@@ -1157,10 +1155,9 @@ const Restaurants = () => {
 
   // Navigation categories
   const navCategories = [
-    { id: 'all', label: 'All', icon: IconHome, active: activeCategory === 'all' },
+    { id: 'all', label: 'Main', icon: IconHome, active: activeCategory === 'all' },
     { id: 'grocery', label: 'Grocery', icon: IconBuildingStore, active: activeCategory === 'grocery' },
-    { id: 'convenience', label: 'Quick Stops', icon: IconCoffee, active: activeCategory === 'convenience' },
-    { id: 'dashmart', label: "Craven'Z", icon: IconBuildingStore, active: activeCategory === 'dashmart' },
+    { id: 'convenience', label: 'C Stores', icon: IconCoffee, active: activeCategory === 'convenience' },
     { id: 'beauty', label: 'Cosmetics', icon: IconHeart, active: activeCategory === 'beauty' },
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
@@ -1177,7 +1174,7 @@ const Restaurants = () => {
     if (categoryId === 'all' || categoryId === 'browse') {
       setCuisineFilter('all');
       setApparelCategoryFilter('all'); // Reset apparel filter when switching away
-    } else if (['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    } else if (['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       // Don't change cuisineFilter for menu clicks - just scroll to the section
       // The sections are always visible in the mobile layout
       setApparelCategoryFilter('all');
@@ -1192,7 +1189,7 @@ const Restaurants = () => {
     }
     
     // Scroll to results section for restaurant categories
-    if (['all', 'browse', 'grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
+    if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setTimeout(() => {
         if (categoryId === 'apparel' && apparelSectionRef.current) {
           apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2259,7 +2256,7 @@ const Restaurants = () => {
               </Text>
             )}
           </Box>
-        ) : ['grocery', 'convenience', 'dashmart', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory) ? (
+        ) : ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory) ? (
           <Box
             component="nav"
             style={{
