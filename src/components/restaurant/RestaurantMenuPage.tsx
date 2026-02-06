@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
+import { getLogoBackgroundColor } from '@/utils/logoUtils';
 import {
   Button,
   TextInput,
@@ -2285,7 +2286,7 @@ const RestaurantMenuPage = () => {
                         border: '2px solid white',
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                         flexShrink: 0,
-                        backgroundColor: 'var(--mantine-color-gray-1)',
+                        backgroundColor: getLogoBackgroundColor(restaurant.logo_url, 'var(--mantine-color-gray-1)'),
                       }}
                     >
                       <MantineImage

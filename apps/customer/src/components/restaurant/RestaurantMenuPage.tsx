@@ -66,6 +66,7 @@ import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravemoreIcon from "@/assets/cravemore-icon.png";
 import { useCart } from '@/contexts/CartContext';
+import { getLogoBackgroundColor } from '@/utils/logoUtils';
 
 // --- Type Definitions (matching your database) ---
 interface Restaurant {
@@ -2379,7 +2380,7 @@ const RestaurantMenuPage = () => {
                         border: '2px solid white',
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                         flexShrink: 0,
-                        backgroundColor: 'var(--mantine-color-gray-1)',
+                        backgroundColor: getLogoBackgroundColor(restaurant.logo_url, 'var(--mantine-color-gray-1)'),
                       }}
                     >
                       <MantineImage

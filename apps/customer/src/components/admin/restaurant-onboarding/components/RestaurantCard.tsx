@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import type { RestaurantOnboardingData } from '../types';
+import { getLogoBackgroundColor } from '@/utils/logoUtils';
 import {
   getOnboardingStage,
   getReadinessScore,
@@ -82,11 +83,18 @@ export function RestaurantCard({
             {/* Logo */}
             <div className="flex-shrink-0">
               {restaurant.restaurant.logo_url ? (
-                <img
-                  src={restaurant.restaurant.logo_url}
-                  alt={restaurant.restaurant.name}
-                  className="w-14 h-14 rounded-lg object-cover border-2 border-gray-200"
-                />
+                <div
+                  className="w-14 h-14 rounded-lg border-2 border-gray-200 overflow-hidden"
+                  style={{
+                    backgroundColor: getLogoBackgroundColor(restaurant.restaurant.logo_url, 'transparent')
+                  }}
+                >
+                  <img
+                    src={restaurant.restaurant.logo_url}
+                    alt={restaurant.restaurant.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               ) : (
                 <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center border-2 border-orange-300">
                   <Store className="h-7 w-7 text-orange-600" />
