@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin } from 'lucide-react';
+import { createCravenMarkerElement, CRAVEN_PIN_URL } from '@/utils/createCravenMapPin';
 
 interface DeliveryMapProps {
   pickupAddress?: any;
@@ -194,18 +195,9 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
 
         map.current.on('load', async () => {
           // Place the main delivery pin (visible when NOT adjusting; hidden during adjust)
-          if (dropoffCoords && customPinIcon) {
-            const el = document.createElement('div');
-            el.className = 'custom-delivery-pin';
-            el.style.cssText = `
-              width: 40px;
-              height: 40px;
-              background-image: url('${customPinIcon}');
-              background-size: contain;
-              background-repeat: no-repeat;
-              background-position: center;
-              cursor: pointer;
-            `;
+          const pinIcon = customPinIcon || CRAVEN_PIN_URL;
+          if (dropoffCoords && pinIcon) {
+            const el = createCravenMarkerElement(40, 'Delivery Location');
             
             marker.current = new mapboxgl.Marker({
               element: el,
@@ -220,21 +212,24 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               el.style.display = 'none';
             }
           } else {
-            // Fallback: standard markers
+            // Fallback: Craven branded markers
             if (!editable) {
-              new mapboxgl.Marker({ color: '#3b82f6' })
+              const locEl = createCravenMarkerElement(36, 'Your Location');
+              new mapboxgl.Marker({ element: locEl, anchor: 'center' })
                 .setLngLat(currentLocation)
                 .addTo(map.current);
             }
 
             if (pickupCoords) {
-              new mapboxgl.Marker({ color: '#ef4444' })
+              const pickupEl = createCravenMarkerElement(36, 'Pickup');
+              new mapboxgl.Marker({ element: pickupEl, anchor: 'center' })
                 .setLngLat(pickupCoords)
                 .addTo(map.current);
             }
 
             if (dropoffCoords && !editable) {
-              new mapboxgl.Marker({ color: '#22c55e' })
+              const dropEl = createCravenMarkerElement(36, 'Dropoff');
+              new mapboxgl.Marker({ element: dropEl, anchor: 'center' })
                 .setLngLat(dropoffCoords)
                 .addTo(map.current);
             }
@@ -373,15 +368,11 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           style={{ zIndex: 10 }}
         >
           <div className="flex flex-col items-center">
-            {customPinIcon ? (
-              <img
-                src={customPinIcon}
-                alt="Delivery pin"
-                style={{ width: 44, height: 44, marginBottom: -4 }}
-              />
-            ) : (
-              <MapPin className="h-10 w-10 text-orange-600 drop-shadow-lg" style={{ marginBottom: -4 }} />
-            )}
+            <img
+              src={customPinIcon || CRAVEN_PIN_URL}
+              alt="Delivery pin"
+              style={{ width: 44, height: 44, marginBottom: -4 }}
+            />
             {/* Shadow dot beneath the pin tip */}
             <div
               className="rounded-full bg-black/20"

@@ -144,7 +144,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Analyze AI Predictive Insights',
           description: 'Review forward-looking predictions and recommendations',
           nextTab: 'Cash Flow Forecast',
-          nextTabId: 'forecast',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Read each insight card - focus on high confidence predictions',
@@ -158,7 +158,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Investigate Anomaly Alerts',
           description: 'Address unusual patterns immediately',
           nextTab: 'Approve Spend',
-          nextTabId: 'approvals',
+          nextTabId: 'tax-compliance',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click on each anomaly alert to see details',
@@ -172,7 +172,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Review Financial Trends',
           description: 'Examine the 12-Month Performance chart',
           nextTab: 'Track Budget vs Actuals',
-          nextTabId: 'bva',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Identify upward/downward trends in revenue',
@@ -185,7 +185,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Check Financial Health Score',
           description: 'Monitor the overall financial health ring indicator',
           nextTab: 'Risk Management',
-          nextTabId: 'risk',
+          nextTabId: 'audit-risk',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Note the current score (0-100)',
@@ -273,7 +273,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Navigate to FP&A & Forecasting Tab',
           description: 'Click on "FP&A & Forecasting" in the left navigation sidebar',
           nextTab: 'Track Budget vs Actuals',
-          nextTabId: 'bva',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Look for "FP&A & Forecasting" in the left sidebar menu',
@@ -285,7 +285,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Review Multi-Scenario Forecasts',
           description: 'Analyze Base, Optimistic, and Pessimistic scenarios',
           nextTab: 'Scenario Planning',
-          nextTabId: 'scenario',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review Base Case scenario (most likely outcome)',
@@ -299,7 +299,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Update Business Drivers',
           description: 'Modify key drivers that impact financial performance',
           nextTab: 'Cash Flow Forecast',
-          nextTabId: 'forecast',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Driver-Based Planning" sub-tab',
@@ -315,7 +315,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Analyze Budget vs Actuals',
           description: 'Compare planned budget to actual performance',
           nextTab: 'Board Reporting',
-          nextTabId: 'board',
+          nextTabId: 'reporting',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Switch to "Budget vs Actuals" sub-tab',
@@ -330,7 +330,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Create Custom Scenarios',
           description: 'Model specific what-if scenarios',
           nextTab: 'Risk Management',
-          nextTabId: 'risk',
+          nextTabId: 'audit-risk',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Create Scenario" button',
@@ -346,7 +346,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Generate Forecast Reports',
           description: 'Export forecasts for presentations',
           nextTab: 'Board Reporting',
-          nextTabId: 'board',
+          nextTabId: 'reporting',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review 12-Month Forecast Comparison chart',
@@ -455,7 +455,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Navigate to Advanced Treasury Tab',
           description: 'Click on "Advanced Treasury" in the left navigation sidebar',
           nextTab: 'Cash Flow Forecast',
-          nextTabId: 'forecast',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Look for "Advanced Treasury" in the left sidebar menu',
@@ -482,7 +482,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Manage Investment Portfolio',
           description: 'Track and rebalance investments',
           nextTab: 'Capital Structure',
-          nextTabId: 'capital',
+          nextTabId: 'reporting',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Investments" sub-tab',
@@ -498,7 +498,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Track Debt Instruments',
           description: 'Monitor debt obligations and covenants',
           nextTab: 'Risk Management',
-          nextTabId: 'risk',
+          nextTabId: 'audit-risk',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Debt Management" sub-tab',
@@ -514,7 +514,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Analyze FX Exposure',
           description: 'Assess foreign currency risk',
           nextTab: 'Risk Management',
-          nextTabId: 'risk',
+          nextTabId: 'audit-risk',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "FX Exposure" sub-tab',
@@ -665,7 +665,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Review AR Aging Report',
           description: 'Monitor overdue customer balances',
           nextTab: 'Cash Flow Forecast',
-          nextTabId: 'forecast',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review aging buckets (Current, 30, 60, 90+ days)',
@@ -679,7 +679,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Follow Up on Overdue Accounts',
           description: 'Contact customers with outstanding balances',
           nextTab: 'Risk Management',
-          nextTabId: 'risk',
+          nextTabId: 'audit-risk',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Filter to show only overdue invoices',
@@ -709,8 +709,8 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
         {
           title: 'Assess Credit Risk',
           description: 'Evaluate customer creditworthiness',
-          nextTab: 'Financial Controls',
-          nextTabId: 'controls',
+          nextTab: 'Tax & Compliance',
+          nextTabId: 'tax-compliance',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review payment history for each customer',
@@ -725,7 +725,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Generate AR Reports',
           description: 'Create reports for analysis',
           nextTab: 'Board Reporting',
-          nextTabId: 'board',
+          nextTabId: 'reporting',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Click "Export" button',
@@ -802,7 +802,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Navigate to Accounts Payable Tab',
           description: 'Click on "Run Payables" in the left navigation sidebar',
           nextTab: 'Approve Spend',
-          nextTabId: 'approvals',
+          nextTabId: 'tax-compliance',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Look for "Run Payables" in the left sidebar menu',
@@ -844,7 +844,7 @@ export const CFOKnowledgeBase: React.FC<CFOKnowledgeBaseProps> = ({ onNavigateTo
           title: 'Schedule Payments',
           description: 'Optimize payment timing',
           nextTab: 'Cash Flow Forecast',
-          nextTabId: 'forecast',
+          nextTabId: 'fpa',
           clickLocation: 'Left sidebar navigation',
           substeps: [
             'Review upcoming due dates',

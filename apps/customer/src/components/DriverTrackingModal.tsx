@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, MapPin, Navigation, Clock, Phone, MessageCircle, Truck, User, Star, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 interface DriverTrackingModalProps {
   orderId: string;
@@ -224,12 +225,10 @@ const DriverTrackingModal: React.FC<DriverTrackingModalProps> = ({
       driverMarker.remove();
     }
 
-    // Create new marker
+    // Create new marker — Craven branded
     const mapboxgl = require('mapbox-gl');
-    const marker = new mapboxgl.Marker({
-      color: '#3b82f6',
-      scale: 1.2
-    })
+    const markerEl = createCravenMarkerElement(44, 'Driver');
+    const marker = new mapboxgl.Marker({ element: markerEl, anchor: 'center' })
       .setLngLat([location.lng, location.lat])
       .addTo(map);
 

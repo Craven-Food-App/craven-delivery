@@ -76,59 +76,42 @@ const getIconForSection = (id: string): React.ReactNode => {
     'evaluation': <IconShield size={20} />,
     'onboarding': <IconScale size={20} />,
     'overview': <IconDashboard size={20} />,
-    'finance-dashboard': <IconChartBar size={20} />,
     // Core Accounting
     'general-ledger': <IconFileText size={20} />,
     'ap': <IconCurrencyDollar size={20} />,
     'ar': <IconTrendingUp size={20} />,
-    // Banking & Treasury
-    'banking': <IconBuildingBank size={20} />,
+    'invoices-expenses': <IconFileText size={20} />,
+    'vendors': <IconUsers size={20} />,
+    // Banking & Treasury (consolidated)
     'treasury': <IconWallet size={20} />,
-    'transactions': <IconFileText size={20} />,
-    'payouts': <IconCurrencyDollar size={20} />,
-    // Team & Operations
-    'manager': <IconUsers size={20} />,
-    'payroll': <IconUsers size={20} />,
-    'driver-comp': <IconCurrencyDollar size={20} />,
-    // Planning & Analysis
+    // Team & Payroll (consolidated)
+    'team': <IconUsers size={20} />,
+    // Planning & Analysis (consolidated)
     'fpa': <IconRocket size={20} />,
-    'budget': <IconCalculator size={20} />,
-    'forecast': <IconChartBar size={20} />,
-    'bva': <IconPresentationAnalytics size={20} />,
-    'scenario': <IconCalendarStats size={20} />,
-    // Compliance & Controls
-    'tax': <IconCalculator size={20} />,
-    'controls': <IconShield size={20} />,
-    'approvals': <IconChecklist size={20} />,
-    'audit': <IconClipboardList size={20} />,
-    'risk': <IconAlertTriangle size={20} />,
-    // Reporting & Investor
-    'reports': <IconReport size={20} />,
-    'board': <IconBriefcase size={20} />,
-    'investor': <IconTrendingUp size={20} />,
-    'capital': <IconBuildingBank size={20} />,
+    // Tax & Compliance (consolidated)
+    'tax-compliance': <IconCalculator size={20} />,
+    // Audit & Risk (consolidated)
+    'audit-risk': <IconClipboardList size={20} />,
+    // Stakeholder Reporting (consolidated)
+    'reporting': <IconReport size={20} />,
     // Period Close
     'close': <IconChecklist size={20} />,
-    // Communications
-    'communications': <IconMail size={20} />,
-    'messages': <IconMessageCircle size={20} />,
-    'wordprocessor': <IconFileText size={20} />,
-    'manual': <IconBook size={20} />,
+    // Communications (consolidated)
+    'comms': <IconMail size={20} />,
   };
   return iconMap[id] || <IconDashboard size={20} />;
 };
 
-// Group definitions - Enterprise Fortune 500 Grade (consolidated)
+// Group definitions — consolidated 15-section architecture
 const navGroups = [
-  { id: 'executive', label: 'Executive Functions', items: ['evaluation', 'onboarding', 'overview'] },
-  { id: 'accounting', label: 'Core Accounting', items: ['general-ledger', 'ap', 'ar'] },
-  { id: 'banking', label: 'Banking & Treasury', items: ['treasury', 'transactions', 'payouts'] },
-  { id: 'team', label: 'Team & Operations', items: ['manager', 'payroll', 'driver-comp'] },
-  { id: 'planning', label: 'Planning & Analysis', items: ['fpa', 'budget', 'forecast', 'scenario'] },
-  { id: 'compliance', label: 'Compliance & Controls', items: ['tax', 'controls', 'approvals', 'audit', 'risk'] },
-  { id: 'reporting', label: 'Reporting & Investor', items: ['reports', 'board', 'investor', 'capital'] },
+  { id: 'executive', label: 'Executive Function', items: ['evaluation', 'onboarding', 'overview'] },
+  { id: 'accounting', label: 'Core Accounting', items: ['general-ledger', 'ap', 'ar', 'invoices-expenses', 'vendors'] },
+  { id: 'banking', label: 'Banking & Treasury', items: ['treasury'] },
+  { id: 'planning', label: 'Planning & Analysis', items: ['fpa'] },
+  { id: 'compliance', label: 'Compliance & Controls', items: ['tax-compliance', 'audit-risk'] },
+  { id: 'reporting', label: 'Stakeholder Reporting', items: ['reporting'] },
   { id: 'close', label: 'Period Close', items: ['close'] },
-  { id: 'communications', label: 'Communications', items: ['communications', 'wordprocessor', 'manual'] },
+  { id: 'operations', label: 'Operations', items: ['team', 'comms'] },
 ];
 
 export const CFOPortalLayout: React.FC<CFOPortalLayoutProps> = ({

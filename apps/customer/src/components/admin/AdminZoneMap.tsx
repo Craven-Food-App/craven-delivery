@@ -5,6 +5,7 @@ import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { MAPBOX_CONFIG } from '@/config/mapbox';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 type ZoneGeometry = Polygon | { type: string; coordinates: any } | null;
 
@@ -315,8 +316,10 @@ const AdminZoneMap: React.FC<AdminZoneMapProps> = ({
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
     if (!markerRef.current) {
+      const driverEl = createCravenMarkerElement(36, 'Driver');
       markerRef.current = new mapboxgl.Marker({
-        color: '#f97316',
+        element: driverEl,
+        anchor: 'center',
       })
         .setLngLat([driverLocation[1], driverLocation[0]])
         .addTo(mapRef.current);

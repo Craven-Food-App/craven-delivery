@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { MapPin, Navigation, Clock } from 'lucide-react';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 // --- GLOBAL VARIABLES (For Single File Compatibility) ---
 // Using the real Mapbox Public Token provided by the user.
@@ -166,13 +167,15 @@ const OrderMapPreview: React.FC<OrderMapPreviewProps> = ({
       map.current.on('load', async () => {
         if (!map.current) return;
 
-        // Add pickup marker (Orange)
-        new mapboxgl.Marker({ color: '#f97316' })
+        // Add pickup marker — Craven branded
+        const pickupEl = createCravenMarkerElement(36, 'Pickup');
+        new mapboxgl.Marker({ element: pickupEl, anchor: 'center' })
           .setLngLat([pickupLng, pickupLat])
           .addTo(map.current);
 
-        // Add dropoff marker (Green)
-        new mapboxgl.Marker({ color: '#22c55e' })
+        // Add dropoff marker — Craven branded
+        const dropoffEl = createCravenMarkerElement(36, 'Dropoff');
+        new mapboxgl.Marker({ element: dropoffEl, anchor: 'center' })
           .setLngLat([dropoffLng, dropoffLat])
           .addTo(map.current);
 

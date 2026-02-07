@@ -9,7 +9,7 @@ import {
   randomizeZoneDemand,
   zonesToGeoJSON,
 } from '@/data/deliveryZones';
-import driverNavIcon from '@/assets/driver_nav_icon.png';
+import { createCravenMarkerElement, CRAVEN_PIN_URL } from '@/utils/createCravenMapPin';
 
 interface MobileMapboxProps {
   className?: string;
@@ -232,18 +232,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         // Initialize marker at config default - will be updated when location is available
         const initialMarkerPos = [MAPBOX_CONFIG.center[0], MAPBOX_CONFIG.center[1]];
         
-        // Create custom marker element with driver icon
-        const el = document.createElement('div');
-        el.className = 'driver-location-marker';
-        el.style.cssText = `
-          width: 41px;
-          height: 41px;
-          background-image: url('${driverNavIcon}');
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          cursor: pointer;
-        `;
+        // Create custom marker element — Craven branded
+        const el = createCravenMarkerElement(41, 'Driver');
         
         marker.current = new (window as any).mapboxgl.Marker({
           element: el,

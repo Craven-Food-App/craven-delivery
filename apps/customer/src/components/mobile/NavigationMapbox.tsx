@@ -17,6 +17,7 @@ import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SpeedLimitSign } from './SpeedLimitSign';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 interface NavigationMapboxProps {
   destination: {
@@ -169,35 +170,10 @@ export const NavigationMapbox: React.FC<NavigationMapboxProps> = ({
         element.style.transform = `rotate(${location.heading}deg)`;
       }
     } else {
-      // Create driver marker
-      const el = document.createElement('div');
-      el.className = 'driver-marker';
-      el.style.cssText = `
-        width: 20px;
-        height: 20px;
-        background: #3b82f6;
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        position: relative;
-      `;
+      // Create driver marker — Craven branded pin
+      const el = createCravenMarkerElement(32, 'Driver');
 
-      // Add direction arrow
-      const arrow = document.createElement('div');
-      arrow.style.cssText = `
-        position: absolute;
-        top: -8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 4px solid transparent;
-        border-right: 4px solid transparent;
-        border-bottom: 8px solid #3b82f6;
-      `;
-      el.appendChild(arrow);
-
-      driverMarker.current = new window.mapboxgl.Marker(el)
+      driverMarker.current = new window.mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([location.longitude, location.latitude])
         .addTo(map.current);
     }
@@ -254,24 +230,9 @@ export const NavigationMapbox: React.FC<NavigationMapboxProps> = ({
       if (destinationMarker.current) {
         destinationMarker.current.setLngLat([destination.longitude, destination.latitude]);
       } else {
-        const el = document.createElement('div');
-        el.className = 'destination-marker';
-        el.style.cssText = `
-          width: 30px;
-          height: 30px;
-          background: #ef4444;
-          border: 3px solid white;
-          border-radius: 50%;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-        `;
-        el.innerHTML = '📍';
+        const el = createCravenMarkerElement(36, 'Destination');
 
-        destinationMarker.current = new window.mapboxgl.Marker(el)
+        destinationMarker.current = new window.mapboxgl.Marker({ element: el, anchor: 'center' })
           .setLngLat([destination.longitude, destination.latitude])
           .addTo(map.current);
       }

@@ -13,7 +13,7 @@ import { CreditCard } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { DeliveryMap } from '@/components/mobile/DeliveryMap';
-import feederNavIcon from '@/assets/feeder_nav_button_compressed.png';
+import { CRAVEN_PIN_URL } from '@/utils/createCravenMapPin';
 import { OrderCompletionModal } from '@/components/OrderCompletionModal';
 
 // Initialize Stripe - only if publishable key is available
@@ -1349,7 +1349,7 @@ const Checkout: React.FC = () => {
                 } : undefined)}
                 className="w-full h-48 rounded-lg overflow-hidden mb-2"
                 editable={isAdjustingPin}
-                customPinIcon={feederNavIcon}
+                customPinIcon={CRAVEN_PIN_URL}
                 onLocationChange={(lng, lat) => {
                   // Store pending pin location — only committed on "Save pin"
                   setPinLocation({ lng, lat });
@@ -2277,7 +2277,7 @@ const Checkout: React.FC = () => {
       </div>
       )}
 
-      {/* Payment Method Selection Modal - shown in both views */}
+      {/* Payment Method Selection Modal — Crave'N Vault */}
       <Sheet open={showPaymentModal} onOpenChange={(open) => {
         setShowPaymentModal(open);
         if (!open) {
@@ -2285,148 +2285,249 @@ const Checkout: React.FC = () => {
           setSelectedPaymentType(null);
         }
       }}>
-        <SheetContent side="top" className="h-auto max-h-[90vh] overflow-y-auto rounded-b-2xl p-4">
-          <div className="flex items-center justify-center mb-2">
-            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+        <SheetContent side="bottom" className="h-auto max-h-[92vh] overflow-y-auto rounded-t-[28px] p-0 border-0">
+          {/* Keyframe animations for the card-deal cascade */}
+          <style>{`
+            @keyframes vaultDealIn {
+              0% { opacity: 0; transform: translateY(60px) rotate(4deg) scale(0.92); }
+              60% { opacity: 1; transform: translateY(-4px) rotate(-0.5deg) scale(1.01); }
+              100% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+            }
+            @keyframes vaultHeaderGlow {
+              0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+              100% { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes vaultShieldPulse {
+              0%, 100% { filter: drop-shadow(0 0 8px rgba(234,179,8,0.3)); }
+              50% { filter: drop-shadow(0 0 20px rgba(234,179,8,0.6)); }
+            }
+            @keyframes vaultLineExpand {
+              0% { transform: scaleX(0); }
+              100% { transform: scaleX(1); }
+            }
+            .vault-card-deal {
+              animation: vaultDealIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            }
+          `}</style>
+
+          {/* Clean white header */}
+          <div
+            style={{
+              background: '#ffffff',
+              padding: '20px 24px 16px',
+              animation: 'vaultHeaderGlow 0.4s ease-out both',
+              position: 'relative',
+            }}
+          >
+            <div className="flex items-center justify-center mb-4">
+              <div style={{
+                width: '40px', height: '4px', borderRadius: '4px',
+                background: '#e5e7eb',
+              }} />
+            </div>
+
+            <SheetHeader className="mb-0">
+              <div className="flex items-center justify-center gap-2.5 mb-1">
+                {/* Orange shield icon */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'vaultShieldPulse 3s ease-in-out infinite' }}>
+                  <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7L12 2z" fill="url(#shieldGrad)" stroke="rgba(234,119,8,0.15)" strokeWidth="0.5"/>
+                  <path d="M10 12l2 2 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <defs><linearGradient id="shieldGrad" x1="3" y1="2" x2="21" y2="22"><stop stopColor="#f97316"/><stop offset="1" stopColor="#ea580c"/></linearGradient></defs>
+                </svg>
+                <SheetTitle className="text-center text-lg font-bold text-gray-900 tracking-tight" style={{ letterSpacing: '-0.02em' }}>
+                  Payment
+                </SheetTitle>
+              </div>
+              <SheetDescription className="text-center text-[11px] text-gray-400 font-medium" style={{ letterSpacing: '0.05em' }}>
+                SECURE • ENCRYPTED • INSTANT
+              </SheetDescription>
+            </SheetHeader>
+
+            {/* Subtle separator */}
+            <div style={{
+              height: '1px', marginTop: '14px',
+              background: 'linear-gradient(90deg, transparent, #e5e7eb, transparent)',
+              animation: 'vaultLineExpand 0.6s ease-out 0.2s both',
+              transformOrigin: 'center',
+            }} />
           </div>
-          <SheetHeader className="mb-3">
-            <SheetTitle className="text-center text-lg font-semibold">Select Payment Method</SheetTitle>
-            <SheetDescription className="sr-only">Choose your preferred payment method for this order</SheetDescription>
-          </SheetHeader>
-          
+
           {!showPaymentSetup ? (
-            <div className="space-y-2 pb-2">
-              {/* Saved Credit/Debit Card */}
+            <div style={{ padding: '12px 20px 28px', background: '#ffffff' }}>
+              {/* Saved card — highlighted at top */}
               {hasPaymentMethods && selectedPaymentMethod && (
                 <button
-                  onClick={() => {
-                    setShowPaymentModal(false);
-                    processOrder();
+                  onClick={() => { setShowPaymentModal(false); processOrder(); }}
+                  className="vault-card-deal"
+                  style={{
+                    animationDelay: '0.05s',
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '14px 16px', marginBottom: '10px',
+                    background: '#fff',
+                    border: '2px solid #f97316',
+                    borderRadius: '16px', cursor: 'pointer',
+                    boxShadow: '0 2px 12px rgba(249,115,22,0.1)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
                   }}
-                  className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(249,115,22,0.15)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(249,115,22,0.1)'; }}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-gray-600" />
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <CreditCard className="w-5 h-5 text-white" />
                   </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-medium text-sm text-gray-900 truncate">
-                      {selectedPaymentMethod.type === 'card' 
-                        ? `${selectedPaymentMethod.brand || 'Card'} •••• ${selectedPaymentMethod.last4}`
-                        : `Bank Account •••• ${selectedPaymentMethod.last4}`
-                      }
+                  <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selectedPaymentMethod.type === 'card'
+                        ? `${(selectedPaymentMethod.brand || 'Card').charAt(0).toUpperCase() + (selectedPaymentMethod.brand || 'card').slice(1)} •••• ${selectedPaymentMethod.last4}`
+                        : `Bank Account •••• ${selectedPaymentMethod.last4}`}
                     </div>
-                    <div className="text-xs text-gray-500">Credit/Debit Card</div>
+                    <div style={{ fontSize: '11px', color: '#f97316', fontWeight: 500, letterSpacing: '0.03em' }}>Saved • Tap to pay now</div>
                   </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
               )}
 
-              {/* Credit/Debit Card */}
-              <button
-                onClick={() => {
-                  // Always show card entry form when clicking Credit/Debit Card
-                  setSelectedPaymentType('card');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <CreditCard className="w-5 h-5 text-gray-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">Credit/Debit Card</div>
-                </div>
-              </button>
+              {/* Payment method option tiles — each cascades in */}
+              {[
+                {
+                  key: 'card', label: 'Credit / Debit Card', sub: 'Visa, Mastercard, Amex',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#1a1f71"/>
+                      <path d="M11.5 13.5H9.8L11 6.5h1.7L11.5 13.5z" fill="#fff"/>
+                      <path d="M17.3 6.6c-.3-.1-.9-.3-1.5-.3-1.7 0-2.9.9-2.9 2.1 0 .9.8 1.5 1.5 1.8.7.3.9.5.9.8 0 .4-.5.6-1 .6-.7 0-1-.1-1.6-.3l-.2-.1-.2 1.4c.4.2 1.1.3 1.8.3 1.8 0 3-.9 3-2.2 0-.7-.4-1.3-1.4-1.7-.6-.3-.9-.5-.9-.8 0-.3.3-.5.9-.5.5 0 .9.1 1.2.2l.1.1.3-1.4z" fill="#fff"/>
+                      <path d="M20.5 6.5h-1.3c-.4 0-.7.1-.9.5l-2.5 5.9h1.8l.4-1h2.2l.2 1h1.6L20.5 6.5zm-2 4.5l.9-2.5.5 2.5h-1.4z" fill="#fff"/>
+                      <path d="M9.2 6.5L7.5 11l-.2-1c-.3-1.1-1.4-2.2-2.5-2.8l1.5 5.8H8l2.7-6.5H9.2z" fill="#fff"/>
+                      <path d="M5.8 6.5H3l0 .2c2.1.5 3.5 1.8 4.1 3.4l-.6-3c-.1-.4-.4-.5-.7-.6z" fill="#f7b600"/>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+                {
+                  key: 'googlepay', label: 'Google Pay', sub: 'Fast & secure checkout',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#fff" stroke="#e5e7eb" strokeWidth="0.5"/>
+                      <text x="4" y="14" fontFamily="Arial,sans-serif" fontWeight="700" fontSize="9" fill="#4285f4">G</text>
+                      <text x="11" y="14" fontFamily="Arial,sans-serif" fontWeight="500" fontSize="8" fill="#5f6368">Pay</text>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+                {
+                  key: 'cashapp', label: 'Cash App Pay', sub: 'Pay with your Cash balance',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#00D632"/>
+                      <text x="14" y="14" textAnchor="middle" fontFamily="Arial,sans-serif" fontWeight="800" fontSize="14" fill="#fff">$</text>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+                {
+                  key: 'klarna', label: 'Klarna', sub: 'Buy now, pay later',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#FFB3C7"/>
+                      <text x="14" y="14.5" textAnchor="middle" fontFamily="Arial,sans-serif" fontWeight="800" fontSize="11" fill="#17120F">K.</text>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+                {
+                  key: 'paypal', label: 'PayPal', sub: 'Email or phone',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#003087"/>
+                      <text x="14" y="14" textAnchor="middle" fontFamily="Arial,sans-serif" fontWeight="700" fontSize="9" fill="#fff">Pay</text>
+                      <text x="14" y="14" textAnchor="middle" fontFamily="Arial,sans-serif" fontWeight="700" fontSize="9" fill="#009cde" dx="-5.5">P</text>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+                {
+                  key: 'venmo', label: 'Venmo', sub: '@username',
+                  logo: (
+                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                      <rect width="28" height="20" rx="3" fill="#3D95CE"/>
+                      <text x="14" y="14.5" textAnchor="middle" fontFamily="Arial,sans-serif" fontWeight="700" fontSize="12" fill="#fff">V</text>
+                    </svg>
+                  ),
+                  bgGrad: '#ffffff',
+                  iconBorder: '1px solid #f0f0f0',
+                },
+              ].map((method, i) => (
+                <button
+                  key={method.key}
+                  onClick={() => { setSelectedPaymentType(method.key); setShowPaymentSetup(true); }}
+                  className="vault-card-deal"
+                  style={{
+                    animationDelay: `${0.08 + i * 0.07}s`,
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '14px 16px', marginBottom: '8px',
+                    background: method.bgGrad,
+                    border: method.iconBorder,
+                    borderRadius: '16px', cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+                    transition: 'transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+                >
+                  <div style={{
+                    width: '48px', height: '34px', borderRadius: '8px', overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                  }}>
+                    {method.logo}
+                  </div>
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827', letterSpacing: '-0.01em' }}>{method.label}</div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400, marginTop: '1px' }}>{method.sub}</div>
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.3 }}>
+                    <path d="M9 18l6-6-6-6" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              ))}
 
-              {/* Google Pay */}
-              <button
-                onClick={() => {
-                  setSelectedPaymentType('googlepay');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-gray-200 flex-shrink-0">
-                  <div className="text-[10px] font-semibold text-gray-700">G Pay</div>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">Google Pay</div>
-                </div>
-              </button>
-
-              {/* Cash App Pay */}
-              <button
-                onClick={() => {
-                  setSelectedPaymentType('cashapp');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center flex-shrink-0">
-                  <div className="text-white font-bold text-sm">$</div>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">Cash App Pay</div>
-                </div>
-              </button>
-
-              {/* Klarna */}
-              <button
-                onClick={() => {
-                  setSelectedPaymentType('klarna');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center flex-shrink-0">
-                  <div className="text-white font-bold text-sm">K</div>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">Klarna</div>
-                </div>
-              </button>
-
-              {/* PayPal */}
-              <button
-                onClick={() => {
-                  setSelectedPaymentType('paypal');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
-                  <div className="text-white font-bold text-sm">P</div>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">PayPal</div>
-                </div>
-              </button>
-
-              {/* Venmo */}
-              <button
-                onClick={() => {
-                  setSelectedPaymentType('venmo');
-                  setShowPaymentSetup(true);
-                }}
-                className="w-full flex items-center gap-3 p-2.5 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors bg-white"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-400 flex items-center justify-center flex-shrink-0">
-                  <div className="text-white font-bold text-sm">V</div>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-gray-900">Venmo</div>
-                </div>
-              </button>
+              {/* Security footer */}
+              <div className="vault-card-deal" style={{
+                animationDelay: '0.6s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                padding: '12px 0 4px', opacity: 0,
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" stroke="#d1d5db" strokeWidth="2"/>
+                  <path d="M7 11V7a5 5 0 0110 0v4" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <span style={{ fontSize: '10px', color: '#d1d5db', fontWeight: 500, letterSpacing: '0.06em' }}>
+                  256-BIT SSL ENCRYPTED
+                </span>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4 pb-2">
+            <div style={{ padding: '20px 20px 28px', background: '#ffffff' }}>
               <button
-                onClick={() => {
-                  setShowPaymentSetup(false);
-                  setSelectedPaymentType(null);
+                onClick={() => { setShowPaymentSetup(false); setSelectedPaymentType(null); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  fontSize: '13px', color: '#6b7280', fontWeight: 500,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  marginBottom: '16px', padding: '4px 0',
                 }}
-                className="flex items-center gap-2 text-sm text-gray-600 mb-2"
               >
-                <span>←</span> Back
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Back to methods
               </button>
               
               {selectedPaymentType === 'card' && (
@@ -2610,77 +2711,135 @@ const Checkout: React.FC = () => {
                   />
                   </Elements>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <p className="text-sm text-yellow-800">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #fffbeb, #fef3c7)',
+                      border: '1px solid rgba(245,158,11,0.2)',
+                      borderRadius: '12px', padding: '14px 16px',
+                    }}>
+                      <p style={{ fontSize: '13px', color: '#92400e', margin: 0 }}>
                         Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY in your environment variables.
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setShowPaymentSetup(false);
-                        setSelectedPaymentType(null);
+                      onClick={() => { setShowPaymentSetup(false); setSelectedPaymentType(null); }}
+                      style={{
+                        width: '100%', border: '1.5px solid #e5e7eb', color: '#374151',
+                        borderRadius: '14px', padding: '12px', fontSize: '14px', fontWeight: 600,
+                        background: '#fff', cursor: 'pointer',
                       }}
-                      className="w-full border border-gray-300 text-gray-700 rounded-lg py-3.5 text-base font-semibold hover:bg-gray-50"
                     >
                       Back
-                  </button>
-                </div>
+                    </button>
+                  </div>
                 )
               )}
 
               {(selectedPaymentType === 'googlepay' || selectedPaymentType === 'cashapp' || selectedPaymentType === 'klarna' || selectedPaymentType === 'paypal' || selectedPaymentType === 'venmo') && (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
-                    {selectedPaymentType === 'googlepay' && 'Connect your Google Pay account to use for payments.'}
-                    {selectedPaymentType === 'cashapp' && 'Enter your Cash App details to use for payments.'}
-                    {selectedPaymentType === 'klarna' && 'Connect your Klarna account for buy now, pay later options.'}
-                    {selectedPaymentType === 'paypal' && 'Connect your PayPal account to use for payments.'}
-                    {selectedPaymentType === 'venmo' && 'Enter your Venmo username to use for payments.'}
-                  </p>
-                  <div className="space-y-2">
-                    {selectedPaymentType === 'cashapp' && (
-                      <input
-                        type="text"
-                        placeholder="$username"
-                        value={paymentSetupValue}
-                        onChange={(e) => setPaymentSetupValue(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    )}
-                    {selectedPaymentType === 'paypal' && (
-                      <input
-                        type="email"
-                        placeholder="PayPal email"
-                        value={paymentSetupValue}
-                        onChange={(e) => setPaymentSetupValue(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    )}
-                    {selectedPaymentType === 'venmo' && (
-                      <input
-                        type="text"
-                        placeholder="@username"
-                        value={paymentSetupValue}
-                        onChange={(e) => setPaymentSetupValue(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      />
-                    )}
-                    {(selectedPaymentType === 'googlepay' || selectedPaymentType === 'klarna') && (
-                      <button
-                        onClick={() => {
-                          // Integrate with Google Pay/Klarna SDK
-                          toast({ title: "Integration", description: `${selectedPaymentType === 'googlepay' ? 'Google Pay' : 'Klarna'} integration will be handled by their SDK.`, variant: "default" });
-                        }}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-left"
-                      >
-                        Connect {selectedPaymentType === 'googlepay' ? 'Google Pay' : 'Klarna'}
-                      </button>
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Method header card */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 16px', borderRadius: '14px',
+                    background: '#f9fafb',
+                    border: '1px solid #f0f0f0',
+                  }}>
+                    <div style={{
+                      width: '40px', height: '40px', borderRadius: '10px',
+                      background: selectedPaymentType === 'cashapp' ? '#00D632' :
+                        selectedPaymentType === 'klarna' ? '#FFB3C7' :
+                        selectedPaymentType === 'paypal' ? '#003087' :
+                        selectedPaymentType === 'venmo' ? '#3D95CE' : '#4285f4',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      <span style={{ color: '#fff', fontWeight: 800, fontSize: '16px' }}>
+                        {selectedPaymentType === 'cashapp' ? '$' : selectedPaymentType === 'klarna' ? 'K' : selectedPaymentType === 'paypal' ? 'P' : selectedPaymentType === 'venmo' ? 'V' : 'G'}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '15px', color: '#111827' }}>
+                        {selectedPaymentType === 'googlepay' ? 'Google Pay' : selectedPaymentType === 'cashapp' ? 'Cash App Pay' : selectedPaymentType === 'klarna' ? 'Klarna' : selectedPaymentType === 'paypal' ? 'PayPal' : 'Venmo'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                        {selectedPaymentType === 'googlepay' && 'Fast & secure checkout'}
+                        {selectedPaymentType === 'cashapp' && 'Pay with your Cash balance'}
+                        {selectedPaymentType === 'klarna' && 'Buy now, pay later'}
+                        {selectedPaymentType === 'paypal' && 'Secure online payments'}
+                        {selectedPaymentType === 'venmo' && 'Social payments made easy'}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Input fields */}
+                  {selectedPaymentType === 'cashapp' && (
+                    <input
+                      type="text"
+                      placeholder="$cashtag"
+                      value={paymentSetupValue}
+                      onChange={(e) => setPaymentSetupValue(e.target.value)}
+                      style={{
+                        width: '100%', border: '1.5px solid #e5e7eb', borderRadius: '12px',
+                        padding: '12px 16px', fontSize: '14px', outline: 'none',
+                        transition: 'border-color 0.2s',
+                        background: '#fff',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                    />
+                  )}
+                  {selectedPaymentType === 'paypal' && (
+                    <input
+                      type="email"
+                      placeholder="PayPal email address"
+                      value={paymentSetupValue}
+                      onChange={(e) => setPaymentSetupValue(e.target.value)}
+                      style={{
+                        width: '100%', border: '1.5px solid #e5e7eb', borderRadius: '12px',
+                        padding: '12px 16px', fontSize: '14px', outline: 'none',
+                        transition: 'border-color 0.2s',
+                        background: '#fff',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                    />
+                  )}
+                  {selectedPaymentType === 'venmo' && (
+                    <input
+                      type="text"
+                      placeholder="@username"
+                      value={paymentSetupValue}
+                      onChange={(e) => setPaymentSetupValue(e.target.value)}
+                      style={{
+                        width: '100%', border: '1.5px solid #e5e7eb', borderRadius: '12px',
+                        padding: '12px 16px', fontSize: '14px', outline: 'none',
+                        transition: 'border-color 0.2s',
+                        background: '#fff',
+                      }}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+                    />
+                  )}
+                  {(selectedPaymentType === 'googlepay' || selectedPaymentType === 'klarna') && (
+                    <button
+                      onClick={() => {
+                        toast({ title: "Integration", description: `${selectedPaymentType === 'googlepay' ? 'Google Pay' : 'Klarna'} integration will be handled by their SDK.`, variant: "default" });
+                      }}
+                      style={{
+                        width: '100%', border: '1.5px dashed #d1d5db', borderRadius: '12px',
+                        padding: '14px 16px', fontSize: '14px', color: '#6b7280',
+                        background: '#fff', cursor: 'pointer',
+                        transition: 'border-color 0.2s, background 0.2s',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = '#fffbeb'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = '#fff'; }}
+                    >
+                      Connect {selectedPaymentType === 'googlepay' ? 'Google Pay' : 'Klarna'}
+                    </button>
+                  )}
+
+                  {/* Continue button */}
                   <button
                     onClick={async () => {
-                      // Validate input for methods that require it
                       if ((selectedPaymentType === 'cashapp' || selectedPaymentType === 'paypal' || selectedPaymentType === 'venmo') && !paymentSetupValue.trim()) {
                         toast({ title: "Error", description: "Please enter your payment details", variant: "destructive" });
                         return;
@@ -2692,7 +2851,6 @@ const Checkout: React.FC = () => {
                         return;
                       }
 
-                      // Set the selected payment method
                       setSelectedPaymentMethod({
                         type: selectedPaymentType,
                         provider: selectedPaymentType,
@@ -2706,7 +2864,17 @@ const Checkout: React.FC = () => {
                       setPaymentSetupValue('');
                       await processOrder();
                     }}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-2.5 text-sm font-semibold"
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: '#fff', border: 'none', borderRadius: '14px',
+                      padding: '14px', fontSize: '15px', fontWeight: 600,
+                      cursor: 'pointer', letterSpacing: '-0.01em',
+                      boxShadow: '0 4px 14px rgba(245,158,11,0.3)',
+                      transition: 'transform 0.15s, box-shadow 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(245,158,11,0.4)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(245,158,11,0.3)'; }}
                   >
                     Continue with {selectedPaymentType === 'googlepay' ? 'Google Pay' : selectedPaymentType === 'cashapp' ? 'Cash App' : selectedPaymentType === 'klarna' ? 'Klarna' : selectedPaymentType === 'paypal' ? 'PayPal' : 'Venmo'}
                   </button>

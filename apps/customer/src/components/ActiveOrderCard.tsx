@@ -176,13 +176,16 @@ const ActiveOrderCard: React.FC<ActiveOrderCardProps> = ({ order, onStatusUpdate
             variant="ghost" 
             size="sm" 
             className="flex-1"
-            onClick={() => {
-              // Share location/ETA
+            onClick={async () => {
+              const shareText = `Your order from ${order.pickup_name} is on the way!`;
               if (navigator.share) {
-                navigator.share({
-                  title: 'Delivery Update',
-                  text: `Your order from ${order.pickup_name} is on the way!`
-                });
+                try {
+                  await navigator.share({ title: 'Delivery Update', text: shareText, url: window.location.href });
+                } catch { /* user cancelled */ }
+              } else {
+                try {
+                  await navigator.clipboard.writeText(shareText);
+                } catch { /* clipboard not available */ }
               }
             }}
           >

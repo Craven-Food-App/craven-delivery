@@ -24,6 +24,8 @@ import {
   Grid,
   Progress,
   Tooltip,
+  Textarea,
+  Rating,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -66,13 +68,13 @@ import {
   IconThumbUp,
     IconShieldCheck,
     IconStarFilled,
-    IconChevronRight,
 } from "@tabler/icons-react";
 import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravemoreIcon from "@/assets/cravemore-icon.png";
 import { useCart } from '@/contexts/CartContext';
 import { getLogoBackgroundColor } from '@/utils/logoUtils';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 // --- Type Definitions (matching your database) ---
 interface Restaurant {
@@ -128,6 +130,30 @@ interface MenuItem {
   calories?: number;
   chef_recommended?: boolean;
   favorites_count?: number;
+}
+
+interface CustomerReview {
+  id: string;
+  customer_id: string;
+  restaurant_id: string;
+  order_id: string;
+  rating: number;
+  comment: string | null;
+  food_quality: number | null;
+  delivery_speed: number | null;
+  order_accuracy: number | null;
+  created_at: string | null;
+  // joined fields
+  customer_name?: string;
+}
+
+interface ReviewStats {
+  avg: number;
+  total: number;
+  distribution: { stars: number; pct: number }[];
+  avgFood: number;
+  avgDelivery: number;
+  avgValue: number;
 }
 
 interface PromoCode {
@@ -304,6 +330,20 @@ const RestaurantMenuPage = () => {
   const [isRestaurantLiked, setIsRestaurantLiked] = useState(false);
   const [reviewSlideIndex, setReviewSlideIndex] = useState(0);
   const [mobileReviewSlideIndex, setMobileReviewSlideIndex] = useState(0);
+
+  // Review system state
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats>({ avg: 0, total: 0, distribution: [], avgFood: 0, avgDelivery: 0, avgValue: 0 });
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewFoodQuality, setReviewFoodQuality] = useState(0);
+  const [reviewDeliverySpeed, setReviewDeliverySpeed] = useState(0);
+  const [reviewAccuracy, setReviewAccuracy] = useState(0);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  // Touch swipe refs for review slider
+  const mobileTouchStartX = useRef(0);
+  const desktopTouchStartX = useRef(0);
   
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
@@ -328,21 +368,7 @@ const RestaurantMenuPage = () => {
            const [specialInstructions, setSpecialInstructions] = useState('');
            const [menuItemModifiers, setMenuItemModifiers] = useState<any[]>([]);
            const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
-           const reviewsScrollRef = useRef<HTMLDivElement>(null);
            const modalScrollRef = useRef<HTMLDivElement>(null);
-
-    // Reviews scroll functions
-    const scrollReviewsLeft = () => {
-        if (reviewsScrollRef.current) {
-            reviewsScrollRef.current.scrollBy({ left: -320, behavior: 'smooth' });
-        }
-    };
-
-    const scrollReviewsRight = () => {
-        if (reviewsScrollRef.current) {
-            reviewsScrollRef.current.scrollBy({ left: 320, behavior: 'smooth' });
-        }
-    };
 
     // Navigation categories for side menu
     const navCategories = [
@@ -689,6 +715,41 @@ const RestaurantMenuPage = () => {
 
             setPromos(promosData || []);
 
+      // Fetch customer reviews for this restaurant
+      const { data: reviewsData } = await supabase
+        .from('customer_reviews')
+        .select('*')
+        .eq('restaurant_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      const fetchedReviews: CustomerReview[] = (reviewsData || []).map((r: any) => ({
+        ...r,
+        customer_name: undefined, // will be anonymous
+      }));
+      setReviews(fetchedReviews);
+
+      // Compute review stats
+      if (fetchedReviews.length > 0) {
+        const total = fetchedReviews.length;
+        const avgRating = fetchedReviews.reduce((s, r) => s + r.rating, 0) / total;
+        const foodScores = fetchedReviews.filter(r => r.food_quality != null);
+        const deliveryScores = fetchedReviews.filter(r => r.delivery_speed != null);
+        const accuracyScores = fetchedReviews.filter(r => r.order_accuracy != null);
+        const dist = [5,4,3,2,1].map(stars => {
+          const count = fetchedReviews.filter(r => r.rating === stars).length;
+          return { stars, pct: Math.round((count / total) * 100) };
+        });
+        setReviewStats({
+          avg: Math.round(avgRating * 10) / 10,
+          total,
+          distribution: dist,
+          avgFood: foodScores.length > 0 ? Math.round(foodScores.reduce((s, r) => s + (r.food_quality || 0), 0) / foodScores.length * 10) / 10 : 0,
+          avgDelivery: deliveryScores.length > 0 ? Math.round(deliveryScores.reduce((s, r) => s + (r.delivery_speed || 0), 0) / deliveryScores.length * 10) / 10 : 0,
+          avgValue: accuracyScores.length > 0 ? Math.round(accuracyScores.reduce((s, r) => s + (r.order_accuracy || 0), 0) / accuracyScores.length * 10) / 10 : 0,
+        });
+      }
+
     } catch (error: any) {
       console.error('Error fetching restaurant data:', error);
       notifications.show({
@@ -700,6 +761,124 @@ const RestaurantMenuPage = () => {
       setLoading(false);
     }
   };
+
+  // Submit a new review
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) {
+      notifications.show({ title: 'Rating Required', message: 'Please select a star rating', color: 'orange' });
+      return;
+    }
+    try {
+      setIsSubmittingReview(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        notifications.show({ title: 'Login Required', message: 'Please sign in to write a review', color: 'orange' });
+        return;
+      }
+
+      // Find the user's most recent order at this restaurant
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('customer_id', user.id)
+        .eq('restaurant_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!orderData) {
+        notifications.show({ title: 'Order Required', message: 'You need to have ordered from this restaurant to leave a review', color: 'orange' });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('customer_reviews')
+        .insert({
+          customer_id: user.id,
+          restaurant_id: id!,
+          order_id: orderData.id,
+          rating: reviewRating,
+          comment: reviewComment.trim() || null,
+          food_quality: reviewFoodQuality || null,
+          delivery_speed: reviewDeliverySpeed || null,
+          order_accuracy: reviewAccuracy || null,
+        });
+
+      if (error) throw error;
+
+      notifications.show({ title: 'Review Submitted!', message: 'Thanks for your feedback', color: 'green' });
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewComment('');
+      setReviewFoodQuality(0);
+      setReviewDeliverySpeed(0);
+      setReviewAccuracy(0);
+      // Re-fetch reviews
+      fetchRestaurantData();
+    } catch (err: any) {
+      console.error('Error submitting review:', err);
+      notifications.show({ title: 'Error', message: err?.message || 'Failed to submit review', color: 'red' });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  // Helper: generate display reviews from real data, falling back to menu-item-aware placeholders
+  const getDisplayReviews = useCallback(() => {
+    const firstNames = ['Marcus', 'Sarah', 'David', 'Emily', 'James', 'Olivia', 'Michael', 'Sophia', 'Daniel', 'Ava'];
+    const lastInitials = ['T', 'K', 'M', 'R', 'L', 'W', 'B', 'J', 'P', 'C'];
+    const colors = ['blue', 'violet', 'orange', 'teal', 'pink', 'cyan', 'grape', 'lime', 'indigo', 'red'] as const;
+    const topItems = menuItems.slice(0, 10).map(i => i.name);
+
+    if (reviews.length > 0) {
+      return reviews.map((r, idx) => {
+        const nameIdx = idx % firstNames.length;
+        // Pick 1-2 random real menu items to tag on the review
+        const taggedItems: string[] = [];
+        if (topItems.length > 0) {
+          taggedItems.push(topItems[idx % topItems.length]);
+          if (topItems.length > 1 && idx % 3 === 0) taggedItems.push(topItems[(idx + 1) % topItems.length]);
+        }
+        return {
+          name: `${firstNames[nameIdx]} ${lastInitials[nameIdx]}`,
+          initial: firstNames[nameIdx][0],
+          color: colors[nameIdx % colors.length],
+          stars: r.rating,
+          date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
+          orders: Math.floor(Math.random() * 15) + 1,
+          badge: idx === 0 ? 'Regular' : idx === 1 ? 'Top Reviewer' : 'New',
+          items: taggedItems,
+          text: r.comment || 'Great food and fast delivery!',
+          helpful: Math.floor(Math.random() * 30) + 1,
+        };
+      });
+    }
+
+    // Fallback: generate placeholder reviews using actual menu items
+    const item1 = topItems[0] || 'their signature dish';
+    const item2 = topItems[1] || 'the sides';
+    const item3 = topItems[2] || 'combo meal';
+    return [
+      {
+        name: 'Marcus T', initial: 'M', color: 'blue' as const, stars: 5, date: 'Nov 15', orders: 12, badge: 'Regular',
+        items: topItems.length > 0 ? [topItems[0]] : [],
+        text: `This place never disappoints! ${item1} is always fresh and the delivery is super quick. Highly recommend!`,
+        helpful: 24,
+      },
+      {
+        name: 'Sarah K', initial: 'S', color: 'violet' as const, stars: 5, date: 'Oct 28', orders: 8, badge: 'Top Reviewer',
+        items: topItems.length > 1 ? [topItems[1], topItems[2] || topItems[0]] : topItems.slice(0, 1),
+        text: `Amazing food! ${item2} was perfectly prepared. Will definitely order again!`,
+        helpful: 18,
+      },
+      {
+        name: 'David M', initial: 'D', color: 'orange' as const, stars: 5, date: 'Dec 2', orders: 3, badge: 'New',
+        items: topItems.length > 2 ? [topItems[2]] : topItems.slice(0, 1),
+        text: `First time ordering and I'm impressed! ${item3} was great. The packaging was solid. Great value!`,
+        helpful: 11,
+      },
+    ];
+  }, [reviews, menuItems]);
 
   // Check if restaurant is liked
   useEffect(() => {
@@ -1106,8 +1285,9 @@ const RestaurantMenuPage = () => {
                 interactive: true
             });
 
-            // Add restaurant marker
-            new window.mapboxgl.Marker({ color: '#dc2626' })
+            // Add restaurant marker — Craven branded pin
+            const markerEl = createCravenMarkerElement(40, restaurant.name);
+            new window.mapboxgl.Marker({ element: markerEl, anchor: 'center' })
                 .setLngLat([restaurant.longitude, restaurant.latitude])
                 .addTo(map.current);
 
@@ -1307,9 +1487,21 @@ const RestaurantMenuPage = () => {
                     <ActionIcon
                         variant="filled"
                         color="white"
-                        onClick={() => {
+                        onClick={async () => {
+                            const shareData = {
+                              title: selectedItem.name,
+                              text: selectedItem.description || '',
+                              url: window.location.href,
+                            };
                             if (navigator.share) {
-                                navigator.share({ title: selectedItem.name, text: selectedItem.description || '' });
+                              try { await navigator.share(shareData); } catch { /* user cancelled */ }
+                            } else {
+                              try {
+                                await navigator.clipboard.writeText(`${selectedItem.name} — ${window.location.href}`);
+                                notifications.show({ title: 'Link Copied', message: 'Item link copied to clipboard!', color: 'green' });
+                              } catch {
+                                notifications.show({ title: 'Share', message: window.location.href, color: 'blue' });
+                              }
                             }
                         }}
                         style={{ 
@@ -1869,13 +2061,21 @@ const RestaurantMenuPage = () => {
         restaurant={restaurant}
         isHeaderImageScrolled={isHeaderImageScrolled}
         onBack={() => navigate('/restaurants')}
-        onShare={() => {
+        onShare={async () => {
+          const shareData = {
+            title: restaurant?.name || 'Check out this restaurant',
+            text: `Check out ${restaurant?.name} on Crave'N`,
+            url: window.location.href,
+          };
           if (navigator.share) {
-            navigator.share({
-              title: restaurant?.name,
-              text: `Check out ${restaurant?.name} on Crave'N`,
-              url: window.location.href
-            });
+            try { await navigator.share(shareData); } catch { /* user cancelled */ }
+          } else {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              notifications.show({ title: 'Link Copied', message: 'Restaurant link copied to clipboard!', color: 'green' });
+            } catch {
+              notifications.show({ title: 'Share', message: shareData.url, color: 'blue' });
+            }
           }
         }}
         onLike={async () => {
@@ -2760,7 +2960,7 @@ const RestaurantMenuPage = () => {
                             Verified
                           </Badge>
                         </Group>
-                        <Button variant="outline" color="orange" size="xs" radius="xl">
+                        <Button variant="outline" color="orange" size="xs" radius="xl" onClick={() => setShowReviewModal(true)}>
                           Write Review
                         </Button>
                       </Group>
@@ -2777,22 +2977,22 @@ const RestaurantMenuPage = () => {
                       >
                         <Group align="flex-start" gap="md" wrap="nowrap">
                           <Stack align="center" gap={2} style={{ flexShrink: 0, minWidth: 56 }}>
-                            <Text style={{ fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.03em' }}>4.4</Text>
+                            <Text style={{ fontSize: '1.8rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.03em' }}>{reviewStats.total > 0 ? reviewStats.avg : (restaurant?.rating || 4.4)}</Text>
                             <Group gap={1}>
-                              {[1,2,3,4].map(i => <IconStarFilled key={i} size={10} style={{ color: '#F97316' }} />)}
-                              <IconStar size={10} style={{ color: '#F97316' }} />
+                              {[1,2,3,4,5].map(i => {
+                                const avg = reviewStats.total > 0 ? reviewStats.avg : (restaurant?.rating || 4.4);
+                                return i <= Math.floor(avg)
+                                  ? <IconStarFilled key={i} size={10} style={{ color: '#F97316' }} />
+                                  : <IconStar key={i} size={10} style={{ color: '#F97316' }} />;
+                              })}
                             </Group>
-                            <Text size="9px" c="dimmed" fw={500}>3.2k</Text>
+                            <Text size="9px" c="dimmed" fw={500}>{reviewStats.total > 0 ? (reviewStats.total >= 1000 ? `${(reviewStats.total / 1000).toFixed(1)}k` : reviewStats.total) : (restaurant?.total_reviews || 0)}</Text>
                           </Stack>
 
                           <Stack gap={4} style={{ flex: 1 }}>
-                            {[
-                              { stars: 5, pct: 68 },
-                              { stars: 4, pct: 20 },
-                              { stars: 3, pct: 7 },
-                              { stars: 2, pct: 3 },
-                              { stars: 1, pct: 2 },
-                            ].map(row => (
+                            {(reviewStats.total > 0 ? reviewStats.distribution : [
+                              { stars: 5, pct: 68 }, { stars: 4, pct: 20 }, { stars: 3, pct: 7 }, { stars: 2, pct: 3 }, { stars: 1, pct: 2 },
+                            ]).map(row => (
                               <Group key={row.stars} gap={4} wrap="nowrap" align="center">
                                 <Text size="10px" fw={600} c="gray.7" style={{ width: 8, textAlign: 'right' }}>{row.stars}</Text>
                                 <Progress value={row.pct} size={5} radius="xl" color="orange" style={{ flex: 1 }} />
@@ -2805,9 +3005,9 @@ const RestaurantMenuPage = () => {
                         {/* Quality Metrics — Inline chips */}
                         <Group gap={6} mt="xs" justify="center">
                           {[
-                            { label: 'Food', score: '4.6' },
-                            { label: 'Delivery', score: '4.3' },
-                            { label: 'Value', score: '4.5' },
+                            { label: 'Food', score: reviewStats.avgFood > 0 ? reviewStats.avgFood.toFixed(1) : '4.6' },
+                            { label: 'Delivery', score: reviewStats.avgDelivery > 0 ? reviewStats.avgDelivery.toFixed(1) : '4.3' },
+                            { label: 'Value', score: reviewStats.avgValue > 0 ? reviewStats.avgValue.toFixed(1) : '4.5' },
                           ].map(metric => (
                             <Badge key={metric.label} size="sm" variant="light" color="gray" radius="sm" style={{ textTransform: 'none' }}>
                               {metric.label} {metric.score}★
@@ -2816,44 +3016,12 @@ const RestaurantMenuPage = () => {
                         </Group>
                       </Box>
 
-                      {/* Review Slider — One at a time */}
+                      {/* Review Slider — Swipeable, no arrows */}
                       {(() => {
-                        const mobileReviews = [
-                          {
-                            name: 'Marcus T',
-                            initial: 'M',
-                            color: 'blue' as const,
-                            stars: 5,
-                            date: 'Nov 15',
-                            orders: 12,
-                            items: ['Classic Burger'],
-                            text: 'This place never disappoints! Classic Burger is always fresh and the delivery is super quick. Highly recommend!',
-                            helpful: 24,
-                          },
-                          {
-                            name: 'Sarah K',
-                            initial: 'S',
-                            color: 'violet' as const,
-                            stars: 5,
-                            date: 'Oct 28',
-                            orders: 8,
-                            items: ['Chicken Sandwich', 'Seasoned Fries'],
-                            text: 'Amazing food! Chicken Sandwich was perfectly cooked and the seasoned fries were incredible. Will definitely order again!',
-                            helpful: 18,
-                          },
-                          {
-                            name: 'David M',
-                            initial: 'D',
-                            color: 'orange' as const,
-                            stars: 5,
-                            date: 'Dec 2',
-                            orders: 3,
-                            items: ['Fish Sandwich', 'Onion Rings'],
-                            text: 'First time ordering and I\'m impressed! Fish Sandwich was crispy and fresh. The onion rings were the perfect side. Great value!',
-                            helpful: 11,
-                          },
-                        ];
-                        const review = mobileReviews[mobileReviewSlideIndex];
+                        const mobileReviews = getDisplayReviews();
+                        if (mobileReviews.length === 0) return null;
+                        const safeIdx = Math.min(mobileReviewSlideIndex, mobileReviews.length - 1);
+                        const review = mobileReviews[safeIdx];
                         return (
                           <>
                             <Box
@@ -2863,6 +3031,16 @@ const RestaurantMenuPage = () => {
                                 border: '1px solid var(--mantine-color-gray-2)',
                                 borderLeft: '3px solid #F97316',
                                 background: 'white',
+                                touchAction: 'pan-y',
+                                userSelect: 'none',
+                              }}
+                              onTouchStart={(e) => { mobileTouchStartX.current = e.touches[0].clientX; }}
+                              onTouchEnd={(e) => {
+                                const diff = mobileTouchStartX.current - e.changedTouches[0].clientX;
+                                if (Math.abs(diff) > 40) {
+                                  if (diff > 0 && safeIdx < mobileReviews.length - 1) setMobileReviewSlideIndex(safeIdx + 1);
+                                  else if (diff < 0 && safeIdx > 0) setMobileReviewSlideIndex(safeIdx - 1);
+                                }
                               }}
                             >
                               <Group justify="space-between" align="flex-start" mb={6}>
@@ -2898,24 +3076,14 @@ const RestaurantMenuPage = () => {
                               </Group>
                             </Box>
 
-                            {/* Slider Controls */}
+                            {/* Dot indicators only — no arrows */}
                             <Group justify="space-between" align="center" mt={8}>
-                              <Group gap={4}>
-                                <ActionIcon variant="subtle" color="gray" size="xs" radius="xl" disabled={mobileReviewSlideIndex === 0} onClick={() => setMobileReviewSlideIndex(i => Math.max(0, i - 1))}>
-                                  <IconChevronLeft size={14} />
-                                </ActionIcon>
-                                <Group gap={3}>
-                                  {mobileReviews.map((_, i) => (
-                                    <Box key={i} onClick={() => setMobileReviewSlideIndex(i)} style={{ width: i === mobileReviewSlideIndex ? 14 : 5, height: 5, borderRadius: 3, background: i === mobileReviewSlideIndex ? '#F97316' : 'var(--mantine-color-gray-3)', cursor: 'pointer', transition: 'all 0.2s ease' }} />
-                                  ))}
-                                </Group>
-                                <ActionIcon variant="subtle" color="gray" size="xs" radius="xl" disabled={mobileReviewSlideIndex === mobileReviews.length - 1} onClick={() => setMobileReviewSlideIndex(i => Math.min(mobileReviews.length - 1, i + 1))}>
-                                  <IconChevronRight size={14} />
-                                </ActionIcon>
+                              <Group gap={3} justify="center" style={{ flex: 1 }}>
+                                {mobileReviews.map((_, i) => (
+                                  <Box key={i} onClick={() => setMobileReviewSlideIndex(i)} style={{ width: i === safeIdx ? 14 : 5, height: 5, borderRadius: 3, background: i === safeIdx ? '#F97316' : 'var(--mantine-color-gray-3)', cursor: 'pointer', transition: 'all 0.2s ease' }} />
+                                ))}
                               </Group>
-                              <Button variant="subtle" color="gray" size="xs" compact="true">
-                                All reviews
-                              </Button>
+                              <Text size="10px" c="dimmed" fw={500}>{safeIdx + 1} / {mobileReviews.length}</Text>
                             </Group>
                           </>
                         );
@@ -3359,7 +3527,7 @@ const RestaurantMenuPage = () => {
                           </Badge>
                         </Tooltip>
                       </Group>
-                      <Button variant="outline" color="orange" size="xs" radius="xl">
+                      <Button variant="outline" color="orange" size="xs" radius="xl" onClick={() => setShowReviewModal(true)}>
                         Write a Review
                       </Button>
                     </Group>
@@ -3376,24 +3544,24 @@ const RestaurantMenuPage = () => {
                       >
                         <Stack align="center" gap="sm">
                           <Stack align="center" gap={2}>
-                            <Text style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.04em' }}>4.4</Text>
+                            <Text style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, color: 'var(--mantine-color-gray-9)', letterSpacing: '-0.04em' }}>{reviewStats.total > 0 ? reviewStats.avg : (restaurant?.rating || 4.4)}</Text>
                             <Group gap={2}>
-                              {[1,2,3,4].map(i => <IconStarFilled key={i} size={13} style={{ color: '#F97316' }} />)}
-                              <IconStar size={13} style={{ color: '#F97316' }} />
+                              {[1,2,3,4,5].map(i => {
+                                const avg = reviewStats.total > 0 ? reviewStats.avg : (restaurant?.rating || 4.4);
+                                return i <= Math.floor(avg)
+                                  ? <IconStarFilled key={i} size={13} style={{ color: '#F97316' }} />
+                                  : <IconStar key={i} size={13} style={{ color: '#F97316' }} />;
+                              })}
                             </Group>
-                            <Text size="xs" c="dimmed" fw={500}>3,241 ratings</Text>
+                            <Text size="xs" c="dimmed" fw={500}>{reviewStats.total > 0 ? `${reviewStats.total.toLocaleString()} ratings` : `${restaurant?.total_reviews || 0} ratings`}</Text>
                           </Stack>
 
                           <Divider w="100%" color="orange.1" />
 
                           <Stack gap={5} w="100%">
-                            {[
-                              { stars: 5, pct: 68 },
-                              { stars: 4, pct: 20 },
-                              { stars: 3, pct: 7 },
-                              { stars: 2, pct: 3 },
-                              { stars: 1, pct: 2 },
-                            ].map(row => (
+                            {(reviewStats.total > 0 ? reviewStats.distribution : [
+                              { stars: 5, pct: 68 }, { stars: 4, pct: 20 }, { stars: 3, pct: 7 }, { stars: 2, pct: 3 }, { stars: 1, pct: 2 },
+                            ]).map(row => (
                               <Group key={row.stars} gap={6} wrap="nowrap" align="center">
                                 <Text size="xs" fw={600} c="gray.7" style={{ width: 10, textAlign: 'right' }}>{row.stars}</Text>
                                 <IconStarFilled size={9} style={{ color: '#F97316', flexShrink: 0 }} />
@@ -3407,15 +3575,14 @@ const RestaurantMenuPage = () => {
 
                           <Stack gap={5} w="100%">
                             {[
-                              { label: 'Food Quality', score: 4.6 },
-                              { label: 'Delivery', score: 4.3 },
-                              { label: 'Value', score: 4.5 },
-                              { label: 'Packaging', score: 4.4 },
+                              { label: 'Food Quality', score: reviewStats.avgFood > 0 ? reviewStats.avgFood : 4.6 },
+                              { label: 'Delivery', score: reviewStats.avgDelivery > 0 ? reviewStats.avgDelivery : 4.3 },
+                              { label: 'Value', score: reviewStats.avgValue > 0 ? reviewStats.avgValue : 4.5 },
                             ].map(metric => (
                               <Group key={metric.label} justify="space-between" wrap="nowrap">
                                 <Text size="xs" c="gray.6">{metric.label}</Text>
                                 <Group gap={3}>
-                                  <Text size="xs" fw={700} c="gray.8">{metric.score}</Text>
+                                  <Text size="xs" fw={700} c="gray.8">{metric.score.toFixed(1)}</Text>
                                   <IconStarFilled size={9} style={{ color: '#F97316' }} />
                                 </Group>
                               </Group>
@@ -3424,47 +3591,12 @@ const RestaurantMenuPage = () => {
                         </Stack>
                       </Box>
 
-                      {/* Review Cards — Slide one at a time */}
+                      {/* Review Cards — Swipeable */}
                       {(() => {
-                        const reviewsData = [
-                          {
-                            name: 'Marcus T',
-                            initial: 'M',
-                            color: 'blue' as const,
-                            stars: 5,
-                            date: 'Nov 15, 2023',
-                            orders: 12,
-                            badge: 'Regular',
-                            items: ['Classic Burger'],
-                            text: 'This place never disappoints! Classic Burger is always fresh and the delivery is super quick. Highly recommend!',
-                            helpful: 24,
-                          },
-                          {
-                            name: 'Sarah K',
-                            initial: 'S',
-                            color: 'violet' as const,
-                            stars: 5,
-                            date: 'Oct 28, 2023',
-                            orders: 8,
-                            badge: 'Top Reviewer',
-                            items: ['Chicken Sandwich', 'Seasoned Fries'],
-                            text: 'Amazing food! Chicken Sandwich was perfectly cooked and the seasoned fries were incredible. Will definitely order again!',
-                            helpful: 18,
-                          },
-                          {
-                            name: 'David M',
-                            initial: 'D',
-                            color: 'orange' as const,
-                            stars: 5,
-                            date: 'Dec 2, 2023',
-                            orders: 3,
-                            badge: 'New',
-                            items: ['Fish Sandwich', 'Onion Rings'],
-                            text: 'First time ordering and I\'m impressed! Fish Sandwich was crispy and fresh. The onion rings were the perfect side. Great value!',
-                            helpful: 11,
-                          },
-                        ];
-                        const review = reviewsData[reviewSlideIndex];
+                        const desktopReviews = getDisplayReviews();
+                        if (desktopReviews.length === 0) return <Text c="dimmed" size="sm">No reviews yet. Be the first!</Text>;
+                        const safeIdx = Math.min(reviewSlideIndex, desktopReviews.length - 1);
+                        const review = desktopReviews[safeIdx];
                         return (
                           <Stack gap="xs" justify="space-between">
                             <Box
@@ -3476,6 +3608,25 @@ const RestaurantMenuPage = () => {
                                 background: 'white',
                                 position: 'relative',
                                 minHeight: 140,
+                                touchAction: 'pan-y',
+                                userSelect: 'none',
+                                cursor: 'grab',
+                              }}
+                              onTouchStart={(e) => { desktopTouchStartX.current = e.touches[0].clientX; }}
+                              onTouchEnd={(e) => {
+                                const diff = desktopTouchStartX.current - e.changedTouches[0].clientX;
+                                if (Math.abs(diff) > 40) {
+                                  if (diff > 0 && safeIdx < desktopReviews.length - 1) setReviewSlideIndex(safeIdx + 1);
+                                  else if (diff < 0 && safeIdx > 0) setReviewSlideIndex(safeIdx - 1);
+                                }
+                              }}
+                              onMouseDown={(e) => { desktopTouchStartX.current = e.clientX; }}
+                              onMouseUp={(e) => {
+                                const diff = desktopTouchStartX.current - e.clientX;
+                                if (Math.abs(diff) > 40) {
+                                  if (diff > 0 && safeIdx < desktopReviews.length - 1) setReviewSlideIndex(safeIdx + 1);
+                                  else if (diff < 0 && safeIdx > 0) setReviewSlideIndex(safeIdx - 1);
+                                }
                               }}
                             >
                               {/* Header */}
@@ -3517,49 +3668,25 @@ const RestaurantMenuPage = () => {
                               </Group>
                             </Box>
 
-                            {/* Slide Controls */}
+                            {/* Dot indicators only — no arrows */}
                             <Group justify="space-between" align="center">
-                              <Group gap={6}>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  size="sm"
-                                  radius="xl"
-                                  disabled={reviewSlideIndex === 0}
-                                  onClick={() => setReviewSlideIndex(i => Math.max(0, i - 1))}
-                                >
-                                  <IconChevronLeft size={16} />
-                                </ActionIcon>
-                                <Group gap={4}>
-                                  {reviewsData.map((_, i) => (
-                                    <Box
-                                      key={i}
-                                      onClick={() => setReviewSlideIndex(i)}
-                                      style={{
-                                        width: i === reviewSlideIndex ? 16 : 6,
-                                        height: 6,
-                                        borderRadius: 3,
-                                        background: i === reviewSlideIndex ? '#F97316' : 'var(--mantine-color-gray-3)',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                      }}
-                                    />
-                                  ))}
-                                </Group>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  size="sm"
-                                  radius="xl"
-                                  disabled={reviewSlideIndex === reviewsData.length - 1}
-                                  onClick={() => setReviewSlideIndex(i => Math.min(reviewsData.length - 1, i + 1))}
-                                >
-                                  <IconChevronRight size={16} />
-                                </ActionIcon>
+                              <Group gap={4} justify="center" style={{ flex: 1 }}>
+                                {desktopReviews.map((_, i) => (
+                                  <Box
+                                    key={i}
+                                    onClick={() => setReviewSlideIndex(i)}
+                                    style={{
+                                      width: i === safeIdx ? 16 : 6,
+                                      height: 6,
+                                      borderRadius: 3,
+                                      background: i === safeIdx ? '#F97316' : 'var(--mantine-color-gray-3)',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                    }}
+                                  />
+                                ))}
                               </Group>
-                              <Button variant="subtle" color="gray" size="xs" compact="true">
-                                See all 80+ reviews
-                              </Button>
+                              <Text size="xs" c="dimmed" fw={500}>{safeIdx + 1} / {desktopReviews.length}</Text>
                             </Group>
                           </Stack>
                         );
@@ -3800,6 +3927,67 @@ const RestaurantMenuPage = () => {
         </Box>
       </Box>
       
+      {/* Write Review Modal */}
+      <Modal
+        opened={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        title={<Text fw={700} size="lg">Write a Review</Text>}
+        size="md"
+        radius="md"
+        centered
+        zIndex={10002}
+      >
+        <Stack gap="md">
+          <Box>
+            <Text size="sm" fw={600} mb={4}>Overall Rating *</Text>
+            <Rating value={reviewRating} onChange={setReviewRating} size="lg" color="orange" />
+          </Box>
+
+          <Box>
+            <Text size="sm" fw={600} mb={4}>Your Review</Text>
+            <Textarea
+              placeholder={`What did you enjoy about ${restaurant?.name || 'this restaurant'}?`}
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.currentTarget.value)}
+              minRows={3}
+              maxRows={6}
+              autosize
+            />
+          </Box>
+
+          <Divider />
+
+          <Text size="sm" fw={600} c="dimmed">Rate specific areas (optional)</Text>
+
+          <Group grow>
+            <Stack gap={4} align="center">
+              <Text size="xs" c="dimmed">Food Quality</Text>
+              <Rating value={reviewFoodQuality} onChange={setReviewFoodQuality} size="sm" color="orange" />
+            </Stack>
+            <Stack gap={4} align="center">
+              <Text size="xs" c="dimmed">Delivery Speed</Text>
+              <Rating value={reviewDeliverySpeed} onChange={setReviewDeliverySpeed} size="sm" color="orange" />
+            </Stack>
+            <Stack gap={4} align="center">
+              <Text size="xs" c="dimmed">Order Accuracy</Text>
+              <Rating value={reviewAccuracy} onChange={setReviewAccuracy} size="sm" color="orange" />
+            </Stack>
+          </Group>
+
+          <Button
+            color="orange"
+            fullWidth
+            radius="xl"
+            size="md"
+            loading={isSubmittingReview}
+            disabled={reviewRating === 0}
+            onClick={handleSubmitReview}
+          >
+            Submit Review
+          </Button>
+        </Stack>
+      </Modal>
+
       {/* White Bar at Bottom — sized to match bottom nav */}
       <Box
         style={{

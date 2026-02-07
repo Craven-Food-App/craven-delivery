@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -136,39 +137,16 @@ const Map: React.FC<MapProps> = ({ orders, activeOrder, onOrderClick }) => {
     const pendingOrders = orders.filter(order => order.status === 'pending');
     
     pendingOrders.forEach(order => {
-      // Create custom marker element
-      const markerEl = document.createElement('div');
-      markerEl.className = 'order-marker';
-      markerEl.style.width = '40px';
-      markerEl.style.height = '40px';
-      markerEl.style.borderRadius = '50%';
-      markerEl.style.cursor = 'pointer';
-      markerEl.style.border = '3px solid white';
-      markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-      markerEl.style.display = 'flex';
-      markerEl.style.alignItems = 'center';
-      markerEl.style.justifyContent = 'center';
-      markerEl.style.color = 'white';
-      markerEl.style.fontWeight = 'bold';
-      markerEl.style.fontSize = '12px';
-      
-      // Color based on payout
-      if (order.payout_cents >= 1000) {
-        markerEl.style.backgroundColor = '#ef4444'; // High payout - red
-      } else if (order.payout_cents >= 700) {
-        markerEl.style.backgroundColor = '#f97316'; // Medium payout - orange
-      } else {
-        markerEl.style.backgroundColor = '#eab308'; // Low payout - yellow
-      }
-      
-      markerEl.textContent = `$${(order.payout_cents / 100).toFixed(0)}`;
+      // Create Craven branded marker element
+      const markerEl = createCravenMarkerElement(40, `$${(order.payout_cents / 100).toFixed(0)} — ${order.pickup_name}`);
+      markerEl.className = 'order-marker craven-map-pin';
 
       // Add click handler
       markerEl.addEventListener('click', () => {
         onOrderClick(order);
       });
 
-      new mapboxgl.Marker(markerEl)
+      new mapboxgl.Marker({ element: markerEl, anchor: 'center' })
         .setLngLat([order.pickup_lng, order.pickup_lat])
         .setPopup(
           new mapboxgl.Popup().setHTML(`
@@ -387,31 +365,19 @@ const Map: React.FC<MapProps> = ({ orders, activeOrder, onOrderClick }) => {
 
     // Add active order route if exists
     if (activeOrder) {
-      // Add pickup marker
-      const pickupEl = document.createElement('div');
-      pickupEl.className = 'active-order-marker';
-      pickupEl.style.width = '30px';
-      pickupEl.style.height = '30px';
-      pickupEl.style.borderRadius = '50%';
-      pickupEl.style.backgroundColor = '#22c55e';
-      pickupEl.style.border = '3px solid white';
-      pickupEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      // Add pickup marker — Craven branded
+      const pickupEl = createCravenMarkerElement(36, 'Pickup');
+      pickupEl.className = 'active-order-marker craven-map-pin';
 
-      new mapboxgl.Marker(pickupEl)
+      new mapboxgl.Marker({ element: pickupEl, anchor: 'center' })
         .setLngLat([activeOrder.pickup_lng, activeOrder.pickup_lat])
         .addTo(map.current);
 
-      // Add dropoff marker
-      const dropoffEl = document.createElement('div');
-      dropoffEl.className = 'active-order-marker';
-      dropoffEl.style.width = '30px';
-      dropoffEl.style.height = '30px';
-      dropoffEl.style.borderRadius = '50%';
-      dropoffEl.style.backgroundColor = '#8b5cf6';
-      dropoffEl.style.border = '3px solid white';
-      dropoffEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      // Add dropoff marker — Craven branded
+      const dropoffEl = createCravenMarkerElement(36, 'Dropoff');
+      dropoffEl.className = 'active-order-marker craven-map-pin';
 
-      new mapboxgl.Marker(dropoffEl)
+      new mapboxgl.Marker({ element: dropoffEl, anchor: 'center' })
         .setLngLat([activeOrder.dropoff_lng, activeOrder.dropoff_lat])
         .addTo(map.current);
     }
@@ -423,16 +389,10 @@ const Map: React.FC<MapProps> = ({ orders, activeOrder, onOrderClick }) => {
         (position) => {
           const { latitude, longitude } = position.coords;
           
-          // Add user location marker
-          const userEl = document.createElement('div');
-          userEl.style.width = '20px';
-          userEl.style.height = '20px';
-          userEl.style.borderRadius = '50%';
-          userEl.style.backgroundColor = '#3b82f6';
-          userEl.style.border = '3px solid white';
-          userEl.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.5)';
+          // Add user location marker — Craven branded
+          const userEl = createCravenMarkerElement(28, 'Your Location');
 
-          new mapboxgl.Marker(userEl)
+          new mapboxgl.Marker({ element: userEl, anchor: 'center' })
             .setLngLat([longitude, latitude])
             .addTo(map.current!);
 

@@ -14,7 +14,6 @@ import {
   Divider,
   Modal,
   TextInput,
-  NumberInput,
   Select,
   Checkbox,
   Slider,
@@ -24,75 +23,17 @@ import {
   Box,
   Table,
   ActionIcon,
-  Textarea,
-  ScrollArea,
+  Tabs,
 } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { modals } from '@mantine/modals';
-import {
-  IconCurrencyDollar,
-  IconChartBar,
-  IconBuildingBank,
-  IconTrendingUp,
-  IconFileSearch,
-  IconCheck,
-  IconArrowLeft,
-  IconUsers,
-  IconFileText,
-  IconBook,
-  IconCircleCheck,
-  IconChartLine,
-  IconCalculator,
-  IconSquareCheck,
-  IconWallet,
-  IconFile,
-  IconDeviceFloppy,
-  IconTrash,
-  IconPlus,
-  IconPrinter,
-  IconShare,
-  IconBold,
-  IconItalic,
-  IconUnderline,
-  IconStrikethrough,
-  IconAlignLeft,
-  IconAlignCenter,
-  IconAlignRight,
-  IconList,
-  IconListNumbers,
-  IconPalette,
-  IconTypography,
-  IconInfoCircle,
-  IconMail,
-  IconClock,
-  IconCalendar,
-} from '@tabler/icons-react';
+import { IconCircleCheck, IconInfoCircle } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, AreaChart, Area, ComposedChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { DataGrid, GridColDef, GridToolbar, GridActionsCellItem } from '@mui/x-data-grid';
-import { Card as MuiCard, CardContent, Typography, IconButton, InputAdornment, TextField as MuiTextField } from '@mui/material';
-import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
-import { ExecutiveInboxIMessage } from '@/components/executive/ExecutiveInboxIMessage';
-import {
-  Aperture,
-  DollarSign,
-  TrendingDown,
-  Clock,
-  Scale,
-  Sigma,
-  BarChart3,
-  Users,
-  Rocket,
-  Lightbulb,
-  ShieldAlert,
-  FileText,
-  Mail,
-} from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Bar, Pie } from "recharts";
+import { Scale } from 'lucide-react';
 import { FuturisticChart } from '@/components/cfo/FuturisticChart';
 import { CFOPortalLayout, CFONavItem } from '@/components/cfo/CFOPortalLayout';
 import { MantineTable } from '@/components/cfo/MantineTable';
@@ -126,6 +67,9 @@ const FinancialReportsDashboard = React.lazy(() => import('@/components/finance/
 const BudgetManagement = React.lazy(() => import('@/components/finance/BudgetManagement').then(m => ({ default: m.BudgetManagement })));
 const FinanceAuditComponent = React.lazy(() => import('@/components/finance/audit/FinanceAuditComponent').then(m => ({ default: m.FinanceAuditComponent })));
 const DriverCompensationDashboard = React.lazy(() => import('@/components/finance/driver-compensation/DriverCompensationDashboard').then(m => ({ default: m.DriverCompensationDashboard })));
+// Invoices & Expenses Modules
+const CFOInvoices = React.lazy(() => import('@/components/cfo/Invoices').then(m => ({ default: m.Invoices })));
+const CFOExpenses = React.lazy(() => import('@/components/cfo/Expenses').then(m => ({ default: m.Expenses })));
 
 // Loading fallback component
 const ModuleLoader = () => (
@@ -469,219 +413,6 @@ const KeyRatiosTable: React.FC<{ data: RatioData[] }> = ({ data }) => {
   );
 };
 
-// CFO Dashboard Component
-function CFODashboard() {
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [kpiData, setKpiData] = useState<KpiData[]>([]);
-  const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
-  const [ratios, setRatios] = useState<RatioData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      // Fetch orders for revenue calculation
-      const { data: orders } = await supabase
-        .from("orders")
-        .select("total_amount, created_at")
-        .gte("created_at", new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
-
-      // Generate monthly data for last 6 months
-      const now = new Date();
-      const months = [];
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        months.push(date.toLocaleString('default', { month: 'short' }));
-      }
-
-      const monthly = months.map((month, index) => {
-        const targetMonth = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
-        const monthOrders = (orders || []).filter(o => {
-          const orderDate = new Date(o.created_at);
-          return orderDate.getMonth() === targetMonth.getMonth() && 
-                 orderDate.getFullYear() === targetMonth.getFullYear();
-        });
-        const revenue = (monthOrders || []).reduce((sum, o) => sum + (o.total_amount || 0), 0) / 1000; // Convert to K
-        const cogs = revenue * 0.36; // Estimate
-        const opEx = revenue * 0.25; // Estimate
-        const profit = revenue - cogs - opEx;
-        return { month, Revenue: revenue, COGS: cogs, Operating_Expenses: opEx, Profit: profit };
-      });
-      setMonthlyData(monthly);
-
-      // Calculate KPIs
-      const currentMonth = monthly[monthly.length - 1];
-      const previousMonth = monthly[monthly.length - 2] || monthly[0];
-
-      const calculateChange = (current: number, previous: number) => {
-        if (previous === 0) return 0;
-        return ((current - previous) / previous) * 100;
-      };
-
-      const currentGrossMargin = currentMonth.Revenue > 0 ? ((currentMonth.Revenue - currentMonth.COGS) / currentMonth.Revenue) * 100 : 0;
-      const previousGrossMargin = previousMonth.Revenue > 0 ? ((previousMonth.Revenue - previousMonth.COGS) / previousMonth.Revenue) * 100 : 0;
-      const changeInGrossMargin = currentGrossMargin - previousGrossMargin;
-
-      setKpiData([
-        {
-          title: 'Monthly Revenue',
-          value: `$${currentMonth.Revenue.toFixed(0)}K`,
-          change: calculateChange(currentMonth.Revenue, previousMonth.Revenue),
-          changeUnit: 'vs Last Month',
-          icon: DollarSign,
-          color: 'text-blue-600',
-        },
-        {
-          title: 'Gross Margin %',
-          value: `${currentGrossMargin.toFixed(1)}%`,
-          change: changeInGrossMargin,
-          changeUnit: 'pp vs Last Month',
-          icon: Sigma,
-          color: 'text-purple-600',
-        },
-        {
-          title: 'Net Cash Flow (Burn $)',
-          value: `$${currentMonth.Profit.toFixed(0)}K`,
-          change: calculateChange(currentMonth.Profit, previousMonth.Profit),
-          changeUnit: 'vs Last Month',
-          icon: Aperture,
-          color: 'text-green-600',
-        },
-        {
-          title: 'COGS',
-          value: `$${currentMonth.COGS.toFixed(0)}K`,
-          change: calculateChange(currentMonth.COGS, previousMonth.COGS),
-          changeUnit: 'vs Last Month',
-          icon: Clock,
-          color: 'text-yellow-600',
-        },
-        {
-          title: 'Operating Expenses',
-          value: `$${currentMonth.Operating_Expenses.toFixed(0)}K`,
-          change: calculateChange(currentMonth.Operating_Expenses, previousMonth.Operating_Expenses),
-          changeUnit: 'vs Last Month',
-          icon: TrendingDown,
-          color: 'text-red-600',
-        },
-      ]);
-
-      // Expense breakdown (ensure it adds up to Operating Expenses)
-      const totalExpenses = currentMonth.Operating_Expenses;
-      setExpenseBreakdown([
-        { name: 'Salaries', value: totalExpenses * 0.64, color: '#1890ff' },
-        { name: 'R&D', value: totalExpenses * 0.20, color: '#9b59b6' },
-        { name: 'Rent & Utilities', value: totalExpenses * 0.10, color: '#2ecc71' },
-        { name: 'Marketing', value: totalExpenses * 0.03, color: '#f39c12' },
-        { name: 'Oth', value: totalExpenses * 0.03, color: '#e74c3c' },
-      ]);
-
-      // Mock ratios
-      setRatios([
-        { ratio: 'Current Ratio', value: '2.5x', interpretation: 'Strong' },
-        { ratio: 'Debt-to-Equity', value: '0.45', interpretation: 'Strong' },
-        { ratio: 'Gross Margin', value: `${currentGrossMargin.toFixed(1)}%`, interpretation: currentGrossMargin > 50 ? 'Strong' : currentGrossMargin > 40 ? 'Average' : 'Needs Attention' },
-        { ratio: 'Quick Ratio', value: '1.1x', interpretation: 'Average' },
-        { ratio: 'Inventory Turnover', value: '6.8x', interpretation: 'Needs Attention' },
-      ]);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const currentMonthName = monthlyData[monthlyData.length - 1]?.month || new Date().toLocaleString('default', { month: 'short' });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading financial data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ padding: isMobile ? 16 : 24, background: '#f8fafc' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <SectionCard>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <h1 style={{ fontSize: isMobile ? 28 : 32, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Aperture style={{ width: 32, height: 32, color: '#3b82f6' }} />
-                CFO Financial Dashboard
-              </h1>
-              <p style={{ color: '#475569', marginTop: 8, fontSize: isMobile ? 14 : 16 }}>
-                Real-time financial overview for the month ending {currentMonthName}
-              </p>
-            </div>
-            <div style={{ textAlign: isMobile ? 'left' : 'right', color: '#475569', fontSize: 13 }}>
-              <div style={{ fontWeight: 600 }}>Reporting Period</div>
-              <div style={{ fontSize: 16 }}>{currentMonthName}</div>
-              <div style={{ marginTop: 4 }}>Updated {new Date().toLocaleString()}</div>
-            </div>
-          </div>
-        </SectionCard>
-
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-          {kpiData.map((kpi) => (
-            <MetricCard key={kpi.title} {...kpi} />
-          ))}
-        </section>
-
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24 }}>
-          <SectionCard>
-            <RevenueProfitChart data={monthlyData} />
-          </SectionCard>
-          <SectionCard>
-            <ExpensesPieChart data={expenseBreakdown} />
-          </SectionCard>
-        </section>
-
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 24 }}>
-          <SectionCard>
-            <FuturisticChart
-              data={monthlyData}
-              type="composed"
-              title="Revenue vs Expenses Analysis"
-              height={350}
-              colors={['#3b82f6', '#ef4444', '#10b981']}
-              dataKeys={{ revenue: 'Revenue', expenses: 'Operating_Expenses', profit: 'Profit' }}
-            />
-          </SectionCard>
-          <SectionCard>
-            <FuturisticChart
-              data={monthlyData.map(d => ({ month: d.month, Revenue: d.Revenue, COGS: d.COGS }))}
-              type="bar"
-              title="Revenue & COGS Comparison"
-              height={350}
-              colors={['#3b82f6', '#f59e0b']}
-              dataKeys={{ revenue: 'Revenue', expenses: 'COGS' }}
-            />
-          </SectionCard>
-        </section>
-
-        <SectionCard>
-          <KeyRatiosTable data={ratios} />
-        </SectionCard>
-      </div>
-    </div>
-  );
-}
 
 function CFOPortalContent() {
   const [loading, setLoading] = useState(false);
@@ -777,7 +508,7 @@ function CFOPortalContent() {
   }, [fetchData]);
 
   const navItems = useMemo<CFONavItem[]>(() => [
-    // Core Executive Functions
+    // Core Executive
     { id: 'evaluation', label: 'CFO Evaluation Gate' },
     { id: 'onboarding', label: 'CFO Onboarding & Governance' },
     { id: 'overview', label: 'CFO Command Center' },
@@ -785,38 +516,25 @@ function CFOPortalContent() {
     { id: 'general-ledger', label: 'General Ledger' },
     { id: 'ap', label: 'Accounts Payable' },
     { id: 'ar', label: 'Accounts Receivable' },
+    { id: 'invoices-expenses', label: 'Invoices & Expenses' },
     { id: 'vendors', label: 'Vendor Management' },
-    // Banking & Treasury
-    { id: 'treasury', label: 'Treasury & Banking' },
-    { id: 'transactions', label: 'Review Transactions', badge: transactions.length > 0 ? transactions.length : undefined },
-    { id: 'payouts', label: 'Process Payouts', badge: payouts.length > 0 ? payouts.length : undefined },
-    // Team & Operations
-    { id: 'manager', label: 'Manage Team' },
-    { id: 'payroll', label: 'Payroll Management' },
-    { id: 'driver-comp', label: 'Driver Compensation' },
-    // Planning & Analysis
-    { id: 'fpa', label: 'FP&A & Forecasting' },
-    { id: 'budget', label: 'Budget Management' },
-    { id: 'forecast', label: 'Cash Flow Forecast' },
-    { id: 'scenario', label: 'Scenario Planning' },
-    // Compliance & Controls
-    { id: 'tax', label: 'Tax Planning' },
-    { id: 'controls', label: 'Financial Controls' },
-    { id: 'approvals', label: 'Approve Spend' },
-    { id: 'audit', label: 'Audit & Compliance' },
-    { id: 'risk', label: 'Risk Management' },
-    // Reporting & Investor
-    { id: 'reports', label: 'Financial Reports' },
-    { id: 'board', label: 'Board Reporting' },
-    { id: 'investor', label: 'Investor Relations' },
-    { id: 'capital', label: 'Capital Structure' },
+    // Banking & Treasury (consolidated — includes transactions & payouts)
+    { id: 'treasury', label: 'Treasury & Banking', badge: transactions.length > 0 ? transactions.length : undefined },
+    // Team & Operations (consolidated — manager, payroll, driver comp)
+    { id: 'team', label: 'Team & Payroll' },
+    // Planning & Analysis (consolidated — FP&A, budget, forecast, scenario)
+    { id: 'fpa', label: 'FP&A & Planning' },
+    // Compliance & Controls (consolidated — tax, controls, approvals)
+    { id: 'tax-compliance', label: 'Tax & Compliance' },
+    // Audit & Risk (consolidated)
+    { id: 'audit-risk', label: 'Audit & Risk' },
+    // Reporting (consolidated — reports, board, investor, capital)
+    { id: 'reporting', label: 'Stakeholder Reporting' },
     // Period Close
     { id: 'close', label: 'Close Checklist' },
-    // Communications
-    { id: 'communications', label: 'Communications' },
-    { id: 'wordprocessor', label: 'Draft Documents' },
-    { id: 'manual', label: 'CFO Knowledge' },
-  ], [transactions.length, payouts.length]);
+    // Communications (consolidated — email, docs, knowledge base)
+    { id: 'comms', label: 'Communications' },
+  ], [transactions.length]);
 
   const openPortal = (path: string, subdomain?: string) => {
     const host = window.location.hostname;
@@ -841,7 +559,7 @@ function CFOPortalContent() {
 
   const renderContent = () => {
     switch (activeSection) {
-      // Core Executive Functions
+      // ── Core Executive ──
       case 'evaluation':
         return (
           <Stack gap="md">
@@ -852,109 +570,178 @@ function CFOPortalContent() {
         return <CFOOnboardingGovernance />;
       case 'overview':
         return <EnhancedCFODashboard />;
-      
-      // Core Accounting - Enterprise Grade
+
+      // ── Core Accounting ──
       case 'general-ledger':
         return <CorporateGeneralLedger />;
       case 'ap':
         return <CorporateAccountsPayable />;
       case 'ar':
         return <CorporateAccountsReceivable />;
+
+      // ── Invoices & Expenses (consolidated: invoices + expenses + PDF import) ──
+      case 'invoices-expenses':
+        return (
+          <Tabs defaultValue="invoices" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="invoices">Invoices</Tabs.Tab>
+              <Tabs.Tab value="expenses">Expenses</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="invoices"><Suspense fallback={<ModuleLoader />}><CFOInvoices /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="expenses"><Suspense fallback={<ModuleLoader />}><CFOExpenses /></Suspense></Tabs.Panel>
+          </Tabs>
+        );
+
       case 'vendors':
         return <VendorManagement />;
-      
-      // Banking & Treasury (consolidated)
+
+      // ── Treasury & Banking (consolidated: treasury + transactions + payouts) ──
       case 'treasury':
-        return <AdvancedTreasuryManagement />;
-      case 'transactions':
         return (
-          <Box style={{ overflow: 'hidden' }}>
-            <MantineTable
-              data={transactions}
-              loading={loading}
-              rowKey={(r: any) => r.id || r.created_at}
-              size={isMobile ? 'small' : 'default'}
-              scroll={{ x: isMobile ? 600 : 'auto' }}
-              pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-              columns={[
-                { title: 'Date', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 200 },
-                { title: 'Amount', dataIndex: 'total_amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-              ]}
-            />
-          </Box>
+          <Tabs defaultValue="treasury" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="treasury">Treasury & Banking</Tabs.Tab>
+              <Tabs.Tab value="transactions">
+                Transactions {transactions.length > 0 && <Badge size="xs" ml={4}>{transactions.length}</Badge>}
+              </Tabs.Tab>
+              <Tabs.Tab value="payouts">Payouts</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="treasury">
+              <Suspense fallback={<ModuleLoader />}><AdvancedTreasuryManagement /></Suspense>
+            </Tabs.Panel>
+            <Tabs.Panel value="transactions">
+              <Box style={{ overflow: 'hidden' }}>
+                <MantineTable
+                  data={transactions}
+                  loading={loading}
+                  rowKey={(r: any) => r.id || r.created_at}
+                  size={isMobile ? 'small' : 'default'}
+                  scroll={{ x: isMobile ? 600 : 'auto' }}
+                  pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
+                  columns={[
+                    { title: 'Date', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString(), width: 200 },
+                    { title: 'Amount', dataIndex: 'total_amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+                  ]}
+                />
+              </Box>
+            </Tabs.Panel>
+            <Tabs.Panel value="payouts">
+              <Box style={{ overflow: 'hidden' }}>
+                <MantineTable
+                  data={payouts}
+                  loading={loading}
+                  rowKey={(r: any) => r.id}
+                  size={isMobile ? 'small' : 'default'}
+                  scroll={{ x: isMobile ? 600 : 'auto' }}
+                  pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
+                  columns={[
+                    { title: 'Payout ID', dataIndex: 'id' },
+                    { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
+                    { title: 'Status', dataIndex: 'status' },
+                    { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString() },
+                  ]}
+                />
+              </Box>
+            </Tabs.Panel>
+          </Tabs>
         );
-      case 'payouts':
+
+      // ── Team & Payroll (consolidated: manager + payroll + driver comp) ──
+      case 'team':
         return (
-          <Box style={{ overflow: 'hidden' }}>
-            <MantineTable
-              data={payouts}
-              loading={loading}
-              rowKey={(r: any) => r.id}
-              size={isMobile ? 'small' : 'default'}
-              scroll={{ x: isMobile ? 600 : 'auto' }}
-              pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-              columns={[
-                { title: 'Payout ID', dataIndex: 'id' },
-                { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v || 0).toLocaleString()}` },
-                { title: 'Status', dataIndex: 'status' },
-                { title: 'Created', dataIndex: 'created_at', render: (v: string) => new Date(v).toLocaleString() },
-              ]}
-            />
-          </Box>
+          <Tabs defaultValue="manager" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="manager">Manage Team</Tabs.Tab>
+              <Tabs.Tab value="payroll">Payroll</Tabs.Tab>
+              <Tabs.Tab value="driver-comp">Driver Compensation</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="manager"><ManagerConsole /></Tabs.Panel>
+            <Tabs.Panel value="payroll"><Suspense fallback={<ModuleLoader />}><EnhancedPayroll /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="driver-comp"><Suspense fallback={<ModuleLoader />}><DriverCompensationDashboard /></Suspense></Tabs.Panel>
+          </Tabs>
         );
-      
-      // Team & Operations
-      case 'manager':
-        return <ManagerConsole />;
-      case 'payroll':
-        return <EnhancedPayroll />;
-      case 'driver-comp':
-        return <DriverCompensationDashboard />;
-      
-      // Planning & Analysis
+
+      // ── FP&A & Planning (consolidated: FP&A + budget + forecast + scenario) ──
       case 'fpa':
-        return <EnhancedFPandA />;
-      case 'budget':
-        return <BudgetManagement />;
-      case 'forecast':
-        return <CashFlowForecast />;
-      case 'scenario':
-        return <EnhancedScenarioPlanning />;
-      
-      // Compliance & Controls
-      case 'tax':
-        return <EnhancedTaxPlanning />;
-      case 'controls':
-        return <EnhancedFinancialControls />;
-      case 'approvals':
-        return <ApprovalsPanel />;
-      case 'audit':
-        return <FinanceAuditComponent />;
-      case 'risk':
-        return <EnhancedRiskManagement />;
-      
-      // Reporting & Investor
-      case 'reports':
-        return <FinancialReportsDashboard />;
-      case 'board':
-        return <EnhancedBoardReporting />;
-      case 'investor':
-        return <EnhancedInvestorRelations />;
-      case 'capital':
-        return <EnhancedCapitalStructure />;
-      
-      // Period Close
+        return (
+          <Tabs defaultValue="fpa" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="fpa">FP&A & Forecasting</Tabs.Tab>
+              <Tabs.Tab value="budget">Budget Tracker</Tabs.Tab>
+              <Tabs.Tab value="forecast">Cash Flow Runway</Tabs.Tab>
+              <Tabs.Tab value="scenario">Scenario Models</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="fpa"><Suspense fallback={<ModuleLoader />}><EnhancedFPandA /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="budget"><Suspense fallback={<ModuleLoader />}><BudgetManagement /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="forecast"><CashFlowForecast /></Tabs.Panel>
+            <Tabs.Panel value="scenario"><Suspense fallback={<ModuleLoader />}><EnhancedScenarioPlanning /></Suspense></Tabs.Panel>
+          </Tabs>
+        );
+
+      // ── Tax & Compliance (consolidated: tax + controls + approvals) ──
+      case 'tax-compliance':
+        return (
+          <Tabs defaultValue="tax" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="tax">Tax Planning</Tabs.Tab>
+              <Tabs.Tab value="controls">Financial Controls</Tabs.Tab>
+              <Tabs.Tab value="approvals">Approve Spend</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="tax"><Suspense fallback={<ModuleLoader />}><EnhancedTaxPlanning /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="controls"><Suspense fallback={<ModuleLoader />}><EnhancedFinancialControls /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="approvals"><ApprovalsPanel /></Tabs.Panel>
+          </Tabs>
+        );
+
+      // ── Audit & Risk (consolidated) ──
+      case 'audit-risk':
+        return (
+          <Tabs defaultValue="audit" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="audit">Audit & Compliance</Tabs.Tab>
+              <Tabs.Tab value="risk">Risk Management</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="audit"><Suspense fallback={<ModuleLoader />}><FinanceAuditComponent /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="risk"><Suspense fallback={<ModuleLoader />}><EnhancedRiskManagement /></Suspense></Tabs.Panel>
+          </Tabs>
+        );
+
+      // ── Stakeholder Reporting (consolidated: reports + board + investor + capital) ──
+      case 'reporting':
+        return (
+          <Tabs defaultValue="reports" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="reports">Financial Reports</Tabs.Tab>
+              <Tabs.Tab value="board">Board Packages</Tabs.Tab>
+              <Tabs.Tab value="investor">Investor Relations</Tabs.Tab>
+              <Tabs.Tab value="capital">Capital Structure</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="reports"><Suspense fallback={<ModuleLoader />}><FinancialReportsDashboard /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="board"><Suspense fallback={<ModuleLoader />}><EnhancedBoardReporting /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="investor"><Suspense fallback={<ModuleLoader />}><EnhancedInvestorRelations /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="capital"><Suspense fallback={<ModuleLoader />}><EnhancedCapitalStructure /></Suspense></Tabs.Panel>
+          </Tabs>
+        );
+
+      // ── Period Close ──
       case 'close':
         return <CloseManagement />;
-      
-      // Communications (consolidated - includes email and messaging)
-      case 'communications':
-        return <BusinessEmailSystem />;
-      case 'wordprocessor':
-        return <ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" />;
-      case 'manual':
-        return <CFOKnowledgeBase onNavigateToTab={setActiveSection} />;
-      
+
+      // ── Communications (consolidated: email + documents + knowledge base) ──
+      case 'comms':
+        return (
+          <Tabs defaultValue="email" keepMounted={false}>
+            <Tabs.List mb="md">
+              <Tabs.Tab value="email">Email & Messaging</Tabs.Tab>
+              <Tabs.Tab value="docs">Draft Documents</Tabs.Tab>
+              <Tabs.Tab value="knowledge">Knowledge Base</Tabs.Tab>
+            </Tabs.List>
+            <Tabs.Panel value="email"><Suspense fallback={<ModuleLoader />}><BusinessEmailSystem /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="docs"><Suspense fallback={<ModuleLoader />}><ExecutiveWordProcessor storageKey="cfo" supabaseTable="cfo_documents" /></Suspense></Tabs.Panel>
+            <Tabs.Panel value="knowledge"><Suspense fallback={<ModuleLoader />}><CFOKnowledgeBase onNavigateToTab={setActiveSection} /></Suspense></Tabs.Panel>
+          </Tabs>
+        );
+
       default:
         return <EnhancedCFODashboard />;
     }
@@ -1236,77 +1023,6 @@ function ManagerConsole() {
   );
 }
 
-function RoleManagement() {
-  const [roles, setRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const form = useForm({
-    initialValues: {
-      user_id: '',
-      role: '',
-    },
-    validate: {
-      role: (value) => (!value ? 'Role is required' : null),
-    },
-  });
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const { data } = await supabase.from('finance_roles').select('user_id, role').order('created_at', { ascending: true });
-        setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
-      } finally { setLoading(false); }
-    })();
-  }, []);
-  return (
-    <div>
-      <Title order={5}>Invite User & Assign Role</Title>
-      <form onSubmit={form.onSubmit(async (vals) => {
-        setLoading(true);
-        try {
-          const { error } = await supabase.from('finance_roles').insert({ user_id: vals.user_id || crypto.randomUUID(), role: vals.role });
-          if (error) throw error;
-          const { data } = await supabase.from('finance_roles').select('user_id, role').order('created_at', { ascending: true });
-          setRoles((data || []).map((r:any, idx:number)=> ({ key: `${r.user_id}-${r.role}-${idx}`, ...r })));
-          form.reset();
-          toast.success('Role assigned', 'Success');
-        } finally { setLoading(false); }
-      })}>
-        <Group align="flex-end" mb="md">
-          <TextInput
-            placeholder="User ID (optional)"
-            {...form.getInputProps('user_id')}
-            style={{ flex: 1, minWidth: 200 }}
-            description="Leave blank to auto-generate"
-          />
-          <Select
-            placeholder="Role"
-            {...form.getInputProps('role')}
-            data={[
-              {value:'CFO',label:'CFO'},
-              {value:'Controller',label:'Controller'},
-              {value:'AP',label:'AP'},
-              {value:'AR',label:'AR'},
-              {value:'Treasury',label:'Treasury'},
-              {value:'Auditor',label:'Auditor'}
-            ]}
-            style={{ minWidth: 180 }}
-          />
-          <Button type="submit" variant="filled" loading={loading}>Assign</Button>
-        </Group>
-      </form>
-
-      <Divider />
-      <MantineTable
-        data={roles}
-        loading={loading}
-        columns={[
-          { title: 'User ID', dataIndex: 'user_id' },
-          { title: 'Role', dataIndex: 'role' },
-        ]}
-      />
-    </div>
-  );
-}
 function CashFlowForecast() {
   const [series, setSeries] = useState<Array<{ period: string; cash: number; revenue: number; expenses: number }>>([]);
   const [loading, setLoading] = useState(false);
@@ -1591,765 +1307,7 @@ function ApprovalsPanel() {
   );
 }
 
-function AccountsPayable() {
-  const toast = useToast();
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [allInvoices, setAllInvoices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [creatingRun, setCreatingRun] = useState(false);
-  const [runDate, setRunDate] = useState<Date>(new Date());
-  const [linking, setLinking] = useState(false);
-  const [runs, setRuns] = useState<any[]>([]);
-  const [selectedRun, setSelectedRun] = useState<string | undefined>(undefined);
-  const [isMobile, setIsMobile] = useState(false);
-  const [filterText, setFilterText] = useState('');
-  const [gridSelection, setGridSelection] = useState<string[]>([]);
-  
-  const statusColors: Record<string, string> = useMemo(() => ({
-    pending: 'gold',
-    approved: 'blue',
-    paid: 'green',
-    rejected: 'red',
-    'Awaiting Payment': 'blue',
-    'Pending Approval': 'gold',
-    'Overdue': 'red',
-  }), []);
 
-  const loadInvoicesAndRuns = useCallback(async () => {
-    const [inv, pr] = await Promise.all([
-      supabase
-        .from('invoices')
-        .select('id, vendor, invoice_number, amount, due_date, status')
-        .order('due_date', { ascending: true }),
-      supabase
-        .from('payment_runs')
-        .select('id, scheduled_date, status, total_amount, processed_at')
-        .order('scheduled_date', { ascending: false })
-        .then(result => {
-          // Handle missing table gracefully
-          if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find'))) {
-            return { data: [], error: null };
-          }
-          return result;
-        })
-    ]);
-    const invoiceData = (inv.data || []).map((d: any) => {
-      const dueDate = new Date(d.due_date);
-      const today = new Date();
-      const daysPastDue = Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
-      return { 
-        id: d.id,
-        key: d.id,
-        ...d,
-        daysPastDue,
-        amount: Number(d.amount) || 0,
-      };
-    });
-    setAllInvoices(invoiceData);
-    setInvoices(invoiceData);
-    setRuns((pr.data || []).map((r: any) => ({ key: r.id, ...r })));
-  }, []);
-
-  const handleInvoiceStatusChange = useCallback(async (invoiceId: string, nextStatus: string) => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('invoices')
-        .update({ status: nextStatus })
-        .eq('id', invoiceId);
-      if (error) throw error;
-      toast.success(`Invoice marked ${nextStatus}`, 'Success');
-      await loadInvoicesAndRuns();
-    } catch (err) {
-      console.error('Error updating invoice status', err);
-      toast.error('Unable to update invoice', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadInvoicesAndRuns, toast]);
-
-  const handleBulkStatusChange = useCallback(async (nextStatus: string) => {
-    if (!gridSelection.length) {
-      toast.info('Select at least one invoice', 'Info');
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('invoices')
-        .update({ status: nextStatus })
-        .in('id', gridSelection);
-      if (error) throw error;
-      toast.success(`Updated ${gridSelection.length} invoices to ${nextStatus}`, 'Success');
-      await loadInvoicesAndRuns();
-      setGridSelection([]);
-    } catch (err) {
-      console.error('Bulk invoice update failed', err);
-      toast.error('Failed to update invoices', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [gridSelection, loadInvoicesAndRuns, toast]);
-
-  // Calculate metrics
-  const metrics = useMemo(() => {
-    const totalSpend = allInvoices
-      .filter(i => i.status !== 'paid')
-      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-    const overdueAmount = allInvoices
-      .filter(inv => inv.daysPastDue > 0 && inv.status !== 'paid')
-      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-    const pendingApprovalCount = allInvoices.filter(i => i.status === 'pending' || i.status === 'Pending Approval').length;
-    const mockDPO = 45; // Mock DPO calculation
-    return { totalSpend, overdueAmount, pendingApprovalCount, mockDPO };
-  }, [allInvoices]);
-
-  // Filter invoices based on search text
-  const filteredInvoices = useMemo(() => {
-    if (!filterText) return invoices;
-    const lowerFilter = filterText.toLowerCase();
-    return invoices.filter(inv => 
-      inv.vendor?.toLowerCase().includes(lowerFilter) ||
-      inv.invoice_number?.toLowerCase().includes(lowerFilter) ||
-      inv.status?.toLowerCase().includes(lowerFilter)
-    );
-  }, [invoices, filterText]);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        await loadInvoicesAndRuns();
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [loadInvoicesAndRuns]);
-  // DataGrid columns
-  const columns: GridColDef[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'vendor', headerName: 'Vendor', width: 200, flex: 1 },
-    { 
-      field: 'amount', 
-      headerName: 'Amount', 
-      width: 140,
-      valueFormatter: (value) => `$${value?.toLocaleString() || '0'}`,
-      type: 'number',
-    },
-    { 
-      field: 'due_date', 
-      headerName: 'Due Date', 
-      width: 140,
-      valueFormatter: (value) => value ? new Date(value).toLocaleDateString() : '',
-    },
-    { 
-      field: 'status', 
-      headerName: 'Status', 
-      width: 160,
-      renderCell: (params) => (
-        <Badge color={statusColors[params.value] || 'gray'} style={{ textTransform: 'capitalize' }}>
-          {params.value}
-        </Badge>
-      ),
-    },
-    { 
-      field: 'daysPastDue', 
-      headerName: 'Days Past Due', 
-      width: 140,
-      renderCell: (params) => (
-        <Text c={params.value > 0 ? 'red' : 'dimmed'}>
-          {params.value > 0 ? `${params.value} days` : 'N/A'}
-        </Text>
-      ),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 180,
-      sortable: false,
-      renderCell: (params) => (
-        <Group gap="xs">
-          {params.row.status !== 'approved' && params.row.status !== 'Approved' && (
-            <Button size="xs" onClick={() => handleInvoiceStatusChange(params.row.id, 'approved')}>
-              Approve
-            </Button>
-          )}
-          {params.row.status !== 'paid' && params.row.status !== 'Paid' && (
-            <Button size="xs" variant="filled" onClick={() => handleInvoiceStatusChange(params.row.id, 'paid')}>
-              Pay Now
-            </Button>
-          )}
-        </Group>
-      ),
-    },
-  ];
-
-  // Chart data calculations
-  const monthlySpendData = useMemo(() => {
-    const months = [1, 2, 3, 4, 5, 6].map(m => {
-      const d = new Date();
-      d.setMonth(d.getMonth() + m - 1);
-      const ym = d.toISOString().slice(0, 7);
-      const sum = (state: string) => allInvoices
-        .filter(i => i.status === state && new Date(i.due_date).toISOString().slice(0, 7) === ym)
-        .reduce((s, i) => s + (i.amount || 0), 0);
-      return { 
-        month: d.toLocaleDateString('en-US', { month: 'short' }), 
-        pending: sum('pending') / 1000,
-        approved: sum('approved') / 1000,
-      };
-    });
-    return months;
-  }, [allInvoices]);
-
-  const agingData = useMemo(() => {
-    const buckets = {
-      '0-30 Days': 0,
-      '31-60 Days': 0,
-      '61-90 Days': 0,
-      '90+ Days': 0,
-    };
-    allInvoices.forEach(inv => {
-      if (inv.status === 'paid' || inv.status === 'Paid') return;
-      const days = inv.daysPastDue || 0;
-      if (days <= 30) buckets['0-30 Days'] += inv.amount || 0;
-      else if (days <= 60) buckets['31-60 Days'] += inv.amount || 0;
-      else if (days <= 90) buckets['61-90 Days'] += inv.amount || 0;
-      else buckets['90+ Days'] += inv.amount || 0;
-    });
-    return Object.entries(buckets).map(([name, value]) => ({ name, value }));
-  }, [allInvoices]);
-
-  const vendorSpendData = useMemo(() => {
-    const vendorMap = new Map<string, number>();
-    allInvoices.forEach(inv => {
-      const current = vendorMap.get(inv.vendor) || 0;
-      vendorMap.set(inv.vendor, current + (inv.amount || 0));
-    });
-    return Array.from(vendorMap.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([vendor, amount]) => ({ vendor, amount: amount / 1000 }));
-  }, [allInvoices]);
-
-  return (
-    <Stack gap="lg" style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      <Box>
-        <Title order={1} mb="xs">Accounts Payable Operations Hub</Title>
-        <Text c="dimmed" size="md">Filter, sort, and action invoices immediately. All analytics update in real-time.</Text>
-      </Box>
-
-      {/* KPI Cards */}
-      <Grid gutter="md">
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
-            <Group justify="space-between" mb="xs">
-              <Box>
-                <Text size="sm" c="dimmed" fw={500}>Total Current Payable</Text>
-                <Text size="xl" fw={700} c="indigo">${metrics.totalSpend.toLocaleString()}</Text>
-              </Box>
-              <IconCurrencyDollar size={32} color="var(--mantine-color-indigo-6)" />
-            </Group>
-            <Text size="xs" c="dimmed">Total open and pending payment obligations.</Text>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
-            <Group justify="space-between" mb="xs">
-              <Box>
-                <Text size="sm" c="dimmed" fw={500}>Overdue Risk ($)</Text>
-                <Text size="xl" fw={700} c="red">${metrics.overdueAmount.toLocaleString()}</Text>
-              </Box>
-              <IconClock size={32} color="var(--mantine-color-red-6)" />
-            </Group>
-            <Text size="xs" c="dimmed">Immediate risk to vendor relationships.</Text>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
-            <Group justify="space-between" mb="xs">
-              <Box>
-                <Text size="sm" c="dimmed" fw={500}>Days Payable Outstanding</Text>
-                <Text size="xl" fw={700} c="green">{metrics.mockDPO} days</Text>
-              </Box>
-              <IconCalendar size={32} color="var(--mantine-color-green-6)" />
-            </Group>
-            <Text size="xs" c="dimmed">Target DPO is 50 days (improving).</Text>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-          <Card p="lg" radius="md" withBorder style={{ height: '100%' }}>
-            <Group justify="space-between" mb="xs">
-              <Box>
-                <Text size="sm" c="dimmed" fw={500}>Invoices Pending Approval</Text>
-                <Text size="xl" fw={700} c="yellow">{metrics.pendingApprovalCount} items</Text>
-              </Box>
-              <IconTrendingUp size={32} color="var(--mantine-color-yellow-6)" />
-            </Group>
-            <Text size="xs" c="dimmed">Potential bottlenecks in payment cycle.</Text>
-          </Card>
-        </Grid.Col>
-      </Grid>
-
-      {/* Invoice Data Grid */}
-      <Paper p="md" radius="md" withBorder>
-        <Stack gap="md">
-          <Group justify="space-between" align="center">
-            <Title order={4}>Invoice Management Grid</Title>
-            <Group gap="xs">
-              <Button size="sm" onClick={() => setCreatingRun(true)}>Create Payment Run</Button>
-              <Button size="sm" onClick={() => setLinking(true)} disabled={!gridSelection.length}>Link to Run</Button>
-              <Button size="sm" onClick={() => handleBulkStatusChange('approved')} disabled={!gridSelection.length}>Approve Selected</Button>
-              <Button size="sm" onClick={() => handleBulkStatusChange('paid')} disabled={!gridSelection.length}>Mark Selected Paid</Button>
-            </Group>
-          </Group>
-          <TextInput
-            placeholder="Filter by Vendor or Status..."
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            rightSection={
-              filterText ? (
-                <ActionIcon onClick={() => setFilterText('')}>
-                  <ClearIcon />
-                </ActionIcon>
-              ) : (
-                <SearchIcon />
-              )
-            }
-          />
-          <Box style={{ width: '100%', height: 600 }}>
-            {filteredInvoices && filteredInvoices.length > 0 ? (
-              <DataGrid
-                rows={filteredInvoices}
-                columns={columns}
-                loading={loading}
-                getRowId={(row) => String(row.id || row.key)}
-                checkboxSelection
-                disableRowSelectionOnClick
-                onRowSelectionModelChange={(newSelection) => {
-                  setGridSelection(Array.isArray(newSelection) ? newSelection.map(String) : []);
-                }}
-                rowSelectionModel={Array.isArray(gridSelection) ? gridSelection : []}
-                pageSizeOptions={[10, 25, 50, 100]}
-                initialState={{
-                  pagination: { paginationModel: { page: 0, pageSize: 10 } },
-                  sorting: { sortModel: [{ field: 'due_date', sort: 'asc' }] },
-                }}
-                disableColumnFilter
-                disableColumnSelector
-                disableDensitySelector
-                sx={{
-                  '& .MuiDataGrid-cell:hover': {
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                  },
-                }}
-              />
-            ) : (
-              <Box p="xl" style={{ textAlign: 'center' }}>
-                <Text c="dimmed">No invoices found</Text>
-              </Box>
-            )}
-          </Box>
-        </Stack>
-      </Paper>
-
-      {/* Charts */}
-      <Grid gutter="md">
-        <Grid.Col span={{ base: 12, lg: 4 }}>
-          <Paper p="md" radius="md" withBorder>
-            <Title order={4} mb="md">Top 5 Vendor Spend Concentration</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={vendorSpendData}
-                  dataKey="amount"
-                  nameKey="vendor"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={({ vendor, amount }) => `${vendor}: $${amount.toFixed(1)}k`}
-                >
-                  {vendorSpendData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f97316', '#ef4444', '#6366f1'][index % 5]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 8 }}>
-          <Paper p="md" radius="md" withBorder>
-            <Title order={4} mb="md">Monthly AP Spend Trend ($k)</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlySpendData}>
-                <defs>
-                  <linearGradient id="pendingGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.1} />
-                  </linearGradient>
-                  <linearGradient id="approvedGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#34d399" stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <RechartsTooltip />
-                <Legend />
-                <Area type="monotone" dataKey="pending" stackId="1" stroke="#60a5fa" fill="url(#pendingGradient)" name="Pending" />
-                <Area type="monotone" dataKey="approved" stackId="1" stroke="#34d399" fill="url(#approvedGradient)" name="Approved" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={12}>
-          <Paper p="md" radius="md" withBorder>
-            <Title order={4} mb="md">Invoice Aging Report (Awaiting/Overdue)</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={agingData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} />
-                <RechartsTooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
-                <Bar dataKey="value" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid.Col>
-      </Grid>
-
-      {/* Modals */}
-      <Modal
-        title="Create Payment Run"
-        opened={creatingRun}
-        onClose={() => setCreatingRun(false)}
-        size={isMobile ? '90%' : 600}
-      >
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          setLoading(true);
-          try {
-            const dueBefore = runDate;
-            const selected = filteredInvoices.filter((i) => new Date(i.due_date) <= dueBefore && (i.status === 'approved' || i.status === 'pending'));
-            const total = selected.reduce((s, i) => s + (i.amount || 0), 0);
-            const { error } = await supabase.from('payment_runs').insert({ scheduled_date: dueBefore.toISOString().slice(0,10), status: 'draft', total_amount: total });
-            if (error) {
-              if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-                toast.error('Payment runs table not found. Please run the database migration.', 'Error');
-              } else {
-                throw error;
-              }
-              return;
-            }
-            toast.success(`Payment run created for $${total.toLocaleString()}`, 'Success');
-            await loadInvoicesAndRuns();
-            setCreatingRun(false);
-          } finally {
-            setLoading(false);
-          }
-        }}>
-          <Stack>
-            <Text>Select due date cutoff</Text>
-            <DatePickerInput 
-              value={runDate} 
-              onChange={(d) => setRunDate(d || new Date())} 
-              style={{ width: '100%' }} 
-            />
-            <Text size="sm" c="dimmed">Includes invoices with due date on or before selected date.</Text>
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setCreatingRun(false)}>Cancel</Button>
-              <Button type="submit" loading={loading}>Create</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-      <Modal
-        title="Link Invoices to Payment Run"
-        opened={linking}
-        onClose={() => setLinking(false)}
-        size={isMobile ? '90%' : 600}
-      >
-        <form onSubmit={async (e) => {
-          e.preventDefault();
-          if (!selectedRun || !gridSelection.length) { 
-            toast.info('Select a run and invoices', 'Info'); 
-            return; 
-          }
-          setLoading(true);
-          try {
-            const { error } = await supabase.from('invoices').update({ payment_run_id: selectedRun }).in('id', gridSelection);
-            if (error) throw error;
-            toast.success('Invoices linked to run', 'Success');
-            setLinking(false);
-            await loadInvoicesAndRuns();
-            setGridSelection([]);
-          } finally {
-            setLoading(false);
-          }
-        }}>
-          <Stack>
-            <Text>Select Payment Run</Text>
-            <Select
-              placeholder="Select run"
-              value={selectedRun}
-              onChange={setSelectedRun}
-              data={runs.map(r => ({ label: `${r.scheduled_date} • ${r.status} • $${(r.total_amount||0).toLocaleString()}`, value: r.id }))}
-            />
-            <Text size="sm" c="dimmed">Link selected invoices to the chosen run.</Text>
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setLinking(false)}>Cancel</Button>
-              <Button type="submit" loading={loading}>Link</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-    </Stack>
-  );
-}
-
-function AccountsReceivable() {
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<any[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
-  const statusColors = useMemo(() => ({
-    open: 'gold',
-    pending: 'gold',
-    overdue: 'red',
-    paid: 'green',
-    partial: 'blue',
-  }), []);
-
-  const loadReceivables = useCallback(async () => {
-    const { data } = await supabase
-      .from('receivables')
-      .select('id, customer, reference, amount, due_date, status, issue_date')
-      .order('due_date', { ascending: true });
-    const list = (data || []).map((r: any) => {
-      const daysPast = Math.max(0, Math.floor((Date.now() - new Date(r.due_date).getTime()) / 86400000));
-      const bucket = daysPast === 0 ? 'Current' : daysPast <= 30 ? '0-30' : daysPast <= 60 ? '31-60' : daysPast <= 90 ? '61-90' : '90+';
-      return { key: r.id, ...r, daysPast, bucket };
-    });
-    setRows(list);
-    setSelected([]);
-  }, []);
-
-  const logReminder = useCallback(async (records: any[]) => {
-    if (!records.length) {
-      toast.info('Select at least one receivable', 'Info');
-      return;
-    }
-    setLoading(true);
-    try {
-      const inserts = records.map((r) => ({
-        receivable_id: r.key,
-        action: 'reminder_sent',
-        notes: `Reminder sent ${new Date().toISOString()}`,
-      }));
-      const { error } = await supabase.from('dunning_events').insert(inserts);
-      if (error) throw error;
-      toast.success('Reminder logged', 'Success');
-    } catch (err) {
-      console.error('Failed to log reminder', err);
-      toast.error('Unable to log reminder', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const handleLogReminder = useCallback(async () => {
-    await logReminder(selected);
-  }, [logReminder, selected]);
-
-  const markCollected = useCallback(async (records: any[]) => {
-    if (!records.length) {
-      toast.info('Select receivables to mark as collected', 'Info');
-      return;
-    }
-    setLoading(true);
-    try {
-      const ids = records.map((r) => r.key);
-      const { error } = await supabase
-        .from('receivables')
-        .update({ status: 'paid' })
-        .in('id', ids);
-      if (error) throw error;
-      toast.success('Receivables marked as collected', 'Success');
-      await loadReceivables();
-    } catch (err) {
-      console.error('Failed to mark collected', err);
-      toast.error('Unable to mark receivables collected', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [loadReceivables]);
-
-  const handleMarkCollected = useCallback(async () => {
-    await markCollected(selected);
-  }, [markCollected, selected]);
-
-  const handleRowReminder = useCallback(async (record: any) => {
-    await logReminder([record]);
-  }, [logReminder]);
-
-  const handleRowCollected = useCallback(async (record: any) => {
-    await markCollected([record]);
-  }, [markCollected]);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        await loadReceivables();
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [loadReceivables]);
-  return (
-    <div>
-      <Grid gutter="md" mb={12}>
-        <Grid.Col span={{ base: 24, md: 12 }}>
-          <Box style={{ position: 'relative' }}>
-            <InfoIcon content="This chart displays accounts receivable aging buckets, categorizing outstanding invoices by how long they've been overdue. Use this to prioritize collection efforts." title="AR Aging Buckets" />
-            <Text fw={600}>AR Aging Buckets</Text>
-          </Box>
-          <Box style={{ height: 220, background:'#fff', position: 'relative' }}>
-            <ChartContainer config={{ current:{label:'Current', color:'#94a3b8'}, b30:{label:'0-30', color:'#22c55e'}, b60:{label:'31-60', color:'#eab308'}, b90:{label:'61-90', color:'#f97316'}, b90p:{label:'90+', color:'#ef4444'} }}>
-              <BarChart data={[(() => {
-                const buckets = { current:0, b30:0, b60:0, b90:0, b90p:0 } as any;
-                rows.forEach(r => {
-                  const amt = r.amount || 0;
-                  if (r.bucket==='Current') buckets.current += amt; else if (r.bucket==='0-30') buckets.b30 += amt; else if (r.bucket==='31-60') buckets.b60 += amt; else if (r.bucket==='61-90') buckets.b90 += amt; else buckets.b90p += amt;
-                });
-                return { name:'Aging', ...buckets };
-              })()]}
-              margin={{ left:12, right:12, top:8, bottom:8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" hide />
-                <YAxis tickFormatter={(v)=>`$${v.toLocaleString()}`} width={72} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="current" fill="var(--color-current)" />
-                <Bar dataKey="b30" fill="var(--color-b30)" />
-                <Bar dataKey="b60" fill="var(--color-b60)" />
-                <Bar dataKey="b90" fill="var(--color-b90)" />
-                <Bar dataKey="b90p" fill="var(--color-b90p)" />
-              </BarChart>
-            </ChartContainer>
-          </Box>
-        </Grid.Col>
-        <Grid.Col span={{ base: 24, md: 12 }}>
-          <Box style={{ position: 'relative' }}>
-            <InfoIcon content="This chart shows the collections trend over the last 6 months, helping you track payment collection patterns and identify trends in receivables management." title="Collections Trend" />
-            <Text fw={600}>Collections Trend (last 6 months)</Text>
-          </Box>
-          <Box style={{ height: 220, background:'#fff', position: 'relative' }}>
-            <ChartContainer config={{ collected:{label:'Collected', color:'#16a34a'} }}>
-              <LineChart data={[...Array(6)].map((_,i) => {
-                const d = new Date(); d.setMonth(d.getMonth()- (5-i));
-                const ym = d.toISOString().slice(0,7);
-                // naive proxy: consider receivables with status paid in that month
-                const collected = rows.filter(r=> r.status==='paid' && new Date(r.due_date).toISOString().slice(0,7)===ym).reduce((s,r)=> s+(r.amount||0),0);
-                return { period: ym, collected };
-              })} margin={{ left:12, right:12, top:8, bottom:8 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={(v)=>`$${v.toLocaleString()}`} width={72} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="collected" stroke="var(--color-collected)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ChartContainer>
-          </Box>
-        </Grid.Col>
-      </Grid>
-      <Group gap="xs" mb={12} wrap>
-        <Button onClick={handleLogReminder}>Send Reminder</Button>
-        <Button onClick={handleMarkCollected} variant="filled">Mark Collected</Button>
-        <Button onClick={() => {
-          // CSV export of current grid
-          const headers = ['Customer','Reference','Issue Date','Due Date','Days Past Due','Bucket','Amount','Status'];
-          const lines = rows.map(r => [r.customer, r.reference, new Date(r.issue_date).toISOString().slice(0,10), new Date(r.due_date).toISOString().slice(0,10), r.daysPast, r.bucket, r.amount, r.status]);
-          const csv = [headers, ...lines].map((arr) => arr.map((v) => `"${(v??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `ar_aging_${new Date().toISOString().slice(0,10)}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }}>Export CSV</Button>
-      </Group>
-      <Grid gutter="md" mb={12}>
-        {['Current','0-30','31-60','61-90','90+'].map((b) => {
-          const sum = rows.filter(r => r.bucket === b).reduce((s, r) => s + (r.amount || 0), 0);
-          return (
-            <Grid.Col key={b} span={{ base: 12, md: 6, lg: 4 }}>
-              <Paper p={12} radius="md" bg="gray.0">
-                <Text c="gray.6">{b}</Text>
-                <Text fw={700}>$ {sum.toLocaleString()}</Text>
-              </Paper>
-            </Grid.Col>
-          );
-        })}
-      </Grid>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={rows}
-          loading={loading}
-          rowSelection={{ 
-            selectedRowKeys: selected.map(s=>s.key), 
-            onChange: (_keys, selRows)=> setSelected(selRows as any[]) 
-          }}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 1000 : 'auto' }}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          columns={[
-            { title: 'Customer', dataIndex: 'customer' },
-            { title: 'Ref', dataIndex: 'reference' },
-            { title: 'Issue Date', dataIndex: 'issue_date', render: (v: string) => new Date(v).toLocaleDateString() },
-            { title: 'Due', dataIndex: 'due_date', render: (v: string) => new Date(v).toLocaleDateString() },
-            { title: 'Days Past Due', dataIndex: 'daysPast' },
-            { title: 'Bucket', dataIndex: 'bucket' },
-            { title: 'Amount', dataIndex: 'amount', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            { title: 'Status', dataIndex: 'status', render: (value: string) => (
-              <Badge color={statusColors[value] || 'gray'} style={{ textTransform: 'capitalize' }}>
-                {value}
-              </Badge>
-            ) },
-            {
-              title: 'Actions',
-              key: 'actions',
-              width: 220,
-              render: (_: any, record: any) => (
-                <Group gap="xs" wrap>
-                  <Button size="sm" onClick={() => handleRowReminder(record)}>Remind</Button>
-                  {record.status !== 'paid' && (
-                    <Button size="sm" variant="filled" onClick={() => handleRowCollected(record)}>Mark Paid</Button>
-                  )}
-                </Group>
-              ),
-            },
-          ]}
-        />
-      </Box>
-    </div>
-  );
-}
 
 function CloseManagement() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -2534,512 +1492,6 @@ function CloseManagement() {
   );
 }
 
-function TreasuryView() {
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [editAcc, setEditAcc] = useState<any | null>(null);
-  const form = useForm({
-    initialValues: {
-      current_balance: 0,
-    },
-    validate: {
-      current_balance: (value) => (value >= 0 ? null : 'Balance must be positive'),
-    },
-  });
-  const [isMobile, setIsMobile] = useState(false);
-  const [newAccountModal, setNewAccountModal] = useState(false);
-  const newAccountForm = useForm({
-    initialValues: {
-      name: '',
-      institution: '',
-      currency: 'USD',
-      current_balance: 0,
-    },
-    validate: {
-      name: (value) => (!value ? 'Account name is required' : null),
-      institution: (value) => (!value ? 'Institution is required' : null),
-      current_balance: (value) => (value >= 0 ? null : 'Balance must be positive'),
-    },
-  });
-  const loadAccounts = useCallback(async () => {
-    const { data } = await supabase.from('bank_accounts').select('id, name, institution, currency, current_balance, updated_at');
-    setAccounts((data || []).map((x: any) => ({ key: x.id, ...x })));
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        await loadAccounts();
-      } finally {
-        setLoading(false);
-      }
-    })();
-    
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [loadAccounts]);
-  const total = accounts.reduce((s, a) => s + (a.current_balance || 0), 0);
-  return (
-    <div>
-      <Grid gutter="md" mb={12}>
-        <Grid.Col span={{ base: 24, md: 8 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="cyan.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="cyan.9">Total Cash</Text>
-            <Text fw={700} size={isMobile ? 'md' : 'lg'}>$ {total.toLocaleString()}</Text>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 24, md: 8 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="violet.0">
-            <Text size={isMobile ? 'xs' : 'sm'} c="violet.9">Accounts</Text>
-            <Text fw={700} size={isMobile ? 'md' : 'lg'}>{accounts.length}</Text>
-          </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 24, md: 8 }}>
-          <Paper p={isMobile ? 12 : 16} radius="md" bg="cyan.0" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <Text c="cyan.9" fw={600}>Actions</Text>
-            <Button 
-              size={isMobile ? 'sm' : 'md'} 
-              variant="filled" 
-              onClick={() => { 
-                newAccountForm.reset(); 
-                setNewAccountModal(true); 
-              }}
-            >
-              Add Account
-            </Button>
-          </Paper>
-        </Grid.Col>
-      </Grid>
-      <Box style={{ overflow: 'hidden' }}>
-        <MantineTable
-          data={accounts}
-          loading={loading}
-          size={isMobile ? 'small' : 'default'}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          pagination={{ pageSize: isMobile ? 5 : 10, showSizeChanger: !isMobile }}
-          columns={[
-            { title: 'Account', dataIndex: 'name' },
-            { title: 'Institution', dataIndex: 'institution' },
-            { title: 'Currency', dataIndex: 'currency', width: 100 },
-            { title: 'Current Balance', dataIndex: 'current_balance', render: (v: number) => `$${(v||0).toLocaleString()}` },
-            { title: 'Updated', dataIndex: 'updated_at', render: (v: string) => new Date(v).toLocaleString(), width: 180 },
-            { title: 'Actions', key: 'actions', render: (_: any, rec: any) => (
-              <Button size="sm" onClick={() => { 
-                setEditAcc(rec); 
-                form.setValues({ current_balance: rec.current_balance }); 
-              }}>
-                Update
-              </Button>
-            ) },
-          ]}
-        />
-      </Box>
-      <Modal
-        title={`Update Balance - ${editAcc?.name || ''}`}
-        opened={!!editAcc}
-        onClose={() => setEditAcc(null)}
-        size={isMobile ? '90%' : 600}
-      >
-        <form onSubmit={form.onSubmit(async (vals) => {
-          setLoading(true);
-          try {
-            const { error } = await supabase.from('bank_accounts').update({ current_balance: vals.current_balance, updated_at: new Date().toISOString() }).eq('id', editAcc.id);
-            if (error) throw error;
-            toast.success('Balance updated', 'Success');
-            await loadAccounts();
-            setEditAcc(null);
-          } finally {
-            setLoading(false);
-          }
-        })}>
-          <Stack>
-            <NumberInput
-              label="Current Balance"
-              {...form.getInputProps('current_balance')}
-              required
-              min={0}
-              step={100}
-              style={{ width: '100%' }}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setEditAcc(null)}>Cancel</Button>
-              <Button type="submit" loading={loading}>Update</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-      <Modal
-        title="Add Bank Account"
-        opened={newAccountModal}
-        onClose={() => setNewAccountModal(false)}
-        size={isMobile ? '90%' : 600}
-      >
-        <form onSubmit={newAccountForm.onSubmit(async (vals) => {
-          setLoading(true);
-          try {
-            const { error } = await supabase.from('bank_accounts').insert({
-              name: vals.name,
-              institution: vals.institution,
-              currency: vals.currency || 'USD',
-              current_balance: vals.current_balance || 0,
-              updated_at: new Date().toISOString(),
-            });
-            if (error) throw error;
-            toast.success('Account created', 'Success');
-            setNewAccountModal(false);
-            await loadAccounts();
-          } finally {
-            setLoading(false);
-          }
-        })}>
-          <Stack>
-            <TextInput
-              label="Account Name"
-              {...newAccountForm.getInputProps('name')}
-              required
-            />
-            <TextInput
-              label="Institution"
-              {...newAccountForm.getInputProps('institution')}
-              required
-            />
-            <TextInput
-              label="Currency"
-              {...newAccountForm.getInputProps('currency')}
-            />
-            <NumberInput
-              label="Opening Balance"
-              {...newAccountForm.getInputProps('current_balance')}
-              min={0}
-              step={100}
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setNewAccountModal(false)}>Cancel</Button>
-              <Button type="submit" loading={loading}>Create</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-    </div>
-  );
-}
-
-function WordProcessor() {
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [currentDoc, setCurrentDoc] = useState<any | null>(null);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [newDocModalVisible, setNewDocModalVisible] = useState(false);
-  const [newDocTitle, setNewDocTitle] = useState('');
-
-  const fetchDocuments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('cfo_documents')
-        .select('id, title, content, updated_at, created_at')
-        .order('updated_at', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      const docs = data || [];
-      setDocuments(docs);
-
-      if (docs.length === 0) {
-        setCurrentDoc(null);
-        setTitle('');
-        setContent('');
-        return;
-      }
-
-      if (!currentDoc || !docs.some((doc) => doc.id === currentDoc.id)) {
-        const firstDoc = docs[0];
-        setCurrentDoc(firstDoc);
-        setTitle(firstDoc.title ?? '');
-        setContent(firstDoc.content ?? '');
-      }
-    } catch (error) {
-      console.error('Error loading documents:', error);
-      toast.error('Failed to load documents', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentDoc]);
-
-  useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const handleSelectDocument = (doc: any) => {
-    setCurrentDoc(doc);
-    setTitle(doc.title ?? '');
-    setContent(doc.content ?? '');
-  };
-
-  const handleSaveDocument = async () => {
-    if (!title.trim()) {
-      toast.warning('Document title is required', 'Warning');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      if (currentDoc) {
-        const { error } = await supabase
-          .from('cfo_documents')
-          .update({ title: title.trim(), content })
-          .eq('id', currentDoc.id);
-
-        if (error) throw error;
-        toast.success('Document saved', 'Success');
-      } else {
-        const { data, error } = await supabase
-          .from('cfo_documents')
-          .insert({ title: title.trim(), content })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setCurrentDoc(data);
-      }
-
-      fetchDocuments();
-    } catch (error) {
-      console.error('Error saving document:', error);
-      toast.error('Failed to save document', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (doc: any) => {
-    modals.openConfirmModal({
-      title: 'Delete document',
-      children: <Text>Are you sure you want to delete "{doc.title}"?</Text>,
-      labels: { confirm: 'Delete', cancel: 'Cancel' },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        setLoading(true);
-        try {
-          const { error } = await supabase.from('cfo_documents').delete().eq('id', doc.id);
-          if (error) throw error;
-          toast.success('Document deleted', 'Success');
-
-          if (currentDoc?.id === doc.id) {
-            setCurrentDoc(null);
-            setTitle('');
-            setContent('');
-          }
-
-          fetchDocuments();
-        } catch (err) {
-          console.error('Error deleting document:', err);
-          toast.error('Failed to delete document', 'Error');
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-  };
-
-  const handleCreateDocument = async () => {
-    const trimmed = newDocTitle.trim();
-    if (!trimmed) {
-      toast.warning('Enter a document title', 'Warning');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('cfo_documents')
-        .insert({ title: trimmed, content: '' })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setNewDocTitle('');
-      setNewDocModalVisible(false);
-      setCurrentDoc(data);
-      setTitle(data?.title ?? '');
-      setContent(data?.content ?? '');
-      fetchDocuments();
-      toast.success('Document created', 'Success');
-    } catch (err) {
-      console.error('Error creating document:', err);
-      toast.error('Failed to create document', 'Error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  };
-
-  return (
-    <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '280px 1fr',
-          gap: 16,
-          alignItems: 'stretch',
-        }}
-      >
-        {(!isMobile || !currentDoc) && (
-          <div
-            style={{
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: 12,
-              padding: 16,
-              background: 'rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <Group justify="space-between" mb="md">
-              <Title order={5} style={{ margin: 0 }}>
-                Documents
-              </Title>
-              <Button
-                variant="filled"
-                size="sm"
-                leftSection={<IconPlus size={16} />}
-                onClick={() => setNewDocModalVisible(true)}
-              >
-                New
-              </Button>
-            </Group>
-
-            <ScrollArea style={{ flex: 1 }}>
-              {loading && documents.length === 0 ? (
-                <Center p={20}>
-                  <Loader />
-                </Center>
-              ) : documents.length === 0 ? (
-                <Center p={20}>
-                  <Text c="dimmed">No documents yet</Text>
-                </Center>
-              ) : (
-                <Stack gap="xs">
-                  {documents.map((doc) => (
-                    <Button
-                      key={doc.id}
-                      variant={currentDoc?.id === doc.id ? 'filled' : 'default'}
-                      fullWidth
-                      style={{
-                        textAlign: 'left',
-                        height: 'auto',
-                        whiteSpace: 'normal',
-                      }}
-                      onClick={() => handleSelectDocument(doc)}
-                    >
-                      <Stack gap={4} align="flex-start" style={{ width: '100%' }}>
-                        <Text fw={600} size="sm">{doc.title || 'Untitled document'}</Text>
-                        <Text size="xs" c="dimmed">{formatDate(doc.updated_at || doc.created_at)}</Text>
-                      </Stack>
-                    </Button>
-                  ))}
-                </Stack>
-              )}
-            </ScrollArea>
-          </div>
-        )}
-
-        <div
-          style={{
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: 12,
-            padding: 16,
-            background: 'rgba(255, 255, 255, 0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          {currentDoc ? (
-            <>
-              <Group wrap style={{ width: '100%' }}>
-                <TextInput
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Document title"
-                  style={{ flex: 1, minWidth: 200 }}
-                />
-                <Button variant="filled" loading={loading} onClick={handleSaveDocument}>
-                  Save
-                </Button>
-                <Button color="red" onClick={() => currentDoc && handleDeleteDocument(currentDoc)}>
-                  Delete
-                </Button>
-              </Group>
-
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                minRows={isMobile ? 12 : 18}
-                maxRows={30}
-                placeholder="Start typing your document here…"
-              />
-            </>
-          ) : (
-            <Center p={40}>
-              <Stack align="center" gap="md">
-                <Title order={4}>Create your first document</Title>
-                <Text c="dimmed" ta="center">
-                  Draft financial memos, board summaries, or approvals using the built-in editor.
-                </Text>
-                <Button variant="filled" onClick={() => setNewDocModalVisible(true)}>
-                  Create Document
-                </Button>
-              </Stack>
-            </Center>
-          )}
-        </div>
-      </div>
-
-      <Modal
-        opened={newDocModalVisible}
-        title="New Document"
-        onClose={() => setNewDocModalVisible(false)}
-      >
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          handleCreateDocument();
-        }}>
-          <Stack>
-            <TextInput
-              value={newDocTitle}
-              onChange={(e) => setNewDocTitle(e.target.value)}
-              placeholder="Document title"
-              required
-            />
-            <Group justify="flex-end" mt="md">
-              <Button variant="subtle" onClick={() => setNewDocModalVisible(false)}>Cancel</Button>
-              <Button type="submit" variant="filled" loading={loading}>Create</Button>
-            </Group>
-          </Stack>
-        </form>
-      </Modal>
-    </>
-  );
-}
 
 export default function CFOPortal() {
   return (

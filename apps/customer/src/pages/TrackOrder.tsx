@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 import { 
   Box, 
   Container, 
@@ -288,28 +289,13 @@ const TrackOrder: React.FC = () => {
   const addRestaurantMarker = (lat: number, lng: number) => {
     if (!mapInstance.current) return;
 
-    const el = document.createElement('div');
-    el.className = 'restaurant-marker';
-    el.style.cssText = `
-      width: 40px;
-      height: 40px;
-      background: #FF6B35;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-    `;
-    el.innerHTML = '🍽️';
+    const el = createCravenMarkerElement(40, 'Restaurant');
 
     if (restaurantMarker.current) {
       restaurantMarker.current.remove();
     }
 
-    restaurantMarker.current = new (window as any).mapboxgl.Marker(el)
+    restaurantMarker.current = new (window as any).mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([lng, lat])
       .addTo(mapInstance.current);
   };
@@ -317,28 +303,13 @@ const TrackOrder: React.FC = () => {
   const addCustomerMarker = (lat: number, lng: number) => {
     if (!mapInstance.current) return;
 
-    const el = document.createElement('div');
-    el.className = 'customer-marker';
-    el.style.cssText = `
-      width: 40px;
-      height: 40px;
-      background: #2563EB;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-    `;
-    el.innerHTML = '📍';
+    const el = createCravenMarkerElement(40, 'Delivery Address');
 
     if (customerMarker.current) {
       customerMarker.current.remove();
     }
 
-    customerMarker.current = new (window as any).mapboxgl.Marker(el)
+    customerMarker.current = new (window as any).mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([lng, lat])
       .addTo(mapInstance.current);
   };
@@ -346,25 +317,10 @@ const TrackOrder: React.FC = () => {
   const updateFeederMarker = (lat: number, lng: number) => {
     if (!mapInstance.current) return;
 
-    const el = document.createElement('div');
-    el.className = 'feeder-marker';
-    el.style.cssText = `
-      width: 48px;
-      height: 48px;
-      background: #10B981;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 12px rgba(16, 185, 129, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 24px;
-      animation: pulse 2s infinite;
-    `;
-    el.innerHTML = '🚚';
+    const el = createCravenMarkerElement(48, 'Feeder');
 
     // Add pulse animation
+    el.style.animation = 'pulse 2s infinite';
     const style = document.createElement('style');
     style.textContent = `
       @keyframes pulse {
@@ -381,7 +337,7 @@ const TrackOrder: React.FC = () => {
       feederMarker.current.remove();
     }
 
-    feederMarker.current = new (window as any).mapboxgl.Marker(el)
+    feederMarker.current = new (window as any).mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([lng, lat])
       .addTo(mapInstance.current);
 
