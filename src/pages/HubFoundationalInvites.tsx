@@ -413,58 +413,17 @@ export default function HubFoundationalInvitesPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)]">
-            {/* Invite Creation Panel */}
-            <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
-              <div className="p-6">
-                <h2 className="text-sm font-semibold mb-1">Create Invite</h2>
-                <p className="text-xs text-zinc-500 mb-4">
-                  Create a single-use access code for a specific relationship. Codes are private and should be
-                  shared directly with the recipient.
-                </p>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-medium text-zinc-700">Email</label>
-                    <input
-                      className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@email.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-zinc-700">Full Name (optional)</label>
-                    <input
-                      className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Full legal name"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-zinc-700">Relationship Note (internal)</label>
-                    <input
-                      className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
-                      value={relationshipNote}
-                      onChange={(e) => setRelationshipNote(e.target.value)}
-                      placeholder="e.g., cousin, childhood friend, former coworker"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-zinc-700">Expires At (optional)</label>
-                    <input
-                      type="date"
-                      className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
-                      value={expiresAt}
-                      onChange={(e) => setExpiresAt(e.target.value)}
-                    />
-                  </div>
+          {/* Create Invite Panel - Compact on top */}
+          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm mb-6">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Create Invite</h2>
+                  <p className="text-xs text-zinc-500">
+                    Single-use access codes for friends &amp; family.
+                  </p>
                 </div>
-
-                {err && <div className="mt-4 text-sm text-red-600">{err}</div>}
-
-                <div className="mt-5 flex gap-3">
+                <div className="flex gap-2">
                   <Button
                     disabled={busy}
                     onClick={createInvite}
@@ -481,10 +440,52 @@ export default function HubFoundationalInvitesPage() {
                   </Button>
                 </div>
               </div>
-            </div>
 
-            {/* Invites Table */}
-            <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div>
+                  <label className="text-xs font-medium text-zinc-700">Email</label>
+                  <input
+                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-zinc-700">Full Name (optional)</label>
+                  <input
+                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Full legal name"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-zinc-700">Relationship Note (internal)</label>
+                  <input
+                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
+                    value={relationshipNote}
+                    onChange={(e) => setRelationshipNote(e.target.value)}
+                    placeholder="e.g., cousin, friend"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-zinc-700">Expires At (optional)</label>
+                  <input
+                    type="date"
+                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-950"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+            </div>
+          </div>
+
+          {/* Invites Registry - Full Width */}
+          <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold">Invite Registry</h2>
@@ -598,10 +599,9 @@ export default function HubFoundationalInvitesPage() {
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Access Activity Log Panel */}
-          <div className="mt-8">
+          <div className="mt-6">
             <div className="rounded-2xl border border-border bg-card shadow-sm">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
