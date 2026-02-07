@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, Activity, Eye, Clock } from "lucide-react";
+import { ArrowLeft, DollarSign, Activity, Eye, Clock, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { generateInviteCode } from "@/lib/invite-code";
+import { toast } from "sonner";
 import cravenLogo from "@/assets/craven-logo.png";
 
 type Invite = {
@@ -55,6 +56,9 @@ export default function HubFoundationalInvitesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [selectedInviteId, setSelectedInviteId] = useState<string | null>(null);
   const [showAccessLogs, setShowAccessLogs] = useState(false);
+  
+  // Reminder state
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
   
   // Email tester state
   const [testEmail, setTestEmail] = useState("");
@@ -213,8 +217,10 @@ export default function HubFoundationalInvitesPage() {
       }
 
       await load();
+      toast.success("Invite revoked successfully");
     } catch (e: any) {
       setErr(e.message || "Failed to revoke invite.");
+      toast.error("Failed to revoke invite");
     }
   }
 
@@ -300,6 +306,51 @@ export default function HubFoundationalInvitesPage() {
       setTestErr(e.message || "Failed to send test email");
     } finally {
       setTestBusy(false);
+    }
+  }
+
+  async function sendReminder(invite: Invite) {
+    if (invite.status === 'revoked') {
+      toast.error("Cannot send reminder to revoked invite");
+      return;
+    }
+    
+    if (invite.paid_at) {
+      toast.error("This invite has already been paid");
+      return;
+    }
+
+    setSendingReminderId(invite.id);
+    
+    try {
+      console.log('[HubFoundationalInvites] Sending reminder to:', invite.email);
+      
+      const { data, error } = await supabase.functions.invoke(
+        "send-foundational-invite-email",
+        {
+          body: {
+            inviteeName: invite.full_name || "there",
+            inviteeEmail: invite.email,
+            accessCode: invite.access_code,
+          },
+        }
+      );
+
+      if (error) {
+        console.error('[HubFoundationalInvites] Reminder email error:', error);
+        throw new Error(error.message || "Failed to send reminder");
+      }
+
+      console.log('[HubFoundationalInvites] Reminder sent successfully:', data);
+      toast.success(`Reminder sent to ${invite.email}`);
+      
+      // Reload to refresh any updated data
+      await load();
+    } catch (e: any) {
+      console.error('[HubFoundationalInvites] Reminder exception:', e);
+      toast.error(e.message || "Failed to send reminder");
+    } finally {
+      setSendingReminderId(null);
     }
   }
 
@@ -488,7 +539,7 @@ export default function HubFoundationalInvitesPage() {
                             {i.paid_amount_cents ? `$${(i.paid_amount_cents / 100).toFixed(2)}` : "—"}
                           </td>
                           <td className="py-3">{new Date(i.created_at).toLocaleString()}</td>
-                          <td className="py-3 text-right space-x-2">
+                          <td className="py-3 text-right space-x-1">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -502,6 +553,22 @@ export default function HubFoundationalInvitesPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            {i.status !== "revoked" && !i.paid_at && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => sendReminder(i)}
+                                disabled={sendingReminderId === i.id}
+                                className="rounded-xl text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                title="Send reminder email"
+                              >
+                                {sendingReminderId === i.id ? (
+                                  <Send className="h-4 w-4 animate-pulse" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
                             {i.status !== "revoked" && (
                               <Button
                                 variant="outline"
