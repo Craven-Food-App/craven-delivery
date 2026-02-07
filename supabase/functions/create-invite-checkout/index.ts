@@ -1,14 +1,49 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import Stripe from "https://esm.sh/stripe@14.11.0";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  ...getCorsHeaders(req.headers.get('origin')),
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
+  if (envOrigins) {
+    return envOrigins.split(",").map(o => o.trim());
+  }
+  return [
+    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
+    "https://cravenusa.com",
+    "https://www.cravenusa.com",
+    "https://feeder.cravenusa.com",
+    "https://merchant.cravenusa.com",
+    "https://board.cravenusa.com",
+    "https://hq.cravenusa.com",
+    "https://ceo.cravenusa.com",
+    "https://cfo.cravenusa.com",
+    "https://coo.cravenusa.com",
+    "https://cto.cravenusa.com",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
+  ];
+};
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -123,4 +158,3 @@ serve(async (req) => {
     );
   }
 });
-

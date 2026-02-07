@@ -4615,6 +4615,7 @@ export type Database = {
           account_number_last_four: string | null
           background_check: boolean | null
           background_check_approved_at: string | null
+          background_check_auto_approved: boolean | null
           background_check_consent: boolean | null
           background_check_consent_date: string | null
           background_check_estimated_completion: string | null
@@ -4697,6 +4698,7 @@ export type Database = {
           account_number_last_four?: string | null
           background_check?: boolean | null
           background_check_approved_at?: string | null
+          background_check_auto_approved?: boolean | null
           background_check_consent?: boolean | null
           background_check_consent_date?: string | null
           background_check_estimated_completion?: string | null
@@ -4779,6 +4781,7 @@ export type Database = {
           account_number_last_four?: string | null
           background_check?: boolean | null
           background_check_approved_at?: string | null
+          background_check_auto_approved?: boolean | null
           background_check_consent?: boolean | null
           background_check_consent_date?: string | null
           background_check_estimated_completion?: string | null
@@ -8919,6 +8922,35 @@ export type Database = {
           timestamp?: string
         }
         Relationships: []
+      }
+      driver_locations: {
+        Row: {
+          lat: number
+          lng: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          lat: number
+          lng: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          lat?: number
+          lng?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_onboarding_progress: {
         Row: {
@@ -18988,6 +19020,45 @@ export type Database = {
           },
         ]
       }
+      notification_dispatch_log: {
+        Row: {
+          body: string | null
+          category: string
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          category: string
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_logs: {
         Row: {
           body: string
@@ -19040,45 +19111,6 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
-      }
-      notification_dispatch_log: {
-        Row: {
-          id: string
-          user_id: string
-          category: string
-          channel: string
-          title: string
-          body: string | null
-          status: string
-          error_message: string | null
-          metadata: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          category: string
-          channel: string
-          title: string
-          body?: string | null
-          status?: string
-          error_message?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          category?: string
-          channel?: string
-          title?: string
-          body?: string | null
-          status?: string
-          error_message?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-        Relationships: []
       }
       notification_settings: {
         Row: {
@@ -26632,37 +26664,37 @@ export type Database = {
       }
       user_notification_preferences: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           is_enabled: boolean
           notification_setting_id: string | null
-          updated_at: string
-          user_id: string
-          category: string | null
           push_enabled: boolean
           sms_enabled: boolean
+          updated_at: string
+          user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           is_enabled?: boolean
           notification_setting_id?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
           updated_at?: string
           user_id: string
-          category?: string | null
-          push_enabled?: boolean
-          sms_enabled?: boolean
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           is_enabled?: boolean
           notification_setting_id?: string | null
-          updated_at?: string
-          user_id?: string
-          category?: string | null
           push_enabled?: boolean
           sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -28213,6 +28245,10 @@ export type Database = {
           variance_pct: number
         }[]
       }
+      check_customer_notification_preference: {
+        Args: { p_category: string; p_channel?: string; p_user_id: string }
+        Returns: boolean
+      }
       check_point_in_zones: {
         Args: { lat: number; lng: number }
         Returns: {
@@ -29664,6 +29700,10 @@ export type Database = {
       }
       text_soundex: { Args: { "": string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_driver_location: {
+        Args: { driver_user_id: string; latitude: number; longitude: number }
+        Returns: undefined
+      }
       update_order_heat_map: { Args: never; Returns: undefined }
       updategeometrysrid: {
         Args: {
