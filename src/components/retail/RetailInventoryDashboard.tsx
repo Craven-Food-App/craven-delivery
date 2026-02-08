@@ -44,6 +44,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  Layers,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -87,18 +88,35 @@ interface MenuItemOption {
   price_cents: number;
 }
 
+interface VariantStock {
+  id: string;
+  menu_item_id: string;
+  product_name: string;
+  title: string;
+  sku: string | null;
+  barcode: string | null;
+  price_cents: number;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  reorder_point: number;
+  is_available: boolean;
+  image_url: string | null;
+}
+
 interface RetailInventoryDashboardProps {
   restaurantId: string;
 }
 
 const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProps) => {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [variantStock, setVariantStock] = useState<VariantStock[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "in_stock" | "low_stock" | "out_of_stock">("all");
   const [sortBy, setSortBy] = useState<"name" | "stock" | "value">("name");
+  const [inventoryTab, setInventoryTab] = useState<"products" | "variants">("products");
 
   // Adjust stock dialog
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
@@ -183,6 +201,45 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
         (mi: any) => !existingMenuItemIds.includes(mi.id)
       );
       setMenuItems(unlinked);
+
+      // Fetch variant-level stock
+      const { data: varData } = await supabase
+        .from("product_variants")
+        .select(`
+          id,
+          menu_item_id,
+          title,
+          sku,
+          barcode,
+          price_cents,
+          quantity_on_hand,
+          quantity_reserved,
+          reorder_point,
+          is_available,
+          image_url,
+          menu_items ( name )
+        `)
+        .in(
+          "menu_item_id",
+          (allMenuItems || []).map((mi: any) => mi.id)
+        )
+        .order("display_order");
+
+      const mappedVariants: VariantStock[] = (varData || []).map((v: any) => ({
+        id: v.id,
+        menu_item_id: v.menu_item_id,
+        product_name: v.menu_items?.name || "Unknown",
+        title: v.title,
+        sku: v.sku,
+        barcode: v.barcode,
+        price_cents: v.price_cents,
+        quantity_on_hand: v.quantity_on_hand,
+        quantity_reserved: v.quantity_reserved,
+        reorder_point: v.reorder_point,
+        is_available: v.is_available,
+        image_url: v.image_url,
+      }));
+      setVariantStock(mappedVariants);
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast.error("Failed to load inventory");
@@ -420,6 +477,50 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
     }
   };
 
+  // ——— Adjust variant stock ———
+  const handleAdjustVariantStock = async (
+    variantId: string,
+    newQty: number
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("product_variants")
+        .update({
+          quantity_on_hand: newQty,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", variantId);
+      if (error) throw error;
+      toast.success("Variant stock updated");
+      fetchInventory();
+    } catch (error: any) {
+      console.error("Error adjusting variant stock:", error);
+      toast.error(error.message || "Failed to update variant stock");
+    }
+  };
+
+  // ——— Variant stock helpers ———
+  const getVariantStatus = (v: VariantStock) => {
+    const avail = v.quantity_on_hand - v.quantity_reserved;
+    if (avail <= 0) return "out_of_stock";
+    if (avail <= v.reorder_point) return "low_stock";
+    return "in_stock";
+  };
+
+  const filteredVariants = variantStock.filter((v) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      v.product_name.toLowerCase().includes(query) ||
+      v.title.toLowerCase().includes(query) ||
+      (v.sku || "").toLowerCase().includes(query);
+    const matchesFilter =
+      filterStatus === "all" || getVariantStatus(v) === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
+  const variantLowStock = variantStock.filter((v) => getVariantStatus(v) === "low_stock").length;
+  const variantOutOfStock = variantStock.filter((v) => getVariantStatus(v) === "out_of_stock").length;
+
   // ——— Export CSV ———
   const exportInventory = () => {
     const csv = [
@@ -553,8 +654,35 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
               </Card>
             </div>
 
+            {/* Inventory Tabs */}
+            {variantStock.length > 0 && (
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={inventoryTab === "products" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInventoryTab("products")}
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Product Stock ({items.length})
+                </Button>
+                <Button
+                  variant={inventoryTab === "variants" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInventoryTab("variants")}
+                >
+                  <Layers className="w-4 h-4 mr-2" />
+                  Variant Stock ({variantStock.length})
+                  {(variantLowStock + variantOutOfStock > 0) && (
+                    <Badge variant="destructive" className="ml-2 h-4 text-[10px]">
+                      {variantLowStock + variantOutOfStock}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            )}
+
             {/* Low Stock Alerts */}
-            {lowStockCount + outOfStockCount > 0 && (
+            {inventoryTab === "products" && lowStockCount + outOfStockCount > 0 && (
               <Card className="mb-6 border-yellow-200 bg-yellow-50/50 dark:bg-yellow-900/10">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
@@ -585,6 +713,150 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
                 </CardContent>
               </Card>
             )}
+
+            {/* Variant Stock Tab */}
+            {inventoryTab === "variants" && (
+              <>
+                {/* Variant Alerts */}
+                {(variantLowStock + variantOutOfStock) > 0 && (
+                  <Card className="mb-6 border-yellow-200 bg-yellow-50/50 dark:bg-yellow-900/10">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Variant Stock Alerts ({variantLowStock + variantOutOfStock} variants need attention)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {variantStock
+                          .filter((v) => getVariantStatus(v) !== "in_stock")
+                          .slice(0, 10)
+                          .map((v) => (
+                            <Badge
+                              key={v.id}
+                              variant={getVariantStatus(v) === "out_of_stock" ? "destructive" : "outline"}
+                            >
+                              {v.product_name} — {v.title}: {Math.max(0, v.quantity_on_hand - v.quantity_reserved)} left
+                            </Badge>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Variant</TableHead>
+                          <TableHead>SKU</TableHead>
+                          <TableHead className="text-right">Price</TableHead>
+                          <TableHead className="text-center">On Hand</TableHead>
+                          <TableHead className="text-center">Available</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="text-center">Adjust</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredVariants.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                              {searchQuery ? "No variants match your search" : "No variant stock data"}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredVariants.map((v) => {
+                            const status = getVariantStatus(v);
+                            const avail = Math.max(0, v.quantity_on_hand - v.quantity_reserved);
+                            return (
+                              <TableRow
+                                key={v.id}
+                                className={
+                                  status === "out_of_stock"
+                                    ? "bg-red-50/50 dark:bg-red-900/10"
+                                    : status === "low_stock"
+                                    ? "bg-yellow-50/50 dark:bg-yellow-900/10"
+                                    : ""
+                                }
+                              >
+                                <TableCell className="font-medium">{v.product_name}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {v.image_url && (
+                                      <img src={v.image_url} alt="" className="w-6 h-6 rounded object-cover" />
+                                    )}
+                                    <span>{v.title}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{v.sku || "—"}</TableCell>
+                                <TableCell className="text-right">${(v.price_cents / 100).toFixed(2)}</TableCell>
+                                <TableCell className="text-center font-semibold">{v.quantity_on_hand}</TableCell>
+                                <TableCell className="text-center font-bold">{avail}</TableCell>
+                                <TableCell className="text-center">
+                                  <Badge
+                                    variant={status === "in_stock" ? "default" : status === "low_stock" ? "outline" : "destructive"}
+                                    className={
+                                      status === "in_stock"
+                                        ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                        : status === "low_stock"
+                                        ? "border-yellow-500 text-yellow-700"
+                                        : ""
+                                    }
+                                  >
+                                    {status === "in_stock" ? "In Stock" : status === "low_stock" ? "Low" : "Out"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex justify-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      title="Add stock"
+                                      onClick={() => handleAdjustVariantStock(v.id, v.quantity_on_hand + 1)}
+                                    >
+                                      <Plus className="w-3.5 h-3.5 text-green-600" />
+                                    </Button>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      value={v.quantity_on_hand}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 0;
+                                        handleAdjustVariantStock(v.id, val);
+                                      }}
+                                      className="h-7 w-16 text-center"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      title="Remove stock"
+                                      onClick={() => handleAdjustVariantStock(v.id, Math.max(0, v.quantity_on_hand - 1))}
+                                    >
+                                      <Minus className="w-3.5 h-3.5 text-red-600" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground mt-4 text-center">
+                  Showing {filteredVariants.length} of {variantStock.length} variants •
+                  Variant stock is set per-variant in the product editor
+                </p>
+              </>
+            )}
+
+            {/* Product Stock Tab */}
+            {inventoryTab === "products" && (<>
 
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -816,6 +1088,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
             <p className="text-xs text-muted-foreground mt-4 text-center">
               Showing {filteredItems.length} of {totalProducts} tracked items
             </p>
+          </>)}
           </>
         )}
       </div>

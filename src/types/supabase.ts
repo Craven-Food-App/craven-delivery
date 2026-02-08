@@ -2705,13 +2705,157 @@ export type Database = {
           }
         ]
       }
+      product_images: {
+        Row: {
+          id: string
+          menu_item_id: string
+          image_url: string
+          alt_text: string | null
+          display_order: number
+          is_primary: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          menu_item_id: string
+          image_url: string
+          alt_text?: string | null
+          display_order?: number
+          is_primary?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          menu_item_id?: string
+          image_url?: string
+          alt_text?: string | null
+          display_order?: number
+          is_primary?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      product_variants: {
+        Row: {
+          id: string
+          menu_item_id: string
+          title: string
+          option1_name: string | null
+          option1_value: string | null
+          option2_name: string | null
+          option2_value: string | null
+          option3_name: string | null
+          option3_value: string | null
+          sku: string | null
+          barcode: string | null
+          price_cents: number
+          compare_at_price_cents: number | null
+          cost_price_cents: number | null
+          weight_value: number | null
+          weight_unit: string
+          quantity_on_hand: number
+          quantity_reserved: number
+          reorder_point: number
+          image_url: string | null
+          is_available: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          menu_item_id: string
+          title: string
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          sku?: string | null
+          barcode?: string | null
+          price_cents: number
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
+          weight_value?: number | null
+          weight_unit?: string
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number
+          image_url?: string | null
+          is_available?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          menu_item_id?: string
+          title?: string
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          sku?: string | null
+          barcode?: string | null
+          price_cents?: number
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
+          weight_value?: number | null
+          weight_unit?: string
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number
+          image_url?: string | null
+          is_available?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_options: {
+        Row: {
+          id: string
+          menu_item_id: string
+          name: string
+          position: number
+          values: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          menu_item_id: string
+          name: string
+          position?: number
+          values?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          menu_item_id?: string
+          name?: string
+          position?: number
+          values?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           allergens: string[] | null
+          barcode: string | null
+          brand: string | null
           category_id: string | null
+          compare_at_price_cents: number | null
+          cost_price_cents: number | null
           created_at: string
           description: string | null
           display_order: number
+          has_variants: boolean
+          height_cm: number | null
           id: string
           image_url: string | null
           is_available: boolean
@@ -2719,20 +2863,36 @@ export type Database = {
           is_gluten_free: boolean
           is_vegan: boolean
           is_vegetarian: boolean
+          length_cm: number | null
+          manufacturer: string | null
           name: string
           order_count: number
           preparation_time: number | null
           price_cents: number
+          product_type: string
+          requires_shipping: boolean
           restaurant_id: string
           spice_level: string | null
+          tags: string[]
+          tax_rate: number
           updated_at: string
+          vendor: string | null
+          weight_unit: string
+          weight_value: number | null
+          width_cm: number | null
         }
         Insert: {
           allergens?: string[] | null
+          barcode?: string | null
+          brand?: string | null
           category_id?: string | null
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
           created_at?: string
           description?: string | null
           display_order?: number
+          has_variants?: boolean
+          height_cm?: number | null
           id?: string
           image_url?: string | null
           is_available?: boolean
@@ -2740,20 +2900,36 @@ export type Database = {
           is_gluten_free?: boolean
           is_vegan?: boolean
           is_vegetarian?: boolean
+          length_cm?: number | null
+          manufacturer?: string | null
           name: string
           order_count?: number
           preparation_time?: number | null
           price_cents: number
+          product_type?: string
+          requires_shipping?: boolean
           restaurant_id: string
           spice_level?: string | null
+          tags?: string[]
+          tax_rate?: number
           updated_at?: string
+          vendor?: string | null
+          weight_unit?: string
+          weight_value?: number | null
+          width_cm?: number | null
         }
         Update: {
           allergens?: string[] | null
+          barcode?: string | null
+          brand?: string | null
           category_id?: string | null
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
           created_at?: string
           description?: string | null
           display_order?: number
+          has_variants?: boolean
+          height_cm?: number | null
           id?: string
           image_url?: string | null
           is_available?: boolean
@@ -2761,13 +2937,23 @@ export type Database = {
           is_gluten_free?: boolean
           is_vegan?: boolean
           is_vegetarian?: boolean
+          length_cm?: number | null
+          manufacturer?: string | null
           name?: string
           order_count?: number
           preparation_time?: number | null
           price_cents?: number
+          product_type?: string
+          requires_shipping?: boolean
           restaurant_id?: string
           spice_level?: string | null
+          tags?: string[]
+          tax_rate?: number
           updated_at?: string
+          vendor?: string | null
+          weight_unit?: string
+          weight_value?: number | null
+          width_cm?: number | null
         }
         Relationships: [
           {

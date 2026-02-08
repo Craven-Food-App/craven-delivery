@@ -14,12 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,9 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -49,25 +40,29 @@ import {
   EyeOff,
   Package,
   Tag,
-  BarChart3,
   Grid3X3,
   List,
   Image,
   ShoppingBag,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import RetailProductEditor from "./RetailProductEditor";
 
 interface Product {
   id: string;
   name: string;
   description: string;
   price_cents: number;
+  compare_at_price_cents: number | null;
   category_id: string;
   category_name: string;
   is_available: boolean;
   image_url?: string;
-  sku: string;
-  barcode?: string;
+  brand?: string;
+  tags?: string[];
+  has_variants?: boolean;
+  variant_count: number;
   display_order: number;
 }
 
@@ -90,16 +85,10 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    description: "",
-    price_cents: 0,
-    category_id: "",
-    is_available: true,
-  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -112,7 +101,7 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
 
       if (catError) throw catError;
 
-      // Fetch products
+      // Fetch products with variant counts
       const { data: prodData, error: prodError } = await supabase
         .from("menu_items")
         .select(`
@@ -120,9 +109,13 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
           name,
           description,
           price_cents,
+          compare_at_price_cents,
           category_id,
           is_available,
           image_url,
+          brand,
+          tags,
+          has_variants,
           display_order,
           order_count,
           menu_categories(name)
@@ -132,17 +125,35 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
 
       if (prodError) throw prodError;
 
+      // Fetch variant counts
+      let variantCounts: Record<string, number> = {};
+      if (prodData && prodData.length > 0) {
+        const { data: varData } = await supabase
+          .from("product_variants")
+          .select("menu_item_id")
+          .in("menu_item_id", prodData.map((p: any) => p.id));
+
+        if (varData) {
+          varData.forEach((v: any) => {
+            variantCounts[v.menu_item_id] = (variantCounts[v.menu_item_id] || 0) + 1;
+          });
+        }
+      }
+
       const mappedProducts: Product[] = (prodData || []).map((p: any) => ({
         id: p.id,
         name: p.name,
         description: p.description || "",
         price_cents: p.price_cents,
+        compare_at_price_cents: p.compare_at_price_cents || null,
         category_id: p.category_id || "",
         category_name: p.menu_categories?.name || "Uncategorized",
         is_available: p.is_available,
         image_url: p.image_url,
-        sku: `SKU-${p.id.slice(0, 8).toUpperCase()}`,
-        barcode: `${restaurantId.slice(0, 4)}${p.id.slice(0, 8)}`.toUpperCase(),
+        brand: p.brand || "",
+        tags: p.tags || [],
+        has_variants: p.has_variants || false,
+        variant_count: variantCounts[p.id] || 0,
         display_order: p.display_order,
       }));
 
@@ -172,89 +183,35 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
   }, [fetchData]);
 
   const filteredProducts = products.filter((p) => {
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      p.name.toLowerCase().includes(query) ||
+      p.description.toLowerCase().includes(query) ||
+      (p.brand && p.brand.toLowerCase().includes(query)) ||
+      (p.tags && p.tags.some((t) => t.toLowerCase().includes(query)));
     const matchesCategory =
       selectedCategory === "all" || p.category_id === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setEditForm({
-      name: product.name,
-      description: product.description,
-      price_cents: product.price_cents,
-      category_id: product.category_id,
-      is_available: product.is_available,
-    });
-    setEditDialogOpen(true);
+  const handleEdit = (productId: string) => {
+    setEditingProductId(productId);
+    setEditorOpen(true);
   };
 
-  const handleSaveProduct = async () => {
-    if (!editForm.name.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
-    if (editForm.price_cents <= 0) {
-      toast.error("Price must be greater than $0");
-      return;
-    }
-
-    try {
-      if (selectedProduct) {
-        // Update existing
-        const { error } = await supabase
-          .from("menu_items")
-          .update({
-            name: editForm.name,
-            description: editForm.description,
-            price_cents: editForm.price_cents,
-            category_id: editForm.category_id || null,
-            is_available: editForm.is_available,
-          })
-          .eq("id", selectedProduct.id);
-
-        if (error) throw error;
-        toast.success("Product updated");
-      } else {
-        // Create new product
-        const { error } = await supabase
-          .from("menu_items")
-          .insert({
-            name: editForm.name,
-            description: editForm.description,
-            price_cents: editForm.price_cents,
-            category_id: editForm.category_id || null,
-            is_available: editForm.is_available,
-            restaurant_id: restaurantId,
-          });
-
-        if (error) throw error;
-        toast.success("Product created");
-      }
-
-      setEditDialogOpen(false);
-      fetchData();
-    } catch (error) {
-      console.error("Error saving product:", error);
-      toast.error("Failed to save product");
-    }
+  const handleCreate = () => {
+    setEditingProductId(null);
+    setEditorOpen(true);
   };
 
   const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
-
     try {
       const { error } = await supabase
         .from("menu_items")
         .delete()
         .eq("id", selectedProduct.id);
-
       if (error) throw error;
-
       toast.success("Product deleted");
       setDeleteDialogOpen(false);
       fetchData();
@@ -270,16 +227,14 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
         .from("menu_items")
         .update({ is_available: !product.is_available })
         .eq("id", product.id);
-
       if (error) throw error;
-
       setProducts((prev) =>
         prev.map((p) =>
           p.id === product.id ? { ...p, is_available: !p.is_available } : p
         )
       );
       toast.success(
-        `${product.name} is now ${!product.is_available ? "available" : "unavailable"}`
+        `${product.name} is now ${!product.is_available ? "active" : "hidden"}`
       );
     } catch (error) {
       console.error("Error toggling availability:", error);
@@ -287,21 +242,96 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
     }
   };
 
-  const handleDuplicateProduct = async (product: Product) => {
+  const handleDuplicate = async (product: Product) => {
     try {
-      const { error } = await supabase.from("menu_items").insert({
-        name: `${product.name} (Copy)`,
-        description: product.description,
-        price_cents: product.price_cents,
-        category_id: product.category_id || null,
-        is_available: false,
-        restaurant_id: restaurantId,
-        display_order: product.display_order + 1,
-      });
+      const { data: original } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("id", product.id)
+        .single();
+
+      if (!original) return;
+
+      const { id, created_at, updated_at, order_count, ...rest } = original as any;
+      const { data: newProd, error } = await supabase
+        .from("menu_items")
+        .insert({
+          ...rest,
+          name: `${rest.name} (Copy)`,
+          is_available: false,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Product duplicated");
+      // Duplicate images
+      if (newProd) {
+        const { data: imgData } = await supabase
+          .from("product_images")
+          .select("*")
+          .eq("menu_item_id", product.id);
+
+        if (imgData && imgData.length > 0) {
+          await supabase.from("product_images").insert(
+            imgData.map((img: any) => ({
+              menu_item_id: newProd.id,
+              image_url: img.image_url,
+              alt_text: img.alt_text,
+              display_order: img.display_order,
+              is_primary: img.is_primary,
+            }))
+          );
+        }
+
+        // Duplicate options
+        const { data: optData } = await supabase
+          .from("product_options")
+          .select("*")
+          .eq("menu_item_id", product.id);
+
+        if (optData && optData.length > 0) {
+          await supabase.from("product_options").insert(
+            optData.map((o: any) => ({
+              menu_item_id: newProd.id,
+              name: o.name,
+              position: o.position,
+              values: o.values,
+            }))
+          );
+        }
+
+        // Duplicate variants
+        const { data: varData } = await supabase
+          .from("product_variants")
+          .select("*")
+          .eq("menu_item_id", product.id);
+
+        if (varData && varData.length > 0) {
+          await supabase.from("product_variants").insert(
+            varData.map((v: any) => ({
+              menu_item_id: newProd.id,
+              title: v.title,
+              option1_name: v.option1_name,
+              option1_value: v.option1_value,
+              option2_name: v.option2_name,
+              option2_value: v.option2_value,
+              option3_name: v.option3_name,
+              option3_value: v.option3_value,
+              sku: v.sku ? `${v.sku}-COPY` : null,
+              barcode: null,
+              price_cents: v.price_cents,
+              compare_at_price_cents: v.compare_at_price_cents,
+              cost_price_cents: v.cost_price_cents,
+              quantity_on_hand: 0,
+              is_available: v.is_available,
+              display_order: v.display_order,
+            }))
+          );
+        }
+      }
+
+      toast.success("Product duplicated (with images, options & variants)");
       fetchData();
     } catch (error) {
       console.error("Error duplicating product:", error);
@@ -311,6 +341,7 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
 
   const totalValue = products.reduce((sum, p) => sum + p.price_cents, 0);
   const activeProducts = products.filter((p) => p.is_available).length;
+  const variantProducts = products.filter((p) => p.has_variants).length;
 
   if (loading) {
     return (
@@ -327,20 +358,17 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
           <div>
             <h1 className="text-2xl font-bold">Product Catalog</h1>
             <p className="text-sm text-muted-foreground">
-              {products.length} products across {categories.length} collections
+              {products.length} product{products.length !== 1 ? "s" : ""} across{" "}
+              {categories.length} collection{categories.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <Button onClick={() => {
-            setSelectedProduct(null);
-            setEditForm({ name: "", description: "", price_cents: 0, category_id: "", is_available: true });
-            setEditDialogOpen(true);
-          }}>
+          <Button onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2" />
             Add Product
           </Button>
         </div>
 
-        {/* Tabs for sub-sections */}
+        {/* Sub-Tabs */}
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="bg-muted mb-6">
             <TabsTrigger value="products">
@@ -356,24 +384,34 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
 
           <TabsContent value="products">
             {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">Total Products</p>
+                  <p className="text-sm text-muted-foreground">Total</p>
                   <p className="text-2xl font-bold">{products.length}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <p className="text-sm text-muted-foreground">Active</p>
-                  <p className="text-2xl font-bold text-green-600">{activeProducts}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {activeProducts}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">Hidden</p>
+                  <p className="text-sm text-muted-foreground">Draft</p>
                   <p className="text-2xl font-bold text-gray-400">
                     {products.length - activeProducts}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">With Variants</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {variantProducts}
                   </p>
                 </CardContent>
               </Card>
@@ -390,13 +428,16 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search products by name or SKU..."
+                  placeholder="Search by name, brand, or tag..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="All Collections" />
                 </SelectTrigger>
@@ -429,174 +470,278 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
               </div>
             </div>
 
-            {/* Product Table View */}
-            {viewMode === "table" ? (
+            {/* Empty state */}
+            {products.length === 0 && (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    No products yet
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Start building your catalog — add your first product with
+                    images, variants, pricing, and more.
+                  </p>
+                  <Button onClick={handleCreate}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Your First Product
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Table View */}
+            {viewMode === "table" && filteredProducts.length > 0 && (
               <Card>
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-14"></TableHead>
                         <TableHead>Product</TableHead>
-                        <TableHead>SKU</TableHead>
                         <TableHead>Collection</TableHead>
                         <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-center">Variants</TableHead>
                         <TableHead className="text-center">Status</TableHead>
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            No products found
+                      {filteredProducts.map((product) => (
+                        <TableRow
+                          key={product.id}
+                          className={`cursor-pointer ${!product.is_available ? "opacity-60" : ""}`}
+                          onClick={() => handleEdit(product.id)}
+                        >
+                          <TableCell>
+                            {product.image_url ? (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="w-10 h-10 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                                <Image className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
                           </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredProducts.map((product) => (
-                          <TableRow
-                            key={product.id}
-                            className={!product.is_available ? "opacity-60" : ""}
-                          >
-                            <TableCell>
-                              {product.image_url ? (
-                                <img
-                                  src={product.image_url}
-                                  alt={product.name}
-                                  className="w-10 h-10 rounded object-cover"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                                  <Image className="w-4 h-4 text-muted-foreground" />
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              {product.brand && (
+                                <p className="text-xs text-muted-foreground">
+                                  {product.brand}
+                                </p>
+                              )}
+                              {product.tags && product.tags.length > 0 && (
+                                <div className="flex gap-1 mt-1">
+                                  {product.tags.slice(0, 3).map((tag) => (
+                                    <Badge
+                                      key={tag}
+                                      variant="outline"
+                                      className="text-[10px] h-4 px-1"
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {product.tags.length > 3 && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      +{product.tags.length - 3}
+                                    </span>
+                                  )}
                                 </div>
                               )}
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{product.name}</p>
-                                {product.description && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">
-                                    {product.description}
-                                  </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="font-normal">
+                              {product.category_name}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div>
+                              <span className="font-semibold">
+                                ${(product.price_cents / 100).toFixed(2)}
+                              </span>
+                              {product.compare_at_price_cents &&
+                                product.compare_at_price_cents >
+                                  product.price_cents && (
+                                  <span className="text-xs text-muted-foreground line-through ml-1">
+                                    $
+                                    {(
+                                      product.compare_at_price_cents / 100
+                                    ).toFixed(2)}
+                                  </span>
                                 )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">{product.sku}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="font-normal">
-                                {product.category_name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {product.variant_count > 0 ? (
+                              <Badge variant="outline" className="gap-1">
+                                <Layers className="w-3 h-3" />
+                                {product.variant_count}
                               </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              ${(product.price_cents / 100).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge
-                                variant={product.is_available ? "default" : "secondary"}
-                                className={
-                                  product.is_available
-                                    ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                    : ""
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                —
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              variant={
+                                product.is_available ? "default" : "secondary"
+                              }
+                              className={
+                                product.is_available
+                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                  : ""
+                              }
+                            >
+                              {product.is_available ? "Active" : "Draft"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div
+                              className="flex justify-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  handleToggleAvailability(product)
+                                }
+                                title={
+                                  product.is_available ? "Set Draft" : "Publish"
                                 }
                               >
-                                {product.is_available ? "Active" : "Hidden"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleToggleAvailability(product)}
-                                  title={product.is_available ? "Hide" : "Show"}
-                                >
-                                  {product.is_available ? (
-                                    <EyeOff className="w-4 h-4" />
-                                  ) : (
-                                    <Eye className="w-4 h-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleEditProduct(product)}
-                                  title="Edit"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleDuplicateProduct(product)}
-                                  title="Duplicate"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700"
-                                  onClick={() => {
-                                    setSelectedProduct(product);
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
+                                {product.is_available ? (
+                                  <EyeOff className="w-4 h-4" />
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEdit(product.id)}
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleDuplicate(product)}
+                                title="Duplicate"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-700"
+                                onClick={() => {
+                                  setSelectedProduct(product);
+                                  setDeleteDialogOpen(true);
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
-            ) : (
-              /* Grid View */
+            )}
+
+            {/* Grid View */}
+            {viewMode === "grid" && filteredProducts.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredProducts.map((product) => (
                   <Card
                     key={product.id}
                     className={`cursor-pointer hover:shadow-md transition-shadow ${!product.is_available ? "opacity-60" : ""}`}
-                    onClick={() => handleEditProduct(product)}
+                    onClick={() => handleEdit(product.id)}
                   >
                     <CardContent className="p-0">
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-32 object-cover rounded-t"
-                        />
-                      ) : (
-                        <div className="w-full h-32 bg-muted flex items-center justify-center rounded-t">
-                          <Package className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                      )}
+                      <div className="relative">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-40 object-cover rounded-t"
+                          />
+                        ) : (
+                          <div className="w-full h-40 bg-muted flex items-center justify-center rounded-t">
+                            <Package className="w-8 h-8 text-muted-foreground" />
+                          </div>
+                        )}
+                        {product.compare_at_price_cents &&
+                          product.compare_at_price_cents >
+                            product.price_cents && (
+                            <Badge
+                              variant="destructive"
+                              className="absolute top-2 left-2 text-xs"
+                            >
+                              Sale
+                            </Badge>
+                          )}
+                        {product.variant_count > 0 && (
+                          <Badge
+                            variant="secondary"
+                            className="absolute top-2 right-2 text-xs gap-1"
+                          >
+                            <Layers className="w-3 h-3" />
+                            {product.variant_count}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="p-3">
                         <p className="font-medium truncate">{product.name}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="font-bold text-lg">
-                            ${(product.price_cents / 100).toFixed(2)}
+                        {product.brand && (
+                          <p className="text-xs text-muted-foreground">
+                            {product.brand}
                           </p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <div>
+                            <span className="font-bold text-lg">
+                              ${(product.price_cents / 100).toFixed(2)}
+                            </span>
+                            {product.compare_at_price_cents &&
+                              product.compare_at_price_cents >
+                                product.price_cents && (
+                                <span className="text-xs text-muted-foreground line-through ml-1">
+                                  $
+                                  {(
+                                    product.compare_at_price_cents / 100
+                                  ).toFixed(2)}
+                                </span>
+                              )}
+                          </div>
                           <Badge
-                            variant={product.is_available ? "default" : "secondary"}
+                            variant={
+                              product.is_available ? "default" : "secondary"
+                            }
                             className={
                               product.is_available
-                                ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                : ""
+                                ? "bg-green-100 text-green-800 hover:bg-green-100 text-xs"
+                                : "text-xs"
                             }
                           >
-                            {product.is_available ? "Active" : "Hidden"}
+                            {product.is_available ? "Active" : "Draft"}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground font-mono mt-1">
-                          {product.sku}
-                        </p>
                       </div>
                     </CardContent>
                   </Card>
@@ -608,7 +753,10 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
           <TabsContent value="collections">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {categories.map((cat) => (
-                <Card key={cat.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={cat.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{cat.name}</CardTitle>
@@ -627,7 +775,8 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">
-                        {cat.product_count} product{cat.product_count !== 1 ? "s" : ""}
+                        {cat.product_count} product
+                        {cat.product_count !== 1 ? "s" : ""}
                       </p>
                       <Button
                         variant="ghost"
@@ -644,7 +793,10 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
                 <Card className="col-span-full">
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Grid3X3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>No collections yet. Add categories to organize your products.</p>
+                    <p>
+                      No collections yet. Add categories to organize your
+                      products.
+                    </p>
                   </CardContent>
                 </Card>
               )}
@@ -660,133 +812,106 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="border rounded-lg p-4 text-center">
                     <p className="text-3xl font-bold">
-                      ${(totalValue / products.length / 100 || 0).toFixed(2)}
+                      $
+                      {products.length > 0
+                        ? (totalValue / products.length / 100).toFixed(2)
+                        : "0.00"}
                     </p>
-                    <p className="text-sm text-muted-foreground">Average Price</p>
+                    <p className="text-sm text-muted-foreground">
+                      Average Price
+                    </p>
                   </div>
                   <div className="border rounded-lg p-4 text-center">
                     <p className="text-3xl font-bold">
-                      ${(Math.min(...products.map((p) => p.price_cents)) / 100).toFixed(2)}
+                      $
+                      {products.length > 0
+                        ? (
+                            Math.min(
+                              ...products.map((p) => p.price_cents)
+                            ) / 100
+                          ).toFixed(2)
+                        : "0.00"}
                     </p>
-                    <p className="text-sm text-muted-foreground">Lowest Price</p>
+                    <p className="text-sm text-muted-foreground">
+                      Lowest Price
+                    </p>
                   </div>
                   <div className="border rounded-lg p-4 text-center">
                     <p className="text-3xl font-bold">
-                      ${(Math.max(...products.map((p) => p.price_cents)) / 100).toFixed(2)}
+                      $
+                      {products.length > 0
+                        ? (
+                            Math.max(
+                              ...products.map((p) => p.price_cents)
+                            ) / 100
+                          ).toFixed(2)
+                        : "0.00"}
                     </p>
-                    <p className="text-sm text-muted-foreground">Highest Price</p>
+                    <p className="text-sm text-muted-foreground">
+                      Highest Price
+                    </p>
                   </div>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Collection</TableHead>
-                      <TableHead className="text-right">Current Price</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {products
-                      .sort((a, b) => b.price_cents - a.price_cents)
-                      .map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>{product.category_name}</TableCell>
-                          <TableCell className="text-right font-semibold">
-                            ${(product.price_cents / 100).toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
+                {products.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Collection</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">
+                          Compare At
+                        </TableHead>
+                        <TableHead className="text-right">Margin</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products
+                        .sort((a, b) => b.price_cents - a.price_cents)
+                        .map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell className="font-medium">
+                              {product.name}
+                            </TableCell>
+                            <TableCell>{product.category_name}</TableCell>
+                            <TableCell className="text-right font-semibold">
+                              ${(product.price_cents / 100).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {product.compare_at_price_cents ? (
+                                <span className="line-through text-muted-foreground">
+                                  $
+                                  {(
+                                    product.compare_at_price_cents / 100
+                                  ).toFixed(2)}
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">—</TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Edit Product Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{selectedProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {selectedProduct?.sku && (
-              <p className="text-sm font-mono text-muted-foreground">
-                {selectedProduct.sku} • {selectedProduct.barcode}
-              </p>
-            )}
-
-            <div>
-              <Label>Product Name</Label>
-              <Input
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Description</Label>
-              <Textarea
-                value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Price ($)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={(editForm.price_cents / 100).toFixed(2)}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      price_cents: Math.round(parseFloat(e.target.value || "0") * 100),
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Collection</Label>
-                <Select
-                  value={editForm.category_id}
-                  onValueChange={(v) => setEditForm({ ...editForm, category_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select collection" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label>Available for purchase</Label>
-              <Switch
-                checked={editForm.is_available}
-                onCheckedChange={(checked) =>
-                  setEditForm({ ...editForm, is_available: checked })
-                }
-              />
-            </div>
-
-            <Button onClick={handleSaveProduct} className="w-full">
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Full Retail Product Editor */}
+      <RetailProductEditor
+        isOpen={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        productId={editingProductId}
+        restaurantId={restaurantId}
+        onSave={() => {
+          fetchData();
+        }}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -794,7 +919,9 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Product</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedProduct?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedProduct?.name}"? This
+              will also delete all images, variants, and inventory tracking.
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -803,7 +930,7 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
               onClick={handleDeleteProduct}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              Delete Product
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -813,4 +940,3 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
 };
 
 export default RetailProductCatalog;
-
