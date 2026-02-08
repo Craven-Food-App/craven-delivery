@@ -376,7 +376,21 @@ const Restaurants = () => {
     };
     return emojiMap[filter] || '🏷️';
   };
-  
+
+  // Unified emoji lookup — checks category sub-filter map first, then cuisine map
+  const getFilterEmoji = (filter: string) => {
+    const catEmoji = getCategoryFilterEmoji(filter);
+    if (catEmoji !== '🏷️') return catEmoji;
+    return getCuisineEmoji(filter);
+  };
+
+  // Build a unified, deduplicated list: cuisines + every category sub-filter
+  const allFilters = React.useMemo(() => {
+    const categoryKeys: string[] = ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'];
+    const allCategoryFilters = categoryKeys.flatMap(k => getCategoryFilters(k));
+    return [...new Set([...availableCuisines, ...allCategoryFilters])];
+  }, [availableCuisines]);
+
   // Filter restaurants based on cuisine filter
   const filteredWeeklyDeals = quickFilter 
     ? weeklyDeals.filter((r: any) => r.cuisine_type?.toLowerCase() === quickFilter.toLowerCase())
@@ -2132,258 +2146,129 @@ const Restaurants = () => {
           </Box>
         )}
 
-        {/* Category Filter Buttons - Mobile (Conditional based on active category) */}
-        {(activeCategory === 'all' || activeCategory === 'restaurants') ? (
-          <Box
-            component="nav"
-            style={{
-              position: 'fixed',
-              top: showMenuIcons 
-                ? 'calc(220px + env(safe-area-inset-top, 0px))' 
-                : 'calc(120px + env(safe-area-inset-top, 0px))',
-              left: 0,
-              right: 0,
-              width: '100%',
-              maxWidth: '430px',
-              margin: '0 auto',
-              zIndex: 998,
-              backgroundColor: 'white',
-              borderBottom: '1px solid #e5e7eb',
-              paddingTop: '13px',
-              paddingBottom: '12px',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-            }}
-          >
-            {availableCuisines.length > 0 ? (
-              <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {/* Row 1 */}
-                <Box style={{ 
-                  display: 'flex', 
-                  gap: '8px', 
-                  overflowX: 'auto', 
-                  scrollbarWidth: 'none', 
-                  msOverflowStyle: 'none', 
-                  WebkitOverflowScrolling: 'touch', 
-                  paddingBottom: '4px' 
-                }} className="scrollbar-hide">
-                  {availableCuisines.slice(0, Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                    const cuisineEmoji = getCuisineEmoji(cuisine);
-                    const isActive = cuisineFilter === cuisine.toLowerCase();
-                    return (
-                      <Button
-                        key={cuisine}
-                        variant={isActive ? "filled" : "outline"}
-                        size="xs"
-                        radius="md"
-                        onClick={() => {
-                          const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
-                          navigate(`/restaurants/cuisine/${cuisineSlug}`);
-                        }}
-                        style={{ 
-                          backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                          borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                          color: isActive ? 'white' : '#404040',
-                          fontWeight: 600,
-                          padding: '6px 12px',
-                          height: 'auto',
-                          fontSize: '11px',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          transition: 'all 0.2s ease',
-                          boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
-                        <span>{cuisine}</span>
-                      </Button>
-                    );
-                  })}
-                </Box>
-                {/* Row 2 */}
-                <Box style={{ 
-                  display: 'flex', 
-                  gap: '8px', 
-                  overflowX: 'auto', 
-                  scrollbarWidth: 'none', 
-                  msOverflowStyle: 'none', 
-                  WebkitOverflowScrolling: 'touch', 
-                  paddingBottom: '4px' 
-                }} className="scrollbar-hide">
-                  {availableCuisines.slice(Math.ceil(availableCuisines.length / 2)).map((cuisine) => {
-                    const cuisineEmoji = getCuisineEmoji(cuisine);
-                    const isActive = cuisineFilter === cuisine.toLowerCase();
-                    return (
-                      <Button
-                        key={cuisine}
-                        variant={isActive ? "filled" : "outline"}
-                        size="xs"
-                        radius="md"
-                        onClick={() => {
-                          const cuisineSlug = cuisine.toLowerCase().replace(/\s+/g, '-');
-                          navigate(`/restaurants/cuisine/${cuisineSlug}`);
-                        }}
-                        style={{ 
-                          backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                          borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                          color: isActive ? 'white' : '#404040',
-                          fontWeight: 600,
-                          padding: '6px 12px',
-                          height: 'auto',
-                          fontSize: '11px',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          transition: 'all 0.2s ease',
-                          boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <span style={{ fontSize: '16px', lineHeight: 1 }}>{cuisineEmoji}</span>
-                        <span>{cuisine}</span>
-                      </Button>
-                    );
-                  })}
-                </Box>
+        {/* Category Filter Buttons - Mobile (All filters: cuisines + every category) */}
+        <Box
+          component="nav"
+          style={{
+            position: 'fixed',
+            top: showMenuIcons 
+              ? 'calc(220px + env(safe-area-inset-top, 0px))' 
+              : 'calc(120px + env(safe-area-inset-top, 0px))',
+            left: 0,
+            right: 0,
+            width: '100%',
+            maxWidth: '430px',
+            margin: '0 auto',
+            zIndex: 998,
+            backgroundColor: 'white',
+            borderBottom: '1px solid #e5e7eb',
+            paddingTop: '13px',
+            paddingBottom: '12px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+          }}
+        >
+          {allFilters.length > 0 ? (
+            <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Row 1 */}
+              <Box style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                overflowX: 'auto', 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none', 
+                WebkitOverflowScrolling: 'touch', 
+                paddingBottom: '4px' 
+              }} className="scrollbar-hide">
+                {allFilters.slice(0, Math.ceil(allFilters.length / 2)).map((filter) => {
+                  const emoji = getFilterEmoji(filter);
+                  const isActive = cuisineFilter === filter.toLowerCase();
+                  return (
+                    <Button
+                      key={filter}
+                      variant={isActive ? "filled" : "outline"}
+                      size="xs"
+                      radius="md"
+                      onClick={() => {
+                        const slug = filter.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/restaurants/cuisine/${slug}`);
+                      }}
+                      style={{ 
+                        backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                        borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                        color: isActive ? 'white' : '#404040',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        height: 'auto',
+                        fontSize: '11px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', lineHeight: 1 }}>{emoji}</span>
+                      <span>{filter}</span>
+                    </Button>
+                  );
+                })}
               </Box>
-            ) : (
-              <Text size="sm" c="gray.6" ta="center" py="md">
-                Loading cuisines...
-              </Text>
-            )}
-          </Box>
-        ) : ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory) ? (
-          <Box
-            component="nav"
-            style={{
-              position: 'fixed',
-              top: showMenuIcons 
-                ? 'calc(220px + env(safe-area-inset-top, 0px))' 
-                : 'calc(120px + env(safe-area-inset-top, 0px))',
-              left: 0,
-              right: 0,
-              width: '100%',
-              maxWidth: '430px',
-              margin: '0 auto',
-              zIndex: 998,
-              backgroundColor: 'white',
-              borderBottom: '1px solid #e5e7eb',
-              paddingTop: '12px',
-              paddingBottom: '12px',
-              paddingLeft: '16px',
-              paddingRight: '16px',
-              transition: 'top 0.2s ease',
-            }}
-          >
-            {(() => {
-              const categoryFilters = getCategoryFilters(activeCategory);
-              if (categoryFilters.length === 0) return null;
-              
-              return (
-                <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {/* Row 1 */}
-                  <Box style={{ 
-                    display: 'flex', 
-                    gap: '8px', 
-                    overflowX: 'auto', 
-                    scrollbarWidth: 'none', 
-                    msOverflowStyle: 'none', 
-                    WebkitOverflowScrolling: 'touch', 
-                    paddingBottom: '4px'
-                  }} className="scrollbar-hide">
-                    {categoryFilters.slice(0, Math.ceil(categoryFilters.length / 2)).map((filter) => {
-                      const filterEmoji = getCategoryFilterEmoji(filter);
-                      const isActive = cuisineFilter === filter.toLowerCase();
-                      return (
-                        <Button
-                          key={filter}
-                          variant={isActive ? "filled" : "outline"}
-                          size="xs"
-                          radius="md"
-                          onClick={() => {
-                            setCuisineFilter(filter.toLowerCase());
-                            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }}
-                          style={{ 
-                            backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                            borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                            color: isActive ? 'white' : '#404040',
-                            fontWeight: 600,
-                            padding: '6px 12px',
-                            height: 'auto',
-                            fontSize: '11px',
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            transition: 'all 0.2s ease',
-                            boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          <span style={{ fontSize: '16px', lineHeight: 1 }}>{filterEmoji}</span>
-                          <span>{filter}</span>
-                        </Button>
-                      );
-                    })}
-                  </Box>
-                  {/* Row 2 */}
-                  {categoryFilters.length > Math.ceil(categoryFilters.length / 2) && (
-                    <Box style={{ 
-                      display: 'flex', 
-                      gap: '8px', 
-                      overflowX: 'auto', 
-                      scrollbarWidth: 'none', 
-                      msOverflowStyle: 'none', 
-                      WebkitOverflowScrolling: 'touch', 
-                      paddingBottom: '4px'
-                    }} className="scrollbar-hide">
-                      {categoryFilters.slice(Math.ceil(categoryFilters.length / 2)).map((filter) => {
-                        const filterEmoji = getCategoryFilterEmoji(filter);
-                        const isActive = cuisineFilter === filter.toLowerCase();
-                        return (
-                          <Button
-                            key={filter}
-                            variant={isActive ? "filled" : "outline"}
-                            size="xs"
-                            radius="md"
-                            onClick={() => {
-                              setCuisineFilter(filter.toLowerCase());
-                              resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }}
-                            style={{ 
-                              backgroundColor: isActive ? '#ff5f1f' : 'white', 
-                              borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
-                              color: isActive ? 'white' : '#404040',
-                              fontWeight: 600,
-                              padding: '6px 12px',
-                              height: 'auto',
-                              fontSize: '11px',
-                              whiteSpace: 'nowrap',
-                              flexShrink: 0,
-                              transition: 'all 0.2s ease',
-                              boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <span style={{ fontSize: '16px', lineHeight: 1 }}>{filterEmoji}</span>
-                            <span>{filter}</span>
-                          </Button>
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-              );
-            })()}
-          </Box>
-        ) : null}
+              {/* Row 2 */}
+              <Box style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                overflowX: 'auto', 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none', 
+                WebkitOverflowScrolling: 'touch', 
+                paddingBottom: '4px' 
+              }} className="scrollbar-hide">
+                {allFilters.slice(Math.ceil(allFilters.length / 2)).map((filter) => {
+                  const emoji = getFilterEmoji(filter);
+                  const isActive = cuisineFilter === filter.toLowerCase();
+                  return (
+                    <Button
+                      key={filter}
+                      variant={isActive ? "filled" : "outline"}
+                      size="xs"
+                      radius="md"
+                      onClick={() => {
+                        const slug = filter.toLowerCase().replace(/\s+/g, '-');
+                        navigate(`/restaurants/cuisine/${slug}`);
+                      }}
+                      style={{ 
+                        backgroundColor: isActive ? '#ff5f1f' : 'white', 
+                        borderColor: isActive ? '#ff5f1f' : '#e5e7eb',
+                        color: isActive ? 'white' : '#404040',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        height: 'auto',
+                        fontSize: '11px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? '0 2px 8px rgba(255, 95, 31, 0.3)' : '0 1px 2px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', lineHeight: 1 }}>{emoji}</span>
+                      <span>{filter}</span>
+                    </Button>
+                  );
+                })}
+              </Box>
+            </Box>
+          ) : (
+            <Text size="sm" c="gray.6" ta="center" py="md">
+              Loading filters...
+            </Text>
+          )}
+        </Box>
 
         {/* Scrollable Content */}
         <Box style={{ 

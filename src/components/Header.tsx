@@ -139,41 +139,10 @@ const Header = () => {
             {!isFeederSubdomain && !isMerchantSubdomain && (
               <nav className="hidden lg:flex items-center space-x-6">
                 {restaurantsVisible && (
-                  <Link to="/restaurants" className="text-foreground hover:text-primary transition-colors">Restaurants</Link>
+                  <Link to="/restaurants" className="text-foreground hover:text-primary transition-colors">Place an Order</Link>
                 )}
                 <Link to="/feeder" className="text-foreground hover:text-primary transition-colors">Become a Feeder</Link>
                 
-                {/* Business Portals Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1 text-foreground hover:text-primary">
-                      <Building2 className="h-4 w-4" />
-                      Business
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link to="/hub" className="w-full cursor-pointer">Hub</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/hr-portal" className="w-full cursor-pointer">HR Portal</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/ceo" className="w-full cursor-pointer">CEO Portal</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/cfo" className="w-full cursor-pointer">CFO Portal</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/coo" className="w-full cursor-pointer">COO Portal</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/cto" className="w-full cursor-pointer">CTO Portal</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </nav>
             )}
             {isMerchantSubdomain && (
@@ -204,7 +173,7 @@ const Header = () => {
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search restaurants, cuisines, or dishes"
+                  placeholder="Search restaurants, clothing stores, brands, cuisines or dishes"
                   className="pl-10 bg-muted border-0 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -451,61 +420,6 @@ const Header = () => {
                       Become a Feeder
                     </Link>
                     
-                    {/* Business Portals Section */}
-                    <div className="pt-2 border-t border-border">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">Business Portals</p>
-                      <div className="space-y-2 pl-2">
-                        <Link 
-                          to="/hub" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          Hub
-                        </Link>
-                        <Link 
-                          to="/hr-portal" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          HR Portal
-                        </Link>
-                        <Link 
-                          to="/board" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          Board Portal
-                        </Link>
-                        <Link 
-                          to="/ceo" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          CEO Portal
-                        </Link>
-                        <Link 
-                          to="/cfo" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          CFO Portal
-                        </Link>
-                        <Link 
-                          to="/coo" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          COO Portal
-                        </Link>
-                        <Link 
-                          to="/cto" 
-                          className="block text-base font-medium text-foreground hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          CTO Portal
-                        </Link>
-                      </div>
-                    </div>
                   </>
                 )}
                 {isMerchantSubdomain && (

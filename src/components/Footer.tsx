@@ -37,7 +37,7 @@ const Footer = () => {
               <li><Link to="/investors" className="hover:text-primary transition-colors">Investors</Link></li>
               <li><Link to="/restaurants" className="hover:text-primary transition-colors">Restaurants</Link></li>
               <li><Link to="/feeder" className="hover:text-primary transition-colors">Become a Feeder</Link></li>
-              <li><Link to="/merchant/signup" className="hover:text-primary transition-colors">Register Restaurant</Link></li>
+              <li><Link to="/merchant/signup" className="hover:text-primary transition-colors">Register Your Business</Link></li>
             </ul>
           </div>
 
@@ -62,11 +62,11 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <Mail className="h-4 w-4" />
-                <span>customerservice@cravenusa.com</span>
+                <span>support@cravenusa.com</span>
               </div>
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                <span>Available in 100+ cities</span>
+                <span>Available in the US</span>
               </div>
             </div>
           </div>
