@@ -12,6 +12,7 @@ const RESTAURANT_TYPES = [
 
 const RETAIL_TYPES = [
   'retail_store', 'retail', 'specialty', 'boutique', 'electronics', 'hardware',
+  'apparel', 'clothing', 'fashion', 'specialty_retail',
 ];
 
 const GROCERY_TYPES = [
