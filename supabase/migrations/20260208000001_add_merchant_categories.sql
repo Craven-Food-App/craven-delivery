@@ -122,8 +122,8 @@ BEGIN
       -- Pet Supplies
       WHEN LOWER(COALESCE(NEW.restaurant_type, '')) IN ('pet_store', 'pet_supplies', 'pet_shop')
         THEN 'pet_supplies'::merchant_category
-      -- Specialty Retail
-      WHEN LOWER(COALESCE(NEW.restaurant_type, '')) IN ('retail', 'specialty', 'boutique', 'electronics', 'hardware')
+      -- Specialty Retail (retail_store is the dropdown value)
+      WHEN LOWER(COALESCE(NEW.restaurant_type, '')) IN ('retail_store', 'retail', 'specialty', 'boutique', 'electronics', 'hardware')
         THEN 'specialty_retail'::merchant_category
       -- Marketplace
       WHEN LOWER(COALESCE(NEW.restaurant_type, '')) IN ('marketplace', 'dashmart', 'warehouse')
