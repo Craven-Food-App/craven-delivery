@@ -278,6 +278,37 @@ serve(async (req) => {
     }
 
     // ========================================================================
+    // STEP 1C: Category-specific inventory validation (grocery/retail/etc.)
+    // ========================================================================
+    const inventoryItems = cart_items.map((item: any) => ({
+      menu_item_id: item.menu_item_id,
+      quantity: item.quantity,
+    }));
+
+    try {
+      const { data: inventoryCheck, error: inventoryError } = await supabaseAdmin.rpc(
+        'check_inventory_for_order',
+        {
+          p_restaurant_id: restaurant_id,
+          p_items: inventoryItems,
+        }
+      );
+
+      if (!inventoryError && inventoryCheck && !inventoryCheck.ok) {
+        return new Response(
+          JSON.stringify({
+            error: 'Some items are out of stock',
+            out_of_stock: inventoryCheck.out_of_stock,
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (invCheckErr) {
+      console.error('Inventory check error (non-fatal):', invCheckErr);
+      // Continue - inventory check is non-fatal for restaurants (no inventory tracking)
+    }
+
+    // ========================================================================
     // STEP 2: Calculate final totals (server-side, promo and tester credits already applied)
     // ========================================================================
     const finalSubtotal = food_subtotal_cents; // NEVER reduce food subtotal
@@ -467,6 +498,19 @@ serve(async (req) => {
     if (itemsError) {
       console.error('Order items error (non-fatal):', itemsError);
       // Continue - items can be added later if needed
+    }
+
+    // ========================================================================
+    // STEP 4B: Reserve inventory for non-restaurant merchants
+    // ========================================================================
+    try {
+      await supabaseAdmin.rpc('reserve_inventory', {
+        p_restaurant_id: restaurant_id,
+        p_items: inventoryItems,
+      });
+    } catch (invReserveErr) {
+      console.error('Inventory reservation error (non-fatal):', invReserveErr);
+      // Non-fatal: order still proceeds
     }
 
     // ========================================================================

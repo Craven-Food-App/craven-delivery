@@ -49,53 +49,79 @@ serve(async (req) => {
       .select('*')
       .eq('restaurant_id', restaurant_id);
 
-    // Calculate readiness score
+    // Fetch category config for this merchant
+    const { data: categoryConfig } = await supabase.rpc(
+      'get_merchant_category_config',
+      { p_restaurant_id: restaurant_id }
+    );
+
+    const isRestaurant = !categoryConfig || categoryConfig.category === 'restaurant';
+    const requiresInventory = categoryConfig?.requires_inventory || false;
+
+    // Calculate readiness score (category-aware)
     let score = 0;
+    let menuScore = 0;
     const blockers: string[] = [];
     const missingItems: string[] = [];
-
-    // Menu completeness (25 points)
-    const menuScore = Math.min((menuItemCount || 0) / 10 * 25, 25);
-    score += menuScore;
-    if (menuItemCount && menuItemCount < 10) {
-      missingItems.push(`Add ${10 - menuItemCount} more menu items`);
-    }
-
-    // Photos (15 points)
-    if (restaurant.logo_url) {
-      score += 7.5;
-    } else {
-      missingItems.push('Upload store logo');
-    }
-
-    if (restaurant.header_image_url) {
-      score += 7.5;
-    } else {
-      missingItems.push('Upload header image');
-    }
-
-    // Business verified (30 points)
-    if (restaurant.business_verified_at) {
-      score += 30;
-    } else {
-      missingItems.push('Business verification pending');
-      blockers.push('Business documents must be verified by admin');
-    }
-
-    // Banking (20 points)
-    if (restaurant.banking_complete) {
-      score += 20;
-    } else {
-      missingItems.push('Complete banking information');
-      blockers.push('Banking information required for payouts');
-    }
-
-    // Hours set (10 points)
     const hoursSet = restaurant.restaurant_hours && restaurant.restaurant_hours.length > 0;
-    if (hoursSet) {
-      score += 10;
+
+    if (isRestaurant) {
+      // ── RESTAURANT SCORING (original weights) ──
+      // Menu completeness (25 points)
+      menuScore = Math.min((menuItemCount || 0) / 10 * 25, 25);
+      score += menuScore;
+      if ((menuItemCount || 0) < 10) missingItems.push(`Add ${10 - (menuItemCount || 0)} more menu items`);
+
+      // Photos (15 points)
+      if (restaurant.logo_url) score += 7.5; else missingItems.push('Upload store logo');
+      if (restaurant.header_image_url) score += 7.5; else missingItems.push('Upload header image');
+
+      // Business verified (30 points)
+      if (restaurant.business_verified_at) score += 30;
+      else { missingItems.push('Business verification pending'); blockers.push('Business documents must be verified by admin'); }
+
+      // Banking (20 points)
+      if (restaurant.banking_complete) score += 20;
+      else { missingItems.push('Complete banking information'); blockers.push('Banking information required for payouts'); }
+
+      // Hours set (10 points)
+      if (hoursSet) score += 10; else missingItems.push('Set store operating hours');
     } else {
-      missingItems.push('Set store operating hours');
+      // ── RETAIL / GROCERY / OTHER SCORING ──
+      // Catalog (20 points – only needs 5 items for non-restaurant)
+      menuScore = Math.min((menuItemCount || 0) / 5 * 20, 20);
+      score += menuScore;
+      if ((menuItemCount || 0) < 5) missingItems.push(`Add ${5 - (menuItemCount || 0)} more catalog items`);
+
+      // Photos (10 points)
+      if (restaurant.logo_url) score += 5; else missingItems.push('Upload store logo');
+      if (restaurant.header_image_url) score += 5; else missingItems.push('Upload store header image');
+
+      // Business verified (25 points)
+      if (restaurant.business_verified_at) score += 25;
+      else { missingItems.push('Business verification pending'); blockers.push('Business documents must be verified'); }
+
+      // Banking (20 points)
+      if (restaurant.banking_complete) score += 20;
+      else { missingItems.push('Complete banking information'); blockers.push('Banking information required for payouts'); }
+
+      // Hours set (10 points)
+      if (hoursSet) score += 10; else missingItems.push('Set store operating hours');
+
+      // Inventory setup (15 points – only for inventory-required merchants)
+      if (requiresInventory) {
+        const { count: inventoryCount } = await supabase
+          .from('merchant_inventory')
+          .select('*', { count: 'exact', head: true })
+          .eq('restaurant_id', restaurant_id);
+        if ((inventoryCount || 0) >= 5) {
+          score += 15;
+        } else {
+          missingItems.push(`Set up inventory for at least 5 items (${inventoryCount || 0}/5)`);
+        }
+      } else {
+        score += 15; // Not required, full points
+      }
     }
 
     const readinessScore = Math.round(score);
@@ -192,6 +218,8 @@ serve(async (req) => {
         blockers,
         missing_items: missingItems,
         estimated_go_live: estimatedGoLive,
+        merchant_category: categoryConfig?.category || 'restaurant',
+        category_display_name: categoryConfig?.display_name || 'Restaurant',
         details: {
           menu_score: menuScore,
           menu_items_count: menuItemCount || 0,
@@ -199,7 +227,8 @@ serve(async (req) => {
           has_header: !!restaurant.header_image_url,
           business_verified: !!restaurant.business_verified_at,
           banking_complete: !!restaurant.banking_complete,
-          hours_set: hoursSet
+          hours_set: hoursSet,
+          requires_inventory: requiresInventory,
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

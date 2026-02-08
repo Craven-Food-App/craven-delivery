@@ -128,6 +128,36 @@ serve(async (req) => {
       // Non-fatal: earnings record is still created
     }
 
+    // Deduct inventory for non-restaurant merchants (grocery/retail/etc.)
+    try {
+      // Get order items and restaurant_id
+      const { data: orderForInv } = await supabase
+        .from('orders')
+        .select('restaurant_id')
+        .eq('id', orderId)
+        .single();
+
+      if (orderForInv?.restaurant_id) {
+        const { data: orderItemsForInv } = await supabase
+          .from('order_items')
+          .select('menu_item_id, quantity')
+          .eq('order_id', orderId);
+
+        if (orderItemsForInv && orderItemsForInv.length > 0) {
+          await supabase.rpc('deduct_inventory', {
+            p_restaurant_id: orderForInv.restaurant_id,
+            p_items: orderItemsForInv.map((i: any) => ({
+              menu_item_id: i.menu_item_id,
+              quantity: i.quantity,
+            })),
+          });
+        }
+      }
+    } catch (invErr) {
+      console.error('Inventory deduction error (non-fatal):', invErr);
+      // Non-fatal: delivery is still finalized, inventory deduction can be reconciled
+    }
+
     console.log('Delivery finalized:', {
       orderId,
       driverId: resolvedDriverId,

@@ -21291,6 +21291,7 @@ export type Database = {
           promotion_title: string | null
           promotion_valid_until: string | null
           rating: number | null
+          merchant_category: string
           readiness_score: number | null
           restaurant_type: string | null
           setup_deadline: string | null
@@ -21361,6 +21362,7 @@ export type Database = {
           promotion_title?: string | null
           promotion_valid_until?: string | null
           rating?: number | null
+          merchant_category?: string
           readiness_score?: number | null
           restaurant_type?: string | null
           setup_deadline?: string | null
@@ -21431,6 +21433,7 @@ export type Database = {
           promotion_title?: string | null
           promotion_valid_until?: string | null
           rating?: number | null
+          merchant_category?: string
           readiness_score?: number | null
           restaurant_type?: string | null
           setup_deadline?: string | null
