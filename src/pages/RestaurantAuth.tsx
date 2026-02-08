@@ -40,13 +40,13 @@ const RestaurantAuth: React.FC = () => {
       if (user) {
         setUser(user);
         // Check if user has a restaurant
-        const { data: restaurant } = await supabase
+        const { data: restaurants } = await supabase
           .from('restaurants')
           .select('id')
           .eq('owner_id', user.id)
-          .single();
+          .limit(1);
         
-        if (restaurant) {
+        if (restaurants && restaurants.length > 0) {
           navigate('/merchant-portal');
         } else {
           navigate('/restaurant/register');
@@ -69,13 +69,13 @@ const RestaurantAuth: React.FC = () => {
           
           // Check for restaurant after successful login
           setTimeout(async () => {
-            const { data: restaurant } = await supabase
+            const { data: restaurants } = await supabase
               .from('restaurants')
               .select('id')
               .eq('owner_id', session.user.id)
-              .single();
+              .limit(1);
             
-            if (restaurant) {
+            if (restaurants && restaurants.length > 0) {
               navigate('/merchant-portal');
             } else {
               navigate('/restaurant/register');

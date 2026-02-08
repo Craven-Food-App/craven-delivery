@@ -98,13 +98,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
             // Check if user has a restaurant to redirect to merchant portal
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              const { data: restaurant } = await supabase
+              const { data: restaurants } = await supabase
                 .from('restaurants')
                 .select('id')
                 .eq('owner_id', user.id)
-                .single();
+                .limit(1);
               
-              if (restaurant) {
+              if (restaurants && restaurants.length > 0) {
                 window.location.href = '/merchant-portal';
               } else {
                 window.location.href = '/restaurant/register';
@@ -139,13 +139,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
         // Check if user has a restaurant
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: restaurant } = await supabase
+          const { data: restaurants } = await supabase
             .from('restaurants')
             .select('id')
             .eq('owner_id', user.id)
-            .single();
+            .limit(1);
           
-          return restaurant ? '/merchant-portal' : '/restaurant/register';
+          return (restaurants && restaurants.length > 0) ? '/merchant-portal' : '/restaurant/register';
         }
         return '/restaurant/register';
       case 'driver':

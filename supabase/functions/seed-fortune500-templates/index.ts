@@ -1,6 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 // Template metadata without server dependencies
 const templates = [

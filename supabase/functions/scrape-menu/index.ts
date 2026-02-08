@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 interface ExtractedMenuItem {
   name: string;

@@ -152,7 +152,7 @@ const INITIAL_DATA: OnboardingData = {
   accountNumberConfirm: '',
   w9Completed: false,
   marketingOptIn: false,
-  commissionTier: 'basic',
+  commissionTier: 'flat',
 };
 
 const STEPS = [

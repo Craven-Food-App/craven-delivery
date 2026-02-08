@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { createCardPaymentMethod, createAchPaymentMethod } from "../_shared/moov.ts";
 
-import { getCorsHeaders } from '../_shared/cors.ts';
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req.headers.get("origin"));
 

@@ -192,8 +192,12 @@ const RestaurantCard = ({
             <IconStar size={24} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
             <Text style={{ fontSize: '24px' }} fw={500} c="gray.8">{restaurant.rating || 4.5}</Text>
           </Group>
-          <Text size="sm" c="gray.4">•</Text>
-          <Text size="sm" c="gray.7">{restaurant.distance || '0.5 mi'}</Text>
+          {restaurant.distance && (
+            <>
+              <Text size="sm" c="gray.4">•</Text>
+              <Text size="sm" c="gray.7">{restaurant.distance}</Text>
+            </>
+          )}
           <Text size="sm" c="gray.4">•</Text>
           <Text size="sm" c="gray.7">{restaurant.time || '20 min'}</Text>
         </Group>
@@ -266,6 +270,8 @@ const Restaurants = () => {
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
   const [showMenuIcons, setShowMenuIcons] = useState(false);
+  // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
   
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -284,6 +290,36 @@ const Restaurants = () => {
       return newLiked;
     });
   }, []);
+
+  // Get user's current location for distance calculations
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => { /* silently fail */ }
+      );
+    }
+  }, []);
+
+  // Haversine distance in miles
+  const calcDistanceMiles = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 3959;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  };
+
+  // Format distance for a restaurant record
+  const formatDistance = (r: any): string => {
+    if (!r.latitude || !r.longitude) return '';
+    const d = calcDistanceMiles(userLocation.lat, userLocation.lng, r.latitude, r.longitude);
+    if (d < 0.1) return `${Math.round(d * 5280)} ft`;
+    return `${d.toFixed(1)} mi`;
+  };
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -751,8 +787,8 @@ const Restaurants = () => {
       name: r.name,
       image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
       rating: r.rating || 4.5,
-      reviews: "1.2K",
-      distance: "0.8 mi",
+      reviews: `${r.total_reviews || 0}+`,
+      distance: formatDistance(r) || '',
       time: `${r.min_delivery_time || 20} min`,
         restaurantPromo: restaurantPromo,
         discountPromo: discountPromo,
@@ -781,8 +817,8 @@ const Restaurants = () => {
       name: r.name,
       image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
       rating: r.rating || 4.5,
-      reviews: "800",
-      distance: "2.1 mi",
+      reviews: `${r.total_reviews || 0}+`,
+      distance: formatDistance(r) || '',
       time: `${r.min_delivery_time || 30} min`,
         restaurantPromo: restaurantPromo,
         discountPromo: discountPromo,

@@ -32,19 +32,27 @@ const BankAccountDashboard = () => {
   const [showStripeSection, setShowStripeSection] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchStripeStatus = async () => {
       if (!restaurant?.id) {
-        setLoading(false);
-        setError("No restaurant found. Please complete restaurant setup first.");
+        if (!cancelled) {
+          setLoading(false);
+          setError("No restaurant found. Please complete restaurant setup first.");
+        }
         return;
       }
 
       try {
-        setLoading(true);
-        setError(null);
+        if (!cancelled) {
+          setLoading(true);
+          setError(null);
+        }
         
         const { data, error } = await supabase.functions.invoke('get-stripe-connect-status');
         
+        if (cancelled) return;
+
         if (error) {
           console.error('Stripe status error:', error);
           throw new Error(error.message || 'Failed to fetch Stripe status');
@@ -53,6 +61,7 @@ const BankAccountDashboard = () => {
         setStripeStatus(data);
         setRetryCount(0);
       } catch (err: any) {
+        if (cancelled) return;
         console.error('Error fetching Stripe status:', err);
         const errorMessage = err.message || 'Failed to load banking status';
         setError(errorMessage);
@@ -62,11 +71,15 @@ const BankAccountDashboard = () => {
           toast.error(errorMessage);
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchStripeStatus();
+
+    return () => { cancelled = true; };
   }, [restaurant?.id, retryCount]);
 
   const handleEditBankAccount = async () => {
@@ -86,7 +99,17 @@ const BankAccountDashboard = () => {
       
       if (error) {
         console.error('Link creation error:', error);
-        throw new Error(error.message || 'Failed to create Stripe link');
+        // Extract the actual server error body from FunctionsHttpError
+        let serverMessage = error.message || 'Failed to create Stripe link';
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errorBody = await error.context.json();
+            console.error('Server error details:', errorBody);
+            // Prefer specific Stripe details over generic error label
+            serverMessage = errorBody?.details || errorBody?.error || serverMessage;
+          }
+        } catch { /* response already consumed or not JSON */ }
+        throw new Error(serverMessage);
       }
       
       if (data?.url) {

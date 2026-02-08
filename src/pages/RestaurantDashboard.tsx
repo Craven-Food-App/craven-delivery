@@ -84,27 +84,40 @@ const RestaurantDashboard = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Use selectedStoreId if available (multi-restaurant support), otherwise fetch most recent
+      let query = supabase
         .from("restaurants")
         .select("*")
         .eq("owner_id", user.id)
-        .single();
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (selectedStoreId) {
+        query = supabase
+          .from("restaurants")
+          .select("*")
+          .eq("id", selectedStoreId)
+          .eq("owner_id", user.id)
+          .limit(1);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No restaurant found
-      notifications.show({
-        title: "No restaurant found",
-        message: "You haven't registered a restaurant yet. Let's get started!",
-        color: 'blue',
-      });
-          navigate("/restaurant/register");
-          return;
-        }
         throw error;
       }
 
-      setRestaurant(data);
+      if (!data || data.length === 0) {
+        notifications.show({
+          title: "No restaurant found",
+          message: "You haven't registered a restaurant yet. Let's get started!",
+          color: 'blue',
+        });
+        navigate("/restaurant/register");
+        return;
+      }
+
+      setRestaurant(data[0]);
     } catch (error) {
       console.error("Error fetching restaurant:", error);
       notifications.show({

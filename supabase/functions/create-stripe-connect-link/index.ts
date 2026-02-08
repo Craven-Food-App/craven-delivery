@@ -222,12 +222,21 @@ serve(async (req) => {
     }
 
     // Create account link for onboarding
-    console.log('Creating Stripe account onboarding link');
+    const defaultUrl = `${Deno.env.get('SUPABASE_URL') || 'https://cravenusa.com'}/merchant-portal`;
+    const finalReturnUrl = returnUrl || defaultUrl;
+    const finalRefreshUrl = refreshUrl || `${finalReturnUrl}?refresh=true`;
+
+    console.log('Creating Stripe account onboarding link', {
+      accountId,
+      returnUrl: finalReturnUrl,
+      refreshUrl: finalRefreshUrl,
+    });
+
     try {
       const accountLink = await stripe.accountLinks.create({
         account: accountId,
-        refresh_url: refreshUrl || `${returnUrl}?refresh=true` || `${Deno.env.get('SUPABASE_URL')}/merchant-portal`,
-        return_url: returnUrl || `${Deno.env.get('SUPABASE_URL')}/merchant-portal`,
+        refresh_url: finalRefreshUrl,
+        return_url: finalReturnUrl,
         type: 'account_onboarding',
       });
 
@@ -242,10 +251,16 @@ serve(async (req) => {
           status: 200 
         }
       );
-    } catch (stripeError) {
-      console.error('Error creating account link:', stripeError);
+    } catch (stripeError: any) {
+      const stripeMsg = stripeError?.raw?.message || stripeError?.message || String(stripeError);
+      const stripeCode = stripeError?.raw?.code || stripeError?.code || 'unknown';
+      console.error('Error creating account link:', stripeMsg, 'code:', stripeCode, 'full:', stripeError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create onboarding link' }),
+        JSON.stringify({
+          error: 'Failed to create onboarding link',
+          details: stripeMsg,
+          code: stripeCode,
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

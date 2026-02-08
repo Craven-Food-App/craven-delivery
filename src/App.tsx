@@ -222,14 +222,10 @@ const TesterHooksWrapper = () => {
 };
 
 const App = () => {
-  console.log('🔥 [App] Component mounting - React is working!');
-  console.log('🔥 [App] Current URL:', window.location.href);
-  console.log('🔥 [App] Current pathname:', window.location.pathname);
-  
   const [user, setUser] = useState(null);
   const [isHQSubdomain, setIsHQSubdomain] = useState(false);
 
-  // Check and update subdomain status on every URL change
+  // Check and update subdomain status on URL change
   useEffect(() => {
     const checkSubdomain = () => {
       if (typeof window === 'undefined') return false;
@@ -279,14 +275,16 @@ const App = () => {
     // Initial check
     setIsHQSubdomain(checkSubdomain());
     
-    // Monitor URL changes via interval (covers all navigation types)
-    const intervalId = setInterval(() => {
+    // Monitor URL changes via popstate (covers back/forward navigation)
+    const handleNavigation = () => {
       const newValue = checkSubdomain();
       setIsHQSubdomain(prev => prev !== newValue ? newValue : prev);
-    }, 100);
+    };
+
+    window.addEventListener('popstate', handleNavigation);
     
     return () => {
-      clearInterval(intervalId);
+      window.removeEventListener('popstate', handleNavigation);
     };
   }, []);
 
@@ -388,9 +386,7 @@ const App = () => {
   }
 
   // If on HQ/business subdomain, show only business routes
-  console.log('🔥 [App] isHQSubdomain:', isHQSubdomain);
   if (isHQSubdomain) {
-    console.log('🔥 [App] Rendering HQ subdomain routes');
     return (
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
@@ -502,9 +498,7 @@ const App = () => {
   }
 
   // If on feeder subdomain, show only feeder-related routes
-  console.log('🔥 [App] isFeederSubdomain:', isFeederSubdomain);
   if (isFeederSubdomain) {
-    console.log('🔥 [App] Rendering feeder subdomain routes');
     return (
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>

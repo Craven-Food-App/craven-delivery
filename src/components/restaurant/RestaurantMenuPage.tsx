@@ -233,6 +233,8 @@ const RestaurantMenuPage = () => {
   const [reviewRating, setReviewRating] = useState<number>(5);
   const [reviewText, setReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  // Default to Tampa HQ — overwritten by browser geolocation if granted
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
   
     const [activeSection, setActiveSection] = useState('featured');
     const [isMenuFixed, setIsMenuFixed] = useState(false);
@@ -471,6 +473,36 @@ const RestaurantMenuPage = () => {
       }
     };
   }, []);
+
+  // Get user's current location for distance display
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => { /* silently fail */ }
+      );
+    }
+  }, []);
+
+  // Haversine distance in miles between two coordinates
+  const calcDistanceMiles = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 3959;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  };
+
+  // Format distance string for display
+  const formatDistanceMi = (rLat?: number | null, rLng?: number | null): string => {
+    if (!userLocation || !rLat || !rLng) return '';
+    const d = calcDistanceMiles(userLocation.lat, userLocation.lng, rLat, rLng);
+    if (d < 0.1) return `${Math.round(d * 5280)} ft`;
+    return `${d.toFixed(1)} mi`;
+  };
 
     // Calculate walking distance and time based on user's location with pin-point precision
     const calculateWalkingDistance = (userLat: number, userLng: number, restaurantLat: number, restaurantLng: number): { time: number; distance: string } => {
@@ -1706,7 +1738,7 @@ const RestaurantMenuPage = () => {
           <Group gap="xs" wrap="nowrap">
             <IconStar size={16} style={{ color: 'var(--mantine-color-yellow-5)', fill: 'var(--mantine-color-yellow-5)' }} />
             <Text size="sm" c="dimmed">
-              {restaurant?.rating || 4.0} <Text component="span" c="dimmed">({restaurant?.total_reviews || 0}+)</Text> • {(((restaurant?.latitude || 0) - 35) * 100).toFixed(1)} mi
+              {restaurant?.rating || 4.0} <Text component="span" c="dimmed">({restaurant?.total_reviews || 0}+)</Text>{formatDistanceMi(restaurant?.latitude, restaurant?.longitude) ? ` • ${formatDistanceMi(restaurant?.latitude, restaurant?.longitude)}` : ''}
             </Text>
           </Group>
           <Group gap="xs" wrap="nowrap">

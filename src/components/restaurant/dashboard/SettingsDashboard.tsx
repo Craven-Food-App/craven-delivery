@@ -21,7 +21,7 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="bg-muted flex-wrap h-auto">
               <TabsTrigger value="account">Account Settings</TabsTrigger>
-              <TabsTrigger value="pricing">Pricing Plans</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing & Performance</TabsTrigger>
               <TabsTrigger value="store">Store Settings</TabsTrigger>
               <TabsTrigger value="users">Manage Users</TabsTrigger>
               <TabsTrigger value="communications">Store Communications</TabsTrigger>

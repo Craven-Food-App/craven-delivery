@@ -1,6 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { getCorsHeaders } from '../_shared/cors.ts';
 
 type AppStatus = 'pending' | 'waitlist' | 'approved';
 

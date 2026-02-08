@@ -37,11 +37,10 @@ export const useRestaurantData = () => {
           .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, city, state, zip_code, description, restaurant_type, auto_descriptions_enabled, chat_enabled, alcohol_enabled, verification_notes')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
 
         if (error) throw error;
-        setRestaurant(data);
+        setRestaurant(data?.[0] ?? null);
       } catch (error) {
         console.error('Error fetching restaurant:', error);
       } finally {

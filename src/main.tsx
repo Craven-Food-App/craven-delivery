@@ -35,14 +35,28 @@ console.warn = (...args: any[]) => {
   if (message.includes('Service Worker') && message.includes('invalid state')) {
     return;
   }
+  // Suppress Stripe HTTP warnings in development (expected when testing locally)
+  if (message.includes('Stripe.js') && message.includes('HTTP')) {
+    return;
+  }
   originalWarn.apply(console, args);
 };
-// Also suppress service worker errors
+// Also suppress known harmless errors
 console.error = (...args: any[]) => {
-  const message = args.join(' ');
+  // Convert each arg individually (React uses %s format strings, so args.join misses substitutions)
+  const argStrings = args.map(a => String(a));
+  const fullMessage = argStrings.join(' ');
   // Suppress Service Worker InvalidStateError (non-critical, happens during navigation)
-  if (message.includes('Service Worker') && (message.includes('InvalidStateError') || message.includes('invalid state'))) {
-    return; // Silently ignore
+  if (fullMessage.includes('Service Worker') && (fullMessage.includes('InvalidStateError') || fullMessage.includes('invalid state'))) {
+    return;
+  }
+  // Suppress MUI v7 + React 18 PropTypes warnings (cosmetic; MUI 7 expects React 19)
+  // React calls: console.error('Warning: Failed %s type: %s%s', 'prop', message, stack)
+  // So we check the format string (arg[0]) for 'Failed %s type' AND any arg for MUI components
+  const firstArg = argStrings[0] || '';
+  if (firstArg.includes('Failed %s type') &&
+      argStrings.some(s => s.includes('ThemeProvider') || s.includes('DefaultPropsProvider') || s.includes('RtlProvider'))) {
+    return;
   }
   originalError.apply(console, args);
 };
