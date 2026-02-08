@@ -18413,6 +18413,75 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_inventory: {
+        Row: {
+          id: string
+          restaurant_id: string
+          menu_item_id: string | null
+          sku: string | null
+          barcode: string | null
+          quantity_on_hand: number
+          quantity_reserved: number
+          reorder_point: number
+          is_perishable: boolean
+          expiry_date: string | null
+          unit_of_measure: string
+          cost_cents: number | null
+          last_restocked_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          menu_item_id?: string | null
+          sku?: string | null
+          barcode?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number
+          is_perishable?: boolean
+          expiry_date?: string | null
+          unit_of_measure?: string
+          cost_cents?: number | null
+          last_restocked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          menu_item_id?: string | null
+          sku?: string | null
+          barcode?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number
+          is_perishable?: boolean
+          expiry_date?: string | null
+          unit_of_measure?: string
+          cost_cents?: number | null
+          last_restocked_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_inventory_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_inventory_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       menu_items: {
         Row: {
           allergens: string[] | null

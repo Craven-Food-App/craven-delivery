@@ -342,11 +342,13 @@ ALTER TABLE public.merchant_category_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.merchant_inventory ENABLE ROW LEVEL SECURITY;
 
 -- merchant_category_config: readable by all authenticated users
+DROP POLICY IF EXISTS "Anyone can read category config" ON public.merchant_category_config;
 CREATE POLICY "Anyone can read category config"
   ON public.merchant_category_config FOR SELECT
   TO authenticated USING (true);
 
 -- merchant_inventory: owners can manage their own inventory
+DROP POLICY IF EXISTS "Owners can view own inventory" ON public.merchant_inventory;
 CREATE POLICY "Owners can view own inventory"
   ON public.merchant_inventory FOR SELECT
   TO authenticated
@@ -356,6 +358,7 @@ CREATE POLICY "Owners can view own inventory"
     )
   );
 
+DROP POLICY IF EXISTS "Owners can insert own inventory" ON public.merchant_inventory;
 CREATE POLICY "Owners can insert own inventory"
   ON public.merchant_inventory FOR INSERT
   TO authenticated
@@ -365,6 +368,7 @@ CREATE POLICY "Owners can insert own inventory"
     )
   );
 
+DROP POLICY IF EXISTS "Owners can update own inventory" ON public.merchant_inventory;
 CREATE POLICY "Owners can update own inventory"
   ON public.merchant_inventory FOR UPDATE
   TO authenticated
@@ -374,6 +378,7 @@ CREATE POLICY "Owners can update own inventory"
     )
   );
 
+DROP POLICY IF EXISTS "Owners can delete own inventory" ON public.merchant_inventory;
 CREATE POLICY "Owners can delete own inventory"
   ON public.merchant_inventory FOR DELETE
   TO authenticated
@@ -384,15 +389,17 @@ CREATE POLICY "Owners can delete own inventory"
   );
 
 -- Service role needs full access for edge functions
+DROP POLICY IF EXISTS "Service role full access to inventory" ON public.merchant_inventory;
 CREATE POLICY "Service role full access to inventory"
   ON public.merchant_inventory FOR ALL
   TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role full access to category config" ON public.merchant_category_config;
 CREATE POLICY "Service role full access to category config"
   ON public.merchant_category_config FOR ALL
   TO service_role USING (true) WITH CHECK (true);
 
--- Grant access to analytics views
+-- Grant access to analytics views (GRANTs are idempotent)
 GRANT SELECT ON public.orders_by_merchant_category TO authenticated;
 GRANT SELECT ON public.inventory_health_by_category TO authenticated;
 GRANT SELECT ON public.merchant_category_summary TO authenticated;

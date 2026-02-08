@@ -194,28 +194,53 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
   };
 
   const handleSaveProduct = async () => {
-    if (!selectedProduct) return;
+    if (!editForm.name.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+    if (editForm.price_cents <= 0) {
+      toast.error("Price must be greater than $0");
+      return;
+    }
 
     try {
-      const { error } = await supabase
-        .from("menu_items")
-        .update({
-          name: editForm.name,
-          description: editForm.description,
-          price_cents: editForm.price_cents,
-          category_id: editForm.category_id || null,
-          is_available: editForm.is_available,
-        })
-        .eq("id", selectedProduct.id);
+      if (selectedProduct) {
+        // Update existing
+        const { error } = await supabase
+          .from("menu_items")
+          .update({
+            name: editForm.name,
+            description: editForm.description,
+            price_cents: editForm.price_cents,
+            category_id: editForm.category_id || null,
+            is_available: editForm.is_available,
+          })
+          .eq("id", selectedProduct.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Product updated");
+      } else {
+        // Create new product
+        const { error } = await supabase
+          .from("menu_items")
+          .insert({
+            name: editForm.name,
+            description: editForm.description,
+            price_cents: editForm.price_cents,
+            category_id: editForm.category_id || null,
+            is_available: editForm.is_available,
+            restaurant_id: restaurantId,
+          });
 
-      toast.success("Product updated successfully");
+        if (error) throw error;
+        toast.success("Product created");
+      }
+
       setEditDialogOpen(false);
       fetchData();
     } catch (error) {
-      console.error("Error updating product:", error);
-      toast.error("Failed to update product");
+      console.error("Error saving product:", error);
+      toast.error("Failed to save product");
     }
   };
 
@@ -305,6 +330,14 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
               {products.length} products across {categories.length} collections
             </p>
           </div>
+          <Button onClick={() => {
+            setSelectedProduct(null);
+            setEditForm({ name: "", description: "", price_cents: 0, category_id: "", is_available: true });
+            setEditDialogOpen(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
         </div>
 
         {/* Tabs for sub-sections */}
@@ -677,7 +710,7 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle>{selectedProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {selectedProduct?.sku && (
