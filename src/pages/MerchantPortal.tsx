@@ -39,6 +39,9 @@ import {
   IconCircleCheck,
   IconShoppingBag,
   IconClipboardList,
+  IconBoxMultiple,
+  IconBarcode,
+  IconTags,
 } from "@tabler/icons-react";
 import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
 import { useRestaurantOnboarding } from "@/hooks/useRestaurantOnboarding";
@@ -56,6 +59,10 @@ import StoreAvailabilityDashboard from "@/components/restaurant/dashboard/StoreA
 import RequestDeliveryDashboard from "@/components/restaurant/dashboard/RequestDeliveryDashboard";
 import { HomeDashboard } from "@/components/merchant/HomeDashboard";
 import MerchantWelcomeConfetti from "@/components/merchant/MerchantWelcomeConfetti";
+import { getMerchantGroup } from "@/utils/merchantCategoryLabels";
+import RetailHomeDashboard from "@/components/retail/RetailHomeDashboard";
+import RetailProductCatalog from "@/components/retail/RetailProductCatalog";
+import RetailInventoryDashboard from "@/components/retail/RetailInventoryDashboard";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
@@ -81,7 +88,7 @@ const formatRestaurantType = (type: string | null | undefined): string => {
 
 const RestaurantSetup = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
   const [prepareStoreExpanded, setPrepareStoreExpanded] = useState(true);
   const [userName, setUserName] = useState("User");
   const [settingsTab, setSettingsTab] = useState<string>("account");
@@ -90,6 +97,8 @@ const RestaurantSetup = () => {
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
+  const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
+  const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -107,6 +116,15 @@ const RestaurantSetup = () => {
       }
     };
     fetchUserProfile();
+  }, []);
+
+  // Listen for nav events from retail dashboard quick actions
+  useEffect(() => {
+    const handleNavEvent = (e: CustomEvent) => {
+      setActiveTab(e.detail as any);
+    };
+    window.addEventListener('merchantPortalNav', handleNavEvent as EventListener);
+    return () => window.removeEventListener('merchantPortalNav', handleNavEvent as EventListener);
   }, []);
 
   // Check for merchant welcome screen
@@ -275,94 +293,209 @@ const RestaurantSetup = () => {
             >
               Home
             </Button>
-            
-            <Button
-              variant={activeTab === 'insights' ? 'light' : 'subtle'}
-              color={activeTab === 'insights' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconTrendingUp size={20} />}
-              onClick={() => setActiveTab('insights')}
-            >
-              Insights
-            </Button>
-            
-            <Button
-              variant={activeTab === 'reports' ? 'light' : 'subtle'}
-              color={activeTab === 'reports' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconFileText size={20} />}
-              onClick={() => setActiveTab('reports')}
-            >
-              Reports
-            </Button>
-            
-            <Button
-              variant={activeTab === 'customers' ? 'light' : 'subtle'}
-              color={activeTab === 'customers' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconUsers size={20} />}
-              onClick={() => setActiveTab('customers')}
-            >
-              Customers
-            </Button>
-            
-            <Button
-              variant={activeTab === 'orders' ? 'light' : 'subtle'}
-              color={activeTab === 'orders' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconPackage size={20} />}
-              onClick={() => setActiveTab('orders')}
-            >
-              Orders
-            </Button>
-            
-            <Button
-              variant={activeTab === 'menu' ? 'light' : 'subtle'}
-              color={activeTab === 'menu' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={labels.catalogLabel === 'Products' ? <IconShoppingBag size={20} /> : <IconMenu2 size={20} />}
-              onClick={() => setActiveTab('menu')}
-            >
-              {labels.catalogLabel}
-            </Button>
-            
-            <Button
-              variant={activeTab === 'availability' ? 'light' : 'subtle'}
-              color={activeTab === 'availability' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconCalendar size={20} />}
-              onClick={() => setActiveTab('availability')}
-            >
-              {labels.availabilityLabel}
-            </Button>
-            
-            <Button
-              variant={activeTab === 'financials' ? 'light' : 'subtle'}
-              color={activeTab === 'financials' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconCurrencyDollar size={20} />}
-              onClick={() => setActiveTab('financials')}
-            >
-              Financials
-            </Button>
-            
-            <Button
-              variant={activeTab === 'settings' ? 'light' : 'subtle'}
-              color={activeTab === 'settings' ? 'orange' : 'gray'}
-              fullWidth
-              justify="flex-start"
-              leftSection={<IconSettings size={20} />}
-              onClick={() => setActiveTab('settings')}
-            >
-              Settings
-            </Button>
+
+            {isRetail ? (
+              <>
+                {/* ========== RETAIL / GROCERY SIDEBAR ========== */}
+                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Sales</Text>
+                
+                <Button
+                  variant={activeTab === 'orders' ? 'light' : 'subtle'}
+                  color={activeTab === 'orders' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconPackage size={20} />}
+                  onClick={() => setActiveTab('orders')}
+                >
+                  Orders
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'customers' ? 'light' : 'subtle'}
+                  color={activeTab === 'customers' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconUsers size={20} />}
+                  onClick={() => setActiveTab('customers')}
+                >
+                  Customers
+                </Button>
+
+                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Catalog</Text>
+                
+                <Button
+                  variant={activeTab === 'products' ? 'light' : 'subtle'}
+                  color={activeTab === 'products' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconShoppingBag size={20} />}
+                  onClick={() => setActiveTab('products')}
+                >
+                  Products
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'inventory' ? 'light' : 'subtle'}
+                  color={activeTab === 'inventory' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconBoxMultiple size={20} />}
+                  onClick={() => setActiveTab('inventory')}
+                >
+                  Inventory
+                </Button>
+
+                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Analytics</Text>
+                
+                <Button
+                  variant={activeTab === 'insights' ? 'light' : 'subtle'}
+                  color={activeTab === 'insights' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconTrendingUp size={20} />}
+                  onClick={() => setActiveTab('insights')}
+                >
+                  Insights
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'reports' ? 'light' : 'subtle'}
+                  color={activeTab === 'reports' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconFileText size={20} />}
+                  onClick={() => setActiveTab('reports')}
+                >
+                  Reports
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'financials' ? 'light' : 'subtle'}
+                  color={activeTab === 'financials' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconCurrencyDollar size={20} />}
+                  onClick={() => setActiveTab('financials')}
+                >
+                  Financials
+                </Button>
+
+                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Store</Text>
+                
+                <Button
+                  variant={activeTab === 'availability' ? 'light' : 'subtle'}
+                  color={activeTab === 'availability' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconCalendar size={20} />}
+                  onClick={() => setActiveTab('availability')}
+                >
+                  {labels.availabilityLabel}
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'settings' ? 'light' : 'subtle'}
+                  color={activeTab === 'settings' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconSettings size={20} />}
+                  onClick={() => setActiveTab('settings')}
+                >
+                  Settings
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* ========== RESTAURANT SIDEBAR ========== */}
+                <Button
+                  variant={activeTab === 'insights' ? 'light' : 'subtle'}
+                  color={activeTab === 'insights' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconTrendingUp size={20} />}
+                  onClick={() => setActiveTab('insights')}
+                >
+                  Insights
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'reports' ? 'light' : 'subtle'}
+                  color={activeTab === 'reports' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconFileText size={20} />}
+                  onClick={() => setActiveTab('reports')}
+                >
+                  Reports
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'customers' ? 'light' : 'subtle'}
+                  color={activeTab === 'customers' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconUsers size={20} />}
+                  onClick={() => setActiveTab('customers')}
+                >
+                  Customers
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'orders' ? 'light' : 'subtle'}
+                  color={activeTab === 'orders' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconPackage size={20} />}
+                  onClick={() => setActiveTab('orders')}
+                >
+                  Orders
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'menu' ? 'light' : 'subtle'}
+                  color={activeTab === 'menu' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconMenu2 size={20} />}
+                  onClick={() => setActiveTab('menu')}
+                >
+                  Menu
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'availability' ? 'light' : 'subtle'}
+                  color={activeTab === 'availability' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconCalendar size={20} />}
+                  onClick={() => setActiveTab('availability')}
+                >
+                  Store availability
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'financials' ? 'light' : 'subtle'}
+                  color={activeTab === 'financials' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconCurrencyDollar size={20} />}
+                  onClick={() => setActiveTab('financials')}
+                >
+                  Financials
+                </Button>
+                
+                <Button
+                  variant={activeTab === 'settings' ? 'light' : 'subtle'}
+                  color={activeTab === 'settings' ? 'orange' : 'gray'}
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={<IconSettings size={20} />}
+                  onClick={() => setActiveTab('settings')}
+                >
+                  Settings
+                </Button>
+              </>
+            )}
           </Stack>
 
           <Divider my="md" />
@@ -423,11 +556,19 @@ const RestaurantSetup = () => {
                   <Text size="sm" c="dimmed">Welcome back, {userName}</Text>
                   <Title order={1}>Dashboard</Title>
                 </Stack>
-                <HomeDashboard 
-                  restaurantId={restaurant?.id || ''} 
-                  restaurant={restaurant}
-                  readiness={readiness}
-                />
+                {isRetail ? (
+                  <RetailHomeDashboard 
+                    restaurantId={restaurant?.id || ''} 
+                    restaurant={restaurant}
+                    readiness={readiness}
+                  />
+                ) : (
+                  <HomeDashboard 
+                    restaurantId={restaurant?.id || ''} 
+                    restaurant={restaurant}
+                    readiness={readiness}
+                  />
+                )}
               </Box>
             ) : (
               <Box style={{ maxWidth: '1024px', margin: '0 auto' }}>
@@ -811,7 +952,18 @@ const RestaurantSetup = () => {
         <div className="p-6 text-center">
           <p className="text-muted-foreground">Please select a store to continue.</p>
         </div>
-      ) : activeTab === 'insights' ? <InsightsDashboard /> : activeTab === 'reports' ? <ReportsDashboard /> : activeTab === 'customers' ? <CustomersDashboard /> : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> : activeTab === 'availability' ? <StoreAvailabilityDashboard /> : activeTab === 'financials' ? <FinancialsDashboard /> : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> : null}
+      ) : activeTab === 'insights' ? <InsightsDashboard /> 
+        : activeTab === 'reports' ? <ReportsDashboard /> 
+        : activeTab === 'customers' ? <CustomersDashboard /> 
+        : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> 
+        : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> 
+        : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} /> 
+        : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} /> 
+        : activeTab === 'availability' ? <StoreAvailabilityDashboard /> 
+        : activeTab === 'financials' ? <FinancialsDashboard /> 
+        : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> 
+        : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> 
+        : null}
         </Box>
       </ScrollArea>
 

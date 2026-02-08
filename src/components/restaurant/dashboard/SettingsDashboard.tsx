@@ -65,27 +65,13 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
             {labels.showInventoryTab && (
               <TabsContent value="inventory" className="mt-6">
                 <div className="space-y-6">
-                  <div className="border rounded-lg p-6">
+                  <div className="border rounded-lg p-6 text-center">
                     <h2 className="text-xl font-semibold mb-2">Inventory Management</h2>
                     <p className="text-muted-foreground mb-4">
                       Track stock levels, set low-stock alerts, and manage your {labels.itemNounPlural}.
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="border rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-orange-500">—</p>
-                        <p className="text-sm text-muted-foreground mt-1">Total {labels.itemNounPlural}</p>
-                      </div>
-                      <div className="border rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-green-500">—</p>
-                        <p className="text-sm text-muted-foreground mt-1">In stock</p>
-                      </div>
-                      <div className="border rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-red-500">—</p>
-                        <p className="text-sm text-muted-foreground mt-1">Low stock</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-4 italic">
-                      Full inventory management coming soon. Use the {labels.catalogLabel} tab to manage your {labels.itemNounPlural} for now.
+                    <p className="text-sm text-muted-foreground">
+                      Use the <strong>Inventory</strong> tab in the sidebar for full stock management.
                     </p>
                   </div>
                 </div>
