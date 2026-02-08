@@ -7,12 +7,17 @@ import StoreCommunicationsDashboard from "./settings/StoreCommunicationsDashboar
 import BankAccountDashboard from "./settings/BankAccountDashboard";
 import IntegrationsDashboard from "./settings/IntegrationsDashboard";
 import DeleteStoreDashboard from "./settings/DeleteStoreDashboard";
+import { useRestaurantData } from "@/hooks/useRestaurantData";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
 interface SettingsDashboardProps {
   defaultTab?: string;
 }
 
 const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) => {
+  const { restaurant } = useRestaurantData();
+  const labels = getMerchantLabels(restaurant?.restaurant_type);
+
   return (
     <div className="w-full h-full bg-background">
       <div className="border-b bg-card">
@@ -26,6 +31,9 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
               <TabsTrigger value="users">Manage Users</TabsTrigger>
               <TabsTrigger value="communications">Store Communications</TabsTrigger>
               <TabsTrigger value="bank">Bank Account</TabsTrigger>
+              {labels.showInventoryTab && (
+                <TabsTrigger value="inventory">Inventory</TabsTrigger>
+              )}
               <TabsTrigger value="integrations">Integrations</TabsTrigger>
               <TabsTrigger value="delete-store">Delete Store</TabsTrigger>
             </TabsList>
@@ -53,6 +61,36 @@ const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) =
             <TabsContent value="bank" className="mt-6">
               <BankAccountDashboard />
             </TabsContent>
+
+            {labels.showInventoryTab && (
+              <TabsContent value="inventory" className="mt-6">
+                <div className="space-y-6">
+                  <div className="border rounded-lg p-6">
+                    <h2 className="text-xl font-semibold mb-2">Inventory Management</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Track stock levels, set low-stock alerts, and manage your {labels.itemNounPlural}.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border rounded-lg p-4 text-center">
+                        <p className="text-3xl font-bold text-orange-500">—</p>
+                        <p className="text-sm text-muted-foreground mt-1">Total {labels.itemNounPlural}</p>
+                      </div>
+                      <div className="border rounded-lg p-4 text-center">
+                        <p className="text-3xl font-bold text-green-500">—</p>
+                        <p className="text-sm text-muted-foreground mt-1">In stock</p>
+                      </div>
+                      <div className="border rounded-lg p-4 text-center">
+                        <p className="text-3xl font-bold text-red-500">—</p>
+                        <p className="text-sm text-muted-foreground mt-1">Low stock</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-4 italic">
+                      Full inventory management coming soon. Use the {labels.catalogLabel} tab to manage your {labels.itemNounPlural} for now.
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
             <TabsContent value="integrations" className="mt-6">
               <IntegrationsDashboard />

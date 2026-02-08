@@ -10,6 +10,10 @@ import { Clock, Save } from "lucide-react";
 
 interface RestaurantHoursProps {
   restaurantId: string;
+  hoursDescription?: string;
+  saveSuccessMessage?: string;
+  saveErrorMessage?: string;
+  loadErrorMessage?: string;
 }
 
 interface HoursData {
@@ -23,7 +27,13 @@ const DAYS = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 ];
 
-const RestaurantHours: React.FC<RestaurantHoursProps> = ({ restaurantId }) => {
+const RestaurantHours: React.FC<RestaurantHoursProps> = ({ 
+  restaurantId,
+  hoursDescription = "Set your restaurant's operating hours for each day of the week",
+  saveSuccessMessage = "Restaurant hours updated successfully",
+  saveErrorMessage = "Failed to save restaurant hours",
+  loadErrorMessage = "Failed to load restaurant hours",
+}) => {
   const [hours, setHours] = useState<HoursData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +69,7 @@ const RestaurantHours: React.FC<RestaurantHoursProps> = ({ restaurantId }) => {
       console.error('Error fetching hours:', error);
       toast({
         title: "Error",
-        description: "Failed to load restaurant hours",
+        description: loadErrorMessage,
         variant: "destructive"
       });
     } finally {
@@ -99,13 +109,13 @@ const RestaurantHours: React.FC<RestaurantHoursProps> = ({ restaurantId }) => {
 
       toast({
         title: "Success",
-        description: "Restaurant hours updated successfully"
+        description: saveSuccessMessage
       });
     } catch (error) {
       console.error('Error saving hours:', error);
       toast({
         title: "Error",
-        description: "Failed to save restaurant hours",
+        description: saveErrorMessage,
         variant: "destructive"
       });
     } finally {
@@ -137,7 +147,7 @@ const RestaurantHours: React.FC<RestaurantHoursProps> = ({ restaurantId }) => {
           Hours of Operation
         </CardTitle>
         <CardDescription>
-          Set your restaurant's operating hours for each day of the week
+          {hoursDescription}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

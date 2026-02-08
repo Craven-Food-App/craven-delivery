@@ -14,9 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { isPngLogo } from "@/utils/logoUtils";
 import { toast } from "sonner";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
 const StoreSettingsDashboard = () => {
   const { restaurant, loading } = useRestaurantData();
+  const labels = getMerchantLabels(restaurant?.restaurant_type);
   const [headerPhoto, setHeaderPhoto] = useState<string | null>(null);
   const [logoPhoto, setLogoPhoto] = useState<string | null>(null);
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -511,7 +513,13 @@ const StoreSettingsDashboard = () => {
 
           {/* Business Hours */}
           {restaurant?.id && (
-            <RestaurantHours restaurantId={restaurant.id} />
+            <RestaurantHours 
+              restaurantId={restaurant.id}
+              hoursDescription={labels.hoursDescription}
+              saveSuccessMessage={labels.hoursSaveSuccess}
+              saveErrorMessage={labels.hoursSaveError}
+              loadErrorMessage={labels.hoursLoadError}
+            />
           )}
 
           {/* Brand Assets */}

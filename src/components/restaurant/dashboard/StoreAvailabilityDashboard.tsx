@@ -8,10 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
 const StoreAvailabilityDashboard = () => {
   const { toast } = useToast();
   const [restaurant, setRestaurant] = useState<any>(null);
+  const labels = getMerchantLabels(restaurant?.restaurant_type);
   const [hours, setHours] = useState<any[]>([]);
   const [specialHours, setSpecialHours] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +145,7 @@ const StoreAvailabilityDashboard = () => {
   return (
     <div className="w-full h-full bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <h1 className="text-3xl font-bold mb-8">Store availability</h1>
+        <h1 className="text-3xl font-bold mb-8">{labels.availabilityLabel}</h1>
 
         {/* Store Status - Read Only */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -178,9 +180,9 @@ const StoreAvailabilityDashboard = () => {
         {/* Regular Hours */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Regular menu hours</CardTitle>
+            <CardTitle>{labels.regularHoursTitle}</CardTitle>
             <CardDescription>
-              These are the hours your store is available on Crave'N.
+              {labels.regularHoursDescription}
             </CardDescription>
           </CardHeader>
           <CardContent>

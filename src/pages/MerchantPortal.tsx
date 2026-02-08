@@ -37,11 +37,14 @@ import {
   IconMail,
   IconClock,
   IconCircleCheck,
+  IconShoppingBag,
+  IconClipboardList,
 } from "@tabler/icons-react";
 import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
 import { useRestaurantOnboarding } from "@/hooks/useRestaurantOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 import InsightsDashboard from "@/components/restaurant/dashboard/InsightsDashboard";
 import CustomersDashboard from "@/components/restaurant/dashboard/CustomersDashboard";
 import MenuDashboard from "@/components/restaurant/dashboard/MenuDashboard"; // Renamed to avoid conflict with Mantine Menu
@@ -86,6 +89,7 @@ const RestaurantSetup = () => {
   
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
+  const labels = getMerchantLabels(restaurant?.restaurant_type);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -182,8 +186,8 @@ const RestaurantSetup = () => {
       <Box style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
         <Card p="xl" withBorder>
           <Stack gap="md">
-            <Title order={3}>No Restaurant Found</Title>
-            <Text c="dimmed">Please complete restaurant onboarding first.</Text>
+            <Title order={3}>{labels.notFoundTitle}</Title>
+            <Text c="dimmed">Please complete onboarding first.</Text>
             <Button onClick={() => navigate('/restaurant/register')}>
               Start Onboarding
             </Button>
@@ -321,10 +325,10 @@ const RestaurantSetup = () => {
               color={activeTab === 'menu' ? 'orange' : 'gray'}
               fullWidth
               justify="flex-start"
-              leftSection={<IconMenu2 size={20} />}
+              leftSection={labels.catalogLabel === 'Products' ? <IconShoppingBag size={20} /> : <IconMenu2 size={20} />}
               onClick={() => setActiveTab('menu')}
             >
-              Menu
+              {labels.catalogLabel}
             </Button>
             
             <Button
@@ -335,7 +339,7 @@ const RestaurantSetup = () => {
               leftSection={<IconCalendar size={20} />}
               onClick={() => setActiveTab('availability')}
             >
-              Store availability
+              {labels.availabilityLabel}
             </Button>
             
             <Button
@@ -540,10 +544,10 @@ const RestaurantSetup = () => {
                       <Group gap="xs" align="center">
                         <Title order={4}>
                           {progress?.menu_preparation_status === 'ready' 
-                            ? 'Your menu is ready' 
+                            ? labels.catalogPrepReady 
                             : progress?.menu_preparation_status === 'in_progress'
-                              ? "We're preparing your menu"
-                              : 'Menu preparation not started'}
+                              ? labels.catalogPrepInProgress
+                              : labels.catalogPrepNotStarted}
                         </Title>
                         <Badge
                           color={
@@ -565,8 +569,8 @@ const RestaurantSetup = () => {
                       </Group>
                       <Text size="sm" c="dimmed" mb="md">
                         {progress?.menu_preparation_status === 'ready'
-                          ? "Your menu has been prepared and is ready to go live."
-                          : "This usually takes 2 business days. You'll get an email when your menu is ready."}
+                          ? `Your ${labels.catalogLabel.toLowerCase()} has been prepared and is ready to go live.`
+                          : `This usually takes 2 business days. You'll get an email when your ${labels.catalogLabel.toLowerCase()} is ready.`}
                       </Text>
                       
                       {progress?.menu_preparation_status === 'ready' && !restaurant?.header_image_url && (
@@ -765,7 +769,7 @@ const RestaurantSetup = () => {
             <Stack gap="md">
               <Title order={2}>Continue your Crave'N setup</Title>
               <Text size="sm" c="dimmed" mb="md">
-                While our team is preparing your Marketplace store, continue your Crave'N setup to maximize sales.
+                While our team is preparing your {labels.entityLabel}, continue your Crave'N setup to maximize sales.
               </Text>
 
               <Card p="lg" withBorder>
@@ -805,7 +809,7 @@ const RestaurantSetup = () => {
       )
       ) : !restaurant ? (
         <div className="p-6 text-center">
-          <p className="text-muted-foreground">Please select a restaurant to continue.</p>
+          <p className="text-muted-foreground">Please select a store to continue.</p>
         </div>
       ) : activeTab === 'insights' ? <InsightsDashboard /> : activeTab === 'reports' ? <ReportsDashboard /> : activeTab === 'customers' ? <CustomersDashboard /> : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> : activeTab === 'availability' ? <StoreAvailabilityDashboard /> : activeTab === 'financials' ? <FinancialsDashboard /> : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> : null}
         </Box>
@@ -816,7 +820,7 @@ const RestaurantSetup = () => {
       {/* Merchant Welcome Confetti */}
       {showWelcomeConfetti && (
         <MerchantWelcomeConfetti
-          restaurantName={restaurant?.name || 'Your Restaurant'}
+          restaurantName={restaurant?.name || 'Your Store'}
           onComplete={() => setShowWelcomeConfetti(false)}
         />
       )}
