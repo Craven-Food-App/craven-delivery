@@ -967,6 +967,9 @@ const RestaurantMenuPage = () => {
         return `$${(cents / 100).toFixed(2)}`;
     };
 
+    // Detect retail vs food
+    const isRetail = isRetailStore(restaurant);
+
     // Sidebar links
     const sidebarLinks = [
         { id: 'featured', label: isRetail ? 'Top Picks' : 'Featured Items', href: '#featured' },
@@ -980,7 +983,6 @@ const RestaurantMenuPage = () => {
     ];
 
     // --- UI Components ---
-    const isRetail = isRetailStore(restaurant);
 
     const MenuItemCard = ({ item }: { item: MenuItem }) => {
         const rating = item.order_count ? Math.min(95, 75 + Math.floor(item.order_count / 10)) : 85;
