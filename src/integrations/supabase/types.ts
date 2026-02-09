@@ -266,6 +266,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "accounts_receivable_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       ach_transfers: {
@@ -1139,6 +1146,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arena_competitions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "arena_competitions_winner_driver_id_fkey"
@@ -2248,6 +2262,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -3836,6 +3857,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -6572,6 +6600,13 @@ export type Database = {
             foreignKeyName: "customer_favorites_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "customer_favorites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -6661,6 +6696,13 @@ export type Database = {
             foreignKeyName: "customer_orders_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "customer_orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -6729,6 +6771,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+          {
+            foreignKeyName: "customer_reviews_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
           },
           {
             foreignKeyName: "customer_reviews_restaurant_id_fkey"
@@ -8283,6 +8339,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "diamond_points_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       dispute_messages: {
@@ -8383,6 +8446,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "disputes_resolved_by_fkey"
@@ -8805,6 +8875,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_earnings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -14416,6 +14493,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gas_money_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       gl_account_assignments: {
@@ -14803,6 +14887,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotspots_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -17694,6 +17785,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ledger_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       legal_documents: {
@@ -18300,6 +18398,13 @@ export type Database = {
             foreignKeyName: "menu_categories_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -18413,237 +18518,6 @@ export type Database = {
         }
         Relationships: []
       }
-      merchant_inventory: {
-        Row: {
-          id: string
-          restaurant_id: string
-          menu_item_id: string | null
-          sku: string | null
-          barcode: string | null
-          quantity_on_hand: number
-          quantity_reserved: number
-          reorder_point: number
-          is_perishable: boolean
-          expiry_date: string | null
-          unit_of_measure: string
-          cost_cents: number | null
-          last_restocked_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          restaurant_id: string
-          menu_item_id?: string | null
-          sku?: string | null
-          barcode?: string | null
-          quantity_on_hand?: number
-          quantity_reserved?: number
-          reorder_point?: number
-          is_perishable?: boolean
-          expiry_date?: string | null
-          unit_of_measure?: string
-          cost_cents?: number | null
-          last_restocked_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          restaurant_id?: string
-          menu_item_id?: string | null
-          sku?: string | null
-          barcode?: string | null
-          quantity_on_hand?: number
-          quantity_reserved?: number
-          reorder_point?: number
-          is_perishable?: boolean
-          expiry_date?: string | null
-          unit_of_measure?: string
-          cost_cents?: number | null
-          last_restocked_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "merchant_inventory_restaurant_id_fkey"
-            columns: ["restaurant_id"]
-            isOneToOne: false
-            referencedRelation: "restaurants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "merchant_inventory_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      product_images: {
-        Row: {
-          id: string
-          menu_item_id: string
-          image_url: string
-          alt_text: string | null
-          display_order: number
-          is_primary: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          menu_item_id: string
-          image_url: string
-          alt_text?: string | null
-          display_order?: number
-          is_primary?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          menu_item_id?: string
-          image_url?: string
-          alt_text?: string | null
-          display_order?: number
-          is_primary?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_images_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      product_variants: {
-        Row: {
-          id: string
-          menu_item_id: string
-          title: string
-          option1_name: string | null
-          option1_value: string | null
-          option2_name: string | null
-          option2_value: string | null
-          option3_name: string | null
-          option3_value: string | null
-          sku: string | null
-          barcode: string | null
-          price_cents: number
-          compare_at_price_cents: number | null
-          cost_price_cents: number | null
-          weight_value: number | null
-          weight_unit: string
-          quantity_on_hand: number
-          quantity_reserved: number
-          reorder_point: number
-          image_url: string | null
-          is_available: boolean
-          display_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          menu_item_id: string
-          title: string
-          option1_name?: string | null
-          option1_value?: string | null
-          option2_name?: string | null
-          option2_value?: string | null
-          option3_name?: string | null
-          option3_value?: string | null
-          sku?: string | null
-          barcode?: string | null
-          price_cents: number
-          compare_at_price_cents?: number | null
-          cost_price_cents?: number | null
-          weight_value?: number | null
-          weight_unit?: string
-          quantity_on_hand?: number
-          quantity_reserved?: number
-          reorder_point?: number
-          image_url?: string | null
-          is_available?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          menu_item_id?: string
-          title?: string
-          option1_name?: string | null
-          option1_value?: string | null
-          option2_name?: string | null
-          option2_value?: string | null
-          option3_name?: string | null
-          option3_value?: string | null
-          sku?: string | null
-          barcode?: string | null
-          price_cents?: number
-          compare_at_price_cents?: number | null
-          cost_price_cents?: number | null
-          weight_value?: number | null
-          weight_unit?: string
-          quantity_on_hand?: number
-          quantity_reserved?: number
-          reorder_point?: number
-          image_url?: string | null
-          is_available?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_variants_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      product_options: {
-        Row: {
-          id: string
-          menu_item_id: string
-          name: string
-          position: number
-          values: string[]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          menu_item_id: string
-          name: string
-          position?: number
-          values?: string[]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          menu_item_id?: string
-          name?: string
-          position?: number
-          values?: string[]
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_options_menu_item_id_fkey"
-            columns: ["menu_item_id"]
-            isOneToOne: false
-            referencedRelation: "menu_items"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       menu_items: {
         Row: {
           allergens: string[] | null
@@ -18655,7 +18529,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
-          has_variants: boolean
+          has_variants: boolean | null
           height_cm: number | null
           id: string
           image_url: string | null
@@ -18670,15 +18544,15 @@ export type Database = {
           order_count: number
           preparation_time: number | null
           price_cents: number
-          product_type: string
-          requires_shipping: boolean
+          product_type: string | null
+          requires_shipping: boolean | null
           restaurant_id: string
           spice_level: string | null
-          tags: string[]
-          tax_rate: number
+          tags: string[] | null
+          tax_rate: number | null
           updated_at: string
           vendor: string | null
-          weight_unit: string
+          weight_unit: string | null
           weight_value: number | null
           width_cm: number | null
         }
@@ -18692,7 +18566,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
-          has_variants?: boolean
+          has_variants?: boolean | null
           height_cm?: number | null
           id?: string
           image_url?: string | null
@@ -18707,15 +18581,15 @@ export type Database = {
           order_count?: number
           preparation_time?: number | null
           price_cents: number
-          product_type?: string
-          requires_shipping?: boolean
+          product_type?: string | null
+          requires_shipping?: boolean | null
           restaurant_id: string
           spice_level?: string | null
-          tags?: string[]
-          tax_rate?: number
+          tags?: string[] | null
+          tax_rate?: number | null
           updated_at?: string
           vendor?: string | null
-          weight_unit?: string
+          weight_unit?: string | null
           weight_value?: number | null
           width_cm?: number | null
         }
@@ -18729,7 +18603,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
-          has_variants?: boolean
+          has_variants?: boolean | null
           height_cm?: number | null
           id?: string
           image_url?: string | null
@@ -18744,15 +18618,15 @@ export type Database = {
           order_count?: number
           preparation_time?: number | null
           price_cents?: number
-          product_type?: string
-          requires_shipping?: boolean
+          product_type?: string | null
+          requires_shipping?: boolean | null
           restaurant_id?: string
           spice_level?: string | null
-          tags?: string[]
-          tax_rate?: number
+          tags?: string[] | null
+          tax_rate?: number | null
           updated_at?: string
           vendor?: string | null
-          weight_unit?: string
+          weight_unit?: string | null
           weight_value?: number | null
           width_cm?: number | null
         }
@@ -18766,6 +18640,149 @@ export type Database = {
           },
           {
             foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_category_config: {
+        Row: {
+          category: Database["public"]["Enums"]["merchant_category"]
+          created_at: string | null
+          default_commission_bps: number
+          default_delivery_radius_miles: number
+          default_prep_time_minutes: number
+          display_name: string
+          id: string
+          requires_alcohol_license: boolean
+          requires_health_permit: boolean
+          requires_inventory: boolean
+          requires_prep_time: boolean
+          supports_bundles: boolean
+          supports_modifiers: boolean
+          supports_pick_pack: boolean
+          track_perishable_turnover: boolean
+          track_sku_velocity: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["merchant_category"]
+          created_at?: string | null
+          default_commission_bps?: number
+          default_delivery_radius_miles?: number
+          default_prep_time_minutes?: number
+          display_name: string
+          id?: string
+          requires_alcohol_license?: boolean
+          requires_health_permit?: boolean
+          requires_inventory?: boolean
+          requires_prep_time?: boolean
+          supports_bundles?: boolean
+          supports_modifiers?: boolean
+          supports_pick_pack?: boolean
+          track_perishable_turnover?: boolean
+          track_sku_velocity?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["merchant_category"]
+          created_at?: string | null
+          default_commission_bps?: number
+          default_delivery_radius_miles?: number
+          default_prep_time_minutes?: number
+          display_name?: string
+          id?: string
+          requires_alcohol_license?: boolean
+          requires_health_permit?: boolean
+          requires_inventory?: boolean
+          requires_prep_time?: boolean
+          supports_bundles?: boolean
+          supports_modifiers?: boolean
+          supports_pick_pack?: boolean
+          track_perishable_turnover?: boolean
+          track_sku_velocity?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      merchant_inventory: {
+        Row: {
+          barcode: string | null
+          cost_cents: number | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          is_perishable: boolean | null
+          last_restocked_at: string | null
+          menu_item_id: string | null
+          quantity_on_hand: number
+          quantity_reserved: number
+          reorder_point: number | null
+          restaurant_id: string
+          sku: string | null
+          unit_of_measure: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          barcode?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_perishable?: boolean | null
+          last_restocked_at?: string | null
+          menu_item_id?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          restaurant_id: string
+          sku?: string | null
+          unit_of_measure?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          barcode?: string | null
+          cost_cents?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_perishable?: boolean | null
+          last_restocked_at?: string | null
+          menu_item_id?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          restaurant_id?: string
+          sku?: string | null
+          unit_of_measure?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_inventory_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_inventory_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "merchant_inventory_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
@@ -19174,6 +19191,13 @@ export type Database = {
             foreignKeyName: "modifier_groups_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "modifier_groups_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -19214,6 +19238,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "moov_invites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "moov_invites_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -19699,6 +19730,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       order_batches: {
@@ -19784,6 +19822,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -19900,6 +19945,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       order_notifications: {
@@ -19978,6 +20030,7 @@ export type Database = {
           exclusive_type: string | null
           food_subtotal_cents: number | null
           id: string
+          is_stacked: boolean | null
           is_test: boolean | null
           merchant_commission_cents: number
           merchant_payout_cents: number
@@ -20012,6 +20065,8 @@ export type Database = {
           route_geometry: Json | null
           service_fee: number | null
           service_fee_cents: number | null
+          stack_order_number: number | null
+          stack_parent_order_id: string | null
           stripe_payment_intent_id: string | null
           stripe_transfer_driver_id: string | null
           stripe_transfer_restaurant_id: string | null
@@ -20070,6 +20125,7 @@ export type Database = {
           exclusive_type?: string | null
           food_subtotal_cents?: number | null
           id?: string
+          is_stacked?: boolean | null
           is_test?: boolean | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
@@ -20104,6 +20160,8 @@ export type Database = {
           route_geometry?: Json | null
           service_fee?: number | null
           service_fee_cents?: number | null
+          stack_order_number?: number | null
+          stack_parent_order_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_transfer_driver_id?: string | null
           stripe_transfer_restaurant_id?: string | null
@@ -20162,6 +20220,7 @@ export type Database = {
           exclusive_type?: string | null
           food_subtotal_cents?: number | null
           id?: string
+          is_stacked?: boolean | null
           is_test?: boolean | null
           merchant_commission_cents?: number
           merchant_payout_cents?: number
@@ -20196,6 +20255,8 @@ export type Database = {
           route_geometry?: Json | null
           service_fee?: number | null
           service_fee_cents?: number | null
+          stack_order_number?: number | null
+          stack_parent_order_id?: string | null
           stripe_payment_intent_id?: string | null
           stripe_transfer_driver_id?: string | null
           stripe_transfer_restaurant_id?: string | null
@@ -20252,8 +20313,36 @@ export type Database = {
             foreignKeyName: "orders_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_stack_parent_order_id_fkey"
+            columns: ["stack_parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_stack_parent_order_id_fkey"
+            columns: ["stack_parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders_needs_attention"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_stack_parent_order_id_fkey"
+            columns: ["stack_parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
         ]
       }
@@ -21500,6 +21589,168 @@ export type Database = {
           },
         ]
       }
+      product_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          is_primary: boolean | null
+          menu_item_id: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_primary?: boolean | null
+          menu_item_id: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_primary?: boolean | null
+          menu_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          menu_item_id: string
+          name: string
+          position: number | null
+          values: string[]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          menu_item_id: string
+          name: string
+          position?: number | null
+          values?: string[]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string
+          name?: string
+          position?: number | null
+          values?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          barcode: string | null
+          compare_at_price_cents: number | null
+          cost_price_cents: number | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          menu_item_id: string
+          option1_name: string | null
+          option1_value: string | null
+          option2_name: string | null
+          option2_value: string | null
+          option3_name: string | null
+          option3_value: string | null
+          price_cents: number
+          quantity_on_hand: number
+          quantity_reserved: number
+          reorder_point: number | null
+          sku: string | null
+          title: string
+          updated_at: string | null
+          weight_unit: string | null
+          weight_value: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          menu_item_id: string
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          price_cents: number
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          sku?: string | null
+          title: string
+          updated_at?: string | null
+          weight_unit?: string | null
+          weight_value?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          compare_at_price_cents?: number | null
+          cost_price_cents?: number | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          menu_item_id?: string
+          option1_name?: string | null
+          option1_value?: string | null
+          option2_name?: string | null
+          option2_value?: string | null
+          option3_name?: string | null
+          option3_value?: string | null
+          price_cents?: number
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          reorder_point?: number | null
+          sku?: string | null
+          title?: string
+          updated_at?: string | null
+          weight_unit?: string | null
+          weight_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promo_code_usage: {
         Row: {
           discount_applied_cents: number
@@ -21539,6 +21790,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "promo_code_usage_promo_code_id_fkey"
@@ -21681,6 +21939,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "promo_ledger_promotion_id_fkey"
@@ -22963,6 +23228,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
+          {
             foreignKeyName: "refund_requests_processed_by_fkey"
             columns: ["processed_by"]
             isOneToOne: false
@@ -23053,6 +23325,13 @@ export type Database = {
             foreignKeyName: "restaurant_commission_overrides_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_commission_overrides_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23087,6 +23366,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restaurant_employee_roles_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "restaurant_employee_roles_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -23188,6 +23474,13 @@ export type Database = {
             foreignKeyName: "restaurant_go_live_checklist_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_go_live_checklist_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23264,6 +23557,13 @@ export type Database = {
             foreignKeyName: "restaurant_hours_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_hours_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23310,6 +23610,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restaurant_integrations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "restaurant_integrations_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -23367,6 +23674,13 @@ export type Database = {
             foreignKeyName: "restaurant_onboarding_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: true
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_onboarding_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23404,6 +23718,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effective_permissions"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "restaurant_onboarding_activity_log_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
           },
           {
             foreignKeyName: "restaurant_onboarding_activity_log_restaurant_id_fkey"
@@ -23497,6 +23818,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restaurant_onboarding_progress_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "restaurant_onboarding_progress_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -23710,6 +24038,13 @@ export type Database = {
             foreignKeyName: "restaurant_reports_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_reports_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23760,6 +24095,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "restaurant_special_hours_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "restaurant_special_hours_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -23827,6 +24169,13 @@ export type Database = {
             foreignKeyName: "restaurant_users_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_users_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23889,6 +24238,13 @@ export type Database = {
             foreignKeyName: "restaurant_verification_tasks_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurant_verification_tasks_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -23931,6 +24287,7 @@ export type Database = {
           marketing_opt_in: boolean | null
           max_delivery_time: number | null
           menu_ready_at: string | null
+          merchant_category: Database["public"]["Enums"]["merchant_category"]
           merchant_welcome_shown: boolean | null
           merchant_welcome_shown_at: string | null
           min_delivery_time: number | null
@@ -23956,7 +24313,6 @@ export type Database = {
           promotion_title: string | null
           promotion_valid_until: string | null
           rating: number | null
-          merchant_category: string
           readiness_score: number | null
           restaurant_type: string | null
           setup_deadline: string | null
@@ -24009,6 +24365,7 @@ export type Database = {
           marketing_opt_in?: boolean | null
           max_delivery_time?: number | null
           menu_ready_at?: string | null
+          merchant_category?: Database["public"]["Enums"]["merchant_category"]
           merchant_welcome_shown?: boolean | null
           merchant_welcome_shown_at?: string | null
           min_delivery_time?: number | null
@@ -24034,7 +24391,6 @@ export type Database = {
           promotion_title?: string | null
           promotion_valid_until?: string | null
           rating?: number | null
-          merchant_category?: string
           readiness_score?: number | null
           restaurant_type?: string | null
           setup_deadline?: string | null
@@ -24087,6 +24443,7 @@ export type Database = {
           marketing_opt_in?: boolean | null
           max_delivery_time?: number | null
           menu_ready_at?: string | null
+          merchant_category?: Database["public"]["Enums"]["merchant_category"]
           merchant_welcome_shown?: boolean | null
           merchant_welcome_shown_at?: string | null
           min_delivery_time?: number | null
@@ -24111,7 +24468,6 @@ export type Database = {
           promotion_minimum_order_cents?: number | null
           promotion_title?: string | null
           promotion_valid_until?: string | null
-          merchant_category?: string
           rating?: number | null
           readiness_score?: number | null
           restaurant_type?: string | null
@@ -24994,6 +25350,13 @@ export type Database = {
             foreignKeyName: "store_locations_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "store_locations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -25035,6 +25398,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "store_orders_store_location_id_fkey"
@@ -25189,6 +25559,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "subscription_usage_subscription_id_fkey"
@@ -25474,6 +25851,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tablet_shipments_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
           {
             foreignKeyName: "tablet_shipments_restaurant_id_fkey"
             columns: ["restaurant_id"]
@@ -26204,6 +26588,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tester_credit_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
           },
           {
             foreignKeyName: "tester_credit_ledger_user_id_fkey"
@@ -27464,6 +27855,13 @@ export type Database = {
             referencedRelation: "orders_needs_attention"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wallet_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "stacked_orders_view"
+            referencedColumns: ["stack_parent_id"]
+          },
         ]
       }
       wire_transfers: {
@@ -27823,6 +28221,21 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_health_by_category: {
+        Row: {
+          expiring_soon: number | null
+          inventory_value_cents: number | null
+          low_stock_skus: number | null
+          merchant_category:
+            | Database["public"]["Enums"]["merchant_category"]
+            | null
+          out_of_stock_skus: number | null
+          restaurant_id: string | null
+          restaurant_name: string | null
+          total_skus: number | null
+        }
+        Relationships: []
+      }
       investor_demo_analytics: {
         Row: {
           access_count: number | null
@@ -27838,6 +28251,37 @@ export type Database = {
           organization: string | null
           status: string | null
           total_views: number | null
+        }
+        Relationships: []
+      }
+      merchant_category_summary: {
+        Row: {
+          active_merchants: number | null
+          avg_rating: number | null
+          avg_readiness_score: number | null
+          category_display_name: string | null
+          merchant_category:
+            | Database["public"]["Enums"]["merchant_category"]
+            | null
+          merchant_count: number | null
+          pending_merchants: number | null
+        }
+        Relationships: []
+      }
+      orders_by_merchant_category: {
+        Row: {
+          avg_order_cents: number | null
+          cancellation_rate_pct: number | null
+          cancelled_count: number | null
+          delivered_count: number | null
+          merchant_category:
+            | Database["public"]["Enums"]["merchant_category"]
+            | null
+          order_date: string | null
+          total_food_subtotal_cents: number | null
+          total_orders: number | null
+          total_revenue_cents: number | null
+          total_tips_cents: number | null
         }
         Relationships: []
       }
@@ -28158,6 +28602,13 @@ export type Database = {
             foreignKeyName: "orders_restaurant_id_fkey"
             columns: ["restaurant_id"]
             isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
@@ -28181,6 +28632,26 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      stacked_orders_view: {
+        Row: {
+          combined_total_cents: number | null
+          customer_id: string | null
+          orders: Json | null
+          parent_status: string | null
+          stack_created_at: string | null
+          stack_parent_id: string | null
+          total_orders_in_stack: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -28531,6 +29002,10 @@ export type Database = {
         Args: { p_category: string; p_channel?: string; p_user_id: string }
         Returns: boolean
       }
+      check_inventory_for_order: {
+        Args: { p_items: Json; p_restaurant_id: string }
+        Returns: Json
+      }
       check_point_in_zones: {
         Args: { lat: number; lng: number }
         Returns: {
@@ -28691,6 +29166,10 @@ export type Database = {
         Args: { p_driver_id: string; p_encryption_key: string }
         Returns: Json
       }
+      deduct_inventory: {
+        Args: { p_items: Json; p_restaurant_id: string }
+        Returns: undefined
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dmetaphone: { Args: { "": string }; Returns: string }
       dmetaphone_alt: { Args: { "": string }; Returns: string }
@@ -28790,6 +29269,10 @@ export type Database = {
         Returns: string
       }
       generate_ticket_number: { Args: never; Returns: string }
+      generate_variant_title: {
+        Args: { opt1_val?: string; opt2_val?: string; opt3_val?: string }
+        Returns: string
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -28981,6 +29464,10 @@ export type Database = {
           feature_name: string
           total_attempts: number
         }[]
+      }
+      get_merchant_category_config: {
+        Args: { p_restaurant_id: string }
+        Returns: Json
       }
       get_or_create_conversation: {
         Args: {
@@ -29326,12 +29813,20 @@ export type Database = {
         Args: { p_actor_id?: string; p_comment?: string; p_queue_id: string }
         Returns: undefined
       }
+      release_inventory: {
+        Args: { p_items: Json; p_restaurant_id: string }
+        Returns: undefined
+      }
       release_wallet_hold: {
         Args: {
           p_amount_cents: number
           p_driver_id: string
           p_stripe_auth_id: string
         }
+        Returns: undefined
+      }
+      reserve_inventory: {
+        Args: { p_items: Json; p_restaurant_id: string }
         Returns: undefined
       }
       reserve_promo_for_checkout: {
@@ -30065,6 +30560,15 @@ export type Database = {
         | "failed"
         | "auto_failed"
       menu_preparation_status: "not_started" | "in_progress" | "ready"
+      merchant_category:
+        | "restaurant"
+        | "grocery"
+        | "convenience"
+        | "alcohol"
+        | "flowers_gifts"
+        | "pet_supplies"
+        | "specialty_retail"
+        | "marketplace"
       role_name:
         | "admin"
         | "moderator"
@@ -30289,6 +30793,16 @@ export const Constants = {
         "auto_failed",
       ],
       menu_preparation_status: ["not_started", "in_progress", "ready"],
+      merchant_category: [
+        "restaurant",
+        "grocery",
+        "convenience",
+        "alcohol",
+        "flowers_gifts",
+        "pet_supplies",
+        "specialty_retail",
+        "marketplace",
+      ],
       role_name: [
         "admin",
         "moderator",

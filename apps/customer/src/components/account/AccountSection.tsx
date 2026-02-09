@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Smartphone } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Smartphone, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -66,6 +66,9 @@ export const AccountSection = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [expandedView, setExpandedView] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchAccountData();
@@ -279,6 +282,65 @@ export const AccountSection = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      toast({
+        title: "Confirmation required",
+        description: "Please type DELETE to confirm account deletion",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to delete your account",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('delete-customer-account', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted. Goodbye!"
+      });
+
+      // Redirect to home page after deletion
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account. Please contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   const openProfileEdit = () => {
     navigate('/account/edit-profile');
   };
@@ -473,11 +535,83 @@ export const AccountSection = () => {
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </button>
+
+          {/* Delete Account */}
+          <button 
+            onClick={() => setDeleteDialogOpen(true)}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-red-50 transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              <div className="text-left">
+                <p className="font-semibold text-red-600">Delete Account</p>
+                <p className="text-sm text-gray-600">Permanently delete your account</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
         </div>
 
         {/* Bottom Spacing */}
         <div className="h-20"></div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Your Account
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800 font-medium mb-2">You will lose:</p>
+              <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                <li>All your order history</li>
+                <li>Saved payment methods</li>
+                <li>Saved delivery addresses</li>
+                <li>Any credits or rewards</li>
+                <li>CraveMore subscription benefits</li>
+              </ul>
+            </div>
+            <div>
+              <Label htmlFor="confirm-delete" className="text-sm font-medium">
+                Type <span className="font-bold text-red-600">DELETE</span> to confirm
+              </Label>
+              <Input
+                id="confirm-delete"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeleteConfirmText('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete My Account'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Desktop Version - DoorDash Style */}
       <div className="hidden lg:block max-w-4xl mx-auto p-6">
