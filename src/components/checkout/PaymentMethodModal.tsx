@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Building2, Plus, Check, Loader2, AlertCircle } from 'lucide-react';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { CreditCard, Building2, Plus, Check, Loader2, AlertCircle, Smartphone, Wallet } from 'lucide-react';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
 interface PaymentMethod {
   id: string;
   stripe_payment_method_id: string;
   provider: 'stripe';
-  type: 'card' | 'ach-debit-fund-source';
+  type: 'card' | 'ach_debit' | 'apple_pay' | 'google_pay' | 'link' | 'paypal' | 'venmo';
   last4: string | null;
   brand?: string | null;
   bank_name?: string | null;
@@ -45,6 +45,69 @@ const getCardBrandColor = (brand: string | null | undefined): { bg: string; text
   return CARD_BRAND_COLORS[normalized] || { bg: 'bg-gray-700', text: 'text-white' };
 };
 
+const getPaymentMethodIcon = (type: string) => {
+  switch (type) {
+    case 'card':
+      return <CreditCard className="h-6 w-6" />;
+    case 'ach_debit':
+      return <Building2 className="h-6 w-6" />;
+    case 'apple_pay':
+      return <Smartphone className="h-6 w-6" />;
+    case 'google_pay':
+      return <Smartphone className="h-6 w-6" />;
+    case 'link':
+      return <Wallet className="h-6 w-6" />;
+    case 'paypal':
+      return <Wallet className="h-6 w-6" />;
+    case 'venmo':
+      return <Wallet className="h-6 w-6" />;
+    default:
+      return <CreditCard className="h-6 w-6" />;
+  }
+};
+
+const getPaymentMethodName = (type: string, brand?: string | null, last4?: string | null): string => {
+  switch (type) {
+    case 'card':
+      return `${brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : 'Card'} •••• ${last4 || '****'}`;
+    case 'ach_debit':
+      return `Bank Account •••• ${last4 || '****'}`;
+    case 'apple_pay':
+      return `Apple Pay •••• ${last4 || '****'}`;
+    case 'google_pay':
+      return `Google Pay •••• ${last4 || '****'}`;
+    case 'link':
+      return `Stripe Link •••• ${last4 || '****'}`;
+    case 'paypal':
+      return `PayPal •••• ${last4 || '****'}`;
+    case 'venmo':
+      return `Venmo •••• ${last4 || '****'}`;
+    default:
+      return `Payment Method •••• ${last4 || '****'}`;
+  }
+};
+
+const getPaymentMethodColor = (type: string, brand?: string | null): { bg: string; text: string } => {
+  switch (type) {
+    case 'card':
+      return getCardBrandColor(brand);
+    case 'ach_debit':
+      return { bg: 'bg-blue-600', text: 'text-white' };
+    case 'apple_pay':
+      return { bg: 'bg-black', text: 'text-white' };
+    case 'google_pay':
+      return { bg: 'bg-[#4285F4]', text: 'text-white' };
+    case 'link':
+      return { bg: 'bg-[#635BFF]', text: 'text-white' };
+    case 'paypal':
+      return { bg: 'bg-[#0070BA]', text: 'text-white' };
+    case 'venmo':
+      return { bg: 'bg-[#3D95CE]', text: 'text-white' };
+    default:
+      return { bg: 'bg-gray-700', text: 'text-white' };
+  }
+};
+
 const formatExpiry = (month: number | null, year: number | null): string => {
   if (!month || !year) return '';
   const monthStr = month.toString().padStart(2, '0');
@@ -52,65 +115,56 @@ const formatExpiry = (month: number | null, year: number | null): string => {
   return `${monthStr}/${yearStr}`;
 };
 
-const CardForm: React.FC<{
-  onSubmit: (paymentMethodId: string) => Promise<void>;
+const PaymentForm: React.FC<{
+  onSubmit: (paymentMethodId: string, paymentMethodType: string) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   customerAddress?: any;
-}> = ({ onSubmit, onCancel, isSubmitting, customerAddress }) => {
+  clientSecret: string | null;
+}> = ({ onSubmit, onCancel, isSubmitting, customerAddress, clientSecret }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [holderName, setHolderName] = useState('');
-  const [billingZip, setBillingZip] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !clientSecret) {
       setError('Stripe is not initialized. Please refresh the page.');
       return;
     }
 
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      setError('Card element not found. Please refresh the page.');
-      return;
-    }
-
-    if (!holderName.trim() || !billingZip || billingZip.length < 5) {
-      setError('Please enter cardholder name and billing ZIP code.');
-      return;
-    }
-
     try {
-      const { error: createError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: holderName.trim(),
-          address: {
-            postal_code: billingZip,
-            line1: customerAddress?.street_address || '',
-            city: customerAddress?.city || '',
-            state: customerAddress?.state || '',
-            country: 'US',
-          },
-        },
-      });
-
-      if (createError) {
-        setError(createError.message || 'Failed to create payment method');
+      // Submit the form with the PaymentElement
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message || 'Please check your payment details.');
         return;
       }
 
-      if (!paymentMethod?.id) {
+      // Confirm the SetupIntent
+      const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        clientSecret,
+        redirect: 'if_required',
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || 'Failed to save payment method');
+        return;
+      }
+
+      if (!setupIntent?.payment_method) {
         setError('Payment method was not created. Please try again.');
         return;
       }
 
-      await onSubmit(paymentMethod.id);
+      // Retrieve payment method to get its type
+      const paymentMethod = await stripe.paymentMethods.retrieve(setupIntent.payment_method as string);
+      const pmType = paymentMethod.type || 'card';
+
+      await onSubmit(setupIntent.payment_method as string, pmType);
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     }
@@ -119,46 +173,22 @@ const CardForm: React.FC<{
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Cardholder Name</label>
-        <input
-          type="text"
-          value={holderName}
-          onChange={(e) => setHolderName(e.target.value)}
-          placeholder="John Doe"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Card Details</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Details</label>
         <div className="border border-gray-300 rounded-lg p-3 focus-within:ring-2 focus-within:ring-orange-500 focus-within:border-orange-500">
-          <CardElement
+          <PaymentElement
             options={{
-              style: {
-                base: {
-                  fontSize: '15px',
-                  color: '#1f2937',
-                  '::placeholder': { color: '#9ca3af' },
-                },
-                invalid: { color: '#ef4444' },
+              layout: 'tabs',
+              paymentMethodTypes: ['card', 'apple_pay', 'google_pay', 'link', 'us_bank_account'],
+              wallets: {
+                applePay: 'auto',
+                googlePay: 'auto',
               },
             }}
           />
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Billing ZIP Code</label>
-        <input
-          type="text"
-          value={billingZip}
-          onChange={(e) => setBillingZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
-          placeholder="12345"
-          maxLength={5}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          required
-        />
+        <p className="text-xs text-gray-500 mt-1.5">
+          Supports cards, Apple Pay, Google Pay, Link, and bank accounts. Payment methods are securely saved for future use.
+        </p>
       </div>
 
       {error && (
@@ -179,7 +209,7 @@ const CardForm: React.FC<{
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || !holderName.trim() || !billingZip || billingZip.length < 5}
+          disabled={isSubmitting}
           className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white rounded-lg py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
@@ -188,7 +218,7 @@ const CardForm: React.FC<{
               Adding...
             </>
           ) : (
-            'Add Card'
+            'Add Payment Method'
           )}
         </button>
       </div>
@@ -210,6 +240,8 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
+  const [setupIntentClientSecret, setSetupIntentClientSecret] = useState<string | null>(null);
+  const [loadingSetupIntent, setLoadingSetupIntent] = useState(false);
 
   useEffect(() => {
     const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -256,10 +288,47 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     if (isOpen) {
       loadPaymentMethods();
       setShowAddForm(false);
+      setSetupIntentClientSecret(null);
     }
   }, [isOpen, loadPaymentMethods]);
 
-  const handleAddCard = async (paymentMethodId: string) => {
+  // Create SetupIntent when add form is shown
+  useEffect(() => {
+    if (showAddForm && !setupIntentClientSecret && !loadingSetupIntent) {
+      createSetupIntent();
+    }
+  }, [showAddForm, setupIntentClientSecret, loadingSetupIntent]);
+
+  const createSetupIntent = async () => {
+    setLoadingSetupIntent(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Please sign in to add a payment method.');
+      }
+
+      // Create SetupIntent via edge function
+      const { data, error } = await supabase.functions.invoke('create-setup-intent', {
+        body: {
+          customerId: null, // Will be created/retrieved on backend
+        },
+      });
+
+      if (error || !data?.clientSecret) {
+        throw new Error(error?.message || 'Failed to create setup intent');
+      }
+
+      setSetupIntentClientSecret(data.clientSecret);
+    } catch (err: any) {
+      console.error('Error creating setup intent:', err);
+      if (onError) onError(err);
+      // Fallback: we can still try to create payment method directly
+    } finally {
+      setLoadingSetupIntent(false);
+    }
+  };
+
+  const handleAddPaymentMethod = async (paymentMethodId: string, paymentMethodType: string) => {
     setIsAddingCard(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -267,43 +336,88 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         throw new Error('Please sign in to add a payment method.');
       }
 
-      if (!customerAddress) {
-        throw new Error('Please add a delivery address in your account settings first.');
-      }
+      // Map Stripe payment method type to our type
+      const mapStripeType = (type: string): PaymentMethod['type'] => {
+        switch (type) {
+          case 'card':
+            return 'card';
+          case 'us_bank_account':
+            return 'ach_debit';
+          case 'link':
+            return 'link';
+          case 'apple_pay':
+            return 'apple_pay';
+          case 'google_pay':
+            return 'google_pay';
+          case 'paypal':
+            return 'paypal';
+          case 'venmo':
+            return 'venmo';
+          default:
+            return 'card';
+        }
+      };
 
+      const mappedType = mapStripeType(paymentMethodType);
+
+      // Get payment method details from Stripe via edge function
       const { data: stripeData, error: stripeError } = await supabase.functions.invoke('create-stripe-payment-method', {
         body: {
           paymentMethodId: paymentMethodId,
-          billingAddress: {
+          billingAddress: customerAddress ? {
             addressLine1: customerAddress.street_address || '',
             city: customerAddress.city || '',
             state: customerAddress.state || '',
             postalCode: customerAddress.zip_code || '',
             country: 'US',
-          },
+          } : undefined,
         },
       });
 
       if (stripeError || (stripeData && (stripeData as any).error)) {
-        throw new Error((stripeData as any)?.error || stripeError?.message || 'Failed to create payment method');
+        throw new Error((stripeData as any)?.error || stripeError?.message || 'Failed to save payment method');
       }
 
       if (!stripeData?.paymentMethodID) {
         throw new Error('Payment method was not created. Please try again.');
       }
 
+      // Extract payment method details based on type
+      let last4 = '****';
+      let brand: string | null = null;
+      let bank_name: string | null = null;
+      let account_type: 'checking' | 'savings' | null = null;
+      let exp_month: number | null = null;
+      let exp_year: number | null = null;
+
+      if (mappedType === 'card' && stripeData.card) {
+        last4 = stripeData.card.last4 || '****';
+        brand = stripeData.card.brand || null;
+        exp_month = stripeData.card.exp_month || null;
+        exp_year = stripeData.card.exp_year || null;
+      } else if (mappedType === 'ach_debit' && stripeData.us_bank_account) {
+        last4 = stripeData.us_bank_account.last4 || '****';
+        bank_name = stripeData.us_bank_account.bank_name || null;
+        account_type = stripeData.us_bank_account.account_type as 'checking' | 'savings' || null;
+      } else {
+        last4 = stripeData.last4 || stripeData.account_last4 || '****';
+        brand = stripeData.brand || null;
+      }
+
       const { data: savedMethod, error: saveError } = await supabase
         .from('payment_methods')
         .insert({
           user_id: user.id,
-          type: 'card',
+          type: mappedType,
           provider: 'stripe',
           token: stripeData.paymentMethodID,
           stripe_payment_method_id: stripeData.paymentMethodID,
-          last4: stripeData.last4 || '****',
-          brand: stripeData.brand || 'card',
-          exp_month: stripeData.exp_month || null,
-          exp_year: stripeData.exp_year || null,
+          last4,
+          brand,
+          bank_name,
+          account_type,
+          exp_month,
+          exp_year,
           is_default: paymentMethods.length === 0,
         } as any)
         .select()
@@ -316,8 +430,9 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       await loadPaymentMethods();
       onSelect(savedMethod as PaymentMethod);
       setShowAddForm(false);
+      setSetupIntentClientSecret(null);
     } catch (error: any) {
-      console.error('Error adding card:', error);
+      console.error('Error adding payment method:', error);
       if (onError) onError(error);
       throw error;
     } finally {
@@ -368,15 +483,44 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                 Back to payment methods
               </button>
 
-              {stripePromise ? (
-                <Elements stripe={stripePromise}>
-                  <CardForm
-                    onSubmit={handleAddCard}
+              {loadingSetupIntent ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                  <span className="ml-3 text-sm text-gray-600">Setting up payment form...</span>
+                </div>
+              ) : stripePromise && setupIntentClientSecret ? (
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: setupIntentClientSecret,
+                    appearance: {
+                      theme: 'stripe',
+                      variables: {
+                        colorPrimary: '#f97316',
+                        colorBackground: '#ffffff',
+                        colorText: '#1f2937',
+                        colorDanger: '#ef4444',
+                        fontFamily: 'system-ui, sans-serif',
+                        spacingUnit: '4px',
+                        borderRadius: '8px',
+                      },
+                    },
+                  }}
+                >
+                  <PaymentForm
+                    onSubmit={handleAddPaymentMethod}
                     onCancel={() => setShowAddForm(false)}
                     isSubmitting={isAddingCard}
                     customerAddress={customerAddress}
+                    clientSecret={setupIntentClientSecret}
                   />
                 </Elements>
+              ) : stripePromise ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    Unable to initialize payment form. Please try again.
+                  </p>
+                </div>
               ) : (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-800">
@@ -392,7 +536,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                 <div className="space-y-2 mb-4">
                   {paymentMethods.map((method) => {
                     const isSelected = selectedPaymentMethod?.id === method.id;
-                    const brandColor = getCardBrandColor(method.brand);
+                    const methodColor = getPaymentMethodColor(method.type, method.brand);
 
                     return (
                       <button
@@ -405,21 +549,15 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                         }`}
                       >
                         {/* Icon */}
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${brandColor.bg} ${brandColor.text}`}>
-                          {method.type === 'card' ? (
-                            <CreditCard className="h-6 w-6" />
-                          ) : (
-                            <Building2 className="h-6 w-6" />
-                          )}
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${methodColor.bg} ${methodColor.text}`}>
+                          {getPaymentMethodIcon(method.type)}
                         </div>
 
                         {/* Details */}
                         <div className="flex-1 text-left min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="font-semibold text-gray-900 text-sm">
-                              {method.type === 'card'
-                                ? `${method.brand ? method.brand.charAt(0).toUpperCase() + method.brand.slice(1) : 'Card'} •••• ${method.last4}`
-                                : `${method.bank_name || 'Bank Account'} •••• ${method.last4}`}
+                              {getPaymentMethodName(method.type, method.brand, method.last4)}
                             </span>
                             {method.is_default && (
                               <span className="text-[10px] font-medium text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">
@@ -431,7 +569,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                             {method.type === 'card' && method.exp_month && method.exp_year && (
                               <span>Expires {formatExpiry(method.exp_month, method.exp_year)}</span>
                             )}
-                            {method.type === 'ach-debit-fund-source' && method.account_type && (
+                            {method.type === 'ach_debit' && method.account_type && (
                               <span className="capitalize">{method.account_type}</span>
                             )}
                           </div>
@@ -458,8 +596,8 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
                   <Plus className="h-6 w-6 text-gray-600 group-hover:text-orange-600" />
                 </div>
                 <div className="flex-1 text-left">
-                  <span className="font-semibold text-gray-900 text-sm">Add New Card</span>
-                  <p className="text-xs text-gray-500 mt-0.5">Add a credit or debit card</p>
+                  <span className="font-semibold text-gray-900 text-sm">Add Payment Method</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Card, Apple Pay, Google Pay, Link, or bank account</p>
                 </div>
               </button>
 
@@ -477,4 +615,3 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
 };
 
 export default PaymentMethodModal;
-
