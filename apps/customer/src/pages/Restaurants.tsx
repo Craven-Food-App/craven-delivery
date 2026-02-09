@@ -2694,70 +2694,80 @@ const Restaurants = () => {
               </Box>
             ) : null}
 
-            {/* Premium Selections Header - Hidden in native mobile app, shown in mobile web */}
+            {/* ═══ FOOD & RESTAURANTS ═══ */}
             {!Capacitor.isNativePlatform() && (
-              <Box px="md" py="md" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto' }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Premium Selections</Title>
-                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
-                    <IconChevronRight size={18} />
-                  </ActionIcon>
+              <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Group gap="xs" mb={4}>
+                  <Text style={{ fontSize: '20px' }}>🍽️</Text>
+                  <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Food & Restaurants</Title>
                 </Group>
+                <Text size="xs" c="dimmed">Order delivery from your favorites</Text>
               </Box>
             )}
 
-            {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+            {/* Restaurants (excluding retail/apparel) */}
             <Box ref={restaurantsSectionRef} id="restaurants-section" data-section="restaurants">
               <RestaurantGrid 
                 searchQuery={searchQuery} 
                 deliveryAddress={location} 
                 cuisineFilter={undefined}
                 excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
-                sectionTitle="Restaurants"
+                sectionTitle="Restaurants Near You"
                 horizontal={true}
               />
             </Box>
 
-            {/* Premium Selections - Apparel */}
-            <Box ref={apparelSectionRef} id="apparel-section" data-section="apparel">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
-                cuisineFilter="apparel"
-                sectionTitle="Apparel"
-                horizontal={true}
-              />
-            </Box>
-
-            {/* Premium Selections - Retail */}
-            <div ref={retailSectionRef} id="retail-section" data-section="retail">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
-                cuisineFilter="retail"
-                sectionTitle="Retail"
-                horizontal={true}
-              />
-            </div>
-
-            {/* Premium Selections - Late Nate Hunger */}
+            {/* Late Nate Hunger */}
             <div ref={lateNateHungerSectionRef}>
               <RestaurantGrid 
                 searchQuery={searchQuery} 
                 deliveryAddress={location} 
                 cuisineFilter="late nate hunger"
-                sectionTitle="Late Nate Hunger"
+                sectionTitle="🌙 Late Nate Hunger"
                 horizontal={true}
               />
             </div>
 
-            {/* Premium Selections - Kids */}
+            {/* Kids */}
             <div ref={kidsSectionRef} id="kids-section" data-section="kids">
               <RestaurantGrid 
                 searchQuery={searchQuery} 
                 deliveryAddress={location} 
                 cuisineFilter="kids"
-                sectionTitle="Kids"
+                sectionTitle="🧒 Kids Menu"
+                horizontal={true}
+              />
+            </div>
+
+            {/* ═══ RETAIL & SHOPPING ═══ */}
+            {!Capacitor.isNativePlatform() && (
+              <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+                <Group gap="xs" mb={4}>
+                  <Text style={{ fontSize: '20px' }}>🛍️</Text>
+                  <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
+                </Group>
+                <Text size="xs" c="dimmed">Shop apparel, accessories & more — delivered</Text>
+              </Box>
+            )}
+
+            {/* Apparel */}
+            <Box ref={apparelSectionRef} id="apparel-section" data-section="apparel">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="apparel"
+                sectionTitle="👗 Apparel & Fashion"
+                horizontal={true}
+              />
+            </Box>
+
+            {/* Retail */}
+            <div ref={retailSectionRef} id="retail-section" data-section="retail">
+              <RestaurantGrid 
+                searchQuery={searchQuery} 
+                deliveryAddress={location} 
+                cuisineFilter="retail"
+                sectionTitle="🏪 Retail Stores"
                 horizontal={true}
               />
             </div>
@@ -3506,63 +3516,71 @@ const Restaurants = () => {
                     </div>
                   )}
 
-                  {/* Premium Selections Header */}
-                  <div className="mb-6 px-4">
-                    <h2 className="text-2xl font-bold text-gray-900">Premium Selections</h2>
+                  {/* ═══════ FOOD & RESTAURANTS SECTION ═══════ */}
+                  <div className="mb-2 px-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span style={{ fontSize: '28px' }}>🍽️</span>
+                      <h2 className="text-2xl font-bold text-gray-900">Food & Restaurants</h2>
+                    </div>
+                    <p className="text-gray-500 text-sm mb-4">Order delivery from your favorite restaurants</p>
                   </div>
 
-                  {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
-                  <div className="mb-8">
+                  <div className="mb-4">
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
                       deliveryAddress={location} 
                       cuisineFilter={undefined}
                       excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
-                      sectionTitle="Restaurants"
+                      sectionTitle="Restaurants Near You"
                       horizontal={true}
                     />
                   </div>
 
-                  {/* Premium Selections - Apparel */}
-                  <div className="mb-8">
+                  <div className="mb-4">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="late nate hunger"
+                      sectionTitle="🌙 Late Nate Hunger"
+                      horizontal={true}
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <RestaurantGrid 
+                      searchQuery={searchQuery} 
+                      deliveryAddress={location} 
+                      cuisineFilter="kids"
+                      sectionTitle="🧒 Kids Menu"
+                      horizontal={true}
+                    />
+                  </div>
+
+                  {/* ═══════ RETAIL & SHOPPING SECTION ═══════ */}
+                  <div className="bg-gradient-to-r from-gray-50 to-white py-6 mt-4 border-t-2 border-gray-100 px-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span style={{ fontSize: '28px' }}>🛍️</span>
+                      <h2 className="text-2xl font-bold text-gray-900">Retail & Shopping</h2>
+                    </div>
+                    <p className="text-gray-500 text-sm mb-4">Shop apparel, accessories, and more — delivered to your door</p>
+                  </div>
+
+                  <div className="mb-4">
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
                       deliveryAddress={location} 
                       cuisineFilter="apparel"
-                      sectionTitle="Apparel"
+                      sectionTitle="👗 Apparel & Fashion"
                       horizontal={true}
                     />
                   </div>
 
-                  {/* Premium Selections - Retail */}
                   <div className="mb-8">
                     <RestaurantGrid 
                       searchQuery={searchQuery} 
                       deliveryAddress={location} 
                       cuisineFilter="retail"
-                      sectionTitle="Retail"
-                      horizontal={true}
-                    />
-                  </div>
-
-                  {/* Premium Selections - Late Nate Hunger */}
-                  <div className="mb-8">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
-                      cuisineFilter="late nate hunger"
-                      sectionTitle="Late Nate Hunger"
-                      horizontal={true}
-                    />
-                  </div>
-
-                  {/* Premium Selections - Kids */}
-                  <div className="mb-8">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
-                      cuisineFilter="kids"
-                      sectionTitle="Kids"
+                      sectionTitle="🏪 Retail Stores"
                       horizontal={true}
                     />
                   </div>

@@ -75,6 +75,7 @@ import cravemoreIcon from "@/assets/cravemore-icon.png";
 import { useCart } from '@/contexts/CartContext';
 import { getLogoBackgroundColor } from '@/utils/logoUtils';
 import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
+import RetailItemDetailModal from '@/components/retail/RetailItemDetailModal';
 
 // --- Type Definitions (matching your database) ---
 interface Restaurant {
@@ -100,7 +101,23 @@ interface Restaurant {
   opens_at?: string;
   closes_at?: string;
   cravemore_eligible?: boolean | null;
+  merchant_category?: string | null;
+  restaurant_type?: string | null;
 }
+
+// Detect if this is a retail / non-food store
+const RETAIL_CUISINE_TYPES = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail'];
+const isRetailStore = (r: Restaurant | null): boolean => {
+  if (!r) return false;
+  const mc = (r.merchant_category || '').toLowerCase();
+  const ct = (r.cuisine_type || '').toLowerCase();
+  const rt = (r.restaurant_type || '').toLowerCase();
+  return (
+    mc === 'retail_store' || mc === 'specialty_retail' ||
+    rt === 'retail_store' || rt === 'retail' ||
+    RETAIL_CUISINE_TYPES.includes(ct)
+  );
+};
 
 interface MenuCategory {
   id: string;
@@ -130,6 +147,15 @@ interface MenuItem {
   calories?: number;
   chef_recommended?: boolean;
   favorites_count?: number;
+  // Retail fields
+  brand?: string;
+  tags?: string[];
+  has_variants?: boolean;
+  compare_at_price_cents?: number;
+  product_type?: string;
+  requires_shipping?: boolean;
+  weight_value?: number;
+  weight_unit?: string;
 }
 
 interface CustomerReview {
@@ -361,6 +387,8 @@ const RestaurantMenuPage = () => {
            });
            const [showItemModal, setShowItemModal] = useState(false);
            const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+           const [showRetailItemModal, setShowRetailItemModal] = useState(false);
+           const [retailSelectedItem, setRetailSelectedItem] = useState<MenuItem | null>(null);
            const [modalQuantity, setModalQuantity] = useState(1);
            const [selectedRecommendedOption, setSelectedRecommendedOption] = useState<number | null>(1);
            const [selectedMenuItem, setSelectedMenuItem] = useState<string | null>(null);
@@ -1051,12 +1079,17 @@ const RestaurantMenuPage = () => {
   }, [restaurant?.id, addToCartContext]);
 
            const openItemModal = useCallback((item: MenuItem) => {
-               setSelectedItem(item);
-               setShowItemModal(true);
-               setModalQuantity(1);
-               setSelectedRecommendedOption(1);
-               setSelectedMenuItem(null);
-           }, []);
+               if (isRetailStore(restaurant)) {
+                   setRetailSelectedItem(item);
+                   setShowRetailItemModal(true);
+               } else {
+                   setSelectedItem(item);
+                   setShowItemModal(true);
+                   setModalQuantity(1);
+                   setSelectedRecommendedOption(1);
+                   setSelectedMenuItem(null);
+               }
+           }, [restaurant]);
 
            const closeItemModal = useCallback(() => {
                setShowItemModal(false);
@@ -1151,9 +1184,9 @@ const RestaurantMenuPage = () => {
 
     // Sidebar links
     const sidebarLinks = [
-        { id: 'featured', label: 'Featured Items', href: '#featured' },
-        { id: 'most-ordered', label: 'Most Ordered', href: '#most-ordered' },
-        { id: 'frequently-ordered', label: 'Frequently Ordered', href: '#frequently-ordered' },
+        { id: 'featured', label: isRetail ? 'Top Picks' : 'Featured Items', href: '#featured' },
+        { id: 'most-ordered', label: isRetail ? 'Best Sellers' : 'Most Ordered', href: '#most-ordered' },
+        { id: 'frequently-ordered', label: isRetail ? 'Popular Products' : 'Frequently Ordered', href: '#frequently-ordered' },
         ...categories.map(cat => ({
             id: cat.id,
             label: cat.name,
@@ -1162,10 +1195,81 @@ const RestaurantMenuPage = () => {
     ];
 
     // --- UI Components ---
+    const isRetail = isRetailStore(restaurant);
+
     const MenuItemCard = ({ item }: { item: MenuItem }) => {
         const rating = item.order_count ? Math.min(95, 75 + Math.floor(item.order_count / 10)) : 85;
         const reviews = item.order_count || Math.floor(Math.random() * 200) + 50;
 
+        // --- Retail Product Card ---
+        if (isRetail) {
+            const hasDiscount = item.compare_at_price_cents && item.compare_at_price_cents > item.price_cents;
+            return (
+                <Box
+                    style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden', backgroundColor: 'white', borderRadius: 8, border: '1px solid var(--mantine-color-gray-2)' }}
+                    onClick={() => openItemModal(item)}
+                >
+                    <Box style={{ height: '160px', overflow: 'hidden', backgroundColor: '#f8f8f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <MantineImage
+                            src={item.image_url || 'https://placehold.co/200x200/f5f5f5/999?text=Product'}
+                            alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            onError={(e) => { e.currentTarget.src = "https://placehold.co/200x200/f5f5f5/999?text=Product"; }}
+                        />
+                        {hasDiscount && (
+                            <Badge
+                                color="red"
+                                variant="filled"
+                                size="sm"
+                                style={{ position: 'absolute', top: 8, left: 8 }}
+                            >
+                                SALE
+                            </Badge>
+                        )}
+                        {item.has_variants && (
+                            <Badge
+                                color="gray"
+                                variant="light"
+                                size="xs"
+                                style={{ position: 'absolute', top: 8, right: 8 }}
+                            >
+                                Options
+                            </Badge>
+                        )}
+                    </Box>
+
+                    <Stack gap={4} p="sm">
+                        {item.brand && (
+                            <Text size="xs" c="dimmed" fw={600} tt="uppercase" lineClamp={1}>
+                                {item.brand}
+                            </Text>
+                        )}
+                        <Text size="sm" fw={700} lineClamp={2} style={{ lineHeight: '1.3' }}>{item.name}</Text>
+                        <Group gap={6}>
+                            <Text size="sm" fw={700} c={hasDiscount ? 'red.7' : 'dark'}>
+                                {formatPrice(item.price_cents)}
+                            </Text>
+                            {hasDiscount && (
+                                <Text size="xs" c="dimmed" td="line-through">
+                                    {formatPrice(item.compare_at_price_cents!)}
+                                </Text>
+                            )}
+                        </Group>
+                        {item.tags && item.tags.length > 0 && (
+                            <Group gap={4}>
+                                {item.tags.slice(0, 2).map((tag) => (
+                                    <Badge key={tag} variant="light" color="gray" size="xs" radius="sm">
+                                        {tag}
+                                    </Badge>
+                                ))}
+                            </Group>
+                        )}
+                    </Stack>
+                </Box>
+            );
+        }
+
+        // --- Food Item Card (original) ---
         return (
             <Box
                 style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden', backgroundColor: 'white' }}
@@ -3920,6 +4024,31 @@ const RestaurantMenuPage = () => {
             
             {/* Item Detail Modal — called as function to avoid remount on state change */}
             {TripleDipperModal()}
+
+            {/* Retail Item Detail Modal (retail stores) */}
+            <RetailItemDetailModal
+              isOpen={showRetailItemModal}
+              onClose={() => { setShowRetailItemModal(false); setRetailSelectedItem(null); }}
+              item={retailSelectedItem}
+              restaurantName={restaurant?.name || ''}
+              onAddToCart={(item, qty, variant) => {
+                if (!restaurant?.id) return;
+                const cartItem = {
+                  id: variant?.id || item.id,
+                  name: variant ? `${item.name} - ${variant.title}` : item.name,
+                  price_cents: variant?.price_cents || item.price_cents,
+                  quantity: qty,
+                  modifiers: [],
+                  special_instructions: undefined,
+                  restaurant_id: restaurant.id,
+                  image_url: item.image_url,
+                };
+                addToCartContext(cartItem, restaurant.id);
+                setShowCartButton(true);
+                if (cartButtonTimerRef.current) clearTimeout(cartButtonTimerRef.current);
+                cartButtonTimerRef.current = setTimeout(() => setShowCartButton(false), 3000);
+              }}
+            />
 
             {/* Mapbox CSS */}
             <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />

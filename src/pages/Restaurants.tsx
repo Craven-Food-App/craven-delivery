@@ -1611,58 +1611,71 @@ const Restaurants = () => {
             {/* Show organized sections when filter is 'all' or no filter */}
             {(!cuisineFilter || cuisineFilter === 'all') ? (
               <>
-                {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                {/* ═══ FOOD & RESTAURANTS ═══ */}
+                <Box px="md" pt="md" pb={4} style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                  <Group gap="xs" mb={4}>
+                    <Text style={{ fontSize: '22px' }}>🍽️</Text>
+                    <Title order={3} fw={800} c="gray.9">Food & Restaurants</Title>
+                  </Group>
+                  <Text size="xs" c="dimmed" mb="sm">Order delivery from your favorites</Text>
+                </Box>
+
+                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter={undefined}
                     excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
-                    sectionTitle="Restaurants"
+                    sectionTitle="Restaurants Near You"
                     horizontal={true}
                   />
                 </Box>
 
-                {/* Premium Selections - Apparel */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="apparel"
-                    sectionTitle="Apparel"
-                    horizontal={true}
-                  />
-                </Box>
-
-                {/* Premium Selections - Retail */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="retail"
-                    sectionTitle="Retail"
-                    horizontal={true}
-                  />
-                </Box>
-
-                {/* Premium Selections - Late Nate Hunger */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="late nate hunger"
-                    sectionTitle="Late Nate Hunger"
+                    sectionTitle="🌙 Late Nate Hunger"
                     horizontal={true}
                   />
                 </Box>
 
-                {/* Premium Selections - Kids */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="kids"
-                    sectionTitle="Kids"
+                    sectionTitle="🧒 Kids Menu"
+                    horizontal={true}
+                  />
+                </Box>
+
+                {/* ═══ RETAIL & SHOPPING ═══ */}
+                <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+                  <Group gap="xs" mb={4}>
+                    <Text style={{ fontSize: '22px' }}>🛍️</Text>
+                    <Title order={3} fw={800} c="gray.9">Retail & Shopping</Title>
+                  </Group>
+                  <Text size="xs" c="dimmed" mb="sm">Shop apparel, accessories & more — delivered</Text>
+                </Box>
+
+                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="apparel"
+                    sectionTitle="👗 Apparel & Fashion"
+                    horizontal={true}
+                  />
+                </Box>
+
+                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="retail"
+                    sectionTitle="🏪 Retail Stores"
                     horizontal={true}
                   />
                 </Box>
@@ -2318,74 +2331,89 @@ const Restaurants = () => {
                 </div>
               )}
 
-              {/* Premium Selections Header */}
+              {/* ═══════ FOOD & RESTAURANTS SECTION ═══════ */}
               <div className="bg-white py-0" style={{ marginTop: '0px', marginBottom: '0px' }}>
                 <div className="max-w-7xl mx-auto px-4">
-                  <h2 className="text-2xl font-bold text-gray-900">Premium Selections</h2>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: '28px' }}>🍽️</span>
+                    <h2 className="text-2xl font-bold text-gray-900">Food & Restaurants</h2>
+                  </div>
+                  <p className="text-gray-500 text-sm mb-4">Order delivery from your favorite restaurants</p>
                 </div>
               </div>
 
-              {/* Premium Selections - Restaurants (excluding apparel, retail, kids, late nate hunger) */}
-              <div className="bg-white py-8 mb-8">
+              {/* Restaurants (excluding apparel, retail, kids, late nate hunger) */}
+              <div className="bg-white py-8 mb-4">
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter={undefined}
                     excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
-                    sectionTitle="Restaurants"
+                    sectionTitle="Restaurants Near You"
                     horizontal={true}
                   />
                 </div>
               </div>
 
-              {/* Premium Selections - Apparel */}
-              <div className="bg-white py-8 mb-8">
+              {/* Late Nate Hunger */}
+              <div className="bg-white py-8 mb-4">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="late nate hunger"
+                    sectionTitle="🌙 Late Nate Hunger"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* Kids */}
+              <div className="bg-white py-8 mb-4">
+                <div className="max-w-7xl mx-auto px-4">
+                  <RestaurantGrid 
+                    searchQuery={searchQuery} 
+                    deliveryAddress={location} 
+                    cuisineFilter="kids"
+                    sectionTitle="🧒 Kids Menu"
+                    horizontal={true}
+                  />
+                </div>
+              </div>
+
+              {/* ═══════ RETAIL & SHOPPING SECTION ═══════ */}
+              <div className="bg-gradient-to-r from-gray-50 to-white py-6 mt-4 border-t-2 border-gray-100">
+                <div className="max-w-7xl mx-auto px-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: '28px' }}>🛍️</span>
+                    <h2 className="text-2xl font-bold text-gray-900">Retail & Shopping</h2>
+                  </div>
+                  <p className="text-gray-500 text-sm mb-4">Shop apparel, accessories, and more — delivered to your door</p>
+                </div>
+              </div>
+
+              {/* Apparel */}
+              <div className="bg-white py-8 mb-4">
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="apparel"
-                    sectionTitle="Apparel"
+                    sectionTitle="👗 Apparel & Fashion"
                     horizontal={true}
                   />
                 </div>
               </div>
 
-              {/* Premium Selections - Retail */}
+              {/* Retail */}
               <div className="bg-white py-8 mb-8">
                 <div className="max-w-7xl mx-auto px-4">
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter="retail"
-                    sectionTitle="Retail"
-                    horizontal={true}
-                  />
-                </div>
-              </div>
-
-              {/* Premium Selections - Late Nate Hunger */}
-              <div className="bg-white py-8 mb-8">
-                <div className="max-w-7xl mx-auto px-4">
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="late nate hunger"
-                    sectionTitle="Late Nate Hunger"
-                    horizontal={true}
-                  />
-                </div>
-              </div>
-
-              {/* Premium Selections - Kids */}
-              <div className="bg-white py-8 mb-8">
-                <div className="max-w-7xl mx-auto px-4">
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="kids"
-                    sectionTitle="Kids"
+                    sectionTitle="🏪 Retail Stores"
                     horizontal={true}
                   />
                 </div>

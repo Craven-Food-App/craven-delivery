@@ -64,15 +64,31 @@ export const StackOrderModal: React.FC<StackOrderModalProps> = ({
           userAddress = address;
         }
 
-        // Determine category logic:
-        // - If order has food items, recommend dessert/beverage stores
-        // - If order has drinks, recommend food stores
-        // - If mixed, show nearby popular stores
+        // Determine category logic based on order type:
+        // - Retail/apparel order → recommend other retail/apparel stores
+        // - Food order → recommend dessert, beverage, convenience stores
+        // - Grocery order → recommend convenience, grocery stores
+        // - Mixed/unknown → show nearby popular stores
         
-        const categories = ['dessert', 'beverage', 'grocery', 'convenience'];
-        const cuisineTypes = ['dessert', 'coffee', 'convenience'];
+        const retailCategories = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics'];
+        const isRetailOrder = orderCategory && retailCategories.some(c =>
+          orderCategory.toLowerCase().includes(c)
+        );
+        const isGroceryOrder = orderCategory && orderCategory.toLowerCase().includes('grocery');
+
+        let cuisineTypes: string[];
+        if (isRetailOrder) {
+          // Retail → recommend other retail, apparel, beauty stores
+          cuisineTypes = ['apparel', 'retail', 'beauty', 'cosmetics', 'electronics'];
+        } else if (isGroceryOrder) {
+          // Grocery → convenience and other grocery
+          cuisineTypes = ['grocery', 'convenience'];
+        } else {
+          // Food → dessert, beverages, convenience
+          cuisineTypes = ['dessert', 'coffee', 'convenience', 'bakery'];
+        }
         
-        // Fetch restaurants nearby that complement the order
+        // Fetch stores that complement the current order
         const { data: restaurants, error } = await supabase
           .from('restaurants')
           .select('*')
@@ -145,7 +161,9 @@ export const StackOrderModal: React.FC<StackOrderModalProps> = ({
             </Button>
           </div>
           <DialogDescription className="text-base">
-            Add items from nearby stores to your current delivery and save on fees!
+            {orderCategory && ['apparel', 'retail', 'clothing', 'fashion', 'beauty', 'cosmetics'].some(c => (orderCategory || '').toLowerCase().includes(c))
+              ? 'Browse more stores and stack your delivery to save on shipping!'
+              : 'Add items from nearby stores to your current delivery and save on fees!'}
           </DialogDescription>
         </DialogHeader>
 
