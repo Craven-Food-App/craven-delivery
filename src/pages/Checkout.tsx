@@ -359,6 +359,14 @@ const Checkout: React.FC = () => {
     checkMobileAuth();
   }, [navigate, showValidationError]);
   
+  // Detect desktop vs mobile for layout switching
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth > 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Safety check for Stripe
   useEffect(() => {
     if (!stripePromise && import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
@@ -1205,8 +1213,9 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Show delivery details view if payment method exists
-  const showDeliveryDetailsView = hasPaymentMethods && selectedPaymentMethod;
+  // Show compact delivery details view on mobile when payment method exists;
+  // Desktop always gets the full wide layout
+  const showDeliveryDetailsView = !isDesktop && hasPaymentMethods && selectedPaymentMethod;
 
   return (
     <div className="min-h-screen bg-white">
