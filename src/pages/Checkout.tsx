@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/CartContext';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
+import { PaymentMethodModal } from '@/components/checkout/PaymentMethodModal';
 import { PromoCodeInput } from '@/components/checkout/PromoCodeInput';
 import { SplitPayment } from '@/components/checkout/SplitPayment';
 import { StackOrderModal } from '@/components/checkout/StackOrderModal';
@@ -2151,8 +2152,30 @@ const Checkout: React.FC = () => {
       </div>
       )}
 
-      {/* Payment Method Selection Modal - shown in both views */}
-      <Sheet open={showPaymentModal} onOpenChange={(open) => {
+      {/* Payment Method Selection Modal - Enterprise Grade */}
+      <PaymentMethodModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setShowPaymentSetup(false);
+          setSelectedPaymentType(null);
+        }}
+        selectedPaymentMethod={selectedPaymentMethod}
+        onSelect={(method) => {
+          setSelectedPaymentMethod(method);
+          setHasPaymentMethods(!!method);
+        }}
+        onAddNew={() => {
+          // Handled internally by modal
+        }}
+        customerAddress={customerAddress}
+        onError={(error) => {
+          showCheckoutError(error);
+        }}
+      />
+      
+      {/* Legacy Sheet - keeping for now but will be removed */}
+      {false && <Sheet open={showPaymentModal} onOpenChange={(open) => {
         setShowPaymentModal(open);
         if (!open) {
           setShowPaymentSetup(false);
@@ -2574,7 +2597,7 @@ const Checkout: React.FC = () => {
             </div>
           )}
         </SheetContent>
-      </Sheet>
+      </Sheet>}
 
       {/* Deals Modal */}
       <Sheet open={showDealsModal} onOpenChange={setShowDealsModal}>
