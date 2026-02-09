@@ -2170,7 +2170,10 @@ const Checkout: React.FC = () => {
         }}
         customerAddress={customerAddress}
         onError={(error) => {
-          showCheckoutError(error);
+          // Only show critical errors that prevent the modal from working
+          // Setup/save errors are handled inline in the modal
+          console.error('Payment method modal error:', error);
+          // Don't show payment failed modal for setup errors
         }}
       />
       

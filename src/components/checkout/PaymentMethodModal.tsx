@@ -143,20 +143,38 @@ const PaymentForm: React.FC<{
         return;
       }
 
-      // Confirm the SetupIntent
+      // Confirm the SetupIntent (this only saves the payment method, does NOT charge)
+      // The SetupIntent is created with usage: 'off_session' so it won't process payments
       const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         clientSecret,
         redirect: 'if_required',
+        confirmParams: {
+          // Explicitly set that we're only saving, not charging
+          return_url: window.location.href,
+        },
       });
 
       if (confirmError) {
-        setError(confirmError.message || 'Failed to save payment method');
+        // Setup errors should not look like payment errors
+        const errorMessage = confirmError.message || 'Failed to save payment method';
+        // Make it clear this is about saving, not paying
+        if (errorMessage.toLowerCase().includes('payment') && !errorMessage.toLowerCase().includes('method')) {
+          setError(`Unable to save payment method: ${errorMessage.replace(/payment/gi, 'payment method')}`);
+        } else {
+          setError(errorMessage);
+        }
         return;
       }
 
       if (!setupIntent?.payment_method) {
-        setError('Payment method was not created. Please try again.');
+        setError('Payment method was not saved. Please try again.');
+        return;
+      }
+
+      // Verify the setup intent status
+      if (setupIntent.status !== 'succeeded') {
+        setError(`Payment method setup ${setupIntent.status}. Please try again.`);
         return;
       }
 
@@ -166,7 +184,12 @@ const PaymentForm: React.FC<{
 
       await onSubmit(setupIntent.payment_method as string, pmType);
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+      // Make sure error messages are about saving, not paying
+      let errorMessage = err.message || 'An error occurred while saving your payment method.';
+      if (errorMessage.toLowerCase().includes('payment failed') || errorMessage.toLowerCase().includes('declined')) {
+        errorMessage = 'Unable to save payment method. Please check your details and try again.';
+      }
+      setError(errorMessage);
     }
   };
 
@@ -187,7 +210,8 @@ const PaymentForm: React.FC<{
           />
         </div>
         <p className="text-xs text-gray-500 mt-1.5">
-          Supports cards, Apple Pay, Google Pay, Link, and bank accounts. Payment methods are securely saved for future use.
+          Supports cards, Apple Pay, Google Pay, Link, and bank accounts. 
+          <span className="font-medium text-gray-700"> No charge will be made</span> - this only saves your payment method for future use.
         </p>
       </div>
 
@@ -361,6 +385,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       const mappedType = mapStripeType(paymentMethodType);
 
       // Get payment method details from Stripe via edge function
+      // Note: This is just for saving/attaching, NOT for processing payments
       const { data: stripeData, error: stripeError } = await supabase.functions.invoke('create-stripe-payment-method', {
         body: {
           paymentMethodId: paymentMethodId,
@@ -375,7 +400,12 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       });
 
       if (stripeError || (stripeData && (stripeData as any).error)) {
-        throw new Error((stripeData as any)?.error || stripeError?.message || 'Failed to save payment method');
+        const errorMsg = (stripeData as any)?.error || stripeError?.message || 'Failed to save payment method';
+        // Make sure error messages don't sound like payment failures
+        if (errorMsg.toLowerCase().includes('payment failed') || errorMsg.toLowerCase().includes('declined')) {
+          throw new Error('Unable to save payment method. Please check your details and try again.');
+        }
+        throw new Error(errorMsg);
       }
 
       if (!stripeData?.paymentMethodID) {
