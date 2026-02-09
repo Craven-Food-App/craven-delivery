@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +6,9 @@ import { useCart } from '@/contexts/CartContext';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
 import { PromoCodeInput } from '@/components/checkout/PromoCodeInput';
+import { CheckoutErrorBanner } from '@/components/checkout/CheckoutErrorBanner';
+import { PaymentFailedModal } from '@/components/checkout/PaymentFailedModal';
+import { parsePaymentError, validateCheckoutFields, type ParsedPaymentError } from '@/utils/paymentErrors';
 import { IconTrash, IconPlus } from '@tabler/icons-react';
 import { SwipeToDelete } from '@/components/ui/SwipeToDelete';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -385,6 +388,36 @@ const Checkout: React.FC = () => {
   const [pinLocation, setPinLocation] = useState<{ lng: number; lat: number } | null>(null);
   const [showOrderCompletionModal, setShowOrderCompletionModal] = useState(false);
   const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
+
+  // ── DoorDash-style error handling state ─────────────────────────────
+  const [checkoutError, setCheckoutError] = useState<ParsedPaymentError | null>(null);
+  const [paymentFailedModal, setPaymentFailedModal] = useState<{
+    isOpen: boolean;
+    error: ParsedPaymentError | null;
+    cardLast4?: string;
+  }>({ isOpen: false, error: null });
+
+  const showCheckoutError = useCallback((error: any) => {
+    const parsed = parsePaymentError(error);
+    if (parsed.shouldShowModal) {
+      setPaymentFailedModal({
+        isOpen: true,
+        error: parsed,
+        cardLast4: selectedPaymentMethod?.last4 || undefined,
+      });
+    } else {
+      setCheckoutError(parsed);
+    }
+  }, [selectedPaymentMethod]);
+
+  const showValidationError = useCallback((title: string, message: string, field?: ParsedPaymentError['field']) => {
+    setCheckoutError({ type: 'validation', title, message, shouldShowModal: false, field });
+  }, []);
+
+  const clearCheckoutError = useCallback(() => {
+    setCheckoutError(null);
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -479,11 +512,7 @@ const Checkout: React.FC = () => {
     // But don't redirect if we have a completed order (order just succeeded)
     if (loadedCart.length === 0 && contextCartItems.length === 0 && !completedOrderId) {
       console.warn('Cart is empty, redirecting to restaurants');
-      toast({
-        title: "Cart is Empty",
-        description: "Please add items to your cart before checking out.",
-        variant: "destructive",
-      });
+      showValidationError('Your Cart is Empty', 'Add items to your cart before checking out.');
       setTimeout(() => {
         navigate('/restaurants');
       }, 2000);
@@ -1044,20 +1073,23 @@ const Checkout: React.FC = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!restaurant || cart.length === 0) {
-      toast({ title: "Error", description: "No items in cart", variant: "destructive" });
-      return;
-    }
+    clearCheckoutError();
 
-    // Validate required fields
-    if (!formData.name || !formData.phone || !formData.email) {
-      toast({ title: "Error", description: "Please complete your profile with name, phone, and email", variant: "destructive" });
-      return;
-    }
+    const validationError = validateCheckoutFields({
+      hasCartItems: !!restaurant && cart.length > 0,
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zip,
+      isDelivery: formData.deliveryMethod === 'delivery',
+      hasPaymentMethod: true, // validated later in processOrder
+    });
 
-    // For delivery orders, validate address
-    if (formData.deliveryMethod === 'delivery' && (!formData.address || !formData.city || !formData.state || !formData.zip)) {
-      toast({ title: "Error", description: "Please add a delivery address in your account settings", variant: "destructive" });
+    if (validationError) {
+      setCheckoutError(validationError);
       return;
     }
 
@@ -1068,7 +1100,7 @@ const Checkout: React.FC = () => {
   const processOrder = async () => {
     // Payment method is required for Stripe processing
     if (!selectedPaymentMethod) {
-      toast({ title: "Error", description: "Please select a payment method", variant: "destructive" });
+      showValidationError('Payment Method Required', 'Please select or add a payment method to complete your order.');
       return;
     }
 
@@ -1257,17 +1289,9 @@ const Checkout: React.FC = () => {
 
       // Check payment status
       if (orderResult.payment_status === 'succeeded' || orderResult.payment_status === 'pending' || orderResult.payment_status === 'processing') {
-        // Payment successful or pending
-        const promoMessage = orderResult.promo?.applied 
-          ? ` You saved $${(orderResult.promo.credit_cents / 100).toFixed(2)} with your first-order promo!`
-          : '';
-
-        toast({
-          title: "Order Placed Successfully!",
-          description: orderResult.payment_status === 'succeeded' 
-            ? `Your payment was successful! Order confirmed.${promoMessage}`
-            : `Your payment is being processed. Order confirmed.${promoMessage}`,
-        });
+        // Payment successful — clear errors
+        clearCheckoutError();
+        setPaymentFailedModal({ isOpen: false, error: null });
 
         // Mark first checkout for feedback prompt
         sessionStorage.setItem('tester_first_checkout_completed', 'true');
@@ -1290,12 +1314,7 @@ const Checkout: React.FC = () => {
       
     } catch (error: any) {
       console.error('Order error:', error);
-      const errorMessage = error?.message || error?.error?.message || 'Failed to place order. Please try again.';
-      toast({ 
-        title: "Error", 
-        description: errorMessage,
-        variant: "destructive" 
-      });
+      showCheckoutError(error);
       setIsProcessing(false);
     }
   };
@@ -1332,6 +1351,11 @@ const Checkout: React.FC = () => {
                 <h1 className="text-lg font-bold text-gray-900">{restaurant?.name || 'Restaurant'}</h1>
               </div>
             </div>
+          </div>
+
+          {/* Error Banner */}
+          <div className="px-4 pt-3">
+            <CheckoutErrorBanner error={checkoutError} onDismiss={clearCheckoutError} onRetry={() => processOrder()} />
           </div>
 
           {/* Delivery Details Section */}
@@ -2539,12 +2563,12 @@ const Checkout: React.FC = () => {
                       try {
                         const { data: { user } } = await supabase.auth.getUser();
                         if (!user) {
-                          toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                          showValidationError('Sign In Required', 'Please sign in to add a payment method.');
                           return;
                         }
 
                         if (!customerAddress) {
-                          toast({ title: "Error", description: "Please add a delivery address in your account settings first", variant: "destructive" });
+                          showValidationError('Address Required', 'Please add a delivery address in your account settings first.');
                           return;
                         }
 
@@ -2675,28 +2699,13 @@ const Checkout: React.FC = () => {
                         setShowPaymentSetup(false);
                         setSelectedPaymentType(null);
 
-                        toast({
-                          title: "Success",
-                          description: "Card added successfully"
-                        });
+                        // Card added — clear errors
+                        clearCheckoutError();
                         
                         // Automatically proceed - payment method is now selected and delivery details are visible
                       } catch (error: any) {
                         console.error('Error adding card:', error);
-                        let errorMessage = "Failed to add card. Please try again.";
-                        if (error?.message) {
-                          errorMessage = error.message;
-                        } else if (error?.error?.message) {
-                          errorMessage = error.error.message;
-                        } else if (typeof error === 'string') {
-                          errorMessage = error;
-                        }
-                        
-                        toast({
-                          title: "Error",
-                          description: errorMessage,
-                          variant: "destructive"
-                        });
+                        showCheckoutError(error);
                         throw error; // Re-throw to prevent form submission
                       } finally {
                         setIsAddingCard(false);
@@ -2841,13 +2850,13 @@ const Checkout: React.FC = () => {
                   <button
                     onClick={async () => {
                       if ((selectedPaymentType === 'cashapp' || selectedPaymentType === 'paypal' || selectedPaymentType === 'venmo') && !paymentSetupValue.trim()) {
-                        toast({ title: "Error", description: "Please enter your payment details", variant: "destructive" });
+                        showValidationError('Details Required', 'Please enter your payment details to continue.');
                         return;
                       }
 
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) {
-                        toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                        showValidationError('Sign In Required', 'Please sign in to continue.');
                         return;
                       }
 
@@ -3068,7 +3077,7 @@ const Checkout: React.FC = () => {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) {
-                    toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                    showValidationError('Sign In Required', 'Please sign in to save your address.');
                     return;
                   }
 
@@ -3123,7 +3132,7 @@ const Checkout: React.FC = () => {
                   toast({ title: "Success", description: "Address added successfully" });
                 } catch (error: any) {
                   console.error('Error saving address:', error);
-                  toast({ title: "Error", description: error.message || "Failed to save address", variant: "destructive" });
+                  showValidationError('Address Error', error.message || 'Failed to save address. Please try again.');
                 }
               }}
               onCancel={() => setShowAddAddressForm(false)}
@@ -3266,7 +3275,7 @@ const Checkout: React.FC = () => {
                 try {
                   const { data: { user } } = await supabase.auth.getUser();
                   if (!user) {
-                    toast({ title: "Error", description: "Please sign in", variant: "destructive" });
+                    showValidationError('Sign In Required', 'Please sign in to save your phone number.');
                     return;
                   }
 
@@ -3297,7 +3306,7 @@ const Checkout: React.FC = () => {
                   toast({ title: "Success", description: "Phone number saved" });
                 } catch (error: any) {
                   console.error('Error saving phone number:', error);
-                  toast({ title: "Error", description: error.message || "Failed to save phone number", variant: "destructive" });
+                  showValidationError('Phone Error', error.message || 'Failed to save phone number. Please try again.');
                 }
               }}
               onCancel={() => setShowAddPhoneForm(false)}
@@ -3398,6 +3407,22 @@ const Checkout: React.FC = () => {
           />
         </SheetContent>
       </Sheet>
+
+      {/* Payment Failed Modal — DoorDash-style */}
+      <PaymentFailedModal
+        isOpen={paymentFailedModal.isOpen}
+        error={paymentFailedModal.error}
+        cardLast4={paymentFailedModal.cardLast4}
+        onClose={() => setPaymentFailedModal({ isOpen: false, error: null })}
+        onRetry={() => {
+          setPaymentFailedModal({ isOpen: false, error: null });
+          processOrder();
+        }}
+        onChangePayment={() => {
+          setPaymentFailedModal({ isOpen: false, error: null });
+          setShowPaymentModal(true);
+        }}
+      />
 
       {/* Order Completion Modal */}
       {completedOrderId && (
