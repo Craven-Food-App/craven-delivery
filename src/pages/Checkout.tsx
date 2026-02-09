@@ -316,7 +316,25 @@ const CardForm: React.FC<{
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
+  // ── DoorDash-style error handling state (declared early – used by effects below) ──
+  const [checkoutError, setCheckoutError] = useState<ParsedPaymentError | null>(null);
+  const [paymentFailedModal, setPaymentFailedModal] = useState<{
+    isOpen: boolean;
+    error: ParsedPaymentError | null;
+    cardLast4?: string;
+  }>({ isOpen: false, error: null });
+
+  /** Show a validation-level inline banner (not a modal) */
+  const showValidationError = useCallback((title: string, message: string, field?: ParsedPaymentError['field']) => {
+    setCheckoutError({ type: 'validation', title, message, shouldShowModal: false, field });
+  }, []);
+
+  /** Clear all checkout errors */
+  const clearCheckoutError = useCallback(() => {
+    setCheckoutError(null);
+  }, []);
+
   // Check authentication on mobile - guests cannot checkout
   useEffect(() => {
     const checkMobileAuth = async () => {
@@ -407,14 +425,6 @@ const Checkout: React.FC = () => {
   const [completedOrderId, setCompletedOrderId] = useState<string>('');
   const [completedOrderItems, setCompletedOrderItems] = useState<any[]>([]);
 
-  // ── DoorDash-style error handling state ─────────────────────────────
-  const [checkoutError, setCheckoutError] = useState<ParsedPaymentError | null>(null);
-  const [paymentFailedModal, setPaymentFailedModal] = useState<{
-    isOpen: boolean;
-    error: ParsedPaymentError | null;
-    cardLast4?: string;
-  }>({ isOpen: false, error: null });
-
   /** Route an error to either the inline banner or the payment-failed modal */
   const showCheckoutError = useCallback((error: any) => {
     const parsed = parsePaymentError(error);
@@ -428,16 +438,6 @@ const Checkout: React.FC = () => {
       setCheckoutError(parsed);
     }
   }, [selectedPaymentMethod]);
-
-  /** Show a validation-level inline banner (not a modal) */
-  const showValidationError = useCallback((title: string, message: string, field?: ParsedPaymentError['field']) => {
-    setCheckoutError({ type: 'validation', title, message, shouldShowModal: false, field });
-  }, []);
-
-  /** Clear all checkout errors */
-  const clearCheckoutError = useCallback(() => {
-    setCheckoutError(null);
-  }, []);
 
   const [formData, setFormData] = useState({
     name: '',

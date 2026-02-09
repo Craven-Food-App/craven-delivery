@@ -517,7 +517,7 @@ const Checkout: React.FC = () => {
         navigate('/restaurants');
       }, 2000);
     }
-  }, [contextCartItems, contextRestaurantId, navigate, toast, completedOrderId]);
+  }, [contextCartItems, contextRestaurantId, navigate, toast, completedOrderId, showValidationError]);
 
   // Fetch menu item images when cart changes
   useEffect(() => {
