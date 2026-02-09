@@ -290,6 +290,37 @@ const Restaurants = () => {
   const [checkingAuth, setCheckingAuth] = useState(cachedAuth === null); // Only check if no cache
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   
+  // Prevent rapid state updates that cause flickering
+  const authUpdateRef = useRef<{ timeoutId: NodeJS.Timeout | null; lastValue: boolean | null }>({
+    timeoutId: null,
+    lastValue: null
+  });
+
+  // Debounced setShowMain to prevent flickering
+  const setShowMainDebounced = useCallback((value: boolean) => {
+    // Clear any pending update
+    if (authUpdateRef.current.timeoutId) {
+      clearTimeout(authUpdateRef.current.timeoutId);
+    }
+    
+    // If we're already at this value, skip update
+    if (authUpdateRef.current.lastValue === value) {
+      return;
+    }
+    
+    // Update immediately if no previous value, otherwise debounce
+    if (authUpdateRef.current.lastValue === null) {
+      setShowMain(value);
+      authUpdateRef.current.lastValue = value;
+    } else {
+      authUpdateRef.current.timeoutId = setTimeout(() => {
+        setShowMain(value);
+        authUpdateRef.current.lastValue = value;
+        authUpdateRef.current.timeoutId = null;
+      }, 100); // 100ms debounce
+    }
+  }, []);
+  
   // Login form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1467,7 +1498,7 @@ const Restaurants = () => {
           const isAuthenticated = !!user;
           if (isAuthenticated !== cachedAuth) {
             // Cache was wrong, update it
-            setShowMain(isAuthenticated);
+            setShowMainDebounced(isAuthenticated);
             if (typeof window !== 'undefined') {
               sessionStorage.setItem('craven_auth_state', JSON.stringify({
                 isAuthenticated,
@@ -1477,7 +1508,7 @@ const Restaurants = () => {
           }
         }).catch(() => {
           // On error, assume not logged in
-          setShowMain(false);
+          setShowMainDebounced(false);
         });
         return;
       }
@@ -1505,10 +1536,10 @@ const Restaurants = () => {
         
         if (user) {
           // User is logged in - skip landing page and show main restaurants view
-          setShowMain(true);
+          setShowMainDebounced(true);
         } else {
           // User is logged out - ensure landing page shows
-          setShowMain(false);
+          setShowMainDebounced(false);
         }
       } catch (error) {
         console.error('Error checking auth:', error);
@@ -1525,7 +1556,7 @@ const Restaurants = () => {
         }
         
         // On error, assume not logged in and show landing page
-        setShowMain(false);
+        setShowMainDebounced(false);
       } finally {
         setCheckingAuth(false);
       }
@@ -1537,7 +1568,7 @@ const Restaurants = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         // User logged out - show landing page
-        setShowMain(false);
+        setShowMainDebounced(false);
         setCheckingAuth(false);
         // Clear cached auth state
         if (typeof window !== 'undefined') {
@@ -1550,7 +1581,7 @@ const Restaurants = () => {
       } else if (event === 'SIGNED_IN' && session?.user) {
         // User logged in - show main view
         if (isMobile) {
-        setShowMain(true);
+        setShowMainDebounced(true);
         // Clear guest browsing flag
         if (typeof window !== 'undefined') {
           sessionStorage.removeItem('browse_as_guest');
@@ -1571,8 +1602,12 @@ const Restaurants = () => {
 
     return () => {
       subscription.unsubscribe();
+      // Cleanup debounce timeout
+      if (authUpdateRef.current.timeoutId) {
+        clearTimeout(authUpdateRef.current.timeoutId);
+      }
     };
-  }, [isMobile]);
+  }, [isMobile, setShowMainDebounced]);
 
   // Show simple loader while checking auth (loading screen is handled at app level)
   if (isMobile && checkingAuth) {
