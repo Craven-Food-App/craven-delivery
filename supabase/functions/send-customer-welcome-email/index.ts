@@ -80,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
                         </div>
                         
                         <p style="margin: 30px 0 0 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
-                          Have questions? We're here to help! Contact us at <a href="mailto:support@craven.com" style="color: #ff6b00; text-decoration: none;">support@craven.com</a>
+                          Have questions? We're here to help! Contact us at <a href="mailto:support@cravenusa.com" style="color: #ff6b00; text-decoration: none;">support@cravenusa.com</a>
                         </p>
                       </td>
                     </tr>

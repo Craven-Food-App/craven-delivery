@@ -112,7 +112,7 @@ export async function generateShippingLabel(restaurant: Restaurant): Promise<{
 
         <!-- Footer -->
         <div style="margin-top: 32px; text-align: center; font-size: 12px; color: #6b7280;">
-          <p style="margin: 4px 0;">Questions? Contact support@craven.com | (555) 123-4567</p>
+          <p style="margin: 4px 0;">Questions? Contact support@cravenusa.com | 216-435-0821</p>
           <p style="margin: 4px 0;">This package contains fragile electronics - Handle with care</p>
         </div>
       </div>

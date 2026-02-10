@@ -215,8 +215,8 @@ const CookiePolicy = () => {
                 If you have questions about our use of cookies, please contact us:
               </p>
               <ul className="list-none mb-4 text-muted-foreground">
-                <li><strong>Email:</strong> customerservice@cravenusa.com</li>
-                <li><strong>Phone:</strong> 1-800-CRAVE-N</li>
+                <li><strong>Email:</strong> support@cravenusa.com</li>
+                <li><strong>Phone:</strong> 216-435-0821</li>
               </ul>
               <p className="text-muted-foreground">
                 For more information about how we collect and use your personal data, please review our <a href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</a>.
