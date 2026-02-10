@@ -171,7 +171,7 @@ const ContactUs = () => {
                 Send us a detailed message
               </p>
               <Button variant="outline" className="w-full">
-                customerservice@cravenusa.com
+                support@cravenusa.com
               </Button>
             </CardContent>
           </Card>
@@ -332,21 +332,21 @@ const ContactUs = () => {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">General Inquiries</p>
-                      <p className="text-sm text-muted-foreground">customerservice@cravenusa.com</p>
+                      <p className="text-sm text-muted-foreground">support@cravenusa.com</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Partnership Inquiries</p>
-                      <p className="text-sm text-muted-foreground">customerservice@cravenusa.com</p>
+                      <p className="text-sm text-muted-foreground">support@cravenusa.com</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Press & Media</p>
-                      <p className="text-sm text-muted-foreground">customerservice@cravenusa.com</p>
+                      <p className="text-sm text-muted-foreground">support@cravenusa.com</p>
                     </div>
                   </div>
                 </div>

@@ -721,7 +721,7 @@ ${formData.message}
                 leftSection={<IconMail size={18} />}
                 color="orange"
               >
-                customerservice@cravenusa.com
+                support@cravenusa.com
               </Button>
             </Group>
           </Stack>

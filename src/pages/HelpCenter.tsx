@@ -242,7 +242,7 @@ const HelpCenter = () => {
               </Button>
               <Button variant="outline" size="lg">
                 <Mail className="h-4 w-4 mr-2" />
-                customerservice@cravenusa.com
+                support@cravenusa.com
               </Button>
             </div>
           </CardContent>

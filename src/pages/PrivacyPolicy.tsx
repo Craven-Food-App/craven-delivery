@@ -192,8 +192,8 @@ const PrivacyPolicy = () => {
               </ul>
               <p className="text-muted-foreground mb-4">To exercise these rights:</p>
               <ul className="list-none mb-4 text-muted-foreground">
-                <li>Contact <strong>privacy@craven.com</strong> (privacy and data requests)</li>
-                <li>Or <strong>customerservice@cravenusa.com</strong> (general account help)</li>
+                <li>Contact <strong>support@cravenusa.com</strong> (privacy and data requests)</li>
+                <li>Or call <strong>216-435-0821</strong> (general account help)</li>
               </ul>
             </section>
 
@@ -248,7 +248,7 @@ const PrivacyPolicy = () => {
                 <li>Designate an authorized agent to exercise rights on their behalf</li>
               </ul>
               <p className="text-muted-foreground mb-4">
-                Submit requests via <strong>privacy@craven.com</strong> with verification information.
+                Submit requests via <strong>support@cravenusa.com</strong> with verification information.
                 Crave'n will not discriminate against users who exercise these rights.
               </p>
             </section>
@@ -284,8 +284,8 @@ const PrivacyPolicy = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, Ohio 43612</p>
-                <p className="mb-2"><strong>Privacy & Data Requests:</strong> privacy@craven.com</p>
-                <p><strong>General Support:</strong> customerservice@cravenusa.com</p>
+                <p className="mb-2"><strong>Privacy & Data Requests:</strong> support@cravenusa.com</p>
+                <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>
 

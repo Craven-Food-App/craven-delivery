@@ -128,7 +128,7 @@ function generateICAHTML(data: GenerateSignedICARequest): string {
     <h3 style="margin: 0 0 10px 0; color: #1890ff;">Contact</h3>
     <p style="margin: 5px 0;"><strong>Crave'n Inc.</strong></p>
     <p style="margin: 5px 0;">1121 W Sylvania Ave., Toledo, OH 43612</p>
-    <p style="margin: 5px 0;">Email: customerservice@cravenusa.com | privacy@craven.com</p>
+    <p style="margin: 5px 0;">Email: support@cravenusa.com</p>
     <p style="margin: 5px 0;">Phone: 216-435-0821</p>
   </div>
 
