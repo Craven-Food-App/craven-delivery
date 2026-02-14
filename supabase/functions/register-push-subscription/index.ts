@@ -32,6 +32,7 @@ serve(async (req) => {
       const pushToken = deviceInfo?.pushToken || '';
       const platform = deviceInfo?.platform || 'unknown';
 
+      // Upsert into push_subscriptions
       const { data, error } = await supabase
         .from("push_subscriptions")
         .upsert({
@@ -50,8 +51,31 @@ serve(async (req) => {
         .select();
 
       if (error) {
-        console.error("Database error (native):", error);
+        console.error("Database error (native push_subscriptions):", error);
         throw error;
+      }
+
+      // Also upsert into driver_push_subscriptions for drivers
+      const { error: driverError } = await supabase
+        .from("driver_push_subscriptions")
+        .upsert({
+          driver_id: userId,
+          endpoint: subscription.endpoint,
+          p256dh_key: 'native',
+          auth_key: 'native',
+          is_native: true,
+          push_token: pushToken,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'driver_id,endpoint'
+        });
+
+      if (driverError) {
+        // Log but don't fail - user might not be a driver
+        console.warn("driver_push_subscriptions upsert note:", driverError.message);
+      } else {
+        console.log("Native driver push subscription also registered");
       }
 
       console.log("Native push subscription registered:", data);
@@ -95,8 +119,29 @@ serve(async (req) => {
       .select();
 
     if (error) {
-      console.error("Database error (web):", error);
+      console.error("Database error (web push_subscriptions):", error);
       throw error;
+    }
+
+    // Also upsert into driver_push_subscriptions for drivers
+    const { error: driverError } = await supabase
+      .from("driver_push_subscriptions")
+      .upsert({
+        driver_id: userId,
+        endpoint: subscription.endpoint,
+        p256dh_key: p256dhKey,
+        auth_key: authKey,
+        is_native: false,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'driver_id,endpoint'
+      });
+
+    if (driverError) {
+      console.warn("driver_push_subscriptions upsert note:", driverError.message);
+    } else {
+      console.log("Web driver push subscription also registered");
     }
 
     console.log("Web push subscription registered successfully:", data);

@@ -1,0 +1,4 @@
+ALTER TABLE public.driver_push_subscriptions
+  ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS is_native BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS push_token TEXT;
