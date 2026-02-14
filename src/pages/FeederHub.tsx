@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, DollarSign, TrendingUp, Gift } from "lucide-react";

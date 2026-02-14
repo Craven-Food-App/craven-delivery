@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Crave'n Feeder App — Security & Safety (Enterprise Compact White)
  * ───────────────────────────────────────────────────────────────

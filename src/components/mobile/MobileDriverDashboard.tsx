@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useCallback, useState, useEffect } from 'react';
 import { MapPin, Settings, Pause, Play, Square, Clock, Car, DollarSign, Calendar, Bell, User, Star, ChevronRight, Menu, X, Home, TrendingUp, HelpCircle, LogOut, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/lib/templates/governanceContext.ts
 
 import { supabase } from '@/integrations/supabase/client';

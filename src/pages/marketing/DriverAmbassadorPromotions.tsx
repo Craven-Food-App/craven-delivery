@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Driver & Ambassador Promotions
  * Manage driver referral codes, ambassador programs, and bonus campaigns

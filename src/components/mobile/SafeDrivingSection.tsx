@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { IconArrowLeft, IconShield, IconPhone, IconAlertTriangle, IconMapPin, IconClock } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';

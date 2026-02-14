@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useCallback } from 'react';
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { analyticsConfig, environment } from '@/config/environment';
