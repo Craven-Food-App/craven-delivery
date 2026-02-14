@@ -1,58 +1,48 @@
 
 
-# Show Restaurant Logo Icons on Map
+# Fix: White Screen on Feeder Android App
 
-## What Changes
+## Problem
+The error `Cannot set properties of undefined (setting 'Children')` means Ant Design's chunk (`vendor-antd`) is executing before React is ready. Ant Design internally does `React.Children = ...` but `React` is `undefined` at that point.
 
-Replace the current colored circle markers with each restaurant's actual logo image displayed at their map location.
+This is caused by the `manualChunks` configuration in `vite.config.ts` which splits `react-dom` into its own chunk (`vendor-react-dom`) but leaves `react` in the default chunk. On Android WebView, these chunks can load out of order, so Ant Design initializes before React is available.
 
-## Approach
+## Solution
+Update the `manualChunks` function in `vite.config.ts` to ensure React core is **never** separated from libraries that depend on it. Specifically:
 
-Instead of using Mapbox's built-in `circle` layer (which only supports solid colors), switch to **HTML-based markers** (`mapboxgl.Marker({ element })`) for individual restaurants. Each marker will be a small circular element showing the restaurant's `logo_url` from the database.
+1. **Bundle `react` and `react-dom` together** into a single `vendor-react` chunk so they always load as one unit.
+2. This ensures React is initialized before any UI library chunk tries to access it.
 
-### RestaurantMapLayer.ts -- Full Rewrite of Unclustered Points
+## Technical Changes
 
-- Keep the **cluster circles** (orange dots with count) for zoomed-out views -- these stay as-is since clusters don't represent a single restaurant
-- Replace the `circle` layer for individual (unclustered) points with **dynamic HTML markers**
-- For each restaurant, create an HTML element:
-  - 36px circular container with white border and drop shadow
-  - `<img>` inside showing the restaurant's `logo_url`
-  - Fallback: if no logo, show a colored circle with the first letter of the restaurant name
-- On click, show the same popup (name, cuisine, rating)
-- Track all created markers for cleanup on unmount
+### File: `vite.config.ts` (lines 128-139)
 
-### Key Technical Detail
-
-Since Mapbox clustering only works with GeoJSON source layers (not HTML markers), we need a hybrid approach:
-- Keep the GeoJSON source with clustering enabled for the cluster circles
-- Listen to `render` / `moveend` events on the map
-- Query visible unclustered features using `map.querySourceFeatures()` 
-- Create/remove HTML markers dynamically as the user pans and zooms
-
-### Marker Design
+Update the `manualChunks` function to add a React rule **before** the other rules:
 
 ```text
-+------------------+
-|  36px circle     |
-|  white border    |
-|  drop-shadow     |
-|  [restaurant     |
-|   logo image]    |
-+------------------+
+manualChunks(id) {
+  // React core must load first - keep react + react-dom together
+  if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
+  if (id.includes('node_modules/@mui')) return 'vendor-mui';
+  if (id.includes('node_modules/@mantine')) return 'vendor-mantine';
+  if (id.includes('node_modules/@chakra-ui') || id.includes('node_modules/@emotion')) return 'vendor-chakra';
+  if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) return 'vendor-antd';
+  if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) return 'vendor-monaco';
+  if (id.includes('node_modules/mapbox-gl') || id.includes('node_modules/@mapbox')) return 'vendor-mapbox';
+  if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
+  if (id.includes('node_modules/framer-motion')) return 'vendor-framer';
+  if (id.includes('node_modules/stripe') || id.includes('node_modules/@stripe')) return 'vendor-stripe';
+},
 ```
 
-- Size: 36px diameter
-- Border: 2px solid white
-- Shadow: subtle drop shadow
-- Border-radius: 50% (fully round)
-- Fallback: orange circle with white initial letter
+Key change: Replace the separate `vendor-react-dom` chunk with a combined `vendor-react` chunk that includes both `react` and `react-dom`. The `react/` path (with trailing slash) ensures we match the `react` package without accidentally matching `react-dom`, `react-router`, etc.
 
-### Files Modified
-
-| File | Change |
-|------|--------|
-| `src/components/map/RestaurantMapLayer.ts` | Replace circle layer with HTML logo markers using hybrid cluster + marker approach |
-| `src/hooks/useRestaurantLocations.ts` | No changes needed -- already fetches `logo_url` |
-
-No other files need changes since `MobileMapbox.tsx`, `ZoneVisualizationMap.tsx`, and `OrderMap.tsx` all call `addRestaurantLayer()` -- updating that one function updates all maps.
+## After Approval
+After implementing, you will need to rebuild and resync:
+```bash
+npm run build
+cd apps/feeder
+npx cap sync android
+npx cap run android
+```
 
