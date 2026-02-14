@@ -1,57 +1,28 @@
 
 
-# Back Button + Sidebar Tier Sync + Tier Ombre Color
+# Update Legal & Support Links in Feeder App Settings
 
 ## What Changes
 
-### 1. Back Button on Feeder Tier / Ratings Page
+The "Legal & Support" section in `AppSettingsPage.tsx` already has the correct 5 items (Terms of Service, Privacy Policy, Driver Agreement, Community Guidelines, Contact Support), matching the reference screenshot. However, the links currently point to **external broken URLs** (`craven.app/*`). These need to be updated to use the app's **internal routes** and the correct support email.
 
-Add a back arrow button to the top-left of the `FeederRatingsTab.tsx` top bar. Tapping it navigates back to the Home tab (`/mobile`). The `onOpenMenu` prop is already available; we will add an `onBack` callback prop (or use `onOpenMenu` to navigate home).
+## Changes to Make
 
-### 2. Sidebar Tier Sync
+### `src/components/mobile/AppSettingsPage.tsx`
 
-The `FeederSidebarMenu.tsx` currently uses a points-based status system (`getStatus(driverPoints)` returning Diamond/Platinum/Gold/Silver) that is **not** connected to the actual `tier_status` column. This needs to be updated to:
-- Read `tier_status` from `driver_profiles` (the source of truth set by the tier evaluation system)
-- Display the correct tier name in the badge (e.g., "Gold Feeder", "Diamond Feeder", "Ultimate Feeder")
-- Use the tier config from `ratingHelpers.ts` for colors
+Update the `onClick` handlers in the Legal & Support section:
 
-### 3. Ombre / Glow Color Matches Tier
-
-The sidebar's top glow gradient (`status.glowGradient`) currently uses hardcoded Diamond/Platinum/Gold/Silver gradients based on points. This will be replaced with tier-specific gradients derived from the actual `TIER_CONFIG` colors:
-
-| Tier | Glow Gradient |
-|------|---------------|
-| Feeder | Neutral gray fade |
-| Gold | Gold/amber fade |
-| Platinum | Silver/gray fade |
-| Diamond | Deep blue fade |
-| Ultimate | Black-to-orange fade |
-
-## Technical Details
-
-### FeederRatingsTab.tsx
-
-- Add `onBack?: () => void` prop
-- Render a left-arrow button in the top bar that calls `onBack` (or navigates to `/mobile`)
-- Wire the prop from `MobileDriverDashboard.tsx`
-
-### FeederSidebarMenu.tsx
-
-1. Replace the `getStatus(driverPoints)` function and `driverPoints` state with a query for `tier_status` from `driver_profiles`
-2. Import `getTierConfig` from `ratingHelpers.ts` to get the correct colors
-3. Create a `TIER_GLOW_GRADIENTS` map keyed by tier name for the ombre effect
-4. Update the `badgeText` and badge styling to use the real tier
-5. Update the top glow div to use the tier-matched gradient
-
-### MobileDriverDashboard.tsx
-
-- Pass `onBack` prop to `FeederRatingsTab` that sets `activeTab('home')` and navigates to `/mobile`
+| Item | Current (broken) | Updated |
+|------|-------------------|---------|
+| Terms of Service | `window.open('https://craven.app/terms', '_blank')` | `window.open('/terms-of-service', '_blank')` |
+| Privacy Policy | `window.open('https://craven.app/privacy', '_blank')` | `window.open('/feeder-privacy-policy', '_blank')` |
+| Driver Agreement | `window.open('https://craven.app/driver-agreement', '_blank')` | `window.open('/independent-contractor-agreement', '_blank')` |
+| Community Guidelines | `window.open('https://craven.app/community-guidelines', '_blank')` | `window.open('/safety', '_blank')` (the Safety page contains Community Guidelines) |
+| Contact Support | `mailto:support@craven.app` | `mailto:support@cravenusa.com` (per branding standards) |
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/mobile/FeederRatingsTab.tsx` | Add back button to top bar |
-| `src/components/mobile/FeederSidebarMenu.tsx` | Replace points-based status with `tier_status` from DB; match glow gradient to tier |
-| `src/components/mobile/MobileDriverDashboard.tsx` | Pass `onBack` handler to FeederRatingsTab |
+| `src/components/mobile/AppSettingsPage.tsx` | Update 5 link URLs to internal routes and correct email |
 
