@@ -272,7 +272,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       fetchCardData();
     } catch (error) {
       console.error('Error transferring earnings:', error);
-      toast.error('Failed to transfer funds. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to transfer funds. Please try again.';
+      toast.error(msg);
     }
   };
 
