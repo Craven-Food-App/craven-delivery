@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Plus, Trash2, Lock, ArrowUpRight } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -112,11 +112,26 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   // Earnings Cashout state
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [earningsCashoutAmount, setEarningsCashoutAmount] = useState('');
+  
+  // Debit Card Cashout state
+  const [showDebitCashoutModal, setShowDebitCashoutModal] = useState(false);
+  const [showAddDebitCardModal, setShowAddDebitCardModal] = useState(false);
+  const [debitCashoutAmount, setDebitCashoutAmount] = useState('');
+  const [savedDebitCards, setSavedDebitCards] = useState<any[]>([]);
+  const [selectedDebitCard, setSelectedDebitCard] = useState<any>(null);
+  const [newCardLast4, setNewCardLast4] = useState('');
+  const [newCardHolderName, setNewCardHolderName] = useState('');
+  const [newCardBrand, setNewCardBrand] = useState('visa');
+  const [isEligibleForInstantCashout, setIsEligibleForInstantCashout] = useState(false);
+  const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
+  const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
 
   useEffect(() => {
     fetchEarningsData();
     fetchCardData();
     fetchGasMoneyData();
+    fetchDebitCards();
+    checkCashoutEligibility();
   }, [timeRange]);
 
   const fetchCardData = async () => {
@@ -285,6 +300,161 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       return `${normalized.slice(0, 4)} ${normalized.slice(4, 8)} ${normalized.slice(8, 12)} ${normalized.slice(12, 16)}`;
     } else {
       return `**** **** **** ${normalized.slice(12, 16)}`;
+    }
+  };
+
+  // Debit card cashout functions
+  const fetchDebitCards = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('driver_debit_cards')
+        .select('*')
+        .eq('driver_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setSavedDebitCards(data);
+        const defaultCard = data.find((c: any) => c.is_default) || data[0];
+        if (defaultCard) setSelectedDebitCard(defaultCard);
+      }
+    } catch (error) {
+      console.error('Error fetching debit cards:', error);
+    }
+  };
+
+  const checkCashoutEligibility = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Count completed orders for this driver
+      const { count, error } = await supabase
+        .from('driver_earnings')
+        .select('id', { count: 'exact', head: true })
+        .eq('driver_id', user.id);
+
+      if (!error && count !== null) {
+        setCompletedOrdersCount(count);
+        // Eligible if 50+ completed orders
+        setIsEligibleForInstantCashout(count >= 50);
+      }
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+    }
+  };
+
+  const handleAddDebitCard = async () => {
+    if (!newCardLast4 || newCardLast4.length !== 4 || !newCardHolderName.trim()) {
+      toast.error('Please enter valid card details');
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const isFirst = savedDebitCards.length === 0;
+
+      const { data, error } = await supabase
+        .from('driver_debit_cards')
+        .insert({
+          driver_id: user.id,
+          card_last4: newCardLast4,
+          card_brand: newCardBrand,
+          card_holder_name: newCardHolderName.trim(),
+          is_default: isFirst,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Debit card added successfully!');
+      setNewCardLast4('');
+      setNewCardHolderName('');
+      setNewCardBrand('visa');
+      setShowAddDebitCardModal(false);
+      fetchDebitCards();
+    } catch (error) {
+      console.error('Error adding debit card:', error);
+      toast.error('Failed to add debit card');
+    }
+  };
+
+  const handleDeleteDebitCard = async (cardId: string) => {
+    try {
+      const { error } = await supabase
+        .from('driver_debit_cards')
+        .delete()
+        .eq('id', cardId);
+
+      if (error) throw error;
+      toast.success('Card removed');
+      fetchDebitCards();
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      toast.error('Failed to remove card');
+    }
+  };
+
+  const handleDebitCashout = async () => {
+    if (!isEligibleForInstantCashout) {
+      toast.error(`You need ${50 - completedOrdersCount} more deliveries to unlock instant cashout`);
+      return;
+    }
+    if (!selectedDebitCard) {
+      toast.error('Please add a debit card first');
+      return;
+    }
+
+    const amount = parseFloat(debitCashoutAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    if (amount > cardBalance) {
+      toast.error(`Amount cannot exceed your Feeder Card balance of ${formatCurrency(cardBalance)}`);
+      return;
+    }
+
+    const fee = amount * 0.015; // 1.5% fee
+    const netAmount = amount - fee;
+
+    setDebitCashoutLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Create a payout record for the debit cashout
+      const { error } = await supabase
+        .from('driver_payouts')
+        .insert({
+          driver_id: user.id,
+          stripe_account_id: `debit_${selectedDebitCard.id}`,
+          stripe_payout_id: `po_debit_${Date.now()}_${user.id.slice(0, 8)}`,
+          amount_cents: Math.round(netAmount * 100),
+          currency: 'usd',
+          payout_type: 'instant',
+          status: 'paid',
+          arrival_date: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      setCardBalance(prev => prev - amount);
+      setDebitCashoutAmount('');
+      setShowDebitCashoutModal(false);
+      toast.success(`${formatCurrency(netAmount)} sent to your debit card ending in ${selectedDebitCard.card_last4}! (${formatCurrency(fee)} fee applied)`);
+      fetchCardData();
+    } catch (error) {
+      console.error('Error processing debit cashout:', error);
+      const msg = error instanceof Error ? error.message : 'Failed to process cashout';
+      toast.error(msg);
+    } finally {
+      setDebitCashoutLoading(false);
     }
   };
 
@@ -752,6 +922,85 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 </Box>
               </Box>
             </Box>
+          </div>
+
+          {/* Cash Out to Debit Card Section */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm mt-2.5 mb-2.5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="w-5 h-5 text-orange-600" />
+                <h3 className="text-sm font-bold text-gray-900">Cash Out to Debit Card</h3>
+              </div>
+              {!isEligibleForInstantCashout && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
+                  <Lock className="w-3 h-3 text-gray-500" />
+                  <span className="text-xs text-gray-500">{completedOrdersCount}/50 deliveries</span>
+                </div>
+              )}
+            </div>
+
+            {!isEligibleForInstantCashout ? (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <p className="text-sm text-orange-800 font-medium mb-1">🔒 Unlock Instant Cashout</p>
+                <p className="text-xs text-orange-700">
+                  Complete {50 - completedOrdersCount} more {50 - completedOrdersCount === 1 ? 'delivery' : 'deliveries'} with a good rating to unlock instant cashout to your debit card.
+                </p>
+                <div className="mt-3 bg-orange-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-orange-500 h-full rounded-full transition-all"
+                    style={{ width: `${Math.min((completedOrdersCount / 50) * 100, 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-orange-600 mt-1 text-right">{Math.min(completedOrdersCount, 50)}/50</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {savedDebitCards.length === 0 ? (
+                  <button
+                    onClick={() => setShowAddDebitCardModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 hover:bg-orange-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm font-medium">Add Debit Card</span>
+                  </button>
+                ) : (
+                  <>
+                    {/* Selected card preview */}
+                    <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                      <CreditCard className="w-5 h-5 text-gray-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {selectedDebitCard?.card_brand?.toUpperCase()} •••• {selectedDebitCard?.card_last4}
+                        </p>
+                        <p className="text-xs text-gray-500">{selectedDebitCard?.card_holder_name}</p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddDebitCardModal(true)}
+                        className="text-xs text-orange-600 font-medium"
+                      >
+                        Manage
+                      </button>
+                    </div>
+                    
+                    {/* Cash out button */}
+                    <button
+                      onClick={() => {
+                        if (cardBalance <= 0) {
+                          toast.error('No balance available to cash out');
+                          return;
+                        }
+                        setShowDebitCashoutModal(true);
+                      }}
+                      className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      Cash Out to Debit Card
+                    </button>
+                    <p className="text-xs text-gray-400 text-center">1.5% instant transfer fee applies</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Earnings Summary Cards - Side by Side */}
@@ -1244,6 +1493,221 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               {/* Info Text */}
               <p className="text-xs text-gray-500 text-center mt-4">
                 Cash out your available earnings instantly to your Feeder Card. Funds can be used anywhere Visa is accepted.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Debit Card Modal */}
+      {showAddDebitCardModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Manage Debit Cards</h3>
+                  <p className="text-sm text-gray-500">For instant cashout</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddDebitCardModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Saved cards list */}
+            {savedDebitCards.length > 0 && (
+              <div className="space-y-2 mb-4">
+                <p className="text-sm font-medium text-gray-700">Your Cards</p>
+                {savedDebitCards.map((card: any) => (
+                  <div key={card.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                    <CreditCard className="w-5 h-5 text-gray-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {card.card_brand?.toUpperCase()} •••• {card.card_last4}
+                      </p>
+                      <p className="text-xs text-gray-500">{card.card_holder_name}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteDebitCard(card.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new card form */}
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700">Add New Card</p>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Cardholder Name</label>
+                <input
+                  type="text"
+                  value={newCardHolderName}
+                  onChange={(e) => setNewCardHolderName(e.target.value)}
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Last 4 Digits</label>
+                <input
+                  type="text"
+                  value={newCardLast4}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setNewCardLast4(val);
+                  }}
+                  placeholder="1234"
+                  maxLength={4}
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Card Network</label>
+                <select
+                  value={newCardBrand}
+                  onChange={(e) => setNewCardBrand(e.target.value)}
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none bg-white"
+                >
+                  <option value="visa">Visa</option>
+                  <option value="mastercard">Mastercard</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddDebitCard}
+                disabled={!newCardLast4 || newCardLast4.length !== 4 || !newCardHolderName.trim()}
+                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Card
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Debit Card Cashout Modal */}
+      {showDebitCashoutModal && selectedDebitCard && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <ArrowUpRight className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Cash Out to Debit</h3>
+                  <p className="text-sm text-gray-500">Instant transfer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDebitCashoutModal(false);
+                  setDebitCashoutAmount('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Balance Display */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border-2 border-orange-200">
+              <p className="text-sm text-orange-700 mb-1">Feeder Card Balance</p>
+              <p className="text-4xl font-bold text-orange-900">{formatCurrency(cardBalance)}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount to Cash Out</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
+                  <input
+                    type="number"
+                    value={debitCashoutAmount}
+                    onChange={(e) => setDebitCashoutAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    max={cardBalance}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {[0.25, 0.5, 0.75, 1].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => setDebitCashoutAmount((cardBalance * pct).toFixed(2))}
+                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      {pct === 1 ? 'All' : `${pct * 100}%`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fee breakdown */}
+              {debitCashoutAmount && parseFloat(debitCashoutAmount) > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(parseFloat(debitCashoutAmount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Instant fee (1.5%)</span>
+                    <span className="font-medium text-red-600">-{formatCurrency(parseFloat(debitCashoutAmount) * 0.015)}</span>
+                  </div>
+                  <div className="border-t pt-1 flex justify-between text-sm">
+                    <span className="font-semibold text-gray-900">You receive</span>
+                    <span className="font-bold text-green-700">{formatCurrency(parseFloat(debitCashoutAmount) * 0.985)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Destination card */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {selectedDebitCard.card_brand?.toUpperCase()} •••• {selectedDebitCard.card_last4}
+                    </p>
+                    <p className="text-xs text-gray-600">{selectedDebitCard.card_holder_name}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowDebitCashoutModal(false);
+                    setDebitCashoutAmount('');
+                  }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDebitCashout}
+                  disabled={!debitCashoutAmount || parseFloat(debitCashoutAmount) <= 0 || debitCashoutLoading}
+                  className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {debitCashoutLoading ? 'Processing...' : 'Cash Out'}
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500 text-center">
+                Funds arrive instantly to your debit card. A 1.5% fee is applied to all instant transfers.
               </p>
             </div>
           </div>
