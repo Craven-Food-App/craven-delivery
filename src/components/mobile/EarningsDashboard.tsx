@@ -509,11 +509,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-gray-50" style={{ 
-      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px' }}>
+      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center justify-between mb-1">
           <button 
             onClick={() => onOpenMenu?.()}

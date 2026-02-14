@@ -1516,7 +1516,7 @@ export const MobileDriverDashboard: React.FC = () => {
       {activeTab === 'home' && driverState !== 'on_delivery' && (
         <div 
           className={`fixed left-4 pointer-events-auto ${isMenuOpen || isActiveFeedingMenuOpen ? 'z-10' : 'z-50'}`} 
-          style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)` }}
+          style={{ top: `calc(env(safe-area-inset-top, 0px) + 12px)` }}
         >
           <button
             onClick={() => {
@@ -1537,7 +1537,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       {/* Speed Limit & Current Speed - Under Hamburger Menu - Only on Home Tab */}
       {activeTab === 'home' && (
-        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 95px)` }}>
+        <div className="fixed left-4 z-40 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 64px)` }}>
           <SpeedLimitSign 
             currentSpeed={location?.speed ? location.speed * 2.237 : 0} // Convert m/s to mph
             location={location ? {
@@ -1717,8 +1717,8 @@ export const MobileDriverDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            {/* Orange footer bar */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '48px' }} />
+            {/* Bottom safe area padding */}
+            <div className="absolute bottom-0 left-0 right-0" style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
           </>}
 
         {/* ONLINE SEARCHING STATE */}
@@ -1729,7 +1729,7 @@ export const MobileDriverDashboard: React.FC = () => {
             </div>
 
             {/* Pause Button - Top Right - Level with menu button - LOCKED POSITION */}
-            <div className="fixed z-50 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 43px)`, right: '66px' }}>
+            <div className="fixed z-50 pointer-events-auto" style={{ top: `calc(env(safe-area-inset-top, 0px) + 12px)`, right: '66px' }}>
               <Button onClick={handlePause} variant="ghost" size="sm" className="w-10 h-10 bg-white/90 backdrop-blur-sm border border-border/20 rounded-full p-2 shadow-lg hover:bg-white">
                 <Pause className="h-5 w-5 text-gray-700" />
               </Button>
@@ -1775,8 +1775,8 @@ export const MobileDriverDashboard: React.FC = () => {
               />
                 </div>
                 
-            {/* Orange footer bar - same as main dashboard */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-orange-600" style={{ height: '48px' }} />
+            {/* Bottom safe area padding */}
+            <div className="absolute bottom-0 left-0 right-0" style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
           </>}
 
         {/* PAUSED STATE - DoorDash Style */}
@@ -1784,7 +1784,7 @@ export const MobileDriverDashboard: React.FC = () => {
           <div className="fixed inset-0 bg-white z-50" style={{ pointerEvents: 'auto' }}>
 
             {/* Header - Level with hamburger menu */}
-            <div className="flex items-center justify-between px-4 safe-area-top" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 43px)' }}>
+            <div className="flex items-center justify-between px-4 safe-area-top" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
               {/* Hamburger menu button */}
               <button
                 onClick={() => setIsMenuOpen(true)}
@@ -1855,8 +1855,8 @@ export const MobileDriverDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Android Bottom Bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-black" style={{ height: '48px' }} />
+            {/* Bottom safe area spacer */}
+            <div className="fixed bottom-0 left-0 right-0" style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#fff' }} />
           </div>
         )}
 

@@ -209,52 +209,38 @@ interface MapHeaderProps {
 const MapHeader: React.FC<MapHeaderProps> = ({ title, status, locationIcon, distance }) => {
   return (
     <Box
-      p="md"
       style={{
-        background: 'linear-gradient(to bottom right, var(--mantine-color-orange-6), var(--mantine-color-red-6))',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(4px)',
         color: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        height: '100%',
-        position: 'relative',
+        padding: '10px 16px',
         zIndex: 40,
-        opacity: 0.8,
-        paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: '48px',
       }}
     >
-      <Group justify="space-between" mb="xl">
-        <Title order={2} fw={700}>CRAVEN</Title>
-        <Badge color="white" variant="light" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}>
-          <Group gap={4}>
-            <Text size="sm" fw={600}>ON FIRE</Text>
-            <IconClock size={16} />
-          </Group>
-        </Badge>
-      </Group>
-
-      <Group justify="space-between" align="flex-end">
-        <Group gap="md">
-          <ThemeIcon
-            size="xl"
-            radius="xl"
-            style={{ backgroundColor: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.5)' }}
-          >
-            {locationIcon}
-          </ThemeIcon>
-          <Box>
-            <Text size="xs" c="white" opacity={0.8} fw={500}>{status}</Text>
-            <Title order={4} fw={700} lineClamp={1}>{title}</Title>
-          </Box>
-        </Group>
-
-        <Box style={{ textAlign: 'right' }}>
-          <Text size="xl" fw={700} style={{ lineHeight: 'none' }}>
-            {typeof distance === 'number' ? distance.toFixed(1) : '0.0'} mi
-          </Text>
-          <Text size="xs" c="white" opacity={0.8} fw={500}>to destination</Text>
+      <Group gap="sm" style={{ flex: 1, minWidth: 0 }}>
+        <ThemeIcon
+          size="sm"
+          radius="xl"
+          style={{ backgroundColor: 'rgba(255,255,255,0.2)', flexShrink: 0 }}
+        >
+          {locationIcon}
+        </ThemeIcon>
+        <Box style={{ minWidth: 0 }}>
+          <Text size="xs" c="white" opacity={0.8} fw={500} lineClamp={1}>{status}</Text>
+          <Text size="sm" fw={600} lineClamp={1}>{title}</Text>
         </Box>
       </Group>
+      <Text size="sm" fw={700} style={{ flexShrink: 0 }}>
+        {typeof distance === 'number' ? distance.toFixed(1) : '0.0'} mi
+      </Text>
     </Box>
   );
 };
@@ -273,12 +259,12 @@ const DetailCard: React.FC<DetailCardProps> = ({ title, content, icon, actionBut
     (icon.type === Avatar || (icon.props && icon.props.src));
   
   return (
-    <Card mb="sm" withBorder p="sm" style={{ borderRadius: '8px' }}>
+    <Card mb="xs" withBorder p="xs" style={{ borderRadius: '8px' }}>
       <Group align="flex-start" gap="sm">
         {isAvatarElement ? (
           <Box style={{ flexShrink: 0 }}>{icon}</Box>
         ) : (
-          <ThemeIcon size="lg" radius="md" color="orange" variant="light" style={{ flexShrink: 0 }}>
+          <ThemeIcon size="md" radius="md" color="orange" variant="light" style={{ flexShrink: 0 }}>
             {icon}
           </ThemeIcon>
         )}
@@ -1312,22 +1298,25 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
 
     return (
-      <Stack 
-        flex={1} 
+      <Box 
         style={{ 
           fontFamily: 'sans-serif',
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#fff',
         }} 
-        data-testid="delivery-flow" 
-        gap={0}
+        data-testid="delivery-flow"
       >
-        {/* Full-screen map section */}
+        {/* Compact map section */}
         <Box 
-          h={status === DRIVER_STATUS.TO_CUSTOMER ? "calc(45% + 50px)" : "45%"} 
-          w="100%" 
-          pos="relative" 
           style={{ 
+            height: 200,
             flexShrink: 0,
-            paddingTop: 'env(safe-area-inset-top, 0px)',
+            position: 'relative',
           }}
         >
           <SimulatedMapView isToStore={isToStore} /> 
@@ -1340,24 +1329,19 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           />
         </Box>
 
-        {/* Content section - more compact */}
+        {/* Content section - scrollable */}
         <Box 
-          flex={1} 
-          px="sm" 
-          pb="sm" 
           style={{ 
+            flex: 1,
             overflowY: 'auto', 
             backgroundColor: 'white', 
-            borderTopLeftRadius: '20px', 
-            borderTopRightRadius: '20px', 
-            marginTop: -16,
-            paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+            padding: '12px 16px 24px',
           }}
         >
-          <Stack gap="sm" pt="md" align="stretch">
+          <Stack gap="xs" align="stretch">
             {/* Customer name and order number - show customer name during pickup and delivery */}
             {currentFlow.isPickup || status === DRIVER_STATUS.TO_CUSTOMER || status === DRIVER_STATUS.AT_CUSTOMER ? (
-              <Stack gap={4} style={{ marginTop: '20px' }}>
+              <Stack gap={4}>
                 <Text size="sm" fw={600} c="dimmed" style={{ letterSpacing: '0.02em' }}>
                   {currentOrder.customer.name}
                 </Text>
@@ -1373,7 +1357,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 </Group>
               </Stack>
             ) : (
-              <Group justify="space-between" align="center" style={{ marginTop: '20px' }}>
+              <Group justify="space-between" align="center">
                 <Title order={2} fw={700} c="dark">
                   Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
                 </Title>
@@ -1600,13 +1584,13 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   />
                 )}
 
-                <Card mt="md" withBorder>
-                  <Group justify="space-between" align="center" p="md">
+                <Card withBorder p="sm">
+                  <Group justify="space-between" align="center">
                     <Group gap={4}>
                       <IconCurrencyDollar size={16} color="var(--mantine-color-green-6)" />
                       <Text size="sm" fw={500} c="dimmed">Estimated Pay</Text>
                     </Group>
-                    <Text size="2xl" fw={700} c="green.7" style={{ lineHeight: 'none' }}>
+                    <Text size="xl" fw={700} c="green.7" style={{ lineHeight: 'none' }}>
                       ${typeof payAmount === 'number' ? payAmount.toFixed(2) : String(payAmount || '0.00')}
                     </Text>
                   </Group>
@@ -1615,11 +1599,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 {status === DRIVER_STATUS.TO_CUSTOMER && (
                   <Button 
                     onClick={handleConfirmArrivalAtCustomer}
-                    size="lg"
+                    size="md"
                     fullWidth
-                    mt="md"
                     color="gray"
                     data-testid="arrived-at-customer-button"
+                    style={{ borderRadius: '8px' }}
                   >
                     Arrived at Customer's Location
                   </Button>
@@ -1628,11 +1612,11 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 {status === DRIVER_STATUS.AT_CUSTOMER && (
                   <Button 
                     onClick={handleStartDeliveryVerification}
-                    size="lg"
+                    size="md"
                     fullWidth
-                    mt="md"
                     color="gray"
                     data-testid="complete-delivery-button"
+                    style={{ borderRadius: '8px' }}
                   >
                     Drop-off & Complete Delivery
                   </Button>
@@ -1641,7 +1625,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             )}
           </Stack>
         </Box>
-      </Stack>
+      </Box>
     );
   };
 
@@ -1691,24 +1675,24 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           }}
         >
           {/* Feeder Icon with animated checkmark */}
-          <Box mt="sm" style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto' }}>
+          <Box mt="sm" style={{ position: 'relative', width: '72px', height: '72px', margin: '0 auto' }}>
             <img 
               src={feederAppIcon} 
               alt="Feeder" 
               style={{ 
-                width: '120px', 
-                height: '120px', 
+                width: '72px', 
+                height: '72px', 
                 objectFit: 'contain',
               }} 
             />
-            {/* Animated green check overlay - appears when animation completes */}
+            {/* Animated green check overlay */}
             <Box
               style={{
                 position: 'absolute',
-                bottom: '-8px',
-                right: '-8px',
-                width: '40px',
-                height: '40px',
+                bottom: '-6px',
+                right: '-6px',
+                width: '28px',
+                height: '28px',
                 borderRadius: '50%',
                 backgroundColor: '#22c55e',
                 display: 'flex',
@@ -1720,7 +1704,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 transition: 'opacity 0.3s ease, transform 0.3s ease',
               }}
             >
-              <IconCheck size={24} color="white" strokeWidth={3} />
+              <IconCheck size={16} color="white" strokeWidth={3} />
             </Box>
           </Box>
 
@@ -1744,7 +1728,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               fw={800}
               c={isAnimating ? 'dark' : '#22c55e'}
               style={{
-                fontSize: '100px',
+                fontSize: '48px',
                 lineHeight: '1',
                 fontFamily: 'system-ui, -apple-system, sans-serif',
                 letterSpacing: '-0.02em',
@@ -1761,7 +1745,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             maw={420} 
             withBorder 
             bg="white" 
-            p="lg" 
+            p="md" 
             style={{ 
               borderRadius: '12px',
               borderColor: '#e5e7eb',
@@ -1821,17 +1805,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           {/* Resume Feeding Button - Orange to Red Gradient */}
           <Button
             onClick={onCompleteDelivery}
-            size="lg"
+            size="md"
             fullWidth
             maw={420}
-            h={56}
+            h={44}
             style={{
               background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)',
               color: 'white',
-              fontSize: '16px',
+              fontSize: '14px',
               fontWeight: 600,
               letterSpacing: '0.02em',
-              borderRadius: '12px',
+              borderRadius: '8px',
               border: 'none',
               boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
             }}
@@ -1844,44 +1828,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   };
 
   if (status === DRIVER_STATUS.COMPLETE) {
-    return (
-      <>
-        {renderComplete()}
-        {/* Android Bottom Bar */}
-        <Box 
-          style={{ 
-            position: 'fixed', 
-            bottom: 0, 
-            left: 0, 
-            right: 0, 
-            height: 'calc(48px + env(safe-area-inset-bottom, 0px))', 
-            backgroundColor: '#000',
-            zIndex: 1000,
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          }} 
-        />
-      </>
-    );
+    return renderComplete();
   }
   
-  return (
-    <>
-      {renderActiveFlow()}
-      {/* Android Bottom Bar */}
-      <Box 
-        style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          height: 'calc(48px + env(safe-area-inset-bottom, 0px))', 
-          backgroundColor: '#000',
-          zIndex: 1000,
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        }} 
-      />
-    </>
-  );
+  return renderActiveFlow();
 }
 
 export default CravenDeliveryFlow;
