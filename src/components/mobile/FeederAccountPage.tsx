@@ -1,23 +1,8 @@
 /**
  * Crave'n Feeder App — Account Tab (Enterprise Compact White)
  * ────────────────────────────────────────────────────────────
- * Drop-in:  src/components/mobile/FeederAccountPage.tsx
- *
- * Cursor instructions:
- *   1) Replace src/components/mobile/FeederAccountPage.tsx with this file.
- *   2) Route / tab already points to <FeederAccountPage /> — no change needed.
- *   3) No gradients on backgrounds, no emojis, no oversized cards.
- *   4) All layout is inline-style; no external CSS file required.
- *   5) Driver data fetched from Supabase — integrated with existing fetchDriverData.
- *   6) Status tier thresholds match your app:
- *        Silver   55–64 pts
- *        Gold     65–75 pts
- *        Platinum 76–84 pts
- *        Diamond  85–94 pts
- *        Ultimate 95+  pts
- *   7) Nav rows are driven by the MENU_ITEMS array — wired to existing actions.
- *   8) ON FIRE card calls showSafetySettings — existing modal.
- *   9) Sign Out row calls handleSignOut — existing auth logout flow.
+ * Uses real tier_status from driver_profiles via ratingHelpers.ts
+ * 5-tier system: Feeder / Gold / Platinum / Diamond / Ultimate
  */
 
 import React, { useMemo, useState, useEffect } from "react";
@@ -30,6 +15,8 @@ import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
 import DriverSupportChat from "./DriverSupportChat";
 import { SafetySettings } from "@/components/settings/SafetySettings";
+import { getTierConfig, getNextTier, TIER_ORDER } from "@/utils/ratingHelpers";
+import { RatingTier } from "@/types/diamond-orders";
 import {
   Box,
   Loader,
@@ -70,24 +57,16 @@ const C = {
 } as const;
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
-type StatusTier = "Silver" | "Gold" | "Platinum" | "Diamond" | "Ultimate";
-
-interface StatusInfo {
-  tier:       StatusTier;
-  label:      string;   // e.g. "Diamond Feeder"
-  minPts:     number;
-  maxPts:     number | null; // null = no cap
-  barColor:   string;   // accent for the 2px progress bar
-}
-
 interface AccountData {
   name:         string;
-  rating:       number;   // 0–5
+  rating:       number;
   totalFeeds:   number;
-  statusPoints: number;
-  memberSince:  string;   // e.g. "Oct 2025"
+  tier:         RatingTier;
+  memberSince:  string;
   onFireActive: boolean;
   cardBalance:  number;
+  rollingDeliveries: number;
+  rollingRating: number;
 }
 
 type FeederAccountPageProps = {
@@ -95,32 +74,7 @@ type FeederAccountPageProps = {
   onOpenNotifications?: () => void;
 };
 
-// ─── STATUS TIERS (source of truth — edit thresholds here) ─────────────────
-const TIERS: StatusInfo[] = [
-  { tier: "Ultimate", label: "Ultimate Feeder", minPts: 95,  maxPts: null,  barColor: "#000000" },
-  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: 94,    barColor: "#3A7BD5" },
-  { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#78909C" },
-  { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#F9A825" },
-  { tier: "Silver",   label: "Silver Feeder",   minPts: 55,  maxPts: 64,    barColor: "#90A4AE" },
-];
-
-function getStatus(pts: number): StatusInfo {
-  // Walk highest → lowest; first match wins
-  for (const t of TIERS) {
-    if (pts >= t.minPts) return t;
-  }
-  // Below Silver floor — still render as Silver
-  return TIERS[TIERS.length - 1];
-}
-
-/** Progress 0–1 within the current tier band. */
-function tierProgress(pts: number, status: StatusInfo): number {
-  const max = status.maxPts ?? status.minPts + 15; // Diamond has no cap; use +15 as visual range
-  return Math.min(1, Math.max(0, (pts - status.minPts) / (max - status.minPts)));
-}
-
-// ─── NAV ITEMS (your real Account menu — add/remove/reorder here) ──────────
-//     Each `id` maps to the onPress switch below in NavRow.
+// ─── NAV ITEMS ──────────────────────────────────────────────────────────────
 const MENU_ITEMS = [
   { id: "profile",     label: "Profile Information",  desc: "Personal details & preferences" },
   { id: "vehicle",     label: "Vehicle & Documents",  desc: "Registration, insurance, inspection" },
@@ -170,7 +124,7 @@ function StarIcon({ size = 12, filled = true }: { size?: number; filled?: boolea
   );
 }
 
-// Per-nav-item SVG icons — matched to your existing Account page icons
+// Per-nav-item SVG icons
 function NavIcon({ id }: { id: NavId }) {
   const s = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: C.text, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
@@ -247,15 +201,16 @@ function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
   );
 }
 
-// ─── COMPONENT: IDENTITY ROW (horizontal: avatar · name · badge · since) ───
-function IdentityRow({ data, status }: { data: AccountData; status: { tier: StatusTier; label: string } }) {
-  // Initials from first + last name
+// ─── COMPONENT: IDENTITY ROW ───────────────────────────────────────────────
+function IdentityRow({ data }: { data: AccountData }) {
   const initials = data.name
     .split(" ")
     .map((w) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  const tierConfig = getTierConfig(data.tier);
 
   return (
     <div style={{
@@ -280,18 +235,19 @@ function IdentityRow({ data, status }: { data: AccountData; status: { tier: Stat
           {data.name}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-          {/* Tier badge */}
+          {/* Tier badge with real tier colors */}
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 4,
-            background: C.blueBg, color: C.blue,
+            background: tierConfig.color,
+            color: tierConfig.textColor,
             padding: "2px 7px", borderRadius: 10,
             fontSize: 9, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+            border: tierConfig.borderColor ? `1px solid ${tierConfig.borderColor}` : undefined,
           }}>
-            {/* Small diamond / gem SVG for the badge icon */}
-            <svg width={8} height={8} viewBox="0 0 24 24" fill={C.blue}>
+            <svg width={8} height={8} viewBox="0 0 24 24" fill={tierConfig.textColor}>
               <path d="M12 2L2 9l3 13h14l3-13L12 2z" />
             </svg>
-            {status.label}
+            {tierConfig.name}
           </span>
           <span style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
             Since {data.memberSince}
@@ -302,12 +258,11 @@ function IdentityRow({ data, status }: { data: AccountData; status: { tier: Stat
   );
 }
 
-// ─── COMPONENT: INLINE STATS STRIP (rating · feeds · points) ───────────────
+// ─── COMPONENT: INLINE STATS STRIP (rating · feeds) ────────────────────────
 function StatsStrip({ data }: { data: AccountData }) {
   const stats = [
     { value: <><StarIcon size={11} />{data.rating.toFixed(2)}</>, label: "Rating" },
     { value: <>{data.totalFeeds}</>,                              label: "Feeds" },
-    { value: <>{data.statusPoints}</>,                            label: "Points" },
   ];
 
   return (
@@ -346,11 +301,19 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── COMPONENT: STATUS POINTS (2px progress row) ───────────────────────────
-function StatusRow({ data, status }: { data: AccountData; status: { tier: StatusTier; label: string; barColor: string; minPts: number; maxPts: number | null } }) {
-  const progress = tierProgress(data.statusPoints, status as any);
-  const nextTierIdx = TIERS.findIndex((t) => t.tier === status.tier) - 1;
-  const nextTier = nextTierIdx >= 0 ? TIERS[nextTierIdx] : null;
+// ─── COMPONENT: STATUS ROW (real tier progress) ────────────────────────────
+function StatusRow({ data }: { data: AccountData }) {
+  const tierConfig = getTierConfig(data.tier);
+  const nextTierKey = getNextTier(data.tier);
+  const nextTierConfig = nextTierKey ? getTierConfig(nextTierKey) : null;
+
+  // Calculate progress based on deliveries toward next tier
+  let progress = 1;
+  if (nextTierConfig) {
+    const currentMin = tierConfig.minDeliveries;
+    const nextMin = nextTierConfig.minDeliveries;
+    progress = Math.min(1, Math.max(0, (data.rollingDeliveries - currentMin) / (nextMin - currentMin)));
+  }
 
   return (
     <>
@@ -358,32 +321,32 @@ function StatusRow({ data, status }: { data: AccountData; status: { tier: Status
         margin: "8px 16px 0",
         display: "flex", alignItems: "center", gap: 10, height: 34,
       }}>
-        <span style={{ fontSize: 12, color: C.text, fontWeight: 600, width: 80, flexShrink: 0 }}>Points</span>
+        <span style={{ fontSize: 12, color: C.text, fontWeight: 600, width: 80, flexShrink: 0 }}>{tierConfig.name}</span>
         {/* 2px bar */}
         <div style={{ flex: 1, height: 2, background: C.track, borderRadius: 1, overflow: "hidden" }}>
           <div style={{
             height: "100%",
-            background: status.barColor,
+            background: tierConfig.color === '#F5F5F5' ? C.muted : tierConfig.color,
             borderRadius: 1,
             width: `${progress * 100}%`,
             transition: "width 600ms cubic-bezier(.22,.61,0,1)",
           }} />
         </div>
         <span style={{ fontSize: 12, fontWeight: 800, color: C.text, flexShrink: 0, whiteSpace: "nowrap" }}>
-          {data.statusPoints} pts
+          {data.rollingDeliveries} feeds
         </span>
       </div>
       {/* Operational sub-line */}
       <div style={{ margin: "4px 16px 0", fontSize: 10.5, color: C.muted, fontWeight: 500 }}>
-        {nextTier
-          ? `${nextTier.minPts - data.statusPoints} pts to ${nextTier.label}`
-          : `${status.label} — top tier reached`}
+        {nextTierConfig
+          ? `${nextTierConfig.minDeliveries - data.rollingDeliveries} more feeds to ${nextTierConfig.name}`
+          : `${tierConfig.name} — top tier reached`}
       </div>
     </>
   );
 }
 
-// ─── COMPONENT: ON FIRE CARD (flat, left orange accent bar) ────────────────
+// ─── COMPONENT: ON FIRE CARD ────────────────────────────────────────────────
 function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () => void }) {
   return (
     <div style={{
@@ -397,7 +360,6 @@ function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () 
         borderLeft: `3px solid ${C.orange}`,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Header: title + active pill */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>ON FIRE Game</span>
             {active && (
@@ -411,11 +373,9 @@ function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () 
               </span>
             )}
           </div>
-          {/* Description */}
           <div style={{ fontSize: 10, color: C.muted, lineHeight: 1.4, marginTop: 3 }}>
             Safety-first speed monitoring with gamified bonuses.
           </div>
-          {/* CTA link */}
           <div
             role="button"
             tabIndex={0}
@@ -485,7 +445,6 @@ function SignOutRow({ onSignOut }: { onSignOut: () => void }) {
         cursor: "pointer",
       }}
     >
-      {/* LogOut icon */}
       <div style={{ width: 18, height: 18, flexShrink: 0 }}>
         <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
@@ -533,10 +492,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     name: '',
     rating: 0,
     totalFeeds: 0,
-    statusPoints: 0,
+    tier: 'Feeder',
     memberSince: '',
     onFireActive: false,
     cardBalance: 0,
+    rollingDeliveries: 0,
+    rollingRating: 0,
   });
 
   // Check URL params and listen for navigation events to auto-open card page
@@ -605,7 +566,11 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
       
       const rating = Number(driverProfile?.rating) || 0;
       const totalDeliveries = driverProfile?.total_deliveries || 0;
-      const points = Math.round((rating) * 17 + (totalDeliveries) * 0.1);
+      
+      // Use real tier_status from DB
+      const tier = (driverProfile?.tier_status as RatingTier) || 'Feeder';
+      const rollingDeliveries = driverProfile?.rolling_deliveries || totalDeliveries;
+      const rollingRating = driverProfile?.rolling_rating || rating;
 
       let memberSince = '';
       if (driverProfile?.created_at) {
@@ -667,10 +632,12 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         name: fullName,
         rating,
         totalFeeds: totalDeliveries,
-        statusPoints: points,
+        tier,
         memberSince,
         onFireActive,
         cardBalance: balance,
+        rollingDeliveries,
+        rollingRating,
       });
       setCardBalance(balance);
     } catch (error) {
@@ -679,8 +646,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
       setLoading(false);
     }
   };
-
-  const status = useMemo(() => getStatus(accountData.statusPoints), [accountData.statusPoints]);
 
   // ── Navigation / action handlers ─────────────────────────────────────────
   const handleNav = (id: NavId) => {
@@ -754,7 +719,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     return <DriverSupportChat onBack={() => setCurrentPage('main')} />;
   }
 
-  // If card page is open, show that instead (keeping existing card page UI)
+  // If card page is open, show that instead
   if (showCardPage) {
     return (
         <div style={{ 
@@ -945,22 +910,13 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
       paddingTop: 'env(safe-area-inset-top, 0px)',
     }}>
 
-      {/* ── Fixed Header Section (everything visible in image) */}
+      {/* ── Fixed Header Section */}
       <div style={{ flexShrink: 0 }}>
-        {/* ── Top bar */}
         <TopBar onMenuPress={onOpenMenu} />
-
-        {/* ── Identity row */}
-        <IdentityRow data={accountData} status={status} />
-
-        {/* ── Inline stats strip: rating | feeds | points */}
+        <IdentityRow data={accountData} />
         <StatsStrip data={accountData} />
-
-        {/* ── Status section */}
         <SectionHeader>Status</SectionHeader>
-        <StatusRow data={accountData} status={status} />
-
-        {/* ── Active Programs section (ON FIRE) */}
+        <StatusRow data={accountData} />
         <SectionHeader>Active Programs</SectionHeader>
         <OnFireCard active={accountData.onFireActive} onConfigure={handleConfigureOnFire} />
       </div>
@@ -974,7 +930,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         marginTop: 14,
         borderTop: `1px solid ${C.border}`,
       }}>
-        {/* ── Menu section — all nav items from MENU_ITEMS */}
         {MENU_ITEMS.map((item) => (
           <NavRow
             key={item.id}
@@ -985,17 +940,13 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             onPress={() => handleNav(item.id)}
           />
         ))}
-
-        {/* ── Sign Out */}
         <SignOutRow onSignOut={handleSignOut} />
-
-        {/* Bottom breathing room for tab bar and extra scroll space */}
         <div style={{ 
           paddingBottom: `calc(100px + env(safe-area-inset-bottom, 0px))` 
         }} />
       </div>
 
-      {/* ON FIRE Safety Settings Modal - Full Screen */}
+      {/* ON FIRE Safety Settings Modal */}
       {showSafetySettings && userId && (
         <div
           style={{
@@ -1010,7 +961,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
-          {/* Header */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1036,7 +986,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
               <IconX size={20} style={{ color: C.text }} />
             </button>
           </div>
-          {/* Scrollable Content */}
           <div style={{ 
             flex: 1, 
             overflowY: 'auto',
