@@ -1502,7 +1502,7 @@ export const MobileDriverDashboard: React.FC = () => {
     )}
 
     {!isLoading && !showWelcomeScreen && isSessionRestored && (
-    <div className="fixed inset-0 h-[100dvh] w-screen overflow-hidden safe-area-top" style={{ background: CR.bg }}>
+    <div className="fixed inset-0 h-[100dvh] w-screen overflow-hidden safe-area-top" style={{ background: C.bg }}>
       {/* Offline Indicator */}
       <OfflineIndicator />
       
