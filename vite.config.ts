@@ -126,8 +126,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // React core must load first - keep react + react-dom together
-            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
+            // DO NOT separate react/react-dom into a chunk — they must stay in the main entry bundle
+            // so they initialize before any UI library chunk executes
             if (id.includes('node_modules/@mui')) return 'vendor-mui';
             if (id.includes('node_modules/@mantine')) return 'vendor-mantine';
             if (id.includes('node_modules/@chakra-ui') || id.includes('node_modules/@emotion')) return 'vendor-chakra';
