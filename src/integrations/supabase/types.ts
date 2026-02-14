@@ -8737,24 +8737,33 @@ export type Database = {
       }
       driver_cards: {
         Row: {
+          card_number: string | null
           created_at: string
+          cvv: string | null
           driver_id: string
+          expiry_date: string
           id: string
           issuing_card_id: string
           status: string
           updated_at: string
         }
         Insert: {
+          card_number?: string | null
           created_at?: string
+          cvv?: string | null
           driver_id: string
+          expiry_date?: string
           id?: string
           issuing_card_id: string
           status?: string
           updated_at?: string
         }
         Update: {
+          card_number?: string | null
           created_at?: string
+          cvv?: string | null
           driver_id?: string
+          expiry_date?: string
           id?: string
           issuing_card_id?: string
           status?: string
@@ -9350,7 +9359,10 @@ export type Database = {
           created_at: string | null
           current_latitude: number | null
           current_longitude: number | null
+          customer_complaints_count: number | null
           diamond_points: number | null
+          dispatch_weight: number | null
+          fraud_flag: boolean | null
           heading: number | null
           id: string
           is_available: boolean | null
@@ -9362,9 +9374,18 @@ export type Database = {
           rating: number | null
           rating_tier: string | null
           region_id: number | null
+          rolling_cancel_rate: number | null
+          rolling_completion_rate: number | null
+          rolling_deliveries: number | null
+          rolling_on_time_rate: number | null
+          rolling_rating: number | null
           route_updated_at: string | null
           speed: number | null
           status: string | null
+          tier_grace_period_start: string | null
+          tier_last_updated: string | null
+          tier_review_required: boolean | null
+          tier_status: Database["public"]["Enums"]["feeder_tier"] | null
           total_deliveries: number | null
           updated_at: string | null
           user_id: string | null
@@ -9380,7 +9401,10 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
+          customer_complaints_count?: number | null
           diamond_points?: number | null
+          dispatch_weight?: number | null
+          fraud_flag?: boolean | null
           heading?: number | null
           id?: string
           is_available?: boolean | null
@@ -9392,9 +9416,18 @@ export type Database = {
           rating?: number | null
           rating_tier?: string | null
           region_id?: number | null
+          rolling_cancel_rate?: number | null
+          rolling_completion_rate?: number | null
+          rolling_deliveries?: number | null
+          rolling_on_time_rate?: number | null
+          rolling_rating?: number | null
           route_updated_at?: string | null
           speed?: number | null
           status?: string | null
+          tier_grace_period_start?: string | null
+          tier_last_updated?: string | null
+          tier_review_required?: boolean | null
+          tier_status?: Database["public"]["Enums"]["feeder_tier"] | null
           total_deliveries?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -9410,7 +9443,10 @@ export type Database = {
           created_at?: string | null
           current_latitude?: number | null
           current_longitude?: number | null
+          customer_complaints_count?: number | null
           diamond_points?: number | null
+          dispatch_weight?: number | null
+          fraud_flag?: boolean | null
           heading?: number | null
           id?: string
           is_available?: boolean | null
@@ -9422,9 +9458,18 @@ export type Database = {
           rating?: number | null
           rating_tier?: string | null
           region_id?: number | null
+          rolling_cancel_rate?: number | null
+          rolling_completion_rate?: number | null
+          rolling_deliveries?: number | null
+          rolling_on_time_rate?: number | null
+          rolling_rating?: number | null
           route_updated_at?: string | null
           speed?: number | null
           status?: string | null
+          tier_grace_period_start?: string | null
+          tier_last_updated?: string | null
+          tier_review_required?: boolean | null
+          tier_status?: Database["public"]["Enums"]["feeder_tier"] | null
           total_deliveries?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -26779,6 +26824,41 @@ export type Database = {
           },
         ]
       }
+      tier_history: {
+        Row: {
+          created_at: string
+          feeder_id: string
+          id: string
+          new_tier: Database["public"]["Enums"]["feeder_tier"]
+          old_tier: Database["public"]["Enums"]["feeder_tier"]
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          feeder_id: string
+          id?: string
+          new_tier: Database["public"]["Enums"]["feeder_tier"]
+          old_tier: Database["public"]["Enums"]["feeder_tier"]
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          feeder_id?: string
+          id?: string
+          new_tier?: Database["public"]["Enums"]["feeder_tier"]
+          old_tier?: Database["public"]["Enums"]["feeder_tier"]
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tier_history_feeder_id_fkey"
+            columns: ["feeder_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_entries: {
         Row: {
           break_duration_minutes: number | null
@@ -29234,6 +29314,10 @@ export type Database = {
         Returns: boolean
       }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      evaluate_feeder_tier: {
+        Args: { p_feeder_id: string }
+        Returns: undefined
+      }
       expire_old_investor_tokens: { Args: never; Returns: undefined }
       finalize_order_transfers: {
         Args: {
@@ -30568,6 +30652,7 @@ export type Database = {
         | "passed"
         | "failed"
         | "auto_failed"
+      feeder_tier: "Feeder" | "Gold" | "Platinum" | "Diamond" | "Ultimate"
       menu_preparation_status: "not_started" | "in_progress" | "ready"
       merchant_category:
         | "restaurant"
@@ -30801,6 +30886,7 @@ export const Constants = {
         "failed",
         "auto_failed",
       ],
+      feeder_tier: ["Feeder", "Gold", "Platinum", "Diamond", "Ultimate"],
       menu_preparation_status: ["not_started", "in_progress", "ready"],
       merchant_category: [
         "restaurant",

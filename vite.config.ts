@@ -118,14 +118,31 @@ export default defineConfig(({ mode }) => {
 
     build: {
       chunkSizeWarningLimit: 1000,
-      sourcemap: mode === "development",
+      sourcemap: false,
       minify: "esbuild",
       commonjsOptions: {
         transformMixedEsModules: true,
       },
       rollupOptions: {
         output: {
-          manualChunks: undefined,
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react-dom'))       return 'vendor-react';
+              if (id.includes('react/'))          return 'vendor-react';
+              if (id.includes('@mui/'))           return 'vendor-mui';
+              if (id.includes('@mantine/'))       return 'vendor-mantine';
+              if (id.includes('@chakra-ui/'))     return 'vendor-chakra';
+              if (id.includes('antd') || id.includes('@ant-design/')) return 'vendor-antd';
+              if (id.includes('recharts'))        return 'vendor-recharts';
+              if (id.includes('framer-motion'))   return 'vendor-framer';
+              if (id.includes('@stripe/'))        return 'vendor-stripe';
+              if (id.includes('mapbox'))          return 'vendor-mapbox';
+              if (id.includes('monaco'))          return 'vendor-monaco';
+              if (id.includes('@emotion/'))       return 'vendor-emotion';
+              if (id.includes('@radix-ui/'))      return 'vendor-radix';
+              if (id.includes('lucide'))          return 'vendor-icons';
+            }
+          },
         },
         onwarn(warning, warn) {
           if (
