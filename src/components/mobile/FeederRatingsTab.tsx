@@ -24,6 +24,7 @@ const C = {
 type FeederRatingsTabProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
+  onBack?: () => void;
 };
 
 // ─── TIER BADGE ─────────────────────────────────────────────────────────────
@@ -169,7 +170,7 @@ function PerkItem({ text, locked }: { text: string; locked?: boolean }) {
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
-const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({ onOpenMenu }) => {
+const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({ onOpenMenu, onBack }) => {
   const profile = useFeederTierProfile();
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -192,10 +193,28 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({ onOpenMenu }) => {
       {/* Top bar */}
       <div style={{
         height: 56, background: C.bg,
-        display: "flex", alignItems: "center", justifyContent: "center",
+        display: "flex", alignItems: "center",
         padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+        position: "relative",
       }}>
-        <span style={{ fontSize: 17, fontWeight: 600, color: C.text }}>Feeder Tier</span>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
+              marginLeft: -8,
+            }}
+            aria-label="Go back"
+          >
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        )}
+        <span style={{ fontSize: 17, fontWeight: 600, color: C.text, flex: 1, textAlign: "center" }}>Feeder Tier</span>
+        {onBack && <div style={{ width: 36 }} />}
       </div>
 
       {/* Tier Badge */}
