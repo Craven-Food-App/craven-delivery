@@ -1,120 +1,57 @@
 
+# Fix Tier Inconsistencies Across the Entire Feeder App
 
-# Dark Mode for the Entire Feeder Mobile App
+## Problem
 
-## Overview
+Three files still use the **old points-based tier system** (with "Silver", "Bronze", or a `points >= 95` check) instead of reading the real `tier_status` from the `driver_profiles` table. This creates visible inconsistencies across the app.
 
-Add a fully functional dark mode toggle that transforms the entire feeder app when enabled. The dark mode preference is already saved to user metadata (`app_settings.darkMode`) via the Settings page -- but currently nothing reads it. This plan introduces a React context provider and updates every mobile component to respect the dark/light mode.
+## Files to Fix
 
-## Architecture
+### 1. `src/components/mobile/FeederAccountPage.tsx`
 
-### 1. Create `FeederDarkModeContext` (New File)
+**Current (broken)**: Uses a `StatusTier` type that includes "Silver" (not part of the spec). Calculates a fake `statusPoints` from `(totalDeliveries * 0.5) + (rating * 10)` and maps to tiers based on point thresholds (55/65/76/85/95).
 
-**File**: `src/contexts/FeederDarkModeContext.tsx`
+**Fix**:
+- Remove the `StatusTier`, `StatusInfo`, `TIERS`, `getStatus()`, and `tierProgress()` constructs
+- Import `getTierConfig`, `getNextTier`, `TIER_ORDER` from `ratingHelpers.ts`
+- Fetch `tier_status` from `driver_profiles` instead of computing points
+- Update `IdentityRow` to show the real tier badge with correct colors
+- Update `StatusRow` to show progress toward the next tier using real metrics (deliveries, rating, etc.) instead of fake points
+- Remove "Silver" references entirely -- the system is Feeder / Gold / Platinum / Diamond / Ultimate
 
-A React context that:
-- Reads `darkMode` from user metadata (`app_settings.darkMode`) on mount
-- Provides `isDark` boolean and `toggleDarkMode()` to all children
-- Stores preference in localStorage for instant load (no flash)
-- Exposes a `colors` object that returns the correct palette based on mode
+### 2. `src/components/mobile/RatingsSection.tsx`
 
-**Light palette** (current):
-- `bg`: `#FFFFFF`, `bgMuted`: `#F8F9FA`, `text`: `#111111`, `muted`: `#777777`, `border`: `#EEEEEE`
+**Current (broken)**: Uses a completely separate 4-tier system (`bronze`, `silver`, `gold`, `platinum`) with different thresholds and emoji icons. This is entirely disconnected from the real tier system.
 
-**Dark palette**:
-- `bg`: `#121212`, `bgMuted`: `#1E1E1E`, `text`: `#F1F1F1`, `muted`: `#A0A0A0`, `border`: `#2E2E2E`
-- `card`: `#1A1A1A`, `surface`: `#1E1E1E`
-- Orange accent stays `#E8622A` (unchanged)
+**Fix**:
+- Replace the local `DriverTier` type and `tierConfig` with imports from `ratingHelpers.ts`
+- Fetch `tier_status` from `driver_profiles` instead of computing the tier locally
+- Update the UI to use the official 5-tier names and colors (Feeder / Gold / Platinum / Diamond / Ultimate)
+- Remove "Bronze" and "Silver" references
+- Use `useFeederTierProfile` hook for consistent data
 
-A custom hook `useFeederDarkMode()` returns `{ isDark, colors, toggleDarkMode }`.
+### 3. `src/components/mobile/FeedPreferencesPage.tsx`
 
-### 2. Wrap the Mobile App in the Provider
+**Current (broken)**: Determines Ultimate status using `points >= 95` (same fake points formula). Not connected to the real tier system.
 
-**File**: `src/components/mobile/MobileDriverDashboard.tsx`
+**Fix**:
+- Fetch `tier_status` from `driver_profiles` instead of computing points
+- Check `tier_status === 'Ultimate'` instead of `points >= 95`
+- Update the status display text to show the real tier name
+- Remove the `statusPoints` state and points calculation
 
-Wrap the entire return JSX with `<FeederDarkModeProvider>`. This ensures every child component can access dark mode state.
+## Technical Approach
 
-### 3. Update All Components with Hardcoded Colors
+All three files will:
+1. Query `tier_status` (and optionally `rolling_rating`, `rolling_deliveries`, etc.) from `driver_profiles`
+2. Use `getTierConfig()` from `ratingHelpers.ts` for colors and display names
+3. Use `getNextTier()` for progress indicators
+4. Remove all local tier definitions, points calculations, and legacy tier names (Bronze, Silver)
 
-Each of these files has a `const C = { ... }` or `const T = { ... }` theme object. Replace the static object with a call to `useFeederDarkMode()` so colors swap dynamically:
+## Summary of Changes
 
-| File | Theme Object |
+| File | What Changes |
 |------|-------------|
-| `AppSettingsPage.tsx` | `C` -- Also wire toggle to context's `toggleDarkMode()` |
-| `FeederAccountPage.tsx` | `C` |
-| `FeederScheduleTab.tsx` | `C` |
-| `FeederRatingsTab.tsx` | `C` |
-| `FeedPreferencesPage.tsx` | `C` |
-| `ProfileDetailsPage.tsx` | `C` |
-| `VehicleDocumentsPage.tsx` | `C` |
-| `SecuritySafetyPage.tsx` | `C` |
-| `DriverSupportChat.tsx` | `C` |
-| `NewDeliveryRequest.tsx` | `C` |
-| `FeederSidebarMenu.tsx` | `T` |
-| `EarningsDashboard.tsx` | Tailwind/inline |
-| `CravenDeliveryFlow.tsx` | Mantine `bg` props |
-| `CorporateEarningsDashboard.tsx` | Inline styles |
-
-In each file, the pattern is:
-- Import `useFeederDarkMode`
-- Replace `const C = { ... }` with `const { colors: C } = useFeederDarkMode();` (moved inside the component)
-- For components using Tailwind classes like `bg-white`, `text-gray-*`, conditionally apply dark variants
-
-### 4. Update `AppSettingsPage.tsx` Toggle Wiring
-
-The existing Dark Mode toggle in settings currently only saves to user metadata. Update it to also call `toggleDarkMode()` from the context so the theme changes instantly without requiring an app restart.
-
-### 5. Delivery Flow Dark Mode (`CravenDeliveryFlow.tsx`)
-
-This is a Mantine-heavy component. Update:
-- Card backgrounds from white to dark surface color
-- Text colors from dark to light
-- Badge/button backgrounds for contrast
-- The simulated map view already uses dark colors (dark.9) so it stays
-- Ensure all status text, item lists, and address text are visible
-
-### 6. Tailwind-Based Components
-
-For components using Tailwind (bottom nav, loading screens, map overlays in `MobileDriverDashboard.tsx`):
-- Add a `dark` class to the root wrapper when dark mode is active
-- Use conditional classNames: `isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'`
-
-### 7. Key Contrast Rules (No Black-on-Dark)
-
-- All body text: `#F1F1F1` on dark backgrounds
-- Muted/secondary text: `#A0A0A0` (never `#777` on dark)
-- Card borders: `#2E2E2E` (subtle, visible)
-- Input fields: `#1E1E1E` background with `#F1F1F1` text
-- Orange accent buttons remain `#E8622A` with white text (unchanged)
-- Progress bars: darker track color `#2E2E2E`
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/contexts/FeederDarkModeContext.tsx` | Dark mode context provider + hook |
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `MobileDriverDashboard.tsx` | Wrap with provider; dark bg on root container |
-| `AppSettingsPage.tsx` | Wire toggle to context; use dynamic colors |
-| `FeederAccountPage.tsx` | Use dynamic colors from context |
-| `FeederScheduleTab.tsx` | Use dynamic colors from context |
-| `FeederRatingsTab.tsx` | Use dynamic colors from context |
-| `FeedPreferencesPage.tsx` | Use dynamic colors from context |
-| `ProfileDetailsPage.tsx` | Use dynamic colors from context |
-| `VehicleDocumentsPage.tsx` | Use dynamic colors from context |
-| `SecuritySafetyPage.tsx` | Use dynamic colors from context |
-| `DriverSupportChat.tsx` | Use dynamic colors from context |
-| `NewDeliveryRequest.tsx` | Use dynamic colors from context |
-| `FeederSidebarMenu.tsx` | Use dynamic colors from context |
-| `EarningsDashboard.tsx` | Conditional dark Tailwind/inline styles |
-| `CravenDeliveryFlow.tsx` | Mantine dark props for cards/text |
-| `CorporateEarningsDashboard.tsx` | Conditional dark inline styles |
-| `BottomNavigation.tsx` | Dark background/text classes |
-| `LoadingScreen.tsx` | Dark background |
-| `GetBackToFeedingCard.tsx` | Dark card background |
-| `NearbyRestaurantCards.tsx` | Dark card background |
-
+| `FeederAccountPage.tsx` | Remove points-based `getStatus`/`TIERS`/`StatusTier`; fetch `tier_status` from DB; display real tier badge and progress |
+| `RatingsSection.tsx` | Replace 4-tier `bronze/silver/gold/platinum` system with official 5-tier system from `ratingHelpers.ts`; fetch `tier_status` from DB |
+| `FeedPreferencesPage.tsx` | Replace `points >= 95` check with `tier_status === 'Ultimate'` from DB; remove points calculation |
