@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
@@ -327,6 +328,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   // GPS tracking for automatic instruction reading
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [hasSpokenInstructions, setHasSpokenInstructions] = useState(false);
+
+  // Navigation hook for external map app deep linking
+  const { openExternalNavigation } = useNavigation();
 
   // Set order start time when component mounts (order is accepted)
   useEffect(() => {
@@ -1387,8 +1391,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       size="sm"
                       title="Start Navigation"
                       onClick={() => {
-                        const address = encodeURIComponent(currentOrder.store.address || '');
-                        window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
+                        openExternalNavigation({
+                          address: currentOrder.store.address || '',
+                          name: currentOrder.store.name,
+                        });
                       }}
                       leftSection={<IconNavigation size={16} />}
                     >
@@ -1543,8 +1549,10 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       size="sm"
                       title="Start Navigation"
                       onClick={() => {
-                        const address = encodeURIComponent(currentOrder.customer.address || '');
-                        window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
+                        openExternalNavigation({
+                          address: currentOrder.customer.address || '',
+                          name: currentOrder.customer.name,
+                        });
                       }}
                       leftSection={<IconNavigation size={16} />}
                     >
