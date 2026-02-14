@@ -249,11 +249,17 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Update local state
+      // Update local state with server-confirmed new balance
+      const newAvailable = data?.new_available_balance != null 
+        ? data.new_available_balance / 100 
+        : payoutStatus.available - amount;
+      
       setPayoutStatus({
         ...payoutStatus,
-        available: payoutStatus.available - amount
+        available: newAvailable,
+        paid: payoutStatus.paid + amount,
       });
       setCardBalance(cardBalance + amount);
       setEarningsCashoutAmount('');
@@ -266,7 +272,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       fetchCardData();
     } catch (error) {
       console.error('Error transferring earnings:', error);
-      toast.error('Failed to transfer funds. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Failed to transfer funds. Please try again.';
+      toast.error(msg);
     }
   };
 
