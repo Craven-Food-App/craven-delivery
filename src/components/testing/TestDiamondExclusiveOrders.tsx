@@ -24,7 +24,7 @@ export const TestDiamondExclusiveOrders: React.FC = () => {
   const [diamondSeconds, setDiamondSeconds] = useState<string>('90');
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentTier, setCurrentTier] = useState<string>('Bronze');
+  const [currentTier, setCurrentTier] = useState<string>('Feeder');
 
   useEffect(() => {
     fetchAvailableOrders();
@@ -45,7 +45,7 @@ export const TestDiamondExclusiveOrders: React.FC = () => {
         .single();
 
       if (profile) {
-        setCurrentTier(profile.rating_tier || 'Bronze');
+        setCurrentTier(profile.rating_tier || 'Feeder');
       }
     } catch (error) {
       console.error('Error fetching current tier:', error);
