@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * HTML Sanitization Utility
  * 

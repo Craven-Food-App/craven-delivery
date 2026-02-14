@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { supabase } from '@/integrations/supabase/client';
 import { ExperienceMetricsSnapshot, ProblemZone } from '@/types/cxo';
 

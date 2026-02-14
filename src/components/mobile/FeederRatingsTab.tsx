@@ -1,143 +1,228 @@
 /**
- * Crave'N Feeder App — Ratings Tab (Tier-Aware Redesign)
- * Clean, enterprise styling. No animations, no emojis.
- * Mobile-first, responsive. Crave'N orange (#F57C00) accent.
+ * Crave'n Feeder App — Ratings Tab (Enterprise Compact White)
+ * ────────────────────────────────────────────────────────────
+ * Drop-in:  src/components/mobile/FeederRatingsTab.tsx
+ *
+ * Cursor instructions:
+ *   1) Replace src/components/mobile/FeederRatingsTab.tsx with this file.
+ *   2) Route / tab already points to <FeederRatingsTab /> — no change needed.
+ *   3) No icons, no emojis, no gradients, no orange backgrounds.
+ *   4) All layout is inline-style; no external CSS file required.
+ *   5) Mock data lives in useMockRatings() — swap for your API call there.
+ *   6) Progress bars animate fill on first mount (staggered 200ms ease-out).
+ *   7) Info icon opens a bottom-sheet modal explaining how ratings work.
  */
 
-import React, { useState } from "react";
-import { useFeederTierProfile } from "@/hooks/useFeederTierProfile";
-import { getTierConfig, getNextTier, TIER_PERKS, TIER_ORDER } from "@/utils/ratingHelpers";
-import { RatingTier } from "@/types/diamond-orders";
-import { useFeederDarkMode } from "@/contexts/FeederDarkModeContext";
-import { format } from "date-fns";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
-// Theme is now dynamic via useFeederDarkMode()
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#F57C00",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  track:   "#EEEEEE",
+  starOff: "#E5E5E5",
+  bg:      "#FFFFFF",
+  bgMuted: "#FAFBFD",
+} as const;
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+interface PulseMetric {
+  label: string;
+  value: number; // 0–100
+}
+
+interface RatingRow {
+  stars: number; // 5 down to 1
+  count: number;
+}
+
+interface RatingsData {
+  score:        number;   // e.g. 5.0
+  totalFeeds:   number;
+  pulse:        PulseMetric[];
+  breakdown:    RatingRow[];
+}
 
 type FeederRatingsTabProps = {
   onOpenMenu?: () => void;
   onOpenNotifications?: () => void;
-  onBack?: () => void;
 };
 
-// ─── TIER BADGE ─────────────────────────────────────────────────────────────
-function TierBadge({ tier }: { tier: RatingTier }) {
-  const { colors: C } = useFeederDarkMode();
-  const config = getTierConfig(tier);
-  const isUltimate = tier === "Ultimate";
+// ─── MOCK DATA (replace with API) ───────────────────────────────────────────
+function useMockRatings(): RatingsData {
+  return useMemo(() => ({
+    score:      5.0,
+    totalFeeds: 0,
+    pulse: [
+      { label: "On-Time",     value: 0 },
+      { label: "Accuracy",    value: 0 },
+      { label: "Quality",     value: 0 },
+      { label: "Satisfaction",value: 0 },
+    ],
+    breakdown: [
+      { stars: 5, count: 0 },
+      { stars: 4, count: 0 },
+      { stars: 3, count: 0 },
+      { stars: 2, count: 0 },
+      { stars: 1, count: 0 },
+    ],
+  }), []);
+}
 
+// ─── TINY UTILS ─────────────────────────────────────────────────────────────
+/** Max count in breakdown — used to size the bars. Returns 1 if all zero to avoid div/0. */
+function maxCount(rows: RatingRow[]) {
+  return Math.max(1, ...rows.map((r) => r.count));
+}
+
+// ─── SVG: STAR ──────────────────────────────────────────────────────────────
+const STAR_PATH = "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z";
+
+function Star({ filled, size = 14 }: { filled: boolean; size?: number }) {
   return (
-    <div
-      style={{
-        background: config.color,
-        color: config.textColor,
-        border: isUltimate ? `2px solid ${C.orange}` : "1px solid #E0E0E0",
-        borderRadius: 10,
-        padding: "20px 16px",
-        margin: "0 16px",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.8 }}>
-        Current Tier
-      </div>
-      <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>
-        {config.name}
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 500, marginTop: 4, opacity: 0.7 }}>
-        +{config.dispatchWeight} dispatch priority
-      </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? C.orange : C.starOff}>
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+/** Renders a row of 5 stars, first `count` filled. */
+function StarRow({ count, size = 14 }: { count: number; size?: number }) {
+  return (
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star key={i} filled={i <= count} size={size} />
+      ))}
     </div>
   );
 }
 
-// ─── METRIC ROW ─────────────────────────────────────────────────────────────
-function MetricRow({ label, value, unit, target, inverse }: {
-  label: string;
-  value: number;
-  unit: string;
-  target?: number;
-  inverse?: boolean; // for cancellation rate where lower is better
-}) {
-  const { colors: C } = useFeederDarkMode();
-  let pct = 0;
-  if (target && target > 0) {
-    pct = inverse
-      ? Math.min(100, ((target - value) / target) * 100)
-      : Math.min(100, (value / target) * 100);
-  }
-
+// ─── SVG: HAMBURGER ─────────────────────────────────────────────────────────
+function HamburgerIcon() {
   return (
-    <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.border}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
-          {unit === "/5.00" ? value.toFixed(2) : unit === "% (max)" ? value.toFixed(1) : typeof value === "number" && unit === "%" ? value.toFixed(1) : value}
-          {unit}
-        </span>
-      </div>
-      {target !== undefined && (
-        <div style={{ height: 4, background: "#EEEEEE", borderRadius: 2, overflow: "hidden" }}>
-          <div style={{
-            height: "100%",
-            width: `${Math.max(0, Math.min(100, pct))}%`,
-            background: pct >= 100 ? C.green : C.orange,
-            borderRadius: 2,
-          }} />
-        </div>
-      )}
-    </div>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round">
+      <line x1="3" y1="6"  x2="21" y2="6"  />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
   );
 }
 
-// ─── REQUIREMENT CHECK ──────────────────────────────────────────────────────
-function RequirementCheck({ label, current, required, met, unit }: {
-  label: string;
-  current: number;
-  required: number;
-  met: boolean;
-  unit: string;
-}) {
-  const { colors: C } = useFeederDarkMode();
+// ─── SVG: INFO CIRCLE ───────────────────────────────────────────────────────
+function InfoIcon() {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "8px 16px", borderBottom: `1px solid ${C.border}`,
-    }}>
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8"  x2="12.01" y2="8" />
+    </svg>
+  );
+}
+
+// ─── SVG: OUTLINE STAR (empty state) ────────────────────────────────────────
+function OutlineStarIcon() {
+  return (
+    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={C.muted2} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+      <path d={STAR_PATH} />
+    </svg>
+  );
+}
+
+// ─── ANIMATED PROGRESS BAR ──────────────────────────────────────────────────
+/**
+ * 2px thin bar that animates from 0 → targetPct on mount.
+ * `delay` (ms) lets you stagger rows.
+ */
+function ThinBar({ targetPct, delay = 0 }: { targetPct: number; delay?: number }) {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(targetPct), delay + 60);
+    return () => clearTimeout(t);
+  }, [targetPct, delay]);
+
+  return (
+    <div style={{ flex: 1, height: 2, background: C.track, borderRadius: 1, overflow: "hidden" }}>
       <div style={{
-        width: 18, height: 18, borderRadius: 9,
-        background: met ? C.green : "#E0E0E0",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0,
-      }}>
-        {met ? (
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth={3}>
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        )}
+        height: "100%",
+        background: C.orange,
+        borderRadius: 1,
+        width: `${width}%`,
+        transition: "width 500ms cubic-bezier(.22,.61,0,1)",
+      }} />
+    </div>
+  );
+}
+
+// ─── COMPONENT: TOP BAR ─────────────────────────────────────────────────────
+function TopBar({ onMenuPress, onInfoPress }: { onMenuPress?: () => void; onInfoPress: () => void }) {
+  return (
+    <div style={{
+      height: 56, background: C.bg,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+      flexShrink: 0,
+    }}>
+      <button 
+        type="button" 
+        onClick={onMenuPress} 
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}
+      >
+        <HamburgerIcon />
+      </button>
+      <span style={{ fontSize: 17, fontWeight: 600, color: C.text }}>Ratings</span>
+      <button type="button" onClick={onInfoPress} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex" }}>
+        <InfoIcon />
+      </button>
+    </div>
+  );
+}
+
+// ─── COMPONENT: SUMMARY (horizontal split) ─────────────────────────────────
+function Summary({ score, totalFeeds, pulse }: { score: number; totalFeeds: number; pulse: PulseMetric[] }) {
+  // How many stars to fill (round to nearest 0.5 mapped to 0–5)
+  const filledStars = Math.round(score);
+
+  return (
+    <div style={{
+      borderBottom: `1px solid ${C.border}`,
+      padding: "14px 16px",
+      display: "flex", gap: 16, alignItems: "flex-start",
+    }}>
+      {/* Left: score + stars + base */}
+      <div style={{ flexShrink: 0 }}>
+        <div style={{ fontSize: 36, fontWeight: 800, color: C.text, lineHeight: 1 }}>
+          {score.toFixed(2)}
+        </div>
+        <div style={{ marginTop: 6 }}>
+          <StarRow count={filledStars} size={14} />
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 5, fontWeight: 500 }}>
+          Based on {totalFeeds} completed {totalFeeds === 1 ? "feed" : "feeds"}
+        </div>
       </div>
-      <div style={{ flex: 1 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: met ? C.green : C.text }}>{label}</span>
-      </div>
-      <div style={{ fontSize: 11, color: C.muted, textAlign: "right" }}>
-        {unit === "/5.00" ? current.toFixed(2) : unit === "% (max)" ? `${current.toFixed(1)}%` : unit === "%" ? `${current.toFixed(1)}%` : current}
-        {" / "}
-        {unit === "/5.00" ? required.toFixed(2) : unit === "% (max)" ? `<${required}%` : unit === "%" ? `${required}%` : required}
+
+      {/* Right: metric label/value stack */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+        {pulse.map((m) => (
+          <div key={m.label} style={{ display: "flex", gap: 10, alignItems: "baseline", width: "100%", justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>{m.label}</span>
+            <span style={{ fontSize: 13, color: C.text, fontWeight: 700, width: 30, textAlign: "right" }}>{m.value}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ─── SECTION HEADER ─────────────────────────────────────────────────────────
+// ─── COMPONENT: SECTION HEADER ──────────────────────────────────────────────
 function SectionHeader({ children }: { children: React.ReactNode }) {
-  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
-      padding: "14px 16px 6px",
+      padding: "12px 16px 0",
       fontSize: 11, fontWeight: 700, textTransform: "uppercase",
       letterSpacing: 1.2, color: C.orange,
     }}>
@@ -146,176 +231,159 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── PERK ITEM ──────────────────────────────────────────────────────────────
-function PerkItem({ text, locked }: { text: string; locked?: boolean }) {
-  const { colors: C } = useFeederDarkMode();
+// ─── COMPONENT: PERFORMANCE PULSE ──────────────────────────────────────────
+function PerformancePulse({ metrics }: { metrics: PulseMetric[] }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 8,
-      padding: "6px 16px", opacity: locked ? 0.4 : 1,
-    }}>
-      <div style={{
-        width: 6, height: 6, borderRadius: 3,
-        background: locked ? "#CCC" : C.orange,
-        flexShrink: 0,
-      }} />
-      <span style={{ fontSize: 12, color: locked ? C.muted2 : C.text, fontWeight: 500 }}>
-        {text}{locked ? " (locked)" : ""}
-      </span>
+    <div style={{ padding: "8px 16px 0" }}>
+      {metrics.map((m, i) => (
+        <div key={m.label} style={{
+          height: 34, display: "flex", alignItems: "center", gap: 10,
+          borderBottom: i < metrics.length - 1 ? `1px solid ${C.border}` : "none",
+        }}>
+          <span style={{ fontSize: 12, color: C.text, fontWeight: 600, width: 76, flexShrink: 0 }}>{m.label}</span>
+          <ThinBar targetPct={m.value} delay={i * 80} />
+          <span style={{ fontSize: 12, fontWeight: 800, color: C.text, width: 32, textAlign: "right", flexShrink: 0 }}>{m.value}%</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
-const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({ onOpenMenu, onBack }) => {
-  const { colors: C } = useFeederDarkMode();
-  const profile = useFeederTierProfile();
-  const [historyOpen, setHistoryOpen] = useState(false);
+// ─── COMPONENT: RATING BREAKDOWN ───────────────────────────────────────────
+function RatingBreakdown({ rows }: { rows: RatingRow[] }) {
+  const max = maxCount(rows);
 
-  if (profile.loading) {
-    return (
-      <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: 13, color: C.muted }}>Loading tier data...</span>
+  return (
+    <div style={{ padding: "8px 16px 0" }}>
+      {rows.map((r, i) => {
+        const pct = (r.count / max) * 100;
+        return (
+          <div key={r.stars} style={{
+            height: 32, display: "flex", alignItems: "center", gap: 10,
+            borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none",
+          }}>
+            <div style={{ width: 72, flexShrink: 0 }}>
+              <StarRow count={r.stars} size={11} />
+            </div>
+            <ThinBar targetPct={pct} delay={200 + i * 70} />
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.text, width: 22, textAlign: "right", flexShrink: 0 }}>{r.count}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── COMPONENT: EMPTY STATE ────────────────────────────────────────────────
+function EmptyState() {
+  return (
+    <div style={{
+      margin: "24px 16px 0",
+      textAlign: "center",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+    }}>
+      <OutlineStarIcon />
+      <p style={{ fontSize: 12, color: C.muted2, lineHeight: 1.45, maxWidth: 180, margin: 0 }}>
+        Complete deliveries to start building your rating
+      </p>
+    </div>
+  );
+}
+
+// ─── COMPONENT: INFO MODAL (bottom sheet) ──────────────────────────────────
+function InfoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(0,0,0,0.35)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 0.2s ease",
+          zIndex: 40,
+        }}
+      />
+
+      {/* Sheet */}
+      <div style={{
+        position: "fixed", left: 0, right: 0, bottom: 0,
+        background: C.bg,
+        borderRadius: "14px 14px 0 0",
+        padding: "18px 16px 28px",
+        transform: open ? "translateY(0)" : "translateY(100%)",
+        transition: "transform 0.25s cubic-bezier(.22,.61,0,1)",
+        zIndex: 50,
+      }}>
+        {/* Handle */}
+        <div style={{ width: 32, height: 3, background: C.border, borderRadius: 2, margin: "0 auto 14px" }} />
+
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>
+          How Ratings Work
+        </h3>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 6 }}>
+          Your Feeder Score is calculated from customer feedback after each completed delivery.
+          Scores range from 1.0 to 5.0 and update in real time.
+        </p>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 6 }}>
+          Performance Pulse tracks four operational metrics — On-Time, Accuracy, Quality, and
+          Satisfaction — independently. Consistency across all four is what separates top feeders.
+        </p>
+        <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, marginBottom: 0 }}>
+          Ratings older than 90 days are automatically removed from your score to keep it current.
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            display: "block", margin: "16px auto 0", background: "none",
+            border: `1px solid ${C.border}`, borderRadius: 6,
+            padding: "6px 24px", fontSize: 11, fontWeight: 700, color: C.text, cursor: "pointer",
+          }}
+        >
+          Close
+        </button>
       </div>
-    );
-  }
+    </>
+  );
+}
 
-  const { tier, tierConfig, metrics, progress, perks, nextPerks, history, graceActive } = profile;
+// ─── PAGE ───────────────────────────────────────────────────────────────────
+const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
+  onOpenMenu,
+  onOpenNotifications
+}) => {
+  const data          = useMockRatings();
+  const [modal, setModal] = useState(false);
 
   return (
     <div style={{
       background: C.bg, minHeight: "100vh", color: C.text,
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-      paddingBottom: 80,
     }}>
+
       {/* Top bar */}
-      <div style={{
-        height: 56, background: C.bg,
-        display: "flex", alignItems: "center",
-        padding: "0 16px", borderBottom: `1px solid ${C.border}`,
-        position: "relative",
-      }}>
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              padding: 8, display: "flex", alignItems: "center", justifyContent: "center",
-              marginLeft: -8,
-            }}
-            aria-label="Go back"
-          >
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        )}
-        <span style={{ fontSize: 17, fontWeight: 600, color: C.text, flex: 1, textAlign: "center" }}>Feeder Tier</span>
-        {onBack && <div style={{ width: 36 }} />}
-      </div>
+      <TopBar onMenuPress={onOpenMenu} onInfoPress={() => setModal(true)} />
 
-      {/* Tier Badge */}
-      <div style={{ padding: "16px 0 8px" }}>
-        <TierBadge tier={tier} />
-      </div>
+      {/* Summary */}
+      <Summary score={data.score} totalFeeds={data.totalFeeds} pulse={data.pulse} />
 
-      {/* Grace period warning */}
-      {graceActive && (
-        <div style={{
-          margin: "0 16px 8px", padding: "8px 12px",
-          background: "#FFF3E0", border: "1px solid #FFE0B2", borderRadius: 6,
-          fontSize: 11, color: "#E65100", fontWeight: 600,
-        }}>
-          Grace period active — maintain metrics to keep your current tier
-        </div>
-      )}
+      {/* Performance Pulse */}
+      <SectionHeader>Performance Pulse</SectionHeader>
+      <PerformancePulse metrics={data.pulse} />
 
-      {/* Current Metrics */}
-      <SectionHeader>Current Metrics (60-Day Rolling)</SectionHeader>
-      <MetricRow label="Rating" value={metrics.rolling_rating} unit="/5.00" target={5} />
-      <MetricRow label="Completion Rate" value={metrics.rolling_completion_rate} unit="%" target={100} />
-      <MetricRow label="On-Time Rate" value={metrics.rolling_on_time_rate} unit="%" target={100} />
-      <MetricRow label="Cancellation Rate" value={metrics.rolling_cancel_rate} unit="% (max)" />
-      <MetricRow label="Deliveries (60-day)" value={metrics.rolling_deliveries} unit="" />
+      {/* Rating Breakdown */}
+      <SectionHeader>Rating Breakdown</SectionHeader>
+      <RatingBreakdown rows={data.breakdown} />
 
-      {/* Next Tier Progress */}
-      {progress.nextTier && progress.nextTierConfig && (
-        <>
-          <SectionHeader>Next Tier: {progress.nextTierConfig.name}</SectionHeader>
-          {progress.requirements.map((req) => (
-            <RequirementCheck key={req.label} {...req} />
-          ))}
-          {progress.nextTier === "Ultimate" && (
-            <div style={{
-              padding: "8px 16px", fontSize: 11, color: C.muted, fontStyle: "italic",
-            }}>
-              Ultimate tier requires manual admin approval after meeting all requirements.
-            </div>
-          )}
-        </>
-      )}
+      {/* Empty state — shown when no feeds yet */}
+      {data.totalFeeds === 0 && <EmptyState />}
 
-      {/* Current Perks */}
-      <SectionHeader>Your Perks</SectionHeader>
-      {perks.map((p) => (
-        <PerkItem key={p} text={p} />
-      ))}
-      {nextPerks.length > 0 && (
-        <>
-          <div style={{ padding: "8px 16px 2px", fontSize: 10, fontWeight: 600, color: C.muted2, textTransform: "uppercase", letterSpacing: 1 }}>
-            Unlock at {progress.nextTierConfig?.name}
-          </div>
-          {nextPerks.map((p) => (
-            <PerkItem key={p} text={p} locked />
-          ))}
-        </>
-      )}
-
-      {/* Tier History */}
-      <div style={{ padding: "14px 16px 6px" }}>
-        <button
-          type="button"
-          onClick={() => setHistoryOpen(!historyOpen)}
-          style={{
-            background: "none", border: "none", padding: 0, cursor: "pointer",
-            fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-            letterSpacing: 1.2, color: C.orange,
-            display: "flex", alignItems: "center", gap: 4,
-          }}
-        >
-          Tier History
-          <span style={{ fontSize: 10 }}>{historyOpen ? "▲" : "▼"}</span>
-        </button>
-      </div>
-      {historyOpen && (
-        <div style={{ padding: "0 16px 16px" }}>
-          {history.length === 0 ? (
-            <div style={{ fontSize: 12, color: C.muted2, padding: "8px 0" }}>
-              No tier changes yet.
-            </div>
-          ) : (
-            history.map((h) => (
-              <div key={h.id} style={{
-                padding: "8px 0", borderBottom: `1px solid ${C.border}`,
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-              }}>
-                <div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
-                    {h.old_tier} → {h.new_tier}
-                  </span>
-                  {h.reason && (
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{h.reason}</div>
-                  )}
-                </div>
-                <span style={{ fontSize: 10, color: C.muted2 }}>
-                  {format(new Date(h.created_at), "MMM d, yyyy")}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {/* Info modal */}
+      <InfoModal open={modal} onClose={() => setModal(false)} />
     </div>
   );
 };

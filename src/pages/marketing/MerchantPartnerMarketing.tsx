@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Merchant & Partner Marketing
  * Manage co-branded campaigns and partner marketing support

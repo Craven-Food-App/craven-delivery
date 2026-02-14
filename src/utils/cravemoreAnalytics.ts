@@ -1,4 +1,3 @@
-// @ts-nocheck
 // CraveMore Analytics Event Tracking
 // Implements all events from spec section 9.1
 

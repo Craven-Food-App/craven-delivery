@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Group, Title, Text, Badge, Button, Stack } from '@mantine/core';
 import { ArrowLeft } from 'lucide-react';

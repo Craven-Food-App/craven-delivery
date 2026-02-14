@@ -10,14 +10,12 @@ import {
   zonesToGeoJSON,
 } from '@/data/deliveryZones';
 import driverNavIcon from '@/assets/driver_nav_icon.png';
-import { useRestaurantLocations } from '@/hooks/useRestaurantLocations';
-import { addRestaurantLayer } from '@/components/map/RestaurantMapLayer';
 
 interface MobileMapboxProps {
   className?: string;
   onZoneStatusChange?: (info: { isInZone: boolean; zone: DeliveryZone | null }) => void;
-  resetToDefaultZoom?: boolean;
-  onScheduleClick?: () => void;
+  resetToDefaultZoom?: boolean; // When true, resets map to default zoom
+  onScheduleClick?: () => void; // Open schedule page
 }
 
 const ZONE_SOURCE_ID = 'delivery-zones';
@@ -34,12 +32,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
   const navigationControlAdded = useRef<boolean>(false);
-  const restaurantCleanup = useRef<(() => void) | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
   const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
-  const { data: restaurants } = useRestaurantLocations();
 
   const driverLocation = useMemo<[number, number] | null>(() => {
     if (location) {
@@ -52,7 +48,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     (zonesData: DeliveryZone[]) => {
       if (!map.current) return;
       
+      // Check if map style is loaded before adding sources
       if (!map.current.isStyleLoaded()) {
+        // Wait for style to load
         map.current.once('style.load', () => {
           updateZoneLayers(zonesData);
         });
@@ -98,6 +96,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         }
       } catch (error) {
         console.error('Error adding zone layers:', error);
+        // Retry after a short delay if style isn't ready
         setTimeout(() => {
           if (map.current && map.current.isStyleLoaded()) {
             updateZoneLayers(zonesData);
@@ -108,20 +107,38 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     []
   );
 
+  // Calculate rotation based on heading
+  // East/West: rotate to point direction, North/South: keep right-side up
   const calculateRotation = useCallback((heading: number | undefined): number => {
     if (heading === undefined || heading === null) return 0;
+    
+    // Normalize heading to 0-360
     const normalizedHeading = ((heading % 360) + 360) % 360;
-    if (normalizedHeading >= 315 || normalizedHeading < 45) return 0;
-    if (normalizedHeading >= 135 && normalizedHeading < 225) return 0;
-    if (normalizedHeading >= 45 && normalizedHeading < 135) return 90;
-    if (normalizedHeading >= 225 && normalizedHeading < 315) return -90;
+    
+    // For North (0°) and South (180°), keep right-side up (0° rotation)
+    if (normalizedHeading >= 315 || normalizedHeading < 45) return 0; // North (0°)
+    if (normalizedHeading >= 135 && normalizedHeading < 225) return 0; // South (180°)
+    
+    // For East (90°), rotate 90° clockwise so hand points East
+    if (normalizedHeading >= 45 && normalizedHeading < 135) {
+      return 90; // Point East
+    }
+    
+    // For West (270°), rotate -90° (or 270° clockwise) so hand points West
+    if (normalizedHeading >= 225 && normalizedHeading < 315) {
+      return -90; // Point West
+    }
+    
     return 0;
   }, []);
 
   const applyDriverLocation = useCallback(
     (lat: number, lng: number, animate = false, heading?: number, zoom?: number) => {
       if (!map.current || !marker.current) return;
+
       marker.current.setLngLat([lng, lat]);
+      
+      // Update rotation if heading is available
       if (heading !== undefined && heading !== null) {
         const rotation = calculateRotation(heading);
         const element = marker.current.getElement();
@@ -129,8 +146,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           element.style.transform = `rotate(${rotation}deg)`;
         }
       }
+      
       if (animate) {
-        const targetZoom = zoom ?? 20;
+        // Use provided zoom, or maximum zoom (20), or current zoom, or minimum 14
+        const targetZoom = zoom ?? 20; // Default to maximum zoom (20) when centering
         const finalZoom = Math.min(targetZoom, map.current.getMaxZoom?.() || 20);
         map.current.flyTo({ center: [lng, lat], zoom: finalZoom, essential: true });
       } else {
@@ -140,8 +159,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           map.current.setZoom(finalZoom);
         }
       }
+
       const zone = getZoneForLocation([lat, lng], zones);
       const isInZone = Boolean(zone);
+
       if (onZoneStatusChange) {
         onZoneStatusChange({ isInZone, zone });
       }
@@ -149,6 +170,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     [onZoneStatusChange, zones, calculateRotation]
   );
 
+  // Start location tracking immediately when component mounts
   useEffect(() => {
     if (!isTracking) {
       startTracking();
@@ -168,6 +190,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       (window as any).mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
 
       try {
+        // Use config default for initial center - location will update via separate effect
         const initialCenter = [MAPBOX_CONFIG.center[0], MAPBOX_CONFIG.center[1]];
         
         map.current = new (window as any).mapboxgl.Map({
@@ -175,20 +198,23 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           style: MAPBOX_CONFIG.style,
           center: initialCenter,
           zoom: MAPBOX_CONFIG.zoom,
-          attributionControl: false,
+          attributionControl: false, // Disable the default attribution (i) button
         });
 
         map.current.on('load', () => {
           setIsMapReady(true);
           if (map.current) {
+            // Add navigation control only once
             if (!navigationControlAdded.current) {
               try {
+                // Remove any existing navigation controls first
                 const existingControls = map.current.getContainer().querySelectorAll('.mapboxgl-ctrl-group');
                 existingControls.forEach((ctrl: any) => {
                   if (ctrl.closest('.mapboxgl-ctrl-top-right')) {
                     ctrl.remove();
                   }
                 });
+                
                 const ctrl = new (window as any).mapboxgl.NavigationControl({ visualizePitch: true });
                 map.current.addControl(ctrl, 'top-right');
                 navigationControlAdded.current = true;
@@ -197,17 +223,13 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
               }
             }
             
+            // Wait for style to be fully loaded before adding zones
             if (map.current.isStyleLoaded()) {
               updateZoneLayers(zones);
             } else {
               map.current.once('style.load', () => {
                 updateZoneLayers(zones);
               });
-            }
-
-            // Add restaurant markers
-            if (restaurants && restaurants.length > 0) {
-              restaurantCleanup.current = addRestaurantLayer(map.current, restaurants);
             }
           }
         });
@@ -216,7 +238,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           console.error('Mapbox error:', e);
         });
 
+        // Initialize marker at config default - will be updated when location is available
         const initialMarkerPos = [MAPBOX_CONFIG.center[0], MAPBOX_CONFIG.center[1]];
+        
+        // Create custom marker element with driver icon
         const el = document.createElement('div');
         el.className = 'driver-location-marker';
         el.style.cssText = `
@@ -259,32 +284,26 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     }
 
     return () => {
-      restaurantCleanup.current?.();
       if (map.current) {
         map.current.remove();
         map.current = null;
         navigationControlAdded.current = false;
       }
     };
-  }, []);
+  }, []); // Only run once on mount
 
-  // Update restaurant layer when data changes
-  useEffect(() => {
-    if (!isMapReady || !map.current) return;
-    if (!map.current.isStyleLoaded()) return;
-    
-    restaurantCleanup.current?.();
-    if (restaurants && restaurants.length > 0) {
-      restaurantCleanup.current = addRestaurantLayer(map.current, restaurants);
-    }
-  }, [restaurants, isMapReady]);
+  // Remove this useEffect - zones are updated in the map load handler
+  // This was causing duplicate calls and race conditions
 
-  // Update map when driver location changes
+  // Update map when driver location changes (real-time updates)
   useEffect(() => {
     if (!isMapReady || !map.current || !marker.current) return;
     if (!location) return;
     
+    // Update marker position
     marker.current.setLngLat([location.longitude, location.latitude]);
+    
+    // Update rotation if heading is available
     if (location.heading !== undefined && location.heading !== null) {
       const rotation = calculateRotation(location.heading);
       const element = marker.current.getElement();
@@ -292,20 +311,33 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         element.style.transform = `rotate(${rotation}deg)`;
       }
     }
+    
+    // Only update map center if user hasn't manually panned (check if map was recently moved by user)
+    // For now, we'll update the center smoothly without animation to follow driver
     map.current.setCenter([location.longitude, location.latitude]);
+    
+    // Update zone status
     const zone = getZoneForLocation([location.latitude, location.longitude], zones);
     const isInZone = Boolean(zone);
     if (onZoneStatusChange) {
       onZoneStatusChange({ isInZone, zone });
     }
+    
     setShowRecenter(true);
   }, [isMapReady, location, calculateRotation, zones, onZoneStatusChange]);
 
-  // Reset map to default zoom
+  // Reset map to default zoom when resetToDefaultZoom prop changes to true
   useEffect(() => {
     if (!isMapReady || !map.current || !resetToDefaultZoom) return;
-    map.current.flyTo({ zoom: MAPBOX_CONFIG.zoom, essential: true, duration: 500 });
+    
+    // Reset to default zoom from config
+    map.current.flyTo({
+      zoom: MAPBOX_CONFIG.zoom,
+      essential: true,
+      duration: 500 // Smooth animation
+    });
   }, [resetToDefaultZoom, isMapReady]);
+
 
   const legendItems = useMemo(() => {
     return zones.map((zone) => {
@@ -340,7 +372,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (onScheduleClick) onScheduleClick();
+              if (onScheduleClick) {
+                onScheduleClick();
+              }
             }}
             className="absolute z-[100] w-12 h-12 rounded-full bg-white/95 backdrop-blur shadow-xl flex items-center justify-center hover:bg-white active:scale-95 transition-all cursor-pointer"
             style={{ top: 'calc(50% + 20px)', left: '11px', transform: 'translateY(-50%)', pointerEvents: 'auto' }}
@@ -360,8 +394,11 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              
+              // Try to get location from multiple sources
               let lat: number | null = null;
               let lng: number | null = null;
+              
               if (location) {
                 lat = location.latitude;
                 lng = location.longitude;
@@ -369,12 +406,15 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
                 lat = driverLocation[0];
                 lng = driverLocation[1];
               } else if (marker.current) {
+                // Fallback: get current marker position
                 const currentPos = marker.current.getLngLat();
                 lat = currentPos.lat;
                 lng = currentPos.lng;
               }
+              
               if (lat !== null && lng !== null && map.current && marker.current) {
                 const currentHeading = location?.heading;
+                // Get maximum zoom from map (typically 20-22) or use 20 as fallback
                 const maxZoom = map.current.getMaxZoom?.() || 20;
                 applyDriverLocation(lat, lng, true, currentHeading, maxZoom);
               }

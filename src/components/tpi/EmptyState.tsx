@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Card, Stack, Text, Button, Group } from '@mantine/core';
 import { IconInbox } from '@tabler/icons-react';

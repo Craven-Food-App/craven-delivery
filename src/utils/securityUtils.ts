@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Security Utilities
  * Helper functions for security features

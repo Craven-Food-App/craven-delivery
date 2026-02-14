@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Crave'n Feeder App — Safety Settings (Enterprise Compact White)
  * ───────────────────────────────────────────────────────────────

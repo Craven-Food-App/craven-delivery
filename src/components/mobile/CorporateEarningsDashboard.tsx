@@ -11,7 +11,6 @@ import { FlamingText } from '@/components/ui/FlamingText';
 import { useCravingWheel } from '@/hooks/useCravingWheel';
 import onfireTextImage from '@/assets/onfire-text.png';
 import onfire2ndStateImage from '@/assets/onfire2ndstate.png';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
 type OnFireDashboardProps = {
   onOpenMenu?: () => void;
@@ -22,7 +21,6 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
-  const { isDark, colors: C } = useFeederDarkMode();
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [loading, setLoading] = useState(true);
   const [earnings, setEarnings] = useState({
@@ -226,11 +224,11 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
 
   return (
     <div className="h-screen w-full overflow-y-auto" style={{ 
-      background: C.bg,
+      background: '#ffffff',
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header - Level with hamburger menu */}
-      <div className="border-b sticky top-0 z-10 px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', background: C.bg, borderColor: C.border }}>
+      <div className="bg-white border-b sticky top-0 z-10 px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <button 
           onClick={() => {
             if (onOpenMenu) {
@@ -239,16 +237,16 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
               toast.info('Menu coming soon.');
             }
           }}
-          className="text-lg p-2" style={{ color: C.text }}
+          className="text-gray-900 text-lg p-2"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 className="text-base font-black" style={{ letterSpacing: '0.2px', color: C.text }}>On Fire</h1>
+        <h1 className="text-gray-900 text-base font-black" style={{ letterSpacing: '0.2px' }}>On Fire</h1>
         <button 
           onClick={() => setShowPageInfo(true)}
-          className="p-2" style={{ color: C.text }}
+          className="text-gray-900 p-2"
         >
           <Info className="w-6 h-6" />
         </button>
@@ -280,7 +278,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
                 }}
               />
             </div>
-            <p className="text-sm font-semibold whitespace-nowrap" style={{ color: C.text }}>
+            <p className="text-gray-900 text-sm font-semibold whitespace-nowrap">
               {cravingLevel > 70 ? 'Cravings spike active!' : 'Normal activity'}
             </p>
             <div className="absolute top-1 right-3 w-12 h-16 bg-gradient-to-b from-red-400 to-transparent rounded-full blur-2xl opacity-60"></div>
@@ -299,8 +297,8 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
             
             {/* Earnings Graph - Two bars per day */}
             <div className="flex-1">
-              <div className="rounded-xl p-2" style={{ background: C.bgMuted, border: `1px solid ${C.border}` }}>
-                <p className="text-[10px] font-semibold mb-1" style={{ color: C.text }}>Daily Earnings</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-2">
+                <p className="text-gray-900 text-[10px] font-semibold mb-1">Daily Earnings</p>
                 <div className="flex items-end gap-0.5" style={{ height: '80px', minHeight: '80px' }}>
                   {weeklyData.length > 0 ? (() => {
                     // Calculate max value across all days (use total earnings for scaling)
@@ -354,7 +352,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
                               }}
                             />
                           </div>
-                          <span className="text-[8px] mt-0.5" style={{ color: C.text }}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
+                          <span className="text-gray-900 text-[8px] mt-0.5">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
                         </div>
                       );
                     });
@@ -363,10 +361,10 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
                     Array.from({ length: 7 }).map((_, idx) => (
                       <div key={idx} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: '100%' }}>
                         <div className="w-full flex gap-0.5 items-end justify-center" style={{ height: '100%' }}>
-                          <div className="flex-1 rounded-t" style={{ minHeight: '4px', height: '20%', background: C.track }} />
-                          <div className="flex-1 rounded-t" style={{ minHeight: '4px', height: '20%', background: C.track }} />
+                          <div className="flex-1 bg-gray-300 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
+                          <div className="flex-1 bg-gray-300 rounded-t" style={{ minHeight: '4px', height: '20%' }} />
                         </div>
-                        <span className="text-[8px] mt-0.5" style={{ color: C.muted2 }}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
+                        <span className="text-white text-[8px] mt-0.5">{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</span>
                       </div>
                     ))
                   )}
@@ -375,11 +373,11 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
                 <div className="flex items-center justify-center gap-3 mt-1.5">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gradient-to-t from-orange-500 to-orange-600 rounded"></div>
-                    <span className="text-[8px]" style={{ color: C.text }}>Daily Earnings</span>
+                    <span className="text-gray-900 text-[8px]">Daily Earnings</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gradient-to-t from-yellow-400 to-yellow-500 rounded"></div>
-                    <span className="text-[8px]" style={{ color: C.text }}>Tips</span>
+                    <span className="text-gray-900 text-[8px]">Tips</span>
                   </div>
                 </div>
               </div>
@@ -389,10 +387,10 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
       </div>
 
       {/* DIAMOND EXCLUSIVE ORDERS - UP FOR GRABS - White background section */}
-      <Box style={{ backgroundColor: C.bg, borderTopLeftRadius: '24px', borderTopRightRadius: '24px', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))', marginTop: '16px' }}>
+      <Box style={{ backgroundColor: '#ffffff', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))', marginTop: '16px' }}>
         <Box px="md" pt="md">
           <Group justify="apart" mb="xs">
-            <Text fw={700} size="sm" c={C.text} style={{ letterSpacing: '0.05em' }}>
+            <Text fw={700} size="sm" c="#000" style={{ letterSpacing: '0.05em' }}>
               UP FOR GRABS
             </Text>
             <Group gap="xs" align="center">
@@ -404,7 +402,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
           </Group>
           <Box
             style={{
-              backgroundColor: C.card,
+              backgroundColor: '#ffffff', // Bright white
               borderRadius: '8px',
               padding: '12px',
             }}
@@ -464,39 +462,38 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPageInfo(false)}
         >
-           <div 
-            className="rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
-            style={{ background: C.bg }}
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 border-b p-4" style={{ background: C.bg, borderColor: C.border }}>
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold" style={{ color: C.text }}>On Fire Page Guide</h2>
+                <h2 className="text-lg font-bold text-gray-900">On Fire Page Guide</h2>
                 <button
                   onClick={() => setShowPageInfo(false)}
-                  className="p-2 rounded-lg transition-colors" style={{ color: C.muted2 }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
             
             <div className="p-4 space-y-4">
               <div>
-                <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: C.text }}>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                   <Flame className="w-4 h-4 text-orange-600" />
                   The ON FIRE Game
                 </h3>
-                <p className="text-xs" style={{ color: C.muted }}>
+                <p className="text-xs text-gray-600">
                   Get "On Fire" by completing deliveries quickly and consistently. The more you deliver, the higher your flame meter rises!
                 </p>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: C.text }}>
+                <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                   🎯 Craving Wheel
                 </h3>
-                <p className="text-xs" style={{ color: C.muted }}>
+                <p className="text-xs text-gray-600">
                   Your activity fuels the craving wheel. As you complete orders, the wheel fills up, unlocking exclusive bonuses and high-value orders.
                 </p>
               </div>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Table, Badge, Button, Group, Text, Stack, Card } from '@mantine/core';
 import { IconCheck, IconX, IconFileText } from '@tabler/icons-react';

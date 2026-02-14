@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Payroll Integration for Exit Workflows
  * Automatically processes final payroll for terminated employees

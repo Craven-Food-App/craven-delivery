@@ -1,12 +1,10 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Lock } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
 type EarningsDashboardProps = {
   onOpenMenu?: () => void;
@@ -66,7 +64,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
-  const { isDark, colors: C } = useFeederDarkMode();
   const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const [showPageInfo, setShowPageInfo] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -101,9 +98,9 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardBalance, setCardBalance] = useState(0);
   const [driverName, setDriverName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
+  const cardNumber = '5399283309390129';
+  const expiryDate = '12/28';
+  const cvv = '847';
   const [showCardDetails, setShowCardDetails] = useState(false);
   
   // Gas Money state
@@ -114,16 +111,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   // Earnings Cashout state
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [earningsCashoutAmount, setEarningsCashoutAmount] = useState('');
-  
-  // Instant Cashout state
-  const [showInstantCashoutModal, setShowInstantCashoutModal] = useState(false);
-  const [instantCashoutAmount, setInstantCashoutAmount] = useState('');
-  const [debitCardLast4, setDebitCardLast4] = useState('');
-  
-  // Instant Cashout Eligibility state
-  const [isInstantCashoutEligible, setIsInstantCashoutEligible] = useState(false);
-  const [completedDeliveries, setCompletedDeliveries] = useState(0);
-  const [accountAgeDays, setAccountAgeDays] = useState(0);
 
   useEffect(() => {
     fetchEarningsData();
@@ -154,63 +141,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
       if (profile?.full_name) {
         setDriverName(profile.full_name);
-      }
-
-      // Fetch or auto-provision card credentials from driver_cards
-      let { data: cardData, error: cardError } = await supabase
-        .from('driver_cards')
-        .select('card_number, cvv, expiry_date')
-        .eq('driver_id', user.id)
-        .maybeSingle();
-
-      if (!cardData && !cardError) {
-        // Auto-provision a card row — trigger auto-fills card_number, cvv, expiry_date
-        const { data: newCard, error: insertError } = await supabase
-          .from('driver_cards')
-          .insert({
-            driver_id: user.id,
-            issuing_card_id: `auto_${user.id.slice(0, 8)}`,
-            status: 'active',
-          } as any)
-          .select('card_number, cvv, expiry_date')
-          .single();
-
-        if (!insertError && newCard) {
-          cardData = newCard;
-        }
-      }
-
-      if (cardData) {
-        setCardNumber(cardData.card_number || '');
-        setCvv(cardData.cvv || '');
-        setExpiryDate(cardData.expiry_date || '');
-      }
-
-      // Fetch debit card on file for instant cashout
-      const { data: paymentMethod } = await supabase
-        .from('payment_methods')
-        .select('last_four')
-        .eq('user_id', user.id)
-        .eq('type', 'debit')
-        .maybeSingle();
-
-      if (paymentMethod?.last_four) {
-        setDebitCardLast4(paymentMethod.last_four);
-      }
-
-      // Fetch eligibility data for instant cashout
-      const { data: driverProfile } = await supabase
-        .from('driver_profiles')
-        .select('created_at, completed_orders')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (driverProfile) {
-        const ageDays = Math.floor((Date.now() - new Date(driverProfile.created_at).getTime()) / 86400000);
-        const deliveries = driverProfile.completed_orders || 0;
-        setAccountAgeDays(ageDays);
-        setCompletedDeliveries(deliveries);
-        setIsInstantCashoutEligible(ageDays >= 30 && deliveries >= 50);
       }
     } catch (error) {
       console.error('Error fetching card data:', error);
@@ -318,17 +248,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
-      // Update local state with server-confirmed new balance
-      const newAvailable = data?.new_available_balance != null 
-        ? data.new_available_balance / 100 
-        : payoutStatus.available - amount;
-      
+      // Update local state
       setPayoutStatus({
         ...payoutStatus,
-        available: newAvailable,
-        paid: payoutStatus.paid + amount,
+        available: payoutStatus.available - amount
       });
       setCardBalance(cardBalance + amount);
       setEarningsCashoutAmount('');
@@ -341,8 +265,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       fetchCardData();
     } catch (error) {
       console.error('Error transferring earnings:', error);
-      const msg = error instanceof Error ? error.message : 'Failed to transfer funds. Please try again.';
-      toast.error(msg);
+      toast.error('Failed to transfer funds. Please try again.');
     }
   };
 
@@ -585,25 +508,24 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   };
 
   return (
-    <div className="h-screen w-full overflow-y-auto" style={{ 
-      background: C.bgMuted,
+    <div className="h-screen w-full overflow-y-auto bg-gray-50" style={{ 
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header */}
-      <div className="border-b sticky top-0 z-10" style={{ padding: '12px 16px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)', background: C.bg, borderColor: C.border }}>
+      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <div className="flex items-center justify-between mb-1">
           <button 
             onClick={() => onOpenMenu?.()}
-            className="p-2" style={{ color: C.muted }}
+            className="text-gray-700 p-2"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-base font-black" style={{ letterSpacing: '0.2px', color: C.text }}>Earnings</h1>
+          <h1 className="text-base font-black text-gray-900" style={{ letterSpacing: '0.2px' }}>Earnings</h1>
           <button 
             onClick={() => setShowPageInfo(true)}
-            className="p-2" style={{ color: C.muted }}
+            className="text-gray-700 p-2"
           >
             <Info className="w-6 h-6" />
           </button>
@@ -617,24 +539,24 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             style={{ padding: '20px' }}
           >
             <div 
-              className="rounded-lg p-6 max-w-md w-full" 
-              style={{ background: C.bg, maxHeight: '80vh', overflowY: 'auto' }}
+              className="bg-white rounded-lg p-6 max-w-md w-full" 
               onClick={(e) => e.stopPropagation()}
+              style={{ maxHeight: '80vh', overflowY: 'auto' }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <DollarSign className="w-5 h-5 text-orange-600" />
                   </div>
-                  <h2 className="text-xl font-bold" style={{ color: C.text }}>Earnings Dashboard</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Earnings Dashboard</h2>
                 </div>
-                <button onClick={() => setShowPageInfo(false)} style={{ color: C.muted2 }}>
+                <button onClick={() => setShowPageInfo(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <div className="space-y-4" style={{ color: C.muted }}>
+              <div className="space-y-4 text-gray-700">
                 <p className="text-sm leading-relaxed">
-                  <strong style={{ color: C.text }}>Your Complete Earnings Overview</strong><br />
+                  <strong className="text-gray-900">Your Complete Earnings Overview</strong><br />
                   Track all your delivery earnings in one place. View your income breakdown, payout status, and performance metrics.
                 </p>
                 <div className="border-t pt-4 space-y-3">
@@ -667,15 +589,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         {/* Time Range Selector */}
         <div className="mt-3">
           <div className="flex gap-2">
-                {(['today', 'thisWeek', 'lastWeek'] as TimeRange[]).map((range) => (
+            {(['today', 'thisWeek', 'lastWeek'] as TimeRange[]).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors`}
-                style={{
-                  background: timeRange === range ? '#E8622A' : C.track,
-                  color: timeRange === range ? '#fff' : C.muted
-                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  timeRange === range
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
               >
                 {range === 'today' ? 'Today' : range === 'thisWeek' ? 'This Week' : 'Last Week'}
               </button>
@@ -824,188 +746,135 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </Box>
           </div>
 
-          {/* Instant Cashout Option */}
-            <div 
-            className={`flex items-center justify-between px-4 py-2 cursor-pointer rounded-xl ${!isInstantCashoutEligible ? 'opacity-70' : ''}`}
-            style={{ background: C.card }}
-            onClick={() => {
-              if (isInstantCashoutEligible) {
-                setShowInstantCashoutModal(true);
-              } else {
-                toast.error('You need 50+ deliveries and 30 days as an active feeder to unlock instant cashout');
-              }
-            }}
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <CreditCard className={`w-4 h-4 ${isInstantCashoutEligible ? 'text-orange-500' : ''}`} style={{ color: isInstantCashoutEligible ? undefined : C.muted2 }} />
-                <span className="text-sm font-medium" style={{ color: isInstantCashoutEligible ? C.muted : C.muted2 }}>
-                  Instant Cashout to Debit Card
-                </span>
-              </div>
-              {!isInstantCashoutEligible && (
-                <p className="text-xs ml-6 mt-0.5" style={{ color: C.muted2 }}>
-                  {completedDeliveries}/50 deliveries · {Math.max(0, 30 - accountAgeDays)} days remaining
-                </p>
-              )}
-            </div>
-            {isInstantCashoutEligible ? (
-              <ChevronRight className="w-4 h-4" style={{ color: C.muted2 }} />
-            ) : (
-              <Lock className="w-4 h-4" style={{ color: C.muted2 }} />
-            )}
-          </div>
-
           {/* Earnings Summary Cards - Side by Side */}
           <div className="grid grid-cols-2 gap-3 mt-2.5">
-            {/* Primary Earnings Summary Card - Clickable only on Today tab */}
-             <div 
-              className={`rounded-2xl p-6 shadow-sm ${
-                timeRange === 'today' && payoutStatus.available > 0 ? 'cursor-pointer' : ''
-              } transition-shadow`}
-              style={{ background: C.card }}
-              onClick={() => {
-                if (timeRange === 'today' && payoutStatus.available > 0) {
-                  setShowEarningsModal(true);
-                }
-              }}
+            {/* Primary Earnings Summary Card - Clickable */}
+            <div 
+              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setShowEarningsModal(true)}
             >
-              <p className="text-sm mb-1" style={{ color: C.muted2 }}>Your Earnings</p>
-              <p className="text-3xl font-bold mb-1" style={{ color: C.text }}>
-                {formatCurrency(timeRange === 'today' ? payoutStatus.available : totalEarnings)}
-              </p>
-              <p className="text-xs" style={{ color: C.muted2 }}>
-                {timeRange === 'today' ? 'Available to cash out' : 'Net earnings'}
-              </p>
+              <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
+              <p className="text-xs text-gray-400">Net earnings</p>
             </div>
             
-            {/* Gas Money Card - Clickable only on Today tab */}
+            {/* Gas Money Card - Clickable */}
             <div 
-              className={`rounded-2xl p-6 shadow-sm ${
-                timeRange === 'today' && gasMoney > 0 ? 'cursor-pointer' : ''
-              } transition-shadow`}
-              style={{ background: C.card }}
-              onClick={() => {
-                if (timeRange === 'today' && gasMoney > 0) {
-                  setShowGasMoneyModal(true);
-                }
-              }}
+              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setShowGasMoneyModal(true)}
             >
-              <p className="text-sm mb-1" style={{ color: C.muted2 }}>Gas Money</p>
-              <p className="text-3xl font-bold mb-1" style={{ color: C.text }}>{formatCurrency(gasMoney)}</p>
-              <p className="text-xs" style={{ color: C.muted2 }}>
-                {timeRange === 'today' ? 'Available to transfer' : 'Mileage earnings'}
-              </p>
+              <p className="text-sm text-gray-500 mb-1">Gas Money</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(gasMoney)}</p>
+              <p className="text-xs text-gray-400">Mileage earnings</p>
             </div>
           </div>
 
           {/* Earnings Breakdown Card */}
-          <div className="rounded-2xl p-6 shadow-sm" style={{ background: C.card }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: C.text }}>Earnings Breakdown</h3>
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings Breakdown</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span style={{ color: C.muted }}>Base Pay</span>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(breakdown.basePay)}</span>
+                <span className="text-gray-600">Base Pay</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(breakdown.basePay)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span style={{ color: C.muted }}>Distance Pay</span>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(breakdown.distancePay)}</span>
+                <span className="text-gray-600">Distance Pay</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(breakdown.distancePay)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span style={{ color: C.muted }}>Tips</span>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(breakdown.tips)}</span>
+                <span className="text-gray-600">Tips</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(breakdown.tips)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span style={{ color: C.muted }}>Bonuses</span>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(breakdown.bonuses)}</span>
+                <span className="text-gray-600">Bonuses</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(breakdown.bonuses)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
-                <span style={{ color: C.muted }}>Adjustments</span>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(breakdown.adjustments)}</span>
+                <span className="text-gray-600">Adjustments</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(breakdown.adjustments)}</span>
               </div>
-              <div className="h-px my-2" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-300 my-2"></div>
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold" style={{ color: C.text }}>Total Earned</span>
-                <span className="text-lg font-bold" style={{ color: C.text }}>{formatCurrency(breakdown.totalEarned)}</span>
+                <span className="text-lg font-bold text-gray-900">Total Earned</span>
+                <span className="text-lg font-bold text-gray-900">{formatCurrency(breakdown.totalEarned)}</span>
               </div>
             </div>
           </div>
 
           {/* Payout Status Card */}
-          <div className="rounded-2xl p-6 shadow-sm" style={{ background: C.card }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: C.text }}>Payout Status</h3>
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Payout Status</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span style={{ color: C.muted }}>Available for Payout</span>
+                  <span className="text-gray-600">Available for Payout</span>
                   <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">Available</span>
                 </div>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(payoutStatus.available)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(payoutStatus.available)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span style={{ color: C.muted }}>Pending</span>
+                  <span className="text-gray-600">Pending</span>
                   <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">Pending</span>
                 </div>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(payoutStatus.pending)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(payoutStatus.pending)}</span>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span style={{ color: C.muted }}>Paid</span>
+                  <span className="text-gray-600">Paid</span>
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">Paid</span>
                 </div>
-                <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(payoutStatus.paid)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(payoutStatus.paid)}</span>
               </div>
             </div>
           </div>
 
           {/* Earnings Metrics Card */}
-          <div className="rounded-2xl p-6 shadow-sm" style={{ background: C.card }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: C.text }}>Earnings Metrics</h3>
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings Metrics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Earnings per Hour</p>
-                <p className="text-2xl font-bold" style={{ color: C.text }}>{formatCurrency(metrics.earningsPerHour)}</p>
+                <p className="text-sm text-gray-500 mb-1">Earnings per Hour</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerHour)}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Earnings per Mile</p>
-                <p className="text-2xl font-bold" style={{ color: C.text }}>{formatCurrency(metrics.earningsPerMile)}</p>
+                <p className="text-sm text-gray-500 mb-1">Earnings per Mile</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerMile)}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Active Time</p>
-                <p className="text-2xl font-bold" style={{ color: C.text }}>{metrics.activeTime.toFixed(1)}h</p>
+                <p className="text-sm text-gray-500 mb-1">Active Time</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.activeTime.toFixed(1)}h</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Total Trips</p>
-                <p className="text-2xl font-bold" style={{ color: C.text }}>{metrics.totalTrips}</p>
+                <p className="text-sm text-gray-500 mb-1">Total Trips</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.totalTrips}</p>
               </div>
             </div>
           </div>
 
           {/* Transaction Ledger */}
-          <div className="rounded-2xl p-6 shadow-sm" style={{ background: C.card }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: C.text }}>Earnings History</h3>
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Earnings History</h3>
             <div className="space-y-0">
               {transactions.length === 0 ? (
-                <p className="text-center py-8" style={{ color: C.muted2 }}>No transactions found</p>
+                <p className="text-center text-gray-400 py-8">No transactions found</p>
               ) : (
                 transactions.map((transaction) => (
                   <button
                     key={transaction.id}
                     onClick={() => handleTransactionClick(transaction)}
-                    className="w-full py-4 last:border-0 text-left transition-colors"
-                    style={{ borderBottom: `1px solid ${C.border}` }}
+                    className="w-full py-4 border-b border-gray-100 last:border-0 text-left hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-semibold" style={{ color: C.text }}>{transaction.restaurantName}</span>
+                          <span className="text-sm font-semibold text-gray-900">{transaction.restaurantName}</span>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                             transaction.status === 'completed' ? 'bg-green-100 text-green-700' :
                             transaction.status === 'paid' ? 'bg-blue-100 text-blue-700' :
@@ -1014,10 +883,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                             {transaction.status}
                           </span>
                         </div>
-                        <p className="text-xs mb-1" style={{ color: C.muted2 }}>
+                        <p className="text-xs text-gray-500 mb-1">
                           {transaction.date} • {transaction.time} • Order #{transaction.orderId}
                         </p>
-                        <div className="flex items-center gap-4 text-xs" style={{ color: C.muted }}>
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
                           <span>Gross: {formatCurrency(transaction.grossEarnings)}</span>
                           {transaction.tipAmount > 0 && (
                             <span>Tip: {formatCurrency(transaction.tipAmount)}</span>
@@ -1025,8 +894,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold" style={{ color: C.text }}>{formatCurrency(transaction.netEarnings)}</p>
-                        <ChevronRight className="w-5 h-5 mt-1" style={{ color: C.muted2 }} />
+                        <p className="text-lg font-bold text-gray-900">{formatCurrency(transaction.netEarnings)}</p>
+                        <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
                       </div>
                     </div>
                   </button>
@@ -1040,16 +909,16 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       {/* Transaction Detail Modal */}
       {showDetailModal && selectedTransaction && transactionDetail && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto" style={{ background: C.bg }}>
-            <div className="sticky top-0 border-b p-4 flex items-center justify-between" style={{ background: C.bg, borderColor: C.border }}>
-              <h2 className="text-xl font-bold" style={{ color: C.text }}>Transaction Details</h2>
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Transaction Details</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedTransaction(null);
                   setTransactionDetail(null);
                 }}
-                style={{ color: C.muted2 }}
+                className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1058,40 +927,40 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Restaurant</p>
-                <p className="font-semibold" style={{ color: C.text }}>{selectedTransaction.restaurantName}</p>
+                <p className="text-sm text-gray-500 mb-1">Restaurant</p>
+                <p className="font-semibold text-gray-900">{selectedTransaction.restaurantName}</p>
               </div>
               <div>
-                <p className="text-sm mb-1" style={{ color: C.muted2 }}>Order ID</p>
-                <p className="font-semibold" style={{ color: C.text }}>{selectedTransaction.orderId}</p>
+                <p className="text-sm text-gray-500 mb-1">Order ID</p>
+                <p className="font-semibold text-gray-900">{selectedTransaction.orderId}</p>
               </div>
-              <div className="h-px" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-200"></div>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span style={{ color: C.muted }}>Driver Share</span>
-                  <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(transactionDetail.driverShare)}</span>
+                  <span className="text-gray-600">Driver Share</span>
+                  <span className="font-semibold text-gray-900">{formatCurrency(transactionDetail.driverShare)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: C.muted }}>Tip</span>
-                  <span className="font-semibold" style={{ color: C.text }}>{formatCurrency(transactionDetail.tip)}</span>
+                  <span className="text-gray-600">Tip</span>
+                  <span className="font-semibold text-gray-900">{formatCurrency(transactionDetail.tip)}</span>
                 </div>
               </div>
-              <div className="h-px my-2" style={{ background: C.border }}></div>
+              <div className="h-px bg-gray-300 my-2"></div>
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold" style={{ color: C.text }}>Final Driver Payout</span>
+                <span className="text-lg font-bold text-gray-900">Final Driver Payout</span>
                 <span className="text-lg font-bold text-orange-500">{formatCurrency(transactionDetail.finalDriverPayout)}</span>
               </div>
               {transactionDetail.stripePayoutId && (
                 <>
-                  <div className="h-px" style={{ background: C.border }}></div>
+                  <div className="h-px bg-gray-200"></div>
                   <div>
-                    <p className="text-sm mb-1" style={{ color: C.muted2 }}>Stripe Payout Reference</p>
-                    <p className="font-mono text-xs" style={{ color: C.muted }}>{transactionDetail.stripePayoutId}</p>
+                    <p className="text-sm text-gray-500 mb-1">Stripe Payout Reference</p>
+                    <p className="font-mono text-xs text-gray-700">{transactionDetail.stripePayoutId}</p>
                   </div>
                   {transactionDetail.payoutDate && (
                     <div>
-                      <p className="text-sm mb-1" style={{ color: C.muted2 }}>Payout Date</p>
-                      <p className="font-semibold" style={{ color: C.text }}>
+                      <p className="text-sm text-gray-500 mb-1">Payout Date</p>
+                      <p className="font-semibold text-gray-900">
                         {new Date(transactionDetail.payoutDate).toLocaleDateString('en-US', {
                           month: 'long',
                           day: 'numeric',
@@ -1110,15 +979,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       {/* Gas Money Transfer Modal */}
       {showGasMoneyModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: C.bg }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                   <Fuel className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold" style={{ color: C.text }}>Gas Money</h3>
-                  <p className="text-sm" style={{ color: C.muted2 }}>Mileage earnings</p>
+                  <h3 className="text-xl font-bold text-gray-900">Gas Money</h3>
+                  <p className="text-sm text-gray-500">Mileage earnings</p>
                 </div>
               </div>
               <button
@@ -1144,7 +1013,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             {/* Transfer Options */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: C.muted }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Transfer Amount
                 </label>
                 <div className="relative">
@@ -1157,7 +1026,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     step="0.01"
                     min="0"
                     max={gasMoney}
-                    className="w-full pl-8 pr-4 py-3 rounded-xl text-lg font-semibold focus:border-green-500 focus:outline-none" style={{ background: C.inputBg, color: C.text, border: `2px solid ${C.border}` }}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-green-500 focus:outline-none"
                   />
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -1193,10 +1062,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-5 h-5 text-orange-600" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold" style={{ color: C.text }}>Transfer to Feeder Card</p>
-                    <p className="text-xs" style={{ color: C.muted }}>Available instantly</p>
+                    <p className="text-sm font-semibold text-gray-900">Transfer to Feeder Card</p>
+                    <p className="text-xs text-gray-600">Available instantly</p>
                   </div>
-                  <p className="text-lg font-bold" style={{ color: C.text }}>{formatCurrency(cardBalance)}</p>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(cardBalance)}</p>
                 </div>
               </div>
               
@@ -1207,7 +1076,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     setShowGasMoneyModal(false);
                     setTransferAmount('');
                   }}
-                  className="flex-1 px-6 py-3 font-semibold rounded-xl transition-colors" style={{ background: C.track, color: C.muted }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
@@ -1221,7 +1090,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               
               {/* Info Text */}
-              <p className="text-xs text-center mt-4" style={{ color: C.muted2 }}>
+              <p className="text-xs text-gray-500 text-center mt-4">
                 Gas money is accumulated from your distance pay and can be used for fuel or transferred to your Feeder Card for any purpose.
               </p>
             </div>
@@ -1232,15 +1101,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       {/* Earnings Cashout Modal */}
       {showEarningsModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: C.bg }}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold" style={{ color: C.text }}>Cash Out Earnings</h3>
-                  <p className="text-sm" style={{ color: C.muted2 }}>Available balance</p>
+                  <h3 className="text-xl font-bold text-gray-900">Cash Out Earnings</h3>
+                  <p className="text-sm text-gray-500">Available balance</p>
                 </div>
               </div>
               <button
@@ -1266,7 +1135,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             {/* Transfer Options */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: C.muted }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cash Out Amount
                 </label>
                 <div className="relative">
@@ -1279,7 +1148,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     step="0.01"
                     min="0"
                     max={payoutStatus.available}
-                    className="w-full pl-8 pr-4 py-3 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none" style={{ background: C.inputBg, color: C.text, border: `2px solid ${C.border}` }}
+                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none"
                   />
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -1315,10 +1184,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-5 h-5 text-purple-600" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold" style={{ color: C.text }}>Transfer to Feeder Card</p>
-                    <p className="text-xs" style={{ color: C.muted }}>Available instantly</p>
+                    <p className="text-sm font-semibold text-gray-900">Transfer to Feeder Card</p>
+                    <p className="text-xs text-gray-600">Available instantly</p>
                   </div>
-                  <p className="text-lg font-bold" style={{ color: C.text }}>{formatCurrency(cardBalance)}</p>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(cardBalance)}</p>
                 </div>
               </div>
               
@@ -1329,7 +1198,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     setShowEarningsModal(false);
                     setEarningsCashoutAmount('');
                   }}
-                  className="flex-1 px-6 py-3 font-semibold rounded-xl transition-colors" style={{ background: C.track, color: C.muted }}
+                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
@@ -1343,151 +1212,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
               
               {/* Info Text */}
-              <p className="text-xs text-center mt-4" style={{ color: C.muted2 }}>
+              <p className="text-xs text-gray-500 text-center mt-4">
                 Cash out your available earnings instantly to your Feeder Card. Funds can be used anywhere Visa is accepted.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Instant Cashout to Debit Card Modal */}
-      {showInstantCashoutModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: C.bg }}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold" style={{ color: C.text }}>Instant Cashout</h3>
-                  <p className="text-sm" style={{ color: C.muted2 }}>Transfer to your debit card</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowInstantCashoutModal(false);
-                  setInstantCashoutAmount('');
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            
-            {/* Feeder Card Balance */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border-2 border-orange-200">
-              <p className="text-sm text-orange-700 mb-1">Feeder Card Balance</p>
-              <p className="text-4xl font-bold text-orange-900">{formatCurrency(cardBalance)}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: C.muted }}>
-                  Cashout Amount
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
-                  <input
-                    type="number"
-                    value={instantCashoutAmount}
-                    onChange={(e) => setInstantCashoutAmount(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    max={cardBalance}
-                    className="w-full pl-8 pr-4 py-3 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none" style={{ background: C.inputBg, color: C.text, border: `2px solid ${C.border}` }}
-                  />
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {[25, 50, 75].map(pct => (
-                    <button
-                      key={pct}
-                      onClick={() => setInstantCashoutAmount((cardBalance * pct / 100).toFixed(2))}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      {pct}%
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setInstantCashoutAmount(cardBalance.toFixed(2))}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    All
-                  </button>
-                </div>
-              </div>
-              
-              {/* Destination */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold" style={{ color: C.text }}>Debit Card on File</p>
-                    <p className="text-xs" style={{ color: C.muted }}>
-                      {debitCardLast4 ? `•••• ${debitCardLast4}` : 'No debit card on file'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Fee Disclosure */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-start gap-2">
-                <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-yellow-800">A 1.5% processing fee applies to all instant cashouts.</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setShowInstantCashoutModal(false);
-                    setInstantCashoutAmount('');
-                  }}
-                  className="flex-1 px-6 py-3 font-semibold rounded-xl transition-colors" style={{ background: C.track, color: C.muted }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const amount = parseFloat(instantCashoutAmount);
-                    if (isNaN(amount) || amount <= 0) {
-                      toast.error('Please enter a valid amount');
-                      return;
-                    }
-                    if (amount > cardBalance) {
-                      toast.error(`Amount cannot exceed ${formatCurrency(cardBalance)}`);
-                      return;
-                    }
-                    if (!debitCardLast4) {
-                      toast.error('No debit card on file. Please add one first.');
-                      return;
-                    }
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) { toast.error('Please sign in'); return; }
-                      const fee = amount * 0.015;
-                      const netAmount = amount - fee;
-                      // TODO: Integrate with actual payout provider (Moov/Stripe)
-                      toast.success(`${formatCurrency(netAmount)} cashout to debit card initiated! (${formatCurrency(fee)} fee)`);
-                      setCardBalance(cardBalance - amount);
-                      setInstantCashoutAmount('');
-                      setShowInstantCashoutModal(false);
-                    } catch (err) {
-                      console.error('Instant cashout error:', err);
-                      toast.error('Cashout failed. Please try again.');
-                    }
-                  }}
-                  disabled={!instantCashoutAmount || parseFloat(instantCashoutAmount) <= 0 || !debitCardLast4}
-                  className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cash Out
-                </button>
-              </div>
-              
-              <p className="text-xs text-center mt-4" style={{ color: C.muted2 }}>
-                Funds will be transferred instantly to your debit card on file.
               </p>
             </div>
           </div>

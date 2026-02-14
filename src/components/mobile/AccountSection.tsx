@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { 
   IconUser, IconCar, IconShield, IconCreditCard, IconSettings, IconLogout, 

@@ -15,7 +15,7 @@ import FeederHub from "./pages/FeederHub";
 import IndependentContractorAgreement from "./pages/IndependentContractorAgreement";
 import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
 import CustomerDashboard from "./pages/CustomerDashboard";
-import { MobileDriverDashboardWithDarkMode as MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
+import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
 import { TestMobileScreen } from "./components/mobile/TestMobileScreen";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";

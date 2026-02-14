@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Driver Compensation Pay Engine
  * 

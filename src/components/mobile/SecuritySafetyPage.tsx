@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Crave'n Feeder App — Security & Safety (Enterprise Compact White)
  * ───────────────────────────────────────────────────────────────
@@ -17,9 +16,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader } from '@mantine/core';
 import SlideToToggle from '@/components/SlideToToggle';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
-// Theme is now dynamic via useFeederDarkMode()
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  bg:      "#FFFFFF",
+  bgMuted: "#F8F9FA",
+  green:   "#2E7D32",
+  red:     "#C62828",
+  blue:    "#3A7BD5",
+} as const;
 
 type SecuritySafetyPageProps = {
   onBack: () => void;
@@ -56,7 +66,6 @@ interface TrustedDevice {
 }
 
 const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
-  const { colors: C } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);

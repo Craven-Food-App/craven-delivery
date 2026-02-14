@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Crave'n Feeder App — App Settings (Enterprise Compact White)
  * ───────────────────────────────────────────────────────────────
@@ -11,17 +10,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { Loader } from '@mantine/core';
 import SlideToToggle from '@/components/SlideToToggle';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
 
-// Theme is now dynamic via useFeederDarkMode()
+// ─── THEME ──────────────────────────────────────────────────────────────────
+const C = {
+  orange:  "#E8622A",
+  text:    "#111111",
+  muted:   "#777777",
+  muted2:  "#999999",
+  border:  "#EEEEEE",
+  bg:      "#FFFFFF",
+  bgMuted: "#F8F9FA",
+  green:   "#2E7D32",
+  red:     "#C62828",
+  blue:    "#3A7BD5",
+} as const;
 
 type AppSettingsPageProps = {
   onBack: () => void;
 };
 
 const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
-  const { colors: C, isDark, toggleDarkMode } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   
   // Keyboard awareness hooks (must be at top level)
@@ -501,10 +510,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
               </div>
               <SlideToToggle
                 checked={settings.darkMode}
-                onChange={(checked) => {
-                  updateSetting('darkMode', checked);
-                  toggleDarkMode();
-                }}
+                onChange={(checked) => updateSetting('darkMode', checked)}
               />
             </div>
           </div>
@@ -676,7 +682,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
-              onClick={() => window.open('/terms-of-service', '_blank')}
+              onClick={() => window.open('https://craven.app/terms', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -698,7 +704,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('/feeder-privacy-policy', '_blank')}
+              onClick={() => window.open('https://craven.app/privacy', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -720,7 +726,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('/independent-contractor-agreement', '_blank')}
+              onClick={() => window.open('https://craven.app/driver-agreement', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -742,7 +748,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('/safety', '_blank')}
+              onClick={() => window.open('https://craven.app/community-guidelines', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -764,7 +770,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('mailto:support@cravenusa.com', '_blank')}
+              onClick={() => window.open('mailto:support@craven.app', '_blank')}
         style={{ 
                 display: 'flex',
                 alignItems: 'center',

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { Modal, Stepper, Button, Stack, Select, TextInput, Textarea, Group } from '@mantine/core';
 import { DateInput } from '@mantine/dates';

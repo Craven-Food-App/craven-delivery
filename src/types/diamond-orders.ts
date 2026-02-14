@@ -1,5 +1,4 @@
-export type RatingTier = 'Feeder' | 'Gold' | 'Platinum' | 'Diamond' | 'Ultimate';
-export type FeederTier = RatingTier; // alias
+export type RatingTier = 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
 export type ExclusiveType = 'flash_drop' | 'vault' | 'mystery' | 'hotspot' | 'batch' | 'arena' | 'none';
 export type BatchType = 'surprise' | 'stacked';
 

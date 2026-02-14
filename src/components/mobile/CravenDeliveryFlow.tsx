@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck, IconVolume } from '@tabler/icons-react';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
-import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
@@ -307,7 +305,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   onProgressChange,
   onCameraStateChange 
 }) => {
-  const { isDark, colors: C } = useFeederDarkMode();
   // All hooks must be called before any early returns
   const [status, setStatus] = useState(DRIVER_STATUS.TO_STORE);
   const [pickupCode, setPickupCode] = useState<string | null>(null);
@@ -330,9 +327,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   // GPS tracking for automatic instruction reading
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [hasSpokenInstructions, setHasSpokenInstructions] = useState(false);
-
-  // Navigation hook for external map app deep linking
-  const { openExternalNavigation } = useNavigation();
 
   // Set order start time when component mounts (order is accepted)
   useEffect(() => {
@@ -1313,7 +1307,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: C.bg,
+          backgroundColor: '#fff',
         }} 
         data-testid="delivery-flow"
       >
@@ -1340,7 +1334,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           style={{ 
             flex: 1,
             overflowY: 'auto', 
-            backgroundColor: C.bg, 
+            backgroundColor: 'white', 
             padding: '12px 16px 24px',
           }}
         >
@@ -1352,7 +1346,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   {currentOrder.customer.name}
                 </Text>
                 <Group justify="space-between" align="center">
-                  <Title order={2} fw={700} c={C.text} style={{ lineHeight: 1.2 }}>
+                  <Title order={2} fw={700} c="dark" style={{ lineHeight: 1.2 }}>
                     Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
                   </Title>
                   {isTestOrder && (
@@ -1364,7 +1358,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               </Stack>
             ) : (
               <Group justify="space-between" align="center">
-                <Title order={2} fw={700} c={C.text}>
+                <Title order={2} fw={700} c="dark">
                   Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
                 </Title>
                 {isTestOrder && (
@@ -1393,10 +1387,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       size="sm"
                       title="Start Navigation"
                       onClick={() => {
-                        openExternalNavigation({
-                          address: currentOrder.store.address || '',
-                          name: currentOrder.store.name,
-                        });
+                        const address = encodeURIComponent(currentOrder.store.address || '');
+                        window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
                       }}
                       leftSection={<IconNavigation size={16} />}
                     >
@@ -1551,10 +1543,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                       size="sm"
                       title="Start Navigation"
                       onClick={() => {
-                        openExternalNavigation({
-                          address: currentOrder.customer.address || '',
-                          name: currentOrder.customer.name,
-                        });
+                        const address = encodeURIComponent(currentOrder.customer.address || '');
+                        window.open(`https://maps.apple.com/?daddr=${address}`, '_blank');
                       }}
                       leftSection={<IconNavigation size={16} />}
                     >
@@ -1667,7 +1657,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           right: 0,
           bottom: 0,
           zIndex: 9999,
-          backgroundColor: C.bg,
+          backgroundColor: '#ffffff',
           overflowY: 'auto',
           paddingTop: 'env(safe-area-inset-top, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -1719,7 +1709,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           </Box>
 
           {/* Title */}
-          <Title order={2} fw={700} c={C.text} mb={0} style={{ letterSpacing: '0.01em' }}>
+          <Title order={2} fw={700} c="dark" mb={0} style={{ letterSpacing: '0.01em' }}>
             Delivery Complete
           </Title>
 

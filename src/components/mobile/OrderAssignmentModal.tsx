@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { IconUsers, IconMapPin, IconClock, IconCurrencyDollar, IconNavigation, IconX, IconPackage, IconPhone, IconMessage, IconStar } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';

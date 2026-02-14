@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import InvestorAccessGuard from '@/components/investor/InvestorAccessGuard';
 import InvestorLayout from '@/components/investor/InvestorLayout';

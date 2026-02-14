@@ -1,10 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { MAPBOX_CONFIG, ZONE_STYLES } from '@/config/mapbox';
-import { useRestaurantLocations } from '@/hooks/useRestaurantLocations';
-import { addRestaurantLayer } from '@/components/map/RestaurantMapLayer';
-import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
 
 interface Zone {
   id: string;
@@ -27,13 +23,11 @@ const ZoneVisualizationMap: React.FC<ZoneVisualizationMapProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
-  const [showRestaurants, setShowRestaurants] = useState(true);
-  const { data: restaurants } = useRestaurantLocations();
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
+    // Initialize map
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       accessToken: MAPBOX_CONFIG.accessToken,
@@ -116,56 +110,37 @@ const ZoneVisualizationMap: React.FC<ZoneVisualizationMapProps> = ({
       map.current.on('click', 'zones-active', (e) => {
         if (onZoneClick && e.features?.[0]) {
           const feature = e.features[0];
-          const zone = zones.find(z => z.id === feature.properties?.id);
+          const zone = zones.find(z => z.id === feature.properties.id);
           if (zone) onZoneClick(zone);
         }
       });
 
       // Add hover effects
       map.current.on('mouseenter', 'zones-active', () => {
-        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-      });
-      map.current.on('mouseleave', 'zones-active', () => {
-        if (map.current) map.current.getCanvas().style.cursor = '';
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
       });
 
-      // Add restaurant markers if available
-      if (restaurants && showRestaurants) {
-        cleanupRef.current = addRestaurantLayer(map.current, restaurants);
-      }
+      map.current.on('mouseleave', 'zones-active', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+      });
     });
 
     return () => {
-      cleanupRef.current?.();
-      if (map.current) map.current.remove();
+      if (map.current) {
+        map.current.remove();
+      }
     };
   }, [zones, onZoneClick]);
 
-  // Update restaurant layer when data or toggle changes
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-    cleanupRef.current?.();
-    if (showRestaurants && restaurants) {
-      cleanupRef.current = addRestaurantLayer(map.current, restaurants);
-    }
-  }, [restaurants, showRestaurants]);
-
   return (
-    <div className="relative">
-      <div
-        ref={mapContainer}
-        className="w-full h-96 rounded-lg border"
-      />
-      <Button
-        size="sm"
-        variant={showRestaurants ? 'default' : 'outline'}
-        className="absolute top-3 left-3 z-10 gap-1.5"
-        onClick={() => setShowRestaurants(!showRestaurants)}
-      >
-        <MapPin className="h-4 w-4" />
-        Restaurants
-      </Button>
-    </div>
+    <div 
+      ref={mapContainer} 
+      className="w-full h-96 rounded-lg border"
+    />
   );
 };
 

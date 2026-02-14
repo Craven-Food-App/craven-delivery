@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { Group, Card, Text, Badge, Button, Stack, ScrollArea, ActionIcon, Box } from '@mantine/core';
 import { IconPlus, IconGripVertical } from '@tabler/icons-react';

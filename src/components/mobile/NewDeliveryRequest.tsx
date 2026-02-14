@@ -6,9 +6,18 @@
 
 import React from 'react';
 import { TimerRing } from './TimerRing';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
-// Theme is now dynamic via useFeederDarkMode()
+// ─── DESIGN TOKENS ──────────────────────────────────────────────────────────
+const C = {
+  surface: '#FFFFFF',
+  border: '#ECECEC',
+  textPrimary: '#1A1A1A',
+  textSecondary: '#999999',
+  orange: '#E8652A',
+  red: '#DC2626',
+  green: '#22C55E',
+  arrowGray: '#C5C5C5',
+} as const;
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface DeliveryRequestProps {
@@ -36,9 +45,7 @@ interface DeliveryRequestProps {
 }
 
 // ─── ICONS ──────────────────────────────────────────────────────────────────
-const PickupIcon: React.FC = () => {
-  const { colors: C } = useFeederDarkMode();
-  return (
+const PickupIcon: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
     <path
       d="M2 5.5L8 2L14 5.5V10.5L8 14L2 10.5V5.5Z"
@@ -54,12 +61,9 @@ const PickupIcon: React.FC = () => {
       fill="none"
     />
   </svg>
-  );
-};
+);
 
-const DropoffIcon: React.FC = () => {
-  const { colors: C } = useFeederDarkMode();
-  return (
+const DropoffIcon: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
     <path
       d="M8 1.5C5.51 1.5 3.5 3.51 3.5 6C3.5 9.5 8 14.5 8 14.5C8 14.5 12.5 9.5 12.5 6C12.5 3.51 10.49 1.5 8 1.5Z"
@@ -76,12 +80,9 @@ const DropoffIcon: React.FC = () => {
       fill="none"
     />
   </svg>
-  );
-};
+);
 
-const ArrowIcon: React.FC = () => {
-  const { colors: C } = useFeederDarkMode();
-  return (
+const ArrowIcon: React.FC = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
     <path
       d="M3 6H9 M9 6L7 4 M9 6L7 8"
@@ -91,18 +92,14 @@ const ArrowIcon: React.FC = () => {
       strokeLinejoin="round"
     />
   </svg>
-  );
-};
+);
 
-const CloseIcon: React.FC = () => {
-  const { colors: C } = useFeederDarkMode();
-  return (
+const CloseIcon: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
     <path d="M4 4L12 12" stroke="#B0B0B0" strokeWidth="1.5" strokeLinecap="round" />
     <path d="M12 4L4 12" stroke="#B0B0B0" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
-  );
-};
+);
 
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
@@ -122,7 +119,6 @@ export const NewDeliveryRequest: React.FC<DeliveryRequestProps> = ({
   onDecline,
   onClose,
 }) => {
-  const { colors: C } = useFeederDarkMode();
   const pct = timeLeft / totalSeconds;
   const urgent = pct <= 0.3;
   const progressColor = urgent ? C.red : C.orange;
