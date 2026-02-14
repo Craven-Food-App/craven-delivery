@@ -13,16 +13,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-// ─── THEME ──────────────────────────────────────────────────────────────────
-const C = {
-  orange: "#E8622A",
-  text: "#111827",
-  muted: "#6B7280",
-  border: "#E7E9EE",
-  track: "#EEF1F6",
-  bg: "#FFFFFF",
-  bgMuted: "#FAFBFD",
-} as const;
+import { useFeederDarkMode } from "@/contexts/FeederDarkModeContext";
+
+// Theme is now dynamic via useFeederDarkMode()
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type Demand = "Standard" | "High Demand" | "Locked";
@@ -100,6 +93,7 @@ function RingProgress({
   topLabel: string;
   mainLabel: string;
 }) {
+  const { colors: C } = useFeederDarkMode();
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const filled = circ * clamp01(progress);
@@ -132,6 +126,7 @@ function RingProgress({
 
 // ─── SEGMENTED TABS ─────────────────────────────────────────────────────────
 function SegTabs({ value, onChange }: { value: Tab; onChange: (v: Tab) => void }) {
+  const { colors: C } = useFeederDarkMode();
   const tabs: Tab[] = ["Available", "Scheduled"];
   return (
     <div style={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${C.border}`, marginTop: 10 }}>
@@ -165,6 +160,7 @@ function DateStrip({
   onSelect: (d: string) => void;
   dots: Record<string, boolean>;
 }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
       {dates.map((d) => {
@@ -211,6 +207,7 @@ function ShiftCard({
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const { colors: C } = useFeederDarkMode();
   const locked = shift.demand === "Locked";
   const canAdd = mode === "Available" && !shift.isScheduled && !locked;
   const canRemove = mode === "Scheduled" && shift.isScheduled && !locked;
@@ -258,6 +255,7 @@ function ShiftCard({
 
 // ─── EMPTY STATE ────────────────────────────────────────────────────────────
 function EmptyState({ tab, onFlip }: { tab: Tab; onFlip: () => void }) {
+  const { colors: C } = useFeederDarkMode();
   const other = tab === "Scheduled" ? "Available" : "Scheduled";
   return (
     <div style={{
@@ -328,6 +326,7 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
+  const { colors: C } = useFeederDarkMode();
   const { dates, shifts, setShifts } = useMockShifts();
   const [tab, setTab]               = useState<Tab>("Available");
   const [selDate, setSelDate]       = useState(dates[0]);
