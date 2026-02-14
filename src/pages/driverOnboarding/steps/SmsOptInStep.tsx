@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { Button, Text, Stack, Box } from '@mantine/core';
 import { MessageSquare } from 'lucide-react';

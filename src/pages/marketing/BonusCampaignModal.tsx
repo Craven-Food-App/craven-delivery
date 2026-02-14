@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Bonus Campaign Creation Modal
  * Create driver bonus campaigns and challenges

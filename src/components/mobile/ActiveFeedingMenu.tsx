@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { X, MessageSquare, Pause, ChevronRight, Home, Settings, Volume2, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';

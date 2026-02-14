@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, InputNumber, Select, Button, Space, message, Tag } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';

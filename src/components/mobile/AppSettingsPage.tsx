@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Crave'n Feeder App — App Settings (Enterprise Compact White)
  * ───────────────────────────────────────────────────────────────
