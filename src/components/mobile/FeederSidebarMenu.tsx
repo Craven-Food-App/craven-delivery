@@ -152,29 +152,35 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   }, [isOpen]);
 
   const getStatus = (points: number) => {
+    if (points >= 95) return { 
+      name: 'Ultimate', 
+      gradient: 'linear-gradient(to bottom right, #000000, #1A1A1A, #2A2A2A)', 
+      glowGradient: 'linear-gradient(to bottom, rgba(232, 98, 42, 0.45), rgba(232, 98, 42, 0.2), rgba(0, 0, 0, 0.15), transparent)',
+      icon: '👑' 
+    };
     if (points >= 85) return { 
       name: 'Diamond', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-cyan-2), var(--mantine-color-blue-3), var(--mantine-color-purple-3))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(37, 99, 235, 0.4), rgba(96, 165, 250, 0.2), rgba(191, 219, 254, 0.1), transparent)',
+      gradient: 'linear-gradient(to bottom right, #1E3A5F, #3A7BD5, #1E3A5F)', 
+      glowGradient: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.4), rgba(58, 123, 213, 0.2), rgba(30, 58, 95, 0.1), transparent)',
       icon: '💎' 
     };
     if (points >= 76) return { 
       name: 'Platinum', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-3), var(--mantine-color-gray-1), var(--mantine-color-gray-3))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(156, 163, 175, 0.3), rgba(209, 213, 219, 0.2), transparent)',
+      gradient: 'linear-gradient(to bottom right, #E8E8E8, #FFFFFF, #C0C0C0)', 
+      glowGradient: 'linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(232, 232, 232, 0.2), transparent)',
       icon: '⚪' 
     };
     if (points >= 65) return { 
       name: 'Gold', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-yellow-3), var(--mantine-color-yellow-2), var(--mantine-color-yellow-4))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(234, 179, 8, 0.3), rgba(250, 204, 21, 0.2), transparent)',
+      gradient: 'linear-gradient(to bottom right, #D4AF37, #F5D060, #D4AF37)', 
+      glowGradient: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(245, 208, 96, 0.2), transparent)',
       icon: '🥇' 
     };
     return { 
-      name: 'Silver', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-4), var(--mantine-color-gray-3), var(--mantine-color-gray-5))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(107, 114, 128, 0.3), rgba(156, 163, 175, 0.2), transparent)',
-      icon: '🥈' 
+      name: 'Feeder', 
+      gradient: 'linear-gradient(to bottom right, #FAFBFC, #F3F4F6, #E5E7EB)', 
+      glowGradient: 'linear-gradient(to bottom, rgba(249, 250, 251, 0.3), rgba(229, 231, 235, 0.15), transparent)',
+      icon: '🍽️' 
     };
   };
 

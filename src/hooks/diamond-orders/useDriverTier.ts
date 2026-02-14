@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RatingTier } from '@/types/diamond-orders';
 
 export const useDriverTier = () => {
-  const [tier, setTier] = useState<RatingTier>('Bronze');
+  const [tier, setTier] = useState<RatingTier>('Feeder');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,17 +27,17 @@ export const useDriverTier = () => {
       if (error) {
         console.error('Error fetching driver tier:', error);
         // Default to Bronze if profile doesn't exist
-        setTier('Bronze');
+        setTier('Feeder');
         setLoading(false);
         return;
       }
 
-      const tierValue = (data?.rating_tier as RatingTier) || 'Bronze';
+      const tierValue = (data?.rating_tier as RatingTier) || 'Feeder';
       console.log('Driver tier:', tierValue, 'isDiamond:', tierValue === 'Diamond');
       setTier(tierValue);
     } catch (error) {
       console.error('Error fetching driver tier:', error);
-      setTier('Bronze');
+      setTier('Feeder');
     } finally {
       setLoading(false);
     }

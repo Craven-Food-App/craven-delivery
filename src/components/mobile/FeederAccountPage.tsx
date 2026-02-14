@@ -70,22 +70,22 @@ const C = {
 } as const;
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
-type StatusTier = "Silver" | "Gold" | "Platinum" | "Diamond" | "Ultimate";
+type StatusTier = "Feeder" | "Gold" | "Platinum" | "Diamond" | "Ultimate";
 
 interface StatusInfo {
   tier:       StatusTier;
-  label:      string;   // e.g. "Diamond Feeder"
+  label:      string;
   minPts:     number;
-  maxPts:     number | null; // null = no cap
-  barColor:   string;   // accent for the 2px progress bar
+  maxPts:     number | null;
+  barColor:   string;
 }
 
 interface AccountData {
   name:         string;
-  rating:       number;   // 0–5
+  rating:       number;
   totalFeeds:   number;
   statusPoints: number;
-  memberSince:  string;   // e.g. "Oct 2025"
+  memberSince:  string;
   onFireActive: boolean;
   cardBalance:  number;
 }
@@ -98,10 +98,10 @@ type FeederAccountPageProps = {
 // ─── STATUS TIERS (source of truth — edit thresholds here) ─────────────────
 const TIERS: StatusInfo[] = [
   { tier: "Ultimate", label: "Ultimate Feeder", minPts: 95,  maxPts: null,  barColor: "#000000" },
-  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: 94,    barColor: "#3A7BD5" },
-  { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#78909C" },
-  { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#F9A825" },
-  { tier: "Silver",   label: "Silver Feeder",   minPts: 55,  maxPts: 64,    barColor: "#90A4AE" },
+  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: 94,    barColor: "#1E3A5F" },
+  { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#C0C0C0" },
+  { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#D4AF37" },
+  { tier: "Feeder",   label: "Feeder",          minPts: 0,   maxPts: 64,    barColor: "#999999" },
 ];
 
 function getStatus(pts: number): StatusInfo {
@@ -109,7 +109,7 @@ function getStatus(pts: number): StatusInfo {
   for (const t of TIERS) {
     if (pts >= t.minPts) return t;
   }
-  // Below Silver floor — still render as Silver
+  // Below Feeder floor — still render as Feeder
   return TIERS[TIERS.length - 1];
 }
 

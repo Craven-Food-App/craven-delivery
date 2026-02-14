@@ -422,32 +422,31 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
     const fee = amount * 0.015; // 1.5% fee
     const netAmount = amount - fee;
+    const amountCents = Math.round(amount * 100);
 
     setDebitCashoutLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      // Create a payout record for the debit cashout
-      const { error } = await supabase
-        .from('driver_payouts')
-        .insert({
-          driver_id: user.id,
-          stripe_account_id: `debit_${selectedDebitCard.id}`,
-          stripe_payout_id: `po_debit_${Date.now()}_${user.id.slice(0, 8)}`,
-          amount_cents: Math.round(netAmount * 100),
-          currency: 'usd',
-          payout_type: 'instant',
-          status: 'paid',
-          arrival_date: new Date().toISOString(),
-        });
+      // Call the Stripe-powered instant payout edge function
+      const { data, error } = await supabase.functions.invoke('create-instant-payout', {
+        body: {
+          amount: amountCents,
+          payout_method: 'instant',
+        },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setCardBalance(prev => prev - amount);
       setDebitCashoutAmount('');
       setShowDebitCashoutModal(false);
-      toast.success(`${formatCurrency(netAmount)} sent to your debit card ending in ${selectedDebitCard.card_last4}! (${formatCurrency(fee)} fee applied)`);
+
+      const actualFee = data?.fee_cents ? (data.fee_cents / 100) : fee;
+      const actualNet = data?.net_amount ? (data.net_amount / 100) : netAmount;
+      toast.success(`${formatCurrency(actualNet)} sent to your debit card ending in ${selectedDebitCard.card_last4}! (${formatCurrency(actualFee)} fee applied)`);
       fetchCardData();
     } catch (error) {
       console.error('Error processing debit cashout:', error);
