@@ -19,6 +19,7 @@ type ProfileDetailsPageProps = {
 };
 
 const ProfileDetailsPage: React.FC<ProfileDetailsPageProps> = ({ onBack }) => {
+  const { colors: C } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   

@@ -56,6 +56,7 @@ interface TrustedDevice {
 }
 
 const SecuritySafetyPage: React.FC<SecuritySafetyPageProps> = ({ onBack }) => {
+  const { colors: C } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
