@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
-import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface Message {
@@ -31,11 +30,23 @@ interface DriverSupportChatProps {
   onBack: () => void;
 }
 
-// Theme is now dynamic via useFeederDarkMode()
+// ─── COLORS ─────────────────────────────────────────────────────────────────
+const C = {
+  orange: '#E8622A',
+  text: '#1A1A1A',
+  textLight: '#666666',
+  muted: '#999999',
+  border: '#E5E5E5',
+  bg: '#F9F9F9',
+  white: '#FFFFFF',
+  green: '#2E7D32',
+  greenBg: '#E8F5E9',
+  blue: '#1976D2',
+  blueBg: '#E3F2FD',
+} as const;
 
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
-  const { colors: C } = useFeederDarkMode();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [conversation, setConversation] = useState<Conversation | null>(null);

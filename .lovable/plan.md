@@ -1,48 +1,120 @@
 
 
-# Fix: White Screen on Feeder Android App
+# Dark Mode for the Entire Feeder Mobile App
 
-## Problem
-The error `Cannot set properties of undefined (setting 'Children')` means Ant Design's chunk (`vendor-antd`) is executing before React is ready. Ant Design internally does `React.Children = ...` but `React` is `undefined` at that point.
+## Overview
 
-This is caused by the `manualChunks` configuration in `vite.config.ts` which splits `react-dom` into its own chunk (`vendor-react-dom`) but leaves `react` in the default chunk. On Android WebView, these chunks can load out of order, so Ant Design initializes before React is available.
+Add a fully functional dark mode toggle that transforms the entire feeder app when enabled. The dark mode preference is already saved to user metadata (`app_settings.darkMode`) via the Settings page -- but currently nothing reads it. This plan introduces a React context provider and updates every mobile component to respect the dark/light mode.
 
-## Solution
-Update the `manualChunks` function in `vite.config.ts` to ensure React core is **never** separated from libraries that depend on it. Specifically:
+## Architecture
 
-1. **Bundle `react` and `react-dom` together** into a single `vendor-react` chunk so they always load as one unit.
-2. This ensures React is initialized before any UI library chunk tries to access it.
+### 1. Create `FeederDarkModeContext` (New File)
 
-## Technical Changes
+**File**: `src/contexts/FeederDarkModeContext.tsx`
 
-### File: `vite.config.ts` (lines 128-139)
+A React context that:
+- Reads `darkMode` from user metadata (`app_settings.darkMode`) on mount
+- Provides `isDark` boolean and `toggleDarkMode()` to all children
+- Stores preference in localStorage for instant load (no flash)
+- Exposes a `colors` object that returns the correct palette based on mode
 
-Update the `manualChunks` function to add a React rule **before** the other rules:
+**Light palette** (current):
+- `bg`: `#FFFFFF`, `bgMuted`: `#F8F9FA`, `text`: `#111111`, `muted`: `#777777`, `border`: `#EEEEEE`
 
-```text
-manualChunks(id) {
-  // React core must load first - keep react + react-dom together
-  if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
-  if (id.includes('node_modules/@mui')) return 'vendor-mui';
-  if (id.includes('node_modules/@mantine')) return 'vendor-mantine';
-  if (id.includes('node_modules/@chakra-ui') || id.includes('node_modules/@emotion')) return 'vendor-chakra';
-  if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) return 'vendor-antd';
-  if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) return 'vendor-monaco';
-  if (id.includes('node_modules/mapbox-gl') || id.includes('node_modules/@mapbox')) return 'vendor-mapbox';
-  if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
-  if (id.includes('node_modules/framer-motion')) return 'vendor-framer';
-  if (id.includes('node_modules/stripe') || id.includes('node_modules/@stripe')) return 'vendor-stripe';
-},
-```
+**Dark palette**:
+- `bg`: `#121212`, `bgMuted`: `#1E1E1E`, `text`: `#F1F1F1`, `muted`: `#A0A0A0`, `border`: `#2E2E2E`
+- `card`: `#1A1A1A`, `surface`: `#1E1E1E`
+- Orange accent stays `#E8622A` (unchanged)
 
-Key change: Replace the separate `vendor-react-dom` chunk with a combined `vendor-react` chunk that includes both `react` and `react-dom`. The `react/` path (with trailing slash) ensures we match the `react` package without accidentally matching `react-dom`, `react-router`, etc.
+A custom hook `useFeederDarkMode()` returns `{ isDark, colors, toggleDarkMode }`.
 
-## After Approval
-After implementing, you will need to rebuild and resync:
-```bash
-npm run build
-cd apps/feeder
-npx cap sync android
-npx cap run android
-```
+### 2. Wrap the Mobile App in the Provider
+
+**File**: `src/components/mobile/MobileDriverDashboard.tsx`
+
+Wrap the entire return JSX with `<FeederDarkModeProvider>`. This ensures every child component can access dark mode state.
+
+### 3. Update All Components with Hardcoded Colors
+
+Each of these files has a `const C = { ... }` or `const T = { ... }` theme object. Replace the static object with a call to `useFeederDarkMode()` so colors swap dynamically:
+
+| File | Theme Object |
+|------|-------------|
+| `AppSettingsPage.tsx` | `C` -- Also wire toggle to context's `toggleDarkMode()` |
+| `FeederAccountPage.tsx` | `C` |
+| `FeederScheduleTab.tsx` | `C` |
+| `FeederRatingsTab.tsx` | `C` |
+| `FeedPreferencesPage.tsx` | `C` |
+| `ProfileDetailsPage.tsx` | `C` |
+| `VehicleDocumentsPage.tsx` | `C` |
+| `SecuritySafetyPage.tsx` | `C` |
+| `DriverSupportChat.tsx` | `C` |
+| `NewDeliveryRequest.tsx` | `C` |
+| `FeederSidebarMenu.tsx` | `T` |
+| `EarningsDashboard.tsx` | Tailwind/inline |
+| `CravenDeliveryFlow.tsx` | Mantine `bg` props |
+| `CorporateEarningsDashboard.tsx` | Inline styles |
+
+In each file, the pattern is:
+- Import `useFeederDarkMode`
+- Replace `const C = { ... }` with `const { colors: C } = useFeederDarkMode();` (moved inside the component)
+- For components using Tailwind classes like `bg-white`, `text-gray-*`, conditionally apply dark variants
+
+### 4. Update `AppSettingsPage.tsx` Toggle Wiring
+
+The existing Dark Mode toggle in settings currently only saves to user metadata. Update it to also call `toggleDarkMode()` from the context so the theme changes instantly without requiring an app restart.
+
+### 5. Delivery Flow Dark Mode (`CravenDeliveryFlow.tsx`)
+
+This is a Mantine-heavy component. Update:
+- Card backgrounds from white to dark surface color
+- Text colors from dark to light
+- Badge/button backgrounds for contrast
+- The simulated map view already uses dark colors (dark.9) so it stays
+- Ensure all status text, item lists, and address text are visible
+
+### 6. Tailwind-Based Components
+
+For components using Tailwind (bottom nav, loading screens, map overlays in `MobileDriverDashboard.tsx`):
+- Add a `dark` class to the root wrapper when dark mode is active
+- Use conditional classNames: `isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'`
+
+### 7. Key Contrast Rules (No Black-on-Dark)
+
+- All body text: `#F1F1F1` on dark backgrounds
+- Muted/secondary text: `#A0A0A0` (never `#777` on dark)
+- Card borders: `#2E2E2E` (subtle, visible)
+- Input fields: `#1E1E1E` background with `#F1F1F1` text
+- Orange accent buttons remain `#E8622A` with white text (unchanged)
+- Progress bars: darker track color `#2E2E2E`
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/contexts/FeederDarkModeContext.tsx` | Dark mode context provider + hook |
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `MobileDriverDashboard.tsx` | Wrap with provider; dark bg on root container |
+| `AppSettingsPage.tsx` | Wire toggle to context; use dynamic colors |
+| `FeederAccountPage.tsx` | Use dynamic colors from context |
+| `FeederScheduleTab.tsx` | Use dynamic colors from context |
+| `FeederRatingsTab.tsx` | Use dynamic colors from context |
+| `FeedPreferencesPage.tsx` | Use dynamic colors from context |
+| `ProfileDetailsPage.tsx` | Use dynamic colors from context |
+| `VehicleDocumentsPage.tsx` | Use dynamic colors from context |
+| `SecuritySafetyPage.tsx` | Use dynamic colors from context |
+| `DriverSupportChat.tsx` | Use dynamic colors from context |
+| `NewDeliveryRequest.tsx` | Use dynamic colors from context |
+| `FeederSidebarMenu.tsx` | Use dynamic colors from context |
+| `EarningsDashboard.tsx` | Conditional dark Tailwind/inline styles |
+| `CravenDeliveryFlow.tsx` | Mantine dark props for cards/text |
+| `CorporateEarningsDashboard.tsx` | Conditional dark inline styles |
+| `BottomNavigation.tsx` | Dark background/text classes |
+| `LoadingScreen.tsx` | Dark background |
+| `GetBackToFeedingCard.tsx` | Dark card background |
+| `NearbyRestaurantCards.tsx` | Dark card background |
 

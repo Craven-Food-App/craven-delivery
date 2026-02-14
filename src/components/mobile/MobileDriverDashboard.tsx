@@ -1,6 +1,5 @@
 // @ts-nocheck
 import React, { useCallback, useState, useEffect } from 'react';
-import { FeederDarkModeProvider, useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import { MapPin, Settings, Pause, Play, Square, Clock, Car, DollarSign, Calendar, Bell, User, Star, ChevronRight, Menu, X, Home, TrendingUp, HelpCircle, LogOut, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -83,7 +82,6 @@ export const MobileDriverDashboard: React.FC = () => {
   const { trackEvent, trackUserAction, trackError } = useAnalytics();
   const { reportCustomError } = useCrashReporting();
   const { trackApiCall } = usePerformanceMonitoring('MobileDriverDashboard');
-  const { isDark, colors: C } = useFeederDarkMode();
 
   // Function to get current time index for highlighting
   const getCurrentTimeIndex = () => {
@@ -1493,16 +1491,16 @@ export const MobileDriverDashboard: React.FC = () => {
     
     {/* Session restoration loading */}
     {!isSessionRestored && (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: C.bg }}>
+      <div className="fixed inset-0 bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p style={{ color: C.muted }}>Restoring your session...</p>
+          <p className="text-gray-600">Restoring your session...</p>
         </div>
       </div>
     )}
 
     {!isLoading && !showWelcomeScreen && isSessionRestored && (
-    <div className="fixed inset-0 h-[100dvh] w-screen overflow-hidden safe-area-top" style={{ background: C.bg }}>
+    <div className="fixed inset-0 h-[100dvh] w-screen bg-background overflow-hidden safe-area-top">
       {/* Offline Indicator */}
       <OfflineIndicator />
       
@@ -1788,21 +1786,20 @@ export const MobileDriverDashboard: React.FC = () => {
 
         {/* PAUSED STATE - DoorDash Style */}
         {activeTab === 'home' && driverState === 'online_paused' && (
-          <div className="fixed inset-0 z-50" style={{ pointerEvents: 'auto', background: C.bg }}>
+          <div className="fixed inset-0 bg-white z-50" style={{ pointerEvents: 'auto' }}>
 
             {/* Header - Level with hamburger menu */}
             <div className="flex items-center justify-between px-4 safe-area-top" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
               {/* Hamburger menu button */}
               <button
                 onClick={() => setIsMenuOpen(true)}
-                className="w-10 h-10 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center transition-all"
-                style={{ background: C.card }}
+                className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all"
               >
-                <Menu className="h-5 w-5" style={{ color: C.muted }} />
+                <Menu className="h-5 w-5 text-gray-700" />
               </button>
               
               {/* Title */}
-              <h1 className="text-xl font-bold" style={{ color: C.text }}>Feeding Paused</h1>
+              <h1 className="text-xl font-bold text-gray-900">Feeding Paused</h1>
               
               {/* Orange buttons */}
               <div className="flex items-center space-x-3">
@@ -1828,7 +1825,7 @@ export const MobileDriverDashboard: React.FC = () => {
               {/* Crave'n C Logo Timer */}
               <div className="relative w-64 h-64 mb-8 flex items-center justify-center">
                 <CravenFillCountdownFlow 
-                  duration={1800}
+                  duration={1800} // 30 minutes in seconds
                   size={256}
                   logoPng="/crave-c-logo.png"
                 />
@@ -1836,10 +1833,10 @@ export const MobileDriverDashboard: React.FC = () => {
 
               {/* Information Text */}
               <div className="text-center mb-8 max-w-sm">
-                 <p className="text-lg font-semibold mb-2" style={{ color: C.text }}>
+                 <p className="text-lg font-semibold text-gray-900 mb-2">
                    You won't get offers while you're paused
                  </p>
-                 <p className="text-sm" style={{ color: C.muted }}>
+                 <p className="text-sm text-gray-600">
                    Timer shows 30 minutes. If paused for 35+ minutes total, your Feeding will end.
                  </p>
               </div>
@@ -1864,7 +1861,7 @@ export const MobileDriverDashboard: React.FC = () => {
             </div>
 
             {/* Bottom safe area spacer */}
-            <div className="fixed bottom-0 left-0 right-0" style={{ height: 'env(safe-area-inset-bottom, 0px)', background: C.bg }} />
+            <div className="fixed bottom-0 left-0 right-0" style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#fff' }} />
           </div>
         )}
 
@@ -2158,10 +2155,3 @@ export const MobileDriverDashboard: React.FC = () => {
     )}
   </>;
 };
-
-// Wrap the entire dashboard with the dark mode provider
-export const MobileDriverDashboardWithDarkMode: React.FC = () => (
-  <FeederDarkModeProvider>
-    <MobileDriverDashboard />
-  </FeederDarkModeProvider>
-);
