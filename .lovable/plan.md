@@ -1,123 +1,57 @@
 
 
-# Unique Feeder Card Numbers + Instant Cashout Option
+# Instant Cashout Eligibility: 30 Days + 50 Deliveries
 
 ## What Changes
 
-### 1. Database: Add card_number and cvv to driver_cards
+### 1. Eligibility Check Logic
 
-Add two new columns to `driver_cards`:
-- `card_number` (text, unique, not null) -- 16-digit number starting with "5", auto-generated via a trigger
-- `cvv` (text, not null) -- 3-digit number, auto-generated via a trigger
-- `expiry_date` (text, not null, default '12/28') -- for future flexibility
+The "Instant Cashout to Debit Card" option in the Earnings Dashboard will be gated behind two requirements:
+- The feeder's account must be **at least 30 days old** (based on `driver_profiles.created_at`)
+- The feeder must have **50 or more completed deliveries** (based on `driver_profiles.completed_orders`)
 
-A PostgreSQL trigger will fire on INSERT and auto-generate:
-- Card number: `'5' || lpad(floor(random() * 10^15)::text, 15, '0')` with a uniqueness retry loop
-- CVV: `lpad(floor(random() * 1000)::text, 3, '0')`
+If either condition is not met:
+- The "Instant Cashout to Debit Card" row will still be visible but **locked** with a lock icon and muted styling
+- Tapping it shows a toast explaining what's needed (e.g., "You need 50+ deliveries and 30 days as an active feeder to unlock instant cashout")
+- The modal will not open
 
-This ensures every feeder gets a unique card number without any frontend logic.
+### 2. Eligibility Display
 
-### 2. Auto-provision a card row on feeder signup/first load
+When locked, the row will show:
+- A lock icon instead of the chevron arrow
+- Muted/gray text
+- A subtitle showing progress: e.g., "12/50 deliveries - 18 days remaining"
 
-Update `fetchCardData` in `EarningsDashboard.tsx` to:
-- Query `driver_cards` for the current user
-- If no row exists, insert one (with a placeholder `issuing_card_id`) -- the trigger auto-fills `card_number`, `cvv`, `expiry_date`
-- Display the DB-sourced card number, CVV, and expiry on the Feeder Card UI
+When unlocked, behavior stays exactly as it is now.
 
-Replace the hardcoded values:
-```
-// BEFORE (hardcoded)
-const cardNumber = '5399283309390129';
-const expiryDate = '12/28';
-const cvv = '847';
+### 3. Fee Disclosure
 
-// AFTER (from DB)
-const [cardNumber, setCardNumber] = useState('');
-const [expiryDate, setExpiryDate] = useState('');
-const [cvv, setCvv] = useState('');
-```
-
-### 3. Instant Cashout to Debit Card on File
-
-Add a compact row directly below the Feeder Card (no extra spacing), containing:
-- A small "Instant Cashout" button/link with a credit card icon
-- Tapping it opens a modal similar to the earnings cashout but transfers from Feeder Card balance to the feeder's debit card on file (from `payment_methods` table)
-- Shows current Feeder Card balance, amount input, and destination (last 4 of debit card)
+The instant cashout modal will include a small percentage fee note (e.g., "A 1.5% processing fee applies") displayed near the Cash Out button.
 
 ## Technical Details
 
-### Database Migration SQL
-
-```sql
--- Add columns
-ALTER TABLE driver_cards
-  ADD COLUMN IF NOT EXISTS card_number text,
-  ADD COLUMN IF NOT EXISTS cvv text,
-  ADD COLUMN IF NOT EXISTS expiry_date text NOT NULL DEFAULT '12/28';
-
--- Auto-generate trigger function
-CREATE OR REPLACE FUNCTION generate_card_credentials()
-RETURNS TRIGGER AS $$
-DECLARE
-  new_number text;
-  attempts int := 0;
-BEGIN
-  -- Generate unique 16-digit card number starting with 5
-  LOOP
-    new_number := '5' || lpad(floor(random() * 999999999999999)::bigint::text, 15, '0');
-    EXIT WHEN NOT EXISTS (SELECT 1 FROM driver_cards WHERE card_number = new_number);
-    attempts := attempts + 1;
-    IF attempts > 10 THEN EXIT; END IF;
-  END LOOP;
-  NEW.card_number := new_number;
-  
-  -- Generate 3-digit CVV
-  NEW.cvv := lpad(floor(random() * 1000)::int::text, 3, '0');
-  
-  -- Set expiry 4 years from now
-  NEW.expiry_date := to_char(now() + interval '4 years', 'MM/YY');
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_generate_card_credentials
-  BEFORE INSERT ON driver_cards
-  FOR EACH ROW
-  EXECUTE FUNCTION generate_card_credentials();
-
--- Add unique constraint
-ALTER TABLE driver_cards ADD CONSTRAINT driver_cards_card_number_unique UNIQUE (card_number);
-```
-
 ### EarningsDashboard.tsx Changes
 
-1. Replace hardcoded card number/cvv/expiry with state variables populated from `driver_cards` query
-2. In `fetchCardData`, query `driver_cards` and auto-insert if missing
-3. Add instant cashout row right after the card div (line ~755), compact with no extra margin:
+1. **New state variables**: `isInstantCashoutEligible`, `completedDeliveries`, `accountAgeDays`
+2. **In `fetchCardData`**: Query `driver_profiles` for `created_at` and `completed_orders` to compute eligibility
+3. **Instant Cashout row (line ~804)**: Conditionally render locked/unlocked state based on eligibility
+4. **Instant Cashout modal**: Add fee percentage display line (e.g., "1.5% fee applies")
 
-```tsx
-{/* Instant Cashout Option */}
-<div 
-  className="flex items-center justify-between px-4 py-2 cursor-pointer"
-  onClick={() => setShowInstantCashoutModal(true)}
->
-  <div className="flex items-center gap-2">
-    <CreditCard className="w-4 h-4 text-orange-500" />
-    <span className="text-sm font-medium text-gray-700">
-      Instant Cashout to Debit Card
-    </span>
-  </div>
-  <ChevronRight className="w-4 h-4 text-gray-400" />
-</div>
+### Eligibility Logic (frontend only, no DB changes needed)
+
+```text
+const accountAgeDays = Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86400000);
+const completedDeliveries = profile.completed_orders || 0;
+const isEligible = accountAgeDays >= 30 && completedDeliveries >= 50;
 ```
 
-4. Add a simple modal for instant cashout (amount input, destination card display, confirm button)
+### No Database Changes Required
+
+All needed data (`created_at`, `completed_orders`) already exists in `driver_profiles`. The `driver_payment_methods` table already supports adding debit cards.
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/mobile/EarningsDashboard.tsx` | Replace hardcoded card data with DB query; add instant cashout row + modal |
-| Database migration | Add `card_number`, `cvv`, `expiry_date` columns + auto-generation trigger |
+| `src/components/mobile/EarningsDashboard.tsx` | Add eligibility check, locked state UI for the instant cashout row, fee display in modal |
 
