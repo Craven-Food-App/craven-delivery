@@ -11,27 +11,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 import { Loader } from '@mantine/core';
 import SlideToToggle from '@/components/SlideToToggle';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
 
-// ─── THEME ──────────────────────────────────────────────────────────────────
-const C = {
-  orange:  "#E8622A",
-  text:    "#111111",
-  muted:   "#777777",
-  muted2:  "#999999",
-  border:  "#EEEEEE",
-  bg:      "#FFFFFF",
-  bgMuted: "#F8F9FA",
-  green:   "#2E7D32",
-  red:     "#C62828",
-  blue:    "#3A7BD5",
-} as const;
+// Theme is now dynamic via useFeederDarkMode()
 
 type AppSettingsPageProps = {
   onBack: () => void;
 };
 
 const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
+  const { colors: C, isDark, toggleDarkMode } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   
   // Keyboard awareness hooks (must be at top level)
@@ -511,7 +501,10 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
               </div>
               <SlideToToggle
                 checked={settings.darkMode}
-                onChange={(checked) => updateSetting('darkMode', checked)}
+                onChange={(checked) => {
+                  updateSetting('darkMode', checked);
+                  toggleDarkMode();
+                }}
               />
             </div>
           </div>

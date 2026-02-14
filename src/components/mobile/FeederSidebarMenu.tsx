@@ -3,6 +3,7 @@ import { IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconFla
 import { supabase } from '@/integrations/supabase/client';
 import { getTierConfig } from '@/utils/ratingHelpers';
 import { RatingTier } from '@/types/diamond-orders';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
 /* ─────────────────────────────────────────
    THEME TOKENS

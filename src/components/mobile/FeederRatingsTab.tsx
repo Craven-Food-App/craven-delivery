@@ -8,18 +8,10 @@ import React, { useState } from "react";
 import { useFeederTierProfile } from "@/hooks/useFeederTierProfile";
 import { getTierConfig, getNextTier, TIER_PERKS, TIER_ORDER } from "@/utils/ratingHelpers";
 import { RatingTier } from "@/types/diamond-orders";
+import { useFeederDarkMode } from "@/contexts/FeederDarkModeContext";
 import { format } from "date-fns";
 
-const C = {
-  orange: "#F57C00",
-  text: "#111111",
-  muted: "#777777",
-  muted2: "#999999",
-  border: "#EEEEEE",
-  bg: "#FFFFFF",
-  green: "#16A34A",
-  red: "#DC2626",
-} as const;
+// Theme is now dynamic via useFeederDarkMode()
 
 type FeederRatingsTabProps = {
   onOpenMenu?: () => void;
@@ -29,6 +21,7 @@ type FeederRatingsTabProps = {
 
 // ─── TIER BADGE ─────────────────────────────────────────────────────────────
 function TierBadge({ tier }: { tier: RatingTier }) {
+  const { colors: C } = useFeederDarkMode();
   const config = getTierConfig(tier);
   const isUltimate = tier === "Ultimate";
 
@@ -65,6 +58,7 @@ function MetricRow({ label, value, unit, target, inverse }: {
   target?: number;
   inverse?: boolean; // for cancellation rate where lower is better
 }) {
+  const { colors: C } = useFeederDarkMode();
   let pct = 0;
   if (target && target > 0) {
     pct = inverse
@@ -103,6 +97,7 @@ function RequirementCheck({ label, current, required, met, unit }: {
   met: boolean;
   unit: string;
 }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
@@ -139,6 +134,7 @@ function RequirementCheck({ label, current, required, met, unit }: {
 
 // ─── SECTION HEADER ─────────────────────────────────────────────────────────
 function SectionHeader({ children }: { children: React.ReactNode }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       padding: "14px 16px 6px",
@@ -152,6 +148,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 // ─── PERK ITEM ──────────────────────────────────────────────────────────────
 function PerkItem({ text, locked }: { text: string; locked?: boolean }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
@@ -171,6 +168,7 @@ function PerkItem({ text, locked }: { text: string; locked?: boolean }) {
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({ onOpenMenu, onBack }) => {
+  const { colors: C } = useFeederDarkMode();
   const profile = useFeederTierProfile();
   const [historyOpen, setHistoryOpen] = useState(false);
 

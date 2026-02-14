@@ -17,20 +17,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader } from '@mantine/core';
 import SlideToToggle from '@/components/SlideToToggle';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
-// ─── THEME ──────────────────────────────────────────────────────────────────
-const C = {
-  orange:  "#E8622A",
-  text:    "#111111",
-  muted:   "#777777",
-  muted2:  "#999999",
-  border:  "#EEEEEE",
-  bg:      "#FFFFFF",
-  bgMuted: "#F8F9FA",
-  green:   "#2E7D32",
-  red:     "#C62828",
-  blue:    "#3A7BD5",
-} as const;
+// Theme is now dynamic via useFeederDarkMode()
 
 type SecuritySafetyPageProps = {
   onBack: () => void;

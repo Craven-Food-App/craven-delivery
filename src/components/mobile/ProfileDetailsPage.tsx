@@ -10,17 +10,9 @@ import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader } from '@mantine/core';
 import { useKeyboardAware, useScrollToInput } from '@/hooks/useKeyboardAware';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
-// ─── THEME ──────────────────────────────────────────────────────────────────
-const C = {
-  orange:  "#E8622A",
-  text:    "#111111",
-  muted:   "#777777",
-  muted2:  "#999999",
-  border:  "#EEEEEE",
-  bg:      "#FFFFFF",
-  bgMuted: "#F8F9FA",
-} as const;
+// Theme is now dynamic via useFeederDarkMode()
 
 type ProfileDetailsPageProps = {
   onBack: () => void;

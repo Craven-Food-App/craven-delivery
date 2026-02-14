@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useCallback, useState, useEffect } from 'react';
+import { FeederDarkModeProvider, useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import { MapPin, Settings, Pause, Play, Square, Clock, Car, DollarSign, Calendar, Bell, User, Star, ChevronRight, Menu, X, Home, TrendingUp, HelpCircle, LogOut, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -2155,3 +2156,10 @@ export const MobileDriverDashboard: React.FC = () => {
     )}
   </>;
 };
+
+// Wrap the entire dashboard with the dark mode provider
+export const MobileDriverDashboardWithDarkMode: React.FC = () => (
+  <FeederDarkModeProvider>
+    <MobileDriverDashboard />
+  </FeederDarkModeProvider>
+);
