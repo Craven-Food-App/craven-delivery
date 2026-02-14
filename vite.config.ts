@@ -126,6 +126,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            // React MUST be bundled together to prevent initialization race conditions
+            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'vendor-react';
             if (id.includes('node_modules/@mui')) return 'vendor-mui';
             if (id.includes('node_modules/@mantine')) return 'vendor-mantine';
             if (id.includes('node_modules/@chakra-ui') || id.includes('node_modules/@emotion')) return 'vendor-chakra';
@@ -133,7 +135,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) return 'vendor-monaco';
             if (id.includes('node_modules/mapbox-gl') || id.includes('node_modules/@mapbox')) return 'vendor-mapbox';
             if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
-            if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
             if (id.includes('node_modules/framer-motion')) return 'vendor-framer';
             if (id.includes('node_modules/stripe') || id.includes('node_modules/@stripe')) return 'vendor-stripe';
           },
