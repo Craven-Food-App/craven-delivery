@@ -99,9 +99,9 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardBalance, setCardBalance] = useState(0);
   const [driverName, setDriverName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
+  const cardNumber = '5399283309390129';
+  const expiryDate = '12/28';
+  const cvv = '847';
   const [showCardDetails, setShowCardDetails] = useState(false);
   
   // Gas Money state
@@ -112,11 +112,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   // Earnings Cashout state
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [earningsCashoutAmount, setEarningsCashoutAmount] = useState('');
-  
-  // Instant Cashout state
-  const [showInstantCashoutModal, setShowInstantCashoutModal] = useState(false);
-  const [instantCashoutAmount, setInstantCashoutAmount] = useState('');
-  const [debitCardLast4, setDebitCardLast4] = useState('');
 
   useEffect(() => {
     fetchEarningsData();
@@ -147,48 +142,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
       if (profile?.full_name) {
         setDriverName(profile.full_name);
-      }
-
-      // Fetch or auto-provision card credentials from driver_cards
-      let { data: cardData, error: cardError } = await supabase
-        .from('driver_cards')
-        .select('card_number, cvv, expiry_date')
-        .eq('driver_id', user.id)
-        .maybeSingle();
-
-      if (!cardData && !cardError) {
-        // Auto-provision a card row — trigger auto-fills card_number, cvv, expiry_date
-        const { data: newCard, error: insertError } = await supabase
-          .from('driver_cards')
-          .insert({
-            driver_id: user.id,
-            issuing_card_id: `auto_${user.id.slice(0, 8)}`,
-            status: 'active',
-          } as any)
-          .select('card_number, cvv, expiry_date')
-          .single();
-
-        if (!insertError && newCard) {
-          cardData = newCard;
-        }
-      }
-
-      if (cardData) {
-        setCardNumber(cardData.card_number || '');
-        setCvv(cardData.cvv || '');
-        setExpiryDate(cardData.expiry_date || '');
-      }
-
-      // Fetch debit card on file for instant cashout
-      const { data: paymentMethod } = await supabase
-        .from('payment_methods')
-        .select('last_four')
-        .eq('user_id', user.id)
-        .eq('type', 'debit')
-        .maybeSingle();
-
-      if (paymentMethod?.last_four) {
-        setDebitCardLast4(paymentMethod.last_four);
       }
     } catch (error) {
       console.error('Error fetching card data:', error);
@@ -801,20 +754,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </Box>
           </div>
 
-          {/* Instant Cashout Option */}
-          <div 
-            className="flex items-center justify-between px-4 py-2 cursor-pointer bg-white rounded-xl"
-            onClick={() => setShowInstantCashoutModal(true)}
-          >
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-gray-700">
-                Instant Cashout to Debit Card
-              </span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          </div>
-
           {/* Earnings Summary Cards - Side by Side */}
           <div className="grid grid-cols-2 gap-3 mt-2.5">
             {/* Primary Earnings Summary Card - Clickable only on Today tab */}
@@ -1305,141 +1244,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               {/* Info Text */}
               <p className="text-xs text-gray-500 text-center mt-4">
                 Cash out your available earnings instantly to your Feeder Card. Funds can be used anywhere Visa is accepted.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Instant Cashout to Debit Card Modal */}
-      {showInstantCashoutModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Instant Cashout</h3>
-                  <p className="text-sm text-gray-500">Transfer to your debit card</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowInstantCashoutModal(false);
-                  setInstantCashoutAmount('');
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            
-            {/* Feeder Card Balance */}
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 mb-6 border-2 border-orange-200">
-              <p className="text-sm text-orange-700 mb-1">Feeder Card Balance</p>
-              <p className="text-4xl font-bold text-orange-900">{formatCurrency(cardBalance)}</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cashout Amount
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
-                  <input
-                    type="number"
-                    value={instantCashoutAmount}
-                    onChange={(e) => setInstantCashoutAmount(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    max={cardBalance}
-                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-semibold focus:border-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {[25, 50, 75].map(pct => (
-                    <button
-                      key={pct}
-                      onClick={() => setInstantCashoutAmount((cardBalance * pct / 100).toFixed(2))}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      {pct}%
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setInstantCashoutAmount(cardBalance.toFixed(2))}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    All
-                  </button>
-                </div>
-              </div>
-              
-              {/* Destination */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Debit Card on File</p>
-                    <p className="text-xs text-gray-600">
-                      {debitCardLast4 ? `•••• ${debitCardLast4}` : 'No debit card on file'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setShowInstantCashoutModal(false);
-                    setInstantCashoutAmount('');
-                  }}
-                  className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    const amount = parseFloat(instantCashoutAmount);
-                    if (isNaN(amount) || amount <= 0) {
-                      toast.error('Please enter a valid amount');
-                      return;
-                    }
-                    if (amount > cardBalance) {
-                      toast.error(`Amount cannot exceed ${formatCurrency(cardBalance)}`);
-                      return;
-                    }
-                    if (!debitCardLast4) {
-                      toast.error('No debit card on file. Please add one first.');
-                      return;
-                    }
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) { toast.error('Please sign in'); return; }
-                      // TODO: Integrate with actual payout provider (Moov/Stripe)
-                      toast.success(`${formatCurrency(amount)} cashout to debit card initiated!`);
-                      setCardBalance(cardBalance - amount);
-                      setInstantCashoutAmount('');
-                      setShowInstantCashoutModal(false);
-                    } catch (err) {
-                      console.error('Instant cashout error:', err);
-                      toast.error('Cashout failed. Please try again.');
-                    }
-                  }}
-                  disabled={!instantCashoutAmount || parseFloat(instantCashoutAmount) <= 0 || !debitCardLast4}
-                  className="flex-1 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cash Out
-                </button>
-              </div>
-              
-              <p className="text-xs text-gray-500 text-center mt-4">
-                Funds will be transferred instantly to your debit card on file.
               </p>
             </div>
           </div>

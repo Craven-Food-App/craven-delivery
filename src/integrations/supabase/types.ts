@@ -8737,33 +8737,24 @@ export type Database = {
       }
       driver_cards: {
         Row: {
-          card_number: string | null
           created_at: string
-          cvv: string | null
           driver_id: string
-          expiry_date: string
           id: string
           issuing_card_id: string
           status: string
           updated_at: string
         }
         Insert: {
-          card_number?: string | null
           created_at?: string
-          cvv?: string | null
           driver_id: string
-          expiry_date?: string
           id?: string
           issuing_card_id: string
           status?: string
           updated_at?: string
         }
         Update: {
-          card_number?: string | null
           created_at?: string
-          cvv?: string | null
           driver_id?: string
-          expiry_date?: string
           id?: string
           issuing_card_id?: string
           status?: string
