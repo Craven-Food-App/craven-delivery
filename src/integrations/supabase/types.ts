@@ -9550,7 +9550,10 @@ export type Database = {
           driver_id: string
           endpoint: string
           id: string
+          is_active: boolean
+          is_native: boolean
           p256dh_key: string
+          push_token: string | null
         }
         Insert: {
           auth_key: string
@@ -9558,7 +9561,10 @@ export type Database = {
           driver_id: string
           endpoint: string
           id?: string
+          is_active?: boolean
+          is_native?: boolean
           p256dh_key: string
+          push_token?: string | null
         }
         Update: {
           auth_key?: string
@@ -9566,7 +9572,10 @@ export type Database = {
           driver_id?: string
           endpoint?: string
           id?: string
+          is_active?: boolean
+          is_native?: boolean
           p256dh_key?: string
+          push_token?: string | null
         }
         Relationships: [
           {
