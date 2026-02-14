@@ -683,7 +683,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
-              onClick={() => window.open('https://craven.app/terms', '_blank')}
+              onClick={() => window.open('/terms-of-service', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -705,7 +705,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('https://craven.app/privacy', '_blank')}
+              onClick={() => window.open('/feeder-privacy-policy', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -727,7 +727,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('https://craven.app/driver-agreement', '_blank')}
+              onClick={() => window.open('/independent-contractor-agreement', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -749,7 +749,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('https://craven.app/community-guidelines', '_blank')}
+              onClick={() => window.open('/safety', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -771,7 +771,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('mailto:support@craven.app', '_blank')}
+              onClick={() => window.open('mailto:support@cravenusa.com', '_blank')}
         style={{ 
                 display: 'flex',
                 alignItems: 'center',
