@@ -1,121 +1,98 @@
 
-# Complete Dark Mode Integration for All Remaining Feeder Pages
 
-## Problem
+# Show Restaurants, Stores, and Fast Food on Mapbox Maps
 
-Several major pages and components in the Feeder app still have hardcoded light colors (`bg-white`, `text-gray-900`, `bg-gray-50`, etc.) and do not use the `useFeederDarkMode()` hook. This means toggling dark mode in Settings has no effect on these pages.
+## Overview
 
-## Files That Need Dark Mode
+Add restaurant/store markers to the Mapbox maps so drivers and customers can see nearby food locations visually. The restaurants table already has `latitude` and `longitude` data, and Mapbox is already configured in the project.
 
-### 1. `CorporateEarningsDashboard.tsx` (On Fire Page)
+## What Gets Built
 
-The entire component uses hardcoded whites and grays:
-- Root: `background: '#ffffff'`
-- Header: `bg-white`, `text-gray-900`
-- Charts: `bg-gray-50`, `text-gray-900`
-- Diamond section: `backgroundColor: '#ffffff'`, `c="#000"`
-- Info modal: `bg-white`, `text-gray-900`, `text-gray-600`
+### 1. Restaurant Map Markers Component
 
-**Fix**: Import and call `useFeederDarkMode()`. Replace all hardcoded colors with dynamic `C.*` values from the context.
+A reusable component that fetches restaurants from Supabase and plots them as markers on any Mapbox map instance.
 
-### 2. `EarningsDashboard.tsx` (Earnings Page -- ~1500 lines)
+- Fetch all active restaurants with valid lat/lng from the `restaurants` table
+- Use the existing branded Crave'N pin (from `createCravenMapPin.ts`) for markers
+- Show a popup on tap/click with restaurant name, cuisine type, rating, and delivery time
+- Color-code or use icons by `restaurant_type` (full_service, retail_store, fast_food, etc.)
 
-Massive file with hardcoded light colors everywhere:
-- Root: `bg-gray-50`
-- Header: `bg-white`, `text-gray-900`, `text-gray-700`
-- Tab buttons: `bg-gray-100 text-gray-700`
-- All cards: `bg-white`, `text-gray-900`, `text-gray-500`, `text-gray-600`
-- Earnings breakdown, payout status, metrics cards
-- Transaction ledger rows: `hover:bg-gray-50`, `text-gray-900`
-- All modals (Transaction detail, Gas Money, Earnings Cashout, Instant Cashout): `bg-white`, `text-gray-900`
-- Input fields: `border-gray-200`
-- Dividers: `bg-gray-200`, `bg-gray-300`
+### 2. Integration Points
 
-**Fix**: Import and call `useFeederDarkMode()`. Replace all hardcoded Tailwind classes and inline styles with dynamic values. Use `isDark` for conditional Tailwind classes and `C.*` for inline styles.
+**Driver Dashboard Map (MobileDriverDashboard.tsx)**
+- When the driver is online and viewing the map, show nearby restaurant markers
+- Tapping a restaurant marker shows a quick info popup (name, cuisine, rating)
+- Markers help drivers orient themselves relative to pickup locations
 
-### 3. `FeederPromotionsTab.tsx` (Promos/Giveaway Page)
+**Zone Visualization Map (ZoneVisualizationMap.tsx)**
+- Add restaurant markers as an optional overlay on the admin zone map
+- Admins can see where restaurants are located relative to delivery zones
+- Toggle layer on/off to avoid clutter
 
-Uses Mantine components with hardcoded light backgrounds:
-- Loading state: `background: 'white'`
-- Root: `background: 'white'`
-- Header: `background: 'white'`, `borderBottom: '1px solid #EEEEEE'`
-- Challenge cards use Mantine color tokens (these work somewhat but the background is still white)
+**Customer Order Map (OrderMap.tsx)**
+- Show restaurant locations on the customer-facing map
+- Tapping a marker could navigate to that restaurant's menu
 
-**Fix**: Import `useFeederDarkMode()`. Replace `background: 'white'` and border colors with dynamic `C.bg`, `C.border`. Update Mantine `c` and `bg` props.
+### 3. Data Flow
 
-### 4. `GetBackToFeedingCard.tsx`
+- Query: `SELECT id, name, latitude, longitude, cuisine_type, rating, restaurant_type, logo_url, is_active FROM restaurants WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL`
+- Cache with React Query to avoid repeated fetches
+- Convert to GeoJSON FeatureCollection for Mapbox source layer
 
-Small component with:
-- `bg-white`, `text-gray-600`, `border-gray-100`
+## Technical Details
 
-**Fix**: Import `useFeederDarkMode()`. Replace with `C.card`, `C.muted`, `C.border`.
+### New Files
 
-### 5. `NearbyRestaurantCards.tsx`
+**`src/hooks/useRestaurantLocations.ts`**
+- React Query hook to fetch restaurant locations from Supabase
+- Returns GeoJSON-formatted data ready for Mapbox
+- Caches for 5 minutes
 
-Restaurant cards with hardcoded:
-- Card backgrounds: `bg-white/95`, `bg-gray-50`
-- Text: `text-gray-900`, `text-gray-500`, `text-gray-600`
-- Borders: `border-gray-100`, `border-gray-200`
-- Stat badges: `bg-gray-50`
+**`src/components/map/RestaurantMapLayer.ts`**
+- Helper function that takes a `mapboxgl.Map` instance and adds:
+  - A GeoJSON source (`restaurants-source`) with all restaurant points
+  - A symbol/circle layer (`restaurants-layer`) for the markers
+  - Click handlers for popups showing restaurant info
+- Supports the branded Crave'N pin as custom marker image
+- Includes a cleanup function to remove layers on unmount
 
-**Fix**: Import `useFeederDarkMode()`. Replace with dynamic values.
+### Modified Files
 
-### 6. `BottomNavigation.tsx`
+**`src/components/admin/ZoneVisualizationMap.tsx`**
+- After zones load, also add the restaurant markers layer
+- Add a toggle button to show/hide restaurants
 
-Uses Tailwind CSS theme variables (`bg-card/95`, `text-primary`, `text-muted-foreground`). These should inherit from CSS but may need explicit dark overrides since the app uses an inline style-based dark mode, not CSS class-based.
+**`src/components/mobile/MobileDriverDashboard.tsx`**
+- Where the Mapbox map is initialized, call the restaurant layer helper
+- Show restaurant pins alongside the driver's current location
 
-**Fix**: Import `useFeederDarkMode()`. Apply dynamic inline background and text colors.
+**`src/components/OrderMap.tsx`** (and `apps/customer/` version)
+- Replace the Google Maps iframe with the Mapbox map
+- Add restaurant markers using the shared helper
 
-### 7. `MobileDriverDashboard.tsx` (Home tab panels)
+### Marker Design
 
-The home tab offline/paused states have hardcoded:
-- Paused state: `bg-white z-50`, `text-gray-900`, `text-gray-600`, `text-gray-700`
+- Use the existing Crave'N gold compass pin (`feeder_nav_button_compressed.png`) for restaurant markers
+- Size: 32px for standard, 40px for promoted restaurants
+- Popup content: Restaurant name, cuisine type, star rating, estimated delivery time
+- Cluster markers when zoomed out (Mapbox clustering) to avoid visual clutter
 
-**Fix**: Add `isDark`/`C` from the existing context (already wrapped in provider). Replace hardcoded colors in the paused state panel and other home-tab overlay sections.
+### Restaurant Type Indicators
 
-### 8. `CravenDeliveryFlow.tsx` (Driver Delivery Flow)
+| Type | Visual |
+|------|--------|
+| Fast Food | Orange pin with lightning icon overlay |
+| Full Service | Orange pin with fork/knife overlay |
+| Retail Store | Orange pin with shopping bag overlay |
+| Default | Standard Crave'N pin |
 
-Does not have `useFeederDarkMode` imported. This is Mantine-heavy and needs:
-- Card backgrounds switched from white to `C.card`
-- Text colors switched to `C.text` / `C.muted`
-- Border colors to `C.border`
+## Summary of Changes
 
-**Fix**: Import `useFeederDarkMode()`. Update Mantine `bg`, `c`, and style props.
+| File | Action |
+|------|--------|
+| `src/hooks/useRestaurantLocations.ts` | **New** -- React Query hook for restaurant lat/lng data |
+| `src/components/map/RestaurantMapLayer.ts` | **New** -- Reusable Mapbox layer helper |
+| `src/components/admin/ZoneVisualizationMap.tsx` | **Edit** -- Add restaurant markers overlay |
+| `src/components/mobile/MobileDriverDashboard.tsx` | **Edit** -- Show restaurants on driver map |
+| `src/components/OrderMap.tsx` | **Edit** -- Add restaurant markers |
 
-## Technical Approach
-
-For each file, the pattern is the same:
-1. Add `import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';`
-2. Inside the component function, add `const { isDark, colors: C } = useFeederDarkMode();`
-3. Replace hardcoded colors:
-   - `bg-white` / `background: '#ffffff'` / `background: 'white'` --> `style={{ background: C.bg }}` or `C.card`
-   - `bg-gray-50` --> `C.bgMuted`
-   - `text-gray-900` / `text-gray-800` / `c="#000"` --> `C.text`
-   - `text-gray-600` / `text-gray-500` / `text-gray-700` --> `C.muted`
-   - `text-gray-400` --> `C.muted2`
-   - `border-gray-100` / `border-gray-200` --> `C.border`
-   - `bg-gray-100` / `bg-gray-200` (dividers, tracks) --> `C.track`
-   - Input backgrounds --> `C.inputBg` with `C.text` text
-
-## Contrast Rules (No Black on Dark)
-
-- Body text on dark: `#F1F1F1`
-- Muted text on dark: `#A0A0A0`
-- Card backgrounds on dark: `#1A1A1A`
-- Surface/input backgrounds on dark: `#1E1E1E`
-- Borders on dark: `#2E2E2E`
-- Orange accent `#E8622A` stays unchanged
-- Modal overlays stay `bg-black/50`
-
-## Summary
-
-| File | What Changes |
-|------|-------------|
-| `CorporateEarningsDashboard.tsx` | Add hook; replace all white/gray hardcoded colors with dynamic `C.*` |
-| `EarningsDashboard.tsx` | Add hook; replace all hardcoded Tailwind and inline colors across cards, modals, inputs |
-| `FeederPromotionsTab.tsx` | Add hook; replace Mantine background/text/border props |
-| `GetBackToFeedingCard.tsx` | Add hook; replace card bg, text, border |
-| `NearbyRestaurantCards.tsx` | Add hook; replace card and stat colors (both RestaurantCard and main component) |
-| `BottomNavigation.tsx` | Add hook; apply dynamic bg/text inline styles |
-| `MobileDriverDashboard.tsx` | Use existing hook; update paused state panel and home overlays |
-| `CravenDeliveryFlow.tsx` | Add hook; update Mantine card/text/border props |
