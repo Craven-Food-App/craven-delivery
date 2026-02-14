@@ -1,43 +1,45 @@
 /**
- * Driver Rating Utilities
- * Custom color scheme: Platinum, Gold, Silver, Bronze
+ * Crave'N Feeder Tier System (Customer App)
+ * 5-tier hierarchy: Feeder → Gold → Platinum → Diamond → Ultimate
+ * Rolling 60-day evaluation window
  */
 
 export const RATING_COLORS = {
-  PLATINUM: '#E5E4E2', // 4.8-5.0
-  GOLD: '#D4AF37',     // 4.5-4.79
-  SILVER: '#C0C0C0',   // 4.0-4.49
-  BRONZE: '#CD7F32',   // <4.0
+  PLATINUM: '#C0C0C0',
+  GOLD: '#D4AF37',
+  SILVER: '#C0C0C0',
+  BRONZE: '#FFFFFF',
 };
 
 export const RATING_TIERS = {
-  ELITE: { min: 4.8, color: RATING_COLORS.PLATINUM, name: 'Elite', icon: '💎' },
-  PRO: { min: 4.5, color: RATING_COLORS.GOLD, name: 'Pro', icon: '🥇' },
-  RISING: { min: 4.0, color: RATING_COLORS.SILVER, name: 'Rising Star', icon: '🥈' },
-  NEW: { min: 0, color: RATING_COLORS.BRONZE, name: 'New Driver', icon: '🥉' },
+  ELITE: { min: 4.95, color: '#000000', name: 'Ultimate', icon: '👑' },
+  PRO: { min: 4.90, color: '#1E3A5F', name: 'Diamond', icon: '💎' },
+  RISING: { min: 4.70, color: '#D4AF37', name: 'Gold', icon: '🥇' },
+  NEW: { min: 0, color: '#FFFFFF', name: 'Feeder', icon: '🍽️' },
 };
 
 export function getRatingColor(rating: number): string {
-  if (rating >= 4.8) return RATING_COLORS.PLATINUM;
-  if (rating >= 4.5) return RATING_COLORS.GOLD;
-  if (rating >= 4.0) return RATING_COLORS.SILVER;
-  return RATING_COLORS.BRONZE;
+  if (rating >= 4.95) return '#000000';
+  if (rating >= 4.90) return '#1E3A5F';
+  if (rating >= 4.80) return '#C0C0C0';
+  if (rating >= 4.70) return '#D4AF37';
+  return '#FFFFFF';
 }
 
 export function getRatingTier(rating: number, deliveries: number = 0) {
-  if (rating >= 4.8 && deliveries >= 100) return RATING_TIERS.ELITE;
-  if (rating >= 4.5 && deliveries >= 50) return RATING_TIERS.PRO;
-  if (rating >= 4.0 && deliveries >= 20) return RATING_TIERS.RISING;
+  if (rating >= 4.95 && deliveries >= 1000) return RATING_TIERS.ELITE;
+  if (rating >= 4.80 && deliveries >= 200) return RATING_TIERS.PRO;
+  if (rating >= 4.70 && deliveries >= 50) return RATING_TIERS.RISING;
   return RATING_TIERS.NEW;
 }
 
 export function getRatingTextColor(rating: number): string {
   const color = getRatingColor(rating);
-  // Return darker version for text
-  if (color === RATING_COLORS.PLATINUM) return '#9CA3AF'; // Gray for contrast
-  if (color === RATING_COLORS.GOLD) return '#B8860B'; // Dark goldenrod
-  if (color === RATING_COLORS.SILVER) return '#808080'; // Gray
-  return '#8B4513'; // Saddle brown
+  if (color === '#000000') return '#E8622A'; // Orange for Ultimate
+  if (color === '#1E3A5F') return '#1E3A5F';
+  if (color === '#C0C0C0') return '#808080';
+  if (color === '#D4AF37') return '#B8860B';
+  return '#666666';
 }
 
 export function formatRating(rating: number): string {
@@ -57,9 +59,9 @@ export function getTrendIcon(trend: number): string {
 }
 
 export function getTrendColor(trend: number): string {
-  if (trend > 0) return '#10b981'; // Green
-  if (trend < 0) return '#ef4444'; // Red
-  return '#6b7280'; // Gray
+  if (trend > 0) return '#10b981';
+  if (trend < 0) return '#ef4444';
+  return '#6b7280';
 }
 
 export const COMPLIMENT_OPTIONS = [
@@ -72,4 +74,3 @@ export const COMPLIMENT_OPTIONS = [
   { id: 'polite', label: 'Very Polite', icon: '🙏' },
   { id: 'follows_instructions', label: 'Follows Instructions', icon: '📝' },
 ];
-

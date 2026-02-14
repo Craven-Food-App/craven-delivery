@@ -4,10 +4,10 @@ import { Sparkles } from 'lucide-react';
 
 interface DiamondPointsBadgeProps {
   points: number;
-  tier?: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+  tier?: 'Feeder' | 'Gold' | 'Platinum' | 'Diamond' | 'Ultimate';
 }
 
-export const DiamondPointsBadge: React.FC<DiamondPointsBadgeProps> = ({ points, tier = 'Bronze' }) => {
+export const DiamondPointsBadge: React.FC<DiamondPointsBadgeProps> = ({ points, tier = 'Feeder' }) => {
   const [showAnimation, setShowAnimation] = useState(false);
   const [prevPoints, setPrevPoints] = useState(points);
 
@@ -21,14 +21,16 @@ export const DiamondPointsBadge: React.FC<DiamondPointsBadgeProps> = ({ points, 
 
   const getTierColor = () => {
     switch (tier) {
+      case 'Ultimate':
+        return 'orange';
       case 'Diamond':
-        return 'violet';
+        return 'blue';
+      case 'Platinum':
+        return 'gray';
       case 'Gold':
         return 'yellow';
-      case 'Silver':
-        return 'gray';
       default:
-        return 'orange';
+        return 'gray';
     }
   };
 

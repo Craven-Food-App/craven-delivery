@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 
-type DriverTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+type DriverTier = 'feeder' | 'gold' | 'platinum' | 'diamond' | 'ultimate';
 
 interface RatingStats {
   overallRating: number;
@@ -33,6 +33,7 @@ interface TierRequirements {
   minCompletionRate: number;
   minAcceptanceRate: number;
   minOnTimeRate: number;
+  minDeliveries: number;
 }
 
 const tierConfig: Record<DriverTier, { 
@@ -42,38 +43,45 @@ const tierConfig: Record<DriverTier, {
   icon: string;
   requirements: TierRequirements;
 }> = {
-  bronze: {
-    name: 'Bronze',
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-100',
-    icon: '🥉',
-    requirements: { minRating: 4.0, minCompletionRate: 80, minAcceptanceRate: 60, minOnTimeRate: 85 }
-  },
-  silver: {
-    name: 'Silver',
+  feeder: {
+    name: 'Feeder',
     color: 'text-gray-600',
     bgColor: 'bg-gray-100',
-    icon: '🥈',
-    requirements: { minRating: 4.3, minCompletionRate: 85, minAcceptanceRate: 70, minOnTimeRate: 88 }
+    icon: '🍽️',
+    requirements: { minRating: 0, minCompletionRate: 0, minAcceptanceRate: 0, minOnTimeRate: 0, minDeliveries: 0 }
   },
   gold: {
     name: 'Gold',
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-100',
     icon: '🥇',
-    requirements: { minRating: 4.5, minCompletionRate: 90, minAcceptanceRate: 75, minOnTimeRate: 90 }
+    requirements: { minRating: 4.70, minCompletionRate: 90, minAcceptanceRate: 60, minOnTimeRate: 90, minDeliveries: 50 }
   },
   platinum: {
     name: 'Platinum',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-100',
+    icon: '⚪',
+    requirements: { minRating: 4.80, minCompletionRate: 95, minAcceptanceRate: 70, minOnTimeRate: 93, minDeliveries: 200 }
+  },
+  diamond: {
+    name: 'Diamond',
+    color: 'text-blue-700',
+    bgColor: 'bg-blue-100',
     icon: '💎',
-    requirements: { minRating: 4.7, minCompletionRate: 95, minAcceptanceRate: 80, minOnTimeRate: 95 }
+    requirements: { minRating: 4.90, minCompletionRate: 97, minAcceptanceRate: 75, minOnTimeRate: 95, minDeliveries: 500 }
+  },
+  ultimate: {
+    name: 'Ultimate',
+    color: 'text-orange-600',
+    bgColor: 'bg-black',
+    icon: '👑',
+    requirements: { minRating: 4.95, minCompletionRate: 98, minAcceptanceRate: 80, minOnTimeRate: 97, minDeliveries: 1000 }
   }
 };
 
 const getNextTier = (currentTier: DriverTier): DriverTier | null => {
-  const tiers: DriverTier[] = ['bronze', 'silver', 'gold', 'platinum'];
+  const tiers: DriverTier[] = ['feeder', 'gold', 'platinum', 'diamond', 'ultimate'];
   const currentIndex = tiers.indexOf(currentTier);
   return currentIndex < tiers.length - 1 ? tiers[currentIndex + 1] : null;
 };
@@ -114,40 +122,42 @@ export const RatingsSection: React.FC = () => {
         const totalDeliveries = driverProfile.total_deliveries || 0;
         const rating = driverProfile.rating || 0;
         
-        // Calculate completion rate (delivered vs all assigned)
+        // Calculate completion rate
         const assignedOrders = completedOrders?.length || 0;
         const deliveredOrders = completedOrders?.filter(o => o.status === 'delivered').length || 0;
         const completionRate = assignedOrders > 0 ? (deliveredOrders / assignedOrders) * 100 : 100;
 
-        // Calculate acceptance rate (accepted vs offered)
+        // Calculate acceptance rate
         const totalAssignments = assignments?.length || 0;
         const acceptedAssignments = assignments?.filter(a => a.status === 'accepted').length || 0;
         const acceptanceRate = totalAssignments > 0 ? (acceptedAssignments / totalAssignments) * 100 : 100;
 
-        // Estimate on-time rate (would need actual tracking)
-        const onTimeRate = Math.max(85, Math.min(95, rating * 20)); // Estimate based on rating
+        // Estimate on-time rate
+        const onTimeRate = Math.max(85, Math.min(97, rating * 20));
 
-        // Determine tier based on performance
-        let tier: DriverTier = 'bronze';
-        if (rating >= 4.7 && completionRate >= 95 && acceptanceRate >= 80 && onTimeRate >= 95) {
+        // Determine tier based on the spec requirements
+        let tier: DriverTier = 'feeder';
+        if (rating >= 4.95 && completionRate >= 98 && totalDeliveries >= 1000 && onTimeRate >= 97) {
+          tier = 'ultimate';
+        } else if (rating >= 4.90 && completionRate >= 97 && totalDeliveries >= 500 && onTimeRate >= 95) {
+          tier = 'diamond';
+        } else if (rating >= 4.80 && completionRate >= 95 && totalDeliveries >= 200 && onTimeRate >= 93) {
           tier = 'platinum';
-        } else if (rating >= 4.5 && completionRate >= 90 && acceptanceRate >= 75 && onTimeRate >= 90) {
+        } else if (rating >= 4.70 && completionRate >= 90 && totalDeliveries >= 50 && onTimeRate >= 90) {
           tier = 'gold';
-        } else if (rating >= 4.3 && completionRate >= 85 && acceptanceRate >= 70 && onTimeRate >= 88) {
-          tier = 'silver';
         }
 
         setStats({
           overallRating: rating,
           completionRate: Math.round(completionRate),
           onTimeRate: Math.round(onTimeRate),
-          customerRating: rating, // Assuming same as overall
+          customerRating: rating,
           totalDeliveries: totalDeliveries,
           acceptanceRate: Math.round(acceptanceRate),
           tier: tier
         });
       } else {
-        // Default stats for new drivers
+        // Default stats for new drivers — always start as Feeder
         setStats({
           overallRating: 0,
           completionRate: 0,
@@ -155,7 +165,7 @@ export const RatingsSection: React.FC = () => {
           customerRating: 0,
           totalDeliveries: 0,
           acceptanceRate: 0,
-          tier: 'bronze'
+          tier: 'feeder'
         });
       }
     } catch (error) {
@@ -217,10 +227,10 @@ export const RatingsSection: React.FC = () => {
     
     const ratingProgress = Math.min((current.overallRating / requirements.minRating) * 100, 100);
     const completionProgress = Math.min((current.completionRate / requirements.minCompletionRate) * 100, 100);
-    const acceptanceProgress = Math.min((current.acceptanceRate / requirements.minAcceptanceRate) * 100, 100);
     const onTimeProgress = Math.min((current.onTimeRate / requirements.minOnTimeRate) * 100, 100);
+    const deliveryProgress = Math.min((current.totalDeliveries / requirements.minDeliveries) * 100, 100);
     
-    return Math.min((ratingProgress + completionProgress + acceptanceProgress + onTimeProgress) / 4, 100);
+    return Math.min((ratingProgress + completionProgress + onTimeProgress + deliveryProgress) / 4, 100);
   };
 
   return (
@@ -236,7 +246,7 @@ export const RatingsSection: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-4xl mb-2">{currentTierConfig.icon}</div>
-              <h1 className={`text-2xl font-bold ${currentTierConfig.color}`}>
+              <h1 className={`text-2xl font-bold ${currentTierConfig.color} ${stats.tier === 'ultimate' ? 'text-orange-500' : ''}`}>
                 {currentTierConfig.name} Feeder
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -344,16 +354,16 @@ export const RatingsSection: React.FC = () => {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                    <span>Acceptance: {nextTierConfig.requirements.minAcceptanceRate}%+</span>
-                    <Badge variant={stats.acceptanceRate >= nextTierConfig.requirements.minAcceptanceRate ? "default" : "secondary"}>
-                      {stats.acceptanceRate >= nextTierConfig.requirements.minAcceptanceRate ? "✓" : `${stats.acceptanceRate}%`}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
                     <span>On Time: {nextTierConfig.requirements.minOnTimeRate}%+</span>
                     <Badge variant={stats.onTimeRate >= nextTierConfig.requirements.minOnTimeRate ? "default" : "secondary"}>
                       {stats.onTimeRate >= nextTierConfig.requirements.minOnTimeRate ? "✓" : `${stats.onTimeRate}%`}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span>Deliveries: {nextTierConfig.requirements.minDeliveries}+</span>
+                    <Badge variant={stats.totalDeliveries >= nextTierConfig.requirements.minDeliveries ? "default" : "secondary"}>
+                      {stats.totalDeliveries >= nextTierConfig.requirements.minDeliveries ? "✓" : stats.totalDeliveries}
                     </Badge>
                   </div>
                 </div>
@@ -372,32 +382,15 @@ export const RatingsSection: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              {stats.tier === 'bronze' && (
+              {stats.tier === 'feeder' && (
                 <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Standard orders only</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     <span>Basic support access</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Standard delivery opportunities</span>
-                  </div>
-                </>
-              )}
-              
-              {stats.tier === 'silver' && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Priority support access</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Higher paying opportunities</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Weekly performance bonuses</span>
                   </div>
                 </>
               )}
@@ -406,19 +399,11 @@ export const RatingsSection: React.FC = () => {
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Premium support access</span>
+                    <span>Early access to standard orders</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Priority on high-value orders</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>5% earnings boost on all deliveries</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Monthly performance bonuses</span>
+                    <span>+5 dispatch weight</span>
                   </div>
                 </>
               )}
@@ -427,23 +412,61 @@ export const RatingsSection: React.FC = () => {
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>VIP support line</span>
+                    <span>Access to premium merchants</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>First access to premium orders</span>
+                    <span>Early scheduling unlock</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>10% earnings boost on all deliveries</span>
+                    <span>+10 dispatch weight</span>
+                  </div>
+                </>
+              )}
+
+              {stats.tier === 'diamond' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Priority dispatch access</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Exclusive high-value delivery access</span>
+                    <span>High-value retail access</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Special recognition and rewards</span>
+                    <span>Large order eligibility</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>+18 dispatch weight</span>
+                  </div>
+                </>
+              )}
+              
+              {stats.tier === 'ultimate' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Top dispatch priority (+30 weight)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Catering & premium retail first access</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Dedicated support queue</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Beta feature access</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>Enhanced referral bonus</span>
                   </div>
                 </>
               )}
