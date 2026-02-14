@@ -1,98 +1,58 @@
 
 
-# Show Restaurants, Stores, and Fast Food on Mapbox Maps
+# Show Restaurant Logo Icons on Map
 
-## Overview
+## What Changes
 
-Add restaurant/store markers to the Mapbox maps so drivers and customers can see nearby food locations visually. The restaurants table already has `latitude` and `longitude` data, and Mapbox is already configured in the project.
+Replace the current colored circle markers with each restaurant's actual logo image displayed at their map location.
 
-## What Gets Built
+## Approach
 
-### 1. Restaurant Map Markers Component
+Instead of using Mapbox's built-in `circle` layer (which only supports solid colors), switch to **HTML-based markers** (`mapboxgl.Marker({ element })`) for individual restaurants. Each marker will be a small circular element showing the restaurant's `logo_url` from the database.
 
-A reusable component that fetches restaurants from Supabase and plots them as markers on any Mapbox map instance.
+### RestaurantMapLayer.ts -- Full Rewrite of Unclustered Points
 
-- Fetch all active restaurants with valid lat/lng from the `restaurants` table
-- Use the existing branded Crave'N pin (from `createCravenMapPin.ts`) for markers
-- Show a popup on tap/click with restaurant name, cuisine type, rating, and delivery time
-- Color-code or use icons by `restaurant_type` (full_service, retail_store, fast_food, etc.)
+- Keep the **cluster circles** (orange dots with count) for zoomed-out views -- these stay as-is since clusters don't represent a single restaurant
+- Replace the `circle` layer for individual (unclustered) points with **dynamic HTML markers**
+- For each restaurant, create an HTML element:
+  - 36px circular container with white border and drop shadow
+  - `<img>` inside showing the restaurant's `logo_url`
+  - Fallback: if no logo, show a colored circle with the first letter of the restaurant name
+- On click, show the same popup (name, cuisine, rating)
+- Track all created markers for cleanup on unmount
 
-### 2. Integration Points
+### Key Technical Detail
 
-**Driver Dashboard Map (MobileDriverDashboard.tsx)**
-- When the driver is online and viewing the map, show nearby restaurant markers
-- Tapping a restaurant marker shows a quick info popup (name, cuisine, rating)
-- Markers help drivers orient themselves relative to pickup locations
-
-**Zone Visualization Map (ZoneVisualizationMap.tsx)**
-- Add restaurant markers as an optional overlay on the admin zone map
-- Admins can see where restaurants are located relative to delivery zones
-- Toggle layer on/off to avoid clutter
-
-**Customer Order Map (OrderMap.tsx)**
-- Show restaurant locations on the customer-facing map
-- Tapping a marker could navigate to that restaurant's menu
-
-### 3. Data Flow
-
-- Query: `SELECT id, name, latitude, longitude, cuisine_type, rating, restaurant_type, logo_url, is_active FROM restaurants WHERE is_active = true AND latitude IS NOT NULL AND longitude IS NOT NULL`
-- Cache with React Query to avoid repeated fetches
-- Convert to GeoJSON FeatureCollection for Mapbox source layer
-
-## Technical Details
-
-### New Files
-
-**`src/hooks/useRestaurantLocations.ts`**
-- React Query hook to fetch restaurant locations from Supabase
-- Returns GeoJSON-formatted data ready for Mapbox
-- Caches for 5 minutes
-
-**`src/components/map/RestaurantMapLayer.ts`**
-- Helper function that takes a `mapboxgl.Map` instance and adds:
-  - A GeoJSON source (`restaurants-source`) with all restaurant points
-  - A symbol/circle layer (`restaurants-layer`) for the markers
-  - Click handlers for popups showing restaurant info
-- Supports the branded Crave'N pin as custom marker image
-- Includes a cleanup function to remove layers on unmount
-
-### Modified Files
-
-**`src/components/admin/ZoneVisualizationMap.tsx`**
-- After zones load, also add the restaurant markers layer
-- Add a toggle button to show/hide restaurants
-
-**`src/components/mobile/MobileDriverDashboard.tsx`**
-- Where the Mapbox map is initialized, call the restaurant layer helper
-- Show restaurant pins alongside the driver's current location
-
-**`src/components/OrderMap.tsx`** (and `apps/customer/` version)
-- Replace the Google Maps iframe with the Mapbox map
-- Add restaurant markers using the shared helper
+Since Mapbox clustering only works with GeoJSON source layers (not HTML markers), we need a hybrid approach:
+- Keep the GeoJSON source with clustering enabled for the cluster circles
+- Listen to `render` / `moveend` events on the map
+- Query visible unclustered features using `map.querySourceFeatures()` 
+- Create/remove HTML markers dynamically as the user pans and zooms
 
 ### Marker Design
 
-- Use the existing Crave'N gold compass pin (`feeder_nav_button_compressed.png`) for restaurant markers
-- Size: 32px for standard, 40px for promoted restaurants
-- Popup content: Restaurant name, cuisine type, star rating, estimated delivery time
-- Cluster markers when zoomed out (Mapbox clustering) to avoid visual clutter
+```text
++------------------+
+|  36px circle     |
+|  white border    |
+|  drop-shadow     |
+|  [restaurant     |
+|   logo image]    |
++------------------+
+```
 
-### Restaurant Type Indicators
+- Size: 36px diameter
+- Border: 2px solid white
+- Shadow: subtle drop shadow
+- Border-radius: 50% (fully round)
+- Fallback: orange circle with white initial letter
 
-| Type | Visual |
+### Files Modified
+
+| File | Change |
 |------|--------|
-| Fast Food | Orange pin with lightning icon overlay |
-| Full Service | Orange pin with fork/knife overlay |
-| Retail Store | Orange pin with shopping bag overlay |
-| Default | Standard Crave'N pin |
+| `src/components/map/RestaurantMapLayer.ts` | Replace circle layer with HTML logo markers using hybrid cluster + marker approach |
+| `src/hooks/useRestaurantLocations.ts` | No changes needed -- already fetches `logo_url` |
 
-## Summary of Changes
-
-| File | Action |
-|------|--------|
-| `src/hooks/useRestaurantLocations.ts` | **New** -- React Query hook for restaurant lat/lng data |
-| `src/components/map/RestaurantMapLayer.ts` | **New** -- Reusable Mapbox layer helper |
-| `src/components/admin/ZoneVisualizationMap.tsx` | **Edit** -- Add restaurant markers overlay |
-| `src/components/mobile/MobileDriverDashboard.tsx` | **Edit** -- Show restaurants on driver map |
-| `src/components/OrderMap.tsx` | **Edit** -- Add restaurant markers |
+No other files need changes since `MobileMapbox.tsx`, `ZoneVisualizationMap.tsx`, and `OrderMap.tsx` all call `addRestaurantLayer()` -- updating that one function updates all maps.
 
