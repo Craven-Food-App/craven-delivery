@@ -17,6 +17,7 @@ import DriverSupportChat from "./DriverSupportChat";
 import { SafetySettings } from "@/components/settings/SafetySettings";
 import { getTierConfig, getNextTier, TIER_ORDER } from "@/utils/ratingHelpers";
 import { RatingTier } from "@/types/diamond-orders";
+import { useFeederDarkMode } from "@/contexts/FeederDarkModeContext";
 import {
   Box,
   Loader,
@@ -39,22 +40,7 @@ import {
   IconEyeOff,
 } from "@tabler/icons-react";
 
-// ─── THEME (shared across Crave'n enterprise pages) ────────────────────────
-const C = {
-  orange:  "#E8622A",
-  text:    "#111111",
-  muted:   "#777777",
-  muted2:  "#999999",
-  border:  "#EEEEEE",
-  track:   "#EEF1F6",
-  bg:      "#FFFFFF",
-  blue:    "#3A7BD5",
-  blueBg:  "#EEF4FF",
-  green:   "#2E7D32",
-  greenBg: "#E6F4EA",
-  red:     "#C62828",
-  redBg:   "#FEF2F2",
-} as const;
+// Theme is now dynamic via useFeederDarkMode()
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 interface AccountData {
@@ -89,6 +75,7 @@ type NavId = typeof MENU_ITEMS[number]["id"];
 
 // ─── SVG ICONS (inline, no dependency) ─────────────────────────────────────
 function HamburgerIcon() {
+  const { colors: C } = useFeederDarkMode();
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth={2} strokeLinecap="round">
       <line x1="3" y1="6"  x2="21" y2="6"  />
@@ -99,6 +86,7 @@ function HamburgerIcon() {
 }
 
 function MoreDotsIcon() {
+  const { colors: C } = useFeederDarkMode();
   return (
     <svg width={20} height={20} viewBox="0 0 24 24" fill={C.muted}>
       <circle cx="5"  cy="12" r="1.5" />
@@ -109,6 +97,7 @@ function MoreDotsIcon() {
 }
 
 function ChevronIcon() {
+  const { colors: C } = useFeederDarkMode();
   return (
     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.muted2} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9,6 15,12 9,18" />
@@ -117,6 +106,7 @@ function ChevronIcon() {
 }
 
 function StarIcon({ size = 12, filled = true }: { size?: number; filled?: boolean }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#F5C518" : C.border}>
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -126,6 +116,7 @@ function StarIcon({ size = 12, filled = true }: { size?: number; filled?: boolea
 
 // Per-nav-item SVG icons
 function NavIcon({ id }: { id: NavId }) {
+  const { colors: C } = useFeederDarkMode();
   const s = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: C.text, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
   switch (id) {
@@ -180,6 +171,7 @@ function NavIcon({ id }: { id: NavId }) {
 
 // ─── COMPONENT: TOP BAR ─────────────────────────────────────────────────────
 function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       background: C.bg, flexShrink: 0,
@@ -203,6 +195,7 @@ function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
 
 // ─── COMPONENT: IDENTITY ROW ───────────────────────────────────────────────
 function IdentityRow({ data }: { data: AccountData }) {
+  const { colors: C } = useFeederDarkMode();
   const initials = data.name
     .split(" ")
     .map((w) => w[0])
@@ -260,6 +253,7 @@ function IdentityRow({ data }: { data: AccountData }) {
 
 // ─── COMPONENT: INLINE STATS STRIP (rating · feeds) ────────────────────────
 function StatsStrip({ data }: { data: AccountData }) {
+  const { colors: C } = useFeederDarkMode();
   const stats = [
     { value: <><StarIcon size={11} />{data.rating.toFixed(2)}</>, label: "Rating" },
     { value: <>{data.totalFeeds}</>,                              label: "Feeds" },
@@ -290,6 +284,7 @@ function StatsStrip({ data }: { data: AccountData }) {
 
 // ─── COMPONENT: SECTION HEADER ──────────────────────────────────────────────
 function SectionHeader({ children }: { children: React.ReactNode }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       padding: "12px 16px 0",
@@ -303,6 +298,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 // ─── COMPONENT: STATUS ROW (real tier progress) ────────────────────────────
 function StatusRow({ data }: { data: AccountData }) {
+  const { colors: C } = useFeederDarkMode();
   const tierConfig = getTierConfig(data.tier);
   const nextTierKey = getNextTier(data.tier);
   const nextTierConfig = nextTierKey ? getTierConfig(nextTierKey) : null;
@@ -348,6 +344,7 @@ function StatusRow({ data }: { data: AccountData }) {
 
 // ─── COMPONENT: ON FIRE CARD ────────────────────────────────────────────────
 function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () => void }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div style={{
       margin: "12px 16px 0",
@@ -397,6 +394,7 @@ function OnFireCard({ active, onConfigure }: { active: boolean; onConfigure: () 
 
 // ─── COMPONENT: NAV ROW ─────────────────────────────────────────────────────
 function NavRow({ id, label, desc, onPress, badge }: { id: NavId; label: string; desc: string; onPress: () => void; badge?: string }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div
       role="button"
@@ -432,6 +430,7 @@ function NavRow({ id, label, desc, onPress, badge }: { id: NavId; label: string;
 
 // ─── COMPONENT: SIGN OUT ROW ────────────────────────────────────────────────
 function SignOutRow({ onSignOut }: { onSignOut: () => void }) {
+  const { colors: C } = useFeederDarkMode();
   return (
     <div
       role="button"
@@ -468,6 +467,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
+  const { colors: C } = useFeederDarkMode();
   const navigate = useNavigate();
   const [showCardPage, setShowCardPage] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState(false);

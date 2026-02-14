@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IconMenu2, IconFlame, IconMapPin, IconClock, IconTarget, IconTrendingUp, IconUsers, IconBolt, IconAward, IconChevronRight, IconPackage } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { supabase } from '@/integrations/supabase/client';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 import {
   Box,
   Stack,
@@ -27,6 +28,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
+  const { isDark, colors: C } = useFeederDarkMode();
   const [activeTab, setActiveTab] = useState('promos');
   const [loading, setLoading] = useState(true);
   const [promotions, setPromotions] = useState<any[]>([]);
@@ -201,16 +203,16 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
 
   if (loading) {
     return (
-      <Box h="100vh" w="100%" style={{ background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box h="100vh" w="100%" style={{ background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="lg" color="orange" />
       </Box>
     );
   }
 
   return (
-    <Box h="100vh" w="100%" style={{ background: 'white', overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+    <Box h="100vh" w="100%" style={{ background: C.bg, overflowY: 'auto', paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <Group px="md" py="xs" justify="space-between" align="center" style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #EEEEEE', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
+      <Group px="md" py="xs" justify="space-between" align="center" style={{ position: 'sticky', top: 0, zIndex: 10, background: C.bg, borderBottom: `1px solid ${C.border}`, paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <ActionIcon
           onClick={() => {
             if (onOpenMenu) {
@@ -228,7 +230,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
         >
           <IconMenu2 size={24} />
         </ActionIcon>
-        <Title order={1} c="dark" fw={900} size="md" style={{ letterSpacing: '0.2px' }}>PROMOS</Title>
+        <Title order={1} c={C.text} fw={900} size="md" style={{ letterSpacing: '0.2px' }}>PROMOS</Title>
         <ActionIcon
           onClick={() => {
             window.location.href = '/mobile?tab=messages';
@@ -254,15 +256,15 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
           size="md"
           styles={{
             root: {
-              backgroundColor: 'var(--mantine-color-gray-2)',
+              backgroundColor: isDark ? C.surface : 'var(--mantine-color-gray-2)',
               padding: '4px',
             },
             indicator: {
-              backgroundColor: 'white',
+              backgroundColor: C.card,
               color: 'var(--mantine-color-red-7)',
             },
             label: {
-              color: 'var(--mantine-color-dark-7)',
+              color: C.text,
               fontWeight: 700,
             },
           }}
@@ -275,7 +277,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
           <Stack gap="md">
             <Group gap="xs" mb="md">
               <IconFlame size={20} color="var(--mantine-color-orange-6)" />
-              <Title order={3} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>ACTIVE NOW</Title>
+              <Title order={3} c={C.text} fw={700} style={{ letterSpacing: '0.05em' }}>ACTIVE NOW</Title>
             </Group>
             
             {promotions.length > 0 ? promotions.map((promo, idx) => (
@@ -315,7 +317,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
                 <Stack gap="md">
                   <Group gap="xs">
                     <IconMapPin size={16} color="var(--mantine-color-orange-6)" />
-                    <Text c="dark" fw={700} size="lg">{promo.zone}</Text>
+                    <Text c={C.text} fw={700} size="lg">{promo.zone}</Text>
                   </Group>
                   
                   <Group gap="md" c="dark.7">
@@ -370,7 +372,7 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
           <Stack gap="md">
             <Group gap="xs" mb="md">
               <IconTarget size={20} color="var(--mantine-color-orange-6)" />
-              <Title order={3} c="dark" fw={700} style={{ letterSpacing: '0.05em' }}>YOUR CHALLENGES</Title>
+              <Title order={3} c={C.text} fw={700} style={{ letterSpacing: '0.05em' }}>YOUR CHALLENGES</Title>
             </Group>
 
             {challenges.length > 0 ? challenges.map((challenge) => {
@@ -386,11 +388,11 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
                         <IconComponent size={24} color={`var(--mantine-color-${colors.icon})`} />
                       </ThemeIcon>
                       <Stack gap="xs" style={{ flex: 1 }}>
-                        <Title order={4} c="dark" fw={700}>{challenge.title}</Title>
+                        <Title order={4} c={C.text} fw={700}>{challenge.title}</Title>
                         <Badge color={colors.badgeBg} c={colors.badgeText} size="sm" radius="xl" fw={700}>
                           {challenge.type}
                         </Badge>
-                        <Text c="dark.7" size="sm">{challenge.description}</Text>
+                        <Text c={C.muted} size="sm">{challenge.description}</Text>
                       </Stack>
                     </Group>
                     <Stack gap="xs" align="flex-end">
@@ -401,8 +403,8 @@ const FeederPromotionsTab: React.FC<FeederPromotionsTabProps> = ({
 
                   <Stack gap="xs">
                     <Group justify="space-between">
-                      <Text c="dark.7" fw={600} size="sm">Progress</Text>
-                      <Text c="dark" fw={700}>{challenge.progress}/{challenge.total}</Text>
+                      <Text c={C.muted} fw={600} size="sm">Progress</Text>
+                      <Text c={C.text} fw={700}>{challenge.progress}/{challenge.total}</Text>
                     </Group>
                     <Progress
                       value={Math.min(progressPercentage, 100)}
