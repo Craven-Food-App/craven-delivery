@@ -309,6 +309,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
 }) => {
   const { isDark, colors: C } = useFeederDarkMode();
   // All hooks must be called before any early returns
+  const [status, setStatus] = useState(DRIVER_STATUS.TO_STORE);
   const [pickupCode, setPickupCode] = useState<string | null>(null);
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
