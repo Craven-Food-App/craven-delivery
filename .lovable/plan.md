@@ -1,120 +1,121 @@
 
+# Complete Dark Mode Integration for All Remaining Feeder Pages
 
-# Dark Mode for the Entire Feeder Mobile App
+## Problem
 
-## Overview
+Several major pages and components in the Feeder app still have hardcoded light colors (`bg-white`, `text-gray-900`, `bg-gray-50`, etc.) and do not use the `useFeederDarkMode()` hook. This means toggling dark mode in Settings has no effect on these pages.
 
-Add a fully functional dark mode toggle that transforms the entire feeder app when enabled. The dark mode preference is already saved to user metadata (`app_settings.darkMode`) via the Settings page -- but currently nothing reads it. This plan introduces a React context provider and updates every mobile component to respect the dark/light mode.
+## Files That Need Dark Mode
 
-## Architecture
+### 1. `CorporateEarningsDashboard.tsx` (On Fire Page)
 
-### 1. Create `FeederDarkModeContext` (New File)
+The entire component uses hardcoded whites and grays:
+- Root: `background: '#ffffff'`
+- Header: `bg-white`, `text-gray-900`
+- Charts: `bg-gray-50`, `text-gray-900`
+- Diamond section: `backgroundColor: '#ffffff'`, `c="#000"`
+- Info modal: `bg-white`, `text-gray-900`, `text-gray-600`
 
-**File**: `src/contexts/FeederDarkModeContext.tsx`
+**Fix**: Import and call `useFeederDarkMode()`. Replace all hardcoded colors with dynamic `C.*` values from the context.
 
-A React context that:
-- Reads `darkMode` from user metadata (`app_settings.darkMode`) on mount
-- Provides `isDark` boolean and `toggleDarkMode()` to all children
-- Stores preference in localStorage for instant load (no flash)
-- Exposes a `colors` object that returns the correct palette based on mode
+### 2. `EarningsDashboard.tsx` (Earnings Page -- ~1500 lines)
 
-**Light palette** (current):
-- `bg`: `#FFFFFF`, `bgMuted`: `#F8F9FA`, `text`: `#111111`, `muted`: `#777777`, `border`: `#EEEEEE`
+Massive file with hardcoded light colors everywhere:
+- Root: `bg-gray-50`
+- Header: `bg-white`, `text-gray-900`, `text-gray-700`
+- Tab buttons: `bg-gray-100 text-gray-700`
+- All cards: `bg-white`, `text-gray-900`, `text-gray-500`, `text-gray-600`
+- Earnings breakdown, payout status, metrics cards
+- Transaction ledger rows: `hover:bg-gray-50`, `text-gray-900`
+- All modals (Transaction detail, Gas Money, Earnings Cashout, Instant Cashout): `bg-white`, `text-gray-900`
+- Input fields: `border-gray-200`
+- Dividers: `bg-gray-200`, `bg-gray-300`
 
-**Dark palette**:
-- `bg`: `#121212`, `bgMuted`: `#1E1E1E`, `text`: `#F1F1F1`, `muted`: `#A0A0A0`, `border`: `#2E2E2E`
-- `card`: `#1A1A1A`, `surface`: `#1E1E1E`
-- Orange accent stays `#E8622A` (unchanged)
+**Fix**: Import and call `useFeederDarkMode()`. Replace all hardcoded Tailwind classes and inline styles with dynamic values. Use `isDark` for conditional Tailwind classes and `C.*` for inline styles.
 
-A custom hook `useFeederDarkMode()` returns `{ isDark, colors, toggleDarkMode }`.
+### 3. `FeederPromotionsTab.tsx` (Promos/Giveaway Page)
 
-### 2. Wrap the Mobile App in the Provider
+Uses Mantine components with hardcoded light backgrounds:
+- Loading state: `background: 'white'`
+- Root: `background: 'white'`
+- Header: `background: 'white'`, `borderBottom: '1px solid #EEEEEE'`
+- Challenge cards use Mantine color tokens (these work somewhat but the background is still white)
 
-**File**: `src/components/mobile/MobileDriverDashboard.tsx`
+**Fix**: Import `useFeederDarkMode()`. Replace `background: 'white'` and border colors with dynamic `C.bg`, `C.border`. Update Mantine `c` and `bg` props.
 
-Wrap the entire return JSX with `<FeederDarkModeProvider>`. This ensures every child component can access dark mode state.
+### 4. `GetBackToFeedingCard.tsx`
 
-### 3. Update All Components with Hardcoded Colors
+Small component with:
+- `bg-white`, `text-gray-600`, `border-gray-100`
 
-Each of these files has a `const C = { ... }` or `const T = { ... }` theme object. Replace the static object with a call to `useFeederDarkMode()` so colors swap dynamically:
+**Fix**: Import `useFeederDarkMode()`. Replace with `C.card`, `C.muted`, `C.border`.
 
-| File | Theme Object |
+### 5. `NearbyRestaurantCards.tsx`
+
+Restaurant cards with hardcoded:
+- Card backgrounds: `bg-white/95`, `bg-gray-50`
+- Text: `text-gray-900`, `text-gray-500`, `text-gray-600`
+- Borders: `border-gray-100`, `border-gray-200`
+- Stat badges: `bg-gray-50`
+
+**Fix**: Import `useFeederDarkMode()`. Replace with dynamic values.
+
+### 6. `BottomNavigation.tsx`
+
+Uses Tailwind CSS theme variables (`bg-card/95`, `text-primary`, `text-muted-foreground`). These should inherit from CSS but may need explicit dark overrides since the app uses an inline style-based dark mode, not CSS class-based.
+
+**Fix**: Import `useFeederDarkMode()`. Apply dynamic inline background and text colors.
+
+### 7. `MobileDriverDashboard.tsx` (Home tab panels)
+
+The home tab offline/paused states have hardcoded:
+- Paused state: `bg-white z-50`, `text-gray-900`, `text-gray-600`, `text-gray-700`
+
+**Fix**: Add `isDark`/`C` from the existing context (already wrapped in provider). Replace hardcoded colors in the paused state panel and other home-tab overlay sections.
+
+### 8. `CravenDeliveryFlow.tsx` (Driver Delivery Flow)
+
+Does not have `useFeederDarkMode` imported. This is Mantine-heavy and needs:
+- Card backgrounds switched from white to `C.card`
+- Text colors switched to `C.text` / `C.muted`
+- Border colors to `C.border`
+
+**Fix**: Import `useFeederDarkMode()`. Update Mantine `bg`, `c`, and style props.
+
+## Technical Approach
+
+For each file, the pattern is the same:
+1. Add `import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';`
+2. Inside the component function, add `const { isDark, colors: C } = useFeederDarkMode();`
+3. Replace hardcoded colors:
+   - `bg-white` / `background: '#ffffff'` / `background: 'white'` --> `style={{ background: C.bg }}` or `C.card`
+   - `bg-gray-50` --> `C.bgMuted`
+   - `text-gray-900` / `text-gray-800` / `c="#000"` --> `C.text`
+   - `text-gray-600` / `text-gray-500` / `text-gray-700` --> `C.muted`
+   - `text-gray-400` --> `C.muted2`
+   - `border-gray-100` / `border-gray-200` --> `C.border`
+   - `bg-gray-100` / `bg-gray-200` (dividers, tracks) --> `C.track`
+   - Input backgrounds --> `C.inputBg` with `C.text` text
+
+## Contrast Rules (No Black on Dark)
+
+- Body text on dark: `#F1F1F1`
+- Muted text on dark: `#A0A0A0`
+- Card backgrounds on dark: `#1A1A1A`
+- Surface/input backgrounds on dark: `#1E1E1E`
+- Borders on dark: `#2E2E2E`
+- Orange accent `#E8622A` stays unchanged
+- Modal overlays stay `bg-black/50`
+
+## Summary
+
+| File | What Changes |
 |------|-------------|
-| `AppSettingsPage.tsx` | `C` -- Also wire toggle to context's `toggleDarkMode()` |
-| `FeederAccountPage.tsx` | `C` |
-| `FeederScheduleTab.tsx` | `C` |
-| `FeederRatingsTab.tsx` | `C` |
-| `FeedPreferencesPage.tsx` | `C` |
-| `ProfileDetailsPage.tsx` | `C` |
-| `VehicleDocumentsPage.tsx` | `C` |
-| `SecuritySafetyPage.tsx` | `C` |
-| `DriverSupportChat.tsx` | `C` |
-| `NewDeliveryRequest.tsx` | `C` |
-| `FeederSidebarMenu.tsx` | `T` |
-| `EarningsDashboard.tsx` | Tailwind/inline |
-| `CravenDeliveryFlow.tsx` | Mantine `bg` props |
-| `CorporateEarningsDashboard.tsx` | Inline styles |
-
-In each file, the pattern is:
-- Import `useFeederDarkMode`
-- Replace `const C = { ... }` with `const { colors: C } = useFeederDarkMode();` (moved inside the component)
-- For components using Tailwind classes like `bg-white`, `text-gray-*`, conditionally apply dark variants
-
-### 4. Update `AppSettingsPage.tsx` Toggle Wiring
-
-The existing Dark Mode toggle in settings currently only saves to user metadata. Update it to also call `toggleDarkMode()` from the context so the theme changes instantly without requiring an app restart.
-
-### 5. Delivery Flow Dark Mode (`CravenDeliveryFlow.tsx`)
-
-This is a Mantine-heavy component. Update:
-- Card backgrounds from white to dark surface color
-- Text colors from dark to light
-- Badge/button backgrounds for contrast
-- The simulated map view already uses dark colors (dark.9) so it stays
-- Ensure all status text, item lists, and address text are visible
-
-### 6. Tailwind-Based Components
-
-For components using Tailwind (bottom nav, loading screens, map overlays in `MobileDriverDashboard.tsx`):
-- Add a `dark` class to the root wrapper when dark mode is active
-- Use conditional classNames: `isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'`
-
-### 7. Key Contrast Rules (No Black-on-Dark)
-
-- All body text: `#F1F1F1` on dark backgrounds
-- Muted/secondary text: `#A0A0A0` (never `#777` on dark)
-- Card borders: `#2E2E2E` (subtle, visible)
-- Input fields: `#1E1E1E` background with `#F1F1F1` text
-- Orange accent buttons remain `#E8622A` with white text (unchanged)
-- Progress bars: darker track color `#2E2E2E`
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/contexts/FeederDarkModeContext.tsx` | Dark mode context provider + hook |
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `MobileDriverDashboard.tsx` | Wrap with provider; dark bg on root container |
-| `AppSettingsPage.tsx` | Wire toggle to context; use dynamic colors |
-| `FeederAccountPage.tsx` | Use dynamic colors from context |
-| `FeederScheduleTab.tsx` | Use dynamic colors from context |
-| `FeederRatingsTab.tsx` | Use dynamic colors from context |
-| `FeedPreferencesPage.tsx` | Use dynamic colors from context |
-| `ProfileDetailsPage.tsx` | Use dynamic colors from context |
-| `VehicleDocumentsPage.tsx` | Use dynamic colors from context |
-| `SecuritySafetyPage.tsx` | Use dynamic colors from context |
-| `DriverSupportChat.tsx` | Use dynamic colors from context |
-| `NewDeliveryRequest.tsx` | Use dynamic colors from context |
-| `FeederSidebarMenu.tsx` | Use dynamic colors from context |
-| `EarningsDashboard.tsx` | Conditional dark Tailwind/inline styles |
-| `CravenDeliveryFlow.tsx` | Mantine dark props for cards/text |
-| `CorporateEarningsDashboard.tsx` | Conditional dark inline styles |
-| `BottomNavigation.tsx` | Dark background/text classes |
-| `LoadingScreen.tsx` | Dark background |
-| `GetBackToFeedingCard.tsx` | Dark card background |
-| `NearbyRestaurantCards.tsx` | Dark card background |
-
+| `CorporateEarningsDashboard.tsx` | Add hook; replace all white/gray hardcoded colors with dynamic `C.*` |
+| `EarningsDashboard.tsx` | Add hook; replace all hardcoded Tailwind and inline colors across cards, modals, inputs |
+| `FeederPromotionsTab.tsx` | Add hook; replace Mantine background/text/border props |
+| `GetBackToFeedingCard.tsx` | Add hook; replace card bg, text, border |
+| `NearbyRestaurantCards.tsx` | Add hook; replace card and stat colors (both RestaurantCard and main component) |
+| `BottomNavigation.tsx` | Add hook; apply dynamic bg/text inline styles |
+| `MobileDriverDashboard.tsx` | Use existing hook; update paused state panel and home overlays |
+| `CravenDeliveryFlow.tsx` | Add hook; update Mantine card/text/border props |
