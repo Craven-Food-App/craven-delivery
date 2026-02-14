@@ -1,179 +1,57 @@
 
 
-# Crave'N Feeder Tier System -- Full Implementation
+# Back Button + Sidebar Tier Sync + Tier Ombre Color
 
-This is a large, multi-layered feature covering database schema, backend evaluation logic, frontend UI, and dispatch integration. Below is the full breakdown.
+## What Changes
 
----
+### 1. Back Button on Feeder Tier / Ratings Page
 
-## Phase 1: Database Schema
+Add a back arrow button to the top-left of the `FeederRatingsTab.tsx` top bar. Tapping it navigates back to the Home tab (`/mobile`). The `onOpenMenu` prop is already available; we will add an `onBack` callback prop (or use `onOpenMenu` to navigate home).
 
-### 1A. New Enum Type: `feeder_tier`
+### 2. Sidebar Tier Sync
 
-Create an enum with values: `Feeder`, `Gold`, `Platinum`, `Diamond`, `Ultimate`
+The `FeederSidebarMenu.tsx` currently uses a points-based status system (`getStatus(driverPoints)` returning Diamond/Platinum/Gold/Silver) that is **not** connected to the actual `tier_status` column. This needs to be updated to:
+- Read `tier_status` from `driver_profiles` (the source of truth set by the tier evaluation system)
+- Display the correct tier name in the badge (e.g., "Gold Feeder", "Diamond Feeder", "Ultimate Feeder")
+- Use the tier config from `ratingHelpers.ts` for colors
 
-### 1B. Alter `driver_profiles` Table
+### 3. Ombre / Glow Color Matches Tier
 
-Add new columns:
-- `tier_status` (feeder_tier, default 'Feeder')
-- `tier_last_updated` (timestamptz)
-- `rolling_rating` (numeric)
-- `rolling_completion_rate` (numeric)
-- `rolling_on_time_rate` (numeric)
-- `rolling_cancel_rate` (numeric)
-- `rolling_deliveries` (integer) -- deliveries in rolling 60-day window
-- `fraud_flag` (boolean, default false)
-- `customer_complaints_count` (integer, default 0)
-- `tier_review_required` (boolean, default false) -- for Ultimate manual approval
-- `tier_grace_period_start` (timestamptz) -- tracks 7-day grace before demotion
-- `dispatch_weight` (integer, default 0)
+The sidebar's top glow gradient (`status.glowGradient`) currently uses hardcoded Diamond/Platinum/Gold/Silver gradients based on points. This will be replaced with tier-specific gradients derived from the actual `TIER_CONFIG` colors:
 
-Update existing `rating_tier` column to stay for backward compatibility but mark as deprecated (the new `tier_status` becomes the source of truth).
+| Tier | Glow Gradient |
+|------|---------------|
+| Feeder | Neutral gray fade |
+| Gold | Gold/amber fade |
+| Platinum | Silver/gray fade |
+| Diamond | Deep blue fade |
+| Ultimate | Black-to-orange fade |
 
-### 1C. New Table: `tier_history`
+## Technical Details
 
-| Column | Type |
-|--------|------|
-| id | uuid PK |
-| feeder_id | uuid FK -> driver_profiles.id |
-| old_tier | feeder_tier |
-| new_tier | feeder_tier |
-| reason | text |
-| created_at | timestamptz |
+### FeederRatingsTab.tsx
 
-RLS: readable by the feeder themselves + admins.
+- Add `onBack?: () => void` prop
+- Render a left-arrow button in the top bar that calls `onBack` (or navigates to `/mobile`)
+- Wire the prop from `MobileDriverDashboard.tsx`
 
-### 1D. Database Function: `evaluate_feeder_tier(p_feeder_id uuid)`
+### FeederSidebarMenu.tsx
 
-A PL/pgSQL function that:
-1. Calculates rolling 60-day metrics from completed orders
-2. Applies the tier qualification rules from the spec
-3. Handles the 7-day grace period for demotions
-4. Requires `tier_review_required = true` (admin approval) for Ultimate
-5. Inserts into `tier_history` on any tier change
-6. Updates `dispatch_weight` based on new tier (0/5/10/18/30)
+1. Replace the `getStatus(driverPoints)` function and `driverPoints` state with a query for `tier_status` from `driver_profiles`
+2. Import `getTierConfig` from `ratingHelpers.ts` to get the correct colors
+3. Create a `TIER_GLOW_GRADIENTS` map keyed by tier name for the ombre effect
+4. Update the `badgeText` and badge styling to use the real tier
+5. Update the top glow div to use the tier-matched gradient
 
-This function will be called by a nightly cron (via pg_cron or edge function) and can also be triggered on delivery completion.
+### MobileDriverDashboard.tsx
 
----
+- Pass `onBack` prop to `FeederRatingsTab` that sets `activeTab('home')` and navigates to `/mobile`
 
-## Phase 2: Tier Evaluation Edge Function
+### Files Modified
 
-### `evaluate-feeder-tiers` Edge Function
-
-- Called nightly via a scheduled job (or manually)
-- Iterates all active feeders and calls `evaluate_feeder_tier()` for each
-- Also callable per-feeder on delivery completion or rating update
-- Sends internal alert (inserts notification) when an Ultimate feeder is downgraded
-
----
-
-## Phase 3: Update Existing Types and Hooks
-
-### 3A. Update `src/types/diamond-orders.ts`
-
-Change `RatingTier` from `'Bronze' | 'Silver' | 'Gold' | 'Diamond'` to `'Feeder' | 'Gold' | 'Platinum' | 'Diamond' | 'Ultimate'`
-
-### 3B. Update `src/hooks/diamond-orders/useDriverTier.ts`
-
-- Read from `tier_status` instead of `rating_tier`
-- Expose full tier info: `tier`, `dispatchWeight`, `isUltimate`, `isDiamond`, `isAtLeastPlatinum`
-
-### 3C. New Hook: `src/hooks/useFeederTierProfile.ts`
-
-Returns all tier-related data for the current feeder:
-- Current tier + badge color
-- All rolling metrics
-- Next tier requirements + progress percentages
-- Grace period status
-- Tier history
-
-### 3D. Update `src/utils/ratingHelpers.ts`
-
-Replace the old 4-tier color scheme with:
-
-| Tier | Color | Hex |
-|------|-------|-----|
-| Feeder | Neutral white | #F5F5F5 |
-| Gold | Gold gradient | #D4AF37 |
-| Platinum | Silver-white | #E5E4E2 |
-| Diamond | Deep blue | #1E3A5F |
-| Ultimate | Black + orange trim | #1A1A1A / #F57C00 |
-
----
-
-## Phase 4: Feeder App UI -- Ratings Tab Redesign
-
-### Redesign `src/components/mobile/FeederRatingsTab.tsx`
-
-Replace the current mock-data ratings tab with a tier-aware version:
-
-**Section 1 -- Tier Badge (top)**
-- Large tier name (e.g., "Diamond Feeder")
-- Color-coded badge matching the spec
-- Ultimate gets a black card with orange trim border
-
-**Section 2 -- Current Metrics**
-- Rating: 4.92/5.00
-- Completion: 97%
-- On-Time: 95%
-- Cancellation: 4%
-- Deliveries (60-day): 523
-
-Each with a progress bar showing distance to next tier threshold.
-
-**Section 3 -- Next Tier Progress**
-- "Next Tier: Ultimate Feeder"
-- Deliveries remaining: 477
-- Rating required: 4.95 (current: 4.92)
-- Each requirement shown as a checklist (check/x icon)
-
-**Section 4 -- Tier Perks**
-- List of current tier perks (unlocked)
-- Locked perks from next tier shown grayed out
-
-**Section 5 -- Tier History** (collapsible)
-- Recent tier changes with timestamps and reasons
-
-### Design Rules
-- Clean, enterprise styling -- no animations, no emojis
-- Badge colors as specified in the spec
-- Mobile-first, responsive
-- Consistent with existing Crave'N orange (#F57C00) accent color
-
----
-
-## Phase 5: Update Dispatch-Related Components
-
-### Update `ExclusiveOrdersFeed.tsx` and related diamond-order components
-
-- Replace `isDiamond` checks with tier-level checks (e.g., `isAtLeastDiamond`)
-- Ultimate feeders get first access to all exclusive order types
-- Platinum+ get premium merchant access
-
----
-
-## Phase 6: Anti-Gaming (Database-Level)
-
-Add to the `evaluate_feeder_tier` function:
-- Skip ratings from customers flagged in a `flagged_customers` reference (if table exists, otherwise note for future)
-- If `fraud_flag = true`, lock tier -- no promotions allowed
-- Log suspicious rating spikes (>0.3 jump in 24h) to `tier_history` with reason "review_spike"
-
----
-
-## Files Created / Modified Summary
-
-| File | Action |
+| File | Change |
 |------|--------|
-| Database migration | Add `feeder_tier` enum, alter `driver_profiles`, create `tier_history`, create `evaluate_feeder_tier()` function |
-| `supabase/functions/evaluate-feeder-tiers/index.ts` | New edge function for batch + per-feeder evaluation |
-| `src/types/diamond-orders.ts` | Update `RatingTier` type to 5 tiers |
-| `src/hooks/diamond-orders/useDriverTier.ts` | Read `tier_status`, expose richer tier info |
-| `src/hooks/useFeederTierProfile.ts` | New hook for full tier profile data |
-| `src/utils/ratingHelpers.ts` | Update colors, tiers, helpers for 5-tier system |
-| `src/components/mobile/FeederRatingsTab.tsx` | Full redesign with tier badge, metrics, progress, perks, history |
-| `src/components/diamond-orders/ExclusiveOrdersFeed.tsx` | Update tier gating logic |
-| `src/components/diamond-orders/FlashDropCard.tsx` | Update tier checks |
-| `src/integrations/supabase/types.ts` | Auto-updated after migration |
+| `src/components/mobile/FeederRatingsTab.tsx` | Add back button to top bar |
+| `src/components/mobile/FeederSidebarMenu.tsx` | Replace points-based status with `tier_status` from DB; match glow gradient to tier |
+| `src/components/mobile/MobileDriverDashboard.tsx` | Pass `onBack` handler to FeederRatingsTab |
 
