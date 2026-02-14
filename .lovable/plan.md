@@ -1,179 +1,57 @@
 
+# Fix Tier Inconsistencies Across the Entire Feeder App
 
-# Crave'N Feeder Tier System -- Full Implementation
+## Problem
 
-This is a large, multi-layered feature covering database schema, backend evaluation logic, frontend UI, and dispatch integration. Below is the full breakdown.
+Three files still use the **old points-based tier system** (with "Silver", "Bronze", or a `points >= 95` check) instead of reading the real `tier_status` from the `driver_profiles` table. This creates visible inconsistencies across the app.
 
----
+## Files to Fix
 
-## Phase 1: Database Schema
+### 1. `src/components/mobile/FeederAccountPage.tsx`
 
-### 1A. New Enum Type: `feeder_tier`
+**Current (broken)**: Uses a `StatusTier` type that includes "Silver" (not part of the spec). Calculates a fake `statusPoints` from `(totalDeliveries * 0.5) + (rating * 10)` and maps to tiers based on point thresholds (55/65/76/85/95).
 
-Create an enum with values: `Feeder`, `Gold`, `Platinum`, `Diamond`, `Ultimate`
+**Fix**:
+- Remove the `StatusTier`, `StatusInfo`, `TIERS`, `getStatus()`, and `tierProgress()` constructs
+- Import `getTierConfig`, `getNextTier`, `TIER_ORDER` from `ratingHelpers.ts`
+- Fetch `tier_status` from `driver_profiles` instead of computing points
+- Update `IdentityRow` to show the real tier badge with correct colors
+- Update `StatusRow` to show progress toward the next tier using real metrics (deliveries, rating, etc.) instead of fake points
+- Remove "Silver" references entirely -- the system is Feeder / Gold / Platinum / Diamond / Ultimate
 
-### 1B. Alter `driver_profiles` Table
+### 2. `src/components/mobile/RatingsSection.tsx`
 
-Add new columns:
-- `tier_status` (feeder_tier, default 'Feeder')
-- `tier_last_updated` (timestamptz)
-- `rolling_rating` (numeric)
-- `rolling_completion_rate` (numeric)
-- `rolling_on_time_rate` (numeric)
-- `rolling_cancel_rate` (numeric)
-- `rolling_deliveries` (integer) -- deliveries in rolling 60-day window
-- `fraud_flag` (boolean, default false)
-- `customer_complaints_count` (integer, default 0)
-- `tier_review_required` (boolean, default false) -- for Ultimate manual approval
-- `tier_grace_period_start` (timestamptz) -- tracks 7-day grace before demotion
-- `dispatch_weight` (integer, default 0)
+**Current (broken)**: Uses a completely separate 4-tier system (`bronze`, `silver`, `gold`, `platinum`) with different thresholds and emoji icons. This is entirely disconnected from the real tier system.
 
-Update existing `rating_tier` column to stay for backward compatibility but mark as deprecated (the new `tier_status` becomes the source of truth).
+**Fix**:
+- Replace the local `DriverTier` type and `tierConfig` with imports from `ratingHelpers.ts`
+- Fetch `tier_status` from `driver_profiles` instead of computing the tier locally
+- Update the UI to use the official 5-tier names and colors (Feeder / Gold / Platinum / Diamond / Ultimate)
+- Remove "Bronze" and "Silver" references
+- Use `useFeederTierProfile` hook for consistent data
 
-### 1C. New Table: `tier_history`
+### 3. `src/components/mobile/FeedPreferencesPage.tsx`
 
-| Column | Type |
-|--------|------|
-| id | uuid PK |
-| feeder_id | uuid FK -> driver_profiles.id |
-| old_tier | feeder_tier |
-| new_tier | feeder_tier |
-| reason | text |
-| created_at | timestamptz |
+**Current (broken)**: Determines Ultimate status using `points >= 95` (same fake points formula). Not connected to the real tier system.
 
-RLS: readable by the feeder themselves + admins.
+**Fix**:
+- Fetch `tier_status` from `driver_profiles` instead of computing points
+- Check `tier_status === 'Ultimate'` instead of `points >= 95`
+- Update the status display text to show the real tier name
+- Remove the `statusPoints` state and points calculation
 
-### 1D. Database Function: `evaluate_feeder_tier(p_feeder_id uuid)`
+## Technical Approach
 
-A PL/pgSQL function that:
-1. Calculates rolling 60-day metrics from completed orders
-2. Applies the tier qualification rules from the spec
-3. Handles the 7-day grace period for demotions
-4. Requires `tier_review_required = true` (admin approval) for Ultimate
-5. Inserts into `tier_history` on any tier change
-6. Updates `dispatch_weight` based on new tier (0/5/10/18/30)
+All three files will:
+1. Query `tier_status` (and optionally `rolling_rating`, `rolling_deliveries`, etc.) from `driver_profiles`
+2. Use `getTierConfig()` from `ratingHelpers.ts` for colors and display names
+3. Use `getNextTier()` for progress indicators
+4. Remove all local tier definitions, points calculations, and legacy tier names (Bronze, Silver)
 
-This function will be called by a nightly cron (via pg_cron or edge function) and can also be triggered on delivery completion.
+## Summary of Changes
 
----
-
-## Phase 2: Tier Evaluation Edge Function
-
-### `evaluate-feeder-tiers` Edge Function
-
-- Called nightly via a scheduled job (or manually)
-- Iterates all active feeders and calls `evaluate_feeder_tier()` for each
-- Also callable per-feeder on delivery completion or rating update
-- Sends internal alert (inserts notification) when an Ultimate feeder is downgraded
-
----
-
-## Phase 3: Update Existing Types and Hooks
-
-### 3A. Update `src/types/diamond-orders.ts`
-
-Change `RatingTier` from `'Bronze' | 'Silver' | 'Gold' | 'Diamond'` to `'Feeder' | 'Gold' | 'Platinum' | 'Diamond' | 'Ultimate'`
-
-### 3B. Update `src/hooks/diamond-orders/useDriverTier.ts`
-
-- Read from `tier_status` instead of `rating_tier`
-- Expose full tier info: `tier`, `dispatchWeight`, `isUltimate`, `isDiamond`, `isAtLeastPlatinum`
-
-### 3C. New Hook: `src/hooks/useFeederTierProfile.ts`
-
-Returns all tier-related data for the current feeder:
-- Current tier + badge color
-- All rolling metrics
-- Next tier requirements + progress percentages
-- Grace period status
-- Tier history
-
-### 3D. Update `src/utils/ratingHelpers.ts`
-
-Replace the old 4-tier color scheme with:
-
-| Tier | Color | Hex |
-|------|-------|-----|
-| Feeder | Neutral white | #F5F5F5 |
-| Gold | Gold gradient | #D4AF37 |
-| Platinum | Silver-white | #E5E4E2 |
-| Diamond | Deep blue | #1E3A5F |
-| Ultimate | Black + orange trim | #1A1A1A / #F57C00 |
-
----
-
-## Phase 4: Feeder App UI -- Ratings Tab Redesign
-
-### Redesign `src/components/mobile/FeederRatingsTab.tsx`
-
-Replace the current mock-data ratings tab with a tier-aware version:
-
-**Section 1 -- Tier Badge (top)**
-- Large tier name (e.g., "Diamond Feeder")
-- Color-coded badge matching the spec
-- Ultimate gets a black card with orange trim border
-
-**Section 2 -- Current Metrics**
-- Rating: 4.92/5.00
-- Completion: 97%
-- On-Time: 95%
-- Cancellation: 4%
-- Deliveries (60-day): 523
-
-Each with a progress bar showing distance to next tier threshold.
-
-**Section 3 -- Next Tier Progress**
-- "Next Tier: Ultimate Feeder"
-- Deliveries remaining: 477
-- Rating required: 4.95 (current: 4.92)
-- Each requirement shown as a checklist (check/x icon)
-
-**Section 4 -- Tier Perks**
-- List of current tier perks (unlocked)
-- Locked perks from next tier shown grayed out
-
-**Section 5 -- Tier History** (collapsible)
-- Recent tier changes with timestamps and reasons
-
-### Design Rules
-- Clean, enterprise styling -- no animations, no emojis
-- Badge colors as specified in the spec
-- Mobile-first, responsive
-- Consistent with existing Crave'N orange (#F57C00) accent color
-
----
-
-## Phase 5: Update Dispatch-Related Components
-
-### Update `ExclusiveOrdersFeed.tsx` and related diamond-order components
-
-- Replace `isDiamond` checks with tier-level checks (e.g., `isAtLeastDiamond`)
-- Ultimate feeders get first access to all exclusive order types
-- Platinum+ get premium merchant access
-
----
-
-## Phase 6: Anti-Gaming (Database-Level)
-
-Add to the `evaluate_feeder_tier` function:
-- Skip ratings from customers flagged in a `flagged_customers` reference (if table exists, otherwise note for future)
-- If `fraud_flag = true`, lock tier -- no promotions allowed
-- Log suspicious rating spikes (>0.3 jump in 24h) to `tier_history` with reason "review_spike"
-
----
-
-## Files Created / Modified Summary
-
-| File | Action |
-|------|--------|
-| Database migration | Add `feeder_tier` enum, alter `driver_profiles`, create `tier_history`, create `evaluate_feeder_tier()` function |
-| `supabase/functions/evaluate-feeder-tiers/index.ts` | New edge function for batch + per-feeder evaluation |
-| `src/types/diamond-orders.ts` | Update `RatingTier` type to 5 tiers |
-| `src/hooks/diamond-orders/useDriverTier.ts` | Read `tier_status`, expose richer tier info |
-| `src/hooks/useFeederTierProfile.ts` | New hook for full tier profile data |
-| `src/utils/ratingHelpers.ts` | Update colors, tiers, helpers for 5-tier system |
-| `src/components/mobile/FeederRatingsTab.tsx` | Full redesign with tier badge, metrics, progress, perks, history |
-| `src/components/diamond-orders/ExclusiveOrdersFeed.tsx` | Update tier gating logic |
-| `src/components/diamond-orders/FlashDropCard.tsx` | Update tier checks |
-| `src/integrations/supabase/types.ts` | Auto-updated after migration |
-
+| File | What Changes |
+|------|-------------|
+| `FeederAccountPage.tsx` | Remove points-based `getStatus`/`TIERS`/`StatusTier`; fetch `tier_status` from DB; display real tier badge and progress |
+| `RatingsSection.tsx` | Replace 4-tier `bronze/silver/gold/platinum` system with official 5-tier system from `ratingHelpers.ts`; fetch `tier_status` from DB |
+| `FeedPreferencesPage.tsx` | Replace `points >= 95` check with `tier_status === 'Ultimate'` from DB; remove points calculation |
