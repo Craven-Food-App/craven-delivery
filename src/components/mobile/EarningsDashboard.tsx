@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Lock } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -117,6 +117,11 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [showInstantCashoutModal, setShowInstantCashoutModal] = useState(false);
   const [instantCashoutAmount, setInstantCashoutAmount] = useState('');
   const [debitCardLast4, setDebitCardLast4] = useState('');
+  
+  // Instant Cashout Eligibility state
+  const [isInstantCashoutEligible, setIsInstantCashoutEligible] = useState(false);
+  const [completedDeliveries, setCompletedDeliveries] = useState(0);
+  const [accountAgeDays, setAccountAgeDays] = useState(0);
 
   useEffect(() => {
     fetchEarningsData();
@@ -189,6 +194,21 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
       if (paymentMethod?.last_four) {
         setDebitCardLast4(paymentMethod.last_four);
+      }
+
+      // Fetch eligibility data for instant cashout
+      const { data: driverProfile } = await supabase
+        .from('driver_profiles')
+        .select('created_at, completed_orders')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (driverProfile) {
+        const ageDays = Math.floor((Date.now() - new Date(driverProfile.created_at).getTime()) / 86400000);
+        const deliveries = driverProfile.completed_orders || 0;
+        setAccountAgeDays(ageDays);
+        setCompletedDeliveries(deliveries);
+        setIsInstantCashoutEligible(ageDays >= 30 && deliveries >= 50);
       }
     } catch (error) {
       console.error('Error fetching card data:', error);
@@ -803,16 +823,33 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Instant Cashout Option */}
           <div 
-            className="flex items-center justify-between px-4 py-2 cursor-pointer bg-white rounded-xl"
-            onClick={() => setShowInstantCashoutModal(true)}
+            className={`flex items-center justify-between px-4 py-2 cursor-pointer bg-white rounded-xl ${!isInstantCashoutEligible ? 'opacity-70' : ''}`}
+            onClick={() => {
+              if (isInstantCashoutEligible) {
+                setShowInstantCashoutModal(true);
+              } else {
+                toast.error('You need 50+ deliveries and 30 days as an active feeder to unlock instant cashout');
+              }
+            }}
           >
-            <div className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-medium text-gray-700">
-                Instant Cashout to Debit Card
-              </span>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <CreditCard className={`w-4 h-4 ${isInstantCashoutEligible ? 'text-orange-500' : 'text-gray-400'}`} />
+                <span className={`text-sm font-medium ${isInstantCashoutEligible ? 'text-gray-700' : 'text-gray-400'}`}>
+                  Instant Cashout to Debit Card
+                </span>
+              </div>
+              {!isInstantCashoutEligible && (
+                <p className="text-xs text-gray-400 ml-6 mt-0.5">
+                  {completedDeliveries}/50 deliveries · {Math.max(0, 30 - accountAgeDays)} days remaining
+                </p>
+              )}
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            {isInstantCashoutEligible ? (
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            ) : (
+              <Lock className="w-4 h-4 text-gray-400" />
+            )}
           </div>
 
           {/* Earnings Summary Cards - Side by Side */}
@@ -1392,6 +1429,12 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 </div>
               </div>
               
+              {/* Fee Disclosure */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-start gap-2">
+                <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-yellow-800">A 1.5% processing fee applies to all instant cashouts.</p>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
@@ -1421,8 +1464,10 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     try {
                       const { data: { user } } = await supabase.auth.getUser();
                       if (!user) { toast.error('Please sign in'); return; }
+                      const fee = amount * 0.015;
+                      const netAmount = amount - fee;
                       // TODO: Integrate with actual payout provider (Moov/Stripe)
-                      toast.success(`${formatCurrency(amount)} cashout to debit card initiated!`);
+                      toast.success(`${formatCurrency(netAmount)} cashout to debit card initiated! (${formatCurrency(fee)} fee)`);
                       setCardBalance(cardBalance - amount);
                       setInstantCashoutAmount('');
                       setShowInstantCashoutModal(false);
