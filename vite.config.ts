@@ -117,15 +117,26 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      chunkSizeWarningLimit: 1000,
-      sourcemap: mode === "development",
+      chunkSizeWarningLimit: 2000,
+      sourcemap: false,
       minify: "esbuild",
       commonjsOptions: {
         transformMixedEsModules: true,
       },
       rollupOptions: {
         output: {
-          manualChunks: undefined,
+          manualChunks(id) {
+            if (id.includes('node_modules/@mui')) return 'vendor-mui';
+            if (id.includes('node_modules/@mantine')) return 'vendor-mantine';
+            if (id.includes('node_modules/@chakra-ui') || id.includes('node_modules/@emotion')) return 'vendor-chakra';
+            if (id.includes('node_modules/antd') || id.includes('node_modules/@ant-design')) return 'vendor-antd';
+            if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) return 'vendor-monaco';
+            if (id.includes('node_modules/mapbox-gl') || id.includes('node_modules/@mapbox')) return 'vendor-mapbox';
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
+            if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
+            if (id.includes('node_modules/framer-motion')) return 'vendor-framer';
+            if (id.includes('node_modules/stripe') || id.includes('node_modules/@stripe')) return 'vendor-stripe';
+          },
         },
         onwarn(warning, warn) {
           if (
