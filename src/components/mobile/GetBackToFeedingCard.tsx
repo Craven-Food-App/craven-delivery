@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { useFeederDarkMode } from '@/contexts/FeederDarkModeContext';
 
 interface GetBackToFeedingCardProps {
   onContinueFeeding: () => void;
@@ -8,15 +9,17 @@ interface GetBackToFeedingCardProps {
 export const GetBackToFeedingCard: React.FC<GetBackToFeedingCardProps> = ({
   onContinueFeeding,
 }) => {
+  const { colors: C } = useFeederDarkMode();
+  
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+    <div className="rounded-2xl p-6 shadow-lg" style={{ background: C.card, borderColor: C.border, borderWidth: 1, borderStyle: 'solid' }}>
       {/* Header */}
       <h2 className="text-2xl font-bold text-orange-500 mb-1">
         GET BACK TO IT
       </h2>
       
       {/* Subheader */}
-      <p className="text-base text-gray-600 mb-6">
+      <p className="text-base mb-6" style={{ color: C.muted }}>
         They're Waiting
       </p>
       
@@ -32,4 +35,3 @@ export const GetBackToFeedingCard: React.FC<GetBackToFeedingCardProps> = ({
 };
 
 export default GetBackToFeedingCard;
-
