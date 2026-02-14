@@ -65,192 +65,48 @@ export const LiveDriverTesting = () => {
   const fetchOnlineDrivers = async () => {
     setIsLoading(true);
     try {
-      // Check current user and their role
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      console.log('=== CURRENT USER CHECK ===');
-      console.log('Current user ID:', currentUser?.id);
-      
-      if (currentUser) {
-        const { data: userRoles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentUser.id);
-        console.log('Current user roles:', userRoles);
-      }
-      // Try to use a join query first (more efficient)
-      // Note: driver_sessions.driver_id = driver_profiles.user_id (both are auth user IDs)
-      let drivers: any[] = [];
-      
-      // Manual join approach - driver_sessions.driver_id = user.id (auth user ID)
-      // driver_profiles.user_id = user.id (auth user ID)
-      // So we match: driver_sessions.driver_id = driver_profiles.user_id
-      
-      // First, check if ANY sessions exist at all (for debugging)
-      const { data: allSessionsCheck, error: allSessionsError } = await supabase
-        .from('driver_sessions')
-        .select('driver_id, is_online, last_activity, session_data')
-        .limit(10);
-      
-      console.log('=== ALL SESSIONS CHECK (first 10) ===');
-      console.log('Total sessions found:', allSessionsCheck?.length || 0);
-      console.log('Sessions:', allSessionsCheck);
-      if (allSessionsError) {
-        console.error('Error fetching all sessions:', allSessionsError);
-      }
-
-      // Get active sessions where drivers are actively searching
-      // Only show drivers with driver_state = 'online_searching' in session_data
-      const { data: activeSessions, error: sessionsError } = await supabase
-        .from('driver_sessions')
-        .select('driver_id, is_online, last_activity, session_data')
-        .eq('is_online', true);
-      
-      if (sessionsError) {
-        console.error('Error fetching driver sessions:', sessionsError);
-        throw sessionsError;
-      }
-
-      // Debug: Log all active sessions to see what we have
-      console.log('=== DRIVER SESSIONS DEBUG ===');
-      console.log('Total active sessions (is_online=true):', activeSessions?.length || 0);
-      activeSessions?.forEach((session, idx) => {
-        const sessionData = session.session_data as any;
-        console.log(`Session ${idx + 1}:`, {
-          driver_id: session.driver_id,
-          is_online: session.is_online,
-          last_activity: session.last_activity,
-          driver_state: sessionData?.driver_state || 'NOT SET',
-          full_session_data: sessionData
-        });
-      });
-
-      // Filter to only drivers who are actively searching (not paused, not on delivery)
-      // Also include drivers without driver_state set (legacy sessions) - treat them as searching
-      const searchingSessions = (activeSessions || []).filter(session => {
-        const sessionData = session.session_data as any;
-        const driverState = sessionData?.driver_state;
-        // Include drivers in 'online_searching' state OR drivers without driver_state set (legacy)
-        const isSearching = driverState === 'online_searching' || driverState === undefined || driverState === null;
-        if (!isSearching) {
-          console.log(`⚠️ Driver ${session.driver_id} filtered out - state: ${driverState}`);
-        } else if (driverState === undefined || driverState === null) {
-          console.log(`ℹ️ Driver ${session.driver_id} included (no driver_state set - treating as searching)`);
-        }
-        return isSearching;
-      });
-
-      console.log('Actively searching sessions (driver_state=online_searching):', searchingSessions.length);
-      
-      if (searchingSessions.length === 0) {
-        console.warn('⚠️ No drivers found in "online_searching" state.');
-        
-        // Fallback: Check driver_profiles.is_available as backup indicator
-        // This handles the case where sessions aren't being created properly
-        // Show drivers who are marked as available and online
-        // Use a longer time window (30 minutes) to catch drivers who may not have updated location recently
-        console.log('Checking driver_profiles.is_available as fallback...');
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-        const { data: availableDrivers, error: availableError } = await supabase
-          .from('driver_profiles')
-          .select('id, user_id, vehicle_type, vehicle_make, vehicle_model, rating, is_available, status, last_location_update')
-          .eq('is_available', true)
-          .eq('status', 'online')
-          .or(`last_location_update.gte.${thirtyMinutesAgo},last_location_update.is.null`); // Drivers active in last 30 min OR no location update recorded
-        
-        console.log('Available drivers from driver_profiles:', availableDrivers?.length || 0, availableDrivers);
-        
-        if (availableDrivers && availableDrivers.length > 0) {
-          console.log('⚠️ Found drivers with is_available=true but no matching sessions. Using driver_profiles as fallback.');
-          
-          // Use available drivers as fallback - treat them as actively searching
-          const driverUserIds = [...new Set(availableDrivers.map(d => d.user_id))];
-          
-          const { data: profiles } = await supabase
-            .from('user_profiles')
-            .select('user_id, full_name')
-            .in('user_id', driverUserIds);
-
-          const { data: locations } = await supabase
-            .from('craver_locations')
-            .select('user_id, lat, lng')
-            .in('user_id', driverUserIds);
-
-          const seenUserIds = new Set();
-          const combinedDrivers: OnlineDriver[] = availableDrivers
-            .filter(driver => {
-              if (seenUserIds.has(driver.user_id)) return false;
-              seenUserIds.add(driver.user_id);
-              return true;
-            })
-            .map(driver => {
-              const profile = profiles?.find(p => p.user_id === driver.user_id);
-              const location = locations?.find(l => l.user_id === driver.user_id);
-              return {
-                ...driver,
-                full_name: profile?.full_name || 'Unknown Driver',
-                current_latitude: location?.lat || null,
-                current_longitude: location?.lng || null,
-                is_available: true,
-                rating: driver.rating || 5.0,
-              };
-            });
-
-          setOnlineDrivers(combinedDrivers);
-          setIsLoading(false);
-          return;
-        }
-        
-        setOnlineDrivers([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Get unique driver profile IDs from actively searching sessions
-      // IMPORTANT: driver_sessions.driver_id references driver_profiles.id (not user_id)
-      const activeDriverProfileIds = [...new Set(searchingSessions.map(s => s.driver_id))];
-      console.log('Actively searching driver profile IDs:', activeDriverProfileIds);
-
-      // Fetch driver profiles where id matches session driver_id
-      const { data: profilesData, error: profilesError } = await supabase
+      // Primary source: driver_profiles with is_available=true AND status='online'
+      // This is the authoritative source — a feeder is "actively feeding" when they
+      // chose "Feed Now", selected an end time, and their profile reflects that.
+      // driver_sessions may not exist for all feeders (not all create session records).
+      const { data: activeProfiles, error: profilesError } = await supabase
         .from('driver_profiles')
-        .select(`
-          id,
-          user_id,
-          vehicle_type,
-          vehicle_make,
-          vehicle_model,
-          rating
-        `)
-        .in('id', activeDriverProfileIds);
+        .select('id, user_id, vehicle_type, vehicle_make, vehicle_model, rating, is_available, status, last_location_update')
+        .eq('is_available', true)
+        .eq('status', 'online');
 
       if (profilesError) {
-        console.error('Error fetching driver profiles:', profilesError);
+        console.error('Error fetching active feeder profiles:', profilesError);
         throw profilesError;
       }
 
-      drivers = profilesData || [];
-      console.log('Driver profiles found:', drivers.length, drivers);
+      console.log('Active feeder profiles (is_available + online):', activeProfiles?.length || 0);
 
-      if (!drivers || drivers.length === 0) {
+      if (!activeProfiles || activeProfiles.length === 0) {
         setOnlineDrivers([]);
         setIsLoading(false);
         return;
       }
 
-      const driverUserIds = [...new Set(drivers.map(d => d.user_id))];
+      const driverUserIds = [...new Set(activeProfiles.map(d => d.user_id))];
 
-      const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('user_id, full_name')
-        .in('user_id', driverUserIds);
+      // Fetch names and locations in parallel
+      const [profilesResult, locationsResult] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('user_id, full_name')
+          .in('user_id', driverUserIds),
+        supabase
+          .from('craver_locations')
+          .select('user_id, lat, lng')
+          .in('user_id', driverUserIds),
+      ]);
 
-      const { data: locations } = await supabase
-        .from('craver_locations')
-        .select('user_id, lat, lng')
-        .in('user_id', driverUserIds);
+      const profiles = profilesResult.data;
+      const locations = locationsResult.data;
 
-      const seenUserIds = new Set();
-      const combinedDrivers: OnlineDriver[] = drivers
+      const seenUserIds = new Set<string>();
+      const combinedDrivers: OnlineDriver[] = activeProfiles
         .filter(driver => {
           if (seenUserIds.has(driver.user_id)) return false;
           seenUserIds.add(driver.user_id);
@@ -261,20 +117,20 @@ export const LiveDriverTesting = () => {
           const location = locations?.find(l => l.user_id === driver.user_id);
           return {
             ...driver,
-            full_name: profile?.full_name || 'Unknown Driver',
+            full_name: profile?.full_name || 'Unknown Feeder',
             current_latitude: location?.lat || null,
             current_longitude: location?.lng || null,
-            is_available: true, // They're available if they have an active session
+            is_available: true,
             rating: driver.rating || 5.0,
           };
         });
 
       setOnlineDrivers(combinedDrivers);
     } catch (error: any) {
-      console.error('Error fetching online drivers:', error);
+      console.error('Error fetching online feeders:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to fetch online drivers',
+        description: error?.message || 'Failed to fetch online feeders',
         variant: 'destructive',
       });
     }
@@ -284,8 +140,8 @@ export const LiveDriverTesting = () => {
   const sendTestOrder = async () => {
     if (!selectedDriver) {
       toast({
-        title: 'No Driver Selected',
-        description: 'Please select a driver to send the test order to',
+        title: 'No Feeder Selected',
+        description: 'Please select a feeder to send the test order to',
         variant: 'destructive',
       });
       return;
@@ -365,7 +221,7 @@ export const LiveDriverTesting = () => {
       // Show success immediately after broadcasts complete
       toast({
         title: 'Test Order Sent!',
-        description: 'Test order has been assigned to the selected driver.',
+        description: 'Test order has been assigned to the selected feeder.',
         duration: 5000,
       });
       setSelectedDriver('');
@@ -384,17 +240,17 @@ export const LiveDriverTesting = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
-            Live Driver Testing
+            Live Feeder Testing
           </CardTitle>
           <CardDescription>
-            Send test orders to real online drivers for testing push notifications and order flow.
+            Send test orders to real online feeders for testing push notifications and order flow.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              This sends real push notifications to actual drivers. Only use for testing purposes.
+              This sends real push notifications to actual feeders. Only use for testing purposes.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -404,18 +260,18 @@ export const LiveDriverTesting = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Online Drivers ({onlineDrivers.length})
+            Online Feeders ({onlineDrivers.length})
           </CardTitle>
-          <CardDescription>Currently available drivers</CardDescription>
+          <CardDescription>Currently available feeders</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={fetchOnlineDrivers} variant="outline" className="mb-4" disabled={isLoading}>
-            {isLoading ? 'Refreshing...' : 'Refresh Drivers'}
+            {isLoading ? 'Refreshing...' : 'Refresh Feeders'}
           </Button>
           {onlineDrivers.length === 0 ? (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>No drivers are currently online.</AlertDescription>
+              <AlertDescription>No feeders are currently online.</AlertDescription>
             </Alert>
           ) : (
             <div className="grid gap-4">
@@ -433,7 +289,7 @@ export const LiveDriverTesting = () => {
                       </Avatar>
                       <div>
                         <p className="font-medium">{driver.full_name}</p>
-                        <p className="text-sm text-muted-foreground">Driver ID: {driver.user_id.slice(0, 8)}</p>
+                        <p className="text-sm text-muted-foreground">Feeder ID: {driver.user_id.slice(0, 8)}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Car className="h-3 w-3" />
                           <span className="text-xs">{driver.vehicle_make} {driver.vehicle_model}</span>
@@ -464,7 +320,7 @@ export const LiveDriverTesting = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={selectedDriver} onValueChange={setSelectedDriver}>
-            <SelectTrigger><SelectValue placeholder="Choose a driver..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Choose a feeder..." /></SelectTrigger>
             <SelectContent>
               {onlineDrivers.map(driver => (
                 <SelectItem key={driver.user_id} value={driver.user_id}>
@@ -493,7 +349,7 @@ export const LiveDriverTesting = () => {
           <Alert>
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              The selected driver will receive a push notification and see a test order assignment modal.
+              The selected feeder will receive a push notification and see a test order assignment modal.
             </AlertDescription>
           </Alert>
         </CardContent>
