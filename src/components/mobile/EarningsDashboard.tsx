@@ -749,24 +749,46 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
           {/* Earnings Summary Cards - Side by Side */}
           <div className="grid grid-cols-2 gap-3 mt-2.5">
-            {/* Primary Earnings Summary Card - Clickable */}
+            {/* Primary Earnings Summary Card - Clickable only on Today tab */}
             <div 
-              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setShowEarningsModal(true)}
+              className={`bg-white rounded-2xl p-6 shadow-sm ${
+                timeRange === 'today' && payoutStatus.available > 0
+                  ? 'cursor-pointer hover:shadow-md' 
+                  : ''
+              } transition-shadow`}
+              onClick={() => {
+                if (timeRange === 'today' && payoutStatus.available > 0) {
+                  setShowEarningsModal(true);
+                }
+              }}
             >
               <p className="text-sm text-gray-500 mb-1">Your Earnings</p>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(totalEarnings)}</p>
-              <p className="text-xs text-gray-400">Net earnings</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">
+                {formatCurrency(timeRange === 'today' ? payoutStatus.available : totalEarnings)}
+              </p>
+              <p className="text-xs text-gray-400">
+                {timeRange === 'today' ? 'Available to cash out' : 'Net earnings'}
+              </p>
             </div>
             
-            {/* Gas Money Card - Clickable */}
+            {/* Gas Money Card - Clickable only on Today tab */}
             <div 
-              className="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setShowGasMoneyModal(true)}
+              className={`bg-white rounded-2xl p-6 shadow-sm ${
+                timeRange === 'today' && gasMoney > 0
+                  ? 'cursor-pointer hover:shadow-md' 
+                  : ''
+              } transition-shadow`}
+              onClick={() => {
+                if (timeRange === 'today' && gasMoney > 0) {
+                  setShowGasMoneyModal(true);
+                }
+              }}
             >
               <p className="text-sm text-gray-500 mb-1">Gas Money</p>
               <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(gasMoney)}</p>
-              <p className="text-xs text-gray-400">Mileage earnings</p>
+              <p className="text-xs text-gray-400">
+                {timeRange === 'today' ? 'Available to transfer' : 'Mileage earnings'}
+              </p>
             </div>
           </div>
 

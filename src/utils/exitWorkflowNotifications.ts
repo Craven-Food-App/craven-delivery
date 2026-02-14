@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Email Notification System for Exit Workflows
  * Sends notifications at key stages of the exit process

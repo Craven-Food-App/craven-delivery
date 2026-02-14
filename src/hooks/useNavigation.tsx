@@ -377,7 +377,13 @@ export const useNavigation = (): UseNavigationReturn => {
         url = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
     }
 
-    window.open(url, '_blank');
+    // Use location.href on mobile to trigger native app deep links
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = url;
+    } else {
+      window.open(url, '_blank');
+    }
     toast.info(`Opening ${navigationSettings.provider === 'apple' ? 'Apple Maps' : navigationSettings.provider === 'waze' ? 'Waze' : 'Google Maps'}`);
   };
 

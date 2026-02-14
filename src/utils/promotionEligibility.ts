@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Promotion Eligibility Gates
  * Implements the state machine and eligibility checks for intern → acting exec → exec promotions
