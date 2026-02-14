@@ -228,9 +228,11 @@ function NavIcon({ id }: { id: NavId }) {
 function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
   return (
     <div style={{
-      height: 56, background: C.bg, flexShrink: 0,
+      background: C.bg, flexShrink: 0,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+      padding: "12px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+      borderBottom: `1px solid ${C.border}`,
+      position: 'sticky', top: 0, zIndex: 10,
     }}>
       <button 
         type="button" 
