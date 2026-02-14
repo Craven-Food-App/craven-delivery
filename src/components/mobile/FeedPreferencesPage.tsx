@@ -34,7 +34,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isUltimateTier, setIsUltimateTier] = useState(false);
-  const [tierName, setTierName] = useState('Feeder');
+  const [statusPoints, setStatusPoints] = useState(0);
 
   // Preferences state
   const [preferences, setPreferences] = useState({
@@ -73,16 +73,21 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check tier status from DB
+      // Check tier status first
       const { data: profileData } = await supabase
         .from('driver_profiles')
-        .select('tier_status')
+        .select('total_deliveries, total_earnings, rating')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const tier = (profileData?.tier_status as string) || 'Feeder';
-      setTierName(tier);
-      setIsUltimateTier(tier === 'Ultimate');
+      const totalDeliveries = profileData?.total_deliveries || 0;
+      const rating = profileData?.rating || 0;
+      const points = Math.round((totalDeliveries * 0.5) + (rating * 10));
+      setStatusPoints(points);
+
+      // Ultimate Feeder tier requires 95+ points
+      const isUltimate = points >= 95;
+      setIsUltimateTier(isUltimate);
 
       // Fetch from driver_preferences table
       const { data: prefs } = await supabase
@@ -123,7 +128,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
     if (!isUltimateTier) {
       notifications.show({
         title: 'Ultimate Feeder Required',
-        message: 'Reach Ultimate Feeder tier to customize your feed',
+        message: 'Upgrade to Ultimate Feeder (95+ points) to customize your feed',
         color: 'red',
       });
       return;
@@ -268,11 +273,11 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
           <div style={{ fontSize: 12, fontWeight: 600, color: isUltimateTier ? '#FFFFFF' : C.muted, lineHeight: 1.4 }}>
             {isUltimateTier 
               ? 'You have full access to customize your order feed preferences'
-              : `You need to reach Ultimate Feeder tier to unlock Feed Preferences.`
+              : `You need ${95 - statusPoints} more points to unlock Feed Preferences. Reach 95+ points to become an Ultimate Feeder.`
             }
           </div>
           <div style={{ fontSize: 11, fontWeight: 600, color: isUltimateTier ? '#FFFFFF' : C.muted2, marginTop: 8 }}>
-            Your Tier: {tierName} {isUltimateTier && '(Ultimate Feeder)'}
+            Your Status: {statusPoints} points {isUltimateTier && '(Ultimate Feeder)'}
           </div>
         </div>
         

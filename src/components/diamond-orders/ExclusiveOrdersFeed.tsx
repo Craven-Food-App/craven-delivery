@@ -15,20 +15,20 @@ interface ExclusiveOrdersFeedProps {
 }
 
 export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClaim }) => {
-  const { tier, isDiamond, isAtLeastDiamond, isAtLeastPlatinum, isUltimate, loading: tierLoading } = useDriverTier();
-  const { orders, loading: ordersLoading } = useExclusiveOrders(isAtLeastDiamond);
+  const { tier, isDiamond, loading: tierLoading } = useDriverTier();
+  const { orders, loading: ordersLoading } = useExclusiveOrders(isDiamond);
 
   const loading = tierLoading || ordersLoading;
 
   // Debug logging
   useEffect(() => {
-    console.log('ExclusiveOrdersFeed - tier:', tier, 'isAtLeastDiamond:', isAtLeastDiamond, 'orders:', orders.length);
-  }, [tier, isAtLeastDiamond, orders.length]);
+    console.log('ExclusiveOrdersFeed - tier:', tier, 'isDiamond:', isDiamond, 'orders:', orders.length);
+  }, [tier, isDiamond, orders.length]);
   const [batches, setBatches] = useState<OrderBatch[]>([]);
 
   useEffect(() => {
     fetchBatches();
-  }, [isAtLeastDiamond]);
+  }, [isDiamond]);
 
   const fetchBatches = async () => {
     try {
@@ -38,7 +38,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         .select('*')
         .or(`diamond_only_until.is.null,diamond_only_until.gt.${now}`);
 
-      if (!isAtLeastDiamond) {
+      if (!isDiamond) {
         query = query.or(`diamond_only_until.is.null,diamond_only_until.lt.${now}`);
       }
 
@@ -141,7 +141,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
                 key={order.id}
                 order={order}
                 onClaim={(id) => handleClaim(id, 'flash_drop')}
-                isDiamond={isAtLeastDiamond}
+                isDiamond={isDiamond}
               />
             ))
           )}
@@ -152,7 +152,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
         <Stack gap="sm">
           {vaultOrders.length === 0 ? (
             <Text c="#666" ta="center" py="xl">
-              {!isAtLeastDiamond ? 'Vault orders require Diamond tier or higher' : 'No vault orders available'}
+              {!isDiamond ? 'Vault orders are Diamond-only' : 'No vault orders available'}
             </Text>
           ) : (
             vaultOrders.map(order => (
@@ -160,7 +160,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
                 key={order.id}
                 order={order}
                 onClaim={(id) => handleClaim(id, 'vault')}
-                isDiamond={isAtLeastDiamond}
+                isDiamond={isDiamond}
               />
             ))
           )}
@@ -179,7 +179,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
                 key={order.id}
                 order={order}
                 onClaim={(id) => handleClaim(id, 'mystery')}
-                isDiamond={isAtLeastDiamond}
+                isDiamond={isDiamond}
               />
             ))
           )}
@@ -203,7 +203,7 @@ export const ExclusiveOrdersFeed: React.FC<ExclusiveOrdersFeedProps> = ({ onClai
                     onClaim(orderId, 'batch');
                   });
                 }}
-                isDiamond={isAtLeastDiamond}
+                isDiamond={isDiamond}
               />
             ))
           )}

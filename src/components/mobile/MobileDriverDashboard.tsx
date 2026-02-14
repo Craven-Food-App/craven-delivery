@@ -1607,10 +1607,6 @@ export const MobileDriverDashboard: React.FC = () => {
                 setActiveTab('notifications');
                 navigate('/mobile?tab=notifications');
               }}
-              onBack={() => {
-                setActiveTab('home');
-                navigate('/mobile');
-              }}
             />
           </div>
         )}
