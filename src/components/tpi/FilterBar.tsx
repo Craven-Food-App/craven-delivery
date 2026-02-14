@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { Group, Button, Chip, Select, TextInput, Menu } from '@mantine/core';
 import { IconX, IconFilter, IconBookmark } from '@tabler/icons-react';

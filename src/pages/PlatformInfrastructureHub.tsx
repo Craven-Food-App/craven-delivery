@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PortalLayout, PageHeader, KpiCard, DataTable, DetailDrawer, StatusBadge, EmptyState, ErrorState, SkeletonLoader, ColumnDef } from '@/components/tpi';

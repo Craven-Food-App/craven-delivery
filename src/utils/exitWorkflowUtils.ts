@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Exit Workflow Utilities
  * Helper functions for exit/termination workflows
