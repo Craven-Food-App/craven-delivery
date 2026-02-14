@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconFlame, IconTrendingUp } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getTierConfig } from '@/utils/ratingHelpers';
+import { RatingTier } from '@/types/diamond-orders';
 
 /* ─────────────────────────────────────────
    THEME TOKENS
@@ -80,7 +82,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   const [deliveries, setDeliveries] = React.useState(0);
   const [perfection, setPerfection] = React.useState(100);
   const [driverStatus, setDriverStatus] = React.useState('New Driver');
-  const [driverPoints, setDriverPoints] = React.useState(87); // Diamond status
+  const [driverTier, setDriverTier] = React.useState<RatingTier>('Feeder');
 
   // Fetch driver data
   React.useEffect(() => {
@@ -101,9 +103,9 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
           setDeliveries(profile.total_deliveries || 0);
           setPerfection(profile.rating ? Math.round((profile.rating / 5) * 100) : 100);
           
-          // Calculate points based on rating and deliveries
-          const points = Math.round((profile.rating || 5) * 17 + (profile.total_deliveries || 0) * 0.1);
-          setDriverPoints(points);
+          // Read tier_status from DB (source of truth)
+          const tierValue = (profile.tier_status as RatingTier) || (profile.rating_tier as RatingTier) || 'Feeder';
+          setDriverTier(tierValue);
         }
 
         // Fetch user metadata and profile for full name
@@ -151,34 +153,19 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     }
   }, [isOpen]);
 
-  const getStatus = (points: number) => {
-    if (points >= 85) return { 
-      name: 'Diamond', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-cyan-2), var(--mantine-color-blue-3), var(--mantine-color-purple-3))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(37, 99, 235, 0.4), rgba(96, 165, 250, 0.2), rgba(191, 219, 254, 0.1), transparent)',
-      icon: '💎' 
-    };
-    if (points >= 76) return { 
-      name: 'Platinum', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-3), var(--mantine-color-gray-1), var(--mantine-color-gray-3))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(156, 163, 175, 0.3), rgba(209, 213, 219, 0.2), transparent)',
-      icon: '⚪' 
-    };
-    if (points >= 65) return { 
-      name: 'Gold', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-yellow-3), var(--mantine-color-yellow-2), var(--mantine-color-yellow-4))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(234, 179, 8, 0.3), rgba(250, 204, 21, 0.2), transparent)',
-      icon: '🥇' 
-    };
-    return { 
-      name: 'Silver', 
-      gradient: 'linear-gradient(to bottom right, var(--mantine-color-gray-4), var(--mantine-color-gray-3), var(--mantine-color-gray-5))', 
-      glowGradient: 'linear-gradient(to bottom, rgba(107, 114, 128, 0.3), rgba(156, 163, 175, 0.2), transparent)',
-      icon: '🥈' 
-    };
+  const TIER_GLOW_GRADIENTS: Record<string, string> = {
+    Feeder: 'linear-gradient(to bottom, rgba(156, 163, 175, 0.2), rgba(209, 213, 219, 0.1), transparent)',
+    Gold: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(234, 197, 80, 0.18), transparent)',
+    Platinum: 'linear-gradient(to bottom, rgba(156, 163, 175, 0.3), rgba(209, 213, 219, 0.18), transparent)',
+    Diamond: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.45), rgba(59, 130, 246, 0.2), rgba(147, 197, 253, 0.08), transparent)',
+    Ultimate: 'linear-gradient(to bottom, rgba(26, 26, 26, 0.5), rgba(245, 124, 0, 0.25), rgba(245, 124, 0, 0.05), transparent)',
   };
 
-  const status = getStatus(driverPoints);
+  const tierConfig = getTierConfig(driverTier);
+  const status = {
+    name: tierConfig.name,
+    glowGradient: TIER_GLOW_GRADIENTS[driverTier] || TIER_GLOW_GRADIENTS.Feeder,
+  };
 
   // Get initials from driver name
   const getInitials = (name: string) => {
@@ -203,7 +190,7 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     { id: "promos", label: "Promos", Icon: PromosIconWrapper },
   ];
 
-  const badgeText = `${status.name} Feeder`;
+  const badgeText = tierConfig.name;
 
   const handleMenuClick = (path: string) => {
     if (onNavigate) {
@@ -255,11 +242,12 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
         <div style={{ fontSize: 13.5, fontWeight: 600, color: T.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 4, marginTop: 3,
-          background: T.blueBg, color: T.blue,
+          background: driverTier === 'Ultimate' ? '#1A1A1A' : `${tierConfig.color}22`,
+          color: tierConfig.textColor,
           padding: "2px 7px", borderRadius: 10,
           fontSize: 9, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
+          border: driverTier === 'Ultimate' ? '1px solid #F57C00' : 'none',
         }}>
-          <DiamondIcon size={9} />
           {badge}
         </div>
       </div>
