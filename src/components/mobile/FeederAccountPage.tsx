@@ -467,6 +467,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
+  const { colors: C } = useFeederDarkMode();
   const navigate = useNavigate();
   const [showCardPage, setShowCardPage] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState(false);

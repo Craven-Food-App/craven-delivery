@@ -19,6 +19,7 @@ type VehicleDocumentsPageProps = {
 };
 
 const VehicleDocumentsPage: React.FC<VehicleDocumentsPageProps> = ({ onBack }) => {
+  const { colors: C } = useFeederDarkMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   

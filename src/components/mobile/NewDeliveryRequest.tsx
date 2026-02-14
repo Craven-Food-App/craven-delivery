@@ -54,7 +54,8 @@ const PickupIcon: React.FC = () => {
       fill="none"
     />
   </svg>
-);
+  );
+};
 
 const DropoffIcon: React.FC = () => {
   const { colors: C } = useFeederDarkMode();
@@ -101,7 +102,6 @@ const CloseIcon: React.FC = () => {
     <path d="M12 4L4 12" stroke="#B0B0B0" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
   );
-};
 };
 
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
