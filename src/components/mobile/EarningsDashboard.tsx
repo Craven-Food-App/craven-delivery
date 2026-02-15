@@ -12,7 +12,7 @@ type EarningsDashboardProps = {
   onOpenNotifications?: () => void;
 };
 
-type TimeRange = 'today' | 'thisWeek' | 'lastWeek' | 'custom';
+type TimeRange = 'today' | 'thisWeek' | 'lastWeek' | 'overall' | 'custom';
 
 interface EarningsBreakdown {
   basePay: number;
@@ -125,6 +125,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [isEligibleForInstantCashout, setIsEligibleForInstantCashout] = useState(false);
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
   const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
+  const [sentToFeederCard, setSentToFeederCard] = useState(0);
 
   useEffect(() => {
     fetchEarningsData();
@@ -477,6 +478,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         const lastWeekStart = new Date(today);
         lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
         return { start: lastWeekStart, end: new Date(lastWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000) };
+      case 'overall':
+        return { start: new Date(2020, 0, 1), end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
       default:
         return { start: today, end: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
     }
@@ -584,6 +587,28 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         pending: pendingTotal,
         paid: paidTotal,
       });
+
+      // Calculate "Sent to Feeder Card" for selected time range
+      let feederCardQuery = supabase
+        .from('driver_payouts')
+        .select('amount, status, created_at')
+        .eq('driver_id', user.id)
+        .in('status', ['completed', 'sent']);
+
+      if (timeRange !== 'overall') {
+        feederCardQuery = feederCardQuery
+          .gte('created_at', start.toISOString())
+          .lt('created_at', end.toISOString());
+      }
+
+      const { data: feederPayouts } = await feederCardQuery;
+      let feederTotal = 0;
+      if (feederPayouts) {
+        feederPayouts.forEach((p: any) => {
+          feederTotal += parseFloat(p.amount || '0');
+        });
+      }
+      setSentToFeederCard(feederTotal);
 
       // Calculate metrics
       const totalTrips = earnings.length;
@@ -766,7 +791,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         {/* Time Range Selector */}
         <div className="mt-3">
           <div className="flex gap-2">
-            {(['today', 'thisWeek', 'lastWeek'] as TimeRange[]).map((range) => (
+            {(['today', 'thisWeek', 'lastWeek', 'overall'] as TimeRange[]).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
@@ -776,7 +801,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                     : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {range === 'today' ? 'Today' : range === 'thisWeek' ? 'This Week' : 'Last Week'}
+                {range === 'today' ? 'Today' : range === 'thisWeek' ? 'This Week' : range === 'lastWeek' ? 'Last Week' : 'Overall'}
               </button>
             ))}
           </div>
@@ -1023,6 +1048,9 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </p>
               <p className="text-xs text-gray-400">
                 {timeRange === 'today' ? 'Available to cash out' : 'Net earnings'}
+              </p>
+              <p className="text-sm font-medium text-orange-500 mt-1">
+                Sent to Feeder Card: {formatCurrency(sentToFeederCard)}
               </p>
             </div>
             
