@@ -102,15 +102,15 @@ export const RatingsSection: React.FC = () => {
         // Calculate completion rate
         const assignedOrders = completedOrders?.length || 0;
         const deliveredOrders = completedOrders?.filter(o => o.order_status === 'delivered').length || 0;
-        const completionRate = assignedOrders > 0 ? (deliveredOrders / assignedOrders) * 100 : 100;
+        const completionRate = assignedOrders > 0 ? (deliveredOrders / assignedOrders) * 100 : 0;
 
         // Calculate acceptance rate
         const totalAssignments = assignments?.length || 0;
         const acceptedAssignments = assignments?.filter(a => a.status === 'accepted').length || 0;
-        const acceptanceRate = totalAssignments > 0 ? (acceptedAssignments / totalAssignments) * 100 : 100;
+        const acceptanceRate = totalAssignments > 0 ? (acceptedAssignments / totalAssignments) * 100 : 0;
 
         // Estimate on-time rate
-        const onTimeRate = Math.max(85, Math.min(97, rating * 20));
+        const onTimeRate = totalDeliveries > 0 ? Math.max(0, Math.min(100, rating * 20)) : 0;
 
         // Determine tier using centralized evaluator
         const tier = evaluateFeederTier({
