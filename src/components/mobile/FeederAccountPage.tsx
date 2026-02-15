@@ -96,7 +96,7 @@ type FeederAccountPageProps = {
 };
 
 // ─── STATUS TIERS (derived from centralized ratingHelpers) ─────────────────
-import { FEEDER_TIERS, TIER_COLORS } from '@/utils/ratingHelpers';
+import { FEEDER_TIERS, TIER_COLORS, evaluateFeederTier, type FeederTierName } from '@/utils/ratingHelpers';
 
 const TIERS: StatusInfo[] = FEEDER_TIERS.map(t => ({
   tier: t.name,
@@ -114,18 +114,23 @@ const TIERS: StatusInfo[] = FEEDER_TIERS.map(t => ({
   barColor: t.color,
 }));
 
+/** Get status tier from evaluateFeederTier result (not points) */
+function getStatusFromTier(tierName: FeederTierName): StatusInfo {
+  const found = TIERS.find(t => t.tier === tierName);
+  return found || TIERS[TIERS.length - 1];
+}
+
+/** Legacy: get status from points (kept for progress bar display) */
 function getStatus(pts: number): StatusInfo {
-  // Walk highest → lowest; first match wins
   for (const t of TIERS) {
     if (pts >= t.minPts) return t;
   }
-  // Below Feeder floor — still render as Feeder
   return TIERS[TIERS.length - 1];
 }
 
 /** Progress 0–1 within the current tier band. */
 function tierProgress(pts: number, status: StatusInfo): number {
-  const max = status.maxPts ?? status.minPts + 15; // Diamond has no cap; use +15 as visual range
+  const max = status.maxPts ?? status.minPts + 15;
   return Math.min(1, Math.max(0, (pts - status.minPts) / (max - status.minPts)));
 }
 
@@ -537,6 +542,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   const [expiryDate] = useState('12/28');
   const [cvv] = useState('847');
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [evaluatedTier, setEvaluatedTier] = useState<FeederTierName>('Feeder');
 
   // Account data state
   const [accountData, setAccountData] = useState<AccountData>({
@@ -615,6 +621,30 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
       
       const rating = Number(driverProfile?.rating) || 0;
       const totalDeliveries = driverProfile?.total_deliveries || 0;
+
+      // Get orders for completion/on-time calculation
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, order_status')
+        .eq('assigned_craver_id', user.id);
+
+      const totalOrders = orders?.length || 0;
+      const deliveredOrders = orders?.filter(o => o.order_status === 'delivered').length || 0;
+      const completionRate = totalOrders > 0 ? (deliveredOrders / totalOrders) * 100 : 0;
+      const onTimeRate = totalDeliveries > 0 ? Math.max(0, Math.min(100, rating * 20)) : 0;
+      const cancellationRate = totalOrders > 0 ? 100 - completionRate : 0;
+
+      // Use centralized evaluator — single source of truth
+      const evaluatedTier = evaluateFeederTier({
+        totalDeliveries,
+        averageRating: rating,
+        completionRate,
+        onTimeRate,
+        cancellationRate,
+        hasFraudFlag: false,
+      });
+
+      // Points are cosmetic only — tier is determined by evaluateFeederTier
       const points = Math.round((rating) * 17 + (totalDeliveries) * 0.1);
 
       let memberSince = '';
@@ -673,6 +703,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         });
       }
 
+      setEvaluatedTier(evaluatedTier);
       setAccountData({
         name: fullName,
         rating,
@@ -690,7 +721,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
     }
   };
 
-  const status = useMemo(() => getStatus(accountData.statusPoints), [accountData.statusPoints]);
+  const status = useMemo(() => getStatusFromTier(evaluatedTier), [evaluatedTier]);
 
   // ── Navigation / action handlers ─────────────────────────────────────────
   const handleNav = (id: NavId) => {
