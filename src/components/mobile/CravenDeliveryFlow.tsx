@@ -1081,8 +1081,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'column',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <Stack align="center" gap="xl">
@@ -1307,8 +1305,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           fontFamily: 'sans-serif',
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#fff',
@@ -1667,8 +1663,6 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           zIndex: 9999,
           backgroundColor: '#ffffff',
           overflowY: 'auto',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <Stack
@@ -1678,8 +1672,8 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           gap="md"
           style={{
             minHeight: '100vh',
-            paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)',
+            paddingTop: '1rem',
+            paddingBottom: '100px',
           }}
         >
           {/* Feeder Icon with animated checkmark */}

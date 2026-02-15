@@ -237,7 +237,7 @@ export const RatingsSection: React.FC = () => {
     <div className="min-h-screen bg-background pb-16">
       <div className="max-w-md mx-auto p-4 space-y-4">
         {/* Header */}
-        <div className="bg-background border-b border-border/50 px-4 py-3 sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="bg-background border-b border-border/50 px-4 py-3 sticky top-0 z-10">
           <h1 className="text-2xl font-bold text-gray-900">Ratings & Performance</h1>
         </div>
         

@@ -328,8 +328,6 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
         height: '100dvh',
         width: '100%',
         background: C.white,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         <div style={{
           display: 'flex',
@@ -368,8 +366,6 @@ const DriverSupportChat: React.FC<DriverSupportChatProps> = ({ onBack }) => {
       height: '100dvh',
       width: '100%',
       background: C.white,
-      paddingTop: 'env(safe-area-inset-top, 0px)',
-      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       overflow: 'hidden',
     }}>
       {/* Header */}

@@ -397,7 +397,6 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
       <div style={{
         position: "sticky", top: 0, background: C.bg, zIndex: 10,
         borderBottom: `1px solid ${C.border}`, padding: "12px 16px",
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
           <h1 style={{ fontSize: 16, fontWeight: 900, letterSpacing: 0.2, margin: 0 }}>Schedule</h1>

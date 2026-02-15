@@ -364,7 +364,6 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
   return (
     <div style={{
       background: C.bg, minHeight: "100vh", color: C.text,
-      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>

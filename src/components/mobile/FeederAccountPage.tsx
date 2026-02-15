@@ -230,7 +230,7 @@ function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
     <div style={{
       background: C.bg, flexShrink: 0,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "12px 16px", paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+      padding: "12px 16px",
       borderBottom: `1px solid ${C.border}`,
       position: 'sticky', top: 0, zIndex: 10,
     }}>
@@ -926,7 +926,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         height: '100dvh',
         width: '100%',
         background: C.bg,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
         <Loader size="lg" color="orange" />
       </div>
@@ -942,7 +941,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
       flexDirection: "column",
       height: "100dvh",
       overflow: "hidden",
-      paddingTop: 'env(safe-area-inset-top, 0px)',
     }}>
 
       {/* ── Fixed Header Section (everything visible in image) */}
@@ -1006,8 +1004,6 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
           {/* Header */}
