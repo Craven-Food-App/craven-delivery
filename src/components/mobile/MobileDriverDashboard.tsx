@@ -37,6 +37,7 @@ import CravenFillCountdownFlow from '@/components/CravenFillCountdownFlow';
 import NearbyRestaurantCards from './NearbyRestaurantCards';
 import ActiveFeedingMenu from './ActiveFeedingMenu';
 import GetBackToFeedingCard from './GetBackToFeedingCard';
+import QuickSchedulerModal from './QuickSchedulerModal';
 // Production readiness imports
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
@@ -425,6 +426,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
   const [resetMapZoom, setResetMapZoom] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showQuickScheduler, setShowQuickScheduler] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
@@ -1509,7 +1511,7 @@ export const MobileDriverDashboard: React.FC = () => {
         <MobileMapbox 
           onZoneStatusChange={handleZoneStatusChange}
           resetToDefaultZoom={resetMapZoom}
-          onScheduleClick={() => setActiveTab('schedule')}
+          onScheduleClick={() => setShowQuickScheduler(true)}
         />
       </div>
 
@@ -2149,5 +2151,10 @@ export const MobileDriverDashboard: React.FC = () => {
 
     </div>
     )}
+      {/* Quick Scheduler Modal */}
+      <QuickSchedulerModal 
+        isOpen={showQuickScheduler} 
+        onClose={() => setShowQuickScheduler(false)} 
+      />
   </>;
 };
