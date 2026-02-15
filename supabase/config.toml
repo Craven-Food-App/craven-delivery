@@ -195,3 +195,6 @@ verify_jwt = false
 
 [functions.get-cravemore-offer]
 verify_jwt = false
+
+[functions.get-feeder-earnings]
+verify_jwt = false

@@ -13673,6 +13673,83 @@ export type Database = {
           },
         ]
       }
+      feeder_wallet_ledger_entries: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          direction: string
+          feeder_id: string
+          id: string
+          idempotency_key: string | null
+          memo: string | null
+          occurred_at: string
+          source_id: string | null
+          source_type: string
+          status: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          direction: string
+          feeder_id: string
+          id?: string
+          idempotency_key?: string | null
+          memo?: string | null
+          occurred_at: string
+          source_id?: string | null
+          source_type: string
+          status?: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          direction?: string
+          feeder_id?: string
+          id?: string
+          idempotency_key?: string | null
+          memo?: string | null
+          occurred_at?: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feeder_wallet_ledger_entries_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "feeder_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feeder_wallets: {
+        Row: {
+          created_at: string
+          currency: string
+          feeder_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          feeder_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          feeder_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       finance_audit_log: {
         Row: {
           action_type: string
