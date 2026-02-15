@@ -1318,7 +1318,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         {/* Compact map section */}
         <Box 
           style={{ 
-            height: 200,
+            height: 140,
             flexShrink: 0,
             position: 'relative',
           }}
@@ -1339,7 +1339,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
             flex: 1,
             overflowY: 'auto', 
             backgroundColor: 'white', 
-            padding: '12px 16px 24px',
+            padding: '8px 16px 16px',
           }}
         >
           <Stack gap="xs" align="stretch">
