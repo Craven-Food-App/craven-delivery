@@ -427,28 +427,43 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         borderColor = '#eab308';
       }
 
-      // Single element — no wrapper. Glow is applied via box-shadow directly.
+      // Pin-shaped marker: circular logo head + pointed tail
       const el = document.createElement('div');
       el.className = 'merchant-map-marker';
-      
+
       const hasPng = isPngLogo(merchant.logo_url);
       const bgColor = hasPng ? '#ffffff' : '#f9fafb';
-      const size = 22;
+      const headSize = 24;
+      const tailHeight = 8;
+      const totalHeight = headSize + tailHeight;
 
       el.style.cssText = `
-        width: ${size}px;
-        height: ${size}px;
+        width: ${headSize}px;
+        height: ${totalHeight}px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+        ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
+      `;
+
+      // Circular logo head
+      const head = document.createElement('div');
+      head.style.cssText = `
+        width: ${headSize}px;
+        height: ${headSize}px;
         border-radius: 50%;
         background: ${merchant.logo_url ? 'transparent' : bgColor};
-        border: 1px solid ${borderColor};
+        border: 1.5px solid ${borderColor};
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: transform 0.15s ease;
-        ${glowStyle || 'box-shadow: 0 1px 4px rgba(0,0,0,0.25);'}
-        ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
+        position: relative;
+        z-index: 1;
+        ${glowStyle || ''}
       `;
 
       if (merchant.logo_url) {
@@ -456,25 +471,39 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         img.src = merchant.logo_url;
         img.alt = merchant.name;
         img.style.cssText = `
-          width: ${size}px;
-          height: ${size}px;
+          width: ${headSize}px;
+          height: ${headSize}px;
           object-fit: contain;
           border-radius: 50%;
         `;
         img.onerror = () => {
-          el.innerHTML = '';
+          head.innerHTML = '';
           const fallback = document.createElement('span');
           fallback.textContent = merchant.name.charAt(0).toUpperCase();
           fallback.style.cssText = 'font-weight: 700; font-size: 11px; color: #ff6600;';
-          el.appendChild(fallback);
+          head.appendChild(fallback);
         };
-        el.appendChild(img);
+        head.appendChild(img);
       } else {
         const fallback = document.createElement('span');
         fallback.textContent = merchant.name.charAt(0).toUpperCase();
         fallback.style.cssText = 'font-weight: 700; font-size: 11px; color: #ff6600;';
-        el.appendChild(fallback);
+        head.appendChild(fallback);
       }
+
+      // Pointed tail (triangle pointing down)
+      const tail = document.createElement('div');
+      tail.style.cssText = `
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: ${tailHeight}px solid ${borderColor};
+        margin-top: -1px;
+      `;
+
+      el.appendChild(head);
+      el.appendChild(tail);
 
       // Hover effect
       el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.2)'; });
@@ -486,7 +515,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       const addressText = merchant.address ? `<p style="margin:2px 0;font-size:11px;color:#6b7280;">${merchant.address}</p>` : '';
       const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`;
 
-      const popup = new mapboxgl.Popup({ offset: 20, closeButton: true, maxWidth: '220px' })
+      const popup = new mapboxgl.Popup({ offset: [0, -totalHeight], closeButton: true, maxWidth: '220px' })
         .setHTML(`
           <div style="padding:8px;font-family:system-ui,sans-serif;">
             <p style="margin:0 0 2px;font-size:13px;font-weight:700;">${merchant.name}</p>
@@ -500,7 +529,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           </div>
         `);
 
-      const markerInstance = new mapboxgl.Marker({ element: el })
+      const markerInstance = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([merchant.longitude, merchant.latitude])
         .setPopup(popup)
         .addTo(map.current);
