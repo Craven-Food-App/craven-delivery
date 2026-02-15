@@ -90,7 +90,6 @@ export const ActiveFeedingMenu: React.FC<ActiveFeedingMenuProps> = ({
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          overflow: 'hidden',
         }}
       >
         {/* Header */}
