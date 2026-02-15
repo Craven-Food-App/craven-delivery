@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconFlame, IconTrendingUp } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { evaluateFeederTier, type FeederTierName } from '@/utils/ratingHelpers';
 
 /* ─────────────────────────────────────────
    THEME TOKENS
@@ -76,11 +77,11 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   onNavigate
 }) => {
   const [driverName, setDriverName] = React.useState('');
-  const [driverRating, setDriverRating] = React.useState(5.00);
+  const [driverRating, setDriverRating] = React.useState(0);
   const [deliveries, setDeliveries] = React.useState(0);
-  const [perfection, setPerfection] = React.useState(100);
+  const [perfection, setPerfection] = React.useState(0);
   const [driverStatus, setDriverStatus] = React.useState('New Driver');
-  const [driverPoints, setDriverPoints] = React.useState(87); // Diamond status
+  const [evaluatedTierName, setEvaluatedTierName] = React.useState<FeederTierName>('Feeder');
 
   // Fetch driver data
   React.useEffect(() => {
@@ -97,13 +98,34 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
           .single();
 
         if (profile) {
-          setDriverRating(profile.rating || 5.00);
-          setDeliveries(profile.total_deliveries || 0);
-          setPerfection(profile.rating ? Math.round((profile.rating / 5) * 100) : 100);
+          const rating = Number(profile.rating) || 0;
+          const totalDeliveries = profile.total_deliveries || 0;
+          setDriverRating(rating);
+          setDeliveries(totalDeliveries);
+          setPerfection(totalDeliveries > 0 && rating > 0 ? Math.round((rating / 5) * 100) : 0);
           
-          // Calculate points based on rating and deliveries
-          const points = Math.round((profile.rating || 5) * 17 + (profile.total_deliveries || 0) * 0.1);
-          setDriverPoints(points);
+          // Fetch orders for completion/on-time calculation
+          const { data: orders } = await supabase
+            .from('orders')
+            .select('id, order_status')
+            .eq('assigned_craver_id', user.id);
+
+          const totalOrders = orders?.length || 0;
+          const deliveredOrders = orders?.filter(o => o.order_status === 'delivered').length || 0;
+          const completionRate = totalOrders > 0 ? (deliveredOrders / totalOrders) * 100 : 0;
+          const onTimeRate = totalDeliveries > 0 ? Math.max(0, Math.min(100, rating * 20)) : 0;
+          const cancellationRate = totalOrders > 0 ? 100 - completionRate : 0;
+
+          // Use centralized evaluator — single source of truth
+          const tier = evaluateFeederTier({
+            totalDeliveries,
+            averageRating: rating,
+            completionRate,
+            onTimeRate,
+            cancellationRate,
+            hasFraudFlag: false,
+          });
+          setEvaluatedTierName(tier);
         }
 
         // Fetch user metadata and profile for full name
@@ -151,40 +173,15 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     }
   }, [isOpen]);
 
-  const getStatus = (points: number) => {
-    if (points >= 95) return { 
-      name: 'Ultimate', 
-      gradient: 'linear-gradient(to bottom right, #000000, #1A1A1A, #2A2A2A)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(232, 98, 42, 0.45), rgba(232, 98, 42, 0.2), rgba(0, 0, 0, 0.15), transparent)',
-      icon: '👑' 
-    };
-    if (points >= 85) return { 
-      name: 'Diamond', 
-      gradient: 'linear-gradient(to bottom right, #1E3A5F, #3A7BD5, #1E3A5F)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.4), rgba(58, 123, 213, 0.2), rgba(30, 58, 95, 0.1), transparent)',
-      icon: '💎' 
-    };
-    if (points >= 76) return { 
-      name: 'Platinum', 
-      gradient: 'linear-gradient(to bottom right, #E8E8E8, #FFFFFF, #C0C0C0)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(232, 232, 232, 0.2), transparent)',
-      icon: '⚪' 
-    };
-    if (points >= 65) return { 
-      name: 'Gold', 
-      gradient: 'linear-gradient(to bottom right, #D4AF37, #F5D060, #D4AF37)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(245, 208, 96, 0.2), transparent)',
-      icon: '🥇' 
-    };
-    return { 
-      name: 'Feeder', 
-      gradient: 'linear-gradient(to bottom right, #FAFBFC, #F3F4F6, #E5E7EB)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(249, 250, 251, 0.3), rgba(229, 231, 235, 0.15), transparent)',
-      icon: '🍽️' 
-    };
+  const STATUS_MAP: Record<FeederTierName, { name: string; gradient: string; glowGradient: string; icon: string }> = {
+    Ultimate: { name: 'Ultimate', gradient: 'linear-gradient(to bottom right, #000000, #1A1A1A, #2A2A2A)', glowGradient: 'linear-gradient(to bottom, rgba(232, 98, 42, 0.45), rgba(232, 98, 42, 0.2), rgba(0, 0, 0, 0.15), transparent)', icon: '👑' },
+    Diamond:  { name: 'Diamond',  gradient: 'linear-gradient(to bottom right, #1E3A5F, #3A7BD5, #1E3A5F)', glowGradient: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.4), rgba(58, 123, 213, 0.2), rgba(30, 58, 95, 0.1), transparent)', icon: '💎' },
+    Platinum: { name: 'Platinum', gradient: 'linear-gradient(to bottom right, #E8E8E8, #FFFFFF, #C0C0C0)', glowGradient: 'linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(232, 232, 232, 0.2), transparent)', icon: '⚪' },
+    Gold:     { name: 'Gold',     gradient: 'linear-gradient(to bottom right, #D4AF37, #F5D060, #D4AF37)', glowGradient: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(245, 208, 96, 0.2), transparent)', icon: '🥇' },
+    Feeder:   { name: 'Feeder',   gradient: 'linear-gradient(to bottom right, #FAFBFC, #F3F4F6, #E5E7EB)', glowGradient: 'linear-gradient(to bottom, rgba(249, 250, 251, 0.3), rgba(229, 231, 235, 0.15), transparent)', icon: '🍽️' },
   };
 
-  const status = getStatus(driverPoints);
+  const status = STATUS_MAP[evaluatedTierName];
 
   // Get initials from driver name
   const getInitials = (name: string) => {
