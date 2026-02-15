@@ -21,6 +21,9 @@ interface MerchantLocation {
   longitude: number;
   merchant_category: string | null;
   cuisine_type: string | null;
+  address?: string | null;
+  phone?: string | null;
+  active_order_count?: number;
 }
 
 interface MobileMapboxProps {
@@ -50,6 +53,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
   const merchantMarkersRef = useRef<any[]>([]);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
+  const userHasPanned = useRef(false);
 
   const driverLocation = useMemo<[number, number] | null>(() => {
     if (location) {
@@ -217,6 +221,13 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
 
         map.current.on('load', () => {
           setIsMapReady(true);
+          
+          // Track user panning to stop auto-centering
+          map.current.on('dragstart', () => {
+            userHasPanned.current = true;
+            setShowRecenter(true);
+          });
+          
           if (map.current) {
             // Add navigation control only once
             if (!navigationControlAdded.current) {
@@ -326,9 +337,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       }
     }
     
-    // Only update map center if user hasn't manually panned (check if map was recently moved by user)
-    // For now, we'll update the center smoothly without animation to follow driver
-    map.current.setCenter([location.longitude, location.latitude]);
+    // Only auto-center if user hasn't manually panned
+    if (!userHasPanned.current) {
+      map.current.setCenter([location.longitude, location.latitude]);
+    }
     
     // Update zone status
     const zone = getZoneForLocation([location.latitude, location.longitude], zones);
@@ -357,13 +369,30 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     const fetchMerchants = async () => {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('id, name, logo_url, latitude, longitude, merchant_category, cuisine_type')
+        .select('id, name, logo_url, latitude, longitude, merchant_category, cuisine_type, address, phone')
         .eq('is_active', true)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
 
       if (!error && data) {
-        setMerchants(data as MerchantLocation[]);
+        // Fetch active order counts per merchant for demand glow
+        let countMap: Record<string, number> = {};
+        try {
+          const { data: orderCounts } = await supabase
+            .from('orders')
+            .select('restaurant_id')
+            .or('status.eq.pending,status.eq.confirmed,status.eq.preparing,status.eq.ready');
+          (orderCounts || []).forEach((o: any) => {
+            countMap[o.restaurant_id] = (countMap[o.restaurant_id] || 0) + 1;
+          });
+        } catch (e) {
+          console.warn('Could not fetch order counts for demand glow:', e);
+        }
+
+        setMerchants((data as MerchantLocation[]).map(m => ({
+          ...m,
+          active_order_count: countMap[m.id] || 0,
+        })));
       }
     };
     fetchMerchants();
@@ -383,25 +412,50 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     merchants.forEach((merchant) => {
       if (!merchant.latitude || !merchant.longitude) return;
 
+      // Demand glow: yellow (1-2 orders), orange (3-4), red (5+)
+      const demand = merchant.active_order_count || 0;
+      let glowStyle = '';
+      let borderColor = '#ff6600';
+      if (demand >= 5) {
+        glowStyle = 'box-shadow: 0 0 10px 4px rgba(239,68,68,0.7), 0 0 20px 8px rgba(239,68,68,0.3);';
+        borderColor = '#ef4444';
+      } else if (demand >= 3) {
+        glowStyle = 'box-shadow: 0 0 8px 3px rgba(249,115,22,0.7), 0 0 16px 6px rgba(249,115,22,0.3);';
+        borderColor = '#f97316';
+      } else if (demand >= 1) {
+        glowStyle = 'box-shadow: 0 0 6px 2px rgba(234,179,8,0.6), 0 0 12px 4px rgba(234,179,8,0.25);';
+        borderColor = '#eab308';
+      }
+
+      // Outer wrapper for glow effect
+      const wrapper = document.createElement('div');
+      wrapper.className = 'merchant-marker-wrapper';
+      wrapper.style.cssText = `
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        ${glowStyle || 'box-shadow: 0 1px 4px rgba(0,0,0,0.25);'}
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
+      `;
+
       const el = document.createElement('div');
       el.className = 'merchant-map-marker';
       
       const hasPng = isPngLogo(merchant.logo_url);
-      const bgColor = hasPng ? '#ffffff' : 'transparent';
+      const bgColor = hasPng ? '#ffffff' : '#f9fafb';
 
       el.style.cssText = `
-        width: 38px;
-        height: 38px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         background: ${bgColor};
-        border: 2px solid #ff6600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        cursor: pointer;
+        border: 2px solid ${borderColor};
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.15s ease;
       `;
 
       if (merchant.logo_url) {
@@ -409,40 +463,53 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         img.src = merchant.logo_url;
         img.alt = merchant.name;
         img.style.cssText = `
-          width: 30px;
-          height: 30px;
+          width: 20px;
+          height: 20px;
           object-fit: contain;
           border-radius: 50%;
         `;
         img.onerror = () => {
-          // Fallback: show first letter
           el.innerHTML = '';
           const fallback = document.createElement('span');
           fallback.textContent = merchant.name.charAt(0).toUpperCase();
-          fallback.style.cssText = 'font-weight: 700; font-size: 16px; color: #ff6600;';
+          fallback.style.cssText = 'font-weight: 700; font-size: 11px; color: #ff6600;';
           el.appendChild(fallback);
         };
         el.appendChild(img);
       } else {
         const fallback = document.createElement('span');
         fallback.textContent = merchant.name.charAt(0).toUpperCase();
-        fallback.style.cssText = 'font-weight: 700; font-size: 16px; color: #ff6600;';
+        fallback.style.cssText = 'font-weight: 700; font-size: 11px; color: #ff6600;';
         el.appendChild(fallback);
       }
 
-      // Hover effect
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.25)'; });
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+      wrapper.appendChild(el);
 
-      // Tooltip popup
-      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
+      // Hover effect
+      wrapper.addEventListener('mouseenter', () => { wrapper.style.transform = 'scale(1.2)'; });
+      wrapper.addEventListener('mouseleave', () => { wrapper.style.transform = 'scale(1)'; });
+
+      // Navigate popup with merchant info
+      const demandLabel = demand >= 5 ? '🔴 High Demand' : demand >= 3 ? '🟠 Moderate' : demand >= 1 ? '🟡 Building' : '';
+      const categoryLabel = merchant.cuisine_type || merchant.merchant_category || 'Restaurant';
+      const addressText = merchant.address ? `<p style="margin:2px 0;font-size:11px;color:#6b7280;">${merchant.address}</p>` : '';
+      const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`;
+
+      const popup = new mapboxgl.Popup({ offset: 20, closeButton: true, maxWidth: '220px' })
         .setHTML(`
-          <div style="padding:4px 8px;font-size:12px;font-weight:600;white-space:nowrap;">
-            ${merchant.name}
+          <div style="padding:8px;font-family:system-ui,sans-serif;">
+            <p style="margin:0 0 2px;font-size:13px;font-weight:700;">${merchant.name}</p>
+            <p style="margin:0 0 4px;font-size:10px;color:#9ca3af;text-transform:uppercase;">${categoryLabel}</p>
+            ${addressText}
+            ${demandLabel ? `<p style="margin:4px 0;font-size:11px;font-weight:600;">${demandLabel}</p>` : ''}
+            <a href="${navUrl}" target="_blank" rel="noopener noreferrer"
+               style="display:block;margin-top:6px;padding:6px 0;background:#ff6600;color:#fff;text-align:center;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">
+              Navigate →
+            </a>
           </div>
         `);
 
-      const markerInstance = new mapboxgl.Marker({ element: el })
+      const markerInstance = new mapboxgl.Marker({ element: wrapper })
         .setLngLat([merchant.longitude, merchant.latitude])
         .setPopup(popup)
         .addTo(map.current);
@@ -479,6 +546,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         }
         .mapboxgl-ctrl-bottom-right {
           bottom: calc(env(safe-area-inset-bottom, 0px) + 350px) !important;
+        }
+        @keyframes demandPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
       `}</style>
       <div ref={mapContainer} className="w-full h-full" style={{ pointerEvents: 'auto' }} />
@@ -531,8 +602,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
               }
               
               if (lat !== null && lng !== null && map.current && marker.current) {
+                userHasPanned.current = false; // Reset panning so map follows driver again
                 const currentHeading = location?.heading;
-                // Get maximum zoom from map (typically 20-22) or use 20 as fallback
                 const maxZoom = map.current.getMaxZoom?.() || 20;
                 applyDriverLocation(lat, lng, true, currentHeading, maxZoom);
               }
