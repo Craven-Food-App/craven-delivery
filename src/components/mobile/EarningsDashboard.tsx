@@ -151,13 +151,23 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch driver balance from Stripe
-      const { data: balanceData, error: balanceError } = await supabase.functions.invoke('get-driver-balance', {
-        body: { driver_id: user.id }
-      });
+      // Derive card balance from ledger: total paid out to card (all-time)
+      // Card balance = total payout_debit (paid) - any instant cashouts already processed
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from('feeder_wallet_ledger_entries')
+        .select('type, amount_cents, status')
+        .eq('feeder_id', user.id)
+        .in('type', ['payout_debit', 'payout_fee_debit'])
+        .eq('status', 'paid');
 
-      if (!balanceError && balanceData?.available_balance) {
-        setCardBalance(balanceData.available_balance / 100);
+      if (!ledgerError && ledgerData) {
+        const totalPaidOut = ledgerData
+          .filter(e => e.type === 'payout_debit')
+          .reduce((sum, e) => sum + (e.amount_cents || 0), 0);
+        const totalFees = ledgerData
+          .filter(e => e.type === 'payout_fee_debit')
+          .reduce((sum, e) => sum + (e.amount_cents || 0), 0);
+        setCardBalance((totalPaidOut - totalFees) / 100);
       }
 
       // Fetch driver name
