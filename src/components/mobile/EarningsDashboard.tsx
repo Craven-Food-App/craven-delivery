@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Plus, Trash2, Lock, ArrowUpRight } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Calendar, DollarSign, TrendingUp, Clock, MapPin, Receipt, Fuel, CreditCard, X, Plus, Trash2, Lock, ArrowUpRight, Check } from 'lucide-react';
 import feederCardBackground from '@/assets/feeder-card-background.png';
 import feederCardImage from '@/assets/feeder-card-image.png';
 import { Box, Stack, Text, Title, Group } from '@mantine/core';
@@ -986,44 +986,35 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             </div>
 
             {!isEligibleForInstantCashout ? (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                <p className="text-sm text-orange-800 font-medium mb-2">🔒 Unlock Instant Cashout</p>
-                <p className="text-xs text-orange-700 mb-3">
+              <div className="pt-1">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Lock className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-xs font-semibold text-gray-800 tracking-wide uppercase">Unlock Instant Cashout</p>
+                </div>
+                <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
                   You must be a Feeder in good standing to unlock instant cashout to your debit card.
                 </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={cashoutEligibility.meetsDeliveries ? 'text-green-700' : 'text-gray-600'}>
-                      {cashoutEligibility.meetsDeliveries ? '✅' : '⬜'} 50+ Completed Deliveries
-                    </span>
-                    <span className={cashoutEligibility.meetsDeliveries ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                      {cashoutEligibility.deliveries}/50
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={cashoutEligibility.meetsRating ? 'text-green-700' : 'text-gray-600'}>
-                      {cashoutEligibility.meetsRating ? '✅' : '⬜'} 4.5+ Rating
-                    </span>
-                    <span className={cashoutEligibility.meetsRating ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                      {cashoutEligibility.rating.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={cashoutEligibility.meetsOnTime ? 'text-green-700' : 'text-gray-600'}>
-                      {cashoutEligibility.meetsOnTime ? '✅' : '⬜'} On-Time Delivery
-                    </span>
-                    <span className={cashoutEligibility.meetsOnTime ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                      {cashoutEligibility.onTimeRate}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={cashoutEligibility.meetsAccuracy ? 'text-green-700' : 'text-gray-600'}>
-                      {cashoutEligibility.meetsAccuracy ? '✅' : '⬜'} 100% Accuracy
-                    </span>
-                    <span className={cashoutEligibility.meetsAccuracy ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                      {cashoutEligibility.accuracy}%
-                    </span>
-                  </div>
+                <div className="space-y-1.5">
+                  {[
+                    { met: cashoutEligibility.meetsDeliveries, label: '50+ Completed Deliveries', value: `${cashoutEligibility.deliveries}/50` },
+                    { met: cashoutEligibility.meetsRating, label: '4.5+ Rating', value: cashoutEligibility.rating.toFixed(2) },
+                    { met: cashoutEligibility.meetsOnTime, label: 'On-Time Delivery', value: `${cashoutEligibility.onTimeRate}%` },
+                    { met: cashoutEligibility.meetsAccuracy, label: '100% Accuracy', value: `${cashoutEligibility.accuracy}%` },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className={`flex items-center gap-1.5 ${item.met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {item.met ? (
+                          <span className="w-3.5 h-3.5 rounded bg-green-500 flex items-center justify-center"><Check className="w-2.5 h-2.5 text-white" /></span>
+                        ) : (
+                          <span className="w-3.5 h-3.5 rounded border border-gray-300" />
+                        )}
+                        {item.label}
+                      </span>
+                      <span className={`font-medium tabular-nums ${item.met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : (
