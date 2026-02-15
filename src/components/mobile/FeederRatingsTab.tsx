@@ -55,7 +55,7 @@ type FeederRatingsTabProps = {
 // ─── REAL DATA HOOK ─────────────────────────────────────────────────────────
 function useRatingsData(): { data: RatingsData; loading: boolean } {
   const [data, setData] = useState<RatingsData>({
-    score: 5.0,
+    score: 0,
     totalFeeds: 0,
     pulse: [
       { label: "On-Time", value: 0 },
@@ -91,7 +91,7 @@ function useRatingsData(): { data: RatingsData; loading: boolean } {
           .eq('assigned_craver_id', user.id);
 
         const totalDeliveries = profile?.total_deliveries || 0;
-        const rating = profile?.rating || 5.0;
+        const rating = profile?.rating || 0;
         const deliveredOrders = orders?.filter(o => o.order_status === 'delivered').length || 0;
         const totalOrders = orders?.length || 0;
         const completionRate = totalOrders > 0 ? Math.round((deliveredOrders / totalOrders) * 100) : 0;
