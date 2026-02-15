@@ -37,7 +37,7 @@ export const isJustin = (email: string | null | undefined): boolean => {
  * Use this in components that need to check access
  */
 export const isTorranceUser = async (): Promise<boolean> => {
-  const { supabase } = await import('@/integrations/supabase/client');
+  const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
   const { data: { user } } = await supabase.auth.getUser();
   return isTorrance(user?.email);
 };
