@@ -374,6 +374,25 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
     }
   };
 
+  const checkCashoutEligibility = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count, error } = await supabase
+        .from('driver_earnings')
+        .select('id', { count: 'exact', head: true })
+        .eq('driver_id', user.id);
+
+      if (!error && count !== null) {
+        setCompletedOrdersCount(count);
+        setIsEligibleForInstantCashout(count >= 50);
+      }
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+    }
+  };
+
   const handleDebitCashout = async () => {
     if (!isEligibleForInstantCashout) {
       toast.error(`You need ${50 - completedOrdersCount} more deliveries to unlock instant cashout`);
