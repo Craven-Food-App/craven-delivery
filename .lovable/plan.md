@@ -1,27 +1,48 @@
 
 
-## Fix: Shrink Container to Match Logo Size
+## Earnings Dashboard Enhancements
 
-The problem is clear: the container is `26px` but the logo image is `22px` (`size - 4`), plus there's a `2px` border and white background filling the gap. The container needs to shrink to hug the logo exactly.
+### What Changes
 
-### Change (single file: `src/components/mobile/MobileMapbox.tsx`, lines ~436-463)
+**1. Add "Overall" tab to the time range selector**
+- Add `'overall'` to the `TimeRange` type (currently: `'today' | 'thisWeek' | 'lastWeek' | 'custom'`)
+- Add an "Overall" button to the tab bar alongside Today, This Week, Last Week
+- For "Overall", the date range query will use no date filter (fetches all earnings for the driver)
 
-**Current state:**
-- Container: 26px with 2px border and white background
-- Logo image: 22px (size - 4)
-- Result: visible white ring between logo and glow
+**2. Add "Sent to Feeder Card" amount in the Your Earnings card**
+- Below the earnings dollar amount, add an orange line showing "Sent to Feeder Card: $X.XX"
+- This value represents the total amount that has been transferred to the Feeder Card for the selected time period
+- Sourced from the `driver_payouts` table (completed/sent status payouts within the date range)
 
-**Fix:**
-- Keep logo image at 22px (the size the user wants)
-- Shrink container to 22px to match
-- Remove the white background -- set to `transparent`
-- Change border from `2px` to `1px` thin subtle edge
-- Make the image fill the full container: change `size - 4` to `size`
-- The `box-shadow` glow now radiates directly from the logo edge with zero gap
+**3. Business logic clarification (per your description)**
+- After each delivery, earnings instantly go to the Feeder Card minus the gas money portion
+- Gas money accumulates separately (like a savings account) and only transfers to the Feeder Card when the feeder requests it
+- The "Sent to Feeder Card" amount will grow to match total earnings for each period as payouts complete
 
-Specifically:
-1. Change `const size = 26` to `const size = 22`
-2. Set `background: transparent` (keep subtle bg only for text fallbacks)
-3. Change `border: 2px solid` to `border: 1px solid`
-4. Change image dimensions from `${size - 4}px` to `${size}px` so the logo fills the entire container edge-to-edge
+---
+
+### Technical Details
+
+**File: `src/components/mobile/EarningsDashboard.tsx`**
+
+1. **Update `TimeRange` type** (line 15):
+   - Change from `'today' | 'thisWeek' | 'lastWeek' | 'custom'` to `'today' | 'thisWeek' | 'lastWeek' | 'overall' | 'custom'`
+
+2. **Update `getDateRange()` function** (line 465-483):
+   - Add `'overall'` case that returns a very early start date (e.g., `new Date(2020, 0, 1)`) and tomorrow as end, effectively capturing all records
+
+3. **Update time range tab bar** (lines 768-782):
+   - Change the array from `['today', 'thisWeek', 'lastWeek']` to `['today', 'thisWeek', 'lastWeek', 'overall']`
+   - Add label mapping for `'overall'` -> `'Overall'`
+
+4. **Add state for "Sent to Feeder Card"**:
+   - New state: `const [sentToFeederCard, setSentToFeederCard] = useState(0);`
+
+5. **Update `fetchEarningsData()`** (around line 558-586):
+   - Query `driver_payouts` with the same date range filter to get completed payouts within the selected period
+   - Sum completed/sent payouts for the period and store in `sentToFeederCard`
+
+6. **Update the Your Earnings card UI** (lines 1019-1027):
+   - Below the existing earnings amount and "Available to cash out" text, add an orange text line:
+   - `Sent to Feeder Card: $XXX.XX` styled with `text-orange-500` font
 
