@@ -201,7 +201,6 @@ export const AccountSection: React.FC<{
         top={0}
         style={{ zIndex: 10, borderBottom: '1px solid var(--mantine-color-slate-2)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
         bg="white"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <Box p="md">
           <Title order={1} fw={700} c="slate.9" style={{ textAlign: 'right' }}>Account</Title>

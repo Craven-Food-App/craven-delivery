@@ -678,7 +678,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
+      <div className="bg-white border-b sticky top-0 z-10" style={{ padding: '12px 16px' }}>
         <div className="flex items-center justify-between mb-1">
           <button 
             onClick={() => onOpenMenu?.()}

@@ -211,7 +211,6 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
         justifyContent: 'center', 
         background: C.bg,
         zIndex: 2000,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
         <Loader size="lg" color="orange" />
       </div>
@@ -229,7 +228,7 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
       flexDirection: "column",
       zIndex: 2000,
       overflow: "hidden",
-      paddingTop: 'env(safe-area-inset-top, 0px)',
+      overflow: "hidden",
     }}>
       {/* Header */}
       <div style={{

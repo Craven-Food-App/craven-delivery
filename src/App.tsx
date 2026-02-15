@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useState, useEffect } from "react";
+import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -365,20 +366,22 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <HashRouter>
-              <Routes>
-                <Route path="/mobile" element={<MobileDriverDashboard />} />
-                <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
-                <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
-                <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
-                <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
-                <Route path="/enhanced-onboarding/vehicle-photos" element={<VehiclePhotosUpload />} />
-                <Route path="/enhanced-onboarding/payout" element={<PayoutSetup />} />
-                <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
-                <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
-                <Route path="*" element={<Navigate to="/mobile" replace />} />
-              </Routes>
-            </HashRouter>
+            <SafeAreaProvider>
+              <HashRouter>
+                <Routes>
+                  <Route path="/mobile" element={<MobileDriverDashboard />} />
+                  <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
+                  <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
+                  <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
+                  <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
+                  <Route path="/enhanced-onboarding/vehicle-photos" element={<VehiclePhotosUpload />} />
+                  <Route path="/enhanced-onboarding/payout" element={<PayoutSetup />} />
+                  <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
+                  <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
+                  <Route path="*" element={<Navigate to="/mobile" replace />} />
+                </Routes>
+              </HashRouter>
+            </SafeAreaProvider>
           </TooltipProvider>
         </QueryClientProvider>
       </ErrorBoundary>

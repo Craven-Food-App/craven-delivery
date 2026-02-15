@@ -138,7 +138,7 @@ export const MobileBackgroundCheckStatus: React.FC<MobileBackgroundCheckStatusPr
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-orange-50 to-orange-100 overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}>
+      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ minHeight: '60px' }}>
         <div className="flex items-center justify-between p-4">
           <button
             onClick={handleSignOut}
