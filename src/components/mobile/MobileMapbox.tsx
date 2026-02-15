@@ -545,43 +545,132 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   }, [isMapReady, merchants]);
 
 
-  // Gas station markers — always visible, green pins
+  // Gas station brand logo mapping
+  const getGasStationLogo = useCallback((name: string): string | null => {
+    const n = name.toLowerCase();
+    const logos: Record<string, string> = {
+      'shell': 'https://logo.clearbit.com/shell.com',
+      'bp': 'https://logo.clearbit.com/bp.com',
+      'exxon': 'https://logo.clearbit.com/exxon.com',
+      'mobil': 'https://logo.clearbit.com/exxonmobil.com',
+      'exxonmobil': 'https://logo.clearbit.com/exxonmobil.com',
+      'chevron': 'https://logo.clearbit.com/chevron.com',
+      'marathon': 'https://logo.clearbit.com/marathonpetroleum.com',
+      'speedway': 'https://logo.clearbit.com/speedway.com',
+      'sunoco': 'https://logo.clearbit.com/sunoco.com',
+      'valero': 'https://logo.clearbit.com/valero.com',
+      'citgo': 'https://logo.clearbit.com/citgo.com',
+      'circle k': 'https://logo.clearbit.com/circlek.com',
+      'casey': 'https://logo.clearbit.com/caseys.com',
+      'caseys': 'https://logo.clearbit.com/caseys.com',
+      "casey's": 'https://logo.clearbit.com/caseys.com',
+      'kwik trip': 'https://logo.clearbit.com/kwiktrip.com',
+      'wawa': 'https://logo.clearbit.com/wawa.com',
+      'sheetz': 'https://logo.clearbit.com/sheetz.com',
+      'pilot': 'https://logo.clearbit.com/pilotflyingj.com',
+      'flying j': 'https://logo.clearbit.com/pilotflyingj.com',
+      'loves': 'https://logo.clearbit.com/loves.com',
+      "love's": 'https://logo.clearbit.com/loves.com',
+      'costco': 'https://logo.clearbit.com/costco.com',
+      'sams club': 'https://logo.clearbit.com/samsclub.com',
+      "sam's club": 'https://logo.clearbit.com/samsclub.com',
+      'kroger': 'https://logo.clearbit.com/kroger.com',
+      'meijer': 'https://logo.clearbit.com/meijer.com',
+      'murphy': 'https://logo.clearbit.com/murphyusa.com',
+      'racetrac': 'https://logo.clearbit.com/racetrac.com',
+      'quiktrip': 'https://logo.clearbit.com/quiktrip.com',
+      'qt': 'https://logo.clearbit.com/quiktrip.com',
+      'phillips 66': 'https://logo.clearbit.com/phillips66.com',
+      'conoco': 'https://logo.clearbit.com/conocophillips.com',
+      '76': 'https://logo.clearbit.com/phillips66.com',
+      'sinclair': 'https://logo.clearbit.com/sinclairoil.com',
+      'gulf': 'https://logo.clearbit.com/gulfoil.com',
+      'get go': 'https://logo.clearbit.com/getgostores.com',
+      'thorntons': 'https://logo.clearbit.com/thorntonsinc.com',
+      'holiday': 'https://logo.clearbit.com/holidaystationstores.com',
+      'amoco': 'https://logo.clearbit.com/bp.com',
+      'arco': 'https://logo.clearbit.com/arco.com',
+      'texaco': 'https://logo.clearbit.com/texaco.com',
+    };
+    for (const [key, url] of Object.entries(logos)) {
+      if (n.includes(key)) return url;
+    }
+    return null;
+  }, []);
+
+  // Gas station markers — always visible, green pins with real logos
   useEffect(() => {
     if (!isMapReady || !map.current) return;
     const mapboxgl = (window as any).mapboxgl;
     if (!mapboxgl) return;
 
-    const addGasStationMarkers = () => {
+    let cancelled = false;
+
+    const fetchAndRenderGasStations = async () => {
+      const center = map.current.getCenter();
+      const zoom = map.current.getZoom();
+
+      // First try queryRenderedFeatures across ALL layers
+      let gasFeatures: any[] = [];
+      const seen = new Set<string>();
+
+      try {
+        const allFeatures = map.current.queryRenderedFeatures();
+        gasFeatures = allFeatures.filter((f: any) => {
+          if (!f.geometry || f.geometry.type !== 'Point') return false;
+          const maki = (f.properties?.maki || '').toLowerCase();
+          const cat = (f.properties?.category_en || f.properties?.class || f.properties?.type || '').toLowerCase();
+          const name = f.properties?.name || f.properties?.name_en || '';
+          const isFuel = maki === 'fuel' || cat.includes('fuel') || cat.includes('gas_station') || cat.includes('petrol');
+          if (!isFuel || !name) return false;
+          const key = `${f.geometry.coordinates[0].toFixed(4)}-${f.geometry.coordinates[1].toFixed(4)}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      } catch (e) {
+        console.warn('queryRenderedFeatures failed:', e);
+      }
+
+      // If no rendered features found, use Mapbox Geocoding API as fallback
+      if (gasFeatures.length === 0 && zoom >= 10) {
+        try {
+          const resp = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/gas%20station.json?proximity=${center.lng},${center.lat}&limit=10&types=poi&access_token=${MAPBOX_CONFIG.accessToken}`
+          );
+          const data = await resp.json();
+          if (data.features) {
+            gasFeatures = data.features.map((f: any) => ({
+              geometry: { coordinates: f.center },
+              properties: { name: f.text || f.place_name || 'Gas Station' },
+            })).filter((f: any) => {
+              const key = `${f.geometry.coordinates[0].toFixed(4)}-${f.geometry.coordinates[1].toFixed(4)}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+        } catch (e) {
+          console.warn('Geocoding fallback failed:', e);
+        }
+      }
+
+      if (cancelled) return;
+
       // Remove old markers
       gasStationMarkersRef.current.forEach(m => m.remove());
       gasStationMarkersRef.current = [];
 
-      // Query rendered features for fuel/gas station POIs from Mapbox Streets tiles
-      const features = map.current.queryRenderedFeatures(undefined, {
-        layers: ['poi-label'],
-      });
-
-      const seen = new Set<string>();
-      const gasFeatures = features.filter((f: any) => {
-        const maki = f.properties?.maki || f.properties?.type || '';
-        const cat = (f.properties?.category_en || f.properties?.class || '').toLowerCase();
-        const name = f.properties?.name || '';
-        const isFuel = maki === 'fuel' || cat.includes('fuel') || cat.includes('gas') || cat.includes('petrol');
-        if (!isFuel || !name) return false;
-        const key = `${name}-${f.geometry.coordinates[0].toFixed(4)}-${f.geometry.coordinates[1].toFixed(4)}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
       gasFeatures.forEach((feature: any) => {
         const [lng, lat] = feature.geometry.coordinates;
-        const name = feature.properties?.name || 'Gas Station';
+        const name = feature.properties?.name || feature.properties?.name_en || 'Gas Station';
+        const logoUrl = getGasStationLogo(name);
 
-        const headSize = 20;
-        const tailHeight = 7;
+        const headSize = 24;
+        const tailHeight = 8;
         const totalHeight = headSize + tailHeight;
         const greenColor = '#22c55e';
+        const greenBorder = '#16a34a';
 
         const el = document.createElement('div');
         el.className = 'gas-station-marker';
@@ -601,8 +690,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           width: ${headSize}px;
           height: ${headSize}px;
           border-radius: 50%;
-          background: ${greenColor};
-          border: 1.5px solid #16a34a;
+          background: #ffffff;
+          border: 2px solid ${greenColor};
+          overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -610,17 +700,39 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           z-index: 1;
         `;
 
-        const icon = document.createElement('span');
-        icon.textContent = '⛽';
-        icon.style.cssText = 'font-size: 10px; line-height: 1;';
-        head.appendChild(icon);
+        if (logoUrl) {
+          const img = document.createElement('img');
+          img.src = logoUrl;
+          img.alt = name;
+          img.style.cssText = `
+            width: ${headSize}px;
+            height: ${headSize}px;
+            object-fit: contain;
+            border-radius: 50%;
+          `;
+          img.onerror = () => {
+            head.innerHTML = '';
+            const fallback = document.createElement('span');
+            fallback.textContent = '⛽';
+            fallback.style.cssText = 'font-size: 12px; line-height: 1;';
+            head.style.background = greenColor;
+            head.appendChild(fallback);
+          };
+          head.appendChild(img);
+        } else {
+          head.style.background = greenColor;
+          const icon = document.createElement('span');
+          icon.textContent = '⛽';
+          icon.style.cssText = 'font-size: 12px; line-height: 1;';
+          head.appendChild(icon);
+        }
 
         const tail = document.createElement('div');
         tail.style.cssText = `
           width: 0;
           height: 0;
-          border-left: 5px solid transparent;
-          border-right: 5px solid transparent;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
           border-top: ${tailHeight}px solid ${greenColor};
           margin-top: -1px;
         `;
@@ -632,7 +744,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
 
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-        const popup = new mapboxgl.Popup({ offset: [0, -totalHeight], closeButton: true, maxWidth: '200px' })
+        const popup = new mapboxgl.Popup({ offset: [0, -totalHeight], closeButton: true, maxWidth: '220px' })
           .setHTML(`
             <div style="padding:6px;font-family:system-ui,sans-serif;">
               <p style="margin:0 0 2px;font-size:12px;font-weight:700;">⛽ ${name}</p>
@@ -652,18 +764,26 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       });
     };
 
-    // Add markers after initial render and on move end
-    addGasStationMarkers();
-    map.current.on('moveend', addGasStationMarkers);
+    // Debounce to avoid excessive API calls
+    let timer: any;
+    const debouncedFetch = () => {
+      clearTimeout(timer);
+      timer = setTimeout(fetchAndRenderGasStations, 300);
+    };
+
+    fetchAndRenderGasStations();
+    map.current.on('moveend', debouncedFetch);
 
     return () => {
+      cancelled = true;
+      clearTimeout(timer);
       if (map.current) {
-        map.current.off('moveend', addGasStationMarkers);
+        map.current.off('moveend', debouncedFetch);
       }
       gasStationMarkersRef.current.forEach(m => m.remove());
       gasStationMarkersRef.current = [];
     };
-  }, [isMapReady]);
+  }, [isMapReady, getGasStationLogo]);
 
 
   const legendItems = useMemo(() => {
