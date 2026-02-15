@@ -433,14 +433,14 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       
       const hasPng = isPngLogo(merchant.logo_url);
       const bgColor = hasPng ? '#ffffff' : '#f9fafb';
-      const size = 26;
+      const size = 22;
 
       el.style.cssText = `
         width: ${size}px;
         height: ${size}px;
         border-radius: 50%;
-        background: ${bgColor};
-        border: 2px solid ${borderColor};
+        background: ${merchant.logo_url ? 'transparent' : bgColor};
+        border: 1px solid ${borderColor};
         overflow: hidden;
         display: flex;
         align-items: center;
@@ -456,8 +456,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         img.src = merchant.logo_url;
         img.alt = merchant.name;
         img.style.cssText = `
-          width: ${size - 4}px;
-          height: ${size - 4}px;
+          width: ${size}px;
+          height: ${size}px;
           object-fit: contain;
           border-radius: 50%;
         `;
