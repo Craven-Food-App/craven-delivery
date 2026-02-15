@@ -228,7 +228,6 @@ const FeedPreferencesPage: React.FC<FeedPreferencesPageProps> = ({ onBack }) => 
       flexDirection: "column",
       zIndex: 2000,
       overflow: "hidden",
-      overflow: "hidden",
     }}>
       {/* Header */}
       <div style={{
