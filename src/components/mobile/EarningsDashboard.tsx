@@ -1049,7 +1049,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               <p className="text-xs text-gray-400">
                 {timeRange === 'today' ? 'Available to cash out' : 'Net earnings'}
               </p>
-              <p className="text-sm font-medium text-orange-500 mt-1">
+              <p className="text-[10px] font-medium text-orange-500 mt-0.5">
                 Sent to Feeder Card: {formatCurrency(sentToFeederCard)}
               </p>
             </div>
