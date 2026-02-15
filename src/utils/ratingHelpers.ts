@@ -2,6 +2,12 @@
  * Crave'N Feeder Tier System
  * 5-tier hierarchy: Feeder → Gold → Platinum → Diamond → Ultimate
  * Rolling 60-day evaluation window
+ *
+ * CANONICAL V2 TIER VALUES (tier_status_v2):
+ *   FEEDER_PROBATIONARY | GOLD | PLATINUM | DIAMOND | ULTIMATE
+ *
+ * DISPLAY LABELS:
+ *   Feeder | Gold Feeder | Platinum Feeder | Diamond Feeder | Ultimate Feeder
  */
 
 export const TIER_COLORS = {
@@ -191,6 +197,52 @@ export function evaluateFeederTier(metrics: {
     }
   }
   return 'Feeder';
+}
+
+// ─── CANONICAL V2 TIER SYSTEM ───────────────────────────────────────────────
+
+export type TierStatusV2 = 'FEEDER_PROBATIONARY' | 'GOLD' | 'PLATINUM' | 'DIAMOND' | 'ULTIMATE';
+
+/** Map internal tier name → canonical V2 enum value */
+export const TIER_TO_V2: Record<FeederTierName, TierStatusV2> = {
+  Feeder:   'FEEDER_PROBATIONARY',
+  Gold:     'GOLD',
+  Platinum: 'PLATINUM',
+  Diamond:  'DIAMOND',
+  Ultimate: 'ULTIMATE',
+};
+
+/** Map canonical V2 enum → internal tier name */
+export const V2_TO_TIER: Record<TierStatusV2, FeederTierName> = {
+  FEEDER_PROBATIONARY: 'Feeder',
+  GOLD:     'Gold',
+  PLATINUM: 'Platinum',
+  DIAMOND:  'Diamond',
+  ULTIMATE: 'Ultimate',
+};
+
+/** Map canonical V2 enum → display label */
+export const V2_DISPLAY_LABELS: Record<TierStatusV2, string> = {
+  FEEDER_PROBATIONARY: 'Feeder',
+  GOLD:     'Gold Feeder',
+  PLATINUM: 'Platinum Feeder',
+  DIAMOND:  'Diamond Feeder',
+  ULTIMATE: 'Ultimate Feeder',
+};
+
+/** Get display label from internal tier name */
+export function getTierDisplayLabel(tier: FeederTierName): string {
+  return V2_DISPLAY_LABELS[TIER_TO_V2[tier]];
+}
+
+/** Convert V2 status to internal tier name */
+export function v2ToTierName(v2: TierStatusV2): FeederTierName {
+  return V2_TO_TIER[v2];
+}
+
+/** Convert internal tier name to V2 status */
+export function tierNameToV2(tier: FeederTierName): TierStatusV2 {
+  return TIER_TO_V2[tier];
 }
 
 /**

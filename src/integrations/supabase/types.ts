@@ -9390,6 +9390,7 @@ export type Database = {
       driver_profiles: {
         Row: {
           acceptance_rate: number | null
+          admin_approved_ultimate: boolean | null
           completed_orders: number | null
           completion_rate: number | null
           created_at: string | null
@@ -9422,7 +9423,9 @@ export type Database = {
           tier_last_updated: string | null
           tier_review_required: boolean | null
           tier_status: Database["public"]["Enums"]["feeder_tier"] | null
+          tier_status_v2: string | null
           total_deliveries: number | null
+          ultimate_fail_streak_days: number | null
           updated_at: string | null
           user_id: string | null
           vehicle_make: string | null
@@ -9432,6 +9435,7 @@ export type Database = {
         }
         Insert: {
           acceptance_rate?: number | null
+          admin_approved_ultimate?: boolean | null
           completed_orders?: number | null
           completion_rate?: number | null
           created_at?: string | null
@@ -9464,7 +9468,9 @@ export type Database = {
           tier_last_updated?: string | null
           tier_review_required?: boolean | null
           tier_status?: Database["public"]["Enums"]["feeder_tier"] | null
+          tier_status_v2?: string | null
           total_deliveries?: number | null
+          ultimate_fail_streak_days?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_make?: string | null
@@ -9474,6 +9480,7 @@ export type Database = {
         }
         Update: {
           acceptance_rate?: number | null
+          admin_approved_ultimate?: boolean | null
           completed_orders?: number | null
           completion_rate?: number | null
           created_at?: string | null
@@ -9506,7 +9513,9 @@ export type Database = {
           tier_last_updated?: string | null
           tier_review_required?: boolean | null
           tier_status?: Database["public"]["Enums"]["feeder_tier"] | null
+          tier_status_v2?: string | null
           total_deliveries?: number | null
+          ultimate_fail_streak_days?: number | null
           updated_at?: string | null
           user_id?: string | null
           vehicle_make?: string | null
