@@ -15,8 +15,14 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-
-type DriverTier = 'feeder' | 'gold' | 'platinum' | 'diamond' | 'ultimate';
+import { 
+  FEEDER_TIERS, 
+  TIER_BADGE_STYLES, 
+  evaluateFeederTier, 
+  getNextTier as getNextFeederTier,
+  type FeederTierName,
+  type TierRequirements as FeederTierRequirements
+} from '@/utils/ratingHelpers';
 
 interface RatingStats {
   overallRating: number;
@@ -25,66 +31,37 @@ interface RatingStats {
   customerRating: number;
   totalDeliveries: number;
   acceptanceRate: number;
-  tier: DriverTier;
+  tier: FeederTierName;
 }
 
-interface TierRequirements {
-  minRating: number;
-  minCompletionRate: number;
-  minAcceptanceRate: number;
-  minOnTimeRate: number;
-  minDeliveries: number;
-}
-
-const tierConfig: Record<DriverTier, { 
+// Build tierConfig from the centralized FEEDER_TIERS
+const tierConfig: Record<string, { 
   name: string; 
   color: string; 
   bgColor: string;
   icon: string;
-  requirements: TierRequirements;
-}> = {
-  feeder: {
-    name: 'Feeder',
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
-    icon: '🍽️',
-    requirements: { minRating: 0, minCompletionRate: 0, minAcceptanceRate: 0, minOnTimeRate: 0, minDeliveries: 0 }
-  },
-  gold: {
-    name: 'Gold',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
-    icon: '🥇',
-    requirements: { minRating: 4.70, minCompletionRate: 90, minAcceptanceRate: 60, minOnTimeRate: 90, minDeliveries: 50 }
-  },
-  platinum: {
-    name: 'Platinum',
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-100',
-    icon: '⚪',
-    requirements: { minRating: 4.80, minCompletionRate: 95, minAcceptanceRate: 70, minOnTimeRate: 93, minDeliveries: 200 }
-  },
-  diamond: {
-    name: 'Diamond',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
-    icon: '💎',
-    requirements: { minRating: 4.90, minCompletionRate: 97, minAcceptanceRate: 75, minOnTimeRate: 95, minDeliveries: 500 }
-  },
-  ultimate: {
-    name: 'Ultimate',
-    color: 'text-orange-600',
-    bgColor: 'bg-black',
-    icon: '👑',
-    requirements: { minRating: 4.95, minCompletionRate: 98, minAcceptanceRate: 80, minOnTimeRate: 97, minDeliveries: 1000 }
-  }
-};
+  requirements: FeederTierRequirements;
+}> = {};
 
-const getNextTier = (currentTier: DriverTier): DriverTier | null => {
-  const tiers: DriverTier[] = ['feeder', 'gold', 'platinum', 'diamond', 'ultimate'];
-  const currentIndex = tiers.indexOf(currentTier);
-  return currentIndex < tiers.length - 1 ? tiers[currentIndex + 1] : null;
-};
+for (const t of FEEDER_TIERS) {
+  const key = t.name.toLowerCase();
+  const styles = TIER_BADGE_STYLES[t.name.toUpperCase() as keyof typeof TIER_BADGE_STYLES];
+  tierConfig[key] = {
+    name: t.name,
+    color: t.name === 'Ultimate' ? 'text-orange-600' 
+         : t.name === 'Diamond' ? 'text-blue-700'
+         : t.name === 'Platinum' ? 'text-gray-500'
+         : t.name === 'Gold' ? 'text-yellow-600'
+         : 'text-gray-600',
+    bgColor: t.name === 'Ultimate' ? 'bg-black'
+           : t.name === 'Diamond' ? 'bg-blue-100'
+           : t.name === 'Platinum' ? 'bg-gray-100'
+           : t.name === 'Gold' ? 'bg-yellow-100'
+           : 'bg-gray-100',
+    icon: t.icon,
+    requirements: t,
+  };
+}
 
 export const RatingsSection: React.FC = () => {
   const [stats, setStats] = useState<RatingStats | null>(null);
@@ -109,7 +86,7 @@ export const RatingsSection: React.FC = () => {
       // Get completed orders for calculating rates
       const { data: completedOrders } = await supabase
         .from('orders')
-        .select('id, status, created_at')
+        .select('id, order_status, created_at')
         .eq('assigned_craver_id', user.id);
 
       // Get all order assignments for acceptance rate
@@ -124,7 +101,7 @@ export const RatingsSection: React.FC = () => {
         
         // Calculate completion rate
         const assignedOrders = completedOrders?.length || 0;
-        const deliveredOrders = completedOrders?.filter(o => o.status === 'delivered').length || 0;
+        const deliveredOrders = completedOrders?.filter(o => o.order_status === 'delivered').length || 0;
         const completionRate = assignedOrders > 0 ? (deliveredOrders / assignedOrders) * 100 : 100;
 
         // Calculate acceptance rate
@@ -135,17 +112,15 @@ export const RatingsSection: React.FC = () => {
         // Estimate on-time rate
         const onTimeRate = Math.max(85, Math.min(97, rating * 20));
 
-        // Determine tier based on the spec requirements
-        let tier: DriverTier = 'feeder';
-        if (rating >= 4.95 && completionRate >= 98 && totalDeliveries >= 1000 && onTimeRate >= 97) {
-          tier = 'ultimate';
-        } else if (rating >= 4.90 && completionRate >= 97 && totalDeliveries >= 500 && onTimeRate >= 95) {
-          tier = 'diamond';
-        } else if (rating >= 4.80 && completionRate >= 95 && totalDeliveries >= 200 && onTimeRate >= 93) {
-          tier = 'platinum';
-        } else if (rating >= 4.70 && completionRate >= 90 && totalDeliveries >= 50 && onTimeRate >= 90) {
-          tier = 'gold';
-        }
+        // Determine tier using centralized evaluator
+        const tier = evaluateFeederTier({
+          totalDeliveries: totalDeliveries,
+          averageRating: rating,
+          completionRate: completionRate,
+          onTimeRate: onTimeRate,
+          cancellationRate: 100 - completionRate,
+          hasFraudFlag: false,
+        });
 
         setStats({
           overallRating: rating,
@@ -165,7 +140,7 @@ export const RatingsSection: React.FC = () => {
           customerRating: 0,
           totalDeliveries: 0,
           acceptanceRate: 0,
-          tier: 'feeder'
+          tier: 'Feeder'
         });
       }
     } catch (error) {
@@ -200,9 +175,9 @@ export const RatingsSection: React.FC = () => {
     );
   }
 
-  const currentTierConfig = tierConfig[stats.tier];
-  const nextTier = getNextTier(stats.tier);
-  const nextTierConfig = nextTier ? tierConfig[nextTier] : null;
+  const currentTierConfig = tierConfig[stats.tier.toLowerCase()];
+  const nextFeederTier = getNextFeederTier(stats.tier);
+  const nextTierConfig = nextFeederTier ? tierConfig[nextFeederTier.name.toLowerCase()] : null;
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -382,7 +357,7 @@ export const RatingsSection: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              {stats.tier === 'feeder' && (
+              {stats.tier === 'Feeder' && (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -395,7 +370,7 @@ export const RatingsSection: React.FC = () => {
                 </>
               )}
               
-              {stats.tier === 'gold' && (
+              {stats.tier === 'Gold' && (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -408,7 +383,7 @@ export const RatingsSection: React.FC = () => {
                 </>
               )}
               
-              {stats.tier === 'platinum' && (
+              {stats.tier === 'Platinum' && (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -425,7 +400,7 @@ export const RatingsSection: React.FC = () => {
                 </>
               )}
 
-              {stats.tier === 'diamond' && (
+              {stats.tier === 'Diamond' && (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -446,7 +421,7 @@ export const RatingsSection: React.FC = () => {
                 </>
               )}
               
-              {stats.tier === 'ultimate' && (
+              {stats.tier === 'Ultimate' && (
                 <>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />

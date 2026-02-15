@@ -95,14 +95,24 @@ type FeederAccountPageProps = {
   onOpenNotifications?: () => void;
 };
 
-// ─── STATUS TIERS (source of truth — edit thresholds here) ─────────────────
-const TIERS: StatusInfo[] = [
-  { tier: "Ultimate", label: "Ultimate Feeder", minPts: 95,  maxPts: null,  barColor: "#000000" },
-  { tier: "Diamond",  label: "Diamond Feeder",  minPts: 85,  maxPts: 94,    barColor: "#1E3A5F" },
-  { tier: "Platinum", label: "Platinum Feeder", minPts: 76,  maxPts: 84,    barColor: "#C0C0C0" },
-  { tier: "Gold",     label: "Gold Feeder",     minPts: 65,  maxPts: 75,    barColor: "#D4AF37" },
-  { tier: "Feeder",   label: "Feeder",          minPts: 0,   maxPts: 64,    barColor: "#999999" },
-];
+// ─── STATUS TIERS (derived from centralized ratingHelpers) ─────────────────
+import { FEEDER_TIERS, TIER_COLORS } from '@/utils/ratingHelpers';
+
+const TIERS: StatusInfo[] = FEEDER_TIERS.map(t => ({
+  tier: t.name,
+  label: t.name === 'Feeder' ? 'Feeder' : `${t.name} Feeder`,
+  minPts: t.name === 'Ultimate' ? 95
+        : t.name === 'Diamond' ? 85
+        : t.name === 'Platinum' ? 76
+        : t.name === 'Gold' ? 65
+        : 0,
+  maxPts: t.name === 'Ultimate' ? null
+        : t.name === 'Diamond' ? 94
+        : t.name === 'Platinum' ? 84
+        : t.name === 'Gold' ? 75
+        : 64,
+  barColor: t.color,
+}));
 
 function getStatus(pts: number): StatusInfo {
   // Walk highest → lowest; first match wins
