@@ -163,8 +163,10 @@ function TopBar({ onMenuPress, onInfoPress }: { onMenuPress?: () => void; onInfo
     <div style={{
       height: 56, background: C.bg,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 16px", borderBottom: `1px solid ${C.border}`,
+      padding: "0 16px",
+      borderBottom: `1px solid ${C.border}`,
       flexShrink: 0,
+      position: 'sticky' as const, top: 0, zIndex: 10,
     }}>
       <button 
         type="button" 
@@ -362,6 +364,8 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
   return (
     <div style={{
       background: C.bg, minHeight: "100vh", color: C.text,
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>
 

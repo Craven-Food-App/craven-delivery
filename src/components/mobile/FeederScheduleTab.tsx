@@ -388,7 +388,8 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
   // ── render ──
   return (
     <div style={{
-      background: C.bg, minHeight: "100vh", color: C.text, paddingBottom: 72,
+      background: C.bg, minHeight: "100vh", color: C.text,
+      paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>
 
