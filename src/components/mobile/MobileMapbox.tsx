@@ -52,6 +52,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const [showRecenter, setShowRecenter] = useState(false);
   const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
   const merchantMarkersRef = useRef<any[]>([]);
+  const gasStationMarkersRef = useRef<any[]>([]);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
   const userHasPanned = useRef(false);
 
@@ -542,6 +543,127 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       merchantMarkersRef.current = [];
     };
   }, [isMapReady, merchants]);
+
+
+  // Gas station markers — always visible, green pins
+  useEffect(() => {
+    if (!isMapReady || !map.current) return;
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) return;
+
+    const addGasStationMarkers = () => {
+      // Remove old markers
+      gasStationMarkersRef.current.forEach(m => m.remove());
+      gasStationMarkersRef.current = [];
+
+      // Query rendered features for fuel/gas station POIs from Mapbox Streets tiles
+      const features = map.current.queryRenderedFeatures(undefined, {
+        layers: ['poi-label'],
+      });
+
+      const seen = new Set<string>();
+      const gasFeatures = features.filter((f: any) => {
+        const maki = f.properties?.maki || f.properties?.type || '';
+        const cat = (f.properties?.category_en || f.properties?.class || '').toLowerCase();
+        const name = f.properties?.name || '';
+        const isFuel = maki === 'fuel' || cat.includes('fuel') || cat.includes('gas') || cat.includes('petrol');
+        if (!isFuel || !name) return false;
+        const key = `${name}-${f.geometry.coordinates[0].toFixed(4)}-${f.geometry.coordinates[1].toFixed(4)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      gasFeatures.forEach((feature: any) => {
+        const [lng, lat] = feature.geometry.coordinates;
+        const name = feature.properties?.name || 'Gas Station';
+
+        const headSize = 20;
+        const tailHeight = 7;
+        const totalHeight = headSize + tailHeight;
+        const greenColor = '#22c55e';
+
+        const el = document.createElement('div');
+        el.className = 'gas-station-marker';
+        el.style.cssText = `
+          width: ${headSize}px;
+          height: ${totalHeight}px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+          transition: transform 0.15s ease;
+          filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+        `;
+
+        const head = document.createElement('div');
+        head.style.cssText = `
+          width: ${headSize}px;
+          height: ${headSize}px;
+          border-radius: 50%;
+          background: ${greenColor};
+          border: 1.5px solid #16a34a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 1;
+        `;
+
+        const icon = document.createElement('span');
+        icon.textContent = '⛽';
+        icon.style.cssText = 'font-size: 10px; line-height: 1;';
+        head.appendChild(icon);
+
+        const tail = document.createElement('div');
+        tail.style.cssText = `
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: ${tailHeight}px solid ${greenColor};
+          margin-top: -1px;
+        `;
+
+        el.appendChild(head);
+        el.appendChild(tail);
+
+        el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.2)'; });
+        el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+
+        const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        const popup = new mapboxgl.Popup({ offset: [0, -totalHeight], closeButton: true, maxWidth: '200px' })
+          .setHTML(`
+            <div style="padding:6px;font-family:system-ui,sans-serif;">
+              <p style="margin:0 0 2px;font-size:12px;font-weight:700;">⛽ ${name}</p>
+              <a href="${navUrl}" target="_blank" rel="noopener noreferrer"
+                 style="display:block;margin-top:4px;padding:5px 0;background:#22c55e;color:#fff;text-align:center;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">
+                Navigate →
+              </a>
+            </div>
+          `);
+
+        const m = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([lng, lat])
+          .setPopup(popup)
+          .addTo(map.current);
+
+        gasStationMarkersRef.current.push(m);
+      });
+    };
+
+    // Add markers after initial render and on move end
+    addGasStationMarkers();
+    map.current.on('moveend', addGasStationMarkers);
+
+    return () => {
+      if (map.current) {
+        map.current.off('moveend', addGasStationMarkers);
+      }
+      gasStationMarkersRef.current.forEach(m => m.remove());
+      gasStationMarkersRef.current = [];
+    };
+  }, [isMapReady]);
 
 
   const legendItems = useMemo(() => {
