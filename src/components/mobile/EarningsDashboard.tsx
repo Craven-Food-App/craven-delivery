@@ -1060,7 +1060,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               }}
             >
               <p className="text-sm text-gray-500 mb-1">Gas Money</p>
-              <p className="text-3xl font-bold text-gray-900 mb-1">{formatCurrency(gasMoney)}</p>
+              <p className={`text-3xl font-bold mb-1 ${gasMoney > 0 ? 'text-green-600' : 'text-red-500'}`}>{formatCurrency(gasMoney)}</p>
               <p className="text-xs text-gray-400">
                 {timeRange === 'today' ? 'Available to transfer' : 'Mileage earnings'}
               </p>
