@@ -1,225 +1,172 @@
 
 
-# Feeder Earnings Tab -- Ledger-Based Backend Overhaul
+# Fix Feeder Card Balance Persistence
 
-## Summary
+## Problem
 
-This plan introduces a proper ledger-based wallet system to replace the current ad-hoc earnings calculations, ensuring all UI values reconcile correctly without any visual changes.
+There are two disconnected wallet systems:
+- **Old system** (`driver_wallet` + `wallet_ledger`): Written to by `finalize-delivery` after each delivery via `credit_wallet_from_earnings`
+- **New ledger** (`feeder_wallet_ledger_entries`): Read by the Earnings Dashboard but never written to
 
----
+The Feeder Card shows $0 on every reload because the new ledger table is always empty.
 
-## Phase 1: Database Schema (Migration)
+## Solution: Dual-Write on Delivery Completion
 
-### New Tables
-
-**`feeder_wallets`**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| feeder_id | uuid NOT NULL | references auth.users conceptually (no FK to auth) |
-| currency | text DEFAULT 'USD' | |
-| created_at | timestamptz DEFAULT now() | |
-
-**`feeder_wallet_ledger_entries`**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| wallet_id | uuid FK feeder_wallets | |
-| feeder_id | uuid NOT NULL | denormalized for fast queries |
-| occurred_at | timestamptz NOT NULL | when the earning/event happened (used for timeframe filtering) |
-| type | text NOT NULL | enum-like: `earnings_base_pay`, `earnings_distance_pay`, `earnings_tip`, `earnings_bonus`, `earnings_adjustment_credit`, `earnings_adjustment_debit`, `payout_debit`, `payout_fee_debit`, `gas_credit`, `gas_transfer_debit` |
-| direction | text NOT NULL | `credit` or `debit` |
-| amount_cents | integer NOT NULL | always positive |
-| status | text NOT NULL DEFAULT 'pending' | `pending`, `available`, `processing`, `paid`, `failed`, `reversed` |
-| source_type | text NOT NULL | `order`, `payout`, `admin`, `system` |
-| source_id | text | order ID, payout ID, etc. |
-| memo | text | nullable |
-| idempotency_key | text UNIQUE | prevents duplicate entries |
-| created_at | timestamptz DEFAULT now() | |
-
-RLS policies on both tables: feeder can only read their own rows (`feeder_id = auth.uid()`). Service role for writes.
-
-### Migration of Existing Data
-
-A one-time migration query will seed `feeder_wallets` and `feeder_wallet_ledger_entries` from existing `driver_earnings` and `driver_payouts` records, mapping:
-- `driver_earnings.amount_cents` -> `earnings_base_pay` (status = 'available')
-- `driver_earnings.tip_cents` -> `earnings_tip` (status = 'available')
-- `driver_payouts` with status 'paid'/'completed'/'sent' -> `payout_debit` (status = 'paid')
-- `driver_gas_money.balance` -> `gas_credit` entries
+The proper fix is to make `finalize-delivery` also write to the new `feeder_wallet_ledger_entries` table after each delivery. This means the Feeder Card balance auto-updates after every completed delivery -- no session end required.
 
 ---
 
-## Phase 2: Edge Function -- `get-feeder-earnings`
+## How the Feeder Card Balance Will Work
 
-New edge function that computes the full earnings payload for a given timeframe.
+1. **Delivery completed** --> `finalize-delivery` writes individual ledger entries (`earnings_base_pay`, `earnings_tip`, etc.) with status `available` into `feeder_wallet_ledger_entries`
+2. **Feeder Card balance** = SUM of all `available` earnings entries minus SUM of all `payout_debit` (paid) entries. This is cumulative, all-time, and persistent.
+3. **"Your Earnings" card** = timeframe-filtered total from the same ledger (today/week/etc.)
+4. **Cash out to debit/bank** creates a `payout_debit` entry, reducing the available balance
 
-**Endpoint**: `POST /get-feeder-earnings`
-**Input**: `{ timeframe: "today" | "this_week" | "last_week" | "overall" }`
-**Auth**: Bearer token required
+```text
+Delivery #1 completes --> +$12.50 base_pay (available)
+                      --> +$3.00  tip (available)
+Delivery #2 completes --> +$10.00 base_pay (available)
+                      --> +$5.00  tip (available)
 
-### Logic
+Feeder Card Balance = $30.50
 
-1. **Timeframe bounds**: Single function returns `[start, end]` or `[null, null]` for overall
-2. **Earnings breakdown** (from ledger entries within timeframe):
-   - `base_pay` = SUM where type = `earnings_base_pay`
-   - `distance_pay` = SUM where type = `earnings_distance_pay`
-   - `tips` = SUM where type = `earnings_tip`
-   - `bonuses` = SUM where type = `earnings_bonus`
-   - `adjustments` = SUM(`earnings_adjustment_credit`) - SUM(`earnings_adjustment_debit`)
-   - `total_earned` = sum of all above
-3. **Payout status** (from ledger entries within timeframe):
-   - `available_for_payout` = SUM of earnings entries where status = 'available'
-   - `pending` = SUM of earnings entries where status = 'pending'
-   - `paid` = SUM of `payout_debit` entries where status = 'paid'
-4. **Available balance** (top card) = `available_for_payout` (same value, guaranteed match)
-5. **Sent to feeder card** = `paid` (same as payout status paid)
-6. **Gas money** = SUM(`gas_credit` status='available') - SUM(`gas_transfer_debit` status in ['processing','paid'])
-7. **Earnings metrics**:
-   - `total_trips` = COUNT of distinct `source_id` where source_type = 'order' and type starts with `earnings_`
-   - `active_time_hours` = from `driver_profiles.total_active_hours` or session data if available; null otherwise
-   - `total_miles` = from order distance data if available; null otherwise
-   - `earnings_per_hour` = total_earned / active_time if active_time > 0, else null
-   - `earnings_per_mile` = total_earned / total_miles if total_miles > 0, else null
-8. **Cashout eligibility** (always computed from overall/all-time data, not timeframe):
-   - `completed_deliveries` from `driver_profiles.completed_orders` or count from ledger
-   - `rating` from `driver_profiles.rolling_rating` (null if < 20 rated deliveries)
-   - `on_time_rate` from `driver_profiles.on_time_rate` (null if < 10 tracked)
-   - `accuracy` from `driver_profiles.completion_rate` (null if < 10 tracked)
-   - `instant_cashout_unlocked` = all thresholds met (null values treated as "in progress", not failing)
+Feeder cashes out $20 --> payout_debit $20 (paid)
 
-**Response shape**:
-```json
-{
-  "available_balance_cents": 12500,
-  "total_earned_cents": 45000,
-  "breakdown": {
-    "base_pay_cents": 20000,
-    "distance_pay_cents": 10000,
-    "tips_cents": 10000,
-    "bonuses_cents": 5000,
-    "adjustments_cents": 0
-  },
-  "payout_status": {
-    "available_cents": 12500,
-    "pending_cents": 7500,
-    "paid_cents": 25000
-  },
-  "sent_to_feeder_card_cents": 25000,
-  "gas_money_cents": 5000,
-  "metrics": {
-    "total_trips": 75,
-    "active_time_hours": 38.5,
-    "total_miles": null,
-    "earnings_per_hour_cents": null,
-    "earnings_per_mile_cents": null
-  },
-  "cashout_eligibility": {
-    "unlocked": false,
-    "deliveries": 75,
-    "deliveries_required": 50,
-    "rating": 4.7,
-    "rating_required": 4.5,
-    "on_time_rate": 96.0,
-    "on_time_required": 95.0,
-    "accuracy": 100.0,
-    "accuracy_required": 100.0
-  }
+Feeder Card Balance = $10.50  (persistent across reloads)
+```
+
+## Cash Out Options
+
+- **Instant (Stripe)**: Requires eligibility (50+ deliveries, 4.5+ rating, etc.). Immediate transfer via Stripe.
+- **Bank Transfer**: 3-day ACH transfer, available to all feeders. New option.
+- **Auto Weekly**: Automatic weekly payout to bank account. New option (settings toggle).
+
+---
+
+## Changes
+
+### 1. Update `finalize-delivery` Edge Function
+
+Add ledger entry writes after the existing `driver_earnings` insert:
+- Ensure/create `feeder_wallets` row for the driver (idempotent upsert)
+- Insert `earnings_base_pay` entry with `status = 'available'`
+- Insert `earnings_tip` entry (if tip > 0) with `status = 'available'`
+- Use `idempotency_key` = `order_{orderId}_base_pay` / `order_{orderId}_tip` to prevent duplicates on retries
+
+### 2. Update `get-feeder-earnings` Edge Function
+
+Change the Feeder Card balance computation:
+- **Feeder Card Balance** = SUM(all earnings entries where status = 'available') - SUM(payout_debit where status = 'paid') -- computed across ALL time regardless of timeframe filter
+- This is returned as a new field `card_balance_cents` separate from `available_balance_cents` (which is timeframe-filtered)
+
+### 3. Update `EarningsDashboard.tsx` (Data Only)
+
+- Read `card_balance_cents` from the edge function response for the Feeder Card display instead of querying ledger directly in `fetchCardData`
+- Remove the separate `fetchCardData` ledger query (redundant now)
+- Add bank transfer option alongside instant cashout (simple UI text change in the existing modal, no layout changes)
+
+### 4. Data Migration
+
+Run a one-time backfill to populate `feeder_wallet_ledger_entries` from existing `driver_earnings` records so historical deliveries show up correctly:
+- Each `driver_earnings` row becomes a `earnings_base_pay` entry (amount_cents) + `earnings_tip` entry (tip_cents)
+- Each `driver_payouts` row with status paid/completed becomes a `payout_debit` entry
+
+---
+
+## Technical Details
+
+### `finalize-delivery` new code (after existing `driver_earnings` insert):
+
+```typescript
+// Ensure feeder wallet exists
+const { data: wallet } = await supabase
+  .from('feeder_wallets')
+  .upsert({ feeder_id: resolvedDriverId, currency: 'USD' }, 
+    { onConflict: 'feeder_id' })
+  .select('id')
+  .single();
+
+// Write ledger entries (idempotent via idempotency_key)
+const ledgerEntries = [];
+if (driverBeforeTipCents > 0) {
+  ledgerEntries.push({
+    wallet_id: wallet.id,
+    feeder_id: resolvedDriverId,
+    occurred_at: new Date().toISOString(),
+    type: 'earnings_base_pay',
+    direction: 'credit',
+    amount_cents: driverBeforeTipCents,
+    status: 'available',
+    source_type: 'order',
+    source_id: orderId,
+    idempotency_key: `order_${orderId}_base_pay`,
+  });
+}
+if (tip > 0) {
+  ledgerEntries.push({
+    wallet_id: wallet.id,
+    feeder_id: resolvedDriverId,
+    occurred_at: new Date().toISOString(),
+    type: 'earnings_tip',
+    direction: 'credit',
+    amount_cents: tip,
+    status: 'available',
+    source_type: 'order',
+    source_id: orderId,
+    idempotency_key: `order_${orderId}_tip`,
+  });
+}
+// Upsert to handle retries gracefully
+for (const entry of ledgerEntries) {
+  await supabase
+    .from('feeder_wallet_ledger_entries')
+    .upsert(entry, { onConflict: 'idempotency_key' });
 }
 ```
 
----
-
-## Phase 3: Frontend Changes (Data Layer Only, No UI Changes)
-
-### `EarningsDashboard.tsx` -- `fetchEarningsData` refactor
-
-Replace the current multi-query approach with a single call to `get-feeder-earnings`:
+### `get-feeder-earnings` new field:
 
 ```typescript
-const { data } = await supabase.functions.invoke('get-feeder-earnings', {
-  body: { timeframe: timeRange === 'thisWeek' ? 'this_week' : timeRange === 'lastWeek' ? 'last_week' : timeRange }
-});
+// Card balance = ALL-TIME available earnings - ALL-TIME paid payouts
+// Separate query without timeframe filter
+const { data: allTimeEntries } = await supabase
+  .from('feeder_wallet_ledger_entries')
+  .select('type, amount_cents, status')
+  .eq('feeder_id', feederId)
+  .in('status', ['available', 'paid']);
+
+const totalAvailableEarnings = allTimeEntries
+  .filter(e => e.type.startsWith('earnings_') && e.status === 'available')
+  .reduce((s, e) => s + e.amount_cents, 0);
+const totalPaidOut = allTimeEntries
+  .filter(e => e.type === 'payout_debit' && e.status === 'paid')
+  .reduce((s, e) => s + e.amount_cents, 0);
+
+payload.card_balance_cents = Math.max(0, totalAvailableEarnings - totalPaidOut);
 ```
 
-Then map response fields directly to existing state variables:
-- `setTotalEarnings(data.total_earned_cents / 100)`
-- `setBreakdown(...)` from `data.breakdown`
-- `setPayoutStatus({ available: data.payout_status.available_cents / 100, ... })`
-- `setSentToFeederCard(data.sent_to_feeder_card_cents / 100)`
-- `setGasMoney(data.gas_money_cents / 100)`
-- Metrics: if `data.metrics.earnings_per_hour_cents` is null, set to null (UI shows "--")
-- Cashout eligibility: map from `data.cashout_eligibility`, using null for "in progress" metrics
+### Migration SQL:
 
-### Null handling for metrics
+```sql
+-- Backfill ledger from existing driver_earnings
+INSERT INTO feeder_wallet_ledger_entries (
+  wallet_id, feeder_id, occurred_at, type, direction, 
+  amount_cents, status, source_type, source_id, idempotency_key
+)
+SELECT 
+  fw.id, de.driver_id, de.earned_at, 'earnings_base_pay', 'credit',
+  de.amount_cents, 'available', 'order', de.order_id::text,
+  'order_' || de.order_id || '_base_pay'
+FROM driver_earnings de
+JOIN feeder_wallets fw ON fw.feeder_id = de.driver_id
+WHERE de.amount_cents > 0
+ON CONFLICT (idempotency_key) DO NOTHING;
 
-Update `EarningsMetrics` interface to allow nulls:
-```typescript
-interface EarningsMetrics {
-  earningsPerHour: number | null;
-  earningsPerMile: number | null;
-  activeTime: number | null;
-  totalTrips: number;
-}
+-- Tips
+INSERT INTO feeder_wallet_ledger_entries (...)
+SELECT ... 'earnings_tip' ... de.tip_cents ...
+WHERE de.tip_cents > 0
+ON CONFLICT (idempotency_key) DO NOTHING;
 ```
-
-In the existing UI rendering, when a metric is null, display "--" instead of "$0.00":
-```typescript
-// Only change the data formatting, not the layout
-metrics.earningsPerHour !== null ? formatCurrency(metrics.earningsPerHour) : '--'
-```
-
-### Cashout eligibility null handling
-
-When rating/on_time/accuracy is null (insufficient data), show "--" in the checklist value and treat as "in progress" (not failing). The Lock/Check icon logic stays the same; only the value text changes.
-
----
-
-## Phase 4: Cashout Endpoint Hardening
-
-### `create-instant-payout` updates
-
-- Add idempotency key check (hash of `driver_id + amount + timestamp_minute`)
-- Verify `instant_cashout_unlocked` server-side before processing
-- Validate `amount <= available_for_payout` from ledger (not from Stripe balance alone)
-- On success: create `payout_debit` ledger entry with status = 'processing'
-- Stripe webhook updates status to 'paid' or 'failed'
-- On failure: create reversal entry or mark as 'failed'
-
-### `transfer-earnings` updates
-
-- Validate against ledger `available_for_payout` instead of ad-hoc calculation
-- Create `payout_debit` ledger entry
-- No idempotency key collision with instant payouts (different source_type)
-
----
-
-## Phase 5: Pending-to-Available Scheduler (Future/Optional)
-
-A Supabase cron job (pg_cron or edge function on schedule) that:
-- Moves `earnings_base_pay` and `earnings_distance_pay` from `pending` to `available` after delivery completion
-- Moves `earnings_tip` from `pending` to `available` after tip edit window (configurable, e.g., 2 hours)
-- Moves `earnings_bonus` to `available` immediately
-
-For now, new earnings entries will be created with status = 'available' since the current `driver_earnings` table doesn't distinguish pending/available. The scheduler infrastructure will be in place for when the ordering system starts writing pending entries.
-
----
-
-## Reconciliation Guarantees
-
-These invariants are enforced by the ledger model:
-
-1. **Available Balance = Payout Status Available for Payout** -- same query, same number
-2. **Total Earned = Available + Pending + Paid** -- all derived from the same ledger entries
-3. **No fake zeros** -- null metrics show "--"
-4. **Lock only gates action** -- eligibility check is separate from balance computation
-
----
-
-## Technical Notes
-
-- The `feeder_wallet_ledger_entries` table uses an `idempotency_key` column to prevent duplicate entries from retries
-- All amounts stored in cents (integer) to avoid floating-point issues
-- Existing `driver_earnings` and `driver_payouts` tables remain untouched; the ledger is a parallel system that will eventually replace them
-- The `get-feeder-earnings` edge function uses `SUPABASE_SERVICE_ROLE_KEY` for reading ledger data, with auth verification via the Bearer token
-- RLS on `feeder_wallet_ledger_entries` allows feeders to SELECT their own rows only
 
