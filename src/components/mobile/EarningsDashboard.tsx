@@ -118,6 +118,16 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [debitCashoutAmount, setDebitCashoutAmount] = useState('');
   const [isEligibleForInstantCashout, setIsEligibleForInstantCashout] = useState(false);
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
+  const [cashoutEligibility, setCashoutEligibility] = useState<{
+    deliveries: number;
+    rating: number;
+    onTimeRate: number;
+    accuracy: number;
+    meetsDeliveries: boolean;
+    meetsRating: boolean;
+    meetsOnTime: boolean;
+    meetsAccuracy: boolean;
+  }>({ deliveries: 0, rating: 0, onTimeRate: 0, accuracy: 0, meetsDeliveries: false, meetsRating: false, meetsOnTime: false, meetsAccuracy: false });
   const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
   const [sentToFeederCard, setSentToFeederCard] = useState(0);
   
@@ -379,15 +389,35 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch completed deliveries count
       const { count, error } = await supabase
         .from('driver_earnings')
         .select('id', { count: 'exact', head: true })
         .eq('driver_id', user.id);
 
-      if (!error && count !== null) {
-        setCompletedOrdersCount(count);
-        setIsEligibleForInstantCashout(count >= 50);
-      }
+      // Fetch driver profile for rating and performance metrics
+      const { data: profile } = await supabase
+        .from('driver_profiles')
+        .select('average_rating, on_time_rate, completion_rate')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const deliveries = count ?? 0;
+      const rating = profile?.average_rating ?? 0;
+      const onTimeRate = profile?.on_time_rate ?? 0;
+      const accuracy = profile?.completion_rate ?? 0;
+
+      const meetsDeliveries = deliveries >= 50;
+      const meetsRating = rating >= 4.5;
+      const meetsOnTime = onTimeRate >= 95;
+      const meetsAccuracy = accuracy >= 100;
+
+      setCompletedOrdersCount(deliveries);
+      setCashoutEligibility({
+        deliveries, rating, onTimeRate, accuracy,
+        meetsDeliveries, meetsRating, meetsOnTime, meetsAccuracy,
+      });
+      setIsEligibleForInstantCashout(meetsDeliveries && meetsRating && meetsOnTime && meetsAccuracy);
     } catch (error) {
       console.error('Error checking eligibility:', error);
     }
@@ -395,7 +425,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   const handleDebitCashout = async () => {
     if (!isEligibleForInstantCashout) {
-      toast.error(`You need ${50 - completedOrdersCount} more deliveries to unlock instant cashout`);
+      toast.error('You must meet all requirements to unlock instant cashout');
       return;
     }
     if (!stripeConnectStatus.hasAccount || !stripeConnectStatus.payoutsEnabled) {
@@ -950,24 +980,51 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               {!isEligibleForInstantCashout && (
                 <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
                   <Lock className="w-3 h-3 text-gray-500" />
-                  <span className="text-xs text-gray-500">{completedOrdersCount}/50 deliveries</span>
+                  <span className="text-xs text-gray-500">Locked</span>
                 </div>
               )}
             </div>
 
             {!isEligibleForInstantCashout ? (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                <p className="text-sm text-orange-800 font-medium mb-1">🔒 Unlock Instant Cashout</p>
-                <p className="text-xs text-orange-700">
-                  Complete {50 - completedOrdersCount} more {50 - completedOrdersCount === 1 ? 'delivery' : 'deliveries'} with a good rating to unlock instant cashout to your debit card.
+                <p className="text-sm text-orange-800 font-medium mb-2">🔒 Unlock Instant Cashout</p>
+                <p className="text-xs text-orange-700 mb-3">
+                  You must be a Feeder in good standing to unlock instant cashout to your debit card.
                 </p>
-                <div className="mt-3 bg-orange-200 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-orange-500 h-full rounded-full transition-all"
-                    style={{ width: `${Math.min((completedOrdersCount / 50) * 100, 100)}%` }}
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={cashoutEligibility.meetsDeliveries ? 'text-green-700' : 'text-gray-600'}>
+                      {cashoutEligibility.meetsDeliveries ? '✅' : '⬜'} 50+ Completed Deliveries
+                    </span>
+                    <span className={cashoutEligibility.meetsDeliveries ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                      {cashoutEligibility.deliveries}/50
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={cashoutEligibility.meetsRating ? 'text-green-700' : 'text-gray-600'}>
+                      {cashoutEligibility.meetsRating ? '✅' : '⬜'} 4.5+ Rating
+                    </span>
+                    <span className={cashoutEligibility.meetsRating ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                      {cashoutEligibility.rating.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={cashoutEligibility.meetsOnTime ? 'text-green-700' : 'text-gray-600'}>
+                      {cashoutEligibility.meetsOnTime ? '✅' : '⬜'} On-Time Delivery
+                    </span>
+                    <span className={cashoutEligibility.meetsOnTime ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                      {cashoutEligibility.onTimeRate}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={cashoutEligibility.meetsAccuracy ? 'text-green-700' : 'text-gray-600'}>
+                      {cashoutEligibility.meetsAccuracy ? '✅' : '⬜'} 100% Accuracy
+                    </span>
+                    <span className={cashoutEligibility.meetsAccuracy ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                      {cashoutEligibility.accuracy}%
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-orange-600 mt-1 text-right">{Math.min(completedOrdersCount, 50)}/50</p>
               </div>
             ) : (
               <div className="space-y-3">
