@@ -115,23 +115,26 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   
   // Debit Card Cashout state
   const [showDebitCashoutModal, setShowDebitCashoutModal] = useState(false);
-  const [showAddDebitCardModal, setShowAddDebitCardModal] = useState(false);
   const [debitCashoutAmount, setDebitCashoutAmount] = useState('');
-  const [savedDebitCards, setSavedDebitCards] = useState<any[]>([]);
-  const [selectedDebitCard, setSelectedDebitCard] = useState<any>(null);
-  const [newCardLast4, setNewCardLast4] = useState('');
-  const [newCardHolderName, setNewCardHolderName] = useState('');
-  const [newCardBrand, setNewCardBrand] = useState('visa');
   const [isEligibleForInstantCashout, setIsEligibleForInstantCashout] = useState(false);
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
   const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
   const [sentToFeederCard, setSentToFeederCard] = useState(0);
+  
+  // Stripe Connect state
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<{
+    hasAccount: boolean;
+    accountId: string | null;
+    payoutsEnabled: boolean;
+    detailsSubmitted: boolean;
+  }>({ hasAccount: false, accountId: null, payoutsEnabled: false, detailsSubmitted: false });
+  const [stripeOnboardingLoading, setStripeOnboardingLoading] = useState(false);
 
   useEffect(() => {
     fetchEarningsData();
     fetchCardData();
     fetchGasMoneyData();
-    fetchDebitCards();
+    fetchStripeConnectStatus();
     checkCashoutEligibility();
   }, [timeRange]);
 
@@ -305,99 +308,69 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   };
 
   // Debit card cashout functions
-  const fetchDebitCards = async () => {
+  const fetchStripeConnectStatus = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Check stripe_accounts table for driver's connected account
       const { data, error } = await supabase
-        .from('driver_debit_cards')
-        .select('*')
-        .eq('driver_id', user.id)
-        .order('created_at', { ascending: false });
+        .from('stripe_accounts')
+        .select('stripe_account_id, details_submitted, payouts_enabled')
+        .eq('owner_type', 'driver')
+        .eq('owner_id', user.id)
+        .maybeSingle();
 
       if (!error && data) {
-        setSavedDebitCards(data);
-        const defaultCard = data.find((c: any) => c.is_default) || data[0];
-        if (defaultCard) setSelectedDebitCard(defaultCard);
+        setStripeConnectStatus({
+          hasAccount: true,
+          accountId: data.stripe_account_id,
+          payoutsEnabled: data.payouts_enabled || false,
+          detailsSubmitted: data.details_submitted || false,
+        });
+      } else {
+        setStripeConnectStatus({ hasAccount: false, accountId: null, payoutsEnabled: false, detailsSubmitted: false });
       }
     } catch (error) {
-      console.error('Error fetching debit cards:', error);
+      console.error('Error fetching Stripe Connect status:', error);
     }
   };
 
-  const checkCashoutEligibility = async () => {
+  const handleStartStripeOnboarding = async () => {
+    setStripeOnboardingLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error('Not authenticated');
 
-      // Count completed orders for this driver
-      const { count, error } = await supabase
-        .from('driver_earnings')
-        .select('id', { count: 'exact', head: true })
-        .eq('driver_id', user.id);
+      const previewUrl = window.location.origin;
 
-      if (!error && count !== null) {
-        setCompletedOrdersCount(count);
-        // Eligible if 50+ completed orders
-        setIsEligibleForInstantCashout(count >= 50);
+      const { data, error } = await supabase.functions.invoke('create-connected-account', {
+        body: {
+          owner_type: 'driver',
+          owner_id: user.id,
+          email: user.email,
+          first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '',
+          last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+          return_url: `${previewUrl}/mobile?tab=earnings`,
+          refresh_url: `${previewUrl}/mobile?tab=earnings`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.onboarding_url) {
+        window.open(data.onboarding_url, '_blank');
+        toast.success('Stripe onboarding opened in a new tab. Complete the setup to enable instant payouts.');
       }
+      
+      // Refresh status after a delay
+      setTimeout(() => fetchStripeConnectStatus(), 3000);
     } catch (error) {
-      console.error('Error checking eligibility:', error);
-    }
-  };
-
-  const handleAddDebitCard = async () => {
-    if (!newCardLast4 || newCardLast4.length !== 4 || !newCardHolderName.trim()) {
-      toast.error('Please enter valid card details');
-      return;
-    }
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const isFirst = savedDebitCards.length === 0;
-
-      const { data, error } = await supabase
-        .from('driver_debit_cards')
-        .insert({
-          driver_id: user.id,
-          card_last4: newCardLast4,
-          card_brand: newCardBrand,
-          card_holder_name: newCardHolderName.trim(),
-          is_default: isFirst,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success('Debit card added successfully!');
-      setNewCardLast4('');
-      setNewCardHolderName('');
-      setNewCardBrand('visa');
-      setShowAddDebitCardModal(false);
-      fetchDebitCards();
-    } catch (error) {
-      console.error('Error adding debit card:', error);
-      toast.error('Failed to add debit card');
-    }
-  };
-
-  const handleDeleteDebitCard = async (cardId: string) => {
-    try {
-      const { error } = await supabase
-        .from('driver_debit_cards')
-        .delete()
-        .eq('id', cardId);
-
-      if (error) throw error;
-      toast.success('Card removed');
-      fetchDebitCards();
-    } catch (error) {
-      console.error('Error deleting card:', error);
-      toast.error('Failed to remove card');
+      console.error('Error starting Stripe onboarding:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to start Stripe setup');
+    } finally {
+      setStripeOnboardingLoading(false);
     }
   };
 
@@ -406,8 +379,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       toast.error(`You need ${50 - completedOrdersCount} more deliveries to unlock instant cashout`);
       return;
     }
-    if (!selectedDebitCard) {
-      toast.error('Please add a debit card first');
+    if (!stripeConnectStatus.hasAccount || !stripeConnectStatus.payoutsEnabled) {
+      toast.error('Please complete Stripe setup first');
       return;
     }
 
@@ -447,7 +420,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
       const actualFee = data?.fee_cents ? (data.fee_cents / 100) : fee;
       const actualNet = data?.net_amount ? (data.net_amount / 100) : netAmount;
-      toast.success(`${formatCurrency(actualNet)} sent to your debit card ending in ${selectedDebitCard.card_last4}! (${formatCurrency(actualFee)} fee applied)`);
+      toast.success(`${formatCurrency(actualNet)} sent to your bank account! (${formatCurrency(actualFee)} fee applied)`);
       fetchCardData();
     } catch (error) {
       console.error('Error processing debit cashout:', error);
@@ -979,31 +952,41 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {savedDebitCards.length === 0 ? (
+                {!stripeConnectStatus.hasAccount ? (
                   <button
-                    onClick={() => setShowAddDebitCardModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 hover:bg-orange-50 transition-colors"
+                    onClick={handleStartStripeOnboarding}
+                    disabled={stripeOnboardingLoading}
+                    className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-orange-300 rounded-xl text-orange-600 hover:bg-orange-50 transition-colors disabled:opacity-50"
                   >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium">Add Debit Card</span>
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {stripeOnboardingLoading ? 'Setting up...' : 'Set Up Stripe for Payouts'}
+                    </span>
                   </button>
+                ) : !stripeConnectStatus.payoutsEnabled ? (
+                  <div className="space-y-2">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                      <p className="text-sm text-yellow-800 font-medium">⏳ Stripe Setup Incomplete</p>
+                      <p className="text-xs text-yellow-700 mt-1">Complete your Stripe onboarding to enable instant payouts.</p>
+                    </div>
+                    <button
+                      onClick={handleStartStripeOnboarding}
+                      disabled={stripeOnboardingLoading}
+                      className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 text-sm"
+                    >
+                      {stripeOnboardingLoading ? 'Opening...' : 'Continue Stripe Setup'}
+                    </button>
+                  </div>
                 ) : (
                   <>
-                    {/* Selected card preview */}
-                    <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                      <CreditCard className="w-5 h-5 text-gray-600" />
+                    {/* Stripe connected indicator */}
+                    <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3">
+                      <CreditCard className="w-5 h-5 text-green-600" />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {selectedDebitCard?.card_brand?.toUpperCase()} •••• {selectedDebitCard?.card_last4}
-                        </p>
-                        <p className="text-xs text-gray-500">{selectedDebitCard?.card_holder_name}</p>
+                        <p className="text-sm font-semibold text-gray-900">Stripe Connected</p>
+                        <p className="text-xs text-green-600">Instant payouts enabled</p>
                       </div>
-                      <button
-                        onClick={() => setShowAddDebitCardModal(true)}
-                        className="text-xs text-orange-600 font-medium"
-                      >
-                        Manage
-                      </button>
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                     </div>
                     
                     {/* Cash out button */}
@@ -1018,7 +1001,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                       className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                       <ArrowUpRight className="w-4 h-4" />
-                      Cash Out to Debit Card
+                      Cash Out to Bank/Debit
                     </button>
                     <p className="text-xs text-gray-400 text-center">1.5% instant transfer fee applies</p>
                   </>
@@ -1526,104 +1509,8 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         </div>
       )}
 
-      {/* Add Debit Card Modal */}
-      {showAddDebitCardModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Manage Debit Cards</h3>
-                  <p className="text-sm text-gray-500">For instant cashout</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAddDebitCardModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Saved cards list */}
-            {savedDebitCards.length > 0 && (
-              <div className="space-y-2 mb-4">
-                <p className="text-sm font-medium text-gray-700">Your Cards</p>
-                {savedDebitCards.map((card: any) => (
-                  <div key={card.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                    <CreditCard className="w-5 h-5 text-gray-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {card.card_brand?.toUpperCase()} •••• {card.card_last4}
-                      </p>
-                      <p className="text-xs text-gray-500">{card.card_holder_name}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteDebitCard(card.id)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add new card form */}
-            <div className="border-t pt-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700">Add New Card</p>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Cardholder Name</label>
-                <input
-                  type="text"
-                  value={newCardHolderName}
-                  onChange={(e) => setNewCardHolderName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Last 4 Digits</label>
-                <input
-                  type="text"
-                  value={newCardLast4}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                    setNewCardLast4(val);
-                  }}
-                  placeholder="1234"
-                  maxLength={4}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Card Network</label>
-                <select
-                  value={newCardBrand}
-                  onChange={(e) => setNewCardBrand(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:border-orange-500 focus:outline-none bg-white"
-                >
-                  <option value="visa">Visa</option>
-                  <option value="mastercard">Mastercard</option>
-                </select>
-              </div>
-              <button
-                onClick={handleAddDebitCard}
-                disabled={!newCardLast4 || newCardLast4.length !== 4 || !newCardHolderName.trim()}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add Card
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Debit Card Cashout Modal */}
-      {showDebitCashoutModal && selectedDebitCard && (
+      {showDebitCashoutModal && stripeConnectStatus.payoutsEnabled && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
@@ -1632,7 +1519,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                   <ArrowUpRight className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Cash Out to Debit</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Cash Out via Stripe</h3>
                   <p className="text-sm text-gray-500">Instant transfer</p>
                 </div>
               </div>
@@ -1700,15 +1587,13 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 </div>
               )}
 
-              {/* Destination card */}
+              {/* Destination */}
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-5 h-5 text-blue-600" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {selectedDebitCard.card_brand?.toUpperCase()} •••• {selectedDebitCard.card_last4}
-                    </p>
-                    <p className="text-xs text-gray-600">{selectedDebitCard.card_holder_name}</p>
+                    <p className="text-sm font-semibold text-gray-900">Stripe Connected Account</p>
+                    <p className="text-xs text-blue-600">Payout to your linked bank/debit</p>
                   </div>
                 </div>
               </div>
