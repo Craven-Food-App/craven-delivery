@@ -10,6 +10,18 @@ import {
   zonesToGeoJSON,
 } from '@/data/deliveryZones';
 import driverNavIcon from '@/assets/driver_nav_icon.png';
+import { supabase } from '@/integrations/supabase/client';
+import { isPngLogo } from '@/utils/logoUtils';
+
+interface MerchantLocation {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  latitude: number;
+  longitude: number;
+  merchant_category: string | null;
+  cuisine_type: string | null;
+}
 
 interface MobileMapboxProps {
   className?: string;
@@ -36,6 +48,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
   const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
+  const merchantMarkersRef = useRef<any[]>([]);
+  const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
 
   const driverLocation = useMemo<[number, number] | null>(() => {
     if (location) {
@@ -337,6 +351,110 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       duration: 500 // Smooth animation
     });
   }, [resetToDefaultZoom, isMapReady]);
+
+  // Fetch merchant locations
+  useEffect(() => {
+    const fetchMerchants = async () => {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('id, name, logo_url, latitude, longitude, merchant_category, cuisine_type')
+        .eq('is_active', true)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+
+      if (!error && data) {
+        setMerchants(data as MerchantLocation[]);
+      }
+    };
+    fetchMerchants();
+  }, []);
+
+  // Render merchant markers on map
+  useEffect(() => {
+    if (!isMapReady || !map.current || merchants.length === 0) return;
+
+    // Clear existing merchant markers
+    merchantMarkersRef.current.forEach(m => m.remove());
+    merchantMarkersRef.current = [];
+
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) return;
+
+    merchants.forEach((merchant) => {
+      if (!merchant.latitude || !merchant.longitude) return;
+
+      const el = document.createElement('div');
+      el.className = 'merchant-map-marker';
+      
+      const hasPng = isPngLogo(merchant.logo_url);
+      const bgColor = hasPng ? '#ffffff' : 'transparent';
+
+      el.style.cssText = `
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: ${bgColor};
+        border: 2px solid #ff6600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        cursor: pointer;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+      `;
+
+      if (merchant.logo_url) {
+        const img = document.createElement('img');
+        img.src = merchant.logo_url;
+        img.alt = merchant.name;
+        img.style.cssText = `
+          width: 30px;
+          height: 30px;
+          object-fit: contain;
+          border-radius: 50%;
+        `;
+        img.onerror = () => {
+          // Fallback: show first letter
+          el.innerHTML = '';
+          const fallback = document.createElement('span');
+          fallback.textContent = merchant.name.charAt(0).toUpperCase();
+          fallback.style.cssText = 'font-weight: 700; font-size: 16px; color: #ff6600;';
+          el.appendChild(fallback);
+        };
+        el.appendChild(img);
+      } else {
+        const fallback = document.createElement('span');
+        fallback.textContent = merchant.name.charAt(0).toUpperCase();
+        fallback.style.cssText = 'font-weight: 700; font-size: 16px; color: #ff6600;';
+        el.appendChild(fallback);
+      }
+
+      // Hover effect
+      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.25)'; });
+      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+
+      // Tooltip popup
+      const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
+        .setHTML(`
+          <div style="padding:4px 8px;font-size:12px;font-weight:600;white-space:nowrap;">
+            ${merchant.name}
+          </div>
+        `);
+
+      const markerInstance = new mapboxgl.Marker({ element: el })
+        .setLngLat([merchant.longitude, merchant.latitude])
+        .setPopup(popup)
+        .addTo(map.current);
+
+      merchantMarkersRef.current.push(markerInstance);
+    });
+
+    return () => {
+      merchantMarkersRef.current.forEach(m => m.remove());
+      merchantMarkersRef.current = [];
+    };
+  }, [isMapReady, merchants]);
 
 
   const legendItems = useMemo(() => {
