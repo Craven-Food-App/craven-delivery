@@ -31,9 +31,9 @@ interface PayoutStatus {
 }
 
 interface EarningsMetrics {
-  earningsPerHour: number;
-  earningsPerMile: number;
-  activeTime: number; // in hours
+  earningsPerHour: number | null;
+  earningsPerMile: number | null;
+  activeTime: number | null; // in hours
   totalTrips: number;
 }
 
@@ -120,14 +120,14 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   const [completedOrdersCount, setCompletedOrdersCount] = useState(0);
   const [cashoutEligibility, setCashoutEligibility] = useState<{
     deliveries: number;
-    rating: number;
-    onTimeRate: number;
-    accuracy: number;
+    rating: number | null;
+    onTimeRate: number | null;
+    accuracy: number | null;
     meetsDeliveries: boolean;
     meetsRating: boolean;
     meetsOnTime: boolean;
     meetsAccuracy: boolean;
-  }>({ deliveries: 0, rating: 0, onTimeRate: 0, accuracy: 0, meetsDeliveries: false, meetsRating: false, meetsOnTime: false, meetsAccuracy: false });
+  }>({ deliveries: 0, rating: null, onTimeRate: null, accuracy: null, meetsDeliveries: false, meetsRating: false, meetsOnTime: false, meetsAccuracy: false });
   const [debitCashoutLoading, setDebitCashoutLoading] = useState(false);
   const [sentToFeederCard, setSentToFeederCard] = useState(0);
   
@@ -143,9 +143,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
   useEffect(() => {
     fetchEarningsData();
     fetchCardData();
-    fetchGasMoneyData();
     fetchStripeConnectStatus();
-    checkCashoutEligibility();
   }, [timeRange]);
 
   const fetchCardData = async () => {
@@ -384,44 +382,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
     }
   };
 
-  const checkCashoutEligibility = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch completed deliveries count
-      const { count, error } = await supabase
-        .from('driver_earnings')
-        .select('id', { count: 'exact', head: true })
-        .eq('driver_id', user.id);
-
-      // Fetch driver profile for rating and performance metrics
-      const { data: profile } = await supabase
-        .from('driver_profiles')
-        .select('average_rating, on_time_rate, completion_rate')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const deliveries = count ?? 0;
-      const rating = profile?.average_rating ?? 0;
-      const onTimeRate = profile?.on_time_rate ?? 0;
-      const accuracy = profile?.completion_rate ?? 0;
-
-      const meetsDeliveries = deliveries >= 50;
-      const meetsRating = rating >= 4.5;
-      const meetsOnTime = onTimeRate >= 95;
-      const meetsAccuracy = accuracy >= 100;
-
-      setCompletedOrdersCount(deliveries);
-      setCashoutEligibility({
-        deliveries, rating, onTimeRate, accuracy,
-        meetsDeliveries, meetsRating, meetsOnTime, meetsAccuracy,
-      });
-      setIsEligibleForInstantCashout(meetsDeliveries && meetsRating && meetsOnTime && meetsAccuracy);
-    } catch (error) {
-      console.error('Error checking eligibility:', error);
-    }
-  };
+  // checkCashoutEligibility is now handled inside fetchEarningsData via the edge function
 
   const handleDebitCashout = async () => {
     if (!isEligibleForInstantCashout) {
@@ -513,9 +474,79 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { start, end } = getDateRange();
+      // Map frontend timeRange to edge function timeframe
+      const timeframeMap: Record<string, string> = {
+        today: 'today',
+        thisWeek: 'this_week',
+        lastWeek: 'last_week',
+        overall: 'overall',
+      };
 
-      // Fetch driver earnings
+      const { data, error } = await supabase.functions.invoke('get-feeder-earnings', {
+        body: { timeframe: timeframeMap[timeRange] || 'today' },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Map breakdown
+      const b = data.breakdown;
+      setBreakdown({
+        basePay: (b.base_pay_cents || 0) / 100,
+        distancePay: (b.distance_pay_cents || 0) / 100,
+        tips: (b.tips_cents || 0) / 100,
+        bonuses: (b.bonuses_cents || 0) / 100,
+        adjustments: (b.adjustments_cents || 0) / 100,
+        totalEarned: (data.total_earned_cents || 0) / 100,
+      });
+
+      setTotalEarnings((data.total_earned_cents || 0) / 100);
+
+      // Map payout status — available_balance = payout_status.available (guaranteed match)
+      const ps = data.payout_status;
+      setPayoutStatus({
+        available: (ps.available_cents || 0) / 100,
+        pending: (ps.pending_cents || 0) / 100,
+        paid: (ps.paid_cents || 0) / 100,
+      });
+
+      setSentToFeederCard((data.sent_to_feeder_card_cents || 0) / 100);
+
+      // Gas money
+      setGasMoney((data.gas_money_cents || 0) / 100);
+
+      // Metrics — null values stay null so UI shows "--"
+      const m = data.metrics;
+      setMetrics({
+        earningsPerHour: m.earnings_per_hour_cents != null ? m.earnings_per_hour_cents / 100 : null,
+        earningsPerMile: m.earnings_per_mile_cents != null ? m.earnings_per_mile_cents / 100 : null,
+        activeTime: m.active_time_hours,
+        totalTrips: m.total_trips || 0,
+      });
+
+      // Cashout eligibility
+      const ce = data.cashout_eligibility;
+      const meetsDeliveries = ce.deliveries >= ce.deliveries_required;
+      // null means "in progress" — treat as met for unlock but show "--"
+      const meetsRating = ce.rating === null || ce.rating >= ce.rating_required;
+      const meetsOnTime = ce.on_time_rate === null || ce.on_time_rate >= ce.on_time_required;
+      const meetsAccuracy = ce.accuracy === null || ce.accuracy >= ce.accuracy_required;
+
+      setCompletedOrdersCount(ce.deliveries);
+      setCashoutEligibility({
+        deliveries: ce.deliveries,
+        rating: ce.rating,
+        onTimeRate: ce.on_time_rate,
+        accuracy: ce.accuracy,
+        meetsDeliveries,
+        meetsRating,
+        meetsOnTime,
+        meetsAccuracy,
+      });
+      setIsEligibleForInstantCashout(ce.unlocked);
+
+      // Fetch transactions from ledger for display
+      const { start, end } = getDateRange();
       const { data: earnings } = await supabase
         .from('driver_earnings')
         .select(`
@@ -537,116 +568,7 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
         .lt('earned_at', end.toISOString())
         .order('earned_at', { ascending: false });
 
-      if (!earnings) return;
-
-      // Calculate breakdown
-      let basePay = 0;
-      let distancePay = 0;
-      let tips = 0;
-      let bonuses = 0;
-      let adjustments = 0;
-
-      let totalMiles = 0; // Track total miles driven
-      
-      earnings.forEach((earning: any) => {
-        basePay += (earning.amount_cents || 0) / 100;
-        tips += (earning.tip_cents || 0) / 100;
-        
-        // Add mileage pay (distance pay) from the order
-        const order = earning.orders;
-        if (order?.mileage_pay_cents) {
-          distancePay += order.mileage_pay_cents / 100;
-        } else if (earning.order_id) {
-          // Fallback: if join didn't work, fetch order directly
-          // This shouldn't be needed but helps debug
-          console.log('Order join missing mileage_pay_cents for order:', earning.order_id);
-        }
-        
-        // Track distance for earnings per mile calculation
-        if (order?.distance_km) {
-          totalMiles += order.distance_km * 0.621371; // Convert km to miles
-        }
-      });
-
-      const totalEarned = basePay + distancePay + tips + bonuses + adjustments;
-      setTotalEarnings(totalEarned);
-      setBreakdown({
-        basePay,
-        distancePay,
-        tips,
-        bonuses,
-        adjustments,
-        totalEarned,
-      });
-
-
-      // Calculate payout status from database
-      // Available = total earnings - paid out earnings
-      const { data: payoutsData } = await supabase
-        .from('driver_payouts')
-        .select('amount, status')
-        .eq('driver_id', user.id);
-
-      let paidTotal = 0;
-      let pendingTotal = 0;
-
-      if (payoutsData) {
-        payoutsData.forEach((payout: any) => {
-          const amountDollars = parseFloat(payout.amount || '0');
-          if (payout.status === 'completed' || payout.status === 'sent') {
-            paidTotal += amountDollars;
-          } else if (payout.status === 'pending') {
-            pendingTotal += amountDollars;
-          }
-        });
-      }
-
-      // Available = total earned - (paid + pending)
-      const availableForPayout = Math.max(0, totalEarned - paidTotal - pendingTotal);
-
-      setPayoutStatus({
-        available: availableForPayout,
-        pending: pendingTotal,
-        paid: paidTotal,
-      });
-
-      // Calculate "Sent to Feeder Card" for selected time range
-      let feederCardQuery = supabase
-        .from('driver_payouts')
-        .select('amount, status, created_at')
-        .eq('driver_id', user.id)
-        .in('status', ['completed', 'sent']);
-
-      if (timeRange !== 'overall') {
-        feederCardQuery = feederCardQuery
-          .gte('created_at', start.toISOString())
-          .lt('created_at', end.toISOString());
-      }
-
-      const { data: feederPayouts } = await feederCardQuery;
-      let feederTotal = 0;
-      if (feederPayouts) {
-        feederPayouts.forEach((p: any) => {
-          feederTotal += parseFloat(p.amount || '0');
-        });
-      }
-      setSentToFeederCard(feederTotal);
-
-      // Calculate metrics
-      const totalTrips = earnings.length;
-      const activeTime = totalTrips * 0.5; // Estimate 30 min per trip
-      const earningsPerHour = activeTime > 0 ? totalEarned / activeTime : 0;
-      const earningsPerMile = totalMiles > 0 ? totalEarned / totalMiles : 0;
-
-      setMetrics({
-        earningsPerHour,
-        earningsPerMile,
-        activeTime,
-        totalTrips,
-      });
-
-      // Format transactions
-      const formattedTransactions: Transaction[] = earnings.map((earning: any) => {
+      const formattedTransactions: Transaction[] = (earnings || []).map((earning: any) => {
         const earnedDate = new Date(earning.earned_at || earning.created_at);
         const order = earning.orders || {};
         const restaurant = order.restaurants || {};
@@ -997,9 +919,9 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
                 <div className="space-y-1.5">
                   {[
                     { met: cashoutEligibility.meetsDeliveries, label: '50+ Completed Deliveries', value: `${cashoutEligibility.deliveries}/50` },
-                    { met: cashoutEligibility.meetsRating, label: '4.5+ Rating', value: cashoutEligibility.rating.toFixed(2) },
-                    { met: cashoutEligibility.meetsOnTime, label: 'On-Time Delivery', value: `${cashoutEligibility.onTimeRate}%` },
-                    { met: cashoutEligibility.meetsAccuracy, label: '100% Accuracy', value: `${cashoutEligibility.accuracy}%` },
+                    { met: cashoutEligibility.meetsRating, label: '4.5+ Rating', value: cashoutEligibility.rating != null ? cashoutEligibility.rating.toFixed(2) : '--' },
+                    { met: cashoutEligibility.meetsOnTime, label: 'On-Time Delivery', value: cashoutEligibility.onTimeRate != null ? `${cashoutEligibility.onTimeRate}%` : '--' },
+                    { met: cashoutEligibility.meetsAccuracy, label: '100% Accuracy', value: cashoutEligibility.accuracy != null ? `${cashoutEligibility.accuracy}%` : '--' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between text-[11px]">
                       <span className={`flex items-center gap-1.5 ${item.met ? 'text-green-600' : 'text-gray-400'}`}>
@@ -1197,15 +1119,15 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Earnings per Hour</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerHour)}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.earningsPerHour != null ? formatCurrency(metrics.earningsPerHour) : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Earnings per Mile</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.earningsPerMile)}</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.earningsPerMile != null ? formatCurrency(metrics.earningsPerMile) : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Active Time</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.activeTime.toFixed(1)}h</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.activeTime != null ? `${metrics.activeTime.toFixed(1)}h` : '--'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Trips</p>
