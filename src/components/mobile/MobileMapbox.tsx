@@ -417,38 +417,27 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       let glowStyle = '';
       let borderColor = '#ff6600';
       if (demand >= 5) {
-        glowStyle = 'box-shadow: 0 0 10px 4px rgba(239,68,68,0.7), 0 0 20px 8px rgba(239,68,68,0.3);';
+        glowStyle = 'box-shadow: 0 0 8px 5px rgba(239,68,68,0.55), 0 0 18px 10px rgba(239,68,68,0.25), 0 0 30px 15px rgba(239,68,68,0.1);';
         borderColor = '#ef4444';
       } else if (demand >= 3) {
-        glowStyle = 'box-shadow: 0 0 8px 3px rgba(249,115,22,0.7), 0 0 16px 6px rgba(249,115,22,0.3);';
+        glowStyle = 'box-shadow: 0 0 6px 4px rgba(249,115,22,0.5), 0 0 14px 8px rgba(249,115,22,0.2), 0 0 24px 12px rgba(249,115,22,0.08);';
         borderColor = '#f97316';
       } else if (demand >= 1) {
-        glowStyle = 'box-shadow: 0 0 6px 2px rgba(234,179,8,0.6), 0 0 12px 4px rgba(234,179,8,0.25);';
+        glowStyle = 'box-shadow: 0 0 5px 3px rgba(234,179,8,0.45), 0 0 12px 6px rgba(234,179,8,0.18), 0 0 20px 10px rgba(234,179,8,0.06);';
         borderColor = '#eab308';
       }
 
-      // Outer wrapper for glow effect
-      const wrapper = document.createElement('div');
-      wrapper.className = 'merchant-marker-wrapper';
-      wrapper.style.cssText = `
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        ${glowStyle || 'box-shadow: 0 1px 4px rgba(0,0,0,0.25);'}
-        cursor: pointer;
-        transition: transform 0.15s ease;
-        ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
-      `;
-
+      // Single element — no wrapper. Glow is applied via box-shadow directly.
       const el = document.createElement('div');
       el.className = 'merchant-map-marker';
       
       const hasPng = isPngLogo(merchant.logo_url);
       const bgColor = hasPng ? '#ffffff' : '#f9fafb';
+      const size = 26;
 
       el.style.cssText = `
-        width: 28px;
-        height: 28px;
+        width: ${size}px;
+        height: ${size}px;
         border-radius: 50%;
         background: ${bgColor};
         border: 2px solid ${borderColor};
@@ -456,6 +445,10 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        ${glowStyle || 'box-shadow: 0 1px 4px rgba(0,0,0,0.25);'}
+        ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
       `;
 
       if (merchant.logo_url) {
@@ -463,8 +456,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         img.src = merchant.logo_url;
         img.alt = merchant.name;
         img.style.cssText = `
-          width: 20px;
-          height: 20px;
+          width: ${size - 4}px;
+          height: ${size - 4}px;
           object-fit: contain;
           border-radius: 50%;
         `;
@@ -483,11 +476,9 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         el.appendChild(fallback);
       }
 
-      wrapper.appendChild(el);
-
       // Hover effect
-      wrapper.addEventListener('mouseenter', () => { wrapper.style.transform = 'scale(1.2)'; });
-      wrapper.addEventListener('mouseleave', () => { wrapper.style.transform = 'scale(1)'; });
+      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.2)'; });
+      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
 
       // Navigate popup with merchant info
       const demandLabel = demand >= 5 ? '🔴 High Demand' : demand >= 3 ? '🟠 Moderate' : demand >= 1 ? '🟡 Building' : '';
@@ -509,7 +500,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           </div>
         `);
 
-      const markerInstance = new mapboxgl.Marker({ element: wrapper })
+      const markerInstance = new mapboxgl.Marker({ element: el })
         .setLngLat([merchant.longitude, merchant.latitude])
         .setPopup(popup)
         .addTo(map.current);
