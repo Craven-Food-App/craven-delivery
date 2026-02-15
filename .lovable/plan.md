@@ -1,172 +1,141 @@
 
 
-# Fix Feeder Card Balance Persistence
+# Combined: Universal Safe Area Enforcement + Black Status Bar Text
 
-## Problem
+## What This Fixes
 
-There are two disconnected wallet systems:
-- **Old system** (`driver_wallet` + `wallet_ledger`): Written to by `finalize-delivery` after each delivery via `credit_wallet_from_earnings`
-- **New ledger** (`feeder_wallet_ledger_entries`): Read by the Earnings Dashboard but never written to
-
-The Feeder Card shows $0 on every reload because the new ledger table is always empty.
-
-## Solution: Dual-Write on Delivery Completion
-
-The proper fix is to make `finalize-delivery` also write to the new `feeder_wallet_ledger_entries` table after each delivery. This means the Feeder Card balance auto-updates after every completed delivery -- no session end required.
+1. **Headers bleeding into status bar** (time, battery, 5G icons) -- fixed by SafeAreaProvider top spacer
+2. **Content overlapping Android nav buttons** -- fixed by always-visible white bottom spacer
+3. **Modals/pop-ups extending into unsafe areas** -- fixed by global CSS rules
+4. **Status bar text invisible on some backgrounds** -- fixed by @capacitor/status-bar plugin forcing black text
+5. **Inconsistent header positioning** -- fixed by removing 28+ duplicate manual paddings
 
 ---
 
-## How the Feeder Card Balance Will Work
+## Changes Overview
 
-1. **Delivery completed** --> `finalize-delivery` writes individual ledger entries (`earnings_base_pay`, `earnings_tip`, etc.) with status `available` into `feeder_wallet_ledger_entries`
-2. **Feeder Card balance** = SUM of all `available` earnings entries minus SUM of all `payout_debit` (paid) entries. This is cumulative, all-time, and persistent.
-3. **"Your Earnings" card** = timeframe-filtered total from the same ledger (today/week/etc.)
-4. **Cash out to debit/bank** creates a `payout_debit` entry, reducing the available balance
+### Part 1: Status Bar Plugin (Black Text)
 
-```text
-Delivery #1 completes --> +$12.50 base_pay (available)
-                      --> +$3.00  tip (available)
-Delivery #2 completes --> +$10.00 base_pay (available)
-                      --> +$5.00  tip (available)
+**Install `@capacitor/status-bar`** and add initialization in `src/App.tsx`:
 
-Feeder Card Balance = $30.50
+```typescript
+import { StatusBar, Style } from '@capacitor/status-bar';
 
-Feeder cashes out $20 --> payout_debit $20 (paid)
-
-Feeder Card Balance = $10.50  (persistent across reloads)
+// On app mount (inside isNative block):
+StatusBar.setStyle({ style: Style.Light }); // Light background = black text
+StatusBar.setBackgroundColor({ color: '#FFFFFF' }); // Android only
+StatusBar.setOverlaysWebView({ overlay: true });
 ```
 
-## Cash Out Options
+This forces the status bar icons (time, battery, network, 5G) to always be **black** against the white safe area background.
 
-- **Instant (Stripe)**: Requires eligibility (50+ deliveries, 4.5+ rating, etc.). Immediate transfer via Stripe.
-- **Bank Transfer**: 3-day ACH transfer, available to all feeders. New option.
-- **Auto Weekly**: Automatic weekly payout to bank account. New option (settings toggle).
+### Part 2: Wrap App in SafeAreaProvider
+
+**File: `src/App.tsx`**
+
+The `SafeAreaProvider` component already exists but is not used. Wrap all three render paths (native, HQ subdomain, main app) with `<SafeAreaProvider>` so every page gets automatic safe area protection.
+
+### Part 3: Update SafeAreaProvider
+
+**File: `src/components/SafeAreaProvider.tsx`**
+
+- **Top spacer**: Set white background so status bar area is always clean
+- **Bottom spacer**: Always render (remove the `!isAndroid` condition) with white background on Android -- this creates the "white box behind built-in Android buttons" during scrolling
+- **Add StatusBar initialization** inside the provider's useEffect for native platforms
+
+### Part 4: CSS Updates
+
+**File: `src/index.css`**
+
+Add rules for:
+- Android bottom spacer white background
+- Modal/dialog safe area padding (all `[role="dialog"]` and `.fixed.inset-0` elements)
+- Top spacer white background
+
+### Part 5: Remove Duplicate Safe Area Padding (28 Files)
+
+Since SafeAreaProvider now handles the top inset globally, remove manual `paddingTop: 'env(safe-area-inset-top, 0px)'` and `paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)'` from all mobile pages. Sticky headers should use `top: 0` -- they will sit naturally below the provider's top spacer.
+
+Files to clean up:
+- `EarningsDashboard.tsx` -- remove calc padding on header
+- `AccountSection.tsx` -- remove duplicate style attribute
+- `ScheduleSection.tsx` -- remove duplicate style attribute
+- `SafeDrivingSection.tsx` -- remove duplicate style attribute
+- `ProfileSection.tsx` -- remove duplicate style attribute
+- `FeederAccountPage.tsx` -- remove 4 instances of manual padding
+- `MobileBackgroundCheckStatus.tsx` -- remove manual padding
+- `VehicleManagementSection.tsx` -- remove duplicate style attribute
+- `DriverPromosPage.tsx` -- remove manual padding
+- `DriverPreferencesPage.tsx` -- remove manual padding
+- `MobilePasswordReset.tsx` -- remove manual padding
+- `CorporateEarningsDashboard.tsx` -- remove manual padding
+- `FeederScheduleTab.tsx` -- remove manual padding
+- `FeederPromotionsTab.tsx` -- remove manual padding
+- `FeederRatingsTab.tsx` -- remove manual padding
+- `ActiveFeedingMenu.tsx` -- remove manual padding
+- `DriverSupportChat.tsx` -- remove manual padding
+- `PaymentMethodsSection.tsx` -- remove manual padding
+- `FeedPreferencesPage.tsx` -- remove manual padding
+- `CravenDeliveryFlow.tsx` -- remove manual padding
+- `DeliveryCamera.tsx` -- add safe area if missing
+- `EndTimeSheet.tsx` -- add safe area if missing
+- And remaining files from the 28 found
+
+**Exception**: The main `MobileDriverDashboard` keeps its own handling as requested.
+
+### Part 6: Capacitor Config Update
+
+**File: `capacitor.config.ts`**
+
+Add StatusBar plugin configuration:
+```typescript
+plugins: {
+  StatusBar: {
+    style: 'LIGHT',        // Black text
+    backgroundColor: '#FFFFFF',
+  },
+  // ... existing plugins
+}
+```
 
 ---
 
-## Changes
+## After Implementation
 
-### 1. Update `finalize-delivery` Edge Function
-
-Add ledger entry writes after the existing `driver_earnings` insert:
-- Ensure/create `feeder_wallets` row for the driver (idempotent upsert)
-- Insert `earnings_base_pay` entry with `status = 'available'`
-- Insert `earnings_tip` entry (if tip > 0) with `status = 'available'`
-- Use `idempotency_key` = `order_{orderId}_base_pay` / `order_{orderId}_tip` to prevent duplicates on retries
-
-### 2. Update `get-feeder-earnings` Edge Function
-
-Change the Feeder Card balance computation:
-- **Feeder Card Balance** = SUM(all earnings entries where status = 'available') - SUM(payout_debit where status = 'paid') -- computed across ALL time regardless of timeframe filter
-- This is returned as a new field `card_balance_cents` separate from `available_balance_cents` (which is timeframe-filtered)
-
-### 3. Update `EarningsDashboard.tsx` (Data Only)
-
-- Read `card_balance_cents` from the edge function response for the Feeder Card display instead of querying ledger directly in `fetchCardData`
-- Remove the separate `fetchCardData` ledger query (redundant now)
-- Add bank transfer option alongside instant cashout (simple UI text change in the existing modal, no layout changes)
-
-### 4. Data Migration
-
-Run a one-time backfill to populate `feeder_wallet_ledger_entries` from existing `driver_earnings` records so historical deliveries show up correctly:
-- Each `driver_earnings` row becomes a `earnings_base_pay` entry (amount_cents) + `earnings_tip` entry (tip_cents)
-- Each `driver_payouts` row with status paid/completed becomes a `payout_debit` entry
+You will need to:
+1. Pull the latest code
+2. Run `npm install` (for the new @capacitor/status-bar package)
+3. Run `npx cap sync` to update the native project
+4. Rebuild and test on a physical device
 
 ---
 
 ## Technical Details
 
-### `finalize-delivery` new code (after existing `driver_earnings` insert):
+### How the safe area stack works after changes:
 
-```typescript
-// Ensure feeder wallet exists
-const { data: wallet } = await supabase
-  .from('feeder_wallets')
-  .upsert({ feeder_id: resolvedDriverId, currency: 'USD' }, 
-    { onConflict: 'feeder_id' })
-  .select('id')
-  .single();
-
-// Write ledger entries (idempotent via idempotency_key)
-const ledgerEntries = [];
-if (driverBeforeTipCents > 0) {
-  ledgerEntries.push({
-    wallet_id: wallet.id,
-    feeder_id: resolvedDriverId,
-    occurred_at: new Date().toISOString(),
-    type: 'earnings_base_pay',
-    direction: 'credit',
-    amount_cents: driverBeforeTipCents,
-    status: 'available',
-    source_type: 'order',
-    source_id: orderId,
-    idempotency_key: `order_${orderId}_base_pay`,
-  });
-}
-if (tip > 0) {
-  ledgerEntries.push({
-    wallet_id: wallet.id,
-    feeder_id: resolvedDriverId,
-    occurred_at: new Date().toISOString(),
-    type: 'earnings_tip',
-    direction: 'credit',
-    amount_cents: tip,
-    status: 'available',
-    source_type: 'order',
-    source_id: orderId,
-    idempotency_key: `order_${orderId}_tip`,
-  });
-}
-// Upsert to handle retries gracefully
-for (const entry of ledgerEntries) {
-  await supabase
-    .from('feeder_wallet_ledger_entries')
-    .upsert(entry, { onConflict: 'idempotency_key' });
-}
+```text
++------------------------------------------+
+| Status Bar (OS)  -- black text, white bg  |  <-- env(safe-area-inset-top)
++------------------------------------------+
+| SafeAreaProvider top spacer (white, fixed) |
++------------------------------------------+
+|                                          |
+|    safe-area-content (scrollable)        |
+|    - All pages render here               |
+|    - Sticky headers at top: 0            |
+|    - No manual safe area padding needed  |
+|                                          |
++------------------------------------------+
+| SafeAreaProvider bottom spacer            |
+| (white bg on Android, transparent iOS)    |  <-- env(safe-area-inset-bottom)
++------------------------------------------+
+| Android Nav Buttons (OS) -- visible over  |
+| white background                          |
++------------------------------------------+
 ```
 
-### `get-feeder-earnings` new field:
+### Modal/Dialog handling:
 
-```typescript
-// Card balance = ALL-TIME available earnings - ALL-TIME paid payouts
-// Separate query without timeframe filter
-const { data: allTimeEntries } = await supabase
-  .from('feeder_wallet_ledger_entries')
-  .select('type, amount_cents, status')
-  .eq('feeder_id', feederId)
-  .in('status', ['available', 'paid']);
-
-const totalAvailableEarnings = allTimeEntries
-  .filter(e => e.type.startsWith('earnings_') && e.status === 'available')
-  .reduce((s, e) => s + e.amount_cents, 0);
-const totalPaidOut = allTimeEntries
-  .filter(e => e.type === 'payout_debit' && e.status === 'paid')
-  .reduce((s, e) => s + e.amount_cents, 0);
-
-payload.card_balance_cents = Math.max(0, totalAvailableEarnings - totalPaidOut);
-```
-
-### Migration SQL:
-
-```sql
--- Backfill ledger from existing driver_earnings
-INSERT INTO feeder_wallet_ledger_entries (
-  wallet_id, feeder_id, occurred_at, type, direction, 
-  amount_cents, status, source_type, source_id, idempotency_key
-)
-SELECT 
-  fw.id, de.driver_id, de.earned_at, 'earnings_base_pay', 'credit',
-  de.amount_cents, 'available', 'order', de.order_id::text,
-  'order_' || de.order_id || '_base_pay'
-FROM driver_earnings de
-JOIN feeder_wallets fw ON fw.feeder_id = de.driver_id
-WHERE de.amount_cents > 0
-ON CONFLICT (idempotency_key) DO NOTHING;
-
--- Tips
-INSERT INTO feeder_wallet_ledger_entries (...)
-SELECT ... 'earnings_tip' ... de.tip_cents ...
-WHERE de.tip_cents > 0
-ON CONFLICT (idempotency_key) DO NOTHING;
-```
+All modals with `role="dialog"` or `.fixed.inset-0` will get automatic safe area padding via CSS, so no content bleeds into status bar or nav button areas.
 
