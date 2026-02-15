@@ -142,7 +142,6 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
 
   useEffect(() => {
     fetchEarningsData();
-    fetchCardData();
     fetchStripeConnectStatus();
   }, [timeRange]);
 
@@ -521,6 +520,17 @@ const EarningsDashboard: React.FC<EarningsDashboardProps> = ({
       });
 
       setSentToFeederCard((data.sent_to_feeder_card_cents || 0) / 100);
+
+      // Card balance from all-time ledger (persistent across reloads)
+      setCardBalance((data.card_balance_cents || 0) / 100);
+
+      // Driver name for the card
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .single();
+      if (profile?.full_name) setDriverName(profile.full_name);
 
       // Gas money
       setGasMoney((data.gas_money_cents || 0) / 100);

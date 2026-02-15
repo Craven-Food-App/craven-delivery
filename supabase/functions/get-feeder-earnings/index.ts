@@ -175,9 +175,30 @@ serve(async (req) => {
       && (on_time_rate === null || on_time_rate >= 95)
       && (accuracy === null || accuracy >= 100);
 
-    // 8) Build response
+    // 8) Card balance = ALL-TIME available earnings - ALL-TIME paid payouts
+    // This is separate from timeframe-filtered data so the card persists across reloads
+    let card_balance_cents = 0;
+    {
+      const { data: allTimeEntries } = await supabase
+        .from('feeder_wallet_ledger_entries')
+        .select('type, amount_cents, status')
+        .eq('feeder_id', feederId)
+        .in('status', ['available', 'paid']);
+
+      const allRows = allTimeEntries || [];
+      const totalAvailableEarnings = allRows
+        .filter(e => e.type.startsWith('earnings_') && e.status === 'available')
+        .reduce((s, e) => s + (e.amount_cents || 0), 0);
+      const totalPaidOut = allRows
+        .filter(e => e.type === 'payout_debit' && e.status === 'paid')
+        .reduce((s, e) => s + (e.amount_cents || 0), 0);
+      card_balance_cents = Math.max(0, totalAvailableEarnings - totalPaidOut);
+    }
+
+    // 9) Build response
     const payload = {
       available_balance_cents: Math.max(0, available_cents),
+      card_balance_cents,
       total_earned_cents,
       breakdown: {
         base_pay_cents,

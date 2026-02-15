@@ -128,6 +128,60 @@ serve(async (req) => {
       // Non-fatal: earnings record is still created
     }
 
+    // DUAL-WRITE: Also write to feeder_wallet_ledger_entries for persistent balance
+    try {
+      // Ensure feeder wallet exists (idempotent upsert)
+      const { data: wallet } = await supabase
+        .from('feeder_wallets')
+        .upsert({ feeder_id: resolvedDriverId, currency: 'USD' }, { onConflict: 'feeder_id' })
+        .select('id')
+        .single();
+
+      if (wallet?.id) {
+        // Build ledger entries
+        const ledgerEntries: any[] = [];
+        if (driverBeforeTipCents > 0) {
+          ledgerEntries.push({
+            wallet_id: wallet.id,
+            feeder_id: resolvedDriverId,
+            occurred_at: new Date().toISOString(),
+            type: 'earnings_base_pay',
+            direction: 'credit',
+            amount_cents: driverBeforeTipCents,
+            status: 'available',
+            source_type: 'order',
+            source_id: orderId,
+            idempotency_key: `order_${orderId}_base_pay`,
+          });
+        }
+        if (tip > 0) {
+          ledgerEntries.push({
+            wallet_id: wallet.id,
+            feeder_id: resolvedDriverId,
+            occurred_at: new Date().toISOString(),
+            type: 'earnings_tip',
+            direction: 'credit',
+            amount_cents: tip,
+            status: 'available',
+            source_type: 'order',
+            source_id: orderId,
+            idempotency_key: `order_${orderId}_tip`,
+          });
+        }
+        // Upsert each entry (idempotent via idempotency_key)
+        for (const entry of ledgerEntries) {
+          const { error: ledgerErr } = await supabase
+            .from('feeder_wallet_ledger_entries')
+            .upsert(entry, { onConflict: 'idempotency_key' });
+          if (ledgerErr) {
+            console.error('Ledger entry write error (non-fatal):', ledgerErr);
+          }
+        }
+      }
+    } catch (ledgerError) {
+      console.error('Feeder ledger dual-write error (non-fatal):', ledgerError);
+    }
+
     // Deduct inventory for non-restaurant merchants (grocery/retail/etc.)
     try {
       // Get order items and restaurant_id
