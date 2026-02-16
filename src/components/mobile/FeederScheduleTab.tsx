@@ -461,9 +461,11 @@ const FeederScheduleTab: React.FC<FeederScheduleTabProps> = ({
 
       {/* ── sticky footer ── */}
       <div style={{
-        position: "fixed", left: 0, right: 0, bottom: 0,
+        position: "fixed", left: 0, right: 0,
+        bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))',
         background: C.bg, borderTop: `1px solid ${C.border}`,
         padding: "10px 16px",
+        zIndex: 40,
       }}>
         <div style={{ maxWidth: 520, margin: "0 auto", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ flex: 1 }}>
