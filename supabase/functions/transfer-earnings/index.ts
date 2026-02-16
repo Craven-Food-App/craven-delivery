@@ -45,28 +45,31 @@ serve(async (req) => {
       throw new Error('Unauthorized: Cannot transfer earnings for another driver');
     }
 
-    // Calculate available balance from ledger
-    const { data: availableEntries, error: ledgerError } = await supabaseClient
-      .from('feeder_wallet_ledger_entries')
-      .select('type, amount_cents, status')
-      .eq('feeder_id', driver_id)
-      .eq('status', 'available');
+    // Calculate available balance from driver_earnings
+    const { data: earningsData, error: earningsError } = await supabaseClient
+      .from('driver_earnings')
+      .select('total_cents')
+      .eq('driver_id', driver_id);
 
-    if (ledgerError) {
-      throw new Error(`Failed to fetch ledger: ${ledgerError.message}`);
+    if (earningsError) {
+      throw new Error(`Failed to fetch earnings: ${earningsError.message}`);
     }
 
-    const earningsTypes = [
-      'earnings_base_pay', 'earnings_distance_pay', 'earnings_tip',
-      'earnings_bonus', 'earnings_adjustment_credit',
-    ];
+    const totalEarnings = earningsData?.reduce((sum, e) => sum + e.total_cents, 0) || 0;
 
-    const availableBalance = (availableEntries || [])
-      .filter(r => earningsTypes.includes(r.type))
-      .reduce((s, r) => s + r.amount_cents, 0)
-      - (availableEntries || [])
-        .filter(r => r.type === 'earnings_adjustment_debit')
-        .reduce((s, r) => s + r.amount_cents, 0);
+    // Get already paid out amount
+    const { data: payoutsData, error: payoutsError } = await supabaseClient
+      .from('driver_payouts')
+      .select('amount_cents, status')
+      .eq('driver_id', driver_id)
+      .in('status', ['pending', 'in_transit', 'paid']);
+
+    if (payoutsError) {
+      throw new Error(`Failed to fetch payouts: ${payoutsError.message}`);
+    }
+
+    const totalPaidOut = payoutsData?.reduce((sum, p) => sum + p.amount_cents, 0) || 0;
+    const availableBalance = totalEarnings - totalPaidOut;
 
     // Check if sufficient balance
     if (availableBalance < amount_cents) {
@@ -95,29 +98,15 @@ serve(async (req) => {
       throw new Error(`Failed to create payout record: ${payoutError.message}`);
     }
 
-    // Create ledger payout_debit entry
-    const { data: wallet } = await supabaseClient
-      .from('feeder_wallets')
-      .select('id')
-      .eq('feeder_id', driver_id)
-      .maybeSingle();
-
-    if (wallet) {
-      await supabaseClient
-        .from('feeder_wallet_ledger_entries')
-        .insert({
-          wallet_id: wallet.id,
-          feeder_id: driver_id,
-          occurred_at: new Date().toISOString(),
-          type: 'payout_debit',
-          direction: 'debit',
-          amount_cents,
-          status: 'paid',
-          source_type: 'payout',
-          source_id: payoutRecord.id,
-          idempotency_key: `transfer_${payoutRecord.id}`,
-        });
-    }
+    // TODO: In production, integrate with Stripe to actually transfer funds to the Feeder Card
+    // The actual Stripe transfer would happen here:
+    // const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '');
+    // await stripe.transfers.create({
+    //   amount: amount_cents,
+    //   currency: 'usd',
+    //   destination: driver_stripe_account_id,
+    //   description: 'Earnings transfer to Feeder Card',
+    // });
 
     const newAvailableBalance = availableBalance - amount_cents;
 
@@ -147,6 +136,13 @@ serve(async (req) => {
     );
   }
 });
+
+
+
+
+
+
+
 
 
 

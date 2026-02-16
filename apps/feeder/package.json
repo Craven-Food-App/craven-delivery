@@ -1,0 +1,22 @@
+{
+  "name": "feeder",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sync:android": "cap sync android",
+    "run:android": "cap run android",
+    "open:android": "cap open android",
+    "clean:android": "cd android && gradlew --stop && gradlew clean"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/geolocation": "^8.1.0",
+    "@capacitor/local-notifications": "^8.0.1",
+    "@capacitor/push-notifications": "^8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}

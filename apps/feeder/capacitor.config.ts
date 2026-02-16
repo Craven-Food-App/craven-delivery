@@ -2,13 +2,13 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.craven.delivery.feeder',
-  appName: "Crave'N Feeder",
+  appName: "Crave'n",
   webDir: '../../dist',
 
   // COMMENT OUT OR REMOVE THIS SERVER SECTION for local development
-  // server: {
-  //   url: 'https://cravenusa.com/mobile',
-  //   cleartext: true
+   //server: {
+   //  url: 'https://cravenusa.com/mobile',
+   // cleartext: true
   // },
 
   android: {
