@@ -8,44 +8,6 @@ import {
   getOrCreateCustomer
 } from '../_shared/stripe.ts';
 
-// Get allowed origins from environment or use defaults
-const getAllowedOrigins = (): string[] => {
-  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
-  if (envOrigins) {
-    return envOrigins.split(",").map(o => o.trim());
-  }
-  return [
-    "http://localhost:8080",
-    "http://localhost:5173",
-    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
-    "https://cravenusa.com",
-    "https://www.cravenusa.com",
-    "https://feeder.cravenusa.com",
-  ];
-};
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigins = getAllowedOrigins();
-  
-  // Check if origin is in allowed list
-  let allowedOrigin: string;
-  if (origin && allowedOrigins.includes(origin)) {
-    allowedOrigin = origin;
-  } else {
-    // Default to first in list (localhost:8080 for dev)
-    allowedOrigin = allowedOrigins[0];
-  }
-  
-  console.log("CORS check:", { origin, allowedOrigin, allowedOrigins, originInList: origin ? allowedOrigins.includes(origin) : false });
-  
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
-  };
-};
-
 serve(async (req) => {
   const origin = req.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);

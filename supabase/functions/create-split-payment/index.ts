@@ -7,8 +7,10 @@ import Stripe from 'https://esm.sh/stripe@13.6.0?target=deno';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: getCorsHeaders(req) });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {

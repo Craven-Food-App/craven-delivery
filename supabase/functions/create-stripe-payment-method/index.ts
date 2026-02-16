@@ -7,36 +7,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
-// CORS helper (inline)
-function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigins = [
-    "http://localhost:8080",
-    "http://localhost:5173",
-    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
-    "https://cravenusa.com",
-    "https://www.cravenusa.com",
-    "https://feeder.cravenusa.com",
-    "https://merchant.cravenusa.com",
-    "https://board.cravenusa.com",
-    "https://hq.cravenusa.com",
-    "https://ceo.cravenusa.com",
-    "https://cfo.cravenusa.com",
-    "https://coo.cravenusa.com",
-    "https://cto.cravenusa.com",
-  ];
-  
-  const allowedOrigin = origin && allowedOrigins.includes(origin) 
-    ? origin 
-    : allowedOrigins[0];
-  
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
-  };
-}
-
 // Stripe helper functions (inline)
 function getStripeClient(): Stripe {
   const secretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";

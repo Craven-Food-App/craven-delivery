@@ -2,41 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 import { getCorsHeaders } from '../_shared/cors.ts';
-// CORS helper (inlined for standalone deployment)
-const getAllowedOrigins = (): string[] => {
-  const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
-  if (envOrigins) {
-    return envOrigins.split(",").map(o => o.trim());
-  }
-  return [
-    "http://localhost:8080",
-    "http://localhost:5173",
-    "https://cravenusa.com",
-    "https://www.cravenusa.com",
-    "https://feeder.cravenusa.com",
-    "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
-  ];
-};
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigins = getAllowedOrigins();
-  
-  // Check if origin is in allowed list
-  let allowedOrigin: string;
-  if (origin && allowedOrigins.includes(origin)) {
-    allowedOrigin = origin;
-  } else {
-    // Default to first in list
-    allowedOrigin = allowedOrigins[0];
-  }
-  
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
-  };
-};
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
