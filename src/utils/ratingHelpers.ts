@@ -113,10 +113,11 @@ export const RATING_COLORS = {
 };
 
 export const RATING_TIERS = {
-  ELITE:  { min: 4.95, color: TIER_COLORS.ULTIMATE, name: 'Ultimate', icon: '👑' },
-  PRO:    { min: 4.80, color: TIER_COLORS.DIAMOND, name: 'Diamond', icon: '💎' },
-  RISING: { min: 4.70, color: TIER_COLORS.GOLD, name: 'Gold', icon: '🥇' },
-  NEW:    { min: 0,    color: TIER_COLORS.FEEDER, name: 'Feeder', icon: '🍽️' },
+  ULTIMATE:  { min: 4.95, color: TIER_COLORS.ULTIMATE, name: 'Ultimate', icon: '👑' },
+  DIAMOND:   { min: 4.90, color: TIER_COLORS.DIAMOND, name: 'Diamond', icon: '💎' },
+  PLATINUM:  { min: 4.80, color: TIER_COLORS.PLATINUM, name: 'Platinum', icon: '⚪' },
+  GOLD:      { min: 4.70, color: TIER_COLORS.GOLD, name: 'Gold', icon: '🥇' },
+  FEEDER:    { min: 0,    color: TIER_COLORS.FEEDER, name: 'Feeder', icon: '🍽️' },
 };
 
 export function getRatingColor(rating: number): string {
@@ -128,10 +129,11 @@ export function getRatingColor(rating: number): string {
 }
 
 export function getRatingTier(rating: number, deliveries: number = 0) {
-  if (rating >= 4.95 && deliveries >= 1000) return RATING_TIERS.ELITE;
-  if (rating >= 4.80 && deliveries >= 200) return RATING_TIERS.PRO;
-  if (rating >= 4.70 && deliveries >= 50) return RATING_TIERS.RISING;
-  return RATING_TIERS.NEW;
+  if (rating >= 4.95 && deliveries >= 1000) return RATING_TIERS.ULTIMATE;
+  if (rating >= 4.90 && deliveries >= 500) return RATING_TIERS.DIAMOND;
+  if (rating >= 4.80 && deliveries >= 200) return RATING_TIERS.PLATINUM;
+  if (rating >= 4.70 && deliveries >= 50) return RATING_TIERS.GOLD;
+  return RATING_TIERS.FEEDER;
 }
 
 export function getRatingTextColor(rating: number): string {

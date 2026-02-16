@@ -120,10 +120,11 @@ Where:
   + (Acceptance Rate × 0.3)
 
 Score Range: 0-100
-- 90-100: Premium Tier (Highest bonuses)
-- 80-89: Standard Tier (Standard bonuses)
-- 70-79: Restricted Tier (Limited bonuses)
-- <70: Limited Tier (No bonuses)`}
+- 95-100: Ultimate Feeder (+30 dispatch weight, admin approved)
+- 90-94: Diamond Feeder (+18 dispatch weight)
+- 80-89: Platinum Feeder (+10 dispatch weight)
+- 70-79: Gold Feeder (+5 dispatch weight)
+- <70: Feeder (Probationary, +0 dispatch weight)`}
                 </Code>
               </Card>
             </Stack>

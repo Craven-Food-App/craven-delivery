@@ -49,10 +49,11 @@ export default function FeederScoreScreen() {
   });
 
   const getTier = (scoreValue: number) => {
-    if (scoreValue >= 90) return { name: 'Premium', color: 'green' };
-    if (scoreValue >= 80) return { name: 'Standard', color: 'blue' };
-    if (scoreValue >= 70) return { name: 'Restricted', color: 'yellow' };
-    return { name: 'Limited', color: 'red' };
+    if (scoreValue >= 95) return { name: 'Ultimate', color: 'orange', icon: '👑' };
+    if (scoreValue >= 90) return { name: 'Diamond', color: 'blue', icon: '💎' };
+    if (scoreValue >= 80) return { name: 'Platinum', color: 'gray', icon: '⚪' };
+    if (scoreValue >= 70) return { name: 'Gold', color: 'yellow', icon: '🥇' };
+    return { name: 'Feeder', color: 'gray', icon: '🍽️' };
   };
 
   if (isLoading) {
@@ -131,36 +132,59 @@ export default function FeederScoreScreen() {
           Tier Benefits
         </Title>
         <List>
-          {tier.name === 'Premium' && (
+          {tier.name === 'Ultimate' && (
             <>
-              <List.Item icon={<IconCheck size={16} color="green" />}>
-                Priority order access
+              <List.Item icon={<IconCheck size={16} color="orange" />}>
+                Top dispatch priority (+30 weight)
               </List.Item>
-              <List.Item icon={<IconCheck size={16} color="green" />}>
-                Higher base pay percentage
+              <List.Item icon={<IconCheck size={16} color="orange" />}>
+                Catering & premium retail first access
               </List.Item>
-              <List.Item icon={<IconCheck size={16} color="green" />}>
-                Exclusive bonus opportunities
+              <List.Item icon={<IconCheck size={16} color="orange" />}>
+                Dedicated support queue
               </List.Item>
             </>
           )}
-          {tier.name === 'Standard' && (
+          {tier.name === 'Diamond' && (
             <>
               <List.Item icon={<IconCheck size={16} color="blue" />}>
-                Standard order access
+                Priority dispatch access (+18 weight)
               </List.Item>
               <List.Item icon={<IconCheck size={16} color="blue" />}>
-                Regular bonus eligibility
+                High-value retail access
+              </List.Item>
+              <List.Item icon={<IconCheck size={16} color="blue" />}>
+                Large order eligibility
               </List.Item>
             </>
           )}
-          {(tier.name === 'Restricted' || tier.name === 'Limited') && (
+          {tier.name === 'Platinum' && (
+            <>
+              <List.Item icon={<IconCheck size={16} color="gray" />}>
+                Access to premium merchants
+              </List.Item>
+              <List.Item icon={<IconCheck size={16} color="gray" />}>
+                Early scheduling unlock (+10 weight)
+              </List.Item>
+            </>
+          )}
+          {tier.name === 'Gold' && (
+            <>
+              <List.Item icon={<IconCheck size={16} color="#D4AF37" />}>
+                Early access to standard orders
+              </List.Item>
+              <List.Item icon={<IconCheck size={16} color="#D4AF37" />}>
+                +5 dispatch weight
+              </List.Item>
+            </>
+          )}
+          {tier.name === 'Feeder' && (
             <>
               <List.Item icon={<IconX size={16} color="red" />}>
-                Limited order access
+                Standard orders only
               </List.Item>
               <List.Item icon={<IconX size={16} color="red" />}>
-                Performance improvement required
+                No premium retail or catering
               </List.Item>
             </>
           )}
