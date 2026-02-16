@@ -47,6 +47,7 @@ export const SafeDrivingSection: React.FC<SafeDrivingSectionProps> = ({ onBack }
         top={0}
         bg="white"
         style={{ zIndex: 10, borderBottom: '1px solid var(--mantine-color-gray-2)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <Group px="md" py="md" gap="md" align="center">
           <ActionIcon onClick={onBack} variant="subtle" color="dark">

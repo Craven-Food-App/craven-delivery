@@ -21,7 +21,7 @@ export class WebScrapingService {
   static async parseMenuFromUrl(url: string): Promise<{ success: boolean; menuItems?: ExtractedMenuItem[]; error?: string }> {
     try {
       // Use Supabase edge function to bypass CORS restrictions
-      const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
+      const { supabase } = await import('@/integrations/supabase/client');
       
       const { data, error } = await supabase.functions.invoke('scrape-menu', {
         body: { url }

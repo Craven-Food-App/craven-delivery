@@ -188,7 +188,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: '12px',
+          paddingTop: 'env(safe-area-inset-top, 12px)',
         }}
       >
         <ActionIcon
@@ -226,7 +226,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
               w="100%"
               style={{ 
                 background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
-                paddingTop: '0',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
               p="md"
             >
@@ -375,7 +375,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
               w="100%"
               style={{ 
                 background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
-                paddingTop: '0',
+                paddingTop: 'env(safe-area-inset-top, 0px)',
               }}
               p="md"
             >

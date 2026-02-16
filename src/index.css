@@ -110,7 +110,7 @@ All colors MUST be HSL.
   height: env(safe-area-inset-top, 0px);
   min-height: env(safe-area-inset-top, 0px);
   width: 100%;
-  background: #ffffff;
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -121,23 +121,8 @@ All colors MUST be HSL.
   width: 100%;
   background: transparent;
   flex-shrink: 0;
-}
-
-/* Android: white background behind navigation buttons */
-.safe-area-bottom-spacer.android-bottom {
-  background: #ffffff;
+  /* Ensure minimum height for Android navigation bar */
   min-height: max(env(safe-area-inset-bottom, 0px), 0px);
-}
-
-/* Modal/Dialog safe area enforcement */
-.capacitor-native [role="dialog"] > *:first-child,
-.capacitor-native .fixed.inset-0 > *:first-child {
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-.capacitor-native [role="dialog"] > *:last-child,
-.capacitor-native .fixed.inset-0 > *:last-child {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Android-specific: No extra bottom spacer - let navigation buttons show naturally */

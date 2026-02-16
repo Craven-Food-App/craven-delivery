@@ -428,7 +428,7 @@ export const MobileDriverDashboard: React.FC = () => {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showQuickScheduler, setShowQuickScheduler] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
-  const [driverRating, setDriverRating] = useState<number>(0);
+  const [driverRating, setDriverRating] = useState<number>(5.0);
   const [driverDeliveries, setDriverDeliveries] = useState<number>(0);
   const [ratingTrend, setRatingTrend] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]); // Add notifications state
@@ -492,7 +492,7 @@ export const MobileDriverDashboard: React.FC = () => {
           .maybeSingle();
 
         if (profile) {
-          setDriverRating(Number(profile.rating) || 0);
+          setDriverRating(Number(profile.rating) || 5.0);
           setDriverDeliveries(profile.total_deliveries || 0);
           setRatingTrend(0); // Will calculate from metrics table once migration runs
         }

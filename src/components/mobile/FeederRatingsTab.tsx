@@ -14,7 +14,6 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from '@/integrations/supabase/client';
 
 // ─── THEME ──────────────────────────────────────────────────────────────────
 const C = {
@@ -52,16 +51,16 @@ type FeederRatingsTabProps = {
   onOpenNotifications?: () => void;
 };
 
-// ─── REAL DATA HOOK ─────────────────────────────────────────────────────────
-function useRatingsData(): { data: RatingsData; loading: boolean } {
-  const [data, setData] = useState<RatingsData>({
-    score: 0,
+// ─── MOCK DATA (replace with API) ───────────────────────────────────────────
+function useMockRatings(): RatingsData {
+  return useMemo(() => ({
+    score:      5.0,
     totalFeeds: 0,
     pulse: [
-      { label: "On-Time", value: 0 },
-      { label: "Accuracy", value: 0 },
-      { label: "Quality", value: 0 },
-      { label: "Satisfaction", value: 0 },
+      { label: "On-Time",     value: 0 },
+      { label: "Accuracy",    value: 0 },
+      { label: "Quality",     value: 0 },
+      { label: "Satisfaction",value: 0 },
     ],
     breakdown: [
       { stars: 5, count: 0 },
@@ -70,59 +69,7 @@ function useRatingsData(): { data: RatingsData; loading: boolean } {
       { stars: 2, count: 0 },
       { stars: 1, count: 0 },
     ],
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setLoading(false); return; }
-
-        const { data: profile } = await supabase
-          .from('driver_profiles')
-          .select('rating, total_deliveries')
-          .eq('user_id', user.id)
-          .single();
-
-        const { data: orders } = await supabase
-          .from('orders')
-          .select('id, order_status, created_at')
-          .eq('assigned_craver_id', user.id);
-
-        const totalDeliveries = profile?.total_deliveries || 0;
-        const rating = profile?.rating || 0;
-        const deliveredOrders = orders?.filter(o => o.order_status === 'delivered').length || 0;
-        const totalOrders = orders?.length || 0;
-        const completionRate = totalOrders > 0 ? Math.round((deliveredOrders / totalOrders) * 100) : 0;
-        const onTimeRate = totalDeliveries > 0 ? Math.max(0, Math.min(100, Math.round(rating * 20))) : 0;
-
-        setData({
-          score: rating,
-          totalFeeds: totalDeliveries,
-          pulse: [
-            { label: "On-Time", value: onTimeRate },
-            { label: "Accuracy", value: completionRate },
-            { label: "Quality", value: totalDeliveries > 0 ? Math.round(rating * 20) : 0 },
-            { label: "Satisfaction", value: totalDeliveries > 0 ? Math.round(rating * 20) : 0 },
-          ],
-          breakdown: [
-            { stars: 5, count: totalDeliveries > 0 ? deliveredOrders : 0 },
-            { stars: 4, count: 0 },
-            { stars: 3, count: 0 },
-            { stars: 2, count: 0 },
-            { stars: 1, count: 0 },
-          ],
-        });
-      } catch (err) {
-        console.error('Error fetching ratings:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  return { data, loading };
+  }), []);
 }
 
 // ─── TINY UTILS ─────────────────────────────────────────────────────────────
@@ -411,12 +358,13 @@ const FeederRatingsTab: React.FC<FeederRatingsTabProps> = ({
   onOpenMenu,
   onOpenNotifications
 }) => {
-  const { data, loading: ratingsLoading } = useRatingsData();
+  const data          = useMockRatings();
   const [modal, setModal] = useState(false);
 
   return (
     <div style={{
       background: C.bg, minHeight: "100vh", color: C.text,
+      paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))',
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     }}>

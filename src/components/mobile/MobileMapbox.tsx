@@ -633,7 +633,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       }
 
       // If no rendered features found, use Mapbox Geocoding API as fallback
-      if (gasFeatures.length === 0) {
+      if (gasFeatures.length === 0 && zoom >= 10) {
         try {
           const resp = await fetch(
             `https://api.mapbox.com/geocoding/v5/mapbox.places/gas%20station.json?proximity=${center.lng},${center.lat}&limit=10&types=poi&access_token=${MAPBOX_CONFIG.accessToken}`

@@ -121,7 +121,7 @@ export const MobilePasswordReset: React.FC = () => {
   return (
     <div className="fixed inset-0 w-full h-full bg-gradient-to-br from-orange-50 to-white overflow-y-auto z-50">
       {/* Header */}
-      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 0, minHeight: '60px' }}>
+      <div className="sticky z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200" style={{ top: 0, paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}>
         <div className="flex items-center justify-between p-4">
           <button
             onClick={() => navigate(-1)}

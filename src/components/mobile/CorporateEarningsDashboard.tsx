@@ -228,7 +228,7 @@ const OnFireDashboard: React.FC<OnFireDashboardProps> = ({
       paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' 
     }}>
       {/* Header - Level with hamburger menu */}
-      <div className="bg-white border-b sticky top-0 z-10 px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b sticky top-0 z-10 px-4 py-3 flex items-center justify-between flex-shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
         <button 
           onClick={() => {
             if (onOpenMenu) {

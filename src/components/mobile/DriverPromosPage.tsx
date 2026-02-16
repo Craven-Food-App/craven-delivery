@@ -202,7 +202,7 @@ export function DriverPromosPage({ onOpenMenu, onOpenNotifications }: DriverProm
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
+      <div className="sticky top-0 z-10 bg-white border-b shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <button

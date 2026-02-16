@@ -10,29 +10,34 @@ interface SafeAreaProviderProps {
  * - Top: Status bar, notch, camera cutout (iOS/Android)
  * - Bottom: Home indicator (iOS), navigation bar (Android)
  * - Left/Right: Landscape safe areas
- * 
- * Also initializes the StatusBar plugin for black text on native.
  */
 export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
+  const [isNative, setIsNative] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
+    // Detect if running in Capacitor native app
     const native = Capacitor.isNativePlatform();
     const platform = Capacitor.getPlatform();
-
+    
+    // Check for test mode (add ?android-test=true to URL for testing)
     const urlParams = new URLSearchParams(window.location.search);
     const isTestMode = urlParams.get('android-test') === 'true';
-
+    
+    // Android detection: Check Capacitor platform or user agent as fallback
     const isAndroidPlatform = platform === 'android';
     const isAndroidUA = /Android/i.test(navigator.userAgent);
     const android = (native && (isAndroidPlatform || isAndroidUA)) || isTestMode;
-
+    
+    setIsNative(native);
     setIsAndroid(android);
-
+    
+    // Set test mode attribute for CSS
     if (isTestMode) {
       document.body.setAttribute('data-android-test', 'true');
     }
 
+    // Add class to body for CSS targeting
     if (native) {
       document.body.classList.add('capacitor-native');
     } else {
@@ -41,23 +46,13 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
 
     if (android) {
       document.body.classList.add('capacitor-android');
+      // Debug log (remove in production if needed)
       console.log('[SafeAreaProvider] Android detected - white navigation bar enabled');
     } else {
       document.body.classList.remove('capacitor-android');
     }
 
-    // Initialize StatusBar plugin on native platforms
-    if (native) {
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        StatusBar.setStyle({ style: Style.Light }).catch(() => {}); // Light = black text
-        StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => {}); // Android only
-        StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
-        console.log('[SafeAreaProvider] StatusBar configured: black text, white background');
-      }).catch(() => {
-        console.warn('[SafeAreaProvider] @capacitor/status-bar not available');
-      });
-    }
-
+    // Cleanup
     return () => {
       document.body.classList.remove('capacitor-native');
       document.body.classList.remove('capacitor-android');
@@ -74,11 +69,13 @@ export function SafeAreaProvider({ children }: SafeAreaProviderProps) {
         {children}
       </div>
       
-      {/* Bottom safe area spacer - always render for both iOS and Android */}
+      {/* Bottom safe area spacer - for home indicator (iOS only) */}
+      {!isAndroid && (
       <div 
-        className={`safe-area-bottom-spacer${isAndroid ? ' android-bottom' : ''}`}
+          className="safe-area-bottom-spacer" 
         aria-hidden="true"
       />
+      )}
     </div>
   );
 }

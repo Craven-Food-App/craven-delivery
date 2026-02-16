@@ -158,7 +158,7 @@ export const getPortalsForPosition = (position?: string | null): Array<'board' |
 export const isOfficer = async (userId?: string | null): Promise<boolean> => {
   if (!userId) return false;
   
-  const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
+  const { supabase } = await import('@/integrations/supabase/client');
   const { data } = await supabase
     .from('exec_users')
     .select('id')
@@ -175,7 +175,7 @@ export const isOfficer = async (userId?: string | null): Promise<boolean> => {
 export const isEmployee = async (userId?: string | null): Promise<boolean> => {
   if (!userId) return false;
   
-  const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
+  const { supabase } = await import('@/integrations/supabase/client');
   const { data } = await supabase
     .from('employees')
     .select('id')
@@ -192,7 +192,7 @@ export const isEmployee = async (userId?: string | null): Promise<boolean> => {
 export const isOfficerAndEmployee = async (userId?: string | null): Promise<boolean> => {
   if (!userId) return false;
   
-  const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
+  const { supabase } = await import('@/integrations/supabase/client');
   const { data } = await supabase
     .from('exec_users')
     .select('is_also_employee')
@@ -209,7 +209,7 @@ export const isOfficerAndEmployee = async (userId?: string | null): Promise<bool
 export const getOfficerAppointmentDate = async (userId?: string | null): Promise<string | null> => {
   if (!userId) return null;
   
-  const { supabase } = await import(/* @vite-ignore */ '@/integrations/supabase/client');
+  const { supabase } = await import('@/integrations/supabase/client');
   const { data } = await supabase
     .from('exec_users')
     .select('appointment_date')
