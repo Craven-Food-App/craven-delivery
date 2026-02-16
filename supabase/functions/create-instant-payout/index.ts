@@ -33,7 +33,92 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { amount, payout_method } = await req.json();
+    const { amount, payout_method, idempotency_key } = await req.json();
+
+    // Idempotency check
+    if (idempotency_key) {
+      const { data: existing } = await supabase
+        .from('feeder_wallet_ledger_entries')
+        .select('id')
+        .eq('idempotency_key', idempotency_key)
+        .maybeSingle();
+
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: 'Duplicate request', duplicate: true }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Server-side eligibility check
+    const { data: eligibilityEntries } = await supabase
+      .from('feeder_wallet_ledger_entries')
+      .select('source_id')
+      .eq('feeder_id', user.id)
+      .eq('source_type', 'order')
+      .eq('type', 'earnings_base_pay');
+
+    const completedDeliveries = new Set(
+      (eligibilityEntries || []).map(r => r.source_id).filter(Boolean)
+    ).size;
+
+    if (completedDeliveries < 50) {
+      throw new Error('Instant cashout requires 50+ completed deliveries');
+    }
+
+    const { data: profile } = await supabase
+      .from('driver_profiles')
+      .select('rolling_rating, on_time_rate, completion_rate')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      if (completedDeliveries >= 20 && profile.rolling_rating != null && profile.rolling_rating < 4.5) {
+        throw new Error('Instant cashout requires 4.5+ rating');
+      }
+      if (completedDeliveries >= 10) {
+        if (profile.on_time_rate != null && profile.on_time_rate < 95) {
+          throw new Error('Instant cashout requires 95%+ on-time rate');
+        }
+        if (profile.completion_rate != null && profile.completion_rate < 100) {
+          throw new Error('Instant cashout requires 100% accuracy');
+        }
+      }
+    }
+
+    // Validate amount against ledger available balance
+    const { data: availableEntries } = await supabase
+      .from('feeder_wallet_ledger_entries')
+      .select('type, amount_cents, status')
+      .eq('feeder_id', user.id)
+      .in('status', ['available']);
+
+    const earningsTypes = [
+      'earnings_base_pay', 'earnings_distance_pay', 'earnings_tip',
+      'earnings_bonus', 'earnings_adjustment_credit',
+    ];
+
+    const ledgerAvailable = (availableEntries || [])
+      .filter(r => earningsTypes.includes(r.type))
+      .reduce((s, r) => s + r.amount_cents, 0)
+      - (availableEntries || [])
+        .filter(r => r.type === 'earnings_adjustment_debit')
+        .reduce((s, r) => s + r.amount_cents, 0);
+
+    if (!amount || amount <= 0) {
+      throw new Error('Invalid amount');
+    }
+
+    if (amount > ledgerAvailable) {
+      throw new Error(
+        `Insufficient ledger balance. Available: $${(ledgerAvailable / 100).toFixed(2)}, Requested: $${(amount / 100).toFixed(2)}`
+      );
+    }
+
+    if (amount < 100) {
+      throw new Error('Minimum instant payout is $1.00');
+    }
 
     // Get driver's Stripe account
     const { data: stripeAccount } = await supabase
@@ -49,7 +134,7 @@ serve(async (req) => {
 
     const stripeAccountId = stripeAccount.stripe_account_id;
 
-    // Get available balance
+    // Get available balance from Stripe
     const balance = await stripe.balance.retrieve({
       stripeAccount: stripeAccountId,
     });
@@ -57,25 +142,37 @@ serve(async (req) => {
     const availableCents = balance.available?.[0]?.amount || 0;
     const currency = balance.available?.[0]?.currency || 'usd';
 
-    console.log(`Available balance: ${availableCents} ${currency}`);
-
-    // Validate requested amount
-    if (!amount || amount <= 0) {
-      throw new Error('Invalid amount');
-    }
-
     if (amount > availableCents) {
       throw new Error(
-        `Insufficient balance. Available: $${(availableCents / 100).toFixed(2)}, Requested: $${(amount / 100).toFixed(2)}`
+        `Insufficient Stripe balance. Available: $${(availableCents / 100).toFixed(2)}`
       );
     }
 
-    // Check minimum (Stripe requires $1 minimum for instant payouts)
-    if (amount < 100) {
-      throw new Error('Minimum instant payout is $1.00');
+    // Create payout_debit ledger entry (processing)
+    const { data: wallet } = await supabase
+      .from('feeder_wallets')
+      .select('id')
+      .eq('feeder_id', user.id)
+      .single();
+
+    if (wallet) {
+      await supabase
+        .from('feeder_wallet_ledger_entries')
+        .insert({
+          wallet_id: wallet.id,
+          feeder_id: user.id,
+          occurred_at: new Date().toISOString(),
+          type: 'payout_debit',
+          direction: 'debit',
+          amount_cents: amount,
+          status: 'processing',
+          source_type: 'payout',
+          source_id: `instant_${Date.now()}`,
+          idempotency_key: idempotency_key || `instant_${user.id}_${amount}_${Math.floor(Date.now() / 60000)}`,
+        });
     }
 
-    // Determine payout method
+    // Create Stripe payout
     let payoutParams: Stripe.PayoutCreateParams = {
       amount: amount,
       currency: currency,
@@ -87,19 +184,13 @@ serve(async (req) => {
       },
     };
 
-    // For instant payouts to debit card
     if (payout_method === 'instant') {
       payoutParams.method = 'instant';
     }
 
-    console.log(`Creating payout: ${JSON.stringify(payoutParams)}`);
-
-    // Create payout
     const payout = await stripe.payouts.create(
       payoutParams,
-      {
-        stripeAccount: stripeAccountId,
-      }
+      { stripeAccount: stripeAccountId }
     );
 
     console.log(`Payout created: ${payout.id}, status: ${payout.status}`);
@@ -177,13 +268,6 @@ serve(async (req) => {
     );
   }
 });
-
-
-
-
-
-
-
 
 
 

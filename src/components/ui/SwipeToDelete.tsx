@@ -173,10 +173,3 @@ export function SwipeToDelete({ children, onDelete, threshold = 80 }: SwipeToDel
 
 
 
-
-
-
-
-
-
-
