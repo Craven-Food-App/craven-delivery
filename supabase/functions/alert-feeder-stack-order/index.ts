@@ -6,8 +6,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: getCorsHeaders(req) });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {

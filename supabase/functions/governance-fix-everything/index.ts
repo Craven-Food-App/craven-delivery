@@ -2,31 +2,16 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getCorsHeaders } from '../_shared/cors.ts';
-const corsHeaders = {
-  ...getCorsHeaders(req.headers.get('origin')),
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function getCorsHeaders(origin: string | null) {
-  return {
-    ...corsHeaders,
-    'Access-Control-Allow-Origin': origin || '*',
-  };
-}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       status: 200,
-      headers: {
-        ...getCorsHeaders(req.headers.get('origin')),
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      } 
+      headers: corsHeaders 
     });
   }
-
-  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
