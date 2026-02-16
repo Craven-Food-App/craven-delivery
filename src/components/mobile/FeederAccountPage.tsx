@@ -701,7 +701,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         setCurrentPage('security');
         break;
       case "callSupport":
-        window.location.href = 'tel:+18005551234';
+        window.location.href = 'tel:+12164350821';
         break;
       case "msgSupport":
         setCurrentPage('support');
