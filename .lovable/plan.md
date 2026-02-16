@@ -1,62 +1,101 @@
 
-# Fix Build to Restore Wallet-Style Earnings Page
 
-## What's Happening
+# Feeder Tier System -- Full Integration Plan
 
-The wallet-style Feeder Card with the locked instant cashout checklist (matching your reference image) **is already coded** in `EarningsDashboard.tsx`. You can't see it because the build is broken by unrelated TypeScript errors in ~29 edge functions that have duplicate `getCorsHeaders` declarations.
+## Problem
 
-## Root Cause
+The tier system spec is defined in `ratingHelpers.ts` but **none of the mobile/feeder UI components actually use it**. There are 4 separate ratings/score components, each with their own hardcoded or mock data, and none query the real rolling metrics from `driver_profiles`.
 
-Many edge functions both **import** `getCorsHeaders` from `_shared/cors.ts` AND **define their own local copy**, causing TypeScript error TS2440 ("Import declaration conflicts with local declaration"). Additionally, 2 functions pass the wrong argument type to `getCorsHeaders`.
+### Current State (Broken)
 
-## Fix
+| Component | Data Source | Tier Logic |
+|---|---|---|
+| `FeederRatingsTab.tsx` (active in feeder app) | Mock data (all zeros) | None |
+| `DriverRatingsPage.tsx` | Hardcoded (score=95) | Wrong reward system |
+| `RatingsSection.tsx` | Real DB queries | Correct but unused |
+| `score.tsx` (feeder page) | `driver_scores` table | Wrong (0-100 scale) |
+| `ratingHelpers.ts` | N/A (utility) | Correct spec constants |
 
-### Step 1: Remove duplicate local `getCorsHeaders` + `getAllowedOrigins` in 29 edge functions
+### Database (Already Exists)
 
-Each of these files imports `getCorsHeaders` from `../_shared/cors.ts` but also declares its own local version. The fix is to **remove the local `getAllowedOrigins` function and local `getCorsHeaders` declaration**, keeping only the import:
+`driver_profiles` already has: `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
 
-1. `activate-drivers/index.ts`
-2. `send-email-verification-code/index.ts`
-3. `send-driver-waitlist-email/index.ts`
-4. `verify-email-login/index.ts`
-5. `sync-equity-grants/index.ts`
-6. `send-phone-verification/index.ts`
-7. `queue-management/index.ts`
-8. `send-exit-notification/index.ts`
-9. `update-order-status/index.ts`
-10. `get-cravemore-offer/index.ts`
-11. `verify-invite-access/index.ts`
-12. `get-city-population/index.ts`
-13. `create-cravemore-checkout/index.ts`
-14. `manage-moov-onboarding-invites/index.ts`
-15. `send-driver-welcome-email/index.ts`
-16. `process-invoice-email/index.ts`
-17. `create-invite-checkout/index.ts`
-18. `create-payment/index.ts`
-19. `governance-fix-cap-table/index.ts` (also has `function` keyword version)
-20. `create-stripe-payment-method/index.ts` (also has `function` keyword version)
-21. `governance-fix-everything/index.ts`
+`tier_history` table already exists with `feeder_id`, `old_tier`, `new_tier`, `reason`, `created_at`
 
-For each file, the pattern is the same: delete lines containing `getAllowedOrigins` and the local `getCorsHeaders` re-declaration (~15-20 lines), leaving only the `import { getCorsHeaders } from '../_shared/cors.ts'` line.
+---
 
-### Step 2: Fix wrong argument type in 2 functions
+## Plan
 
-These pass `req` (a Request object) instead of a string:
+### 1. Rewrite `FeederRatingsTab.tsx` to Use Real Data + Tier Spec
 
-- `alert-feeder-stack-order/index.ts`: Change all `getCorsHeaders(req)` to `getCorsHeaders(req.headers.get('origin'))`
-- `create-split-payment/index.ts`: Same fix
+Replace the mock data hook with a real Supabase query that pulls from `driver_profiles`:
+- `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
 
-### Step 3: Add `// @ts-nocheck` to remaining problematic files
+Use `evaluateFeederTier()` and `getNextTier()` from `ratingHelpers.ts` to determine the current tier and next tier requirements.
 
-For any edge functions with deeper type issues (implicit `any`, Supabase client version mismatches) that aren't worth refactoring, add `// @ts-nocheck` at the top to suppress errors and unblock the build.
+Display:
+- Tier badge (color-coded per spec: white/gold gradient/silver-white/deep blue/black+orange)
+- Current rating with stars
+- Performance Pulse metrics (On-Time, Completion, Cancellation rates from rolling data)
+- Rating breakdown (keep existing star breakdown UI)
+- Next tier progress section showing requirements vs current values
+- Tier benefits list matching the spec exactly
 
-## Result
+### 2. Update `score.tsx` (Feeder Score Page)
 
-Once the build passes, the earnings page will display exactly as shown in your reference image:
-- "Cash Out to Debit Card" header with "Locked" pill
-- Lock icon + "UNLOCK INSTANT CASHOUT" subheading
-- Explanatory text about being a Feeder in good standing
-- Checklist with checkboxes: 50+ Completed Deliveries (with progress like 0/50), 4.5+ Rating, On-Time Delivery, 100% Accuracy
-- Green checkmarks for met requirements, gray empty boxes for unmet ones
+- Replace the `getTier` function (which uses a 0-100 score scale) with `evaluateFeederTier()` from `ratingHelpers.ts`
+- Query `driver_profiles` rolling metrics instead of `driver_scores`
+- Add cancellation rate display (missing from current UI)
+- Add next-tier progress section with deliveries remaining, rating required, etc.
 
-No UI changes needed -- only build fixes.
+### 3. Consolidate: Remove `DriverRatingsPage.tsx` Usage
+
+- The feeder app already uses `FeederRatingsTab` -- confirm `DriverRatingsPage` is not referenced anywhere active and leave it as-is (no breakage risk)
+
+### 4. Add Tier Badge to Feeder Account Page and Dashboard
+
+- On the account page header, show the current tier badge (icon + name + color)
+- On the main dashboard (home tab), show a small tier indicator near the driver's name/status
+
+### 5. Ensure `RatingsSection.tsx` Stays in Sync
+
+- This component already has correct logic; add the missing `cancellation_rate` metric and ensure it imports thresholds from `ratingHelpers.ts` instead of duplicating them inline
+
+---
+
+## Technical Details
+
+### Shared Hook: `useFeederTier`
+
+Create a reusable hook that all components can share:
+
+```typescript
+// src/hooks/useFeederTier.ts
+function useFeederTier(userId: string) {
+  // Query driver_profiles for rolling metrics
+  // Call evaluateFeederTier() from ratingHelpers
+  // Return: { tier, metrics, nextTier, loading }
+}
+```
+
+### Files to Modify
+
+1. **`src/hooks/useFeederTier.ts`** -- New shared hook (or update existing `useDriverTier.ts`)
+2. **`src/components/mobile/FeederRatingsTab.tsx`** -- Replace mock data with real queries + full tier UI
+3. **`src/pages/feeder/score.tsx`** -- Fix tier evaluation to use spec thresholds
+4. **`src/components/mobile/FeederAccountPage.tsx`** -- Add tier badge display
+5. **`src/components/mobile/RatingsSection.tsx`** -- Add cancellation rate, import from ratingHelpers
+6. **`src/components/mobile/MobileDriverDashboard.tsx`** -- Add tier indicator to home tab header
+
+### Badge Colors (from spec)
+
+- Feeder: White background, gray text, gray border
+- Gold: Gold gradient, dark gold text
+- Platinum: Silver-white gradient, gray text
+- Diamond: Deep blue gradient, white text
+- Ultimate: Black background, orange (#E8622A) text/border
+
+### No Database Changes Needed
+
+All required columns and tables already exist in the schema.
+
