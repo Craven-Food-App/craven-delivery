@@ -13,50 +13,41 @@ import {
   Loader,
   Center,
 } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { IconStar, IconCheck, IconX } from '@tabler/icons-react';
+import { IconCheck, IconX } from '@tabler/icons-react';
+import { useFeederTier } from '@/hooks/useFeederTier';
+import { TIER_BADGE_STYLES, type FeederTierName } from '@/utils/ratingHelpers';
+
+const TIER_BENEFITS: Record<FeederTierName, { text: string; positive: boolean }[]> = {
+  Feeder: [
+    { text: 'Standard orders only', positive: false },
+    { text: 'No premium retail or catering', positive: false },
+  ],
+  Gold: [
+    { text: 'Early access to standard orders', positive: true },
+    { text: '+5 dispatch weight', positive: true },
+  ],
+  Platinum: [
+    { text: 'Access to premium merchants', positive: true },
+    { text: 'Early scheduling unlock (+10 weight)', positive: true },
+  ],
+  Diamond: [
+    { text: 'Priority dispatch access (+18 weight)', positive: true },
+    { text: 'High-value retail access', positive: true },
+    { text: 'Large order eligibility', positive: true },
+  ],
+  Ultimate: [
+    { text: 'Top dispatch priority (+30 weight)', positive: true },
+    { text: 'Catering & premium retail first access', positive: true },
+    { text: 'Dedicated support queue', positive: true },
+    { text: 'Beta feature access', positive: true },
+    { text: 'Enhanced referral bonus', positive: true },
+  ],
+};
 
 export default function FeederScoreScreen() {
-  const { data: { user } } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
+  const { tier, tierConfig, metrics, nextTier, loading } = useFeederTier();
 
-  const { data: score, isLoading } = useQuery({
-    queryKey: ['feeder-score', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
-      const { data, error } = await supabase
-        .from('driver_scores')
-        .select('*')
-        .eq('driver_id', user.id)
-        .order('calculated_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching score:', error);
-      }
-
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  const getTier = (scoreValue: number) => {
-    if (scoreValue >= 95) return { name: 'Ultimate', color: 'orange', icon: '👑' };
-    if (scoreValue >= 90) return { name: 'Diamond', color: 'blue', icon: '💎' };
-    if (scoreValue >= 80) return { name: 'Platinum', color: 'gray', icon: '⚪' };
-    if (scoreValue >= 70) return { name: 'Gold', color: 'yellow', icon: '🥇' };
-    return { name: 'Feeder', color: 'gray', icon: '🍽️' };
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
       <Center style={{ minHeight: '50vh' }}>
         <Loader size="lg" />
@@ -64,11 +55,17 @@ export default function FeederScoreScreen() {
     );
   }
 
-  const tier = score ? getTier(score.overall_score || 0) : { name: 'N/A', color: 'gray' };
+  const rating = metrics.rolling_rating || metrics.rating;
+  const deliveries = metrics.rolling_deliveries || metrics.total_deliveries;
+  const styleKey = tier.toUpperCase() as keyof typeof TIER_BADGE_STYLES;
+  const badgeStyle = TIER_BADGE_STYLES[styleKey] || TIER_BADGE_STYLES.FEEDER;
+
+  // For the ring progress, map rating to percentage (out of 5)
+  const ratingPct = (rating / 5) * 100;
 
   return (
     <Stack gap="lg" p="lg">
-      <Title order={2}>My Driver Score</Title>
+      <Title order={2}>My Feeder Score</Title>
 
       {/* Score Gauge */}
       <Card withBorder padding="lg">
@@ -76,123 +73,115 @@ export default function FeederScoreScreen() {
           <RingProgress
             size={200}
             thickness={16}
-            sections={[
-              {
-                value: score?.overall_score || 0,
-                color: tier.color,
-              },
-            ]}
+            sections={[{ value: ratingPct, color: tier === 'Ultimate' ? '#E8622A' : tier === 'Diamond' ? '#1E3A5F' : tier === 'Platinum' ? '#C0C0C0' : tier === 'Gold' ? '#D4AF37' : '#999999' }]}
             label={
               <Text size="3xl" fw={700} ta="center">
-                {score?.overall_score || 0}
+                {rating.toFixed(2)}
               </Text>
             }
           />
-          <Badge size="lg" color={tier.color}>
-            {tier.name} Tier
+          <Badge
+            size="lg"
+            style={{
+              background: badgeStyle.bg,
+              color: badgeStyle.text,
+              border: `2px solid ${badgeStyle.border}`,
+            }}
+          >
+            {tierConfig.icon} {tier} Feeder
           </Badge>
+          <Text size="sm" c="dimmed">{deliveries} deliveries (rolling 60-day)</Text>
         </Stack>
       </Card>
 
       {/* Score Breakdown */}
       <Card withBorder padding="lg">
-        <Title order={4} mb="md">
-          Score Breakdown
-        </Title>
+        <Title order={4} mb="md">Performance Metrics (60-Day Rolling)</Title>
         <Stack gap="md">
           <div>
             <Group justify="space-between" mb="xs">
               <Text size="sm">On-Time Rate</Text>
-              <Text fw={600}>{((score?.on_time_rate || 0) * 100).toFixed(1)}%</Text>
+              <Text fw={600}>{metrics.rolling_on_time_rate.toFixed(1)}%</Text>
             </Group>
-            <Progress value={(score?.on_time_rate || 0) * 100} size="sm" />
-          </div>
-
-          <div>
-            <Group justify="space-between" mb="xs">
-              <Text size="sm">Acceptance Rate</Text>
-              <Text fw={600}>{((score?.acceptance_rate || 0) * 100).toFixed(1)}%</Text>
-            </Group>
-            <Progress value={(score?.acceptance_rate || 0) * 100} size="sm" />
+            <Progress value={metrics.rolling_on_time_rate} size="sm" />
           </div>
 
           <div>
             <Group justify="space-between" mb="xs">
               <Text size="sm">Completion Rate</Text>
-              <Text fw={600}>{((score?.completion_rate || 0) * 100).toFixed(1)}%</Text>
+              <Text fw={600}>{metrics.rolling_completion_rate.toFixed(1)}%</Text>
             </Group>
-            <Progress value={(score?.completion_rate || 0) * 100} size="sm" />
+            <Progress value={metrics.rolling_completion_rate} size="sm" />
+          </div>
+
+          <div>
+            <Group justify="space-between" mb="xs">
+              <Text size="sm">Cancellation Rate</Text>
+              <Text fw={600} c={metrics.rolling_cancel_rate > 10 ? 'red' : undefined}>
+                {metrics.rolling_cancel_rate.toFixed(1)}%
+              </Text>
+            </Group>
+            <Progress value={metrics.rolling_cancel_rate} size="sm" color="red" />
           </div>
         </Stack>
       </Card>
 
+      {/* Next Tier Progress */}
+      {nextTier && (
+        <Card withBorder padding="lg">
+          <Title order={4} mb="md">Next Tier: {nextTier.name} Feeder</Title>
+          <Stack gap="sm">
+            <Group justify="space-between">
+              <Text size="sm">Deliveries: {nextTier.minDeliveries}+</Text>
+              <Badge color={deliveries >= nextTier.minDeliveries ? 'green' : 'gray'}>
+                {deliveries >= nextTier.minDeliveries ? '✓' : deliveries}
+              </Badge>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">Rating: {nextTier.minRating}+</Text>
+              <Badge color={rating >= nextTier.minRating ? 'green' : 'gray'}>
+                {rating >= nextTier.minRating ? '✓' : rating.toFixed(2)}
+              </Badge>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">Completion: {nextTier.minCompletionRate}%+</Text>
+              <Badge color={metrics.rolling_completion_rate >= nextTier.minCompletionRate ? 'green' : 'gray'}>
+                {metrics.rolling_completion_rate >= nextTier.minCompletionRate ? '✓' : `${metrics.rolling_completion_rate.toFixed(1)}%`}
+              </Badge>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">On-Time: {nextTier.minOnTimeRate}%+</Text>
+              <Badge color={metrics.rolling_on_time_rate >= nextTier.minOnTimeRate ? 'green' : 'gray'}>
+                {metrics.rolling_on_time_rate >= nextTier.minOnTimeRate ? '✓' : `${metrics.rolling_on_time_rate.toFixed(1)}%`}
+              </Badge>
+            </Group>
+            <Group justify="space-between">
+              <Text size="sm">Cancel Rate: {'<'}{nextTier.maxCancellationRate}%</Text>
+              <Badge color={metrics.rolling_cancel_rate <= nextTier.maxCancellationRate ? 'green' : 'gray'}>
+                {metrics.rolling_cancel_rate <= nextTier.maxCancellationRate ? '✓' : `${metrics.rolling_cancel_rate.toFixed(1)}%`}
+              </Badge>
+            </Group>
+          </Stack>
+        </Card>
+      )}
+
       {/* Tier Benefits */}
       <Card withBorder padding="lg">
-        <Title order={4} mb="md">
-          Tier Benefits
-        </Title>
+        <Title order={4} mb="md">{tier} Feeder Benefits</Title>
         <List>
-          {tier.name === 'Ultimate' && (
-            <>
-              <List.Item icon={<IconCheck size={16} color="orange" />}>
-                Top dispatch priority (+30 weight)
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="orange" />}>
-                Catering & premium retail first access
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="orange" />}>
-                Dedicated support queue
-              </List.Item>
-            </>
-          )}
-          {tier.name === 'Diamond' && (
-            <>
-              <List.Item icon={<IconCheck size={16} color="blue" />}>
-                Priority dispatch access (+18 weight)
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="blue" />}>
-                High-value retail access
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="blue" />}>
-                Large order eligibility
-              </List.Item>
-            </>
-          )}
-          {tier.name === 'Platinum' && (
-            <>
-              <List.Item icon={<IconCheck size={16} color="gray" />}>
-                Access to premium merchants
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="gray" />}>
-                Early scheduling unlock (+10 weight)
-              </List.Item>
-            </>
-          )}
-          {tier.name === 'Gold' && (
-            <>
-              <List.Item icon={<IconCheck size={16} color="#D4AF37" />}>
-                Early access to standard orders
-              </List.Item>
-              <List.Item icon={<IconCheck size={16} color="#D4AF37" />}>
-                +5 dispatch weight
-              </List.Item>
-            </>
-          )}
-          {tier.name === 'Feeder' && (
-            <>
-              <List.Item icon={<IconX size={16} color="red" />}>
-                Standard orders only
-              </List.Item>
-              <List.Item icon={<IconX size={16} color="red" />}>
-                No premium retail or catering
-              </List.Item>
-            </>
-          )}
+          {TIER_BENEFITS[tier].map((b, i) => (
+            <List.Item
+              key={i}
+              icon={b.positive
+                ? <IconCheck size={16} color={tier === 'Ultimate' ? '#E8622A' : '#10b981'} />
+                : <IconX size={16} color="#ef4444" />
+              }
+            >
+              {b.text}
+            </List.Item>
+          ))}
         </List>
       </Card>
     </Stack>
   );
 }
-
-
-
