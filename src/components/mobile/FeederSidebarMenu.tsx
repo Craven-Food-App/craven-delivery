@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { IconHome, IconCalendar, IconCurrencyDollar, IconUser, IconStar, IconFlame, IconTrendingUp } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFeederTier } from '@/hooks/useFeederTier';
+import { TIER_BADGE_STYLES } from '@/utils/ratingHelpers';
 
 /* ─────────────────────────────────────────
    THEME TOKENS
@@ -80,7 +82,9 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
   const [deliveries, setDeliveries] = React.useState(0);
   const [perfection, setPerfection] = React.useState(100);
   const [driverStatus, setDriverStatus] = React.useState('New Driver');
-  const [driverPoints, setDriverPoints] = React.useState(87); // Diamond status
+
+  // Use real tier from the shared hook
+  const { tier, tierConfig } = useFeederTier();
 
   // Fetch driver data
   React.useEffect(() => {
@@ -100,10 +104,6 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
           setDriverRating(profile.rating || 5.00);
           setDeliveries(profile.total_deliveries || 0);
           setPerfection(profile.rating ? Math.round((profile.rating / 5) * 100) : 100);
-          
-          // Calculate points based on rating and deliveries
-          const points = Math.round((profile.rating || 5) * 17 + (profile.total_deliveries || 0) * 0.1);
-          setDriverPoints(points);
         }
 
         // Fetch user metadata and profile for full name
@@ -151,40 +151,19 @@ const FeederSidebarMenu: React.FC<FeederSidebarMenuProps> = ({
     }
   }, [isOpen]);
 
-  const getStatus = (points: number) => {
-    if (points >= 95) return { 
-      name: 'Ultimate', 
-      gradient: 'linear-gradient(to bottom right, #000000, #1A1A1A, #2A2A2A)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(232, 98, 42, 0.45), rgba(232, 98, 42, 0.2), rgba(0, 0, 0, 0.15), transparent)',
-      icon: '👑' 
-    };
-    if (points >= 85) return { 
-      name: 'Diamond', 
-      gradient: 'linear-gradient(to bottom right, #1E3A5F, #3A7BD5, #1E3A5F)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.4), rgba(58, 123, 213, 0.2), rgba(30, 58, 95, 0.1), transparent)',
-      icon: '💎' 
-    };
-    if (points >= 76) return { 
-      name: 'Platinum', 
-      gradient: 'linear-gradient(to bottom right, #E8E8E8, #FFFFFF, #C0C0C0)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(232, 232, 232, 0.2), transparent)',
-      icon: '⚪' 
-    };
-    if (points >= 65) return { 
-      name: 'Gold', 
-      gradient: 'linear-gradient(to bottom right, #D4AF37, #F5D060, #D4AF37)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(245, 208, 96, 0.2), transparent)',
-      icon: '🥇' 
-    };
-    return { 
-      name: 'Feeder', 
-      gradient: 'linear-gradient(to bottom right, #FAFBFC, #F3F4F6, #E5E7EB)', 
-      glowGradient: 'linear-gradient(to bottom, rgba(249, 250, 251, 0.3), rgba(229, 231, 235, 0.15), transparent)',
-      icon: '🍽️' 
-    };
+  const TIER_VISUALS: Record<string, { gradient: string; glowGradient: string }> = {
+    Ultimate: { gradient: 'linear-gradient(to bottom right, #000000, #1A1A1A, #2A2A2A)', glowGradient: 'linear-gradient(to bottom, rgba(232, 98, 42, 0.45), rgba(232, 98, 42, 0.2), rgba(0, 0, 0, 0.15), transparent)' },
+    Diamond:  { gradient: 'linear-gradient(to bottom right, #1E3A5F, #3A7BD5, #1E3A5F)', glowGradient: 'linear-gradient(to bottom, rgba(30, 58, 95, 0.4), rgba(58, 123, 213, 0.2), rgba(30, 58, 95, 0.1), transparent)' },
+    Platinum: { gradient: 'linear-gradient(to bottom right, #E8E8E8, #FFFFFF, #C0C0C0)', glowGradient: 'linear-gradient(to bottom, rgba(192, 192, 192, 0.3), rgba(232, 232, 232, 0.2), transparent)' },
+    Gold:     { gradient: 'linear-gradient(to bottom right, #D4AF37, #F5D060, #D4AF37)', glowGradient: 'linear-gradient(to bottom, rgba(212, 175, 55, 0.35), rgba(245, 208, 96, 0.2), transparent)' },
+    Feeder:   { gradient: 'linear-gradient(to bottom right, #FAFBFC, #F3F4F6, #E5E7EB)', glowGradient: 'linear-gradient(to bottom, rgba(249, 250, 251, 0.3), rgba(229, 231, 235, 0.15), transparent)' },
   };
 
-  const status = getStatus(driverPoints);
+  const status = {
+    name: tier,
+    icon: tierConfig.icon,
+    ...TIER_VISUALS[tier] || TIER_VISUALS.Feeder,
+  };
 
   // Get initials from driver name
   const getInitials = (name: string) => {
