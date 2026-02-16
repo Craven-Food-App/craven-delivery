@@ -26,7 +26,7 @@ export const useDriverTier = () => {
 
       if (error) {
         console.error('Error fetching driver tier:', error);
-        // Default to Bronze if profile doesn't exist
+        // Default to Feeder if profile doesn't exist
         setTier('Feeder');
         setLoading(false);
         return;
