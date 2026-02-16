@@ -30,6 +30,8 @@ import AppSettingsPage from "./AppSettingsPage";
 import SecuritySafetyPage from "./SecuritySafetyPage";
 import DriverSupportChat from "./DriverSupportChat";
 import { SafetySettings } from "@/components/settings/SafetySettings";
+import { useFeederTier } from "@/hooks/useFeederTier";
+import { TIER_BADGE_STYLES, type FeederTierName } from "@/utils/ratingHelpers";
 import {
   Box,
   Loader,
@@ -248,8 +250,7 @@ function TopBar({ onMenuPress }: { onMenuPress?: () => void }) {
 }
 
 // ─── COMPONENT: IDENTITY ROW (horizontal: avatar · name · badge · since) ───
-function IdentityRow({ data, status }: { data: AccountData; status: { tier: StatusTier; label: string } }) {
-  // Initials from first + last name
+function IdentityRow({ data, tierName, tierIcon }: { data: AccountData; tierName: FeederTierName; tierIcon: string }) {
   const initials = data.name
     .split(" ")
     .map((w) => w[0])
@@ -257,13 +258,15 @@ function IdentityRow({ data, status }: { data: AccountData; status: { tier: Stat
     .toUpperCase()
     .slice(0, 2);
 
+  const styleKey = tierName.toUpperCase() as keyof typeof TIER_BADGE_STYLES;
+  const badgeStyle = TIER_BADGE_STYLES[styleKey] || TIER_BADGE_STYLES.FEEDER;
+
   return (
     <div style={{
       borderBottom: `1px solid ${C.border}`,
       padding: "14px 16px",
       display: "flex", gap: 13, alignItems: "center",
     }}>
-      {/* Monogram avatar */}
       <div style={{
         width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
         background: "linear-gradient(135deg, #E8622A, #f0a060)",
@@ -273,25 +276,21 @@ function IdentityRow({ data, status }: { data: AccountData; status: { tier: Stat
       }}>
         {initials}
       </div>
-
-      {/* Name + badge + since */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {data.name}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-          {/* Tier badge */}
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 4,
-            background: C.blueBg, color: C.blue,
+            background: badgeStyle.bg,
+            color: badgeStyle.text,
+            border: `1px solid ${badgeStyle.border}`,
             padding: "2px 7px", borderRadius: 10,
             fontSize: 9, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase",
           }}>
-            {/* Small diamond / gem SVG for the badge icon */}
-            <svg width={8} height={8} viewBox="0 0 24 24" fill={C.blue}>
-              <path d="M12 2L2 9l3 13h14l3-13L12 2z" />
-            </svg>
-            {status.label}
+            <span style={{ fontSize: 10 }}>{tierIcon}</span>
+            {tierName} Feeder
           </span>
           <span style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>
             Since {data.memberSince}
@@ -510,6 +509,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
   onOpenNotifications
 }) => {
   const navigate = useNavigate();
+  const { tier: feederTier, tierConfig: feederTierConfig } = useFeederTier();
   const [showCardPage, setShowCardPage] = useState(false);
   const [showCardDetails, setShowCardDetails] = useState(false);
   const [isCardLocked, setIsCardLocked] = useState(false);
@@ -951,7 +951,7 @@ const FeederAccountPage: React.FC<FeederAccountPageProps> = ({
         <TopBar onMenuPress={onOpenMenu} />
 
         {/* ── Identity row */}
-        <IdentityRow data={accountData} status={status} />
+        <IdentityRow data={accountData} tierName={feederTier} tierIcon={feederTierConfig.icon} />
 
         {/* ── Inline stats strip: rating | feeds | points */}
         <StatsStrip data={accountData} />
