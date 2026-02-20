@@ -422,6 +422,49 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
         });
       }
 
+      // 8. Notify CEO of new driver signup
+      try {
+        const driverFullName = `${firstName}${middleName ? ' ' + middleName : ''} ${lastName}`.trim();
+        const ceoEmails = ['tstroman.ceo@cravenusa.com', 'craven@usa.com'];
+        const notificationSubject = `🚗 New Feeder Application: ${driverFullName}`;
+        const notificationBody = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #EA580C;">New Feeder Driver Application</h2>
+            <p>A new driver has applied to become a Feeder.</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+              <tr><td style="padding: 8px; font-weight: bold; color: #555;">Name</td><td style="padding: 8px;">${driverFullName}</td></tr>
+              <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Email</td><td style="padding: 8px;">${values.email}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold; color: #555;">Phone</td><td style="padding: 8px;">${values.phone || 'Not provided'}</td></tr>
+              <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Location</td><td style="padding: 8px;">${detectedLocation?.city || ''}, ${detectedLocation?.state || ''} ${values.zip}</td></tr>
+              <tr><td style="padding: 8px; font-weight: bold; color: #555;">Region</td><td style="padding: 8px;">${regionName || 'Unknown'}</td></tr>
+              <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Applied At</td><td style="padding: 8px;">${new Date().toLocaleString()}</td></tr>
+            </table>
+            <p style="margin-top: 24px; color: #888; font-size: 12px;">This is an automated notification from Crave'N Delivery.</p>
+          </div>
+        `;
+
+        await Promise.all(ceoEmails.map(email =>
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              recipientEmail: email,
+              recipientName: 'CEO',
+              subject: notificationSubject,
+              body: notificationBody,
+              type: 'new_driver_signup',
+              metadata: { driverName: driverFullName, driverEmail: values.email, region: regionName }
+            }),
+          })
+        ));
+        console.log('CEO notifications sent for new driver signup');
+      } catch (ceoNotifyError) {
+        console.warn('Could not send CEO notification:', ceoNotifyError);
+      }
+
       // Clear secure storage after successful submission
       import('@/utils/storage').then(({ secureRemoveItem }) => {
         secureRemoveItem('feeder_signup_email');
