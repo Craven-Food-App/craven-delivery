@@ -5,7 +5,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, AlertCircle, MapPin, Award, ChevronRight, Info } from "lucide-react";
 
-const MostLovedDashboard = () => {
+interface MostLovedDashboardProps {
+  restaurantId?: string;
+}
+
+const MostLovedDashboard = ({ restaurantId: _restaurantId }: MostLovedDashboardProps) => {
   return (
     <div className="space-y-6 pb-8">
       {/* Month Tabs */}

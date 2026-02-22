@@ -7,20 +7,26 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 
-const SalesDashboard = () => {
+interface SalesDashboardProps {
+  restaurantId?: string;
+}
+
+const SalesDashboard = ({ restaurantId: restaurantIdProp }: SalesDashboardProps) => {
   const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [dateRange, setDateRange] = useState("last7");
   const [chartView, setChartView] = useState<"sales" | "orders" | "ticket">("sales");
   const [salesData, setSalesData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchSalesData();
     }
-  }, [restaurant?.id, dateRange]);
+  }, [restaurantId, dateRange]);
 
   const fetchSalesData = async () => {
+    if (!restaurantId) return;
     try {
       setLoading(true);
       const days = dateRange === "last7" ? 7 : 30;
@@ -34,9 +40,9 @@ const SalesDashboard = () => {
       const { data: currentOrders, error: currentError } = await supabase
         .from("orders")
         .select("total_cents, created_at")
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", startDate.toISOString())
-        .eq("order_status", "completed");
+        .eq("order_status", "delivered");
 
       if (currentError) throw currentError;
 
@@ -44,10 +50,10 @@ const SalesDashboard = () => {
       const { data: previousOrders, error: prevError } = await supabase
         .from("orders")
         .select("total_cents, created_at")
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", prevStartDate.toISOString())
         .lt("created_at", startDate.toISOString())
-        .eq("order_status", "completed");
+        .eq("order_status", "delivered");
 
       if (prevError) throw prevError;
 

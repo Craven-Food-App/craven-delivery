@@ -3,17 +3,44 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Laptop, Calendar, Smartphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
-const RequestDeliveryDashboard = () => {
+interface RequestDeliveryDashboardProps {
+  restaurantId?: string;
+}
+
+const RequestDeliveryDashboard = ({ restaurantId }: RequestDeliveryDashboardProps) => {
+  const { toast } = useToast();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleRequestDelivery = () => {
+  const handleRequestDelivery = async () => {
     if (!agreedToTerms) {
-      alert("Please agree to the Drive On-Demand Merchant Terms and Conditions");
+      toast({ title: "Terms required", description: "Please agree to the Drive On-Demand Merchant Terms and Conditions", variant: "destructive" });
       return;
     }
-    // Handle delivery request
-    console.log("Delivery requested");
+    if (!restaurantId) {
+      toast({ title: "Store required", description: "Please select a store first", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('drive_on_demand_requests').insert({
+        restaurant_id: restaurantId,
+        terms_accepted_at: new Date().toISOString(),
+        status: 'pending'
+      });
+      if (error) throw error;
+      toast({ title: "Request submitted", description: "Your Drive On-Demand request has been submitted. We'll be in touch soon." });
+      setAgreedToTerms(false);
+    } catch (err: any) {
+      console.error('Request delivery error:', err);
+      toast({ title: "Error", description: err.message || "Failed to submit request", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -127,10 +154,10 @@ const RequestDeliveryDashboard = () => {
 
             <Button
               onClick={handleRequestDelivery}
-              disabled={!agreedToTerms}
+              disabled={!agreedToTerms || submitting}
               className="w-full md:w-auto bg-[#FF4D00] hover:bg-[#FF4D00]/90 text-white px-8"
             >
-              Request your first delivery
+              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</> : "Request your first delivery"}
             </Button>
           </CardContent>
         </Card>

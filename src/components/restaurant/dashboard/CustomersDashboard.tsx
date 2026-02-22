@@ -8,7 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CustomerInsightsDashboard from "./customers/CustomerInsightsDashboard";
 import RatingsReviewsDashboard from "./customers/RatingsReviewsDashboard";
 
-const CustomersDashboard = () => {
+interface CustomersDashboardProps {
+  restaurantId?: string;
+}
+
+const CustomersDashboard = ({ restaurantId: restaurantIdProp }: CustomersDashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -20,50 +24,68 @@ const CustomersDashboard = () => {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [restaurantIdProp]);
 
   const fetchStats = async () => {
     try {
-      const userResult = await supabase.auth.getUser();
-      if (!userResult.data?.user) return;
+      let restaurantId: string | null = restaurantIdProp ?? null;
+      if (!restaurantId) {
+        const userResult = await supabase.auth.getUser();
+        if (!userResult.data?.user) return;
+        const { data } = await supabase
+          .from('restaurants')
+          .select('id')
+          .eq('owner_id', userResult.data.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        restaurantId = data?.[0]?.id ?? null;
+      }
+      if (!restaurantId) return;
 
-      const restaurantResult = await supabase
-        .from('restaurants')
-        .select('id')
-        .eq('owner_id', userResult.data.user.id)
-        .single();
-
-      if (!restaurantResult.data) return;
-
-      // Get unique customers  
-      const query: any = supabase.from('orders');
-      const ordersResult = await query
+      const { data: orders } = await supabase
+        .from('orders')
         .select('customer_id, total_cents')
-        .eq('restaurant_id', restaurantResult.data.id)
-        .eq('status', 'completed');
-      
-      const orders = ordersResult.data || [];
-      
-      if (orders.length > 0) {
-        const uniqueCustomers = new Set(orders.map((o: any) => o.customer_id)).size;
-        const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.total_cents || 0), 0);
-        const avgOrder = orders.length > 0 ? totalRevenue / orders.length : 0;
+        .eq('restaurant_id', restaurantId)
+        .eq('order_status', 'delivered');
 
-        // Calculate repeat rate
-        const customerOrderCounts = orders.reduce((acc: Record<string, number>, o: any) => {
+      const ordersList = orders || [];
+      let avgRating = 0;
+
+      if (ordersList.length > 0) {
+        const uniqueCustomers = new Set(ordersList.map((o: { customer_id: string }) => o.customer_id)).size;
+        const totalRevenue = ordersList.reduce((sum: number, o: { total_cents?: number }) => sum + (o.total_cents || 0), 0);
+        const avgOrder = totalRevenue / ordersList.length;
+
+        const customerOrderCounts = ordersList.reduce((acc: Record<string, number>, o: { customer_id: string }) => {
           acc[o.customer_id] = (acc[o.customer_id] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
-        
         const repeatCustomers = Object.values(customerOrderCounts).filter((count: number) => count > 1).length;
         const repeatRate = uniqueCustomers > 0 ? (repeatCustomers / uniqueCustomers) * 100 : 0;
+
+        const { data: reviews } = await supabase
+          .from('customer_reviews')
+          .select('rating')
+          .eq('restaurant_id', restaurantId);
+        avgRating = reviews && reviews.length > 0
+          ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+          : 0;
 
         setStats({
           totalCustomers: uniqueCustomers,
           repeatRate: Math.round(repeatRate),
           avgOrderValue: avgOrder,
-          avgRating: 4.5
+          avgRating
         });
+      } else {
+        const { data: reviews } = await supabase
+          .from('customer_reviews')
+          .select('rating')
+          .eq('restaurant_id', restaurantId);
+        avgRating = reviews && reviews.length > 0
+          ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+          : 0;
+        setStats({ totalCustomers: 0, repeatRate: 0, avgOrderValue: 0, avgRating });
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -135,11 +157,11 @@ const CustomersDashboard = () => {
             </TabsList>
 
             <TabsContent value="insights" className="mt-6">
-              <CustomerInsightsDashboard />
+              <CustomerInsightsDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
 
             <TabsContent value="ratings" className="mt-6">
-              <RatingsReviewsDashboard />
+              <RatingsReviewsDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
           </Tabs>
         </div>

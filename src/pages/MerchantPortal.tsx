@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Button,
   Card,
@@ -99,13 +99,37 @@ const RestaurantSetup = () => {
   const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
   const [prepareStoreExpanded, setPrepareStoreExpanded] = useState(true);
   const [userName, setUserName] = useState("User");
+  const [fullName, setFullName] = useState<string | null>(null);
   const [settingsTab, setSettingsTab] = useState<string>("account");
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant, refetchRestaurants } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
+
+  // Sync tab from URL on mount and when URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const section = searchParams.get('section') ?? searchParams.get('subtab');
+    if (tab && ['home','insights','reports','customers','orders','menu','products','inventory','availability','financials','settings','request-delivery'].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+    if (section && tab === 'settings') {
+      setSettingsTab(section === 'bank-account' ? 'bank' : section);
+    }
+  }, [searchParams]);
+
+  // Keep URL in sync when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', activeTab);
+      setSearchParams(next, { replace: true });
+    }
+  }, [activeTab]);
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
   const isGrocery = merchantGroup === 'grocery';
@@ -121,7 +145,9 @@ const RestaurantSetup = () => {
           .single();
         
         if (profile?.full_name) {
-          setUserName(profile.full_name.split(' ')[0]);
+          const parts = profile.full_name.trim().split(/\s+/);
+          setUserName(parts[0] || "User");
+          setFullName(profile.full_name);
         }
       }
     };
@@ -499,7 +525,7 @@ const RestaurantSetup = () => {
               fullWidth
               justify="flex-start"
               leftSection={<IconPlus size={20} />}
-              onClick={() => navigate('/restaurant/solutions')}
+              onClick={() => navigate(window.location.pathname.startsWith('/portal') ? '/solutions' : '/restaurant/solutions')}
             >
               Add solutions
             </Button>
@@ -514,12 +540,12 @@ const RestaurantSetup = () => {
             justify="flex-start"
             leftSection={
               <Avatar size="sm" radius="xl" color="gray">
-                T
+                {(fullName ?? userName).charAt(0).toUpperCase()}
               </Avatar>
             }
             rightSection={<IconChevronDown size={16} />}
           >
-            {userName} Stroman
+            {userName}
           </Button>
         </Box>
       </Box>
@@ -937,17 +963,17 @@ const RestaurantSetup = () => {
         <div className="p-6 text-center">
           <p className="text-muted-foreground">Please select a store to continue.</p>
         </div>
-      ) : activeTab === 'insights' ? <InsightsDashboard /> 
-        : activeTab === 'reports' ? <ReportsDashboard /> 
-        : activeTab === 'customers' ? <CustomersDashboard /> 
+      ) : activeTab === 'insights' ? <InsightsDashboard restaurantId={restaurant?.id} /> 
+        : activeTab === 'reports' ? <ReportsDashboard restaurantId={restaurant?.id} /> 
+        : activeTab === 'customers' ? <CustomersDashboard restaurantId={restaurant?.id} /> 
         : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> 
         : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> 
         : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
         : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
-        : activeTab === 'availability' ? <StoreAvailabilityDashboard /> 
-        : activeTab === 'financials' ? <FinancialsDashboard /> 
-        : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> 
-        : activeTab === 'request-delivery' ? <RequestDeliveryDashboard /> 
+: activeTab === 'availability' ? <StoreAvailabilityDashboard restaurantId={restaurant?.id} />
+        : activeTab === 'financials' ? <FinancialsDashboard restaurantId={restaurant?.id} />
+        : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} restaurantId={restaurant?.id} /> 
+        : activeTab === 'request-delivery' ? <RequestDeliveryDashboard restaurantId={restaurant?.id} /> 
         : null}
         </Box>
       </ScrollArea>

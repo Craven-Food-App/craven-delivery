@@ -8,20 +8,26 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 
-const OperationsQualityDashboard = () => {
+interface OperationsQualityDashboardProps {
+  restaurantId?: string;
+}
+
+const OperationsQualityDashboard = ({ restaurantId: restaurantIdProp }: OperationsQualityDashboardProps) => {
   const navigate = useNavigate();
   const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [dateRange, setDateRange] = useState("this-month");
   const [metrics, setMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchQualityMetrics();
     }
-  }, [restaurant?.id, dateRange]);
+  }, [restaurantId, dateRange]);
 
   const fetchQualityMetrics = async () => {
+    if (!restaurantId) return;
     try {
       setLoading(true);
       const startDate = new Date();
@@ -36,7 +42,7 @@ const OperationsQualityDashboard = () => {
       const { data: reviews, error: reviewsError } = await supabase
         .from("customer_reviews")
         .select("rating")
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", startDate.toISOString());
 
       if (reviewsError) throw reviewsError;
@@ -45,7 +51,7 @@ const OperationsQualityDashboard = () => {
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("order_status, created_at, estimated_delivery_time")
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", startDate.toISOString());
 
       if (ordersError) throw ordersError;
@@ -56,7 +62,7 @@ const OperationsQualityDashboard = () => {
       
       const lowRatings = reviews?.filter(r => r.rating <= 2).length || 0;
       const totalOrders = orders?.length || 0;
-      const completedOrders = orders?.filter(o => o.order_status === "completed").length || 0;
+      const completedOrders = orders?.filter(o => o.order_status === "delivered").length || 0;
       const cancelledOrders = orders?.filter(o => o.order_status === "cancelled").length || 0;
       const cancelRate = totalOrders > 0 ? ((cancelledOrders / totalOrders) * 100).toFixed(1) : "0.0";
 

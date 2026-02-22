@@ -14,30 +14,34 @@ interface PayoutData {
   commissionRate: number;
 }
 
-const PayoutsDashboard = () => {
+interface PayoutsDashboardProps {
+  restaurantId?: string;
+}
+
+const PayoutsDashboard = ({ restaurantId: restaurantIdProp }: PayoutsDashboardProps) => {
   const [dateRange, setDateRange] = useState("last-30-days");
   const [loading, setLoading] = useState(true);
   const [payoutData, setPayoutData] = useState<PayoutData | null>(null);
-  const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [restaurantId, setRestaurantId] = useState<string | null>(restaurantIdProp ?? null);
 
   useEffect(() => {
+    if (restaurantIdProp) {
+      setRestaurantId(restaurantIdProp);
+      return;
+    }
     const fetchRestaurantId = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
       const { data } = await supabase
         .from('restaurants')
         .select('id')
         .eq('owner_id', user.id)
-        .single();
-      
-      if (data) {
-        setRestaurantId(data.id);
-      }
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data?.[0]) setRestaurantId(data[0].id);
     };
-
     fetchRestaurantId();
-  }, []);
+  }, [restaurantIdProp]);
 
   useEffect(() => {
     if (restaurantId) {

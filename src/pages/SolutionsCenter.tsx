@@ -28,16 +28,22 @@ import {
   Package,
   Truck,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CraveMoreText } from "@/components/ui/cravemore-text";
 import AdCreationModal from "@/pages/marketing/AdCreationModal";
 import PromotionCampaignModal, { type PromotionType } from "@/components/merchant/PromotionCampaignModal";
 import SolutionInfoDialog, { type SolutionInfoType } from "@/components/merchant/SolutionInfoDialog";
 import FeatureActivationDialog, { type FeatureType } from "@/components/merchant/FeatureActivationDialog";
+import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
 import { toast } from "sonner";
 
 const SolutionsCenter = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isMerchantSubdomain = location.pathname.startsWith('/portal') || location.pathname.startsWith('/solutions');
+  const portalPath = isMerchantSubdomain ? '/portal' : '/merchant-portal';
+  const solutionsPath = isMerchantSubdomain ? '/solutions' : '/restaurant/solutions';
+  const { selectedRestaurant } = useRestaurantSelector();
 
   // --- Modal state ---
   const [adModalOpen, setAdModalOpen] = useState(false);
@@ -70,13 +76,12 @@ const SolutionsCenter = () => {
   const [infoAction, setInfoAction] = useState<(() => void) | undefined>(undefined);
 
   const navigateToMenu = () => {
-    // Navigate to merchant portal menu tab
-    navigate("/portal");
+    navigate(`${portalPath}?tab=menu`);
     toast.info("Navigate to the Menu tab to add products to your menu.");
   };
 
   const navigateToRequestDelivery = () => {
-    navigate("/portal");
+    navigate(`${portalPath}?tab=request-delivery`);
     toast.info("Navigate to the Request Delivery section in your merchant portal.");
   };
 
@@ -527,6 +532,7 @@ const SolutionsCenter = () => {
         open={featureDialogOpen}
         onClose={() => setFeatureDialogOpen(false)}
         feature={featureType}
+        restaurantId={selectedRestaurant?.id}
       />
     </div>
   );

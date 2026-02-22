@@ -4,7 +4,11 @@ import TransactionsDashboard from "./financials/TransactionsDashboard";
 import PayoutsDashboard from "./financials/PayoutsDashboard";
 import StatementsDashboard from "./financials/StatementsDashboard";
 
-const FinancialsDashboard = () => {
+interface FinancialsDashboardProps {
+  restaurantId?: string;
+}
+
+const FinancialsDashboard = ({ restaurantId }: FinancialsDashboardProps) => {
   return (
     <div className="w-full h-full bg-background">
       <div className="border-b bg-card">
@@ -18,15 +22,15 @@ const FinancialsDashboard = () => {
             </TabsList>
 
             <TabsContent value="transactions" className="mt-6">
-              <TransactionsDashboard />
+              <TransactionsDashboard restaurantId={restaurantId} />
             </TabsContent>
 
             <TabsContent value="payouts" className="mt-6">
-              <PayoutsDashboard />
+              <PayoutsDashboard restaurantId={restaurantId} />
             </TabsContent>
 
             <TabsContent value="statements" className="mt-6">
-              <StatementsDashboard />
+              <StatementsDashboard restaurantId={restaurantId} />
             </TabsContent>
           </Tabs>
         </div>

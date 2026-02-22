@@ -1,67 +1,83 @@
+// src/main.tsx
+
 // @ts-nocheck
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { MantineProvider, createTheme, MantineThemeOverride } from '@mantine/core';
-import { DatesProvider } from '@mantine/dates';
-import 'dayjs/locale/en';
-import { ModalsProvider } from '@mantine/modals';
-import { Notifications } from '@mantine/notifications';
-// @ts-ignore - MUI optional dependency
-import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
+
+import { LocalNotifications } from '@capacitor/local-notifications';
+
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
-import App from './App.tsx';
-import './index.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import 'dayjs/locale/en';
+
+import { MantineProvider, createTheme, type MantineThemeOverride } from '@mantine/core';
+import { DatesProvider } from '@mantine/dates';
+import { ModalsProvider } from '@mantine/modals';
+import { Notifications } from '@mantine/notifications';
+
+// @ts-ignore - MUI optional dependency
+import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
+
+import { PushNotifications } from '@capacitor/push-notifications';
+
+import App from './App';
+import './index.css';
 import { initSentry } from '@/integrations/sentry';
 
-// Initialize Sentry before React renders
+/** -----------------------------
+ * Sentry (must run before render)
+ * ------------------------------ */
 initSentry();
 
-// Suppress known harmless console warnings and errors
-const originalWarn = console.warn;
-const originalError = console.error;
+/** -----------------------------
+ * Console noise suppression
+ * ------------------------------ */
+const originalWarn = console.warn.bind(console);
+const originalError = console.error.bind(console);
+
 console.warn = (...args: any[]) => {
-  const message = args.join(' ');
-  // Suppress LockManager warnings from Supabase (known browser compatibility issue)
-  if (message.includes('LockManager') || message.includes('@supabase/gotrue-js')) {
-    return;
-  }
-  // Suppress CacheStorage errors from service worker (handled gracefully)
-  if (message.includes('CacheStorage') || message.includes('Failed to open cache')) {
-    return;
-  }
-  // Suppress Service Worker invalid state warnings (non-critical)
-  if (message.includes('Service Worker') && message.includes('invalid state')) {
-    return;
-  }
-  // Suppress Stripe HTTP warnings in development (expected when testing locally)
-  if (message.includes('Stripe.js') && message.includes('HTTP')) {
-    return;
-  }
-  originalWarn.apply(console, args);
-};
-// Also suppress known harmless errors
-console.error = (...args: any[]) => {
-  // Convert each arg individually (React uses %s format strings, so args.join misses substitutions)
-  const argStrings = args.map(a => String(a));
-  const fullMessage = argStrings.join(' ');
-  // Suppress Service Worker InvalidStateError (non-critical, happens during navigation)
-  if (fullMessage.includes('Service Worker') && (fullMessage.includes('InvalidStateError') || fullMessage.includes('invalid state'))) {
-    return;
-  }
-  // Suppress MUI v7 + React 18 PropTypes warnings (cosmetic; MUI 7 expects React 19)
-  // React calls: console.error('Warning: Failed %s type: %s%s', 'prop', message, stack)
-  // So we check the format string (arg[0]) for 'Failed %s type' AND any arg for MUI components
-  const firstArg = argStrings[0] || '';
-  if (firstArg.includes('Failed %s type') &&
-      argStrings.some(s => s.includes('ThemeProvider') || s.includes('DefaultPropsProvider') || s.includes('RtlProvider'))) {
-    return;
-  }
-  originalError.apply(console, args);
+  const msg = args.map(String).join(' ');
+
+  if (msg.includes('LockManager') || msg.includes('@supabase/gotrue-js')) return;
+  if (msg.includes('CacheStorage') || msg.includes('Failed to open cache')) return;
+  if (msg.includes('Service Worker') && msg.includes('invalid state')) return;
+  if (msg.includes('Stripe.js') && msg.includes('HTTP')) return;
+
+  originalWarn(...args);
 };
 
+console.error = (...args: any[]) => {
+  const strings = args.map(String);
+  const full = strings.join(' ');
+
+  if (
+    full.includes('Service Worker') &&
+    (full.includes('InvalidStateError') || full.includes('invalid state'))
+  ) {
+    return;
+  }
+
+  const first = strings[0] ?? '';
+  if (
+    first.includes('Failed %s type') &&
+    strings.some(
+      (s) =>
+        s.includes('ThemeProvider') ||
+        s.includes('DefaultPropsProvider') ||
+        s.includes('RtlProvider')
+    )
+  ) {
+    return;
+  }
+
+  originalError(...args);
+};
+
+/** -----------------------------
+ * Themes
+ * ------------------------------ */
 const theme: MantineThemeOverride = createTheme({
   primaryColor: 'orange',
   fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
@@ -93,19 +109,65 @@ const theme: MantineThemeOverride = createTheme({
 
 const muiTheme = createMUITheme({
   palette: {
-    primary: {
-      main: '#ff5f1f',
-    },
-    secondary: {
-      main: '#ff8147',
-    },
+    primary: { main: '#ff5f1f' },
+    secondary: { main: '#ff8147' },
   },
   typography: {
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   },
 });
 
-createRoot(document.getElementById("root")!).render(
+/** -----------------------------
+ * Capacitor Push Notifications
+ * ------------------------------ */
+const initPush = async () => {
+  try {
+    const perm = await PushNotifications.requestPermissions();
+    if (perm.receive !== 'granted') return;
+
+     // 🔊 Create Android notification channel (REQUIRED for sound)
+    await LocalNotifications.createChannel({
+      id: 'default',
+      name: 'Default',
+      importance: 5, // HIGH importance
+      sound: 'default',
+    });
+
+    // Listener FIRST is fine (it will fire when register completes)
+    PushNotifications.addListener('registration', (token) => {
+      console.log('FCM TOKEN:', token.value);
+    });
+
+    PushNotifications.addListener('registrationError', (error) => {
+      console.error('Push registration error:', error);
+    });
+
+    // (Optional) notification received while app is foregrounded
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('📬 Push received:', notification);
+    });
+
+    // (Optional) user tapped a notification
+    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      console.log('👉 Push action performed:', action);
+    });
+
+    await PushNotifications.register();
+  } catch (err) {
+    // Non-fatal: don't crash app if push init fails
+    console.warn('Push init failed (non-critical):', err);
+  }
+};
+
+void initPush();
+
+/** -----------------------------
+ * Render
+ * ------------------------------ */
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('Root element #root not found');
+
+createRoot(rootEl).render(
   <React.StrictMode>
     <MUIThemeProvider theme={muiTheme}>
       <CssBaseline />
@@ -121,99 +183,79 @@ createRoot(document.getElementById("root")!).render(
   </React.StrictMode>
 );
 
-// Register Service Worker for Web Push notifications and PWA support
-// Skip service worker registration in development to avoid MIME type issues
+/** -----------------------------
+ * Service Worker (PROD only)
+ * ------------------------------ */
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  // Wait for document to be ready and check if already registered
+  const waitForLoad = () =>
+    new Promise<void>((resolve) => {
+      if (document.readyState === 'complete') resolve();
+      else window.addEventListener('load', () => resolve(), { once: true });
+    });
+
+  const shouldSilentlyIgnore = (err: any) => {
+    const name = String(err?.name ?? '');
+    const message = String(err?.message ?? '');
+
+    if (name === 'InvalidStateError') return true;
+    if (message.includes('invalid state') || message.includes('InvalidStateError')) return true;
+    if (message.includes('CacheStorage') || message.includes('Unexpected internal error')) return true;
+    if (message.includes('Failed to fetch') || message.includes('404')) return true;
+
+    return false;
+  };
+
   const registerServiceWorker = async () => {
     try {
-      // Check if service worker is already registered
-      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-      if (existingRegistrations.length > 0) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs.length > 0) {
         console.log('✅ Service Worker already registered');
         return;
       }
 
-      // Check if document is in a valid state
-      if (document.readyState === 'loading' || document.readyState === 'uninitialized') {
-        // Wait for document to be ready
-        await new Promise(resolve => {
-          if (document.readyState === 'complete') {
-            resolve(undefined);
-          } else {
-            window.addEventListener('load', resolve, { once: true });
+      await waitForLoad();
+
+      // safe states
+      if (document.readyState !== 'complete' && document.readyState !== 'interactive') return;
+
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('✅ Service Worker registered:', registration.scope);
+
+      // hourly update check
+      setInterval(() => {
+        registration.update().catch((err) => {
+          console.warn('Service worker update check failed:', err);
+        });
+      }, 60 * 60 * 1000);
+
+      // update listener
+      registration.addEventListener('updatefound', () => {
+        const worker = registration.installing;
+        if (!worker) return;
+
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔄 New service worker available - refresh to update');
           }
         });
-      }
+      });
 
-      // Only register if document is ready
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        console.log('✅ Service Worker registered:', registration.scope);
-        
-        // Check for updates every hour
-        setInterval(() => {
-          registration.update().catch((err) => {
-            // Silently handle update failures
-            console.warn('Service worker update check failed:', err);
-          });
-        }, 60 * 60 * 1000);
-
-        // Listen for service worker updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 New service worker available - refresh to update');
-              }
-            });
-          }
-        });
-
-        // Handle push notification permission for iOS
-        if ('PushManager' in window) {
-          console.log('✅ Push Manager available');
-        }
+      if ('PushManager' in window) {
+        console.log('✅ Push Manager available');
       }
     } catch (err: any) {
-      // Handle specific error types - all are non-critical
-      const errorName = err?.name || '';
-      const errorMessage = err?.message || '';
-      
-      if (
-        errorName === 'InvalidStateError' || 
-        errorMessage.includes('invalid state') ||
-        errorMessage.includes('InvalidStateError')
-      ) {
-        // Document is in invalid state - this can happen during navigation or in iframes
-        // This is non-critical, suppress completely
-        return; // Silently ignore
-      } else if (errorMessage.includes('CacheStorage') || errorMessage.includes('Unexpected internal error')) {
-        // Cache storage unavailable (private browsing, etc.) - suppress
-        return; // Silently ignore
-      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('404')) {
-        // Service worker file doesn't exist - this is expected in development
-        return; // Silently ignore
-      } else {
-        // Other errors - only log in development
-        if (import.meta.env.DEV) {
-          console.warn('⚠️ Service Worker registration failed (non-critical):', errorMessage || err);
-        }
+      if (shouldSilentlyIgnore(err)) return;
+
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ Service Worker registration failed (non-critical):', err?.message ?? err);
       }
     }
   };
 
-  // Register when page loads
-  if (document.readyState === 'complete') {
-    registerServiceWorker();
-  } else {
-    window.addEventListener('load', registerServiceWorker, { once: true });
-  }
+  void registerServiceWorker();
 
-  // Listen for messages from service worker
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'push_notification_received') {
+    if (event.data?.type === 'push_notification_received') {
       console.log('📬 Push notification received:', event.data.data);
     }
   });

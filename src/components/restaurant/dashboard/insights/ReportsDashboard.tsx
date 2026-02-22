@@ -4,31 +4,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Plus, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateReportModal } from "@/components/merchant/CreateReportModal";
+import { ScheduleReportModal } from "@/components/merchant/ScheduleReportModal";
 import { ReportCard } from "@/components/merchant/ReportCard";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 
-const ReportsDashboard = () => {
+interface ReportsDashboardProps {
+  restaurantId?: string;
+}
+
+const ReportsDashboard = ({ restaurantId: restaurantIdProp }: ReportsDashboardProps) => {
+  const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [scheduleModalReport, setScheduleModalReport] = useState<{ id: string; name: string } | null>(null);
   const [reports, setReports] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { restaurant } = useRestaurantData();
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchReports();
       fetchSchedules();
     }
-  }, [restaurant?.id]);
+  }, [restaurantId]);
 
   const fetchReports = async () => {
-    if (!restaurant?.id) return;
+    if (!restaurantId) return;
 
     setLoading(true);
     const { data, error } = await supabase
       .from('restaurant_reports')
       .select('*')
-      .eq('restaurant_id', restaurant.id)
+      .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -40,12 +47,12 @@ const ReportsDashboard = () => {
   };
 
   const fetchSchedules = async () => {
-    if (!restaurant?.id) return;
+    if (!restaurantId) return;
 
     const { data: reportData } = await supabase
       .from('restaurant_reports')
       .select('id')
-      .eq('restaurant_id', restaurant.id);
+      .eq('restaurant_id', restaurantId);
 
     if (!reportData || reportData.length === 0) return;
 
@@ -130,9 +137,7 @@ const ReportsDashboard = () => {
                   key={report.id}
                   report={report}
                   onDelete={fetchReports}
-                  onSchedule={(report) => {
-                    console.log('Schedule report:', report);
-                  }}
+                  onSchedule={(r) => setScheduleModalReport({ id: r.id, name: r.name })}
                 />
               ))}
             </div>
@@ -188,9 +193,18 @@ const ReportsDashboard = () => {
       <CreateReportModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
-        restaurantId={restaurant?.id || ''}
-        onSuccess={fetchReports}
+        restaurantId={restaurantId || ''}
+        onSuccess={() => { fetchReports(); fetchSchedules(); }}
       />
+
+      {scheduleModalReport && (
+        <ScheduleReportModal
+          open={!!scheduleModalReport}
+          onOpenChange={(open) => !open && setScheduleModalReport(null)}
+          report={scheduleModalReport}
+          onSuccess={() => { fetchReports(); fetchSchedules(); }}
+        />
+      )}
     </div>
   );
 };

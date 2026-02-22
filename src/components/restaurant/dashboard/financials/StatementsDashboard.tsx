@@ -2,7 +2,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 
-const StatementsDashboard = () => {
+interface StatementsDashboardProps {
+  restaurantId?: string;
+}
+
+const StatementsDashboard = ({ restaurantId: _restaurantId }: StatementsDashboardProps) => {
   return (
     <div className="space-y-6 pb-8">
       <Tabs defaultValue="monthly" className="w-full">

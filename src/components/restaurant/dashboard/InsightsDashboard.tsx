@@ -11,7 +11,11 @@ import ProductMixDashboard from "./insights/ProductMixDashboard";
 import OperationsQualityDashboard from "./insights/OperationsQualityDashboard";
 import MostLovedDashboard from "./insights/MostLovedDashboard";
 
-const InsightsDashboard = () => {
+interface InsightsDashboardProps {
+  restaurantId?: string;
+}
+
+const InsightsDashboard = ({ restaurantId: restaurantIdProp }: InsightsDashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("last-7-days");
@@ -23,50 +27,59 @@ const InsightsDashboard = () => {
 
   useEffect(() => {
     fetchMetrics();
-  }, [dateRange]);
+  }, [dateRange, restaurantIdProp]);
 
   const fetchMetrics = async () => {
     setLoading(true);
     try {
-      const userResult = await supabase.auth.getUser();
-      if (!userResult.data?.user) return;
+      let restaurantId: string | null = restaurantIdProp ?? null;
 
-      const restaurantResult = await supabase
-        .from('restaurants')
-        .select('id')
-        .eq('owner_id', userResult.data.user.id)
-        .single();
+      if (!restaurantId) {
+        const userResult = await supabase.auth.getUser();
+        if (!userResult.data?.user) return;
 
-      if (!restaurantResult.data) return;
+        const { data } = await supabase
+          .from('restaurants')
+          .select('id')
+          .eq('owner_id', userResult.data.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        restaurantId = data?.[0]?.id ?? null;
+      }
+
+      if (!restaurantId) return;
 
       const endDate = new Date();
       const startDate = new Date();
-      
+
       switch (dateRange) {
         case "last-7-days": startDate.setDate(startDate.getDate() - 7); break;
         case "last-30-days": startDate.setDate(startDate.getDate() - 30); break;
         case "last-90-days": startDate.setDate(startDate.getDate() - 90); break;
       }
 
-      const query: any = supabase.from('orders');
-      const ordersResult = await query
+      const { data: orders } = await supabase
+        .from('orders')
         .select('total_cents')
-        .eq('restaurant_id', restaurantResult.data.id)
-        .eq('status', 'completed')
+        .eq('restaurant_id', restaurantId)
+        .eq('order_status', 'delivered')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
-      
-      const orders = ordersResult.data || [];
-      
-      if (orders.length > 0) {
-        const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.total_cents || 0), 0);
-        const avgOrder = totalRevenue / orders.length;
+
+      const ordersList = orders || [];
+
+      if (ordersList.length > 0) {
+        const totalRevenue = ordersList.reduce((sum: number, o: { total_cents?: number }) => sum + (o.total_cents || 0), 0);
+        const avgOrder = totalRevenue / ordersList.length;
 
         setMetrics({
-          totalOrders: orders.length,
+          totalOrders: ordersList.length,
           totalRevenue,
           avgOrderValue: avgOrder
         });
+      } else {
+        setMetrics({ totalOrders: 0, totalRevenue: 0, avgOrderValue: 0 });
       }
     } catch (error) {
       console.error('Error fetching metrics:', error);
@@ -141,19 +154,19 @@ const InsightsDashboard = () => {
             </TabsList>
 
             <TabsContent value="sales" className="mt-6">
-              <SalesDashboard />
+              <SalesDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
 
             <TabsContent value="product-mix" className="mt-6">
-              <ProductMixDashboard />
+              <ProductMixDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
 
             <TabsContent value="operations" className="mt-6">
-              <OperationsQualityDashboard />
+              <OperationsQualityDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
 
             <TabsContent value="most-loved" className="mt-6">
-              <MostLovedDashboard />
+              <MostLovedDashboard restaurantId={restaurantIdProp} />
             </TabsContent>
           </Tabs>
         </div>

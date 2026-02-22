@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,11 +95,11 @@ export const CreateReportModal = ({ open, onOpenChange, restaurantId, onSuccess 
     }
   };
 
-  if (step === 1) {
-    if (templates.length === 0) {
+  useEffect(() => {
+    if (open && step === 1 && templates.length === 0) {
       fetchTemplates();
     }
-  }
+  }, [open, step]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

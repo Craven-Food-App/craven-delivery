@@ -8,8 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
 
-const RatingsReviewsDashboard = () => {
+interface RatingsReviewsDashboardProps {
+  restaurantId?: string;
+}
+
+const RatingsReviewsDashboard = ({ restaurantId: restaurantIdProp }: RatingsReviewsDashboardProps) => {
   const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [dateRange, setDateRange] = useState("last-7-days");
   const [showTip, setShowTip] = useState(true);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -17,10 +22,10 @@ const RatingsReviewsDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchReviews();
     }
-  }, [restaurant?.id, dateRange]);
+  }, [restaurantId, dateRange]);
 
   const fetchReviews = async () => {
     try {
@@ -40,7 +45,7 @@ const RatingsReviewsDashboard = () => {
           *,
           orders(order_number)
         `)
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", startDate.toISOString())
         .order("created_at", { ascending: false });
 

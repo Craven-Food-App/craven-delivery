@@ -6,20 +6,26 @@ import { Search, TrendingUp, TrendingDown, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 
-const ProductMixDashboard = () => {
+interface ProductMixDashboardProps {
+  restaurantId?: string;
+}
+
+const ProductMixDashboard = ({ restaurantId: restaurantIdProp }: ProductMixDashboardProps) => {
   const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState("last7");
   const [productData, setProductData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchProductMixData();
     }
-  }, [restaurant?.id, dateRange]);
+  }, [restaurantId, dateRange]);
 
   const fetchProductMixData = async () => {
+    if (!restaurantId) return;
     try {
       setLoading(true);
       const days = dateRange === "last7" ? 7 : 30;
@@ -35,10 +41,10 @@ const ProductMixDashboard = () => {
           quantity,
           price_cents,
           menu_items!inner(name),
-          orders!inner(created_at, restaurant_id, status)
+          orders!inner(created_at, restaurant_id, order_status)
         `)
-        .eq("orders.restaurant_id", restaurant?.id)
-        .eq("orders.status", "completed")
+        .eq("orders.restaurant_id", restaurantId)
+        .eq("orders.order_status", "delivered")
         .gte("orders.created_at", startDate.toISOString());
 
       if (error) throw error;

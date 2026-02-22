@@ -12,9 +12,10 @@ import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
 interface SettingsDashboardProps {
   defaultTab?: string;
+  restaurantId?: string;
 }
 
-const SettingsDashboard = ({ defaultTab = "account" }: SettingsDashboardProps) => {
+const SettingsDashboard = ({ defaultTab = "account", restaurantId: _restaurantId }: SettingsDashboardProps) => {
   const { restaurant } = useRestaurantData();
   const labels = getMerchantLabels(restaurant?.restaurant_type);
 

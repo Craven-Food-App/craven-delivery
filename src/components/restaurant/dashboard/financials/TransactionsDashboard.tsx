@@ -14,7 +14,11 @@ interface PayoutData {
   commissionRate: number;
 }
 
-const TransactionsDashboard = () => {
+interface TransactionsDashboardProps {
+  restaurantId?: string;
+}
+
+const TransactionsDashboard = ({ restaurantId: restaurantIdProp }: TransactionsDashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [payoutData, setPayoutData] = useState<PayoutData | null>(null);
@@ -23,21 +27,24 @@ const TransactionsDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, restaurantIdProp]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userQuery = await supabase.auth.getUser();
-      if (!userQuery.data?.user) return;
-
-      const restaurantQuery = await supabase
-        .from('restaurants')
-        .select('id')
-        .eq('owner_id', userQuery.data.user.id)
-        .single();
-
-      if (!restaurantQuery.data) return;
+      let restaurantId: string | null = restaurantIdProp ?? null;
+      if (!restaurantId) {
+        const userQuery = await supabase.auth.getUser();
+        if (!userQuery.data?.user) return;
+        const { data } = await supabase
+          .from('restaurants')
+          .select('id')
+          .eq('owner_id', userQuery.data.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        restaurantId = data?.[0]?.id ?? null;
+      }
+      if (!restaurantId) return;
 
       const endDate = new Date().toISOString();
       const startDate = new Date();
@@ -50,7 +57,7 @@ const TransactionsDashboard = () => {
 
       const response = await supabase.functions.invoke('calculate-restaurant-payouts', {
         body: {
-          restaurantId: restaurantQuery.data.id,
+          restaurantId,
           startDate: startDate.toISOString(),
           endDate
         }
@@ -63,8 +70,8 @@ const TransactionsDashboard = () => {
       const ordersResponse = await supabase
         .from('orders')
         .select('id, order_number, total_cents, created_at')
-        .eq('restaurant_id', restaurantQuery.data.id)
-        .eq('status', 'completed')
+        .eq('restaurant_id', restaurantId)
+        .eq('order_status', 'delivered')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate)
         .order('created_at', { ascending: false })

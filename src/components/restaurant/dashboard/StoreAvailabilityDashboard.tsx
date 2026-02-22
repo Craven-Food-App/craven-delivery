@@ -10,7 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
-const StoreAvailabilityDashboard = () => {
+interface StoreAvailabilityDashboardProps {
+  restaurantId?: string;
+}
+
+const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAvailabilityDashboardProps) => {
   const { toast } = useToast();
   const [restaurant, setRestaurant] = useState<any>(null);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
@@ -40,19 +44,25 @@ const StoreAvailabilityDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [restaurantIdProp]);
 
   const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: restaurantData } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('owner_id', user.id)
-        .single();
-
+      let restaurantData: any = null;
+      if (restaurantIdProp) {
+        const { data } = await supabase.from('restaurants').select('*').eq('id', restaurantIdProp).single();
+        restaurantData = data;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('restaurants')
+          .select('*')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        restaurantData = data?.[0] ?? null;
+      }
       if (!restaurantData) return;
 
       setRestaurant(restaurantData);

@@ -16,8 +16,13 @@ interface CustomerStats {
   frequent: number;
 }
 
-const CustomerInsightsDashboard = () => {
+interface CustomerInsightsDashboardProps {
+  restaurantId?: string;
+}
+
+const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerInsightsDashboardProps) => {
   const { restaurant } = useRestaurantData();
+  const restaurantId = restaurantIdProp ?? restaurant?.id;
   const [dateRange, setDateRange] = useState("this-month");
   const [customerType, setCustomerType] = useState("all");
   const [stats, setStats] = useState<CustomerStats>({ total: 0, new: 0, occasional: 0, frequent: 0 });
@@ -40,10 +45,10 @@ const CustomerInsightsDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (restaurant?.id) {
+    if (restaurantId) {
       fetchCustomerStats();
     }
-  }, [restaurant?.id, dateRange]);
+  }, [restaurantId, dateRange]);
 
   const fetchCustomerStats = async () => {
     try {
@@ -57,7 +62,7 @@ const CustomerInsightsDashboard = () => {
       const { data: orders, error } = await supabase
         .from("orders")
         .select("customer_id, created_at")
-        .eq("restaurant_id", restaurant?.id)
+        .eq("restaurant_id", restaurantId)
         .gte("created_at", startDate.toISOString());
 
       if (error) throw error;
