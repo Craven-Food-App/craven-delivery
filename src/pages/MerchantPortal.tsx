@@ -100,7 +100,8 @@ const RestaurantSetup = () => {
   const [userName, setUserName] = useState("User");
   const [settingsTab, setSettingsTab] = useState<string>("account");
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
-  
+  const [creatingLocation, setCreatingLocation] = useState(false);
+
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
@@ -149,37 +150,61 @@ const RestaurantSetup = () => {
 
   const handleCreateAdditionalLocation = async () => {
     if (!restaurant) return;
-    
+    setCreatingLocation(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-additional-location', {
-        body: {
-          parent_restaurant_id: restaurant.id,
-          location_data: {
-            name: `${restaurant.name} - New Location`,
-            address: "",
-            city: "",
-            state: "",
-            zip_code: ""
-          }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        notifications.show({
+          title: "Error",
+          message: "You must be signed in to add a store.",
+          color: "red",
+        });
+        setCreatingLocation(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "create-additional-location",
+        {
+          body: {
+            parent_restaurant_id: restaurant.id,
+            location_data: {
+              name: `${restaurant.name} - New Location`,
+              address: "",
+              city: "",
+              state: "",
+              zip_code: "",
+            },
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (error) throw error;
+      const errMsg = data && typeof data === "object" && "error" in data ? (data as { error: string }).error : null;
+      if (errMsg) throw new Error(errMsg);
 
       notifications.show({
         title: "Success",
         message: "New location created successfully",
-        color: 'green',
+        color: "green",
       });
 
-      navigate('/restaurant/onboarding');
-    } catch (error) {
-      console.error('Error creating location:', error);
+      navigate("/restaurant/onboarding");
+    } catch (err: unknown) {
+      console.error("Error creating location:", err);
+      const message =
+        err instanceof Error ? err.message : "Failed to create new location";
       notifications.show({
         title: "Error",
-        message: "Failed to create new location",
-        color: 'red',
+        message,
+        color: "red",
       });
+    } finally {
+      setCreatingLocation(false);
     }
   };
 
@@ -953,6 +978,8 @@ const RestaurantSetup = () => {
                     <Button 
                       color="orange"
                       onClick={handleCreateAdditionalLocation}
+                      loading={creatingLocation}
+                      disabled={creatingLocation}
                     >
                       Add store or business
                     </Button>

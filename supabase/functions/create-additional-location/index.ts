@@ -49,20 +49,21 @@ serve(async (req) => {
       .insert({
         owner_id: user.id,
         name: location_data.name,
-        address: location_data.address,
-        city: location_data.city,
-        state: location_data.state,
-        zip_code: location_data.zip_code,
+        address: location_data.address ?? '',
+        city: location_data.city ?? '',
+        state: location_data.state ?? '',
+        zip_code: location_data.zip_code ?? '',
         phone: location_data.phone || parentRestaurant.phone,
         email: location_data.email || parentRestaurant.email,
         // Clone settings from parent
         cuisine_type: parentRestaurant.cuisine_type,
+        restaurant_type: parentRestaurant.restaurant_type ?? null,
         commission_tier: parentRestaurant.commission_tier,
         delivery_radius_miles: parentRestaurant.delivery_radius_miles,
         minimum_order_cents: parentRestaurant.minimum_order_cents,
         // New location starts fresh onboarding
         onboarding_status: 'in_progress',
-        is_active: false
+        is_active: false,
       })
       .select()
       .single();
