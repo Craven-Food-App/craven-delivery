@@ -785,7 +785,7 @@ const Restaurants = () => {
       return {
       id: r.id,
       name: r.name,
-      image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
+      image: r.promotion_image_url || r.header_image_url || r.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
       rating: r.rating || 4.5,
       reviews: `${r.total_reviews || 0}+`,
       distance: formatDistance(r) || '',
@@ -815,7 +815,7 @@ const Restaurants = () => {
       return {
       id: r.id,
       name: r.name,
-      image: r.promotion_image_url || r.image_url || r.header_image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
+      image: r.promotion_image_url || r.header_image_url || r.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(r.name)}`,
       rating: r.rating || 4.5,
       reviews: `${r.total_reviews || 0}+`,
       distance: formatDistance(r) || '',

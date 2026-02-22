@@ -43,6 +43,11 @@ serve(async (req) => {
       );
     }
 
+    // Use location_data when provided, otherwise clone from parent (so new location can be grocery even if parent is restaurant)
+    const restaurant_type = location_data.restaurant_type ?? parentRestaurant.restaurant_type ?? null;
+    const email = location_data.email ?? parentRestaurant.email ?? null;
+    const phone = location_data.phone ?? parentRestaurant.phone ?? null;
+
     // Create new restaurant with cloned settings
     const { data: newRestaurant, error: createError } = await supabase
       .from('restaurants')
@@ -53,11 +58,11 @@ serve(async (req) => {
         city: location_data.city ?? '',
         state: location_data.state ?? '',
         zip_code: location_data.zip_code ?? '',
-        phone: location_data.phone || parentRestaurant.phone,
-        email: location_data.email || parentRestaurant.email,
-        // Clone settings from parent
+        phone,
+        email,
+        restaurant_type,
+        // Clone other settings from parent
         cuisine_type: parentRestaurant.cuisine_type,
-        restaurant_type: parentRestaurant.restaurant_type ?? null,
         commission_tier: parentRestaurant.commission_tier,
         delivery_radius_miles: parentRestaurant.delivery_radius_miles,
         minimum_order_cents: parentRestaurant.minimum_order_cents,

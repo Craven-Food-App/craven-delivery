@@ -64,6 +64,7 @@ import RetailHomeDashboard from "@/components/retail/RetailHomeDashboard";
 import RetailProductCatalog from "@/components/retail/RetailProductCatalog";
 import RetailInventoryDashboard from "@/components/retail/RetailInventoryDashboard";
 import { GroceryHomeDashboard } from "@/components/grocery/GroceryHomeDashboard";
+import { AddLocationWizard } from "@/components/merchant/AddLocationWizard";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
@@ -100,9 +101,9 @@ const RestaurantSetup = () => {
   const [userName, setUserName] = useState("User");
   const [settingsTab, setSettingsTab] = useState<string>("account");
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
-  const [creatingLocation, setCreatingLocation] = useState(false);
+  const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
 
-  const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant } = useRestaurantSelector();
+  const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant, refetchRestaurants } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
@@ -148,64 +149,8 @@ const RestaurantSetup = () => {
     checkWelcomeStatus();
   }, [restaurant]);
 
-  const handleCreateAdditionalLocation = async () => {
-    if (!restaurant) return;
-    setCreatingLocation(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        notifications.show({
-          title: "Error",
-          message: "You must be signed in to add a store.",
-          color: "red",
-        });
-        setCreatingLocation(false);
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke(
-        "create-additional-location",
-        {
-          body: {
-            parent_restaurant_id: restaurant.id,
-            location_data: {
-              name: `${restaurant.name} - New Location`,
-              address: "",
-              city: "",
-              state: "",
-              zip_code: "",
-            },
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (error) throw error;
-      const errMsg = data && typeof data === "object" && "error" in data ? (data as { error: string }).error : null;
-      if (errMsg) throw new Error(errMsg);
-
-      notifications.show({
-        title: "Success",
-        message: "New location created successfully",
-        color: "green",
-      });
-
-      navigate("/restaurant/onboarding");
-    } catch (err: unknown) {
-      console.error("Error creating location:", err);
-      const message =
-        err instanceof Error ? err.message : "Failed to create new location";
-      notifications.show({
-        title: "Error",
-        message,
-        color: "red",
-      });
-    } finally {
-      setCreatingLocation(false);
-    }
+  const handleAddLocationSuccess = (newRestaurantId: string) => {
+    refetchRestaurants().then(() => selectRestaurant(newRestaurantId));
   };
 
   const isBusinessVerified = Boolean(progress?.business_info_verified) || Boolean(restaurant?.business_verified_at);
@@ -977,9 +922,7 @@ const RestaurantSetup = () => {
                     </Text>
                     <Button 
                       color="orange"
-                      onClick={handleCreateAdditionalLocation}
-                      loading={creatingLocation}
-                      disabled={creatingLocation}
+                      onClick={() => setAddLocationModalOpen(true)}
                     >
                       Add store or business
                     </Button>
@@ -1016,6 +959,17 @@ const RestaurantSetup = () => {
         <MerchantWelcomeConfetti
           restaurantName={restaurant?.name || 'Your Store'}
           onComplete={() => setShowWelcomeConfetti(false)}
+        />
+      )}
+
+      {/* Add new store / location wizard */}
+      {restaurant && (
+        <AddLocationWizard
+          opened={addLocationModalOpen}
+          onClose={() => setAddLocationModalOpen(false)}
+          parentRestaurantId={restaurant.id}
+          parentRestaurantName={restaurant.name || "Your store"}
+          onSuccess={handleAddLocationSuccess}
         />
       )}
     </Box>

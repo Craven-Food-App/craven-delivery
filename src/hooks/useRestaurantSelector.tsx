@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Restaurant {
@@ -22,50 +22,46 @@ export const useRestaurantSelector = () => {
   const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let channel: any;
+  const fetchRestaurants = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    const fetchRestaurants = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('restaurants')
-          .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, description, business_verified_at, merchant_welcome_shown, restaurant_type')
-          .eq('owner_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        console.log('Fetched restaurants for user:', user.id, 'data:', data);
-        setRestaurants(data || []);
-
-        // Load selected restaurant from localStorage or default to first owned restaurant
-        const stored = localStorage.getItem('selected_restaurant_id');
-        const validStored = stored && data?.find(r => r.id === stored);
-        
-        if (validStored) {
-          setSelectedRestaurantId(stored);
-        } else if (data && data.length > 0) {
-          // Default to the most recently created restaurant the user owns
-          setSelectedRestaurantId(data[0].id);
-          localStorage.setItem('selected_restaurant_id', data[0].id);
-        }
-      } catch (error) {
-        console.error('Error fetching restaurants:', error);
-      } finally {
+      if (!user) {
         setLoading(false);
+        return;
       }
-    };
+
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, description, business_verified_at, merchant_welcome_shown, restaurant_type')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setRestaurants(data || []);
+
+      const stored = localStorage.getItem('selected_restaurant_id');
+      const validStored = stored && data?.find(r => r.id === stored);
+
+      if (validStored) {
+        setSelectedRestaurantId(stored);
+      } else if (data && data.length > 0) {
+        setSelectedRestaurantId(data[0].id);
+        localStorage.setItem('selected_restaurant_id', data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     fetchRestaurants();
 
-    // Subscribe to real-time updates for restaurants table
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
 
@@ -91,19 +87,20 @@ export const useRestaurantSelector = () => {
         supabase.removeChannel(channel);
       }
     };
-  }, []);
+  }, [fetchRestaurants]);
 
-  const selectRestaurant = (restaurantId: string) => {
+  const selectRestaurant = useCallback((restaurantId: string) => {
     setSelectedRestaurantId(restaurantId);
     localStorage.setItem('selected_restaurant_id', restaurantId);
-  };
+  }, []);
 
   const selectedRestaurant = restaurants.find(r => r.id === selectedRestaurantId) || null;
 
-  return { 
-    restaurants, 
-    selectedRestaurant, 
+  return {
+    restaurants,
+    selectedRestaurant,
     loading,
-    selectRestaurant
+    selectRestaurant,
+    refetchRestaurants: fetchRestaurants,
   };
 };

@@ -119,7 +119,7 @@ const StoreSettingsDashboard = () => {
         setLogoPhoto(publicUrl);
       }
 
-      toast.success(`${currentImageType === 'header' ? 'Header' : 'Logo'} updated successfully`);
+      toast.success(`${currentImageType === 'header' ? 'Store listing photo' : 'Logo'} updated successfully`);
       setCropperOpen(false);
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -572,9 +572,9 @@ const StoreSettingsDashboard = () => {
                       </div>
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold mb-1">Header photo</h3>
+                      <h3 className="font-semibold mb-1">Store listing photo</h3>
                       <p className="text-sm text-muted-foreground">
-                        This photo appears at the top of your store page.
+                        This image appears on your store card in the customer app and at the top of your store page.
                       </p>
                     </div>
                   </div>
@@ -585,9 +585,9 @@ const StoreSettingsDashboard = () => {
                         <Image className="w-6 h-6 text-muted-foreground" />
                       </div>
                     </div>
-                    <h3 className="font-semibold mb-1">Header photo</h3>
+                    <h3 className="font-semibold mb-1">Store listing photo</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Add a photo to make sure your store shows up in search and categories.
+                      This image appears on your store card in the customer app. Add a photo so your store stands out in search and categories.
                     </p>
                     <Button 
                       type="button"
@@ -739,7 +739,7 @@ const StoreSettingsDashboard = () => {
                     <img src={headerPhoto} alt="Header" className="w-full h-full object-cover" />
                   ) : (
                     <p className="text-sm text-muted-foreground px-4 text-center">
-                      Add a header photo
+                      Add a store listing photo
                     </p>
                   )}
                 </div>
