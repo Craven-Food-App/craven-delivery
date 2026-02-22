@@ -10,6 +10,7 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -255,19 +256,17 @@ const GrowthToolInfoModal: React.FC<GrowthToolInfoModalProps> = ({
       }}
     >
       <DialogContent className="max-w-lg">
-        <DialogTitle>{tool.title}</DialogTitle>
-        <DialogDescription>{tool.description}</DialogDescription>
-        <div className="mt-4">
-          <InnerContent tool={tool} onClose={onClose} />
-        </div>
+        <DialogHeader>
+          <DialogTitle>{tool.title}</DialogTitle>
+          <DialogDescription>{tool.description}</DialogDescription>
+        </DialogHeader>
+        <InnerContent tool={tool} onClose={onClose} />
       </DialogContent>
     </Dialog>
   );
 };
 
 export default GrowthToolInfoModal;
-
-
 
 
 

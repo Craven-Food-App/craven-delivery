@@ -1,42 +1,38 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.craven.delivery.customer"
-    compileSdk = rootProject.ext.compileSdkVersion
+    namespace "com.craven.delivery.customer"
+    compileSdk rootProject.ext.compileSdkVersion
 
     defaultConfig {
-        applicationId = "com.craven.delivery.customer"
-        minSdk = rootProject.ext.minSdkVersion
-        targetSdk = rootProject.ext.targetSdkVersion
-        versionCode = 2
-        versionName = "1.0.1"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        applicationId "com.craven.delivery.customer"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         aaptOptions {
-            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
 
     buildTypes {
         debug {
-            minifyEnabled = false
-            shrinkResources = false
+            minifyEnabled false
+            shrinkResources false
         }
 
         release {
-            minifyEnabled = true
-            shrinkResources = true
-            proguardFiles(
-                    getDefaultProguardFile('proguard-android-optimize.txt'),
-                    'proguard-rules.pro'
-            )
-            signingConfig = signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
@@ -47,7 +43,7 @@ repositories {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
 
     implementation "com.google.android.material:material:1.12.0"
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"

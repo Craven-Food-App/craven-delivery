@@ -154,10 +154,3 @@ COMMENT ON FUNCTION public.audit_security_definer_functions IS
 
 
 
-
-
-
-
-
-
-
