@@ -25,18 +25,18 @@ export function QualificationStep({ data, updateData, onNext }: QualificationSte
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Let's Get Started</h2>
-        <p className="text-gray-600">Help us understand your restaurant better</p>
+        <p className="text-gray-600">Help us understand your business better</p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="restaurantType">What type of restaurant do you operate? *</Label>
+          <Label htmlFor="restaurantType">What type of business do you operate? *</Label>
           <Select
             value={data.restaurantType || ''}
             onValueChange={(value) => updateData({ restaurantType: value })}
           >
             <SelectTrigger id="restaurantType">
-              <SelectValue placeholder="Select restaurant type" />
+              <SelectValue placeholder="Select business type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="full_service">Full Service Restaurant</SelectItem>
@@ -47,6 +47,12 @@ export function QualificationStep({ data, updateData, onNext }: QualificationSte
               <SelectItem value="ghost_kitchen">Ghost Kitchen/Virtual Brand</SelectItem>
               <SelectItem value="catering">Catering Only</SelectItem>
               <SelectItem value="food_truck">Food Truck</SelectItem>
+              <SelectItem value="retail_store">Retail Store</SelectItem>
+              <SelectItem value="grocery">Grocery</SelectItem>
+              <SelectItem value="supermarket">Supermarket</SelectItem>
+              <SelectItem value="convenience">Convenience Store</SelectItem>
+              <SelectItem value="deli">Deli</SelectItem>
+              <SelectItem value="market">Market</SelectItem>
             </SelectContent>
           </Select>
         </div>

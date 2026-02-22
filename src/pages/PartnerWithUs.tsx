@@ -633,6 +633,8 @@ ${formData.message}
                       onChange={(value) => handleInputChange('businessType', value || '')}
                       data={[
                         { value: 'restaurant', label: 'Restaurant' },
+                        { value: 'grocery', label: 'Grocery' },
+                        { value: 'retail', label: 'Retail' },
                         { value: 'food-truck', label: 'Food Truck' },
                         { value: 'catering', label: 'Catering Company' },
                         { value: 'ghost-kitchen', label: 'Ghost Kitchen' },

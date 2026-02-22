@@ -41,7 +41,7 @@ const StoreSettingsDashboard = () => {
   const headerInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // Restaurant type options (matching QualificationStep)
+  // Restaurant type options (matching QualificationStep + grocery)
   const restaurantTypeOptions = [
     { value: "full_service", label: "Full Service Restaurant" },
     { value: "fast_casual", label: "Fast Casual" },
@@ -52,6 +52,11 @@ const StoreSettingsDashboard = () => {
     { value: "catering", label: "Catering Only" },
     { value: "food_truck", label: "Food Truck" },
     { value: "retail_store", label: "Retail Store" },
+    { value: "grocery", label: "Grocery" },
+    { value: "supermarket", label: "Supermarket" },
+    { value: "convenience", label: "Convenience Store" },
+    { value: "deli", label: "Deli" },
+    { value: "market", label: "Market" },
   ];
 
   useEffect(() => {
