@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "424634339319",
+    "project_id": "crave-notifications",
+    "storage_bucket": "crave-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424634339319:android:043e0d9a60960e0ce668f2",
+        "android_client_info": {
+          "package_name": "com.craven.delivery.feeder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHdTjJJeYxZJLtdJxOAnvrnnCUUri_J70"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

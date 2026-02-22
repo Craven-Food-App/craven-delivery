@@ -4,44 +4,189 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import {
   Loader2,
   Save,
-  Package,
-  Image as ImageIcon,
-  Tag,
-  Layers,
-  Truck,
-  DollarSign,
   X,
-  Plus,
-  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import ProductImageUploader, { ProductImage } from "./ProductImageUploader";
 import VariantManager, { OptionDef, VariantRow } from "./VariantManager";
+
+// ── Add Product design: styles & primitives ─────────────────────────────────
+
+const ProductEditorStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    .product-editor * { box-sizing: border-box; }
+    .product-editor .field-input {
+      width: 100%; border: 1px solid #e5e7eb; border-radius: 7px;
+      padding: 9px 12px; font-size: 13.5px;
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      color: #111827; background: #fff; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .product-editor .field-input:focus { border-color: #ea580c; box-shadow: 0 0 0 3px rgba(234,88,12,0.1); }
+    .product-editor .field-input::placeholder { color: #9ca3af; }
+    .product-editor textarea.field-input { resize: vertical; min-height: 88px; line-height: 1.6; }
+    .product-editor .mono-input { font-family: 'IBM Plex Mono', monospace !important; font-size: 13px !important; }
+    .product-editor .select-wrap { position: relative; }
+    .product-editor .select-wrap svg.chevron { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #9ca3af; }
+    .product-editor .select-input {
+      width: 100%; border: 1px solid #e5e7eb; border-radius: 7px;
+      padding: 9px 32px 9px 12px; font-size: 13.5px;
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      color: #111827; background: #fff; outline: none; appearance: none; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .product-editor .select-input:focus { border-color: #ea580c; box-shadow: 0 0 0 3px rgba(234,88,12,0.1); }
+    .product-editor .save-btn { transition: background 0.15s, box-shadow 0.15s, transform 0.12s; cursor: pointer; }
+    .product-editor .save-btn:hover { background: #c2410c !important; box-shadow: 0 4px 16px rgba(234,88,12,0.3) !important; transform: translateY(-1px); }
+    .product-editor .tab-btn { transition: color 0.15s; cursor: pointer; background: none; border: none; font-family: 'IBM Plex Sans', sans-serif; }
+    .product-editor .tab-btn:hover { color: #ea580c !important; }
+    .product-editor .section-head {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.13em;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .product-editor .section-head::after { content: ''; flex: 1; height: 1px; background: #f3f4f6; }
+    .product-editor .stat-card { border-radius: 8px; border: 1px solid #f3f4f6; padding: 10px 14px; background: #f9fafb; }
+    .product-editor .info-box { background: #f9fafb; border: 1px solid #f3f4f6; border-radius: 8px; padding: 12px 14px; }
+    .product-editor .toggle-track { transition: background 0.2s; cursor: pointer; }
+    .product-editor .toggle-thumb { transition: left 0.2s; }
+    .product-editor .tag-chip { transition: background 0.12s; cursor: default; }
+    .product-editor .tag-chip:hover { background: #fee2e2 !important; }
+    .product-editor .upload-zone { transition: border-color 0.15s, background 0.15s; cursor: pointer; }
+    .product-editor .upload-zone:hover { border-color: #ea580c !important; background: #fff7ed !important; }
+  `}</style>
+);
+
+function Toggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  return (
+    <div
+      onClick={onToggle}
+      className="toggle-track"
+      style={{
+        width: 38,
+        height: 21,
+        borderRadius: 99,
+        background: active ? "#ea580c" : "#e5e7eb",
+        position: "relative",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        className="toggle-thumb"
+        style={{
+          position: "absolute",
+          top: 2.5,
+          left: active ? 19 : 2.5,
+          width: 16,
+          height: 16,
+          borderRadius: "50%",
+          background: "#fff",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+        }}
+      />
+    </div>
+  );
+}
+
+function FieldLabel({
+  children,
+  required,
+  hint,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <label style={{ fontSize: 11.5, fontWeight: 600, color: "#374151", letterSpacing: "0.04em" }}>
+        {children}
+        {required && <span style={{ color: "#ea580c", marginLeft: 3 }}>*</span>}
+      </label>
+      {hint && <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{hint}</p>}
+    </div>
+  );
+}
+
+function SelectWrap({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="select-wrap" style={{ width: "100%" }}>
+      {children}
+      <svg
+        className="chevron"
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </div>
+  );
+}
+
+function SectionHead({ children }: { children: React.ReactNode }) {
+  return <div className="section-head">{children}</div>;
+}
+
+const TAB_ICONS: Record<string, React.ReactNode> = {
+  general: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
+  images: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </>
+  ),
+  variants: (
+    <>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </>
+  ),
+  pricing: (
+    <>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </>
+  ),
+  shipping: (
+    <>
+      <rect x="1" y="3" width="15" height="13" rx="1" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </>
+  ),
+  organization: (
+    <>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </>
+  ),
+};
+
+const TABS = [
+  { id: "general", label: "General", badge: null as number | null },
+  { id: "images", label: "Images", badge: null as number | null },
+  { id: "variants", label: "Variants", badge: null as number | null },
+  { id: "pricing", label: "Pricing", badge: null as number | null },
+  { id: "shipping", label: "Shipping", badge: null as number | null },
+  { id: "organization", label: "Organization", badge: null as number | null },
+];
 
 // ── Types ──────────────────────────────────────────────
 
@@ -61,7 +206,6 @@ interface ProductFormData {
   manufacturer: string;
   vendor: string;
   barcode: string;
-  sku: string;
   tags: string[];
   product_type: string;
   weight_value: number | null;
@@ -109,7 +253,6 @@ const RetailProductEditor = ({
     manufacturer: "",
     vendor: "",
     barcode: "",
-    sku: "",
     tags: [],
     product_type: "physical",
     weight_value: null,
@@ -155,7 +298,6 @@ const RetailProductEditor = ({
       manufacturer: "",
       vendor: "",
       barcode: "",
-      sku: "",
       tags: [],
       product_type: "physical",
       weight_value: null,
@@ -179,6 +321,7 @@ const RetailProductEditor = ({
       .from("menu_categories")
       .select("id, name")
       .eq("restaurant_id", restaurantId)
+      .eq("is_active", true)
       .order("display_order");
     setCategories(data || []);
   };
@@ -206,7 +349,6 @@ const RetailProductEditor = ({
         manufacturer: product.manufacturer || "",
         vendor: product.vendor || "",
         barcode: product.barcode || "",
-        sku: "",
         tags: product.tags || [],
         product_type: product.product_type || "physical",
         weight_value: product.weight_value || null,
@@ -358,8 +500,8 @@ const RetailProductEditor = ({
         brand: form.brand.trim() || null,
         manufacturer: form.manufacturer.trim() || null,
         vendor: form.vendor.trim() || null,
-        barcode: form.barcode.trim() || null,
-        tags: form.tags,
+        barcode: form.barcode?.trim() || null,
+        tags: form.tags || [],
         product_type: form.product_type,
         weight_value: form.weight_value || null,
         weight_unit: form.weight_unit,
@@ -468,688 +610,590 @@ const RetailProductEditor = ({
     }
   };
 
+  // ── Right panel (per tab) ─────────────────────────────────────────────────
+  const primaryImage = images.find((i) => i.is_primary) || images[0];
+  const RightPanelContent = () => {
+    const panels: Record<string, React.ReactNode> = {
+      general: (
+        <>
+          <div
+            style={{
+              borderRadius: 10,
+              overflow: "hidden",
+              border: "1px solid #f3f4f6",
+              position: "relative",
+              aspectRatio: "3/4",
+              marginBottom: 14,
+              cursor: "pointer",
+            }}
+            onClick={() => setActiveTab("images")}
+          >
+            {primaryImage ? (
+              <img
+                src={primaryImage.image_url}
+                alt="Product"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "#f9fafb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#9ca3af",
+                  fontSize: 12,
+                }}
+              >
+                No image
+              </div>
+            )}
+            <div
+              style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "3px 9px",
+                borderRadius: 99,
+                background: form.is_available ? "#ecfdf5" : "#f1f5f9",
+                color: form.is_available ? "#065f46" : "#6b7280",
+                border: `1px solid ${form.is_available ? "#a7f3d0" : "#e2e8f0"}`,
+              }}
+            >
+              {form.is_available ? "● Active" : "○ Inactive"}
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              ["Variants", hasVariants ? String(variants.length) : "0", "options"],
+              ["In Stock", String(variants.reduce((s, v) => s + (v.quantity_on_hand || 0), 0)), "units"],
+              ["Images", String(images.length), "uploaded"],
+              ["Price", `$${(form.price_cents / 100).toFixed(2)}`, "base"],
+            ].map(([l, v, s], i) => (
+              <div key={i} className="stat-card">
+                <p style={{ fontSize: 16, fontWeight: 700, color: "#111827", fontFamily: "'IBM Plex Mono', monospace" }}>{v}</p>
+                <p style={{ fontSize: 10.5, color: "#9ca3af" }}>{l} · {s}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      ),
+      images: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af" }}>Image Guidelines</p>
+          {[
+            ["Min resolution", "1000 × 1000px"],
+            ["Aspect ratio", "1:1 or 3:4"],
+            ["Max file size", "10MB"],
+            ["Formats", "PNG, JPG, WEBP"],
+            ["Background", "White preferred"],
+            ["Max images", "20 per product"],
+          ].map(([k, v], i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingBottom: 8, borderBottom: "1px solid #f9fafb" }}>
+              <span style={{ fontSize: 12, color: "#6b7280" }}>{k}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151", fontFamily: "'IBM Plex Mono', monospace" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      variants: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af" }}>Inventory Summary</p>
+          {[
+            ["Total Variants", String(variants.length)],
+            ["In Stock", String(variants.filter((v) => (v.quantity_on_hand || 0) > 0).length)],
+            ["Out of Stock", String(variants.filter((v) => (v.quantity_on_hand || 0) === 0).length)],
+            ["Total Units", String(variants.reduce((s, v) => s + (v.quantity_on_hand || 0), 0))],
+          ].map(([k, v], i) => (
+            <div key={i} className="stat-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12.5, color: "#374151" }}>{k}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#111827", fontFamily: "'IBM Plex Mono', monospace" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      pricing: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af" }}>Pricing Summary</p>
+          {[
+            ["Retail Price", `$${(form.price_cents / 100).toFixed(2)}`],
+            ["Compare-at", form.compare_at_price_cents ? `$${(form.compare_at_price_cents / 100).toFixed(2)}` : "—"],
+            ["Cost", form.cost_price_cents ? `$${(form.cost_price_cents / 100).toFixed(2)}` : "—"],
+            ["Gross Margin", profitMargin() != null ? `${profitMargin()}%` : "—"],
+          ].map(([k, v], i) => (
+            <div key={i} className="stat-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12.5, color: "#374151" }}>{k}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: i === 3 ? "#16a34a" : "#111827", fontFamily: "'IBM Plex Mono', monospace" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      shipping: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9ca3af" }}>Package Summary</p>
+          {[
+            ["Weight", form.weight_value != null ? `${form.weight_value} ${form.weight_unit}` : "—"],
+            ["Dimensions", [form.length_cm, form.width_cm, form.height_cm].every((n) => n != null) ? `${form.length_cm} × ${form.width_cm} × ${form.height_cm} cm` : "—"],
+          ].map(([k, v], i) => (
+            <div key={i} className="stat-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12.5, color: "#374151" }}>{k}</span>
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#111827", fontFamily: "'IBM Plex Mono', monospace" }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      organization: (
+        <div className="info-box" style={{ marginTop: 4 }}>
+          <p style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.6 }}>
+            Tags: <strong style={{ color: "#374151" }}>{form.tags.length}</strong>. Brand: <strong style={{ color: "#374151" }}>{form.brand || "—"}</strong>. Vendor: <strong style={{ color: "#374151" }}>{form.vendor || "—"}</strong>.
+          </p>
+        </div>
+      ),
+    };
+    return panels[activeTab] || null;
+  };
+
   // ── Render ───────────────────────────────────────────
 
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl">
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <DialogContent className="max-w-4xl [&>button]:hidden">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 24px" }}>
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#9ca3af" }} />
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
+  const tabsWithBadges = TABS.map((t) =>
+    t.id === "images" ? { ...t, badge: images.length } : t.id === "variants" ? { ...t, badge: variants.length } : t
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] flex flex-col p-0">
-        {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              {productId ? "Edit Product" : "New Product"}
-            </DialogTitle>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="avail-switch" className="text-sm">
-                  {form.is_available ? "Active" : "Draft"}
-                </Label>
-                <Switch
-                  id="avail-switch"
-                  checked={form.is_available}
-                  onCheckedChange={(v) => updateField("is_available", v)}
-                />
+      <DialogContent
+        className="product-editor p-0 border-0 max-w-[980px] w-full max-h-[92vh] flex flex-col overflow-hidden shadow-xl [&>button]:hidden"
+        style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderRadius: 16, border: "1px solid #e5e7eb" }}
+      >
+        <ProductEditorStyles />
+        <div className="product-editor" style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                <div style={{ width: 3, height: 12, background: "#ea580c", borderRadius: 2 }} />
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.13em", textTransform: "uppercase", color: "#9ca3af" }}>Product Management</span>
               </div>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: "#111827", letterSpacing: "-0.3px", margin: 0 }}>{productId ? "Edit Product" : "New Product"}</h2>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: form.is_available ? "#111827" : "#9ca3af" }}>{form.is_available ? "Active" : "Inactive"}</span>
+                <Toggle active={form.is_available} onToggle={() => updateField("is_available", !form.is_available)} />
+              </div>
+              <div style={{ width: 1, height: 22, background: "#f3f4f6" }} />
+              <button
+                type="button"
+                className="save-btn"
+                onClick={handleSave}
+                disabled={saving}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "9px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#ea580c",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  boxShadow: "0 2px 8px rgba(234,88,12,0.22)",
+                }}
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save style={{ width: 13, height: 13 }} />}
                 {saving ? "Saving..." : "Save Product"}
-              </Button>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", padding: 4, display: "flex" }}
+                aria-label="Close"
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
             </div>
           </div>
-        </DialogHeader>
 
-        {/* Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="flex-1 flex flex-col overflow-hidden"
-        >
-          <div className="px-6 border-b">
-            <TabsList className="bg-transparent h-auto p-0 gap-6">
-              <TabsTrigger
-                value="general"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <Package className="w-4 h-4 mr-2" /> General
-              </TabsTrigger>
-              <TabsTrigger
-                value="images"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <ImageIcon className="w-4 h-4 mr-2" /> Images
-                {images.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 text-xs">
-                    {images.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="variants"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <Layers className="w-4 h-4 mr-2" /> Variants
-                {variants.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 h-5 text-xs">
-                    {variants.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="pricing"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <DollarSign className="w-4 h-4 mr-2" /> Pricing
-              </TabsTrigger>
-              <TabsTrigger
-                value="shipping"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <Truck className="w-4 h-4 mr-2" /> Shipping
-              </TabsTrigger>
-              <TabsTrigger
-                value="organization"
-                className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-0 pb-3"
-              >
-                <Tag className="w-4 h-4 mr-2" /> Organization
-              </TabsTrigger>
-            </TabsList>
+          {/* Tabs */}
+          <div style={{ display: "flex", padding: "0 24px", borderBottom: "1px solid #f3f4f6", background: "#fafafa", overflowX: "auto" }}>
+            {tabsWithBadges.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className="tab-btn"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "11px 14px",
+                    fontSize: 12.5,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? "#ea580c" : "#6b7280",
+                    borderBottom: active ? "2px solid #ea580c" : "2px solid transparent",
+                    marginBottom: -1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: active ? 1 : 0.5 }}>
+                    {TAB_ICONS[tab.id]}
+                  </svg>
+                  {tab.label}
+                  {"badge" in tab && tab.badge != null && tab.badge > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 99, background: active ? "#ea580c" : "#e5e7eb", color: active ? "#fff" : "#6b7280" }}>{tab.badge}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {/* ── General ─────────────────────────── */}
-            <TabsContent value="general" className="mt-0 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left column */}
-                <div className="space-y-4">
+          {/* Body */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", minHeight: 520, flex: 1, overflow: "hidden" }}>
+            <div style={{ padding: "22px 24px", borderRight: "1px solid #f3f4f6", overflowY: "auto" }}>
+              {activeTab === "general" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <SectionHead>Basic Information</SectionHead>
                   <div>
-                    <Label htmlFor="name">
-                      Product Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="name"
+                    <FieldLabel required>Product Name</FieldLabel>
+                    <input
+                      className="field-input"
                       value={form.name}
                       onChange={(e) => updateField("name", e.target.value)}
-                      placeholder="e.g. Classic Cotton T-Shirt"
-                      className="mt-1.5"
+                      placeholder="Enter product name"
                     />
                   </div>
-
                   <div>
-                    <Label htmlFor="desc">Description</Label>
-                    <Textarea
-                      id="desc"
+                    <FieldLabel hint="Shown on product pages and search results.">Description</FieldLabel>
+                    <textarea
+                      className="field-input"
                       value={form.description}
                       onChange={(e) => updateField("description", e.target.value)}
-                      placeholder="Describe your product..."
-                      rows={5}
-                      className="mt-1.5"
+                      placeholder="Describe your product"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                     <div>
-                      <Label>Collection</Label>
-                      <Select
-                        value={form.category_id || "none"}
-                        onValueChange={(v) =>
-                          updateField("category_id", v === "none" ? null : v)
-                        }
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue placeholder="Select collection" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
+                      <FieldLabel>Collection</FieldLabel>
+                      <SelectWrap>
+                        <select
+                          className="select-input"
+                          value={form.category_id || ""}
+                          onChange={(e) => updateField("category_id", e.target.value || null)}
+                        >
+                          <option value="">None</option>
                           {categories.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
+                            <option key={c.id} value={c.id}>{c.name}</option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </SelectWrap>
                     </div>
                     <div>
-                      <Label>Product Type</Label>
-                      <Select
-                        value={form.product_type}
-                        onValueChange={(v) => updateField("product_type", v)}
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="physical">Physical</SelectItem>
-                          <SelectItem value="digital">Digital</SelectItem>
-                          <SelectItem value="gift_card">Gift Card</SelectItem>
-                          <SelectItem value="service">Service</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FieldLabel>Product Type</FieldLabel>
+                      <SelectWrap>
+                        <select
+                          className="select-input"
+                          value={form.product_type}
+                          onChange={(e) => updateField("product_type", e.target.value)}
+                        >
+                          <option value="physical">Physical</option>
+                          <option value="digital">Digital</option>
+                          <option value="gift_card">Gift Card</option>
+                          <option value="service">Service</option>
+                        </select>
+                      </SelectWrap>
+                    </div>
+                  </div>
+                  <div>
+                    <FieldLabel hint="UPC, EAN, or ISBN">Barcode / UPC</FieldLabel>
+                    <input
+                      className="field-input mono-input"
+                      value={form.barcode}
+                      onChange={(e) => updateField("barcode", e.target.value)}
+                      placeholder="Optional barcode"
+                    />
+                  </div>
+                  <SectionHead>Tags</SectionHead>
+                  <div>
+                    <FieldLabel hint="Press Enter to add a tag.">Product Tags</FieldLabel>
+                    <div style={{ border: "1px solid #e5e7eb", borderRadius: 7, padding: "7px 10px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {form.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="tag-chip"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            fontSize: 11.5,
+                            fontWeight: 500,
+                            padding: "3px 9px",
+                            borderRadius: 5,
+                            background: "#f1f5f9",
+                            color: "#374151",
+                            border: "1px solid #e2e8f0",
+                          }}
+                        >
+                          {tag}
+                          <span
+                            onClick={() => removeTag(tag)}
+                            style={{ cursor: "pointer", color: "#9ca3af", fontWeight: 700, fontSize: 13, lineHeight: 1 }}
+                          >
+                            ×
+                          </span>
+                        </span>
+                      ))}
+                      <input
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault();
+                            addTag();
+                          }
+                        }}
+                        placeholder="Add tag…"
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          fontSize: 13,
+                          color: "#111827",
+                          minWidth: 80,
+                          flex: 1,
+                          fontFamily: "'IBM Plex Sans', sans-serif",
+                          background: "transparent",
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Right column — quick image preview */}
-                <div className="space-y-4">
-                  <Label>Primary Image</Label>
-                  <div
-                    className="aspect-square border-2 border-dashed rounded-lg overflow-hidden cursor-pointer hover:border-primary transition-colors flex items-center justify-center bg-muted"
-                    onClick={() => setActiveTab("images")}
-                  >
-                    {images.length > 0 ? (
-                      <img
-                        src={
-                          (images.find((i) => i.is_primary) || images[0])
-                            .image_url
-                        }
-                        alt="Product"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center p-4">
-                        <ImageIcon className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Click to add images
-                        </p>
-                      </div>
-                    )}
+              {activeTab === "images" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <SectionHead>Product Images</SectionHead>
+                  <ProductImageUploader restaurantId={restaurantId} images={images} onChange={setImages} />
+                  <div className="info-box">
+                    <p style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.6 }}>
+                      <strong style={{ color: "#374151" }}>Tip:</strong> Click an image to set it as the primary. Recommended size: 1000×1000px minimum.
+                    </p>
                   </div>
-                  {images.length > 1 && (
-                    <div className="flex gap-2 overflow-x-auto">
-                      {images.slice(0, 5).map((img, i) => (
-                        <div
-                          key={i}
-                          className={`w-16 h-16 rounded border-2 flex-shrink-0 overflow-hidden cursor-pointer ${
-                            img.is_primary ? "border-primary" : "border-border"
-                          }`}
-                          onClick={() => setActiveTab("images")}
-                        >
-                          <img
-                            src={img.image_url}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                      {images.length > 5 && (
-                        <div
-                          className="w-16 h-16 rounded border bg-muted flex items-center justify-center text-sm font-medium cursor-pointer"
-                          onClick={() => setActiveTab("images")}
-                        >
-                          +{images.length - 5}
-                        </div>
-                      )}
+                </div>
+              )}
+
+              {activeTab === "variants" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 8, border: "1px solid #f3f4f6", background: "#fafafa" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>This product has multiple options</p>
+                      <p style={{ fontSize: 11.5, color: "#6b7280" }}>Add variants like sizes, colors, or materials.</p>
                     </div>
+                    <Toggle active={hasVariants} onToggle={() => setHasVariants(!hasVariants)} />
+                  </div>
+                  {hasVariants && (
+                    <VariantManager
+                      options={options}
+                      variants={variants}
+                      basePrice={form.price_cents}
+                      onOptionsChange={setOptions}
+                      onVariantsChange={setVariants}
+                    />
+                  )}
+                  {!hasVariants && (
+                    <div style={{ padding: 24, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>Enable variants above to add size, color, and other options.</div>
                   )}
                 </div>
-              </div>
-            </TabsContent>
-
-            {/* ── Images ──────────────────────────── */}
-            <TabsContent value="images" className="mt-0">
-              <ProductImageUploader
-                restaurantId={restaurantId}
-                images={images}
-                onChange={setImages}
-              />
-            </TabsContent>
-
-            {/* ── Variants ────────────────────────── */}
-            <TabsContent value="variants" className="mt-0 space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                <Switch
-                  checked={hasVariants}
-                  onCheckedChange={setHasVariants}
-                />
-                <div>
-                  <p className="font-medium">
-                    This product has multiple options
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Add variants like different sizes, colors, or materials
-                  </p>
-                </div>
-              </div>
-
-              {hasVariants && (
-                <VariantManager
-                  options={options}
-                  variants={variants}
-                  basePrice={form.price_cents}
-                  onOptionsChange={setOptions}
-                  onVariantsChange={setVariants}
-                />
               )}
 
-              {!hasVariants && (
-                <div className="border rounded-lg p-6 text-center text-muted-foreground">
-                  <Layers className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p>Enable variants to add size, color, and other options</p>
-                </div>
-              )}
-            </TabsContent>
-
-            {/* ── Pricing ─────────────────────────── */}
-            <TabsContent value="pricing" className="mt-0 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>
-                    Price ($) <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.price_cents ? (form.price_cents / 100).toFixed(2) : ""}
-                    onChange={(e) =>
-                      updateField(
-                        "price_cents",
-                        Math.round(parseFloat(e.target.value || "0") * 100)
-                      )
-                    }
-                    placeholder="0.00"
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label>Compare At Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={
-                      form.compare_at_price_cents
-                        ? (form.compare_at_price_cents / 100).toFixed(2)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      updateField(
-                        "compare_at_price_cents",
-                        e.target.value
-                          ? Math.round(parseFloat(e.target.value) * 100)
-                          : null
-                      )
-                    }
-                    placeholder="Original price"
-                    className="mt-1.5"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Shows as strikethrough on store page
-                  </p>
-                </div>
-                <div>
-                  <Label>Cost Per Item ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={
-                      form.cost_price_cents
-                        ? (form.cost_price_cents / 100).toFixed(2)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      updateField(
-                        "cost_price_cents",
-                        e.target.value
-                          ? Math.round(parseFloat(e.target.value) * 100)
-                          : null
-                      )
-                    }
-                    placeholder="Your cost"
-                    className="mt-1.5"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Customers won't see this
-                  </p>
-                </div>
-              </div>
-
-              {/* Profit margin display */}
-              {profitMargin() !== null && (
-                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                  <Info className="w-5 h-5 text-blue-500" />
-                  <div>
-                    <p className="text-sm">
-                      <span className="font-medium">Profit margin:</span>{" "}
-                      <span
-                        className={
-                          parseFloat(profitMargin()!) > 0
-                            ? "text-green-600 font-semibold"
-                            : "text-destructive font-semibold"
-                        }
-                      >
-                        {profitMargin()}%
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Profit per unit: $
-                      {(
-                        (form.price_cents - (form.cost_price_cents || 0)) /
-                        100
-                      ).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Sale badge preview */}
-              {form.compare_at_price_cents &&
-                form.compare_at_price_cents > form.price_cents && (
-                  <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                    <Tag className="w-5 h-5 text-red-500" />
+              {activeTab === "pricing" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <SectionHead>Base Pricing</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
                     <div>
-                      <p className="text-sm">
-                        <span className="line-through text-muted-foreground mr-2">
-                          ${(form.compare_at_price_cents / 100).toFixed(2)}
-                        </span>
-                        <span className="font-bold text-red-600">
-                          ${(form.price_cents / 100).toFixed(2)}
-                        </span>
-                        <Badge
-                          variant="destructive"
-                          className="ml-2 text-xs"
-                        >
-                          Save{" "}
-                          {Math.round(
-                            ((form.compare_at_price_cents - form.price_cents) /
-                              form.compare_at_price_cents) *
-                              100
-                          )}
-                          %
-                        </Badge>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        This is how the sale will appear to customers
-                      </p>
+                      <FieldLabel required>Base Price</FieldLabel>
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>$</span>
+                        <input
+                          className="field-input mono-input"
+                          type="text"
+                          value={form.price_cents ? (form.price_cents / 100).toFixed(2) : ""}
+                          onChange={(e) => updateField("price_cents", Math.round(parseFloat(e.target.value || "0") * 100))}
+                          style={{ paddingLeft: 22 }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Tax Rate (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={form.tax_rate ? (form.tax_rate * 100).toFixed(2) : ""}
-                    onChange={(e) =>
-                      updateField(
-                        "tax_rate",
-                        parseFloat(e.target.value || "0") / 100
-                      )
-                    }
-                    placeholder="0.00"
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* ── Shipping ────────────────────────── */}
-            <TabsContent value="shipping" className="mt-0 space-y-6">
-              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-                <Switch
-                  checked={form.requires_shipping}
-                  onCheckedChange={(v) => updateField("requires_shipping", v)}
-                />
-                <div>
-                  <p className="font-medium">This is a physical product</p>
-                  <p className="text-sm text-muted-foreground">
-                    Requires shipping or local delivery
-                  </p>
-                </div>
-              </div>
-
-              {form.requires_shipping && (
-                <>
-                  <div>
-                    <Label className="text-base font-semibold">Weight</Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Used to calculate shipping rates
-                    </p>
-                    <div className="flex gap-3">
-                      <div className="flex-1">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={form.weight_value || ""}
+                    <div>
+                      <FieldLabel hint="Shown as strikethrough.">Compare-at Price</FieldLabel>
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>$</span>
+                        <input
+                          className="field-input mono-input"
+                          type="text"
+                          value={form.compare_at_price_cents != null ? (form.compare_at_price_cents / 100).toFixed(2) : ""}
                           onChange={(e) =>
-                            updateField(
-                              "weight_value",
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : null
-                            )
+                            updateField("compare_at_price_cents", e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null)
                           }
-                          placeholder="Weight"
+                          style={{ paddingLeft: 22 }}
                         />
                       </div>
-                      <Select
-                        value={form.weight_unit}
-                        onValueChange={(v) => updateField("weight_unit", v)}
-                      >
-                        <SelectTrigger className="w-24">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="oz">oz</SelectItem>
-                          <SelectItem value="lb">lb</SelectItem>
-                          <SelectItem value="g">g</SelectItem>
-                          <SelectItem value="kg">kg</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-base font-semibold">
-                      Dimensions (cm)
-                    </Label>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Used for box fitting and shipping quotes
-                    </p>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs">Length</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={form.length_cm || ""}
+                    <div>
+                      <FieldLabel>Cost per Item</FieldLabel>
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>$</span>
+                        <input
+                          className="field-input mono-input"
+                          type="text"
+                          value={form.cost_price_cents != null ? (form.cost_price_cents / 100).toFixed(2) : ""}
                           onChange={(e) =>
-                            updateField(
-                              "length_cm",
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : null
-                            )
+                            updateField("cost_price_cents", e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null)
                           }
-                          placeholder="L"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Width</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={form.width_cm || ""}
-                          onChange={(e) =>
-                            updateField(
-                              "width_cm",
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : null
-                            )
-                          }
-                          placeholder="W"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Height</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          value={form.height_cm || ""}
-                          onChange={(e) =>
-                            updateField(
-                              "height_cm",
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : null
-                            )
-                          }
-                          placeholder="H"
-                          className="mt-1"
+                          style={{ paddingLeft: 22 }}
                         />
                       </div>
                     </div>
                   </div>
-                </>
-              )}
-            </TabsContent>
-
-            {/* ── Organization ────────────────────── */}
-            <TabsContent value="organization" className="mt-0 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Brand</Label>
-                  <Input
-                    value={form.brand}
-                    onChange={(e) => updateField("brand", e.target.value)}
-                    placeholder="e.g. Nike, Apple"
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label>Manufacturer</Label>
-                  <Input
-                    value={form.manufacturer}
-                    onChange={(e) => updateField("manufacturer", e.target.value)}
-                    placeholder="Who makes this product"
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label>Vendor / Supplier</Label>
-                  <Input
-                    value={form.vendor}
-                    onChange={(e) => updateField("vendor", e.target.value)}
-                    placeholder="Where you buy it from"
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label>Barcode (UPC / EAN / ISBN)</Label>
-                  <Input
-                    value={form.barcode}
-                    onChange={(e) => updateField("barcode", e.target.value)}
-                    placeholder="e.g. 012345678901"
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <Label className="text-base font-semibold">Tags</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Used for search, filtering, and automated collections
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {form.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="gap-1 pr-1"
-                    >
-                      {tag}
-                      <button
-                        className="ml-1 hover:text-destructive"
-                        onClick={() => removeTag(tag)}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addTag();
-                      }
-                    }}
-                    className="max-w-xs"
-                  />
-                  <Button variant="outline" onClick={addTag}>
-                    <Plus className="w-4 h-4 mr-1" /> Add
-                  </Button>
-                </div>
-
-                {/* Suggested tags */}
-                {form.tags.length < 5 && (
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    <span className="text-xs text-muted-foreground">
-                      Suggested:
-                    </span>
-                    {[
-                      "sale",
-                      "bestseller",
-                      "new-arrival",
-                      "clearance",
-                      "seasonal",
-                      "featured",
-                      "gift-idea",
-                      "limited-edition",
-                    ]
-                      .filter((t) => !form.tags.includes(t))
-                      .slice(0, 5)
-                      .map((tag) => (
-                        <button
-                          key={tag}
-                          className="text-xs px-2 py-0.5 rounded-full border hover:bg-muted transition-colors"
-                          onClick={() =>
-                            updateField("tags", [...form.tags, tag])
-                          }
-                        >
-                          + {tag}
-                        </button>
+                  {profitMargin() != null && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+                      {[
+                        { label: "Margin", value: `${profitMargin()}%`, color: "#16a34a" },
+                        {
+                          label: "Profit per Unit",
+                          value: `$${((form.price_cents - (form.cost_price_cents || 0)) / 100).toFixed(2)}`,
+                          color: "#16a34a",
+                        },
+                        {
+                          label: "Discount",
+                          value:
+                            form.compare_at_price_cents && form.compare_at_price_cents > form.price_cents
+                              ? `${Math.round(((form.compare_at_price_cents - form.price_cents) / form.compare_at_price_cents) * 100)}% off`
+                              : "—",
+                          color: "#ea580c",
+                        },
+                      ].map((s, i) => (
+                        <div key={i} className="stat-card">
+                          <p style={{ fontSize: 17, fontWeight: 700, color: s.color, fontFamily: "'IBM Plex Mono', monospace" }}>{s.value}</p>
+                          <p style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 2 }}>{s.label}</p>
+                        </div>
                       ))}
+                    </div>
+                  )}
+                  <SectionHead>Tax & Compliance</SectionHead>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 8, border: "1px solid #f3f4f6", background: "#fafafa" }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>Charge Tax on Product</p>
+                        <p style={{ fontSize: 11.5, color: "#6b7280" }}>Tax will be calculated at checkout based on customer location.</p>
+                      </div>
+                      <Toggle active={form.tax_rate > 0} onToggle={() => updateField("tax_rate", form.tax_rate > 0 ? 0 : 0.07)} />
+                    </div>
+                    <div>
+                      <FieldLabel>Tax Rate (%)</FieldLabel>
+                      <input
+                        className="field-input mono-input"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={form.tax_rate ? (form.tax_rate * 100).toFixed(2) : ""}
+                        onChange={(e) => updateField("tax_rate", parseFloat(e.target.value || "0") / 100)}
+                      />
+                    </div>
                   </div>
-                )}
-              </div>
-            </TabsContent>
+                </div>
+              )}
+
+              {activeTab === "shipping" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 8, border: "1px solid #f3f4f6", background: "#fafafa" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>This product requires shipping</p>
+                      <p style={{ fontSize: 11.5, color: "#6b7280" }}>Disable for digital or virtual products.</p>
+                    </div>
+                    <Toggle active={form.requires_shipping} onToggle={() => updateField("requires_shipping", !form.requires_shipping)} />
+                  </div>
+                  {form.requires_shipping && (
+                    <>
+                      <SectionHead>Package Dimensions</SectionHead>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+                        {[
+                          ["Weight", form.weight_value ?? "", form.weight_unit || "lb"],
+                          ["Length", form.length_cm ?? "", "cm"],
+                          ["Width", form.width_cm ?? "", "cm"],
+                          ["Height", form.height_cm ?? "", "cm"],
+                        ].map(([label, val, unit], i) => (
+                          <div key={i}>
+                            <FieldLabel>{label}</FieldLabel>
+                            <div style={{ position: "relative" }}>
+                              <input
+                                className="field-input mono-input"
+                                type="number"
+                                step="0.1"
+                                value={val}
+                                onChange={(e) => {
+                                  const key = label === "Weight" ? "weight_value" : label === "Length" ? "length_cm" : label === "Width" ? "width_cm" : "height_cm";
+                                  updateField(key, e.target.value ? parseFloat(e.target.value) : null);
+                                }}
+                                style={{ paddingRight: 32 }}
+                              />
+                              <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 11, color: "#9ca3af", fontWeight: 600 }}>{unit}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "organization" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <SectionHead>Catalog Organization</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div>
+                      <FieldLabel>Brand</FieldLabel>
+                      <input className="field-input" value={form.brand} onChange={(e) => updateField("brand", e.target.value)} placeholder="Brand name" />
+                    </div>
+                    <div>
+                      <FieldLabel>Vendor</FieldLabel>
+                      <input className="field-input" value={form.vendor} onChange={(e) => updateField("vendor", e.target.value)} placeholder="Vendor or supplier" />
+                    </div>
+                    <div>
+                      <FieldLabel>Manufacturer</FieldLabel>
+                      <input className="field-input" value={form.manufacturer} onChange={(e) => updateField("manufacturer", e.target.value)} placeholder="Manufacturer" />
+                    </div>
+                    <div>
+                      <FieldLabel>Barcode (UPC / EAN)</FieldLabel>
+                      <input className="field-input mono-input" value={form.barcode} onChange={(e) => updateField("barcode", e.target.value)} placeholder="Optional barcode" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div style={{ padding: "22px 20px", overflowY: "auto", background: "#fafafa" }}>
+              <RightPanelContent />
+            </div>
           </div>
-        </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Restaurant {
+export interface Restaurant {
   id: string;
   name: string;
   owner_id: string;
@@ -16,6 +16,10 @@ interface Restaurant {
   zip_code: string | null;
   description: string | null;
   restaurant_type: string | null;
+  auto_descriptions_enabled?: boolean;
+  chat_enabled?: boolean;
+  cravemore_eligible?: boolean;
+  verification_notes?: Record<string, unknown>;
 }
 
 export const useRestaurantData = () => {
@@ -34,7 +38,7 @@ export const useRestaurantData = () => {
 
         const { data, error } = await supabase
           .from('restaurants')
-          .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, city, state, zip_code, description, restaurant_type, auto_descriptions_enabled, chat_enabled, alcohol_enabled, verification_notes')
+          .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, city, state, zip_code, description, restaurant_type, auto_descriptions_enabled, chat_enabled, cravemore_eligible, alcohol_enabled, verification_notes')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -51,5 +55,26 @@ export const useRestaurantData = () => {
     fetchRestaurant();
   }, []);
 
-  return { restaurant, loading };
+  const refetch = () => {
+    setLoading(true);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      supabase
+        .from('restaurants')
+        .select('id, name, owner_id, setup_deadline, logo_url, header_image_url, instagram_handle, phone, address, city, state, zip_code, description, restaurant_type, auto_descriptions_enabled, chat_enabled, cravemore_eligible, alcohol_enabled, verification_notes')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .then(({ data, error }) => {
+          if (error) console.error('Error refetching restaurant:', error);
+          else setRestaurant(data?.[0] ?? null);
+        })
+        .finally(() => setLoading(false));
+    });
+  };
+
+  return { restaurant, loading, refetch };
 };

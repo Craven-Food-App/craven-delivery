@@ -65,6 +65,9 @@ import RetailProductCatalog from "@/components/retail/RetailProductCatalog";
 import RetailInventoryDashboard from "@/components/retail/RetailInventoryDashboard";
 import { GroceryHomeDashboard } from "@/components/grocery/GroceryHomeDashboard";
 import { AddLocationWizard } from "@/components/merchant/AddLocationWizard";
+import StoreActivation from "@/components/merchant/StoreActivation";
+import GoLiveSection from "@/components/merchant/GoLiveSection";
+import CraveNSetupSection from "@/components/merchant/CraveNSetupSection";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
@@ -97,7 +100,6 @@ const formatRestaurantType = (type: string | null | undefined): string => {
 const RestaurantSetup = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
-  const [prepareStoreExpanded, setPrepareStoreExpanded] = useState(true);
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
   const [settingsTab, setSettingsTab] = useState<string>("account");
@@ -592,371 +594,37 @@ const RestaurantSetup = () => {
                 </Stack>
 
           {/* Prepare your store section */}
-          <Card p="lg" mb="lg" withBorder>
-            <Button
-              variant="subtle"
-              fullWidth
-              onClick={() => setPrepareStoreExpanded(!prepareStoreExpanded)}
-              rightSection={prepareStoreExpanded ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
-              styles={{ root: { justifyContent: 'space-between', height: 'auto', padding: '16px' } }}
-            >
-              <Stack gap="xs" align="flex-start" style={{ flex: 1 }}>
-                <Title order={3} style={{ textAlign: 'left' }}>Prepare your store</Title>
-                <Text size="sm" c="dimmed" style={{ textAlign: 'left' }}>
-                  Review other steps before your store goes live.
-                </Text>
-              </Stack>
-              <Text size="sm" c="dimmed">{completedSteps} of 3 steps</Text>
-            </Button>
-
-            {prepareStoreExpanded && (
-              <Stack gap="md" mt="md">
-                {/* Business info verified */}
-                <Card p="lg" withBorder>
-                  <Group gap="md" align="flex-start">
-                    <Box style={{ flexShrink: 0 }}>
-                      <Box
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: isBusinessVerified ? 'var(--mantine-color-green-6)' : 'var(--mantine-color-orange-6)',
-                        }}
-                      >
-                        {isBusinessVerified ? (
-                          <Box style={{ position: 'relative' }}>
-                            <IconClock size={24} style={{ color: 'white' }} />
-                            <Box
-                              style={{
-                                position: 'absolute',
-                                bottom: -4,
-                                right: -4,
-                                width: '16px',
-                                height: '16px',
-                                borderRadius: '50%',
-                                backgroundColor: 'var(--mantine-color-green-6)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <IconCircleCheck size={12} style={{ color: 'white' }} />
-                            </Box>
-                          </Box>
-                        ) : (
-                          <IconClock size={24} style={{ color: 'white' }} />
-                        )}
-                      </Box>
-                    </Box>
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                      <Title order={4}>
-                        {isBusinessVerified 
-                          ? 'Your business info was verified' 
-                          : 'Business verification pending'}
-                      </Title>
-                      <Text size="sm" c="dimmed">
-                        {isBusinessVerified
-                          ? "We've reviewed and verified your business info. No further action is needed."
-                          : "Our team is reviewing your business documents. This usually takes 1-2 business days."}
-                      </Text>
-                    </Stack>
-                  </Group>
-                </Card>
-
-                {/* Menu preparation */}
-                <Card p="lg" withBorder>
-                  <Group gap="md" align="flex-start">
-                    <Box style={{ flexShrink: 0 }}>
-                      <Box
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: progress?.menu_preparation_status === 'ready' 
-                            ? 'var(--mantine-color-green-6)' 
-                            : progress?.menu_preparation_status === 'in_progress'
-                              ? 'var(--mantine-color-green-6)'
-                              : 'var(--mantine-color-red-6)',
-                        }}
-                      >
-                        {progress?.menu_preparation_status === 'ready' ? (
-                          <IconCircleCheck size={24} style={{ color: 'white' }} />
-                        ) : (
-                          <IconClock size={24} style={{ color: 'white' }} />
-                        )}
-                      </Box>
-                    </Box>
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                      <Group gap="xs" align="center">
-                        <Title order={4}>
-                          {progress?.menu_preparation_status === 'ready' 
-                            ? labels.catalogPrepReady 
-                            : progress?.menu_preparation_status === 'in_progress'
-                              ? labels.catalogPrepInProgress
-                              : labels.catalogPrepNotStarted}
-                        </Title>
-                        <Badge
-                          color={
-                            progress?.menu_preparation_status === 'ready'
-                              ? 'green'
-                              : progress?.menu_preparation_status === 'in_progress'
-                                ? 'yellow'
-                                : 'red'
-                          }
-                          variant="light"
-                          size="sm"
-                        >
-                          {progress?.menu_preparation_status === 'ready' 
-                            ? 'Complete' 
-                            : progress?.menu_preparation_status === 'in_progress'
-                              ? 'In progress'
-                              : 'Not started'}
-                        </Badge>
-                      </Group>
-                      <Text size="sm" c="dimmed" mb="md">
-                        {progress?.menu_preparation_status === 'ready'
-                          ? `Your ${labels.catalogLabel.toLowerCase()} has been prepared and is ready to go live.`
-                          : `This usually takes 2 business days. You'll get an email when your ${labels.catalogLabel.toLowerCase()} is ready.`}
-                      </Text>
-                      
-                      {progress?.menu_preparation_status === 'ready' && !restaurant?.header_image_url && (
-                        <Box p="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)', borderRadius: '8px' }}>
-                          <Stack gap="xs">
-                            <Text fw={600} size="sm">Add a store header</Text>
-                            <Text size="sm" c="dimmed" mb="md">
-                              Stores with a header image get up to 50% more monthly sales.
-                            </Text>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setSettingsTab('store');
-                                setActiveTab('settings');
-                              }}
-                            >
-                              Add a header image
-                            </Button>
-                          </Stack>
-                        </Box>
-                      )}
-                    </Stack>
-                  </Group>
-                </Card>
-
-                {/* Tablet status */}
-                <Card p="lg" withBorder>
-                  <Group gap="md" align="flex-start">
-                    <Box style={{ flexShrink: 0 }}>
-                      <Box
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: progress?.tablet_delivered_at 
-                            ? 'var(--mantine-color-green-6)' 
-                            : progress?.tablet_shipped 
-                              ? 'var(--mantine-color-blue-6)' 
-                              : progress?.tablet_preparing_shipment
-                                ? 'var(--mantine-color-yellow-6)'
-                                : 'var(--mantine-color-gray-3)',
-                        }}
-                      >
-                        <IconDeviceTablet size={24} style={{ color: progress?.tablet_delivered_at || progress?.tablet_shipped || progress?.tablet_preparing_shipment ? 'white' : 'var(--mantine-color-dimmed)' }} />
-                      </Box>
-                    </Box>
-                    <Stack gap="xs" style={{ flex: 1 }}>
-                      <Group gap="xs" align="center">
-                        <Title order={4}>
-                          {progress?.tablet_delivered_at
-                            ? 'Your tablet has been delivered'
-                            : progress?.tablet_shipped
-                              ? 'Your tablet is in transit'
-                              : progress?.tablet_preparing_shipment
-                                ? 'Tablet is preparing for shipment'
-                                : 'Tablet not yet shipped'}
-                        </Title>
-                        {(progress?.tablet_shipped || progress?.tablet_preparing_shipment) && (
-                          <Badge
-                            color={
-                              progress?.tablet_delivered_at
-                                ? 'green'
-                                : progress?.tablet_shipped
-                                  ? 'blue'
-                                  : 'yellow'
-                            }
-                            variant="light"
-                            size="sm"
-                          >
-                            {progress?.tablet_delivered_at ? '✓ Delivered' : progress?.tablet_shipped ? '✓ In transit' : '⏱ Preparing'}
-                          </Badge>
-                        )}
-                      </Group>
-                      <Text size="sm" c="dimmed" mb="md">
-                        {progress?.tablet_delivered_at
-                          ? "Your tablet has been delivered and is ready to use."
-                          : progress?.tablet_shipped
-                            ? "We'll keep you updated on its status."
-                            : progress?.tablet_preparing_shipment
-                              ? "Your tablet is being prepared for shipment. You'll receive tracking info soon."
-                              : "Your tablet will ship once business verification and menu preparation are complete."}
-                      </Text>
-                      
-                      {progress?.tablet_shipping_label_url && (
-                        <Button
-                          onClick={() => window.open(progress.tablet_shipping_label_url!, '_blank')}
-                          variant="outline"
-                          size="sm"
-                          fullWidth
-                          leftSection={<IconPackage size={16} />}
-                        >
-                          View Shipping Label
-                        </Button>
-                      )}
-
-                      {progress?.tablet_tracking_number && progress?.tablet_shipped && (
-                        <Box p="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)', borderRadius: '8px' }} mt="md">
-                          <Stack gap="xs">
-                            <Text fw={600} size="sm">Tracking Information</Text>
-                            <Text size="sm">
-                              <Text component="span" c="dimmed">Carrier:</Text> {progress.tablet_shipping_carrier || 'USPS'}
-                            </Text>
-                            <Text size="sm">
-                              <Text component="span" c="dimmed">Tracking #:</Text> {progress.tablet_tracking_number}
-                            </Text>
-                            {progress.tablet_shipped_at && (
-                              <Text size="sm">
-                                <Text component="span" c="dimmed">Shipped:</Text> {format(new Date(progress.tablet_shipped_at), 'PPP')}
-                              </Text>
-                            )}
-                            <Button
-                              onClick={() => {
-                                const carrier = progress.tablet_shipping_carrier || 'USPS';
-                                const trackingUrl = carrier === 'USPS' 
-                                  ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${progress.tablet_tracking_number}`
-                                  : carrier === 'UPS'
-                                  ? `https://www.ups.com/track?tracknum=${progress.tablet_tracking_number}`
-                                  : carrier === 'FedEx'
-                                  ? `https://www.fedex.com/fedextrack/?trknbr=${progress.tablet_tracking_number}`
-                                  : `https://www.dhl.com/en/express/tracking.html?AWB=${progress.tablet_tracking_number}`;
-                                window.open(trackingUrl, '_blank');
-                              }}
-                              size="sm"
-                              fullWidth
-                              mt="xs"
-                            >
-                              Track Package
-                            </Button>
-                          </Stack>
-                        </Box>
-                      )}
-                    </Stack>
-                  </Group>
-                </Card>
-              </Stack>
-            )}
-          </Card>
+          <Box mb="lg">
+            <StoreActivation
+              progress={progress}
+              restaurant={restaurant}
+              labels={labels}
+              onNavigateToSettings={(tab) => {
+                setSettingsTab(tab);
+                setActiveTab('settings');
+              }}
+              onContactSupport={() => {
+                window.open('/support', '_blank');
+              }}
+            />
+          </Box>
 
           {/* Go live section */}
-          <Card p="lg" mb="lg" withBorder>
-            <Group gap="md" align="flex-start">
-              <Box style={{ flexShrink: 0 }}>
-                <IconBuildingStore size={64} style={{ color: 'var(--mantine-color-orange-6)' }} />
-              </Box>
-              <Stack gap="xs" style={{ flex: 1 }}>
-                <Group gap="xs" align="center">
-                  <Title order={4}>Go live with your store</Title>
-                  <Badge
-                    color={readiness?.ready ? 'green' : 'orange'}
-                    variant="light"
-                    size="sm"
-                  >
-                    {readiness?.ready ? '✓ Ready' : '🔥 Not ready'}
-                  </Badge>
-                  {readiness && (
-                    <Text size="xs" c="dimmed" fw={500}>
-                      Readiness: {readiness.score}%
-                    </Text>
-                  )}
-                </Group>
-                <Text size="sm" c="dimmed" mb="md">
-                  {readiness?.ready
-                    ? `You're ready to go live! Your estimated launch date is ${deadline}.`
-                    : `We recommend going live by ${deadline}. Complete the items below to go live.`}
-                </Text>
-                {readiness && readiness.blockers.length > 0 && (
-                  <Box p="md" style={{ backgroundColor: 'var(--mantine-color-orange-0)', borderRadius: '8px' }} mt="md">
-                    <Text fw={600} size="sm" c="orange.9" mb="xs">Required to go live:</Text>
-                    <Stack gap="xs">
-                      {readiness.blockers.map((blocker, idx) => (
-                        <Text key={idx} size="sm" c="orange.8">• {blocker}</Text>
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-                {readiness && readiness.missing_items.length > 0 && (
-                  <Box p="md" style={{ backgroundColor: 'var(--mantine-color-blue-0)', borderRadius: '8px' }} mt="md">
-                    <Text fw={600} size="sm" c="blue.9" mb="xs">Recommended items:</Text>
-                    <Stack gap="xs">
-                      {readiness.missing_items.slice(0, 3).map((item, idx) => (
-                        <Text key={idx} size="sm" c="blue.8">• {item}</Text>
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-              </Stack>
-            </Group>
-          </Card>
+          <GoLiveSection
+            readiness={readiness}
+            targetDate={deadline}
+            onNavigateToSettings={(tab) => {
+              setSettingsTab(tab);
+              setActiveTab("settings");
+            }}
+            onNavigateToAvailability={() => setActiveTab("availability")}
+          />
 
           {/* Continue Crave'N setup */}
-          <Box mb="lg">
-            <Stack gap="md">
-              <Title order={2}>Continue your Crave'N setup</Title>
-              <Text size="sm" c="dimmed" mb="md">
-                While our team is preparing your {labels.entityLabel}, continue your Crave'N setup to maximize sales.
-              </Text>
-
-              <Card p="lg" withBorder>
-                <Group gap="md" align="flex-start">
-                  <Box style={{ flexShrink: 0 }}>
-                    <Box
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--mantine-color-orange-0)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <IconBuildingStore size={32} style={{ color: 'var(--mantine-color-orange-6)' }} />
-                    </Box>
-                  </Box>
-                  <Stack gap="xs" style={{ flex: 1 }}>
-                    <Title order={4}>Add another store or a new business</Title>
-                    <Text size="sm" c="dimmed" mb="md">
-                      We noticed you signed up for more than one store location. Continue setting up your business on Crave'N by adding another store or business now.
-                    </Text>
-                    <Button 
-                      color="orange"
-                      onClick={() => setAddLocationModalOpen(true)}
-                    >
-                      Add store or business
-                    </Button>
-                  </Stack>
-                </Group>
-              </Card>
-            </Stack>
-          </Box>
+          <CraveNSetupSection
+            labels={labels}
+            onAddStoreOrBusiness={() => setAddLocationModalOpen(true)}
+          />
         </Box>
       )
       ) : !restaurant ? (

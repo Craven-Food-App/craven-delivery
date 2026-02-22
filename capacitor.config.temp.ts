@@ -1,10 +1,16 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.craven.delivery.customer',
-  appName: "Crave'N Delivery",
+  appId: 'com.craven.delivery.feeder',
+  appName: "Crave'n",
   webDir: '../../dist',
-  
+
+  // COMMENT OUT OR REMOVE THIS SERVER SECTION for local development
+   //server: {
+   //  url: 'https://cravenusa.com/mobile',
+   // cleartext: true
+  // },
+
   android: {
     allowMixedContent: true,
     captureInput: true,
@@ -13,14 +19,15 @@ const config: CapacitorConfig = {
 
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000
+      launchShowDuration: 0
     },
     Geolocation: {
       requestPermission: true,
       enableHighAccuracy: true
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert']
+      presentationOptions: ['badge', 'sound', 'alert'],
+      sound: 'craven-notification.caf'
     }
   }
 };

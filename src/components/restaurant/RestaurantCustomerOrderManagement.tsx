@@ -1,30 +1,17 @@
 import { useState, useEffect } from "react";
 import {
   Card,
-  Button,
-  Badge,
   Tabs,
   Text,
-  Title,
   Stack,
   Group,
   Box,
   Loader,
-  Divider,
-  ActionIcon,
   Grid,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import {
-  IconClock,
-  IconMapPin,
-  IconPhone,
-  IconMail,
-  IconPackage,
-  IconTruck,
-  IconCopy,
-} from "@tabler/icons-react";
 import { supabase } from "@/integrations/supabase/client";
+import MerchantOrderList, { type CustomerOrderForList } from "@/components/restaurant/MerchantOrderList";
 
 interface CustomerOrder {
   id: string;
@@ -253,7 +240,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
   };
 
   const getStatusLabel = (status: string) => {
-    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const filterOrdersByStatus = (status?: string) => {
@@ -318,196 +305,23 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
           <Tabs.Tab value="delivered">Completed ({completedOrders.length})</Tabs.Tab>
         </Tabs.List>
 
-        {['all', 'pending', 'active', 'delivered'].map((tab) => (
-          <Tabs.Panel key={tab} value={tab} pt="md">
-            <Stack gap="md">
-            {filterOrdersByStatus(tab === 'active' ? undefined : tab === 'all' ? undefined : tab)
-              .filter(order => tab === 'active' 
-                ? ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.order_status)
-                : tab === 'all' ? true : order.order_status === tab
-              )
-              .map((order) => (
-              <Card key={order.id} p="md" withBorder>
-                <Stack gap="md">
-                  <Group justify="space-between" align="flex-start">
-                    <Stack gap="xs">
-                      <Title order={4}>Order #{order.order_number || order.id.slice(-8)}</Title>
-                      <Group gap="md">
-                        <Group gap="xs">
-                          <IconClock size={12} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                          <Text size="sm" c="dimmed">{new Date(order.created_at).toLocaleString()}</Text>
-                        </Group>
-                        <Badge color={getStatusColor(order.order_status) === 'destructive' ? 'red' : getStatusColor(order.order_status) === 'secondary' ? 'blue' : 'gray'}>
-                          {getStatusLabel(order.order_status)}
-                        </Badge>
-                      </Group>
-                    </Stack>
-                    <Stack gap="xs" align="flex-end">
-                      <Text size="lg" fw={700}>${(order.total_cents / 100).toFixed(2)}</Text>
-                      <Text size="sm" c="dimmed">{order.delivery_method}</Text>
-                    </Stack>
-                  </Group>
-
-                  {/* Order Number and Pickup Code */}
-                  <Grid gutter="md">
-                    <Grid.Col span={{ base: 12, md: 6 }}>
-                      <Box p="md" style={{ backgroundColor: 'var(--mantine-color-gray-0)', borderRadius: '8px', border: '1px solid var(--mantine-color-gray-3)' }}>
-                        <Stack gap="xs">
-                          <Text size="xs" fw={600} c="gray.6" tt="uppercase">Order Number</Text>
-                          <Text size="lg" fw={700} style={{ fontFamily: 'monospace' }}>
-                            {order.order_number || order.id.slice(-8)}
-                          </Text>
-                        </Stack>
-                      </Box>
-                    </Grid.Col>
-                    
-                    {/* Pickup Code */}
-                    {order.pickup_code && (
-                      <Grid.Col span={{ base: 12, md: 6 }}>
-                        <Box p="md" style={{ background: 'linear-gradient(to right, var(--mantine-color-orange-0), var(--mantine-color-orange-1))', border: '2px solid var(--mantine-color-orange-3)', borderRadius: '8px' }}>
-                          <Group justify="space-between" align="flex-start">
-                            <Stack gap="xs">
-                              <Text size="xs" fw={600} c="orange.7" tt="uppercase">Pickup Code</Text>
-                              <Text size="lg" fw={900} c="orange.9" style={{ fontFamily: 'monospace' }}>
-                                {order.pickup_code}
-                              </Text>
-                            </Stack>
-                            <ActionIcon
-                              variant="subtle"
-                              color="orange"
-                              onClick={() => {
-                                navigator.clipboard.writeText(order.pickup_code!);
-                                notifications.show({
-                                  title: "Copied!",
-                                  message: `Pickup code copied`,
-                                  color: 'green',
-                                });
-                              }}
-                            >
-                              <IconCopy size={16} />
-                            </ActionIcon>
-                          </Group>
-                        </Box>
-                      </Grid.Col>
-                    )}
-                  </Grid>
-                  
-                  {/* Customer Information */}
-                  <Stack gap="xs">
-                    <Text fw={500}>Customer</Text>
-                    <Stack gap="xs">
-                      <Group gap="xs">
-                        <IconPackage size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                        <Text size="sm">{order.customer_name}</Text>
-                      </Group>
-                      <Group gap="xs">
-                        <IconMail size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                        <Text size="sm">{order.customer_email}</Text>
-                      </Group>
-                      <Group gap="xs">
-                        <IconPhone size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                        <Text size="sm">{order.customer_phone}</Text>
-                      </Group>
-                      {order.delivery_address && (
-                        <Group gap="xs">
-                          <IconMapPin size={14} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                          <Text size="sm">
-                            {typeof order.delivery_address === 'string' 
-                              ? order.delivery_address 
-                              : order.delivery_address && typeof order.delivery_address === 'object' && 'street' in order.delivery_address
-                                ? `${(order.delivery_address as any).street}, ${(order.delivery_address as any).city}, ${(order.delivery_address as any).state} ${(order.delivery_address as any).zip}`
-                                : 'N/A'
-                            }
-                          </Text>
-                        </Group>
-                      )}
-                    </Stack>
-                  </Stack>
-
-                  <Divider />
-
-                  {/* Order Items */}
-                  <Stack gap="xs">
-                    <Text fw={500}>Items ({order.order_items.length})</Text>
-                    <Stack gap="xs">
-                      {order.order_items.map((item: any, index: number) => (
-                        <Group key={index} justify="space-between">
-                          <Stack gap="xs">
-                            <Text size="sm">{item.quantity}x {item.name}</Text>
-                            {item.modifiers?.length > 0 && (
-                              <Box pl="md">
-                                <Stack gap="xs">
-                                  {item.modifiers.map((mod: any) => (
-                                    <Text key={mod.id} size="sm" c="dimmed">+ {mod.name}</Text>
-                                  ))}
-                                </Stack>
-                              </Box>
-                            )}
-                            {item.special_instructions && (
-                              <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }} pl="md">
-                                Note: {item.special_instructions}
-                              </Text>
-                            )}
-                          </Stack>
-                          <Text size="sm" fw={500}>
-                            ${((item.price_cents + (item.modifiers?.reduce((sum: number, mod: any) => sum + mod.price_cents, 0) || 0)) * item.quantity / 100).toFixed(2)}
-                          </Text>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Stack>
-
-                  {order.special_instructions && (
-                    <>
-                      <Divider />
-                      <Stack gap="xs">
-                        <Text fw={500}>Special Instructions</Text>
-                        <Text size="sm" c="dimmed">{order.special_instructions}</Text>
-                      </Stack>
-                    </>
-                  )}
-
-                  {/* Order Actions */}
-                  {order.order_status !== 'delivered' && order.order_status !== 'cancelled' && (
-                    <>
-                      <Divider />
-                      <Group gap="xs" wrap="wrap">
-                        {getNextStatus(order.order_status) && (
-                          <Button
-                            onClick={() => updateOrderStatus(order.id, getNextStatus(order.order_status)!)}
-                            size="sm"
-                          >
-                            Mark as {getStatusLabel(getNextStatus(order.order_status)!)}
-                          </Button>
-                        )}
-                        
-                        {order.order_status === 'pending' && (
-                          <>
-                            <Button
-                              onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                              size="sm"
-                              color="green"
-                            >
-                              Confirm Order
-                            </Button>
-                            <Button
-                              color="red"
-                              onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                              size="sm"
-                            >
-                              Cancel Order
-                            </Button>
-                          </>
-                        )}
-                      </Group>
-                    </>
-                  )}
-                </Stack>
-              </Card>
-            ))}
-            </Stack>
-          </Tabs.Panel>
-        ))}
+        {["all", "pending", "active", "delivered"].map((tab) => {
+          const filtered = filterOrdersByStatus(tab === "active" ? undefined : tab === "all" ? undefined : tab).filter(
+            (order) =>
+              tab === "active"
+                ? ["confirmed", "preparing", "ready", "out_for_delivery"].includes(order.order_status)
+                : tab === "all" || order.order_status === tab
+          ) as CustomerOrderForList[];
+          return (
+            <Tabs.Panel key={tab} value={tab} pt="md">
+              <MerchantOrderList
+                orders={filtered}
+                getStatusLabel={getStatusLabel}
+                onUpdateStatus={updateOrderStatus}
+              />
+            </Tabs.Panel>
+          );
+        })}
       </Tabs>
     </Stack>
   );
