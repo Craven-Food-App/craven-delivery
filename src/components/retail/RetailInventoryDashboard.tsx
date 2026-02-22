@@ -57,6 +57,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
 interface InventoryItem {
   id: string;
@@ -105,9 +106,11 @@ interface VariantStock {
 
 interface RetailInventoryDashboardProps {
   restaurantId: string;
+  restaurantType?: string | null;
 }
 
-const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProps) => {
+const RetailInventoryDashboard = ({ restaurantId, restaurantType }: RetailInventoryDashboardProps) => {
+  const labels = getMerchantLabels(restaurantType);
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [variantStock, setVariantStock] = useState<VariantStock[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
@@ -304,7 +307,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
   // ——— Add inventory item ———
   const handleAddItem = async () => {
     if (!addForm.menu_item_id && !addForm.sku) {
-      toast.error("Select a product or enter a SKU");
+      toast.error(`Select a ${labels.itemNoun} or enter a SKU`);
       return;
     }
 
@@ -326,7 +329,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
 
       if (error) throw error;
 
-      toast.success("Inventory item added");
+      toast.success(`Inventory ${labels.itemNoun} added`);
       setAddDialogOpen(false);
       setAddForm({
         menu_item_id: "",
@@ -412,7 +415,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
 
       if (error) throw error;
 
-      toast.success("Inventory item updated");
+      toast.success(`Inventory ${labels.itemNoun} updated`);
       setEditDialogOpen(false);
       fetchInventory();
     } catch (error: any) {
@@ -435,7 +438,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
 
       if (error) throw error;
 
-      toast.success("Inventory item removed");
+      toast.success(`Inventory ${labels.itemNoun} removed`);
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       fetchInventory();
@@ -448,7 +451,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
   // ——— Seed all menu items that don't have inventory rows ———
   const handleSeedInventory = async () => {
     if (menuItems.length === 0) {
-      toast.info("All products already have inventory records");
+      toast.info(`All ${labels.itemNounPlural} already have inventory records`);
       return;
     }
 
@@ -557,7 +560,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
           <div>
             <h1 className="text-2xl font-bold">Inventory Management</h1>
             <p className="text-sm text-muted-foreground">
-              Track stock levels, manage products, and set reorder alerts
+              Track stock for your {labels.itemNounPlural} and set reorder alerts
             </p>
           </div>
           <div className="flex gap-2">
@@ -572,7 +575,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
             {menuItems.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleSeedInventory} disabled={saving}>
                 <Package className="w-4 h-4 mr-2" />
-                Track All Products ({menuItems.length})
+                Track All {labels.itemNounPlural} ({menuItems.length})
               </Button>
             )}
             <Button size="sm" onClick={() => setAddDialogOpen(true)}>
@@ -590,13 +593,13 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
               <h2 className="text-xl font-semibold mb-2">No inventory yet</h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Start tracking stock for your products. You can add items one by one, or click
-                "Track All Products" to create inventory records for all your existing products at once.
+                &quot;Track All {labels.itemNounPlural}&quot; to create inventory records for all your existing {labels.itemNounPlural} at once.
               </p>
               <div className="flex gap-3 justify-center">
                 {menuItems.length > 0 && (
                   <Button onClick={handleSeedInventory} disabled={saving}>
                     {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Package className="w-4 h-4 mr-2" />}
-                    Track All Products ({menuItems.length})
+                    Track All {labels.itemNounPlural} ({menuItems.length})
                   </Button>
                 )}
                 <Button variant="outline" onClick={() => setAddDialogOpen(true)}>
@@ -1097,18 +1100,18 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Inventory Item</DialogTitle>
+            <DialogTitle>Add Inventory {labels.itemNoun.charAt(0).toUpperCase() + labels.itemNoun.slice(1)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {menuItems.length > 0 && (
               <div>
-                <Label>Link to Product</Label>
+                <Label>Link to {labels.itemNoun.charAt(0).toUpperCase() + labels.itemNoun.slice(1)}</Label>
                 <Select
                   value={addForm.menu_item_id}
                   onValueChange={(v) => setAddForm({ ...addForm, menu_item_id: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a product..." />
+                    <SelectValue placeholder={`Select a ${labels.itemNoun}...`} />
                   </SelectTrigger>
                   <SelectContent>
                     {menuItems.map((mi) => (
@@ -1119,7 +1122,7 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Only products without inventory records are shown
+                  Only {labels.itemNounPlural} without inventory records are shown
                 </p>
               </div>
             )}
@@ -1437,10 +1440,10 @@ const RetailInventoryDashboard = ({ restaurantId }: RetailInventoryDashboardProp
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Inventory Item</AlertDialogTitle>
+            <AlertDialogTitle>Remove Inventory {labels.itemNoun.charAt(0).toUpperCase() + labels.itemNoun.slice(1)}</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove "{itemToDelete?.product_name}" from inventory tracking? The product itself
-              won't be deleted — only the inventory record.
+              Remove &quot;{itemToDelete?.product_name}&quot; from inventory tracking? The {labels.itemNoun} itself
+              won&apos;t be deleted — only the inventory record.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

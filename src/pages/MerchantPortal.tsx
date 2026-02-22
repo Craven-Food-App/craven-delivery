@@ -63,11 +63,12 @@ import { getMerchantGroup } from "@/utils/merchantCategoryLabels";
 import RetailHomeDashboard from "@/components/retail/RetailHomeDashboard";
 import RetailProductCatalog from "@/components/retail/RetailProductCatalog";
 import RetailInventoryDashboard from "@/components/retail/RetailInventoryDashboard";
+import { GroceryHomeDashboard } from "@/components/grocery/GroceryHomeDashboard";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
   if (!type) return 'Store';
-  
+
   const typeMap: Record<string, string> = {
     'full_service': 'Full Service Restaurant',
     'fast_casual': 'Fast Casual',
@@ -79,9 +80,15 @@ const formatRestaurantType = (type: string | null | undefined): string => {
     'food_truck': 'Food Truck',
     'retail_store': 'Retail Store',
     'restaurant': 'Restaurant',
+    'grocery': 'Grocery',
+    'supermarket': 'Supermarket',
+    'convenience': 'Convenience Store',
+    'convenience_store': 'Convenience Store',
+    'deli': 'Deli',
+    'market': 'Market',
   };
-  
-  return typeMap[type] || type.split('_').map(word => 
+
+  return typeMap[type] || type.split('_').map(word =>
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
 };
@@ -99,6 +106,7 @@ const RestaurantSetup = () => {
   const labels = getMerchantLabels(restaurant?.restaurant_type);
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
+  const isGrocery = merchantGroup === 'grocery';
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -556,15 +564,22 @@ const RestaurantSetup = () => {
                   <Text size="sm" c="dimmed">Welcome back, {userName}</Text>
                   <Title order={1}>Dashboard</Title>
                 </Stack>
-                {isRetail ? (
-                  <RetailHomeDashboard 
-                    restaurantId={restaurant?.id || ''} 
+                {isGrocery ? (
+                  <GroceryHomeDashboard
+                    restaurantId={restaurant?.id || ''}
+                    restaurant={restaurant}
+                    readiness={readiness}
+                    labels={labels}
+                  />
+                ) : isRetail ? (
+                  <RetailHomeDashboard
+                    restaurantId={restaurant?.id || ''}
                     restaurant={restaurant}
                     readiness={readiness}
                   />
                 ) : (
-                  <HomeDashboard 
-                    restaurantId={restaurant?.id || ''} 
+                  <HomeDashboard
+                    restaurantId={restaurant?.id || ''}
                     restaurant={restaurant}
                     readiness={readiness}
                   />
@@ -957,8 +972,8 @@ const RestaurantSetup = () => {
         : activeTab === 'customers' ? <CustomersDashboard /> 
         : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> 
         : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> 
-        : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} /> 
-        : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} /> 
+        : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
+        : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
         : activeTab === 'availability' ? <StoreAvailabilityDashboard /> 
         : activeTab === 'financials' ? <FinancialsDashboard /> 
         : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} /> 

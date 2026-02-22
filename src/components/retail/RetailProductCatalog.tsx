@@ -47,6 +47,7 @@ import {
   Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 import RetailProductEditor from "./RetailProductEditor";
 
 interface Product {
@@ -76,9 +77,11 @@ interface Category {
 
 interface RetailProductCatalogProps {
   restaurantId: string;
+  restaurantType?: string | null;
 }
 
-const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
+const RetailProductCatalog = ({ restaurantId, restaurantType }: RetailProductCatalogProps) => {
+  const labels = getMerchantLabels(restaurantType);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -356,15 +359,15 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Product Catalog</h1>
+            <h1 className="text-2xl font-bold">{labels.catalogLabel} Catalog</h1>
             <p className="text-sm text-muted-foreground">
-              {products.length} product{products.length !== 1 ? "s" : ""} across{" "}
+              {products.length} {labels.itemNounPlural.toLowerCase()} across{" "}
               {categories.length} collection{categories.length !== 1 ? "s" : ""}
             </p>
           </div>
           <Button onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Product
+            Add {labels.itemNoun.charAt(0).toUpperCase() + labels.itemNoun.slice(1)}
           </Button>
         </div>
 
@@ -372,7 +375,7 @@ const RetailProductCatalog = ({ restaurantId }: RetailProductCatalogProps) => {
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="bg-muted mb-6">
             <TabsTrigger value="products">
-              <ShoppingBag className="w-4 h-4 mr-2" /> All Products
+              <ShoppingBag className="w-4 h-4 mr-2" /> All {labels.itemNounPlural}
             </TabsTrigger>
             <TabsTrigger value="collections">
               <Grid3X3 className="w-4 h-4 mr-2" /> Collections
