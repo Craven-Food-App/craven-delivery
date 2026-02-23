@@ -15,7 +15,7 @@ import {
   Container,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import craveCLogo from '@/assets/crave-c-logo.png';
+import cravenCLogo from '@/assets/craven-c-new.png';
 
 // Background: craven-merchant-app-bg.png from public folder (also in apps/tablet/public)
 const MERCHANT_AUTH_BG = '/craven-merchant-app-bg.png';
@@ -214,7 +214,7 @@ const RestaurantAuth: React.FC = () => {
         <Container size="sm">
           <Stack align="center" gap="xl">
             <Group gap="sm" style={{ marginBottom: 8 }}>
-              <img src={craveCLogo} alt="Crave'n" style={{ height: 40, width: 'auto' }} />
+              <img src={cravenCLogo} alt="Crave'n" style={{ height: 40, width: 'auto' }} />
               <Title order={1} c="white" style={{ letterSpacing: '-0.02em' }}>
                 Merchant Portal
               </Title>

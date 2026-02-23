@@ -69,6 +69,7 @@ import { AddLocationWizard } from "@/components/merchant/AddLocationWizard";
 import StoreActivation from "@/components/merchant/StoreActivation";
 import GoLiveSection from "@/components/merchant/GoLiveSection";
 import CraveNSetupSection from "@/components/merchant/CraveNSetupSection";
+import cravenCLogo from "@/assets/craven-c-new.png";
 
 // Helper function to format restaurant type for display
 const formatRestaurantType = (type: string | null | undefined): string => {
@@ -311,6 +312,8 @@ const RestaurantSetup = () => {
         height: '100vh',
         minWidth: 1024,
         width: '100%',
+        background: '#ffffff',
+        color: '#18181b',
       }}
     >
       {/* Left Sidebar */}
@@ -319,8 +322,8 @@ const RestaurantSetup = () => {
         <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
           <Group gap="xs">
             <img 
-              src="/merchant-logo.png" 
-              alt="Crave'N" 
+              src={cravenCLogo} 
+              alt="Crave'n" 
               style={{ height: '24px', width: 'auto' }}
             />
             <Text fw={600} size="lg">Merchant</Text>
@@ -377,7 +380,7 @@ const RestaurantSetup = () => {
         </Box>
 
         {/* Navigation */}
-        <ScrollArea style={{ flex: 1 }} p="xs">
+        <ScrollArea style={{ flex: 1 }} p="xs" scrollbarSize={8} type="auto">
           <Stack gap="xs">
             <Button
               variant={activeTab === 'home' ? 'light' : 'subtle'}
@@ -687,7 +690,7 @@ const RestaurantSetup = () => {
       </Box>
 
       {/* Main Content */}
-      <ScrollArea style={{ flex: 1 }}>
+      <ScrollArea style={{ flex: 1, minWidth: 0 }} scrollbarSize={8} type="auto">
         <Box p="xl">
           {activeTab === 'home' ? (
             allStepsComplete ? (
@@ -754,7 +757,7 @@ const RestaurantSetup = () => {
             onNavigateToAvailability={() => setActiveTab("availability")}
           />
 
-          {/* Continue Crave'N setup */}
+          {/* Continue Crave'n setup */}
           <CraveNSetupSection
             labels={labels}
             onAddStoreOrBusiness={() => setAddLocationModalOpen(true)}
