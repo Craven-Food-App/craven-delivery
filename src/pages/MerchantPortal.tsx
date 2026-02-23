@@ -24,6 +24,8 @@ import {
   IconPackage,
   IconMenu2,
   IconCalendar,
+  IconChevronLeft,
+  IconChevronRight as IconChevronRightTabler,
   IconCurrencyDollar,
   IconSettings,
   IconChevronDown,
@@ -103,6 +105,7 @@ const RestaurantSetup = () => {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
   const [settingsTab, setSettingsTab] = useState<string>("account");
@@ -317,47 +320,61 @@ const RestaurantSetup = () => {
       }}
     >
       {/* Left Sidebar */}
-      <Box style={{ width: '256px', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', flexDirection: 'column' }}>
-        {/* Logo */}
-        <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-          <Group gap="xs">
-            <img 
-              src={cravenCLogo} 
-              alt="Crave'n" 
-              style={{ height: '24px', width: 'auto' }}
-            />
-            <Text fw={600} size="lg">Merchant</Text>
-          </Group>
+      <Box style={{ width: sidebarCollapsed ? '72px' : '256px', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', flexDirection: 'column', transition: 'width 200ms ease-in-out', overflow: 'hidden' }}>
+        {/* Logo + Collapse Toggle */}
+        <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
+          {!sidebarCollapsed && (
+            <Group gap="xs">
+              <img 
+                src={cravenCLogo} 
+                alt="Crave'n" 
+                style={{ height: '24px', width: 'auto' }}
+              />
+              <Text fw={600} size="lg">Merchant</Text>
+            </Group>
+          )}
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            style={{ padding: 4 }}
+          >
+            {sidebarCollapsed ? <IconChevronRightTabler size={18} /> : <IconChevronLeft size={18} />}
+          </Button>
         </Box>
 
         {/* Restaurant Selector */}
-        <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+        <Box p={sidebarCollapsed ? 'xs' : 'md'} style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', display: 'flex', justifyContent: 'center' }}>
           <Menu width={224} position="bottom-start">
             <Menu.Target>
-              <Button
-                variant="subtle"
-                fullWidth
-                justify="space-between"
-                leftSection={
-                  <Group gap="xs">
-                    <Avatar 
-                      size="sm" 
-                      radius="xl" 
-                      color="gray"
-                      src={restaurant?.logo_url}
-                    >
-                      {!restaurant?.logo_url && <IconBuildingStore size={16} />}
-                    </Avatar>
-                    <Stack gap={0}>
-                      <Text size="sm" fw={600}>{restaurant.name}</Text>
-                      <Text size="xs" c="dimmed">
-                        {formatRestaurantType(restaurant.restaurant_type)} {restaurants.length > 1 && `(${restaurants.length})`}
-                      </Text>
-                    </Stack>
-                  </Group>
-                }
-                rightSection={<IconChevronDown size={16} />}
-              />
+              {sidebarCollapsed ? (
+                <Button variant="subtle" size="compact-md" style={{ padding: 8 }}>
+                  <Avatar size="sm" radius="xl" color="gray" src={restaurant?.logo_url}>
+                    {!restaurant?.logo_url && <IconBuildingStore size={16} />}
+                  </Avatar>
+                </Button>
+              ) : (
+                <Button
+                  variant="subtle"
+                  fullWidth
+                  justify="space-between"
+                  leftSection={
+                    <Group gap="xs">
+                      <Avatar size="sm" radius="xl" color="gray" src={restaurant?.logo_url}>
+                        {!restaurant?.logo_url && <IconBuildingStore size={16} />}
+                      </Avatar>
+                      <Stack gap={0}>
+                        <Text size="sm" fw={600}>{restaurant.name}</Text>
+                        <Text size="xs" c="dimmed">
+                          {formatRestaurantType(restaurant.restaurant_type)} {restaurants.length > 1 && `(${restaurants.length})`}
+                        </Text>
+                      </Stack>
+                    </Group>
+                  }
+                  rightSection={<IconChevronDown size={16} />}
+                />
+              )}
             </Menu.Target>
             <Menu.Dropdown>
               {restaurants.map((r) => (
@@ -386,213 +403,77 @@ const RestaurantSetup = () => {
               variant={activeTab === 'home' ? 'light' : 'subtle'}
               color={activeTab === 'home' ? 'orange' : 'gray'}
               fullWidth
-              justify="flex-start"
-              leftSection={<IconHome size={20} />}
+              justify={sidebarCollapsed ? 'center' : 'flex-start'}
+              leftSection={!sidebarCollapsed ? <IconHome size={20} /> : undefined}
               onClick={() => setActiveTab('home')}
+              style={sidebarCollapsed ? { padding: '8px 0' } : undefined}
             >
-              Home
+              {sidebarCollapsed ? <IconHome size={20} /> : 'Home'}
             </Button>
 
             {isRetail ? (
               <>
-                {/* ========== RETAIL / GROCERY SIDEBAR ========== */}
-                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Sales</Text>
+                {!sidebarCollapsed && <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Sales</Text>}
                 
-                <Button
-                  variant={activeTab === 'orders' ? 'light' : 'subtle'}
-                  color={activeTab === 'orders' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconPackage size={20} />}
-                  onClick={() => setActiveTab('orders')}
-                >
-                  Orders
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'customers' ? 'light' : 'subtle'}
-                  color={activeTab === 'customers' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconUsers size={20} />}
-                  onClick={() => setActiveTab('customers')}
-                >
-                  Customers
-                </Button>
+                {[
+                  { tab: 'orders' as const, icon: IconPackage, label: 'Orders' },
+                  { tab: 'customers' as const, icon: IconUsers, label: 'Customers' },
+                ].map(({ tab, icon: Icon, label }) => (
+                  <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} fullWidth justify={sidebarCollapsed ? 'center' : 'flex-start'} leftSection={!sidebarCollapsed ? <Icon size={20} /> : undefined} onClick={() => setActiveTab(tab)} style={sidebarCollapsed ? { padding: '8px 0' } : undefined}>
+                    {sidebarCollapsed ? <Icon size={20} /> : label}
+                  </Button>
+                ))}
 
-                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Catalog</Text>
+                {!sidebarCollapsed && <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Catalog</Text>}
                 
-                <Button
-                  variant={activeTab === 'products' ? 'light' : 'subtle'}
-                  color={activeTab === 'products' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconShoppingBag size={20} />}
-                  onClick={() => setActiveTab('products')}
-                >
-                  Products
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'inventory' ? 'light' : 'subtle'}
-                  color={activeTab === 'inventory' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconBoxMultiple size={20} />}
-                  onClick={() => setActiveTab('inventory')}
-                >
-                  Inventory
-                </Button>
+                {[
+                  { tab: 'products' as const, icon: IconShoppingBag, label: 'Products' },
+                  { tab: 'inventory' as const, icon: IconBoxMultiple, label: 'Inventory' },
+                ].map(({ tab, icon: Icon, label }) => (
+                  <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} fullWidth justify={sidebarCollapsed ? 'center' : 'flex-start'} leftSection={!sidebarCollapsed ? <Icon size={20} /> : undefined} onClick={() => setActiveTab(tab)} style={sidebarCollapsed ? { padding: '8px 0' } : undefined}>
+                    {sidebarCollapsed ? <Icon size={20} /> : label}
+                  </Button>
+                ))}
 
-                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Analytics</Text>
+                {!sidebarCollapsed && <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Analytics</Text>}
                 
-                <Button
-                  variant={activeTab === 'insights' ? 'light' : 'subtle'}
-                  color={activeTab === 'insights' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconTrendingUp size={20} />}
-                  onClick={() => setActiveTab('insights')}
-                >
-                  Insights
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'reports' ? 'light' : 'subtle'}
-                  color={activeTab === 'reports' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconFileText size={20} />}
-                  onClick={() => setActiveTab('reports')}
-                >
-                  Reports
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'financials' ? 'light' : 'subtle'}
-                  color={activeTab === 'financials' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconCurrencyDollar size={20} />}
-                  onClick={() => setActiveTab('financials')}
-                >
-                  Financials
-                </Button>
+                {[
+                  { tab: 'insights' as const, icon: IconTrendingUp, label: 'Insights' },
+                  { tab: 'reports' as const, icon: IconFileText, label: 'Reports' },
+                  { tab: 'financials' as const, icon: IconCurrencyDollar, label: 'Financials' },
+                ].map(({ tab, icon: Icon, label }) => (
+                  <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} fullWidth justify={sidebarCollapsed ? 'center' : 'flex-start'} leftSection={!sidebarCollapsed ? <Icon size={20} /> : undefined} onClick={() => setActiveTab(tab)} style={sidebarCollapsed ? { padding: '8px 0' } : undefined}>
+                    {sidebarCollapsed ? <Icon size={20} /> : label}
+                  </Button>
+                ))}
 
-                <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Store</Text>
+                {!sidebarCollapsed && <Text size="xs" c="dimmed" fw={500} px="xs" mt="xs">Store</Text>}
                 
-                <Button
-                  variant={activeTab === 'availability' ? 'light' : 'subtle'}
-                  color={activeTab === 'availability' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconCalendar size={20} />}
-                  onClick={() => setActiveTab('availability')}
-                >
-                  {labels.availabilityLabel}
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'settings' ? 'light' : 'subtle'}
-                  color={activeTab === 'settings' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconSettings size={20} />}
-                  onClick={() => setActiveTab('settings')}
-                >
-                  Settings
-                </Button>
+                {[
+                  { tab: 'availability' as const, icon: IconCalendar, label: labels.availabilityLabel },
+                  { tab: 'settings' as const, icon: IconSettings, label: 'Settings' },
+                ].map(({ tab, icon: Icon, label }) => (
+                  <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} fullWidth justify={sidebarCollapsed ? 'center' : 'flex-start'} leftSection={!sidebarCollapsed ? <Icon size={20} /> : undefined} onClick={() => setActiveTab(tab)} style={sidebarCollapsed ? { padding: '8px 0' } : undefined}>
+                    {sidebarCollapsed ? <Icon size={20} /> : label}
+                  </Button>
+                ))}
               </>
             ) : (
               <>
-                {/* ========== RESTAURANT SIDEBAR ========== */}
-                <Button
-                  variant={activeTab === 'insights' ? 'light' : 'subtle'}
-                  color={activeTab === 'insights' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconTrendingUp size={20} />}
-                  onClick={() => setActiveTab('insights')}
-                >
-                  Insights
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'reports' ? 'light' : 'subtle'}
-                  color={activeTab === 'reports' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconFileText size={20} />}
-                  onClick={() => setActiveTab('reports')}
-                >
-                  Reports
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'customers' ? 'light' : 'subtle'}
-                  color={activeTab === 'customers' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconUsers size={20} />}
-                  onClick={() => setActiveTab('customers')}
-                >
-                  Customers
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'orders' ? 'light' : 'subtle'}
-                  color={activeTab === 'orders' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconPackage size={20} />}
-                  onClick={() => setActiveTab('orders')}
-                >
-                  Orders
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'menu' ? 'light' : 'subtle'}
-                  color={activeTab === 'menu' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconMenu2 size={20} />}
-                  onClick={() => setActiveTab('menu')}
-                >
-                  Menu
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'availability' ? 'light' : 'subtle'}
-                  color={activeTab === 'availability' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconCalendar size={20} />}
-                  onClick={() => setActiveTab('availability')}
-                >
-                  Store availability
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'financials' ? 'light' : 'subtle'}
-                  color={activeTab === 'financials' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconCurrencyDollar size={20} />}
-                  onClick={() => setActiveTab('financials')}
-                >
-                  Financials
-                </Button>
-                
-                <Button
-                  variant={activeTab === 'settings' ? 'light' : 'subtle'}
-                  color={activeTab === 'settings' ? 'orange' : 'gray'}
-                  fullWidth
-                  justify="flex-start"
-                  leftSection={<IconSettings size={20} />}
-                  onClick={() => setActiveTab('settings')}
-                >
-                  Settings
-                </Button>
+                {[
+                  { tab: 'insights' as const, icon: IconTrendingUp, label: 'Insights' },
+                  { tab: 'reports' as const, icon: IconFileText, label: 'Reports' },
+                  { tab: 'customers' as const, icon: IconUsers, label: 'Customers' },
+                  { tab: 'orders' as const, icon: IconPackage, label: 'Orders' },
+                  { tab: 'menu' as const, icon: IconMenu2, label: 'Menu' },
+                  { tab: 'availability' as const, icon: IconCalendar, label: 'Store availability' },
+                  { tab: 'financials' as const, icon: IconCurrencyDollar, label: 'Financials' },
+                  { tab: 'settings' as const, icon: IconSettings, label: 'Settings' },
+                ].map(({ tab, icon: Icon, label }) => (
+                  <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} fullWidth justify={sidebarCollapsed ? 'center' : 'flex-start'} leftSection={!sidebarCollapsed ? <Icon size={20} /> : undefined} onClick={() => setActiveTab(tab)} style={sidebarCollapsed ? { padding: '8px 0' } : undefined}>
+                    {sidebarCollapsed ? <Icon size={20} /> : label}
+                  </Button>
+                ))}
               </>
             )}
           </Stack>
@@ -600,17 +481,18 @@ const RestaurantSetup = () => {
           <Divider my="md" />
 
           <Stack gap="xs">
-            <Text size="xs" c="dimmed" fw={500} px="xs">Channels</Text>
+            {!sidebarCollapsed && <Text size="xs" c="dimmed" fw={500} px="xs">Channels</Text>}
             
             <Button
               variant={activeTab === 'request-delivery' ? 'light' : 'subtle'}
               color={activeTab === 'request-delivery' ? 'orange' : 'gray'}
               fullWidth
-              justify="flex-start"
-              leftSection={<IconDeviceTablet size={20} />}
+              justify={sidebarCollapsed ? 'center' : 'flex-start'}
+              leftSection={!sidebarCollapsed ? <IconDeviceTablet size={20} /> : undefined}
               onClick={() => setActiveTab('request-delivery')}
+              style={sidebarCollapsed ? { padding: '8px 0' } : undefined}
             >
-              Request a delivery
+              {sidebarCollapsed ? <IconDeviceTablet size={20} /> : 'Request a delivery'}
             </Button>
           </Stack>
 
@@ -618,32 +500,41 @@ const RestaurantSetup = () => {
             <Button
               variant="subtle"
               fullWidth
-              justify="flex-start"
-              leftSection={<IconPlus size={20} />}
+              justify={sidebarCollapsed ? 'center' : 'flex-start'}
+              leftSection={!sidebarCollapsed ? <IconPlus size={20} /> : undefined}
               onClick={() => navigate(window.location.pathname.startsWith('/portal') ? '/solutions' : '/restaurant/solutions')}
+              style={sidebarCollapsed ? { padding: '8px 0' } : undefined}
             >
-              Add solutions
+              {sidebarCollapsed ? <IconPlus size={20} /> : 'Add solutions'}
             </Button>
           </Box>
         </ScrollArea>
 
         {/* User Profile */}
-        <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+        <Box p={sidebarCollapsed ? 'xs' : 'md'} style={{ borderTop: '1px solid var(--mantine-color-gray-3)', display: 'flex', justifyContent: 'center' }}>
           <Menu width={224} position="top-end">
             <Menu.Target>
-              <Button
-                variant="subtle"
-                fullWidth
-                justify="flex-start"
-                leftSection={
+              {sidebarCollapsed ? (
+                <Button variant="subtle" size="compact-md" style={{ padding: 8 }}>
                   <Avatar size="sm" radius="xl" color="gray">
                     {(fullName ?? userName).charAt(0).toUpperCase()}
                   </Avatar>
-                }
-                rightSection={<IconChevronDown size={16} />}
-              >
-                {userName}
-              </Button>
+                </Button>
+              ) : (
+                <Button
+                  variant="subtle"
+                  fullWidth
+                  justify="flex-start"
+                  leftSection={
+                    <Avatar size="sm" radius="xl" color="gray">
+                      {(fullName ?? userName).charAt(0).toUpperCase()}
+                    </Avatar>
+                  }
+                  rightSection={<IconChevronDown size={16} />}
+                >
+                  {userName}
+                </Button>
+              )}
             </Menu.Target>
             <Menu.Dropdown>
               <Menu.Item

@@ -8688,6 +8688,48 @@ export type Database = {
           },
         ]
       }
+      drive_on_demand_requests: {
+        Row: {
+          created_at: string
+          id: string
+          restaurant_id: string
+          status: string
+          terms_accepted_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          restaurant_id: string
+          status?: string
+          terms_accepted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          restaurant_id?: string
+          status?: string
+          terms_accepted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_on_demand_requests_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "drive_on_demand_requests_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_background_checks: {
         Row: {
           completed_at: string | null
