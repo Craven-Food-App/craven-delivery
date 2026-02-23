@@ -248,7 +248,7 @@ export function BusinessDetailsStep({ data, updateData, onNext, onBack }: Busine
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
               <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-900">
-                While optional now, this document may be required at a later date or upon request by Crave'N for compliance verification.
+                While optional now, this document may be required at a later date or upon request by Crave'n for compliance verification.
               </p>
             </div>
           </div>
@@ -256,7 +256,7 @@ export function BusinessDetailsStep({ data, updateData, onNext, onBack }: Busine
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
             <Shield className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-900">
-              All documents are securely encrypted and used for verification purposes only. Additional documents may be requested by Crave'N to ensure compliance with local regulations.
+              All documents are securely encrypted and used for verification purposes only. Additional documents may be requested by Crave'n to ensure compliance with local regulations.
             </p>
           </div>
         </div>

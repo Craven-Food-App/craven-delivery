@@ -14,7 +14,7 @@ const DriverGuide = () => {
         <div className="container mx-auto px-4 py-12">
           <Truck className="h-16 w-16 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-center mb-4">Driver Training Guide</h1>
-          <p className="text-xl text-center opacity-90">Learn how to become a successful Crave'N driver</p>
+          <p className="text-xl text-center opacity-90">Learn how to become a successful Crave'n driver</p>
         </div>
       </div>
 

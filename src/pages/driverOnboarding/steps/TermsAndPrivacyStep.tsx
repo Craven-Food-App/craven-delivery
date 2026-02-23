@@ -57,7 +57,7 @@ export const TermsAndPrivacyStep: React.FC<TermsAndPrivacyStepProps> = ({ onNext
             <Text fw={600} size="md">Terms of Service</Text>
             <Text size="sm" c="dimmed">
               By clicking the link below, you'll read our complete Terms of Service which
-              govern your use of the Crave'N platform as a driver.
+              govern your use of the Crave'n platform as a driver.
             </Text>
             <Checkbox
               checked={termsAccepted}

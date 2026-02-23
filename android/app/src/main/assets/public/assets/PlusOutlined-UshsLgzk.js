@@ -1,0 +1,1 @@
+import{r as s,ak as o,al as c}from"./index-h_AmERuv.js";function e(){return e=Object.assign?Object.assign.bind():function(t){for(var n=1;n<arguments.length;n++){var r=arguments[n];for(var a in r)Object.prototype.hasOwnProperty.call(r,a)&&(t[a]=r[a])}return t},e.apply(this,arguments)}const i=(t,n)=>s.createElement(o,e({},t,{ref:n,icon:c})),f=s.forwardRef(i);export{f as R};

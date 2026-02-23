@@ -9,7 +9,7 @@
  *   3) No gradients on backgrounds, no emojis, no oversized cards.
  *   4) All layout is inline-style; no external CSS file required.
  *   5) Driver data fetched from Supabase — integrated with existing fetchDriverData.
- *   6) Status tier thresholds match Crave'N spec:
+ *   6) Status tier thresholds match Crave'n spec:
  *        Feeder   0–64 pts   (Probationary)
  *        Gold     65–75 pts
  *        Platinum 76–84 pts

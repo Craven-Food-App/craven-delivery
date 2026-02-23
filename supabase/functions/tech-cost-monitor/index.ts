@@ -97,7 +97,7 @@ serve(async (req) => {
       if (recipientEmails.length > 0) {
         try {
           const emailResult = await resend.emails.send({
-            from: Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N Finance <finance@cravenusa.com>",
+            from: Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n Finance <finance@cravenusa.com>",
             to: recipientEmails,
             subject: `🚨 Tech Cost Alert: ${alertData.title}`,
             html: buildAlertEmail(alertData),
@@ -240,7 +240,7 @@ function buildAlertEmail(alert: any): string {
           </div>
         </div>
         <div class="footer">
-          <p>© 2025 Crave'N. This is an automated financial operations alert.</p>
+          <p>© 2025 Crave'n. This is an automated financial operations alert.</p>
         </div>
       </div>
     </body>

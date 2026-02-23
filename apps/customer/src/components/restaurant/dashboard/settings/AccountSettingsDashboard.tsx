@@ -215,7 +215,7 @@ const AccountSettingsDashboard = () => {
             <div className="pt-6 border-t">
               <h3 className="font-semibold mb-2">Alcohol sales</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Sell alcohol on Crave'N in compliance with local laws and regulations. To get started, confirm that alcohol delivery is allowed in your state.{" "}
+                Sell alcohol on Crave'n in compliance with local laws and regulations. To get started, confirm that alcohol delivery is allowed in your state.{" "}
                 <a href="#" className="text-primary underline">Learn more</a>
               </p>
               <Button variant="destructive">Add</Button>
@@ -250,7 +250,7 @@ const AccountSettingsDashboard = () => {
             <div className="pt-6 border-t">
               <h3 className="font-semibold mb-2">Pause store PIN</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Create and manage your PIN to pause your store on the Crave'N Tablet.
+                Create and manage your PIN to pause your store on the Crave'n Tablet.
               </p>
               {!((restaurant as any)?.verification_notes?.pause_pin) ? (
                 <>
@@ -296,7 +296,7 @@ const AccountSettingsDashboard = () => {
                 <div className="flex-1">
                   <h3 className="font-semibold mb-1">Chat feature</h3>
                   <p className="text-sm text-muted-foreground">
-                    Add chat functionality to contact customers directly through the Crave'N Tablet.
+                    Add chat functionality to contact customers directly through the Crave'n Tablet.
                   </p>
                 </div>
                 <Switch 

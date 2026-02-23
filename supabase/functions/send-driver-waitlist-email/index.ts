@@ -167,14 +167,14 @@ const handler = async (req: Request): Promise<Response> => {
                   <tr>
                     <td style="background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
                       <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 You're Activated!</h1>
-                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 18px;">Welcome to Crave'N!</p>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 18px;">Welcome to Crave'n!</p>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 40px;">
                       <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Hi ${driverName}! 👋</h2>
                       <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                        Great news! You've been activated and are now ready to start delivering with Crave'N. 🚗✨
+                        Great news! You've been activated and are now ready to start delivering with Crave'n. 🚗✨
                       </p>
                       ${passwordSection}
                       <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
@@ -194,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
                       </div>
                       <p style="margin: 20px 0 0 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
                         Welcome aboard! 🧡<br>
-                        <strong>The Crave'N Team</strong>
+                        <strong>The Crave'n Team</strong>
                       </p>
                     </td>
                   </tr>
@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                       <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Happy Delivering! 🚗💨</p>
                       <p style="margin: 0; color: #898989; font-size: 12px;">
-                        © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                        © ${new Date().getFullYear()} Crave'n. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -213,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
         </body>
         </html>
       `;
-      subject = "🎉 You're Activated! Welcome to Crave'N";
+      subject = "🎉 You're Activated! Welcome to Crave'n";
     } else if (effectiveEmailType === 'invitation') {
       emailHtml = `
         <!DOCTYPE html>
@@ -231,7 +231,7 @@ const handler = async (req: Request): Promise<Response> => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🎉 You've Been Invited to Drive with Crave'N!</h1>
+              <h1>🎉 You've Been Invited to Drive with Crave'n!</h1>
             </div>
             
             <div class="content">
@@ -256,11 +256,11 @@ const handler = async (req: Request): Promise<Response> => {
               
               <p>You can complete this in about 10-15 minutes. Your application will be reviewed within 24 hours.</p>
               
-              <p><strong>The Crave'N Team</strong></p>
+              <p><strong>The Crave'n Team</strong></p>
             </div>
             
             <div class="footer">
-              <p>© 2025 Crave'N. All rights reserved.</p>
+              <p>© 2025 Crave'n. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -281,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>You're on the Waitlist! - Crave'N</title>
+            <title>You're on the Waitlist! - Crave'n</title>
             <style type="text/css">
                 /* Basic Reset */
                 body, table, td, a {
@@ -351,7 +351,7 @@ const handler = async (req: Request): Promise<Response> => {
                             <!-- Header/Logo Area -->
                             <tr>
                                 <td align="center" style="padding: 20px 0 10px 0;">
-                                    <h1 style="font-size: 24px; color: #343a40;">Crave'N</h1>
+                                    <h1 style="font-size: 24px; color: #343a40;">Crave'n</h1>
                                 </td>
                             </tr>
                             <!-- Main Card (The Core Content) -->
@@ -382,7 +382,7 @@ const handler = async (req: Request): Promise<Response> => {
                                                 
                                                 <!-- Body Text -->
                                                 <p style="margin: 0 0 24px 0; font-size: 16px; color: #495057;">
-                                                    Thank you for joining the waitlist for <strong>Crave'N</strong>. We're excited to give you early access to the best way to earn money as a delivery driver.
+                                                    Thank you for joining the waitlist for <strong>Crave'n</strong>. We're excited to give you early access to the best way to earn money as a delivery driver.
                                                 </p>
                                                 
                                                 <!-- Waitlist Status Card (Mantine Style Alert/Badge) -->
@@ -421,7 +421,7 @@ const handler = async (req: Request): Promise<Response> => {
                                                     Cheers,
                                                 </p>
                                                 <p style="margin: 0; font-size: 16px; font-weight: 600; color: #212529;">
-                                                    The Crave'N Team
+                                                    The Crave'n Team
                                                 </p>
                                             </td>
                                         </tr>
@@ -435,7 +435,7 @@ const handler = async (req: Request): Promise<Response> => {
                                         <tr>
                                             <td align="center">
                                                 <p style="font-size: 12px; color: #868e96; margin: 0 0 8px 0;">
-                                                    Crave'N &copy; 2025. All rights reserved.
+                                                    Crave'n &copy; 2025. All rights reserved.
                                                 </p>
                                                 <p style="font-size: 12px; margin: 0;">
                                                     <a href="https://www.cravenusa.com/privacy-policy" style="color: #868e96;">Privacy Policy</a>
@@ -463,7 +463,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Use Resend SDK
     const resend = new Resend(resendApiKey);
     
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
     
     console.log(`Sending ${emailType} email to ${driverEmail} from ${fromEmail}`);
     

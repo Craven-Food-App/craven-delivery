@@ -256,7 +256,7 @@ const PricingPlansDashboard = () => {
                     <span className="font-semibold text-sm">Access to <CraveMoreText /> members</span>
                   </div>
                   <p className="text-sm">Businesses with <CraveMoreText /> typically see a 30% increase in earnings, as members order twice as often and spend 2.5 times more annually than regular customers.</p>
-                  <p className="text-sm">You'll be promoted with $0 delivery and lower service fees, making it easier for customers to find you on Crave'N.</p>
+                  <p className="text-sm">You'll be promoted with $0 delivery and lower service fees, making it easier for customers to find you on Crave'n.</p>
                 </div>
               </CardContent>
             </Card>
@@ -314,7 +314,7 @@ const PricingPlansDashboard = () => {
                     <span className="font-semibold text-sm">Access to <CraveMoreText /> members</span>
                   </div>
                   <p className="text-sm">Businesses with <CraveMoreText /> typically see a 30% increase in earnings, as members order twice as often and spend 2.5 times more annually than regular customers.</p>
-                  <p className="text-sm">You'll be promoted with $0 delivery and lower service fees, making it easier for customers to find you on Crave'N.</p>
+                  <p className="text-sm">You'll be promoted with $0 delivery and lower service fees, making it easier for customers to find you on Crave'n.</p>
                 </div>
 
                 {/* 6-month order guarantee */}

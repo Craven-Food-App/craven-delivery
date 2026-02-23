@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-A complete investor demonstration system allowing stakeholders to preview the Crave'N platform through three distinct perspectives: Customer, Merchant, and Driver. All demo data is isolated and explicitly marked as mock data for demonstration purposes only.
+A complete investor demonstration system allowing stakeholders to preview the Crave'n platform through three distinct perspectives: Customer, Merchant, and Driver. All demo data is isolated and explicitly marked as mock data for demonstration purposes only.
 
 ### Business Value
 
@@ -391,7 +391,7 @@ expire_old_investor_tokens()
 
 ## Conclusion
 
-The Investor Demo Portal provides a production-grade solution for showcasing the Crave'N platform to stakeholders. With email-only magic link authentication, comprehensive analytics, and fully functional mock experiences, this system enables scalable, professional investor engagement without compromising production security.
+The Investor Demo Portal provides a production-grade solution for showcasing the Crave'n platform to stakeholders. With email-only magic link authentication, comprehensive analytics, and fully functional mock experiences, this system enables scalable, professional investor engagement without compromising production security.
 
 **Next Actions:**
 1. Deploy database migration to production

@@ -264,7 +264,7 @@ export const OrderVerificationScreen: React.FC<OrderVerificationProps> = ({
             icon={Users}
           >
             <div className="flex items-center space-x-2">
-              <img src={cravenLogo} alt="Crave'N" className="w-6 h-6" />
+              <img src={cravenLogo} alt="Crave'n" className="w-6 h-6" />
               <span className="text-sm text-gray-600">Crave'n Delivery</span>
             </div>
           </DeliveryInfoCard>

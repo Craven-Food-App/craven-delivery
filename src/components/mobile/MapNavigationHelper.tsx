@@ -100,7 +100,7 @@ export const MapNavigationHelper: React.FC<MapNavigationHelperProps> = ({
       'google': 'Google Maps',
       'apple': 'Apple Maps',
       'waze': 'Waze',
-      'mapbox': "Crave'N Navigation"
+      'mapbox': "Crave'n Navigation"
     };
     return names[preferredMapApp] || 'Maps';
   };

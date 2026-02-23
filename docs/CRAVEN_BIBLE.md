@@ -67,7 +67,7 @@
 ### 1.1 Company Identity
 
 **Legal Name:** Crave'n Inc.  
-**DBA:** Crave'N, Crave'n Delivery  
+**DBA:** Crave'n, Crave'n Delivery  
 **Tagline:** "Your Local Food Delivery Partner"  
 **Founded:** 2025  
 **Headquarters:** Distributed operations across 100+ cities nationwide  

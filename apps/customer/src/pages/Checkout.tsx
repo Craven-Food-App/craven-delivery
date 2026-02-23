@@ -2301,7 +2301,7 @@ const Checkout: React.FC = () => {
       </div>
       )}
 
-      {/* Payment Method Selection Modal — Crave'N Vault */}
+      {/* Payment Method Selection Modal — Crave'n Vault */}
       <Sheet open={showPaymentModal} onOpenChange={(open) => {
         setShowPaymentModal(open);
         if (!open) {

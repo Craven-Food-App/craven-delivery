@@ -9,9 +9,9 @@ interface MenuDashboardProps {
 
 const MenuDashboard = ({ restaurantId }: MenuDashboardProps) => {
   return (
-    <div className="w-full h-full bg-background">
+    <div className="w-full h-full min-w-0 bg-background">
       <div className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-4 min-w-0 overflow-hidden">
           <h1 className="text-2xl font-bold mb-4">Menu</h1>
           <Tabs defaultValue="manager" className="w-full">
             <TabsList className="bg-muted">

@@ -191,7 +191,7 @@ const MerchantWelcomeConfetti: React.FC<MerchantWelcomeConfettiProps> = ({
               `}
             >
               <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
-                Welcome to Crave'N,
+                Welcome to Crave'n,
                 <br />
                 <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
                   {restaurantName}

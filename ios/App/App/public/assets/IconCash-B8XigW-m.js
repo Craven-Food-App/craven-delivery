@@ -1,1 +1,0 @@
-import{a9 as a}from"./index-CLcR6DS_.js";const o=[["path",{d:"M7 15h-3a1 1 0 0 1 -1 -1v-8a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v3",key:"svg-0"}],["path",{d:"M7 9m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v8a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1z",key:"svg-1"}],["path",{d:"M12 14a2 2 0 1 0 4 0a2 2 0 0 0 -4 0",key:"svg-2"}]],e=a("outline","cash","Cash",o);export{e as I};

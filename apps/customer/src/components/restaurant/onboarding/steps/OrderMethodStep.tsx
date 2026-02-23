@@ -16,7 +16,7 @@ const OrderMethodStep = ({ data, updateData, onNext }: OrderMethodStepProps) => 
     {
       value: "tablet",
       icon: Tablet,
-      title: "Crave'N Tablet",
+      title: "Crave'n Tablet",
       description: "Receive orders on a dedicated tablet with our easy-to-use interface",
       pricing: "Free tablet included",
       badge: "Most popular",
@@ -40,7 +40,7 @@ const OrderMethodStep = ({ data, updateData, onNext }: OrderMethodStepProps) => 
   return (
     <div className="max-w-3xl mx-auto py-4 sm:py-8">
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Choose how you want to receive Crave'N orders</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Choose how you want to receive Crave'n orders</h2>
         <p className="text-muted-foreground text-base sm:text-lg">
           Select the method that works best for your restaurant operations
         </p>

@@ -34,7 +34,7 @@ const PricingPlanStep = ({
           Pricing
         </h2>
         <p className="text-muted-foreground text-base sm:text-lg">
-          Crave'N uses a single flat commission for every merchant. No tiers, no
+          Crave'n uses a single flat commission for every merchant. No tiers, no
           upsells.
         </p>
       </div>
@@ -43,7 +43,7 @@ const PricingPlanStep = ({
       <div className="border-2 rounded-xl p-5 sm:p-8 mb-4 space-y-5">
         <div className="flex items-center gap-2">
           <Lock className="w-5 h-5 text-muted-foreground" />
-          <h3 className="text-lg font-bold">Crave'N Base Commission</h3>
+          <h3 className="text-lg font-bold">Crave'n Base Commission</h3>
         </div>
 
         <div className="flex items-center justify-between py-3 border-b">

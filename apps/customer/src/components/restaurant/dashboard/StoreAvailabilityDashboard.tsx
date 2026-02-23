@@ -168,7 +168,7 @@ const StoreAvailabilityDashboard = () => {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Only Crave'N administrators can change your store's active status. Contact support if you need assistance.
+                  Only Crave'n administrators can change your store's active status. Contact support if you need assistance.
                 </p>
               </div>
             </CardContent>
@@ -180,7 +180,7 @@ const StoreAvailabilityDashboard = () => {
           <CardHeader>
             <CardTitle>Regular menu hours</CardTitle>
             <CardDescription>
-              These are the hours your store is available on Crave'N.
+              These are the hours your store is available on Crave'n.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,7 +1,7 @@
 {
-  "name": "Crave'N - Food Delivery",
-  "short_name": "Crave'N",
-  "description": "Order food delivery from your favorite local restaurants with Crave'N.",
+  "name": "Crave'n - Food Delivery",
+  "short_name": "Crave'n",
+  "description": "Order food delivery from your favorite local restaurants with Crave'n.",
   "start_url": "/restaurants",
   "display": "standalone",
   "background_color": "#FF6B35",

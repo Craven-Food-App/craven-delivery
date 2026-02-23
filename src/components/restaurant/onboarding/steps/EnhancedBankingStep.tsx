@@ -250,7 +250,7 @@ export function EnhancedBankingStep({ data, updateData, onNext, onBack }: Enhanc
             className="mt-0.5"
           />
           <Label htmlFor="termsAgreed" className="text-xs sm:text-sm cursor-pointer leading-normal">
-            By clicking 'Finish setup', I agree to 'Crave'N Merchant Sign-Up Sheet' including the{' '}
+            By clicking 'Finish setup', I agree to 'Crave'n Merchant Sign-Up Sheet' including the{' '}
             <a href="/terms-of-service" target="_blank" className="text-blue-600 hover:underline">
               Terms of Service
             </a>{' '}

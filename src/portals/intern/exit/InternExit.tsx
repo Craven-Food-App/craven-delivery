@@ -1140,7 +1140,7 @@ const InternExit: React.FC = () => {
           <h3 style={{ fontSize: isMobile ? '17px' : '20px', fontWeight: 700, margin: 0 }}>Join Our Alumni Network</h3>
         </div>
         <p style={{ fontSize: isMobile ? '13px' : '14px', opacity: 0.9, marginBottom: isMobile ? '14px' : '20px', lineHeight: 1.6 }}>
-          Stay connected with Crave'N! Our alumni network offers exclusive job opportunities, networking events, and the chance to mentor future interns.
+          Stay connected with Crave'n! Our alumni network offers exclusive job opportunities, networking events, and the chance to mentor future interns.
         </p>
         <button
           style={{

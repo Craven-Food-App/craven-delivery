@@ -168,7 +168,7 @@ const BankAccountDashboard = () => {
     <div className="space-y-6 pb-8">
       {/* Description */}
       <p className="text-muted-foreground">
-        Here is where you will find a summary of your banking information. Crave'N uses Moov to securely manage your payouts.
+        Here is where you will find a summary of your banking information. Crave'n uses Moov to securely manage your payouts.
       </p>
 
       {/* Toggle for Stripe section */}
@@ -198,7 +198,7 @@ const BankAccountDashboard = () => {
             <div>
               <h2 className="text-xl font-semibold mb-2">Bank account information</h2>
               <p className="text-sm text-muted-foreground">
-                Crave'N uses Stripe Connect to securely manage your payouts.
+                Crave'n uses Stripe Connect to securely manage your payouts.
               </p>
             </div>
             <Button 
@@ -275,7 +275,7 @@ const BankAccountDashboard = () => {
           <h2 className="text-xl font-semibold mb-4">Business information</h2>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              To process payouts, Crave'N and our payments processing partner, Stripe, are required to collect your business information for compliance and tax purposes.
+              To process payouts, Crave'n and our payments processing partner, Stripe, are required to collect your business information for compliance and tax purposes.
             </p>
 
             {stripeStatus?.requirements?.currently_due && stripeStatus.requirements.currently_due.length > 0 ? (

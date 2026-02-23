@@ -180,7 +180,7 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Only Crave'N administrators can change your store's active status. Contact support if you need assistance.
+                  Only Crave'n administrators can change your store's active status. Contact support if you need assistance.
                 </p>
               </div>
             </CardContent>

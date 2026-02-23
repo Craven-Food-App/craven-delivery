@@ -34,18 +34,18 @@ interface SolutionInfoDialogProps {
 const SOLUTION_INFO: Record<SolutionInfoType, { title: string; description: string; benefits: string[]; actionLabel: string }> = {
   alcohol: {
     title: "Add Alcohol to Your Menu",
-    description: "Expand your menu with alcoholic beverages. Restaurants that offer alcohol through Crave'N see an average 23% increase in order value.",
+    description: "Expand your menu with alcoholic beverages. Restaurants that offer alcohol through Crave'n see an average 23% increase in order value.",
     benefits: [
       "Higher average order value — alcohol adds $8-15 per order",
       "Attract evening and weekend customers looking for full dining experiences",
-      "Crave'N handles compliance checks — age verification at delivery",
+      "Crave'n handles compliance checks — age verification at delivery",
       "No additional hardware needed — managed through your existing menu dashboard",
       "Opt-in by city/state — we guide you through local regulations",
     ],
     actionLabel: "Add Alcohol to Menu",
   },
   advertise: {
-    title: "Advertise to Customers on Crave'N",
+    title: "Advertise to Customers on Crave'n",
     description: "Sponsored listings put your restaurant in front of hungry customers who are actively searching for food. You only pay when a customer clicks.",
     benefits: [
       "Appear at the top of search results and cuisine categories",
@@ -70,13 +70,13 @@ const SOLUTION_INFO: Record<SolutionInfoType, { title: string; description: stri
   },
   instagram: {
     title: "Instagram Ordering Integration",
-    description: "Let customers order directly from your Instagram profile. Link your restaurant's Instagram to Crave'N for seamless social-to-order flow.",
+    description: "Let customers order directly from your Instagram profile. Link your restaurant's Instagram to Crave'n for seamless social-to-order flow.",
     benefits: [
       "Add an 'Order Now' button to your Instagram bio and stories",
       "Shoppable posts — tag menu items in photos for direct ordering",
       "Track social-driven orders with dedicated analytics",
-      "Automatic menu sync — changes to your Crave'N menu update instantly",
-      "No additional fees — included with your Crave'N partnership",
+      "Automatic menu sync — changes to your Crave'n menu update instantly",
+      "No additional fees — included with your Crave'n partnership",
     ],
     actionLabel: "Connect Instagram",
   },
@@ -99,7 +99,7 @@ const SOLUTION_INFO: Record<SolutionInfoType, { title: string; description: stri
       "CraveMore members get free delivery — removing the #1 order barrier",
       "Members order 3.2x more often than non-members",
       "Priority placement in CraveMore member feeds",
-      "No additional cost to you — Crave'N subsidizes the membership benefits",
+      "No additional cost to you — Crave'n subsidizes the membership benefits",
       "Access to CraveMore-exclusive promotions and co-marketing",
     ],
     actionLabel: "Learn About CraveMore",
@@ -108,19 +108,19 @@ const SOLUTION_INFO: Record<SolutionInfoType, { title: string; description: stri
     title: "Pickup Ordering",
     description: "Enable customers to order ahead and pick up at your location. Zero delivery fees, zero commission — a pure revenue channel.",
     benefits: [
-      "Commission-free — 0% Crave'N fees on pickup orders",
+      "Commission-free — 0% Crave'n fees on pickup orders",
       "No delivery fee for customers — removes the biggest order barrier",
       "Reduce kitchen wait times with pre-scheduled orders",
       "Curbside and in-store pickup options",
-      "Integrated with your existing Crave'N menu and tablet",
+      "Integrated with your existing Crave'n menu and tablet",
     ],
     actionLabel: "Enable Pickup",
   },
   drive_on_demand: {
     title: "Drive On-Demand",
-    description: "Use Crave'N's Feeder network to fulfill deliveries from your own ordering channels — phone orders, your website, or third-party apps.",
+    description: "Use Crave'n's Feeder network to fulfill deliveries from your own ordering channels — phone orders, your website, or third-party apps.",
     benefits: [
-      "Access Crave'N's entire Feeder delivery network on demand",
+      "Access Crave'n's entire Feeder delivery network on demand",
       "Fulfill orders from any channel — phone, website, third-party apps",
       "Real-time driver tracking and ETAs",
       "Pay per delivery — no subscription or commitment",

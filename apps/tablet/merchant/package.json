@@ -1,0 +1,40 @@
+{
+  "name": "@craven/tablet-merchant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.ts",
+    "build": "vite build --config vite.config.ts && node -e \"var fs=require('fs'),path=require('path');var s=path.join(process.cwd(),'../../../public/craven-merchant-app-bg.png');var d=path.join(process.cwd(),'dist/craven-merchant-app-bg.png');if(fs.existsSync(s)){fs.copyFileSync(s,d);console.log('Copied merchant bg');}\"",
+    "preview": "vite preview --config vite.config.ts",
+    "sync": "npx cap sync android",
+    "open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@mantine/core": "^8.3.8",
+    "@mantine/dates": "^8.3.8",
+    "@mantine/hooks": "^8.3.8",
+    "@mantine/modals": "^8.3.8",
+    "@mantine/notifications": "^8.3.8",
+    "@supabase/supabase-js": "^2.57.2",
+    "@tanstack/react-query": "^5.56.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "sonner": "^1.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.11",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.5.3",
+    "vite": "^7.1.12"
+  }
+}

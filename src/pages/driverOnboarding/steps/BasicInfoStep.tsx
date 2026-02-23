@@ -439,7 +439,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ onNext, onBack, ap
               <tr><td style="padding: 8px; font-weight: bold; color: #555;">Region</td><td style="padding: 8px;">${regionName || 'Unknown'}</td></tr>
               <tr style="background:#f9f9f9;"><td style="padding: 8px; font-weight: bold; color: #555;">Applied At</td><td style="padding: 8px;">${new Date().toLocaleString()}</td></tr>
             </table>
-            <p style="margin-top: 24px; color: #888; font-size: 12px;">This is an automated notification from Crave'N Delivery.</p>
+            <p style="margin-top: 24px; color: #888; font-size: 12px;">This is an automated notification from Crave'n Delivery.</p>
           </div>
         `;
 

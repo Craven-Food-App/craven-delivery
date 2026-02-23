@@ -130,11 +130,11 @@ serve(async (req) => {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Investor Demo Access - Crave'N Platform</title>
+        <title>Investor Demo Access - Crave'n Platform</title>
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">Crave'N Platform Demo</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">Crave'n Platform Demo</h1>
           <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Investor Preview Access</p>
         </div>
         
@@ -144,7 +144,7 @@ serve(async (req) => {
           </p>
           
           <p style="font-size: 16px; margin: 0 0 20px 0;">
-            You've been granted exclusive access to preview the Crave'N last-mile delivery platform. Experience our ecosystem from three perspectives:
+            You've been granted exclusive access to preview the Crave'n last-mile delivery platform. Experience our ecosystem from three perspectives:
           </p>
           
           <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin: 25px 0; border-radius: 4px;">
@@ -220,7 +220,7 @@ serve(async (req) => {
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
           
           <p style="font-size: 13px; color: #9ca3af; margin: 0; line-height: 1.5;">
-            <strong>Crave'N Inc.</strong><br>
+            <strong>Crave'n Inc.</strong><br>
             Last-Mile Delivery & Logistics Platform<br>
             Confidential - For Investor Use Only
           </p>

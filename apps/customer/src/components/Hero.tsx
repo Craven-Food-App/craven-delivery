@@ -96,7 +96,7 @@ const Hero = () => {
         <div className="relative z-10 text-center text-white px-4 animate-fade-in">
           <div className="max-w-5xl mx-auto">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight drop-shadow-lg">
-              Crave'N
+              Crave'n
             </h1>
             
             <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg">

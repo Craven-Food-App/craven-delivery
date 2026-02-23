@@ -63,11 +63,11 @@ export const InstallAppBanner = () => {
 
         <div className="p-4 flex items-center gap-4">
           <div className="flex-shrink-0 w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <img src="/craven-logo.png" alt="Crave'N" className="w-12 h-12 rounded-lg" />
+            <img src="/craven-logo.png" alt="Crave'n" className="w-12 h-12 rounded-lg" />
           </div>
 
           <div className="flex-1">
-            <h3 className="font-bold text-lg">Install Crave'N App</h3>
+            <h3 className="font-bold text-lg">Install Crave'n App</h3>
             <p className="text-sm text-white/90">Get the full app experience</p>
           </div>
 
@@ -95,7 +95,7 @@ export const InstallAppBanner = () => {
             </p>
             <p className="flex items-center gap-2">
               <span className="text-2xl">3️⃣</span>
-              <span>Tap <strong>"Add"</strong> and find Crave'N on your home screen!</span>
+              <span>Tap <strong>"Add"</strong> and find Crave'n on your home screen!</span>
             </p>
           </div>
         )}

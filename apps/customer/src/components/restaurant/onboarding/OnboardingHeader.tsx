@@ -14,7 +14,7 @@ const OnboardingHeader = ({ onSave }: OnboardingHeaderProps) => {
       <div className="flex items-center gap-3">
         <img 
           src="/craven-logo.png" 
-          alt="Crave'N" 
+          alt="Crave'n" 
           className="h-8 w-auto cursor-pointer"
           onClick={() => navigate("/")}
         />

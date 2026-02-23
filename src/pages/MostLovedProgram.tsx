@@ -69,7 +69,7 @@ const MostLovedProgram = () => {
                 <div>
                   <h3 className="font-bold mb-2">BETTER VISIBILITY</h3>
                   <p className="text-sm text-muted-foreground">
-                    Most Loved restaurants on Crave'N are prioritized in search and customers see more products.
+                    Most Loved restaurants on Crave'n are prioritized in search and customers see more products.
                   </p>
                 </div>
               </div>

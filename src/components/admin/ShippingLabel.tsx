@@ -30,7 +30,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(
         <div className="border-4 border-black p-4 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-orange-600">Crave'N</h1>
+              <h1 className="text-4xl font-bold text-orange-600">Crave'n</h1>
               <p className="text-sm font-semibold">TABLET DELIVERY</p>
             </div>
             <div className="text-right">
@@ -43,7 +43,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(
         {/* From Address */}
         <div className="border-2 border-black p-4 mb-6">
           <p className="text-xs font-bold mb-2">FROM:</p>
-          <p className="text-lg font-bold">Crave'N Headquarters</p>
+          <p className="text-lg font-bold">Crave'n Headquarters</p>
           <p className="text-base">123 Main Street</p>
           <p className="text-base">Suite 100</p>
           <p className="text-base">San Francisco, CA 94102</p>
@@ -66,7 +66,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs font-bold">CONTENTS:</p>
-              <p className="text-base font-semibold">Crave'N POS Tablet</p>
+              <p className="text-base font-semibold">Crave'n POS Tablet</p>
               <p className="text-sm">+ Charging Cable</p>
               <p className="text-sm">+ Quick Start Guide</p>
             </div>

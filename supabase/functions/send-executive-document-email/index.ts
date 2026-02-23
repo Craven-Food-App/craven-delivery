@@ -105,7 +105,7 @@ serve(async (req: Request) => {
     console.log(`Sending ${documentTitle} to ${executiveName} at ${to}`);
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N HR <hr@craven.com>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n HR <hr@craven.com>";
 
     // Prepare attachments and links
     let attachments: Array<{ filename: string; content: string; type?: string }> = [];

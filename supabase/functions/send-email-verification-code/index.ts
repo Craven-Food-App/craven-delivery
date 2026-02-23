@@ -81,7 +81,7 @@ serve(async (req) => {
 
     console.log("[send-email-verification-code] Verification record created");
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     // Send email with 6-digit code (same template style as signup)
     const emailHtml = `
@@ -135,7 +135,7 @@ serve(async (req) => {
                 <tr>
                   <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                     <p style="margin: 0; color: #898989; font-size: 12px;">
-                      © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                      © ${new Date().getFullYear()} Crave'n. All rights reserved.
                     </p>
                   </td>
                 </tr>
@@ -151,7 +151,7 @@ serve(async (req) => {
       const emailResponse = await resend.emails.send({
         from: fromEmail,
         to: [email],
-        subject: `Your Sign-In Code: ${sixDigitCode} - Crave'N`,
+        subject: `Your Sign-In Code: ${sixDigitCode} - Crave'n`,
         html: emailHtml,
       });
 

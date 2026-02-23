@@ -133,7 +133,7 @@ export function OwnerVerificationStep({ data, updateData, onNext, onBack }: Owne
                 Background Check Authorization *
               </Label>
               <p className="text-xs text-gray-600">
-                I authorize Crave'N to conduct a background check as required for restaurant partner verification. 
+                I authorize Crave'n to conduct a background check as required for restaurant partner verification. 
                 This may include criminal history and business verification checks.
               </p>
             </div>

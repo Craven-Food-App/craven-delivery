@@ -62,6 +62,7 @@ const CustomerDashboard = () => {
 
   const tabFromUrl = searchParams.get('tab') || 'account';
   const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const [defaultAddressLine, setDefaultAddressLine] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveTab(tabFromUrl);
@@ -156,6 +157,19 @@ const CustomerDashboard = () => {
       } else {
         setFavorites([]);
       }
+
+      const { data: addressesData } = await supabase
+        .from('delivery_addresses')
+        .select('street_address, city, state, zip_code')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .limit(1);
+      if (addressesData && addressesData.length > 0) {
+        const a = addressesData[0];
+        setDefaultAddressLine(`${a.street_address}, ${a.city}, ${a.state} ${a.zip_code}`);
+      } else {
+        setDefaultAddressLine(null);
+      }
     } catch (error) {
       console.error("Error fetching user data:", error);
       toast({
@@ -248,12 +262,14 @@ const CustomerDashboard = () => {
         {activeTab === 'home' && (
           <button 
             className="flex items-center space-x-2 w-full py-2 px-3 bg-gray-50 rounded-lg"
-            onClick={() => {/* Handle address change */}}
+            onClick={() => navigate('/account/delivery-addresses')}
           >
             <MapPin className="w-4 h-4 text-gray-600 flex-shrink-0" />
             <div className="flex-1 text-left min-w-0">
               <p className="text-xs text-gray-500">Deliver to</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">6759 Nebraska Ave</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {defaultAddressLine || 'Add delivery address'}
+              </p>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </button>

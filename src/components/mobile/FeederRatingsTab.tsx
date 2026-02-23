@@ -1,5 +1,5 @@
 /**
- * Crave'N Feeder App — Ratings Tab
+ * Crave'n Feeder App — Ratings Tab
  * Uses real data from driver_profiles via useFeederTier hook.
  * Displays tier badge, rolling metrics, rating breakdown, next-tier progress, and benefits.
  */

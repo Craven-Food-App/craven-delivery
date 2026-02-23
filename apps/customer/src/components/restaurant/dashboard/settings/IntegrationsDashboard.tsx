@@ -96,7 +96,7 @@ const IntegrationsDashboard = () => {
     { name: "Tabit", category: "Point of sale (POS) system", featured: false },
     { name: "Zytle", category: "Point of sale (POS) system", featured: false },
     { name: "Toast", category: "Point of sale (POS) system", featured: false },
-    { name: "Crave'N for WooCommerce", category: "Point of sale (POS) system", featured: false },
+    { name: "Crave'n for WooCommerce", category: "Point of sale (POS) system", featured: false },
     { name: "NCR", category: "Point of sale (POS) system", featured: false },
     { name: "Ordermark", category: "Point of sale (POS) system", featured: false },
     { name: "HungerRush", category: "Point of sale (POS) system", featured: false },
@@ -134,7 +134,7 @@ const IntegrationsDashboard = () => {
       <div>
         <h3 className="text-xl font-semibold mb-4">Point of sale (POS) system</h3>
         <p className="text-sm text-muted-foreground mb-6">
-          Crave'N users who use a POS integration point-of-sale solution, seamlessly send orders directly to your current experience and leveraging integrations.
+          Crave'n users who use a POS integration point-of-sale solution, seamlessly send orders directly to your current experience and leveraging integrations.
         </p>
 
         {/* Featured Integration */}

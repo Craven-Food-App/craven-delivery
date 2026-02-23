@@ -154,7 +154,7 @@ Date: ${new Date().toLocaleDateString()}
 ===============================================
 
 This document is electronically signed and stored securely.
-For questions, contact Crave'N support.
+For questions, contact Crave'n support.
 `;
 }
 

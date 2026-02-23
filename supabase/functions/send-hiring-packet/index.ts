@@ -28,7 +28,7 @@ serve(async (req: Request) => {
       throw new Error("Missing candidateEmail or candidateName");
     }
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     const normalizedDocs = (docs || []).map((d: any) => {
       if (typeof d === 'string') return { label: d, required: true };
@@ -62,7 +62,7 @@ serve(async (req: Request) => {
                 <ul style="padding-left: 18px;">${docsList}</ul>
                 <p>If you have questions, reply to this email.</p>
               </div>
-              <div style="padding: 16px 24px; background: #f1f5f9; color: #334155; font-size: 12px;">Crave'N • Hiring & Onboarding</div>
+              <div style="padding: 16px 24px; background: #f1f5f9; color: #334155; font-size: 12px;">Crave'n • Hiring & Onboarding</div>
             </div>
           </body>
         </html>

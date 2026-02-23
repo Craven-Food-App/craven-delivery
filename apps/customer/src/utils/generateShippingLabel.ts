@@ -51,7 +51,7 @@ export async function generateShippingLabel(restaurant: Restaurant): Promise<{
         <div style="border: 4px solid black; padding: 24px; margin-bottom: 32px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <h1 style="font-size: 48px; font-weight: bold; color: #FF6B35; margin: 0;">Crave'N</h1>
+              <h1 style="font-size: 48px; font-weight: bold; color: #FF6B35; margin: 0;">Crave'n</h1>
               <p style="font-size: 14px; font-weight: 600; margin: 4px 0 0 0;">TABLET DELIVERY</p>
             </div>
             <div style="text-align: right;">
@@ -64,7 +64,7 @@ export async function generateShippingLabel(restaurant: Restaurant): Promise<{
         <!-- From Address -->
         <div style="border: 2px solid black; padding: 24px; margin-bottom: 32px;">
           <p style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">FROM:</p>
-          <p style="font-size: 20px; font-weight: bold; margin: 4px 0;">Crave'N Headquarters</p>
+          <p style="font-size: 20px; font-weight: bold; margin: 4px 0;">Crave'n Headquarters</p>
           <p style="font-size: 16px; margin: 2px 0;">123 Main Street</p>
           <p style="font-size: 16px; margin: 2px 0;">Suite 100</p>
           <p style="font-size: 16px; margin: 2px 0;">San Francisco, CA 94102</p>
@@ -85,7 +85,7 @@ export async function generateShippingLabel(restaurant: Restaurant): Promise<{
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
             <div>
               <p style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">CONTENTS:</p>
-              <p style="font-size: 16px; font-weight: 600; margin: 2px 0;">Crave'N POS Tablet</p>
+              <p style="font-size: 16px; font-weight: 600; margin: 2px 0;">Crave'n POS Tablet</p>
               <p style="font-size: 14px; margin: 2px 0;">+ Charging Cable</p>
               <p style="font-size: 14px; margin: 2px 0;">+ Quick Start Guide</p>
             </div>

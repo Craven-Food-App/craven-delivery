@@ -28,7 +28,7 @@
 ## For Investors: Accessing the Demo
 
 ### You'll Receive:
-📧 **Email Subject:** "🚀 Your Exclusive Access to the Crave'N Platform Demo"
+📧 **Email Subject:** "🚀 Your Exclusive Access to the Crave'n Platform Demo"
 
 ### Access Process:
 1. Click **"Access Demo Portal"** button in email

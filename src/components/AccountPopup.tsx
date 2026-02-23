@@ -98,7 +98,7 @@ const AccountPopup: React.FC<AccountPopupProps> = ({ isOpen, onClose, position }
                 <CreditCard className="w-4 h-4 text-gray-600" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">Crave'N Rewards Mastercard®</p>
+                <p className="font-semibold text-gray-900">Crave'n Rewards Mastercard®</p>
                     <p className="text-sm text-gray-500">Get 4% cash back and 1 year of CraveMore</p>
               </div>
             </div>

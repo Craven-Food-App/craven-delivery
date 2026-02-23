@@ -78,7 +78,7 @@ const ReportsDashboard = ({ restaurantId: restaurantIdProp }: ReportsDashboardPr
         <div>
           <h2 className="text-3xl font-bold mb-2">Reports</h2>
           <p className="text-muted-foreground">
-            Create and manage the reports that provide access to sales, operations, and financial data for your store on Crave'N.
+            Create and manage the reports that provide access to sales, operations, and financial data for your store on Crave'n.
           </p>
         </div>
         <Button className="bg-primary hover:bg-primary/90" onClick={() => setShowCreateModal(true)}>
@@ -123,7 +123,7 @@ const ReportsDashboard = ({ restaurantId: restaurantIdProp }: ReportsDashboardPr
               </div>
               <h3 className="text-xl font-bold mb-2">No reports</h3>
               <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-                You haven't created any reports yet. When you do, you'll find all of your Crave'N reports here.
+                You haven't created any reports yet. When you do, you'll find all of your Crave'n reports here.
               </p>
               <Button variant="outline" className="gap-2" onClick={() => setShowCreateModal(true)}>
                 <Plus className="w-4 h-4" />

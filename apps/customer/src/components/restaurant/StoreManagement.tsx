@@ -352,9 +352,16 @@ export default function StoreManagement() {
                   <Input
                     id="delivery-radius"
                     type="number"
+                    min={1}
+                    max={50}
                     value={newStore.delivery_radius_miles}
-                    onChange={(e) => setNewStore({ ...newStore, delivery_radius_miles: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      const clamped = Number.isNaN(v) ? 5 : Math.min(50, Math.max(1, v));
+                      setNewStore({ ...newStore, delivery_radius_miles: clamped });
+                    }}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Normal max 30 miles; set custom (up to 50) if you deliver farther.</p>
                 </div>
               </div>
 
@@ -616,8 +623,14 @@ export default function StoreManagement() {
                   <Input
                     id="edit-delivery-radius"
                     type="number"
+                    min={1}
+                    max={50}
                     value={editingStore.delivery_radius_miles}
-                    onChange={(e) => setEditingStore({ ...editingStore, delivery_radius_miles: parseInt(e.target.value) })}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      const clamped = Number.isNaN(v) ? 5 : Math.min(50, Math.max(1, v));
+                      setEditingStore({ ...editingStore, delivery_radius_miles: clamped });
+                    }}
                   />
                 </div>
               </div>

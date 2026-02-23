@@ -42,13 +42,13 @@ serve(async (req) => {
     if (portals.includes('cfo')) links.push(`<a href="${appUrl.replace('https://','https://cfo.')}" style="display:inline-block;margin:4px 6px;padding:10px 16px;background:#fb923c;color:#fff;border-radius:6px;text-decoration:none;">Open CFO Portal</a>`);
 
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get('RESEND_FROM_EMAIL') || "Crave'N <onboarding@resend.dev>",
+      from: Deno.env.get('RESEND_FROM_EMAIL') || "Crave'n <onboarding@resend.dev>",
       to: [email],
-      subject: `Your Crave'N portal access`,
+      subject: `Your Crave'n portal access`,
       html: `
         <div style="font-family:Arial,Helvetica,sans-serif;padding:24px;">
           <h2 style="margin:0 0 8px 0;">Welcome, ${name}</h2>
-          <p style="color:#374151;">Your Crave'N access has been set up. Use the links below to access your portals. If prompted, complete your account using the email invitation we sent.</p>
+          <p style="color:#374151;">Your Crave'n access has been set up. Use the links below to access your portals. If prompted, complete your account using the email invitation we sent.</p>
           <div style="margin:16px 0;">
             ${links.join(' ')}
           </div>
@@ -69,8 +69,8 @@ serve(async (req) => {
         recipient_email: email,
         recipient_name: name,
         email_type: 'portal_access',
-        subject: `Your Crave'N portal access`,
-        from_email: Deno.env.get('RESEND_FROM_EMAIL') || "Crave'N <onboarding@resend.dev>",
+        subject: `Your Crave'n portal access`,
+        from_email: Deno.env.get('RESEND_FROM_EMAIL') || "Crave'n <onboarding@resend.dev>",
         resend_email_id: resendId,
         status: 'sent',
         employee_id: employeeId || null

@@ -105,7 +105,7 @@ export const WaitlistSuccessModal = ({
             onClick={() => window.open('/', '_blank')}
             color="#ff7a00"
           >
-            Explore Crave'N
+            Explore Crave'n
           </Button>
           <Button 
             variant="outline" 

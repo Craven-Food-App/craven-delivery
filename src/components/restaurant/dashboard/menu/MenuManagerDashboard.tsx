@@ -244,9 +244,9 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 min-w-[400px]">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="relative flex-1 min-w-0 max-w-[400px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -292,8 +292,8 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
         </div>
 
         {/* Table */}
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
+        <div className="border rounded-lg overflow-x-auto">
+          <Table className="w-full min-w-[640px]">
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="w-[40%]">Item</TableHead>

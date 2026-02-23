@@ -41,7 +41,7 @@ export const SmsOptInStep: React.FC<SmsOptInStepProps> = ({ onNext, onBack, appl
 
       toast({
         title: "Opted In",
-        description: "You'll receive SMS messages from Crave'N",
+        description: "You'll receive SMS messages from Crave'n",
       });
 
       onNext({
@@ -93,7 +93,7 @@ export const SmsOptInStep: React.FC<SmsOptInStepProps> = ({ onNext, onBack, appl
 
         {/* First Paragraph */}
         <Text size="sm" style={{ color: '#191919', lineHeight: '1.5' }}>
-          Opt in to receive SMS messages via autodialer from Crave'N about special offers and other Feeder news to the number you provided.
+          Opt in to receive SMS messages via autodialer from Crave'n about special offers and other Feeder news to the number you provided.
         </Text>
 
         {/* Second Paragraph */}

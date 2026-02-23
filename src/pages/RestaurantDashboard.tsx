@@ -219,7 +219,7 @@ const RestaurantDashboard = () => {
                     <Text size="sm" c="dimmed" mt="xs">
                       {restaurant.is_active 
                         ? "Your restaurant is accepting orders" 
-                        : "Contact Crave'N support to activate your restaurant"}
+                        : "Contact Crave'n support to activate your restaurant"}
                     </Text>
                   </Card>
                 </Grid.Col>

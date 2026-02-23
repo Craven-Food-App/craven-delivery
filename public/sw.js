@@ -155,7 +155,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   try {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || "Crave'N";
+    const title = data.title || "Crave'n";
     const message = data.message || 'You have a new notification';
     const payload = data.data || {};
 

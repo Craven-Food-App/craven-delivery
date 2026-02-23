@@ -604,7 +604,7 @@ const DepartmentHub: React.FC = () => {
             <div style={{ borderLeft: "1px solid #e5e7eb", height: 32 }} />
             <img
               src={cravenLogo}
-              alt="Crave'N"
+              alt="Crave'n"
               style={{ height: 40, width: "auto" }}
             />
             <div style={{ borderLeft: "1px solid #e5e7eb", height: 32 }} />

@@ -34,7 +34,7 @@ public class CravenFirebaseMessagingService extends FirebaseMessagingService {
         super.onMessageReceived(remoteMessage);
         Log.d(TAG, "FCM message received from: " + remoteMessage.getFrom());
 
-        String title = "Crave'N Delivery";
+        String title = "Crave'n Delivery";
         String body = "You have a new notification";
 
         // Check notification payload

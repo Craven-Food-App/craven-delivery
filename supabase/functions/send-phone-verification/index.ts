@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     console.log(`Sending step 1 verification email to ${email} from ${fromEmail}`);
 
@@ -172,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <tr>
                   <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                     <p style="margin: 0; color: #898989; font-size: 12px;">
-                      © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                      © ${new Date().getFullYear()} Crave'n. All rights reserved.
                     </p>
                   </td>
                 </tr>
@@ -198,7 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
       emailResponse = await resend.emails.send({
         from: fromEmail,
         to: [email],
-        subject: `Your Phone Verification Code: ${last4Digits} - Crave'N`,
+        subject: `Your Phone Verification Code: ${last4Digits} - Crave'n`,
         html: emailHtml,
       });
 

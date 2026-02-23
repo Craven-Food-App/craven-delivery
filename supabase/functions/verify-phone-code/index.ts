@@ -180,7 +180,7 @@ serve(async (req) => {
       }
 
       // Send step 2 email with 6-digit code
-      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
       const step2EmailHtml = `
         <!DOCTYPE html>
@@ -233,7 +233,7 @@ serve(async (req) => {
                   <tr>
                     <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                       <p style="margin: 0; color: #898989; font-size: 12px;">
-                        © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                        © ${new Date().getFullYear()} Crave'n. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -249,7 +249,7 @@ serve(async (req) => {
         await resend.emails.send({
           from: fromEmail,
           to: [email],
-          subject: `Your Final Verification Code: ${sixDigitCode} - Crave'N`,
+          subject: `Your Final Verification Code: ${sixDigitCode} - Crave'n`,
           html: step2EmailHtml,
         });
 

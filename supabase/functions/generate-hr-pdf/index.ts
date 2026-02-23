@@ -198,7 +198,7 @@ function generateOfferLetterHTML(data: any): string {
         
         <p><strong>Dear ${data.employeeName},</strong></p>
         
-        <p>We are pleased to offer you the position of <strong>${data.position}</strong> in our <strong>${data.department}</strong> department at Crave'N Delivery, effective ${new Date(data.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+        <p>We are pleased to offer you the position of <strong>${data.position}</strong> in our <strong>${data.department}</strong> department at Crave'n Delivery, effective ${new Date(data.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
 
         <div style="background-color: #f9f9f9; border-left: 4px solid #ff6b00; padding: 25px; margin: 30px 0;">
           <h3 style="margin: 0 0 20px 0;">📋 Position Details</h3>
@@ -214,9 +214,9 @@ function generateOfferLetterHTML(data: any): string {
 
         <p><strong>Reporting To:</strong> ${data.reportingTo}</p>
 
-        <p>We look forward to welcoming you to the Crave'N Delivery team!</p>
+        <p>We look forward to welcoming you to the Crave'n Delivery team!</p>
 
-        <p>Best regards,<br/>Crave'N Delivery HR Team</p>
+        <p>Best regards,<br/>Crave'n Delivery HR Team</p>
       </body>
     </html>
   `;
@@ -685,7 +685,7 @@ serve(async (req: Request) => {
     // Send email if requested
     if (alsoEmail && metadata.employeeEmail) {
       try {
-        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <hr@cravenusa.com>";
+        const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <hr@cravenusa.com>";
         
         await resend.emails.send({
           from: fromEmail,

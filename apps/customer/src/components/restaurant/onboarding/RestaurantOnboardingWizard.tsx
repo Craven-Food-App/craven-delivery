@@ -308,7 +308,7 @@ const RestaurantOnboardingWizard = (props: RestaurantOnboardingWizardProps = {})
             max_delivery_time: data.maxPrepTime || 40,
             delivery_fee_cents: data.deliveryFeeCents || 299,
             minimum_order_cents: data.minimumOrderCents || 1000,
-            delivery_radius_miles: data.deliveryRadius || 5,
+            delivery_radius_miles: Math.min(30, data.deliveryRadius || 5),
             is_active: false, // Pending admin approval
             rating: 5.0,
             onboarding_status: 'pending',

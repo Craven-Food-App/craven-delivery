@@ -1,0 +1,1 @@
+import{s as n,h as r,b3 as l}from"./index-h_AmERuv.js";async function c(){const{data:{user:t}}=await n.auth.getUser(),s=["INTERN","INTERN_MANAGER","INTERN_SPONSOR","INTERN_PROGRAM_ADMIN"];return t?.email&&r(t.email)?s:(await l()).filter(e=>s.includes(e))}function i(t,s){return(Array.isArray(s)?s:[s]).some(e=>t.includes(e))}export{c as f,i as h};

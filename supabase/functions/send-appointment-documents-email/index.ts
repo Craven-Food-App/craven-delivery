@@ -187,7 +187,7 @@ serve(async (req: Request) => {
 
       // Send email directly using Resend (avoiding JWT validation issues with function-to-function calls)
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N HR <hr@craven.com>";
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n HR <hr@craven.com>";
       const companyWebsiteUrl = Deno.env.get('COMPANY_WEBSITE_URL') || 'https://cravenusa.com';
       
       // Build email content

@@ -52,7 +52,7 @@ export const LoyaltyDashboard = ({ userId }: LoyaltyDashboardProps) => {
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-2xl font-bold mb-1">Crave'N Rewards</h2>
+              <h2 className="text-2xl font-bold mb-1">Crave'n Rewards</h2>
               <p className="text-sm opacity-90">Earn points with every order!</p>
             </div>
             <Crown className="h-12 w-12 opacity-50" />

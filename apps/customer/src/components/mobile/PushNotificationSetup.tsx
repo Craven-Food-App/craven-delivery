@@ -565,7 +565,7 @@ export const PushNotificationSetup: React.FC = () => {
                     {/iPad|iPhone|iPod/.test(navigator.userAgent) ? (
                       <>
                         iOS Safari has limited push notification support. For the best experience, 
-                        install the Crave'N app from the App Store or use "Add to Home Screen" 
+                        install the Crave'n app from the App Store or use "Add to Home Screen" 
                         for enhanced notifications.
                       </>
                     ) : (

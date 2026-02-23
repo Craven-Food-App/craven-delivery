@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   appId: 'com.craven.delivery.customer',
 
   // App display name (what users see on the home screen in many contexts)
-  appName: "Crave'N Delivery",
+  appName: "Crave'n Delivery",
 
   // Your web build output folder.
   // If you use Vite, this is usually "dist".

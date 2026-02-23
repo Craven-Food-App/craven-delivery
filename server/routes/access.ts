@@ -19,7 +19,7 @@ r.post('/portal-email', async (req, res) => {
 
     const html = `
       <div style="font-family:Arial,sans-serif;color:#111">
-        <h2 style="color:#ff7a45;margin:0 0 8px">Crave'N Portal Access</h2>
+        <h2 style="color:#ff7a45;margin:0 0 8px">Crave'n Portal Access</h2>
         <p>Hi ${employee_name},</p>
         <p>Your company portal access details are below:</p>
         <ul>
@@ -29,11 +29,11 @@ r.post('/portal-email', async (req, res) => {
           <li><strong>Portals:</strong> ${portals.length ? portals.join(', ') : 'None assigned yet'}</li>
         </ul>
         <p>Please sign in with your company email and your password, then enter your PIN at the Hub.</p>
-        <p>— Crave'N IT</p>
+        <p>— Crave'n IT</p>
       </div>
     `;
 
-    await sendDocEmail(employee_email, "Crave'N Portal Access", html);
+    await sendDocEmail(employee_email, "Crave'n Portal Access", html);
 
     res.json({ ok: true });
   } catch (e: any) {

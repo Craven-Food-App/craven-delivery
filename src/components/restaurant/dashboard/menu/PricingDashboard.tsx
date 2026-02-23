@@ -161,7 +161,7 @@ const PricingDashboard = () => {
               <div>
                 <h4 className="font-semibold mb-2">Higher visibility</h4>
                 <p className="text-sm text-muted-foreground">
-                  Research shows that stores that are priced the same or lower prices on Crave'N than in-store may be surfaced higher on the homepage and are more easily discovered by customers.
+                  Research shows that stores that are priced the same or lower prices on Crave'n than in-store may be surfaced higher on the homepage and are more easily discovered by customers.
                 </p>
               </div>
             </div>
@@ -173,7 +173,7 @@ const PricingDashboard = () => {
               <div>
                 <h4 className="font-semibold mb-2">More repeat orders</h4>
                 <p className="text-sm text-muted-foreground">
-                  Customers are 3x more likely to place when they see higher prices all Crave'N than in-store.
+                  Customers are 3x more likely to place when they see higher prices all Crave'n than in-store.
                 </p>
               </div>
             </div>

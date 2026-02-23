@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Determine if equity should be included
     const hasEquity = isCLevel && equity !== undefined && equity > 0;
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
     // Use the production domain for executive signatures
     const appUrl = 'https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com';
     const signUrl = signatureToken ? `${appUrl}/executive-sign?token=${signatureToken}` : '';
@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
           ${equity}% Equity Stake
         </p>
         <p style="margin: 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
-          As part of your compensation package, you will receive a ${equity}% equity stake in Crave'N Delivery. 
+          As part of your compensation package, you will receive a ${equity}% equity stake in Crave'n Delivery. 
           Details regarding vesting schedule and share allocation will be provided in your formal equity agreement.
         </p>
       </div>
@@ -111,7 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: fromEmail,
       to: [employeeEmail],
-      subject: `🎯 ${isCLevel ? 'Executive ' : ''}Offer Letter - ${position} at Crave'N Delivery`,
+      subject: `🎯 ${isCLevel ? 'Executive ' : ''}Offer Letter - ${position} at Crave'n Delivery`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -137,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
                         <p style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 18px; font-weight: 600;">Dear ${employeeName},</p>
                         
                         <p style="margin: 0 0 25px 0; color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-                          We are pleased to offer you the position of <strong style="color: #ff6b00;">${position}</strong> in our <strong>${department}</strong> department at Crave'N Delivery, effective ${new Date(startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
+                          We are pleased to offer you the position of <strong style="color: #ff6b00;">${position}</strong> in our <strong>${department}</strong> department at Crave'n Delivery, effective ${new Date(startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
                         </p>
 
                         <div style="background-color: #f9f9f9; border-left: 4px solid #ff6b00; padding: 25px; margin: 30px 0;">
@@ -187,11 +187,11 @@ const handler = async (req: Request): Promise<Response> => {
                         <p style="margin: 5px 0 0 0; color: #4a4a4a; font-size: 15px;">${reportingTo}</p>
 
                         <p style="margin: 40px 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.8;">
-                          We look forward to welcoming you to the Crave'N Delivery team!
+                          We look forward to welcoming you to the Crave'n Delivery team!
                         </p>
 
                         <p style="margin: 0; color: #1a1a1a; font-size: 16px;">Best regards,</p>
-                        <p style="margin: 0; color: #1a1a1a; font-size: 16px; font-weight: 600;">Crave'N Delivery HR Team</p>
+                        <p style="margin: 0; color: #1a1a1a; font-size: 16px; font-weight: 600;">Crave'n Delivery HR Team</p>
                       </td>
                     </tr>
                     
@@ -200,7 +200,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                         <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Welcome to the Team! 🚀</p>
                         <p style="margin: 0; color: #898989; font-size: 12px;">
-                          © ${new Date().getFullYear()} Crave'N Delivery. All rights reserved.
+                          © ${new Date().getFullYear()} Crave'n Delivery. All rights reserved.
                         </p>
                       </td>
                     </tr>
@@ -222,7 +222,7 @@ const handler = async (req: Request): Promise<Response> => {
         recipient_email: employeeEmail,
         recipient_name: employeeName,
         email_type: 'offer_letter',
-        subject: `🎯 ${isCLevel ? 'Executive ' : ''}Offer Letter - ${position} at Crave'N Delivery`,
+        subject: `🎯 ${isCLevel ? 'Executive ' : ''}Offer Letter - ${position} at Crave'n Delivery`,
         from_email: fromEmail,
         resend_email_id: resendId,
         status: 'sent',

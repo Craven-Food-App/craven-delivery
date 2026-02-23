@@ -21,9 +21,11 @@ function getSharedUserLocation(cb: (loc: { lat: number; lng: number } | null) =>
       },
       (error) => {
         // Denied / unavailable — resolve all waiters with null
-        // Only log if not a user denial (error.code !== 1)
-        if (error.code !== 1) {
-          console.warn('Location access unavailable:', error.message || 'Unknown error');
+        // Only log if not a user denial (error.code !== 1). Network/403 from provider is common on HTTP or restricted domains.
+        if (error.code !== 1 && import.meta.env.DEV) {
+          const msg = error.message || 'Unknown error';
+          const short = msg.includes('403') || msg.includes('network') ? 'Location from network unavailable (e.g. HTTP or domain restriction).' : msg;
+          console.warn('Location access unavailable:', short);
         }
         _geoCallbacks.forEach((fn) => fn(null));
         _geoCallbacks = [];
@@ -164,22 +166,26 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by delivery radius if user location is available
+      // Filter by delivery radius: only show merchants to customers within the merchant's set radius.
+      // Normal default is 30 miles; merchants can set a custom radius in the portal (e.g. > 30) if they deliver farther.
+      const DEFAULT_DELIVERY_RADIUS_MILES = 30;
       if (userLocation && filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          if (!restaurant.latitude || !restaurant.longitude || !restaurant.delivery_radius_miles) {
+          if (!restaurant.latitude || !restaurant.longitude) {
             return true; // Include restaurants without location data
           }
+          const radiusMiles = restaurant.delivery_radius_miles != null
+            ? Number(restaurant.delivery_radius_miles)
+            : DEFAULT_DELIVERY_RADIUS_MILES;
 
-          // Calculate distance using Haversine formula
           const distance = calculateDistance(
-            userLocation.lat, 
-            userLocation.lng, 
-            restaurant.latitude, 
+            userLocation.lat,
+            userLocation.lng,
+            restaurant.latitude,
             restaurant.longitude
           );
-          
-          return distance <= restaurant.delivery_radius_miles;
+
+          return distance <= radiusMiles;
         });
       }
 

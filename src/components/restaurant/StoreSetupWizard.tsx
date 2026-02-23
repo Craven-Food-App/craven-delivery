@@ -325,12 +325,16 @@ export default function StoreSetupWizard({ onComplete, onCancel }: StoreSetupWiz
                 id="delivery-radius"
                 type="number"
                 value={storeData.delivery_radius_miles}
-                onChange={(e) => setStoreData({ ...storeData, delivery_radius_miles: parseInt(e.target.value) })}
-                min="1"
-                max="50"
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  const clamped = Number.isNaN(v) ? 5 : Math.min(50, Math.max(1, v));
+                  setStoreData({ ...storeData, delivery_radius_miles: clamped });
+                }}
+                min={1}
+                max={50}
               />
               <p className="text-sm text-gray-500 mt-1">
-                Set the maximum distance you'll deliver to from this location
+                Normal area is up to 30 miles. Set a custom radius (up to 50) if you deliver farther.
               </p>
             </div>
 

@@ -1,12 +1,12 @@
 import cravenPinIcon from '@/assets/feeder_nav_button_compressed.png';
 
 /**
- * The resolved URL to the Crave'N gold compass pin icon — for use in dynamic DOM elements.
+ * The resolved URL to the Crave'n gold compass pin icon — for use in dynamic DOM elements.
  */
 export const CRAVEN_PIN_URL: string = cravenPinIcon;
 
 /**
- * Creates a branded Crave'N map-marker DOM element using the gold compass pin.
+ * Creates a branded Crave'n map-marker DOM element using the gold compass pin.
  *
  * @param size  Pixel width/height of the marker (default 36)
  * @param label Optional tooltip-style label shown on hover

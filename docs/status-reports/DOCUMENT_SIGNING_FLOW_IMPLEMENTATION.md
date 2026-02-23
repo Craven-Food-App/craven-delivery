@@ -16,7 +16,7 @@ Outbound notifications that support the signing flow (IBOE dispatch, executive d
 - `GOOGLE_WORKSPACE_SERVICE_ACCOUNT_EMAIL`
 - `GOOGLE_WORKSPACE_SERVICE_ACCOUNT_PRIVATE_KEY` (use the PEM value; escape newlines as `\n` when storing)
 - `GOOGLE_WORKSPACE_DELEGATED_USER` (workspace user that holds the send-as aliases)
-- `GOOGLE_WORKSPACE_DEFAULT_FROM` (fallback `From` header, e.g., `Crave'N HR <hr@craven.com>`)
+- `GOOGLE_WORKSPACE_DEFAULT_FROM` (fallback `From` header, e.g., `Crave'n HR <hr@craven.com>`)
 
 ### Optional Overrides
 - `GOOGLE_WORKSPACE_EXECUTIVE_FROM` (overrides the `From` header for executive document related emails)

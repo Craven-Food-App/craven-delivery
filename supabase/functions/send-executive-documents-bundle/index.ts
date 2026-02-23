@@ -38,7 +38,7 @@ serve(async (req: Request) => {
     console.log(`Sending ${documents.length} documents to ${executiveName} (${position}) at ${to}`);
 
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N HR <hr@craven.com>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n HR <hr@craven.com>";
 
     // Group documents by signature requirement
     const signatureDocs = documents.filter(d => d.requiresSignature);
@@ -87,7 +87,7 @@ serve(async (req: Request) => {
                     <!-- Header with Orange Banner -->
                     <tr>
                       <td style="background: linear-gradient(135deg, #ff7a45 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 Welcome to Crave'N!</h1>
+                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 Welcome to Crave'n!</h1>
                         <p style="margin: 10px 0 0 0; color: #fff; font-size: 18px; opacity: 0.95;">Your Executive Documents Package</p>
                       </td>
                     </tr>

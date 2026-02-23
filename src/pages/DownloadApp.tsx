@@ -16,9 +16,9 @@ export const DownloadApp = () => {
         {/* Hero */}
         <div className="text-center space-y-4 py-8">
           <div className="w-24 h-24 mx-auto bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl flex items-center justify-center shadow-2xl">
-            <img src="/craven-logo.png" alt="Crave'N" className="w-20 h-20 rounded-2xl" />
+            <img src="/craven-logo.png" alt="Crave'n" className="w-20 h-20 rounded-2xl" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900">Get the Crave'N App</h1>
+          <h1 className="text-4xl font-bold text-gray-900">Get the Crave'n App</h1>
           <p className="text-lg text-gray-600">
             Install our app for the best food delivery experience
           </p>
@@ -134,7 +134,7 @@ export const DownloadApp = () => {
                   <div>
                     <p className="font-semibold mb-2">Confirm & Launch</p>
                     <p className="text-sm text-white/90">
-                      Tap "Add" in the top right, then find Crave'N icon on your home screen!
+                      Tap "Add" in the top right, then find Crave'n icon on your home screen!
                     </p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export const DownloadApp = () => {
 
               <div className="pt-4 text-center border-t border-white/20">
                 <p className="text-white/90 text-sm mb-4">
-                  🎉 That's it! Open Crave'N from your home screen like any other app
+                  🎉 That's it! Open Crave'n from your home screen like any other app
                 </p>
               </div>
             </CardContent>
@@ -166,7 +166,7 @@ export const DownloadApp = () => {
                   <div>
                     <p className="font-semibold mb-2">Look for the Install Prompt</p>
                     <p className="text-sm text-white/90">
-                      A banner should appear at the bottom asking to "Add Crave'N to Home screen"
+                      A banner should appear at the bottom asking to "Add Crave'n to Home screen"
                     </p>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export const DownloadApp = () => {
 
               <div className="pt-4 text-center border-t border-white/20">
                 <p className="text-white/90 text-sm">
-                  🎉 Find the Crave'N icon on your home screen!
+                  🎉 Find the Crave'n icon on your home screen!
                 </p>
               </div>
             </CardContent>
@@ -202,11 +202,11 @@ export const DownloadApp = () => {
               <Chrome className="h-16 w-16 mx-auto text-gray-400" />
               <h2 className="text-2xl font-bold">Desktop Installation</h2>
               <p className="text-gray-600">
-                While you're on desktop, you can still install Crave'N for quick access!
+                While you're on desktop, you can still install Crave'n for quick access!
               </p>
               <div className="text-left max-w-md mx-auto space-y-2 text-sm">
                 <p>• Look for an install icon <Smartphone className="inline h-4 w-4" /> in your browser's address bar</p>
-                <p>• Or check your browser menu for "Install Crave'N" option</p>
+                <p>• Or check your browser menu for "Install Crave'n" option</p>
                 <p>• For best mobile experience, open this page on your phone!</p>
               </div>
             </CardContent>

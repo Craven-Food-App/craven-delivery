@@ -229,7 +229,7 @@ const AdminGuide = () => {
           <Shield className="h-16 w-16 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-center mb-4">Admin Documentation</h1>
           <p className="text-xl text-center opacity-90 max-w-3xl mx-auto">
-            Complete guide to managing the Crave'N platform
+            Complete guide to managing the Crave'n platform
           </p>
         </div>
       </div>

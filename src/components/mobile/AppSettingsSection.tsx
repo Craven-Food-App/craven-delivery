@@ -54,7 +54,7 @@ export const AppSettingsSection: React.FC<AppSettingsSectionProps> = ({ onBack }
   };
 
   const navigationOptions = [
-    { value: 'mapbox', label: "Crave'N Navigation (In-App)" },
+    { value: 'mapbox', label: "Crave'n Navigation (In-App)" },
     { value: 'google', label: 'Google Maps' },
     ...(/iPad|iPhone|iPod/.test(navigator.userAgent) ? [{ value: 'apple', label: 'Apple Maps' }] : []),
     ...(/Android/.test(navigator.userAgent) ? [{ value: 'waze', label: 'Waze' }] : []),

@@ -25,7 +25,7 @@ This document is based on:
 
 **Visible Links on Main Site:**
 ```
-Logo (Crave'N) → /
+Logo (Crave'n) → /
 
 Navigation Bar:
 ├─ Restaurants → /restaurants (if feature flag enabled)

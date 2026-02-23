@@ -1,6 +1,6 @@
 {
 	"appId": "com.craven.delivery.feeder",
-	"appName": "Crave'N Feeder",
+	"appName": "Crave'n Feeder",
 	"webDir": "dist",
 	"android": {
 		"allowMixedContent": true,

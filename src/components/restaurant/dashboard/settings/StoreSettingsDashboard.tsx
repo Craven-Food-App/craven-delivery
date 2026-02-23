@@ -499,7 +499,7 @@ const StoreSettingsDashboard = () => {
                         <p className="text-sm">{storeDescription}</p>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Write a short description of your store for customers to read on your Crave'N store page
+                          Write a short description of your store for customers to read on your Crave'n store page
                         </p>
                       )}
                     </div>
@@ -532,7 +532,7 @@ const StoreSettingsDashboard = () => {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-2">Brand assets</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Showcase your brand on Crave'N by adding photos.
+                Showcase your brand on Crave'n by adding photos.
               </p>
 
               <div className="space-y-4">
@@ -665,7 +665,7 @@ const StoreSettingsDashboard = () => {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-2">Instagram account</h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Connect your Instagram account to feature content directly on Crave'N.
+                Connect your Instagram account to feature content directly on Crave'n.
               </p>
 
               {!instagramHandle || isEditingInstagram ? (

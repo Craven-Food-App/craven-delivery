@@ -891,7 +891,7 @@ const InvoicePreviewInline: React.FC<{ invoice: Invoice; onClose: () => void }> 
       </style></head><body>
         <div class="header">
           <div>
-            <div class="company">Crave'N Delivery</div>
+            <div class="company">Crave'n Delivery</div>
             <div style="color:#868e96;font-size:13px">Financial Operations</div>
           </div>
           <div style="text-align:right">
@@ -935,7 +935,7 @@ const InvoicePreviewInline: React.FC<{ invoice: Invoice; onClose: () => void }> 
     <Stack gap="md">
       <Group justify="space-between">
         <div>
-          <Text fw={700} size="lg">Crave'N Delivery</Text>
+          <Text fw={700} size="lg">Crave'n Delivery</Text>
           <Text size="xs" c="dimmed">Financial Operations</Text>
         </div>
         <div style={{ textAlign: 'right' }}>

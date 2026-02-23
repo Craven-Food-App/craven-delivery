@@ -1,0 +1,1 @@
+import{a3 as o}from"./index-h_AmERuv.js";const e=[["path",{d:"M7 8l-4 4l4 4",key:"svg-0"}],["path",{d:"M17 8l4 4l-4 4",key:"svg-1"}],["path",{d:"M14 4l-4 16",key:"svg-2"}]],a=o("outline","code","Code",e);export{a as I};

@@ -59,7 +59,7 @@ export const IOSNotificationBanner: React.FC<IOSNotificationBannerProps> = ({
             <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <img 
                 src="/craven-logo.png" 
-                alt="Crave'N" 
+                alt="Crave'n" 
                 className="w-6 h-6 rounded-md"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;

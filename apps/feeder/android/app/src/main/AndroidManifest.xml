@@ -39,7 +39,7 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
 
-        <!-- FCM default notification color (Crave'N Orange) -->
+        <!-- FCM default notification color (Crave'n Orange) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/craven_orange" />

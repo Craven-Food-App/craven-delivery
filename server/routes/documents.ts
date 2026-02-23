@@ -170,13 +170,13 @@ function buildDriverICAHtml(input: { driver_name: string; signed_at?: string }) 
       </head>
       <body>
         <h1>Independent Contractor Agreement (Receipt)</h1>
-        <div class="muted">This document confirms your acceptance of the Independent Contractor Agreement with Crave'N.</div>
+        <div class="muted">This document confirms your acceptance of the Independent Contractor Agreement with Crave'n.</div>
         <div class="card">
           <div><strong>Contractor:</strong> ${input.driver_name}</div>
           <div><strong>Signed At:</strong> ${dateStr}</div>
         </div>
         <div class="section-title">Summary</div>
-        <p class="muted">You agreed to the Crave'N Independent Contractor terms including relationship, compensation, compliance with applicable law, and confidentiality. Keep this receipt for your records.</p>
+        <p class="muted">You agreed to the Crave'n Independent Contractor terms including relationship, compensation, compliance with applicable law, and confidentiality. Keep this receipt for your records.</p>
       </body>
     </html>
   `;
@@ -203,8 +203,8 @@ r.post("/driver/ica-email", async (req: Request, res: Response) => {
     // Email the driver the attachment and a link
     await sendDocEmail(
       driver_email,
-      "Your Crave'N Contractor Agreement Receipt",
-      `Hello ${driver_name},<br/><br/>Attached is your agreement receipt. You can also access it here: <a href="${file_url}">${file_url}</a>.<br/><br/>Welcome to Crave'N!`,
+      "Your Crave'n Contractor Agreement Receipt",
+      `Hello ${driver_name},<br/><br/>Attached is your agreement receipt. You can also access it here: <a href="${file_url}">${file_url}</a>.<br/><br/>Welcome to Crave'n!`,
       { filename: "Craven-ICA.pdf", content: pdf }
     );
 

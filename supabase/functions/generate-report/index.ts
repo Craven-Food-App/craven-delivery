@@ -126,7 +126,7 @@ serve(async (req: Request) => {
 
       if (restaurant?.email) {
         await resend.emails.send({
-          from: Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <reports@craven.com>",
+          from: Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <reports@craven.com>",
           to: [restaurant.email],
           subject: `Your ${report.name} report is ready`,
           html: `

@@ -63,14 +63,14 @@ serve(async (req) => {
     await resend.emails.send({
       from: Deno.env.get('RESEND_FROM_EMAIL') || 'Crave\'N <onboarding@resend.dev>',
       to: [email],
-      subject: `You've been invited to join ${restaurant.name} on Crave'N`,
+      subject: `You've been invited to join ${restaurant.name} on Crave'n`,
       html: `
         <h1>You've been invited!</h1>
         <p>Hi ${firstName || 'there'},</p>
-        <p>You've been invited to join <strong>${restaurant.name}</strong> on Crave'N as a ${role}.</p>
+        <p>You've been invited to join <strong>${restaurant.name}</strong> on Crave'n as a ${role}.</p>
         <p>Click the link below to accept your invitation:</p>
         <a href="${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${invitation.id}&type=invite">Accept Invitation</a>
-        <p>Best regards,<br>The Crave'N Team</p>
+        <p>Best regards,<br>The Crave'n Team</p>
       `,
     })
 

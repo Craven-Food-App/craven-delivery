@@ -22,12 +22,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending restaurant welcome email to ${ownerEmail} for ${restaurantName}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
       to: [ownerEmail],
-      subject: "Welcome to your Crave'N Merchant Portal",
+      subject: "Welcome to your Crave'n Merchant Portal",
       html: `
         <!DOCTYPE html>
         <html>
@@ -48,7 +48,7 @@ const handler = async (req: Request): Promise<Response> => {
               <tr>
                 <td style="padding: 0 24px;">
                   <h1 style="margin: 0 0 24px 0; color: #191919; font-size: 32px; font-weight: 600; line-height: 1.2;">
-                    Welcome to your Crave'N<br/>Merchant Portal
+                    Welcome to your Crave'n<br/>Merchant Portal
                   </h1>
                 </td>
               </tr>
@@ -169,7 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </table>
                   
                   <p style="margin: 0 0 8px 0; color: #5b5b5b; font-size: 11px; line-height: 1.4;">
-                    ©2025 Crave'N Inc.<br/>
+                    ©2025 Crave'n Inc.<br/>
                     303 2nd Street, Suite 800<br/>
                     San Francisco, CA, 94107
                   </p>
@@ -184,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </p>
                   
                   <p style="margin: 16px 0 0 0; color: #5b5b5b; font-size: 10px; line-height: 1.4;">
-                    You are receiving this email because you signed up with your email address (${ownerEmail}) for a product or service offered by Crave'N. If you believe you received this email in error, or if you'd like to stop receiving emails from Crave'N, you can unsubscribe at any time. Please note that if you unsubscribe, you will no longer receive any communications from Crave'N, including important product updates.
+                    You are receiving this email because you signed up with your email address (${ownerEmail}) for a product or service offered by Crave'n. If you believe you received this email in error, or if you'd like to stop receiving emails from Crave'n, you can unsubscribe at any time. Please note that if you unsubscribe, you will no longer receive any communications from Crave'n, including important product updates.
                   </p>
                 </td>
               </tr>

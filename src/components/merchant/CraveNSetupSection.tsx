@@ -75,7 +75,7 @@ export default function CraveNSetupSection({ labels, onAddStoreOrBusiness }: Cra
               letterSpacing: "-0.3px",
             }}
           >
-            Continue your Crave'N setup
+            Continue your Crave'n setup
           </h2>
           <p style={{ margin: 0, fontSize: 12.5, color: "#6b7280" }}>
             While our team prepares your {labels.entityLabel}, continue your setup to maximize sales.
@@ -124,7 +124,7 @@ export default function CraveNSetupSection({ labels, onAddStoreOrBusiness }: Cra
               Add another store or a new business
             </p>
             <p style={{ margin: 0, fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
-              Continue setting up your business on Crave'N by adding another store or business now.
+              Continue setting up your business on Crave'n by adding another store or business now.
             </p>
           </div>
 

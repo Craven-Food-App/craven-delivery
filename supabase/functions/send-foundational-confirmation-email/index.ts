@@ -81,7 +81,7 @@ serve(async (req) => {
 
     console.log(`Sending foundational confirmation email to ${contributorEmail}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <support@cravenusa.com>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <support@cravenusa.com>";
     const supportUrl = Deno.env.get("SUPPORT_URL") || "https://cravenusa.com/contact";
 
     // Fetch PDF attachments from the document URLs

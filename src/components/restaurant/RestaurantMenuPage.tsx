@@ -1935,7 +1935,7 @@ const RestaurantMenuPage = () => {
           if (navigator.share) {
             navigator.share({
               title: restaurant?.name,
-              text: `Check out ${restaurant?.name} on Crave'N`,
+              text: `Check out ${restaurant?.name} on Crave'n`,
               url: window.location.href
             });
           }
@@ -2017,7 +2017,7 @@ const RestaurantMenuPage = () => {
             {/* Center: Search */}
             <Box style={{ flex: 1, maxWidth: '672px', margin: '0 32px' }}>
               <TextInput
-                placeholder="Search Crave'N"
+                placeholder="Search Crave'n"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftSection={<IconSearch size={20} style={{ color: 'var(--mantine-color-gray-5)' }} />}

@@ -168,7 +168,7 @@ export const BankingStep = ({ data, onUpdate, onNext, onBack, isValid }: Applica
           <div style={{ flex: 1 }}>
             <Text size="sm" fw={500} mb="xs">Background Check Authorization *</Text>
             <Text size="xs" c="dimmed">
-              I authorize Crave'N to obtain a consumer report and/or investigative consumer report for employment purposes. 
+              I authorize Crave'n to obtain a consumer report and/or investigative consumer report for employment purposes. 
               I understand this may include criminal history, motor vehicle records, and employment verification as permitted by law.
             </Text>
           </div>

@@ -30,7 +30,7 @@
 3. **Wait 3 seconds** - Install banner should slide up from bottom
 4. **OR** Navigate to **/download** to see full installation guide
 5. Follow the instructions to add to home screen
-6. Find Crave'N icon on home screen and tap to open
+6. Find Crave'n icon on home screen and tap to open
 7. App opens **full screen** without Safari bars! 🎉
 
 ### On Android:
@@ -70,7 +70,7 @@ Users think they're downloading an app from Safari, but they're actually:
 1. User lands on your site
    ↓
 2. After 3 seconds, beautiful banner slides up:
-   "Install Crave'N App - Get the full app experience"
+   "Install Crave'n App - Get the full app experience"
    ↓
 3. User taps "Install" button
    ↓

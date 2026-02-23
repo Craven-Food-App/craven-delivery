@@ -25,7 +25,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending driver ${isBackgroundCheckApproval ? 'background check approval' : isNewSignup ? 'new signup welcome' : 'welcome'} email to ${driverEmail}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     // Different email content based on type
     let subject: string;
@@ -34,9 +34,9 @@ const handler = async (req: Request): Promise<Response> => {
     let passwordSection = '';
 
     if (isNewSignup && presetPassword) {
-      subject = "🎉 Welcome to Crave'N! Your Account is Ready";
-      headerTitle = "Welcome to Crave'N!";
-      mainMessage = "Your account has been created successfully! You're now on the waitlist to become a Crave'N driver. 🚗✨";
+      subject = "🎉 Welcome to Crave'n! Your Account is Ready";
+      headerTitle = "Welcome to Crave'n!";
+      mainMessage = "Your account has been created successfully! You're now on the waitlist to become a Crave'n driver. 🚗✨";
       passwordSection = `
         <div style="background-color: #fff5ec; border: 2px solid #ff6b00; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
           <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 20px; font-weight: bold;">🔐 Your Login Credentials</h3>
@@ -55,13 +55,13 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
       `;
     } else if (isBackgroundCheckApproval) {
-      subject = "🎉 You're Cleared to Drive with Crave'N!";
+      subject = "🎉 You're Cleared to Drive with Crave'n!";
       headerTitle = "Background Check Complete!";
-      mainMessage = "Excellent news! Your background check has been completed and you're cleared to drive with Crave'N. 🚗✨";
+      mainMessage = "Excellent news! Your background check has been completed and you're cleared to drive with Crave'n. 🚗✨";
     } else {
       subject = "🎉 You're Approved! Complete Your Onboarding";
       headerTitle = "Congratulations!";
-      mainMessage = "Great news! Your application to become a Crave'N driver has been <strong>approved</strong>. Welcome to the team! 🚗🍔";
+      mainMessage = "Great news! Your application to become a Crave'n driver has been <strong>approved</strong>. Welcome to the team! 🚗🍔";
     }
 
     const emailResponse = await resend.emails.send({
@@ -149,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
                         
                         <p style="margin: 20px 0 0 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
                           Welcome aboard! 🧡<br>
-                          <strong>The Crave'N Team</strong>
+                          <strong>The Crave'n Team</strong>
                         </p>
                       </td>
                     </tr>
@@ -159,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                         <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Ready to Start Earning? 💰</p>
                         <p style="margin: 0; color: #898989; font-size: 12px;">
-                          © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                          © ${new Date().getFullYear()} Crave'n. All rights reserved.
                         </p>
                       </td>
                     </tr>

@@ -1,4 +1,4 @@
-# 🍽️ Crave'N Company Guide & Binder
+# 🍽️ Crave'n Company Guide & Binder
 
 **Version 1.0** | **Last Updated: January 2025**
 
@@ -28,7 +28,7 @@
 ## Company Overview
 
 ### Company Name
-**Crave'N** (also styled as "Crave'n")
+**Crave'n** (also styled as "Crave'n")
 
 ### Tagline
 **"Your Local Food Delivery Partner"**
@@ -59,7 +59,7 @@ To become the most trusted and beloved food delivery platform, known for excepti
 
 ## Company Description
 
-Crave'N is a next-generation food delivery company built on a simple principle: **when local businesses succeed, entire communities benefit**. We are redefining the delivery landscape by prioritizing fairness, transparency, and sustainable growth.
+Crave'n is a next-generation food delivery company built on a simple principle: **when local businesses succeed, entire communities benefit**. We are redefining the delivery landscape by prioritizing fairness, transparency, and sustainable growth.
 
 We were created with a mission to restore balance in an industry that often disadvantages small businesses. Our platform uses advanced logistics and modern technology to empower independent restaurants with the tools, insights, and operational support they need to compete at scale. We believe every neighborhood kitchen deserves the opportunity to thrive without sacrificing profits to excessive fees or restrictive practices.
 
@@ -69,7 +69,7 @@ Our commitment reaches far beyond convenience. We focus on:
 - Creating meaningful earning opportunities for drivers
 - Delivering an elevated customer experience centered on reliability, speed, accuracy, and trust
 
-Crave'N is not just delivering meals. We are reshaping the future of local commerce by championing equitable economics, community-driven innovation, and uncompromising service quality.
+Crave'n is not just delivering meals. We are reshaping the future of local commerce by championing equitable economics, community-driven innovation, and uncompromising service quality.
 
 ---
 
@@ -282,7 +282,7 @@ Professional delivery driver program offering flexible earning opportunities.
 
 ### vs. DoorDash, UberEats, Grubhub
 
-| Feature | Competitors | Crave'N |
+| Feature | Competitors | Crave'n |
 |---------|-------------|---------|
 | **Tier System** | ❌ No | ✅ Auto 5-tier |
 | **Custom Rates** | ❌ Manual | ✅ Automated |
@@ -304,7 +304,7 @@ Professional delivery driver program offering flexible earning opportunities.
 
 ## Company Culture
 
-### Life at Crave'N
+### Life at Crave'n
 We believe that great products come from great teams. Our culture is built on:
 - ✅ **Flexible work arrangements** - Work-life balance
 - ✅ **Comprehensive health benefits** - Full coverage
@@ -485,14 +485,14 @@ We're committed to reducing our environmental impact:
 
 **Document Version:** 1.0  
 **Last Updated:** January 2025  
-**Prepared For:** Crave'N Internal Use  
+**Prepared For:** Crave'n Internal Use  
 **Classification:** Internal Company Guide
 
 ---
 
-*This guide contains comprehensive information about Crave'N as a company. For detailed technical documentation, refer to specific system documentation files in the repository.*
+*This guide contains comprehensive information about Crave'n as a company. For detailed technical documentation, refer to specific system documentation files in the repository.*
 
-**© 2025 Crave'N. All Rights Reserved.**
+**© 2025 Crave'n. All Rights Reserved.**
 
 
 

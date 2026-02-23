@@ -277,7 +277,7 @@ const ContactUs = () => {
               </CardHeader>
               <CardContent>
                 <address className="not-italic text-muted-foreground">
-                  Crave'N Headquarters<br />
+                  Crave'n Headquarters<br />
                   Coming Soon<br />
                   United States
                 </address>

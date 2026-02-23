@@ -21,12 +21,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending customer welcome email to ${customerEmail}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
       to: [customerEmail],
-      subject: "🎉 Welcome to Crave'N!",
+      subject: "🎉 Welcome to Crave'n!",
       html: `
         <!DOCTYPE html>
         <html>
@@ -42,7 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Header with Orange Banner -->
                     <tr>
                       <td style="background: linear-gradient(135deg, #ff6b00 0%, #ff8c00 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 Welcome to Crave'N!</h1>
+                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">🎉 Welcome to Crave'n!</h1>
                       </td>
                     </tr>
                     
@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
                         <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Hi ${customerName}!</h2>
                         
                         <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                          We're thrilled to have you join the Crave'N family! Get ready to discover amazing local restaurants and enjoy fast, reliable delivery right to your door.
+                          We're thrilled to have you join the Crave'n family! Get ready to discover amazing local restaurants and enjoy fast, reliable delivery right to your door.
                         </p>
                         
                         <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                         <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Happy Ordering! 🍔🍕🌮</p>
                         <p style="margin: 0; color: #898989; font-size: 12px;">
-                          © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                          © ${new Date().getFullYear()} Crave'n. All rights reserved.
                         </p>
                       </td>
                     </tr>

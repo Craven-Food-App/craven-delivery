@@ -151,7 +151,7 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
           max_delivery_time: data.maxPrepTime,
           delivery_fee_cents: data.deliveryFeeCents,
           minimum_order_cents: data.minimumOrderCents,
-          delivery_radius_miles: data.deliveryRadius,
+          delivery_radius_miles: Math.min(30, data.deliveryRadius ?? 5),
           is_active: false, // Pending admin approval
           rating: 5.0,
         });
@@ -273,10 +273,10 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
               <Label htmlFor="terms" className="cursor-pointer">
                 <p className="font-medium">I accept the terms and conditions *</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  By submitting, you agree to Crave'N's{' '}
+                  By submitting, you agree to Crave'n's{' '}
                   <a href="/terms" className="text-primary hover:underline">Terms of Service</a>,{' '}
                   <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>, and{' '}
-                  Partnership Agreement. You understand that Crave'N will charge a commission on each order.
+                  Partnership Agreement. You understand that Crave'n will charge a commission on each order.
                 </p>
               </Label>
             </div>
@@ -291,7 +291,7 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-2">Merchant Partnership Agreement</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Before proceeding, please review and sign the Crave'N Merchant Partnership Agreement. 
+                    Before proceeding, please review and sign the Crave'n Merchant Partnership Agreement. 
                     This outlines the terms of our partnership including commission structure, payment terms, and responsibilities.
                   </p>
                   <Button onClick={() => setShowAgreement(true)} className="w-full sm:w-auto">
@@ -330,7 +330,7 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
 
                 <div>
                   <p className="mb-4">
-                    This Merchant Partnership Agreement ("Agreement") is entered into between Crave'N ("Platform") 
+                    This Merchant Partnership Agreement ("Agreement") is entered into between Crave'n ("Platform") 
                     and {data.legalBusinessName} ("Merchant") for the operation of delivery services.
                   </p>
                 </div>
@@ -419,7 +419,7 @@ export function ReviewStep({ data, onBack }: ReviewStepProps) {
                       }
                     />
                     <Label htmlFor="liability" className="text-sm cursor-pointer">
-                      I accept liability terms and agree to indemnify Crave'N
+                      I accept liability terms and agree to indemnify Crave'n
                     </Label>
                   </div>
                 </div>

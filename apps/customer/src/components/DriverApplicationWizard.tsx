@@ -329,7 +329,7 @@ export const DriverApplicationWizard = ({ onClose }: DriverApplicationWizardProp
           }}
         >
           <Group justify="space-between" style={{ maxWidth: 896, margin: '0 auto', padding: '0 16px' }}>
-            <Text fw={700} size="xl">Crave'N Driver Application</Text>
+            <Text fw={700} size="xl">Crave'n Driver Application</Text>
             <Button
               variant="subtle"
               size="sm"

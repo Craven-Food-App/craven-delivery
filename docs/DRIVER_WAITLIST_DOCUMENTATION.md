@@ -1,14 +1,14 @@
-# 🚗 Crave'N Driver Waitlist System
+# 🚗 Crave'n Driver Waitlist System
 
 ## Overview
 
-The Driver Waitlist System allows Crave'N to collect verified driver applications **before** launching in a market, while controlling costs by delaying background checks until routes are actually ready. Drivers complete a full, professional onboarding experience thinking they'll start immediately - only after submission do they learn they're on a waitlist.
+The Driver Waitlist System allows Crave'n to collect verified driver applications **before** launching in a market, while controlling costs by delaying background checks until routes are actually ready. Drivers complete a full, professional onboarding experience thinking they'll start immediately - only after submission do they learn they're on a waitlist.
 
 ---
 
 ## Key Benefits
 
-### For Crave'N:
+### For Crave'n:
 - **Cost Savings**: Save $30-40 per driver by deferring background checks until activation
 - **Geographic Control**: Launch city-by-city with pre-vetted driver pools
 - **Sales Leverage**: "We have 1,200 drivers ready in your area" when pitching restaurants
@@ -75,7 +75,7 @@ Estimated wait time: 2-8 weeks (we're growing fast!)
 ```
 
 **Confirmation Email Sent Automatically:**
-- Subject: "You're on the Crave'N Driver Waitlist! 🚗"
+- Subject: "You're on the Crave'n Driver Waitlist! 🚗"
 - Body: Same messaging as modal, includes position number and city
 - Call-to-action: Download customer app, follow on Instagram
 
@@ -98,18 +98,18 @@ Estimated wait time: 2-8 weeks (we're growing fast!)
 
 **Activation Email Sent:**
 ```
-Subject: 🎉 Crave'N is Launching in Toledo! Complete Your Activation
+Subject: 🎉 Crave'n is Launching in Toledo! Complete Your Activation
 
 Hi John,
 
-Great news! Crave'N is officially launching delivery routes in 
+Great news! Crave'n is officially launching delivery routes in 
 Toledo, OH and you're invited to be one of our first drivers.
 
 You applied 23 days ago and your spot is ready.
 
 To activate your account:
 1. Complete your background check (takes 3-5 business days)
-2. Download the Crave'N Driver app
+2. Download the Crave'n Driver app
 3. Start accepting deliveries immediately after approval
 
 [Button: Complete Background Check] → /driver/activate/:token
@@ -127,7 +127,7 @@ This invitation expires in 7 days. Don't miss your spot!
 ```
 Welcome Back, John! 🎉
 
-You're one step away from delivering with Crave'N in Toledo.
+You're one step away from delivering with Crave'n in Toledo.
 
 We already have your basic info. Just complete these final steps:
 ```
@@ -153,11 +153,11 @@ We already have your basic info. Just complete these final steps:
 - `status` → `'approved'`
 - `background_check` → `true`
 - `driver_profiles.status` → `'offline'` (ready to go online)
-- Email: "🎉 You're Approved! Start Driving with Crave'N"
+- Email: "🎉 You're Approved! Start Driving with Crave'n"
 
 **If Failed:**
 - `status` → `'rejected'`
-- Email: "Update on Your Crave'N Driver Application" (with dispute info)
+- Email: "Update on Your Crave'n Driver Application" (with dispute info)
 
 ---
 
@@ -304,7 +304,7 @@ EXECUTE FUNCTION calculate_waitlist_position();
 
 **Step 3: Customize Email**
 - Pre-filled template (editable)
-- Subject line: "🎉 Crave'N is Launching in [City]!"
+- Subject line: "🎉 Crave'n is Launching in [City]!"
 - Body includes activation link
 - Preview mode
 
@@ -579,14 +579,14 @@ A: Yes, use the "Override Background Check" option in the driver detail drawer (
 
 The Driver Waitlist System transforms driver acquisition from a reactive process ("hire drivers after restaurants sign up") to a proactive asset ("we already have drivers, let's sign restaurants"). 
 
-The key insight: **Make drivers feel like they're joining something exclusive, not just filling out a form.** The waitlist creates FOMO (fear of missing out) and urgency, which is exactly what Crave'N needs to build momentum before official launch.
+The key insight: **Make drivers feel like they're joining something exclusive, not just filling out a form.** The waitlist creates FOMO (fear of missing out) and urgency, which is exactly what Crave'n needs to build momentum before official launch.
 
-The admin controls ensure Crave'N never over-promises to drivers or under-delivers on driver availability to restaurants. It's a controlled, professional rollout system disguised as a standard application.
+The admin controls ensure Crave'n never over-promises to drivers or under-delivers on driver availability to restaurants. It's a controlled, professional rollout system disguised as a standard application.
 
 **Estimated ROI:** Save $20,000-30,000 in unnecessary background checks in first 90 days while building a 1,000+ driver pipeline.
 
 ---
 
 **Last Updated:** January 2025  
-**Maintained By:** Crave'N Engineering Team  
+**Maintained By:** Crave'n Engineering Team  
 **Version:** 1.0

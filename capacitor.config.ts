@@ -4,7 +4,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 // For customer app, use: npm run customer:sync (temporarily uses apps/customer/capacitor.config.ts)
 const config: CapacitorConfig = {
   appId: 'com.craven.delivery.feeder',
-  appName: "Crave'N Feeder",
+  appName: "Crave'n Feeder",
   webDir: 'dist',
 
   // COMMENT OUT OR REMOVE THIS SERVER SECTION for local development

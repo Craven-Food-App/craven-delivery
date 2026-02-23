@@ -1,5 +1,5 @@
 /**
- * Crave'N Feeder Tier System (Customer App)
+ * Crave'n Feeder Tier System (Customer App)
  * 5-tier hierarchy: Feeder → Gold → Platinum → Diamond → Ultimate
  * Rolling 60-day evaluation window
  */

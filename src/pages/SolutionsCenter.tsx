@@ -103,7 +103,7 @@ const SolutionsCenter = () => {
           </button>
           <h1 className="text-3xl font-bold mb-2">Solutions center</h1>
           <p className="text-muted-foreground">
-            Power your growth with these tools and offers from Crave'N today's most powerful apps
+            Power your growth with these tools and offers from Crave'n today's most powerful apps
           </p>
         </div>
       </div>
@@ -112,10 +112,10 @@ const SolutionsCenter = () => {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-12">
 
         {/* ═══════════════════════════════════════════
-            Crave'N Top Picks
+            Crave'n Top Picks
         ═══════════════════════════════════════════ */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Crave'N Top Picks</h2>
+          <h2 className="text-2xl font-bold mb-6">Crave'n Top Picks</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {/* Alcohol */}
             <Card className="overflow-hidden">
@@ -147,7 +147,7 @@ const SolutionsCenter = () => {
               <CardContent className="p-6">
                 <h3 className="font-bold text-lg mb-2">Advertise to Customers</h3>
                 <p className="text-sm mb-4 opacity-90">
-                  Stand out and attract new customers on Crave'N. You can add any ads with one of the profiles{" "}
+                  Stand out and attract new customers on Crave'n. You can add any ads with one of the profiles{" "}
                   <button
                     onClick={() => openInfoDialog("advertise", openAdModal)}
                     className="underline hover:opacity-80"
@@ -199,7 +199,7 @@ const SolutionsCenter = () => {
                 </div>
                 <h3 className="font-bold mb-2">Advertise to Customers</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Promote your store in the Crave'N app. Sponsored listings put you in front of new customers.{" "}
+                  Promote your store in the Crave'n app. Sponsored listings put you in front of new customers.{" "}
                   <button
                     onClick={() => openInfoDialog("campaign_types", openAdModal)}
                     className="text-primary underline hover:text-primary/80"
@@ -419,7 +419,7 @@ const SolutionsCenter = () => {
                 </div>
                 <h3 className="font-bold mb-2"><CraveMoreText /></h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  <CraveMoreText /> subscribers ordering on Crave'N have higher order frequency.{" "}
+                  <CraveMoreText /> subscribers ordering on Crave'n have higher order frequency.{" "}
                   <button
                     onClick={() => openInfoDialog("cravemore", () => openFeatureDialog("cravemore"))}
                     className="text-primary underline hover:text-primary/80"
@@ -473,7 +473,7 @@ const SolutionsCenter = () => {
         <section>
           <h2 className="text-2xl font-bold mb-2">Other Ways To Grow</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Explore additional tools from Crave'N to reach customers
+            Explore additional tools from Crave'n to reach customers
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>

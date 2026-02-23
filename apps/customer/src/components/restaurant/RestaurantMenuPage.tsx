@@ -340,7 +340,7 @@ const RestaurantMenuPage = () => {
 
   // New state for header and side menu
   const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('6759 Nebraska Ave');
+  const [location, setLocation] = useState('');
   const [showAddressSelector, setShowAddressSelector] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
@@ -526,6 +526,25 @@ const RestaurantMenuPage = () => {
     // Auto-hide side menu when entering restaurant page
     setIsMenuCompressed(true);
   }, [id]);
+
+  // Set location from customer's saved default address only (no hardcoded address)
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('delivery_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        const addr = data[0];
+        setLocation(`${addr.street_address}, ${addr.city}, ${addr.state} ${addr.zip_code}`);
+      }
+    };
+    loadDefaultAddress();
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -2170,7 +2189,7 @@ const RestaurantMenuPage = () => {
         onShare={async () => {
           const shareData = {
             title: restaurant?.name || 'Check out this restaurant',
-            text: `Check out ${restaurant?.name} on Crave'N`,
+            text: `Check out ${restaurant?.name} on Crave'n`,
             url: window.location.href,
           };
           if (navigator.share) {
@@ -2264,7 +2283,7 @@ const RestaurantMenuPage = () => {
             {/* Center: Search */}
             <Box style={{ flex: 1, maxWidth: '672px', margin: '0 32px' }}>
               <TextInput
-                placeholder="Search Crave'N"
+                placeholder="Search Crave'n"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftSection={<IconSearch size={20} style={{ color: 'var(--mantine-color-gray-5)' }} />}
@@ -2288,7 +2307,7 @@ const RestaurantMenuPage = () => {
                     rightSection={<IconChevronLeft size={16} style={{ transform: 'rotate(-90deg)' }} />}
                     onClick={() => setShowAddressSelector(!showAddressSelector)}
                   >
-                    <Text size="sm" fw={500} truncate style={{ maxWidth: '128px' }}>{location}</Text>
+                    <Text size="sm" fw={500} truncate style={{ maxWidth: '128px' }}>{location || 'Select delivery address'}</Text>
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>

@@ -227,11 +227,11 @@ export const CommissionSettingsManager: React.FC = () => {
               <div>
                 <strong>Revenue Split:</strong>
                 <div>Restaurant Gets: ${(25 - (25 * (restaurantCommission / 100))).toFixed(2)}</div>
-                <div>Crave'N Commission: ${(25 * (restaurantCommission / 100)).toFixed(2)}</div>
-                <div>Crave'N Service Fee: ${(25 * (serviceFeePct / 100)).toFixed(2)}</div>
-                <div>Crave'N Delivery Revenue: ${((deliveryFeeBase + (3 * deliveryFeePerMile)) / 100).toFixed(2)}</div>
+                <div>Crave'n Commission: ${(25 * (restaurantCommission / 100)).toFixed(2)}</div>
+                <div>Crave'n Service Fee: ${(25 * (serviceFeePct / 100)).toFixed(2)}</div>
+                <div>Crave'n Delivery Revenue: ${((deliveryFeeBase + (3 * deliveryFeePerMile)) / 100).toFixed(2)}</div>
                 <div className="font-bold text-green-600">
-                  Total Crave'N Revenue: ${((25 * (restaurantCommission / 100)) + (25 * (serviceFeePct / 100)) + ((deliveryFeeBase + (3 * deliveryFeePerMile)) / 100)).toFixed(2)}
+                  Total Crave'n Revenue: ${((25 * (restaurantCommission / 100)) + (25 * (serviceFeePct / 100)) + ((deliveryFeeBase + (3 * deliveryFeePerMile)) / 100)).toFixed(2)}
                 </div>
               </div>
             </div>

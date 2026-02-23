@@ -102,19 +102,19 @@ const PricingPlansDashboard = () => {
         <div>
           <h2 className="text-2xl font-bold mb-1">Pricing & Performance</h2>
           <p className="text-muted-foreground">
-            Crave'N operates on a flat, merchant-friendly commission. Growth and
+            Crave'n operates on a flat, merchant-friendly commission. Growth and
             reach are earned through performance, not higher fees.
           </p>
         </div>
 
         {/* ═══════════════════════════════════════════
-            Section 1 — Crave'N Base Commission
+            Section 1 — Crave'n Base Commission
         ═══════════════════════════════════════════ */}
         <Card>
           <CardContent className="p-6 space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <Lock className="w-5 h-5 text-muted-foreground" />
-              <h3 className="text-lg font-bold">Crave'N Base Commission</h3>
+              <h3 className="text-lg font-bold">Crave'n Base Commission</h3>
             </div>
 
             {/* Delivery */}
@@ -152,7 +152,7 @@ const PricingPlansDashboard = () => {
             <p className="text-xs text-muted-foreground pt-2">
               Payment processing fees (Stripe) apply to all transactions.
               Commission rate is locked and identical for every merchant on
-              Crave'N.
+              Crave'n.
             </p>
           </CardContent>
         </Card>
@@ -345,7 +345,7 @@ const PricingPlansDashboard = () => {
                 </div>
                 <h4 className="font-semibold">City Spotlight</h4>
                 <p className="text-sm text-muted-foreground">
-                  Featured on the Crave'N homepage for your entire city.
+                  Featured on the Crave'n homepage for your entire city.
                 </p>
                 <p className="text-lg font-bold">
                   $149

@@ -43,7 +43,7 @@ const FEATURE_CONFIG: Record<FeatureType, {
   instagram: {
     title: "Activate Instagram Ordering",
     description: "Connect your Instagram account to enable direct ordering from your social media profile.",
-    pricing: "Free — included with your Crave'N partnership",
+    pricing: "Free — included with your Crave'n partnership",
     steps: [
       "Connect your Instagram business account",
       "We'll sync your menu items automatically",
@@ -58,7 +58,7 @@ const FEATURE_CONFIG: Record<FeatureType, {
     pricing: "$49/month — commission-free direct orders",
     steps: [
       "Choose your brand colors and upload your logo",
-      "Your menu syncs automatically from Crave'N",
+      "Your menu syncs automatically from Crave'n",
       "Embed on your website or use a standalone page",
       "Start accepting commission-free orders immediately",
     ],
@@ -90,7 +90,7 @@ const FEATURE_CONFIG: Record<FeatureType, {
   },
   drive_on_demand: {
     title: "Activate Drive On-Demand",
-    description: "Use Crave'N's Feeder network to fulfill deliveries from any ordering channel.",
+    description: "Use Crave'n's Feeder network to fulfill deliveries from any ordering channel.",
     pricing: "Pay per delivery — $4.99-$8.99 depending on distance",
     steps: [
       "Add your external ordering channels (phone, website, etc.)",
@@ -103,11 +103,11 @@ const FEATURE_CONFIG: Record<FeatureType, {
   alcohol: {
     title: "Add Alcohol to Your Menu",
     description: "Expand your menu with alcoholic beverages. Average order value increases by 23%.",
-    pricing: "Free to enable — standard Crave'N commission applies",
+    pricing: "Free to enable — standard Crave'n commission applies",
     steps: [
       "Confirm your liquor license details",
       "Add alcohol items to your menu",
-      "Crave'N handles age verification at delivery",
+      "Crave'n handles age verification at delivery",
       "Start selling immediately after review (1-2 business days)",
     ],
     buttonLabel: "Enable Alcohol Sales",

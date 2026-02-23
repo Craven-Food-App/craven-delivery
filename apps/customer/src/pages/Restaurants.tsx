@@ -241,10 +241,19 @@ const RestaurantCard = ({
   );
 };
 
+// Legacy hardcoded address: treat as empty so URL/bookmarks don't keep using it
+const LEGACY_DEFAULT_ADDRESS = '6759 Nebraska Ave';
+function normalizeInitialLocation(urlLocation: string | null): string {
+  const s = (urlLocation || '').trim();
+  if (!s) return '';
+  if (s === LEGACY_DEFAULT_ADDRESS || s.startsWith(LEGACY_DEFAULT_ADDRESS + ',') || s.includes('6759 Nebraska Ave')) return '';
+  return s;
+}
+
 const Restaurants = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [location, setLocation] = useState(searchParams.get('location') || '6759 Nebraska Ave');
+  const [location, setLocation] = useState(normalizeInitialLocation(searchParams.get('location')));
   const [cuisineFilter, setCuisineFilter] = useState(searchParams.get('cuisine') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'rating');
   const [weeklyDeals, setWeeklyDeals] = useState<any[]>([]);
@@ -263,8 +272,8 @@ const Restaurants = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
   const [apparelCategoryFilter, setApparelCategoryFilter] = useState<string>('all'); // 'all', 'Apparel', 'Accessories', 'Shoes'
-  // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
+  // Neutral US center for map/distance only; no hardcoded delivery address
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 39.8283, lng: -98.5795 });
   
   // Mobile app states
   // Check cached auth state first to prevent flash
@@ -869,7 +878,16 @@ const Restaurants = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSavedAddresses(data || []);
+      const list = data || [];
+      setSavedAddresses(list);
+      // Set location from customer's default address only if they have one and location is not already set
+      if (list.length > 0) {
+        setLocation((prev) => {
+          if (prev) return prev;
+          const defaultAddr = list.find((a: any) => a.is_default) || list[0];
+          return `${defaultAddr.street_address}, ${defaultAddr.city}, ${defaultAddr.state} ${defaultAddr.zip_code}`;
+        });
+      }
     } catch (error) {
       console.error('Error fetching saved addresses:', error);
       setSavedAddresses([]);
@@ -1827,7 +1845,7 @@ const Restaurants = () => {
                 marginBottom: 'env(safe-area-inset-bottom, 0px)'
               }}
             >
-              By {isSignUp ? 'creating an account' : 'signing in'}, you agree to Crave'N's{' '}
+              By {isSignUp ? 'creating an account' : 'signing in'}, you agree to Crave'n's{' '}
               <Text
                 component="a"
                 href="/terms"
@@ -2924,7 +2942,7 @@ const Restaurants = () => {
               }}
             >
               <Text size="sm" fw={500} lineClamp={1} style={{ flex: 1, textAlign: 'left' }}>
-                {location}
+                {location || 'Select delivery address'}
               </Text>
             </Button>
             
@@ -2988,7 +3006,7 @@ const Restaurants = () => {
               <div className="relative">
                 <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <TextInput 
-                  placeholder="Search Crave'N" 
+                  placeholder="Search Crave'n" 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -3005,7 +3023,7 @@ const Restaurants = () => {
                   className="address-selector-button flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <IconMapPin className="w-4 h-4" />
-                  <span className="text-sm font-medium max-w-32 truncate">{location}</span>
+                  <span className="text-sm font-medium max-w-32 truncate">{location || 'Select delivery address'}</span>
                   <IconChevronRight className="w-4 h-4" />
                 </button>
                 

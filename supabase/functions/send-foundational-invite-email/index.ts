@@ -69,7 +69,7 @@ serve(async (req) => {
 
     console.log(`Sending foundational invite email to ${inviteeEmail}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <support@cravenusa.com>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <support@cravenusa.com>";
     const supportUrl = Deno.env.get("SUPPORT_URL") || "https://cravenusa.com/contact";
     const accessUrl = Deno.env.get("ACCESS_URL") || "https://cravenusa.com/access";
 

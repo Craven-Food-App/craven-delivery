@@ -194,7 +194,7 @@ export default function InvestorDemoPortal() {
             <p className="text-white font-semibold text-sm">Investor Demo Portal</p>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-            Welcome to Crave'N Platform
+            Welcome to Crave'n Platform
           </h1>
           {accessRecord.full_name && (
             <p className="text-xl text-slate-600 mb-2">
@@ -373,7 +373,7 @@ export default function InvestorDemoPortal() {
             </p>
             <hr className="my-4 border-slate-200" />
             <p className="text-xs text-slate-400">
-              Crave'N Inc. • Confidential • For Investor Use Only
+              Crave'n Inc. • Confidential • For Investor Use Only
             </p>
           </CardContent>
         </Card>

@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending approval email to ${driverEmail} for application ${applicationId}`);
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'N <onboarding@resend.dev>";
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "Crave'n <onboarding@resend.dev>";
 
     // Password section for email
     const passwordSection = presetPassword ? `
@@ -76,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: fromEmail,
       to: [driverEmail],
-      subject: "🎉 Your Crave'N Driver Application has been Approved!",
+      subject: "🎉 Your Crave'n Driver Application has been Approved!",
       html: `
         <!DOCTYPE html>
         <html>
@@ -99,10 +99,10 @@ const handler = async (req: Request): Promise<Response> => {
                     <!-- Main Content -->
                     <tr>
                       <td style="padding: 40px;">
-                        <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Welcome to the Crave'N Driver Team, ${driverName}!</h2>
+                        <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px;">Welcome to the Crave'n Driver Team, ${driverName}!</h2>
                         
                         <p style="margin: 0 0 20px 0; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
-                          We're excited to inform you that your driver application has been <strong style="color: #ff6b00;">approved</strong>! You're now ready to start delivering with Crave'N.
+                          We're excited to inform you that your driver application has been <strong style="color: #ff6b00;">approved</strong>! You're now ready to start delivering with Crave'n.
                         </p>
                         
                         ${passwordSection}
@@ -110,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
                         <div style="background-color: #fff5ec; border-left: 4px solid #ff6b00; padding: 20px; margin: 30px 0;">
                           <h3 style="margin: 0 0 15px 0; color: #ff6b00; font-size: 18px;">Next Steps:</h3>
                           <ol style="margin: 0; padding-left: 20px; color: #4a4a4a; font-size: 15px; line-height: 1.8;">
-                            <li>Log in to your Crave'N driver account</li>
+                            <li>Log in to your Crave'n driver account</li>
                             <li>Complete your profile setup if needed</li>
                             <li>Review the driver guidelines and safety protocols</li>
                             <li>Go online and start accepting delivery requests!</li>
@@ -125,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
                         </div>
                         
                         <div style="background-color: #f9f9f9; padding: 20px; border-radius: 6px; margin: 30px 0;">
-                          <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">📱 Download the Crave'N Driver App</h3>
+                          <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px;">📱 Download the Crave'n Driver App</h3>
                           <p style="margin: 0; color: #4a4a4a; font-size: 14px; line-height: 1.6;">
                             For the best experience, download our mobile app to manage deliveries on the go.
                           </p>
@@ -142,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
                       <td style="background-color: #f9f9f9; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e5e5;">
                         <p style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: bold;">Happy Delivering! 🚗💨</p>
                         <p style="margin: 0; color: #898989; font-size: 12px;">
-                          © ${new Date().getFullYear()} Crave'N. All rights reserved.
+                          © ${new Date().getFullYear()} Crave'n. All rights reserved.
                         </p>
                       </td>
                     </tr>

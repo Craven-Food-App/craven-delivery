@@ -206,7 +206,7 @@ const MostLovedDashboard = () => {
                 <AccordionItem value="item-4">
                   <AccordionTrigger>How do I see which stores I can travel to?</AccordionTrigger>
                   <AccordionContent>
-                    You can view all Most Loved stores in your area through the Crave'N app or website. Use the filters to see top-rated restaurants and those with the Most Loved badge.
+                    You can view all Most Loved stores in your area through the Crave'n app or website. Use the filters to see top-rated restaurants and those with the Most Loved badge.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

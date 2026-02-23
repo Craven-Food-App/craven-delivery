@@ -1058,7 +1058,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
                 Background Check Authorization
               </p>
               <p className="text-sm text-gray-700">
-                By proceeding, you authorize Crave'N to conduct a background check to verify your eligibility as a driver. This check may include:
+                By proceeding, you authorize Crave'n to conduct a background check to verify your eligibility as a driver. This check may include:
               </p>
               <ul className="text-sm text-gray-700 list-disc list-inside space-y-2 ml-4">
                 <li>Criminal history search</li>
@@ -1148,7 +1148,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
                 Facial Recognition and Image Collection Consent
               </p>
               <p className="text-sm text-gray-700">
-                Crave'N uses facial recognition technology to verify driver identity and ensure platform security. By agreeing below, you consent to:
+                Crave'n uses facial recognition technology to verify driver identity and ensure platform security. By agreeing below, you consent to:
               </p>
               <ul className="text-sm text-gray-700 list-disc list-inside space-y-2 ml-4">
                 <li>Collection and storage of facial recognition data from your profile photo</li>
@@ -1200,7 +1200,7 @@ export const PostWaitlistOnboarding: React.FC = () => {
                 Electronic Delivery of Tax Documents
               </p>
               <p className="text-sm text-gray-700">
-                Under federal regulations, Crave'N is required to provide you with Form 1099-NEC for tax reporting purposes. By consenting below, you agree to receive this form electronically:
+                Under federal regulations, Crave'n is required to provide you with Form 1099-NEC for tax reporting purposes. By consenting below, you agree to receive this form electronically:
               </p>
               <ul className="text-sm text-gray-700 list-disc list-inside space-y-2 ml-4">
                 <li>You will receive your 1099-NEC electronically via email or the portal</li>

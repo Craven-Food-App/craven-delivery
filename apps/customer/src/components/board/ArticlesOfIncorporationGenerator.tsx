@@ -124,7 +124,7 @@ const DEFAULT_BARCODE_META: BarcodeMeta = {
 };
 
 const DEFAULT_FORM_VALUES: ArticlesFormValues = {
-  entityName: "Crave'N Foods Holdings, Inc.",
+  entityName: "Crave'n Foods Holdings, Inc.",
   entityType: 'For-Profit Corporation',
   formationState: 'Ohio',
   principalAddressLine1: '123 Innovation Way',
