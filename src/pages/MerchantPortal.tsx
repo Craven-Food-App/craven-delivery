@@ -42,6 +42,7 @@ import {
   IconBoxMultiple,
   IconBarcode,
   IconTags,
+  IconLogout,
 } from "@tabler/icons-react";
 import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
 import { useRestaurantOnboarding } from "@/hooks/useRestaurantOnboarding";
@@ -136,6 +137,33 @@ const RestaurantSetup = () => {
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
   const isGrocery = merchantGroup === 'grocery';
 
+  // Tablet-first: lock to landscape only — request lock when portal loads, show overlay if portrait
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(orientation: portrait)').matches : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(orientation: portrait)');
+    const handler = () => setIsPortrait(mql.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  // Lock orientation to landscape when merchant portal is active (supported on Android Chrome, some PWAs)
+  useEffect(() => {
+    const orient = typeof screen !== 'undefined' && screen.orientation && typeof (screen.orientation as { lock?: (mode: string) => Promise<void> }).lock === 'function';
+    if (!orient) return;
+    (screen.orientation as { lock: (mode: string) => Promise<void> })
+      .lock('landscape')
+      .catch(() => { /* ignore: e.g. requires fullscreen or not allowed */ });
+    return () => {
+      try {
+        (screen.orientation as { unlock?: () => void }).unlock?.();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const fetchUserProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -221,8 +249,56 @@ const RestaurantSetup = () => {
     );
   }
 
+  // Portrait: show rotate-device overlay (merchant portal is landscape-only, tablet-first)
+  if (isPortrait) {
+    return (
+      <Box
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'var(--mantine-color-gray-0)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+          zIndex: 9999,
+        }}
+      >
+        <Box
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 16,
+            background: 'var(--mantine-color-orange-1)',
+            color: 'var(--mantine-color-orange-6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <IconDeviceTablet size={48} style={{ transform: 'rotate(-90deg)' }} />
+        </Box>
+        <Title order={2} ta="center" mb="xs">
+          Rotate your device
+        </Title>
+        <Text c="dimmed" ta="center" maw={320}>
+          The Merchant Portal is designed for tablet in landscape. Please rotate your device to continue.
+        </Text>
+      </Box>
+    );
+  }
+
   return (
-    <Box style={{ display: 'flex', height: '100vh' }}>
+    <Box
+      style={{
+        display: 'flex',
+        height: '100vh',
+        minWidth: 1024,
+        width: '100%',
+      }}
+    >
       {/* Left Sidebar */}
       <Box style={{ width: '256px', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', flexDirection: 'column' }}>
         {/* Logo */}
@@ -536,19 +612,63 @@ const RestaurantSetup = () => {
 
         {/* User Profile */}
         <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
-          <Button
-            variant="subtle"
-            fullWidth
-            justify="flex-start"
-            leftSection={
-              <Avatar size="sm" radius="xl" color="gray">
-                {(fullName ?? userName).charAt(0).toUpperCase()}
-              </Avatar>
-            }
-            rightSection={<IconChevronDown size={16} />}
-          >
-            {userName}
-          </Button>
+          <Menu width={224} position="top-end">
+            <Menu.Target>
+              <Button
+                variant="subtle"
+                fullWidth
+                justify="flex-start"
+                leftSection={
+                  <Avatar size="sm" radius="xl" color="gray">
+                    {(fullName ?? userName).charAt(0).toUpperCase()}
+                  </Avatar>
+                }
+                rightSection={<IconChevronDown size={16} />}
+              >
+                {userName}
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                component="a"
+                href="/legal/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                leftSection={<IconFileText size={16} />}
+              >
+                Privacy Policy
+              </Menu.Item>
+              <Menu.Item
+                component="a"
+                href="/legal/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                leftSection={<IconFileText size={16} />}
+              >
+                Terms of Service
+              </Menu.Item>
+              <Menu.Item
+                component="a"
+                href="/drive-on-demand-merchant-terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                leftSection={<IconFileText size={16} />}
+              >
+                Drive on demand terms
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                leftSection={<IconLogout size={16} />}
+                color="red"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  navigate('/restaurant/auth');
+                }}
+              >
+                Log out
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Box>
       </Box>
 
