@@ -55,10 +55,15 @@
     "cleanup:report": "tsx scripts/cleanup-codebase.ts",
     "git:push": "pwsh -File git-push.ps1",
     "push": "pwsh -File git-push.ps1",
-    "tablet:dev": "cd apps/tablet && npm run dev",
-    "tablet:build": "cd apps/tablet && npm run build",
-    "tablet:sync": "cd apps/tablet && npm run sync",
-    "tablet:open:android": "cd apps/tablet && npm run open:android"
+    "tablet:corporate:dev": "cd apps/tablet/corporate && npm run dev",
+    "tablet:corporate:build": "cd apps/tablet/corporate && npm run build",
+    "tablet:corporate:sync": "cd apps/tablet/corporate && npm run sync",
+    "tablet:corporate:open:android": "cd apps/tablet/corporate && npm run open:android",
+    "tablet:merchant:dev": "cd apps/tablet/merchant && npm run dev",
+    "tablet:merchant:build": "cd apps/tablet/merchant && npm run build",
+    "tablet:merchant:sync": "cd apps/tablet/merchant && npm run sync",
+    "tablet:merchant:open:android": "cd apps/tablet/merchant && npm run open:android",
+    "deploy:pos-functions": "npx supabase functions deploy pos-oauth-start --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy pos-oauth-callback --project-ref xaxbucnjlrfkccsfiddq"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.6",

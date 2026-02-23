@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
+import { POSIntegrationInstructions, type POSProvider } from "@/components/restaurant/dashboard/settings/POSIntegrationInstructions";
 
 const FontLoader = () => (
   <style>{`
@@ -689,10 +690,19 @@ function TabBank({ restaurant, loading: rLoading }: SettingsTabProps) {
 }
 
 // ── TAB: Integrations ─────────────────────────────────────────────────────────
-const INTEGRATION_OPTIONS = [
+const INTEGRATION_OPTIONS: Array<{
+  name: string;
+  desc: string;
+  color: string;
+  icon: string;
+  posOAuth?: boolean;
+  providerKey?: POSProvider;
+}> = [
   { name: "Google Business",  desc: "Sync your store info and hours to your Google listing.", color: "#4285F4", icon: "G" },
   { name: "Meta / Instagram", desc: "Enable product catalog sync to your Instagram shop.", color: "#E1306C", icon: "M" },
-  { name: "Square POS",       desc: "Connect Square to sync inventory and in-person sales.", color: "#006AFF", icon: "S" },
+  { name: "Square POS",       desc: "Connect Square to sync inventory and in-person sales.", color: "#006AFF", icon: "S", posOAuth: true, providerKey: "square" },
+  { name: "Toast",            desc: "Connect Toast POS to sync menu and orders.", color: "#D7262C", icon: "T", posOAuth: true, providerKey: "toast" },
+  { name: "Clover",           desc: "Connect Clover POS to sync menu and orders.", color: "#00B140", icon: "C", posOAuth: true, providerKey: "clover" },
   { name: "Mailchimp",        desc: "Export customer emails to your Mailchimp audience.", color: "#FFE01B", icon: "✉" },
   { name: "Zapier",           desc: "Automate workflows across 5,000+ apps.", color: "#FF4A00", icon: "Z" },
   { name: "Google Analytics", desc: "Track store visits and conversions in GA4.", color: "#F9AB00", icon: "A" },
@@ -700,6 +710,7 @@ const INTEGRATION_OPTIONS = [
 function TabIntegrations({ restaurant, loading: rLoading }: SettingsTabProps) {
   const [connected, setConnected] = useState<{ provider_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [oauthStarting, setOauthStarting] = useState<string | null>(null);
 
   useEffect(() => {
     if (!restaurant?.id) return;
@@ -708,10 +719,54 @@ function TabIntegrations({ restaurant, loading: rLoading }: SettingsTabProps) {
     }).finally(() => setLoading(false));
   }, [restaurant?.id]);
 
+  // Show success/error toast when returning from POS OAuth
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pos = params.get("pos");
+    const provider = params.get("provider");
+    const message = params.get("message");
+    if (pos === "connected" && provider) {
+      toast.success(`Successfully connected to ${provider === "square" ? "Square" : provider === "toast" ? "Toast" : "Clover"}`);
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    } else if (pos === "error" && message) {
+      toast.error("Connection failed. Please try again or contact support.");
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    }
+  }, []);
+
   const isConnected = (name: string) => connected.some(c => c.provider_name === name);
 
   const connect = async (name: string) => {
     if (!restaurant?.id) return;
+    const int = INTEGRATION_OPTIONS.find((o) => o.name === name);
+    if (int?.posOAuth && int.providerKey) {
+      setOauthStarting(name);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          toast.error("Please sign in to connect.");
+          return;
+        }
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xaxbucnjlrfkccsfiddq.supabase.co";
+        const res = await fetch(`${supabaseUrl}/functions/v1/pos-oauth-start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+          body: JSON.stringify({ provider: int.providerKey, restaurant_id: restaurant.id }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data.error || "Failed to start connection");
+          return;
+        }
+        if (data.url) window.location.href = data.url;
+        else toast.error("Invalid response from server");
+      } catch (e) {
+        toast.error("Failed to start connection");
+      } finally {
+        setOauthStarting(null);
+      }
+      return;
+    }
     try {
       const { error } = await supabase.from("restaurant_integrations").insert({ restaurant_id: restaurant.id, integration_type: "pos", provider_name: name, status: "connected" });
       if (error) throw error;
@@ -739,25 +794,46 @@ function TabIntegrations({ restaurant, loading: rLoading }: SettingsTabProps) {
   return (
     <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <SHead>Connected Apps</SHead>
+      <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+        Connect your point-of-sale (Square, Toast, Clover) for real sync. Follow the instructions for each to complete setup.
+      </p>
       {loading ? <p style={{ color: "#6b7280" }}>Loading…</p> : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {INTEGRATION_OPTIONS.map((int, i) => {
             const connected_ = isConnected(int.name);
+            const isPosOAuth = int.posOAuth && int.providerKey;
             return (
-              <div key={i} className="int-card" style={{ padding: "14px 16px", borderRadius: 10, border: "1.5px solid #f3f4f6", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: int.color + "18", border: `1.5px solid ${int.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: int.color, flexShrink: 0 }}>{int.icon}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{int.name}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: connected_ ? "#ecfdf5" : "#f9fafb", color: connected_ ? "#065f46" : "#9ca3af", border: `1px solid ${connected_ ? "#a7f3d0" : "#e5e7eb"}` }}>
-                      {connected_ ? "Connected" : "Not Connected"}
-                    </span>
+              <div key={i} className="int-card" style={{ padding: "14px 16px", borderRadius: 10, border: "1.5px solid #f3f4f6", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", gap: 12, alignItems: "stretch" }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 9, background: int.color + "18", border: `1.5px solid ${int.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: int.color, flexShrink: 0 }}>{int.icon}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{int.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: connected_ ? "#ecfdf5" : "#f9fafb", color: connected_ ? "#065f46" : "#9ca3af", border: `1px solid ${connected_ ? "#a7f3d0" : "#e5e7eb"}` }}>
+                        {connected_ ? "Connected" : "Not Connected"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.5 }}>{int.desc}</p>
                   </div>
-                  <p style={{ fontSize: 11.5, color: "#6b7280", lineHeight: 1.5 }}>{int.desc}</p>
-                  <button onClick={() => connected_ ? disconnect(int.name) : connect(int.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${connected_ ? "#e5e7eb" : "#fed7aa"}`, background: connected_ ? "#fff" : "#fff7ed", color: connected_ ? "#6b7280" : "#ea580c", cursor: "pointer", fontFamily: "inherit" }}>
+                </div>
+                {isPosOAuth ? (
+                  <POSIntegrationInstructions
+                    provider={int.providerKey!}
+                    isConnected={connected_}
+                    onConnect={() => connect(int.name)}
+                    onDisconnect={() => disconnect(int.name)}
+                    connectLabel={oauthStarting === int.name ? "Redirecting…" : "Connect"}
+                    connectDisabled={oauthStarting === int.name}
+                    compact
+                  />
+                ) : (
+                  <button
+                    onClick={() => connected_ ? disconnect(int.name) : connect(int.name)}
+                    style={{ marginTop: 0, fontSize: 11.5, fontWeight: 600, padding: "6px 12px", borderRadius: 6, border: `1px solid ${connected_ ? "#e5e7eb" : "#fed7aa"}`, background: connected_ ? "#fff" : "#fff7ed", color: connected_ ? "#6b7280" : "#ea580c", cursor: "pointer", fontFamily: "inherit", alignSelf: "flex-start" }}
+                  >
                     {connected_ ? "Disconnect" : "Connect"}
                   </button>
-                </div>
+                )}
               </div>
             );
           })}

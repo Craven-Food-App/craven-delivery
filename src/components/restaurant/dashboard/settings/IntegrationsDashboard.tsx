@@ -1,17 +1,25 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Check, X } from "lucide-react";
+import { ExternalLink, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { POSIntegrationInstructions, type POSProvider } from "@/components/restaurant/dashboard/settings/POSIntegrationInstructions";
+
+const POS_OAUTH_NAMES: Record<string, { providerKey: POSProvider; displayName: string }> = {
+  Square: { providerKey: "square", displayName: "Square POS" },
+  Toast: { providerKey: "toast", displayName: "Toast" },
+  Clover: { providerKey: "clover", displayName: "Clover" },
+};
 
 const IntegrationsDashboard = () => {
   const { toast } = useToast();
   const [restaurant, setRestaurant] = useState<any>(null);
   const [connectedIntegrations, setConnectedIntegrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [oauthStarting, setOauthStarting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -45,36 +53,79 @@ const IntegrationsDashboard = () => {
   };
 
   const isConnected = (providerName: string) => {
-    return connectedIntegrations.some(i => i.provider_name === providerName && i.status === 'connected');
+    const oauthInfo = POS_OAUTH_NAMES[providerName];
+    const namesToCheck = oauthInfo ? [oauthInfo.displayName, providerName] : [providerName];
+    return connectedIntegrations.some(
+      (i) => namesToCheck.includes(i.provider_name) && i.status === "connected"
+    );
+  };
+
+  const startPosOAuth = async (providerName: string) => {
+    const oauthInfo = POS_OAUTH_NAMES[providerName];
+    if (!oauthInfo || !restaurant) return;
+    setOauthStarting(providerName);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Please sign in to connect.", variant: "destructive" });
+        return;
+      }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xaxbucnjlrfkccsfiddq.supabase.co";
+      const res = await fetch(`${supabaseUrl}/functions/v1/pos-oauth-start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+        body: JSON.stringify({ provider: oauthInfo.providerKey, restaurant_id: restaurant.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Error", description: data.error || "Failed to start connection", variant: "destructive" });
+        return;
+      }
+      if (data.url) window.location.href = data.url;
+      else toast({ title: "Error", description: "Invalid response", variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to start connection", variant: "destructive" });
+    } finally {
+      setOauthStarting(null);
+    }
+  };
+
+  const disconnectIntegration = async (providerName: string) => {
+    if (!restaurant) return;
+    const oauthInfo = POS_OAUTH_NAMES[providerName];
+    const nameToDelete = oauthInfo ? oauthInfo.displayName : providerName;
+    try {
+      const { error } = await supabase
+        .from("restaurant_integrations")
+        .delete()
+        .eq("restaurant_id", restaurant.id)
+        .eq("provider_name", nameToDelete);
+      if (error) throw error;
+      toast({ title: "Success", description: "Disconnected" });
+      fetchData();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to disconnect", variant: "destructive" });
+    }
   };
 
   const connectIntegration = async (providerName: string) => {
+    if (POS_OAUTH_NAMES[providerName]) {
+      startPosOAuth(providerName);
+      return;
+    }
     try {
       if (!restaurant) return;
-
-      const { error } = await supabase
-        .from('restaurant_integrations')
-        .insert({
-          restaurant_id: restaurant.id,
-          integration_type: 'pos',
-          provider_name: providerName,
-          status: 'connected'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: `Connected to ${providerName}`,
+      const { error } = await supabase.from("restaurant_integrations").insert({
+        restaurant_id: restaurant.id,
+        integration_type: "pos",
+        provider_name: providerName,
+        status: "connected",
       });
+      if (error) throw error;
+      toast({ title: "Success", description: `Connected to ${providerName}` });
       fetchData();
     } catch (error) {
-      console.error('Error connecting integration:', error);
-      toast({
-        title: "Error",
-        description: "Failed to connect integration",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to connect integration", variant: "destructive" });
     }
   };
 
@@ -96,7 +147,7 @@ const IntegrationsDashboard = () => {
     { name: "Tabit", category: "Point of sale (POS) system", featured: false },
     { name: "Zytle", category: "Point of sale (POS) system", featured: false },
     { name: "Toast", category: "Point of sale (POS) system", featured: false },
-    { name: "Crave'N for WooCommerce", category: "Point of sale (POS) system", featured: false },
+    { name: "Crave'n for WooCommerce", category: "Point of sale (POS) system", featured: false },
     { name: "NCR", category: "Point of sale (POS) system", featured: false },
     { name: "Ordermark", category: "Point of sale (POS) system", featured: false },
     { name: "HungerRush", category: "Point of sale (POS) system", featured: false },
@@ -134,7 +185,7 @@ const IntegrationsDashboard = () => {
       <div>
         <h3 className="text-xl font-semibold mb-4">Point of sale (POS) system</h3>
         <p className="text-sm text-muted-foreground mb-6">
-          Crave'N users who use a POS integration point-of-sale solution, seamlessly send orders directly to your current experience and leveraging integrations.
+          Crave'n users who use a POS integration point-of-sale solution, seamlessly send orders directly to your current experience and leveraging integrations.
         </p>
 
         {/* Featured Integration */}
@@ -177,41 +228,50 @@ const IntegrationsDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {integrations.map((integration, index) => {
               const connected = isConnected(integration.name);
+              const posOAuth = POS_OAUTH_NAMES[integration.name];
               return (
                 <Card key={index} className={connected ? "border-green-500 bg-green-50" : ""}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
-                          <span className="text-lg">{integration.name.charAt(0)}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-sm">{integration.name}</h4>
-                            {connected && (
-                              <Badge variant="default" className="text-xs">
-                                <Check className="w-3 h-3 mr-1" />
-                                Connected
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">{integration.category}</p>
-                        </div>
+                    <div className="flex items-center gap-3 flex-1 mb-2">
+                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                        <span className="text-lg">{integration.name.charAt(0)}</span>
                       </div>
-                      {connected ? (
-                        <Button variant="ghost" size="sm">
-                          Disconnect
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => connectIntegration(integration.name)}
-                        >
-                          Connect
-                        </Button>
-                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-sm">{integration.name}</h4>
+                          {connected && (
+                            <Badge variant="default" className="text-xs">
+                              <Check className="w-3 h-3 mr-1" />
+                              Connected
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{integration.category}</p>
+                      </div>
                     </div>
+                    {posOAuth ? (
+                      <POSIntegrationInstructions
+                        provider={posOAuth.providerKey}
+                        isConnected={connected}
+                        onConnect={() => connectIntegration(integration.name)}
+                        onDisconnect={() => disconnectIntegration(integration.name)}
+                        connectLabel={oauthStarting === integration.name ? "Redirecting…" : "Connect"}
+                        connectDisabled={oauthStarting === integration.name}
+                        compact
+                      />
+                    ) : (
+                      <div className="flex justify-end">
+                        {connected ? (
+                          <Button variant="ghost" size="sm" onClick={() => disconnectIntegration(integration.name)}>
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => connectIntegration(integration.name)}>
+                            Connect
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
