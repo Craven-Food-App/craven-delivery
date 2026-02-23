@@ -44,6 +44,10 @@ apps/*/ios/DerivedData/
 apps/*/ios/*.xcworkspace/xcuserdata/
 apps/*/ios/*.xcodeproj/xcuserdata/
 
+# Native app copied web assets (contain bundled code; may include secrets — do not commit)
+android/app/src/main/assets/public/
+ios/App/App/public/
+
 # Sensitive configuration files (keep out of version control)
 ENV_CONFIGURATION_LIVE_KEYS.txt
 SETUP_ENV_FILE_NOW.md

@@ -1,1 +1,0 @@
-import{j as e,Y as r}from"./index-h_AmERuv.js";import{D as o,a as i}from"./DemoMockContext-BS4jEHTU.js";function s(){return e.jsx(o,{appName:"Driver Mobile App Demo",appDescription:"Experience the full mobile driver delivery app",children:e.jsx(i,{children:e.jsx(r,{})})})}export{s as default};

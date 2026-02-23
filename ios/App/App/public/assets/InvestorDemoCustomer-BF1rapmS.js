@@ -1,1 +1,0 @@
-import{j as e,X as r}from"./index-h_AmERuv.js";import{D as o,a as s}from"./DemoMockContext-BS4jEHTU.js";function a(){return e.jsx(o,{appName:"Customer App Demo",appDescription:"Experience the full customer ordering experience",children:e.jsx(s,{children:e.jsx(r,{})})})}export{a as default};
