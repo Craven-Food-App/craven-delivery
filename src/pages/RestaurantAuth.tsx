@@ -12,19 +12,13 @@ import {
   Group,
   Box,
   Loader,
-  Badge,
   Container,
-  Grid,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import {
-  IconBuildingStore,
-  IconChefHat,
-  IconUsers,
-  IconTrendingUp,
-  IconLoader2,
-} from '@tabler/icons-react';
-import merchantSignupBg from '@/assets/merchant-signup-bg.png';
+import craveCLogo from '@/assets/crave-c-logo.png';
+
+// Background: craven-merchant-app-bg.png from public folder (also in apps/tablet/public)
+const MERCHANT_AUTH_BG = '/craven-merchant-app-bg.png';
 
 const RestaurantAuth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,18 +28,16 @@ const RestaurantAuth: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already signed in
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        // Check if user has a restaurant
         const { data: restaurants } = await supabase
           .from('restaurants')
           .select('id')
           .eq('owner_id', user.id)
           .limit(1);
-        
+
         if (restaurants && restaurants.length > 0) {
           navigate('/merchant-portal');
         } else {
@@ -53,10 +45,9 @@ const RestaurantAuth: React.FC = () => {
         }
       }
     };
-    
+
     checkUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
@@ -66,15 +57,14 @@ const RestaurantAuth: React.FC = () => {
             message: "You've been signed in successfully.",
             color: 'green',
           });
-          
-          // Check for restaurant after successful login
+
           setTimeout(async () => {
             const { data: restaurants } = await supabase
               .from('restaurants')
               .select('id')
               .eq('owner_id', session.user.id)
               .limit(1);
-            
+
             if (restaurants && restaurants.length > 0) {
               navigate('/merchant-portal');
             } else {
@@ -94,7 +84,6 @@ const RestaurantAuth: React.FC = () => {
         localStorage.removeItem(key);
       }
     });
-    
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
@@ -104,51 +93,33 @@ const RestaurantAuth: React.FC = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!email || !password) {
-      notifications.show({
-        title: "Error",
-        message: "Please fill in all fields",
-        color: 'red',
-      });
+      notifications.show({ title: "Error", message: "Please fill in all fields", color: 'red' });
       return;
     }
-
     setLoading(true);
-    
     try {
       cleanupAuthState();
-      
       try {
         await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
-        console.log('Cleanup signout:', err);
+      } catch {
+        /* ignore */
       }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Invalid email or password. Please check your credentials.');
         }
         throw error;
       }
-
       if (data.user) {
-        notifications.show({
-          title: "Success!",
-          message: "Signing you in...",
-          color: 'green',
-        });
+        notifications.show({ title: "Success!", message: "Signing you in...", color: 'green' });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
       notifications.show({
         title: "Sign In Failed",
-        message: error.message || 'An error occurred during sign in',
+        message: (error as Error)?.message || 'An error occurred during sign in',
         color: 'red',
       });
     } finally {
@@ -158,47 +129,29 @@ const RestaurantAuth: React.FC = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!email || !password) {
-      notifications.show({
-        title: "Error",
-        message: "Please enter both email and password",
-        color: 'red',
-      });
+      notifications.show({ title: "Error", message: "Please enter both email and password", color: 'red' });
       return;
     }
-
     if (password.length < 6) {
-      notifications.show({
-        title: "Error",
-        message: "Password must be at least 6 characters long",
-        color: 'red',
-      });
+      notifications.show({ title: "Error", message: "Password must be at least 6 characters long", color: 'red' });
       return;
     }
-
     setLoading(true);
-    
     try {
       cleanupAuthState();
-      
       const redirectUrl = `${window.location.origin}/restaurant/register`;
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
+        options: { emailRedirectTo: redirectUrl },
       });
-
       if (error) {
         if (error.message.includes('User already registered')) {
           throw new Error('An account with this email already exists. Please sign in instead.');
         }
         throw error;
       }
-
       if (data.user) {
         notifications.show({
           title: "Account Created!",
@@ -206,11 +159,11 @@ const RestaurantAuth: React.FC = () => {
           color: 'green',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
       notifications.show({
         title: "Sign Up Failed",
-        message: error.message || 'An error occurred during sign up',
+        message: (error as Error)?.message || 'An error occurred during sign up',
         color: 'red',
       });
     } finally {
@@ -220,209 +173,159 @@ const RestaurantAuth: React.FC = () => {
 
   if (user) {
     return (
-      <Box style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--mantine-color-dark-8)' }}>
         <Stack align="center" gap="md">
-          <Loader size="lg" />
-          <Text>Redirecting to your restaurant dashboard...</Text>
+          <Loader size="lg" color="orange" />
+          <Text c="gray.3">Redirecting to your merchant dashboard...</Text>
         </Stack>
       </Box>
     );
   }
 
   return (
-    <Box 
-      style={{ 
-        minHeight: '100vh', 
-        backgroundImage: `url(${merchantSignupBg})`,
+    <Box
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        backgroundImage: `url(${MERCHANT_AUTH_BG})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }}
     >
+      {/* Dark overlay for readability, keeps background visible */}
       <Box
         style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      />
+      <Box
+        style={{
+          position: 'relative',
           minHeight: '100vh',
-          backgroundColor: 'rgba(255, 255, 255, 0.85)', // Semi-transparent overlay for readability
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
         }}
       >
-        <Container size="xl" py="xl">
-        {/* Header */}
-        <Stack align="center" gap="md" mb="xl">
-          <Group gap="xs">
-            <IconBuildingStore size={32} color="var(--mantine-color-orange-6)" />
-            <Title order={1}>Restaurant Portal</Title>
-          </Group>
-          <Text size="lg" c="dimmed" ta="center">
-            Manage your restaurant, track orders, and grow your business
-          </Text>
-        </Stack>
+        <Container size="sm">
+          <Stack align="center" gap="xl">
+            <Group gap="sm" style={{ marginBottom: 8 }}>
+              <img src={craveCLogo} alt="Crave'n" style={{ height: 40, width: 'auto' }} />
+              <Title order={1} c="white" style={{ letterSpacing: '-0.02em' }}>
+                Merchant Portal
+              </Title>
+            </Group>
+            <Text c="gray.4" size="lg" ta="center">
+              Sign in to manage your store, orders, and catalog
+            </Text>
 
-        <Grid gutter="xl">
-          {/* Features Section */}
-          <Grid.Col span={{ base: 12, lg: 6 }}>
-            <Stack gap="xl">
-              <Title order={2} ta={{ base: 'center', lg: 'left' }}>Why Choose Crave'n for Your Restaurant?</Title>
+            <Card
+              p="xl"
+              radius="md"
+              withBorder
+              style={{
+                width: '100%',
+                maxWidth: 420,
+                backgroundColor: 'rgba(255, 255, 255, 0.97)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              }}
+            >
+              <Tabs defaultValue="signin">
+                <Tabs.List grow mb="md">
+                  <Tabs.Tab value="signin">Sign In</Tabs.Tab>
+                  <Tabs.Tab value="signup">Get Started</Tabs.Tab>
+                </Tabs.List>
 
-              <Stack gap="md">
-                <Card p="md" withBorder>
-                  <Group align="flex-start" gap="md">
-                    <IconChefHat size={24} color="var(--mantine-color-orange-6)" />
-                    <div>
-                      <Text fw={600} mb="xs">Easy Menu Management</Text>
-                      <Text size="sm" c="dimmed">
-                        Upload and organize your menu items with photos, prices, and descriptions
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
+                <Tabs.Panel value="signin">
+                  <form onSubmit={handleSignIn}>
+                    <Stack gap="md">
+                      <TextInput
+                        label="Email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                        required
+                        size="md"
+                      />
+                      <TextInput
+                        label="Password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                        required
+                        size="md"
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        size="md"
+                        color="orange"
+                        disabled={loading}
+                        leftSection={loading ? <Loader size="sm" color="white" /> : null}
+                      >
+                        {loading ? 'Signing in…' : 'Sign in'}
+                      </Button>
+                    </Stack>
+                  </form>
+                </Tabs.Panel>
 
-                <Card p="md" withBorder>
-                  <Group align="flex-start" gap="md">
-                    <IconUsers size={24} color="var(--mantine-color-orange-6)" />
-                    <div>
-                      <Text fw={600} mb="xs">Real-time Order Management</Text>
-                      <Text size="sm" c="dimmed">
-                        Track orders from placement to delivery with instant notifications
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
+                <Tabs.Panel value="signup">
+                  <form onSubmit={handleSignUp}>
+                    <Stack gap="md">
+                      <TextInput
+                        label="Email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                        required
+                        size="md"
+                      />
+                      <TextInput
+                        label="Password"
+                        type="password"
+                        placeholder="At least 6 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                        required
+                        minLength={6}
+                        size="md"
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        size="md"
+                        color="orange"
+                        disabled={loading}
+                        leftSection={loading ? <Loader size="sm" color="white" /> : null}
+                      >
+                        {loading ? 'Creating account…' : 'Create account'}
+                      </Button>
+                    </Stack>
+                  </form>
+                </Tabs.Panel>
+              </Tabs>
 
-                <Card p="md" withBorder>
-                  <Group align="flex-start" gap="md">
-                    <IconTrendingUp size={24} color="var(--mantine-color-orange-6)" />
-                    <div>
-                      <Text fw={600} mb="xs">Business Analytics</Text>
-                      <Text size="sm" c="dimmed">
-                        Monitor your restaurant's performance with detailed insights
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
+              <Stack gap="xs" align="center" mt="lg">
+                <Button variant="subtle" size="sm" color="gray" onClick={() => navigate('/auth')}>
+                  Customer login
+                </Button>
+                <Button variant="subtle" size="sm" color="gray" onClick={() => navigate('/')}>
+                  Back to home
+                </Button>
               </Stack>
-
-              <Card p="md" withBorder bg="orange.0">
-                <Stack gap="xs">
-                  <Badge color="orange">Special Offer</Badge>
-                  <Text size="sm">
-                    Join now and get your first month of premium features absolutely free!
-                  </Text>
-                </Stack>
-              </Card>
-            </Stack>
-          </Grid.Col>
-
-          {/* Auth Form */}
-          <Grid.Col span={{ base: 12, lg: 6 }}>
-            <Box style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Card w="100%" maw={400} p="xl" withBorder>
-                <Stack gap="md">
-                  <Stack gap="xs" align="center">
-                    <Title order={2}>Restaurant Access</Title>
-                    <Text size="sm" c="dimmed" ta="center">
-                      Sign in to your restaurant account or create a new one
-                    </Text>
-                  </Stack>
-
-                  <Tabs defaultValue="signin">
-                    <Tabs.List>
-                      <Tabs.Tab value="signin">Sign In</Tabs.Tab>
-                      <Tabs.Tab value="signup">Get Started</Tabs.Tab>
-                    </Tabs.List>
-                    
-                    <Tabs.Panel value="signin" pt="md">
-                      <form onSubmit={handleSignIn}>
-                        <Stack gap="md">
-                          <TextInput
-                            label="Email"
-                            type="email"
-                            placeholder="Enter your restaurant email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                            required
-                          />
-                          
-                          <TextInput
-                            label="Password"
-                            type="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            required
-                          />
-                          
-                          <Button 
-                            type="submit" 
-                            fullWidth
-                            disabled={loading}
-                            leftSection={loading ? <Loader size="sm" /> : null}
-                          >
-                            {loading ? 'Signing In...' : 'Access Restaurant Dashboard'}
-                          </Button>
-                        </Stack>
-                      </form>
-                    </Tabs.Panel>
-                    
-                    <Tabs.Panel value="signup" pt="md">
-                      <form onSubmit={handleSignUp}>
-                        <Stack gap="md">
-                          <TextInput
-                            label="Restaurant Email"
-                            type="email"
-                            placeholder="Enter your restaurant email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                            required
-                          />
-                          
-                          <TextInput
-                            label="Password"
-                            type="password"
-                            placeholder="Create a secure password (min 6 characters)"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            required
-                            minLength={6}
-                          />
-                          
-                          <Button 
-                            type="submit" 
-                            fullWidth
-                            disabled={loading}
-                            leftSection={loading ? <Loader size="sm" /> : null}
-                          >
-                            {loading ? 'Creating Account...' : 'Create Restaurant Account'}
-                          </Button>
-                        </Stack>
-                      </form>
-                    </Tabs.Panel>
-                  </Tabs>
-                  
-                  <Stack gap="xs" align="center" mt="xl">
-                    <Button 
-                      variant="subtle"
-                      onClick={() => navigate('/auth')}
-                      size="sm"
-                    >
-                      Customer Login
-                    </Button>
-                    <Button 
-                      variant="subtle"
-                      onClick={() => navigate('/')}
-                      size="sm"
-                    >
-                      Back to Home
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Card>
-            </Box>
-          </Grid.Col>
-        </Grid>
+            </Card>
+          </Stack>
         </Container>
       </Box>
     </Box>
