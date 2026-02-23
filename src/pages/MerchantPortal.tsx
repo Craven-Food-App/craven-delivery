@@ -100,6 +100,7 @@ const formatRestaurantType = (type: string | null | undefined): string => {
 
 const RestaurantSetup = () => {
   const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
@@ -111,6 +112,19 @@ const RestaurantSetup = () => {
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant, refetchRestaurants } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
+
+  // Redirect to merchant auth if not signed in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/restaurant/auth', { replace: true });
+        return;
+      }
+      setAuthChecked(true);
+    };
+    checkAuth();
+  }, [navigate]);
 
   // Sync tab from URL on mount and when URL changes
   useEffect(() => {
@@ -225,7 +239,7 @@ const RestaurantSetup = () => {
       ? format(new Date(readiness.estimated_go_live), 'EEE, MMM d')
       : "Not set";
 
-  if (restaurantLoading || onboardingLoading) {
+  if (!authChecked || restaurantLoading || onboardingLoading) {
     return (
       <Box style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
         <Loader size="xl" color="orange" />
