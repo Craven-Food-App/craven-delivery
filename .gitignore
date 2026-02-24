@@ -47,6 +47,8 @@ apps/*/ios/*.xcodeproj/xcuserdata/
 # Native app copied web assets (contain bundled code; may include secrets — do not commit)
 android/app/src/main/assets/public/
 ios/App/App/public/
+# Hashed bundle files (e.g. index-h_AmERuv.js) — may contain embedded secrets
+**/public/assets/index-*.js
 
 # Sensitive configuration files (keep out of version control)
 ENV_CONFIGURATION_LIVE_KEYS.txt
