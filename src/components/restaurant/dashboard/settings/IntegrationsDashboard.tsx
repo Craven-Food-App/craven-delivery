@@ -20,6 +20,7 @@ const IntegrationsDashboard = () => {
   const [connectedIntegrations, setConnectedIntegrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [oauthStarting, setOauthStarting] = useState<string | null>(null);
+  const [syncLoading, setSyncLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -87,6 +88,41 @@ const IntegrationsDashboard = () => {
       toast({ title: "Error", description: "Failed to start connection", variant: "destructive" });
     } finally {
       setOauthStarting(null);
+    }
+  };
+
+  const syncMenuFromPos = async (providerName: string) => {
+    const oauthInfo = POS_OAUTH_NAMES[providerName];
+    if (!oauthInfo || !restaurant) return;
+    setSyncLoading(providerName);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Please sign in to sync.", variant: "destructive" });
+        return;
+      }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xaxbucnjlrfkccsfiddq.supabase.co";
+      const res = await fetch(`${supabaseUrl}/functions/v1/pos-sync-menu`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+        body: JSON.stringify({ restaurant_id: restaurant.id, provider: oauthInfo.providerKey }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Sync failed", description: data.error || "Could not sync menu", variant: "destructive" });
+        return;
+      }
+      toast({
+        title: "Menu synced",
+        description: data.synced != null ? `${data.synced} item(s) synced from ${providerName}.` : "Sync completed.",
+      });
+      if (data.errors?.length) {
+        console.warn("POS sync partial errors:", data.errors);
+      }
+    } catch (e) {
+      toast({ title: "Error", description: "Failed to sync menu", variant: "destructive" });
+    } finally {
+      setSyncLoading(null);
     }
   };
 
@@ -255,6 +291,8 @@ const IntegrationsDashboard = () => {
                         isConnected={connected}
                         onConnect={() => connectIntegration(integration.name)}
                         onDisconnect={() => disconnectIntegration(integration.name)}
+                        onSyncMenu={posOAuth.providerKey === "square" ? () => syncMenuFromPos(integration.name) : undefined}
+                        syncMenuLoading={syncLoading === integration.name}
                         connectLabel={oauthStarting === integration.name ? "Redirecting…" : "Connect"}
                         connectDisabled={oauthStarting === integration.name}
                         compact

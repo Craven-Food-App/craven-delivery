@@ -42,12 +42,13 @@ export default function CraveNSetupSection({ labels, onAddStoreOrBusiness }: Cra
         style={{
           fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
           background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
+          borderTop: "1px solid #e5e7eb",
+          borderBottom: "1px solid #e5e7eb",
+          borderRadius: 0,
+          boxShadow: "none",
           padding: "20px 24px",
-          maxWidth: 860,
-          margin: "0 auto 24px",
+          width: "100%",
+          margin: 0,
         }}
       >
         {/* Header */}

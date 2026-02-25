@@ -79,13 +79,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        // Force all react-is imports to use the root version
         "react-is": resolve(__dirname, "node_modules/react-is"),
-        // Handle nested react-is in @mui/utils
         "@mui/utils/node_modules/react-is": resolve(__dirname, "node_modules/react-is"),
+        "@tabler/icons-react": resolve(__dirname, "node_modules/@tabler/icons-react/dist/cjs/tabler-icons-react.cjs"),
       },
       dedupe: ["react", "react-dom", "react-is"],
-      // Handle CJS/ESM interop for hoist-non-react-statics
       conditions: ["import", "module", "browser", "default"],
     },
 
@@ -99,6 +97,7 @@ export default defineConfig(({ mode }) => {
         "@emotion/styled",
         "deepmerge",
         "@mui/utils",
+        "@tabler/icons-react",
       ],
       exclude: [
         "@mui/material",

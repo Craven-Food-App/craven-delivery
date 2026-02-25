@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
 import { toast } from "sonner";
@@ -998,6 +999,75 @@ function TabDeleteStore(_props: SettingsTabProps) {
   );
 }
 
+// ── TAB: Delete Account ───────────────────────────────────────────────────────
+function TabDeleteAccount(_props: SettingsTabProps) {
+  const [confirm, setConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const ready = confirm === "DELETE MY ACCOUNT";
+
+  const handleDeleteAccount = async () => {
+    if (!ready) return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Please sign in to continue.");
+        return;
+      }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xaxbucnjlrfkccsfiddq.supabase.co";
+      const res = await fetch(`${supabaseUrl}/functions/v1/delete-merchant-account`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Failed to delete account");
+        return;
+      }
+      toast.success("Account deleted. Signing out…");
+      await supabase.auth.signOut();
+      window.location.href = "/restaurant/auth";
+    } catch (e) {
+      toast.error("Failed to delete account");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "14px 18px", borderRadius: 10, background: "#fef2f2", border: "1.5px solid #fecaca", display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#991b1b" }}>Delete account</p>
+          <p style={{ fontSize: 12.5, color: "#6b7280", marginTop: 2, lineHeight: 1.6 }}>
+            Permanently delete your merchant account. This will remove <strong>all your stores</strong>, menu items, and account data. This action <strong>cannot be undone</strong>. You will be signed out and redirected to the login page.
+          </p>
+        </div>
+      </div>
+
+      <SHead>Confirm account deletion</SHead>
+      <div>
+        <FL hint={<>Type <strong style={{ fontFamily: "'IBM Plex Mono', monospace" }}>DELETE MY ACCOUNT</strong> exactly to confirm.</>}>Confirmation</FL>
+        <input className="field-input" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Type DELETE MY ACCOUNT here" style={{ fontFamily: "'IBM Plex Mono', monospace", maxWidth: 360 }} />
+        {confirm && confirm !== "DELETE MY ACCOUNT" && <p style={{ fontSize: 11.5, color: "#ef4444", marginTop: 5 }}>Must match exactly: DELETE MY ACCOUNT</p>}
+        {ready && <p style={{ fontSize: 11.5, color: "#16a34a", marginTop: 5 }}>✓ Confirmation matches</p>}
+      </div>
+
+      <button className="danger-btn" disabled={!ready || deleting} onClick={handleDeleteAccount}
+        style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 20px", borderRadius: 8, border: "none", background: ready ? "#dc2626" : "#f3f4f6", color: ready ? "#fff" : "#9ca3af", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: ready ? "pointer" : "not-allowed", width: "fit-content", transition: "background 0.15s" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        {deleting ? "Deleting account…" : "Permanently delete my account"}
+      </button>
+    </div>
+  );
+}
+
 // ── Nav items ──────────────────────────────────────────────────────────────────
 const NAV: { id: string; label: string; icon: React.ReactNode; danger?: boolean }[] = [
   { id: "account",        label: "Account Settings",     icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></> },
@@ -1009,6 +1079,7 @@ const NAV: { id: string; label: string; icon: React.ReactNode; danger?: boolean 
   { id: "inventory",      label: "Inventory",             icon: <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></> },
   { id: "integrations",   label: "Integrations",          icon: <><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></> },
   { id: "delete-store",   label: "Delete Store",          icon: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>, danger: true },
+  { id: "delete-account", label: "Delete Account",        icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>, danger: true },
 ];
 
 const CONTENT: Record<string, (p: SettingsTabProps) => React.ReactElement> = {
@@ -1021,24 +1092,27 @@ const CONTENT: Record<string, (p: SettingsTabProps) => React.ReactElement> = {
   inventory: TabInventory,
   integrations: TabIntegrations,
   "delete-store": TabDeleteStore,
+  "delete-account": TabDeleteAccount,
 };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 interface SettingsDashboardProps {
   defaultTab?: string;
   restaurantId?: string;
+  onSettingsTabChange?: (tab: string) => void;
 }
 
-export default function SettingsDashboard({ defaultTab = "account" }: SettingsDashboardProps) {
+export default function SettingsDashboard({ defaultTab = "account", onSettingsTabChange }: SettingsDashboardProps) {
   const [active, setActive] = useState(defaultTab);
   const { restaurant, loading, refetch } = useRestaurantData();
+  useEffect(() => setActive(defaultTab), [defaultTab]);
   const Content = CONTENT[active] ?? TabAccount;
   const tabProps: SettingsTabProps = { restaurant, loading, refetchRestaurant: refetch };
 
   return (
     <>
       <FontLoader />
-      <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", maxWidth: 980, margin: "40px auto", overflow: "hidden", display: "grid", gridTemplateColumns: "220px 1fr", minHeight: 600 }}>
+      <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderTop: "1px solid #e5e7eb", borderBottom: "1px solid #e5e7eb", borderRadius: 0, boxShadow: "none", width: "100%", margin: "32px 0 0 0", overflow: "hidden", display: "grid", gridTemplateColumns: "220px 1fr", minHeight: 600 }}>
 
         {/* ── Left nav ── */}
         <div style={{ borderRight: "1px solid #f3f4f6", background: "#fafafa", display: "flex", flexDirection: "column" }}>
@@ -1052,9 +1126,20 @@ export default function SettingsDashboard({ defaultTab = "account" }: SettingsDa
           <nav style={{ padding: "10px 10px", flex: 1 }}>
             {NAV.map(item => {
               const isActive = active === item.id;
+              const navStyle = { width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 8, marginBottom: 2, fontSize: 13, fontWeight: isActive ? 600 : 500, color: item.danger ? (isActive ? "#dc2626" : "#ef4444") : isActive ? "#ea580c" : "#374151", background: isActive ? (item.danger ? "#fef2f2" : "#fff7ed") : "transparent", borderLeft: isActive ? `3px solid ${item.danger ? "#ef4444" : "#ea580c"}` : "3px solid transparent", textDecoration: "none" } as const;
+              if (item.id === "delete-account") {
+                return (
+                  <Link key={item.id} to="/merchant-portal/delete-account" className="nav-item" style={navStyle}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6 }}>
+                      {item.icon}
+                    </svg>
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
-                <button key={item.id} className="nav-item" onClick={() => setActive(item.id)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 8, marginBottom: 2, fontSize: 13, fontWeight: isActive ? 600 : 500, color: item.danger ? (isActive ? "#dc2626" : "#ef4444") : isActive ? "#ea580c" : "#374151", background: isActive ? (item.danger ? "#fef2f2" : "#fff7ed") : "transparent", borderLeft: isActive ? `3px solid ${item.danger ? "#ef4444" : "#ea580c"}` : "3px solid transparent" }}>
+                <button key={item.id} className="nav-item" onClick={() => { setActive(item.id); onSettingsTabChange?.(item.id); }}
+                  style={{ ...navStyle, textDecoration: undefined }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6 }}>
                     {item.icon}
                   </svg>

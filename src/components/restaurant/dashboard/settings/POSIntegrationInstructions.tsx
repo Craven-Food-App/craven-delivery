@@ -49,10 +49,13 @@ interface POSIntegrationInstructionsProps {
   isConnected: boolean;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  onSyncMenu?: () => void;
   connectLabel?: string;
   disconnectLabel?: string;
+  syncMenuLabel?: string;
   compact?: boolean;
   connectDisabled?: boolean;
+  syncMenuLoading?: boolean;
 }
 
 export function POSIntegrationInstructions({
@@ -60,10 +63,13 @@ export function POSIntegrationInstructions({
   isConnected,
   onConnect,
   onDisconnect,
+  onSyncMenu,
   connectLabel = "Connect",
   disconnectLabel = "Disconnect",
+  syncMenuLabel = "Sync menu from POS",
   compact = false,
   connectDisabled = false,
+  syncMenuLoading = false,
 }: POSIntegrationInstructionsProps) {
   const [expanded, setExpanded] = useState(false);
   const info = INSTRUCTIONS[provider];
@@ -157,6 +163,27 @@ export function POSIntegrationInstructions({
             }}
           >
             {connectLabel}
+          </button>
+        )}
+        {isConnected && onSyncMenu && (
+          <button
+            type="button"
+            onClick={onSyncMenu}
+            disabled={syncMenuLoading}
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid #86efac",
+              background: "#dcfce7",
+              color: "#166534",
+              cursor: syncMenuLoading ? "wait" : "pointer",
+              fontFamily: "inherit",
+              opacity: syncMenuLoading ? 0.7 : 1,
+            }}
+          >
+            {syncMenuLoading ? "Syncing…" : syncMenuLabel}
           </button>
         )}
         {isConnected && onDisconnect && (

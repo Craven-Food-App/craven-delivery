@@ -1,6 +1,4 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -106,59 +104,52 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Default error UI
+      // Default error UI: minimal HTML + inline styles so it never throws (e.g. in Capacitor if Button/icons fail)
+      const err = this.state.error;
+      const showDetails = !!err?.message;
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
-            <div className="flex justify-center mb-4">
-              <AlertTriangle className="h-12 w-12 text-red-500" />
-            </div>
-            
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
+        <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ maxWidth: 448, width: '100%', background: '#fff', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: 24, textAlign: 'center' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111', marginBottom: 8 }}>
               Something went wrong
             </h1>
-            
-            <p className="text-gray-600 mb-4">
-              We're sorry, but something unexpected happened. Our team has been notified.
+            <p style={{ color: '#4b5563', marginBottom: 16 }}>
+              We're sorry, but something unexpected happened.
             </p>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4 text-left">
-                <p className="text-sm font-medium text-red-800 mb-1">Error Details:</p>
-                <p className="text-xs text-red-700 font-mono break-all">
-                  {this.state.error.message}
+            {/* Always show error message so users can report it (especially in Capacitor/mobile builds) */}
+            {showDetails && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: 12, marginBottom: 16, textAlign: 'left' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#991b1b', marginBottom: 4 }}>Error:</p>
+                <p style={{ fontSize: '0.75rem', color: '#b91c1c', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {err.message}
                 </p>
-                {this.state.error.stack && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-red-600 cursor-pointer">Stack Trace</summary>
-                    <pre className="text-xs text-red-600 mt-1 whitespace-pre-wrap break-all">
-                      {this.state.error.stack}
+                {err.stack && (
+                  <details style={{ marginTop: 8 }}>
+                    <summary style={{ fontSize: '0.75rem', color: '#b91c1c', cursor: 'pointer' }}>Stack trace</summary>
+                    <pre style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: 4, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                      {err.stack}
                     </pre>
                   </details>
                 )}
               </div>
             )}
-
-            <div className="space-y-3">
-              <Button 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button
+                type="button"
                 onClick={this.handleRetry}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                style={{ width: '100%', padding: '10px 16px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
-              </Button>
-              
-              <Button 
+              </button>
+              <button
+                type="button"
                 onClick={this.handleGoHome}
-                variant="outline"
-                className="w-full"
+                style={{ width: '100%', padding: '10px 16px', background: 'transparent', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
               >
-                <Home className="h-4 w-4 mr-2" />
                 Go Home
-              </Button>
+              </button>
             </div>
-
-            <p className="text-xs text-gray-500 mt-4">
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: 16 }}>
               Error ID: {this.state.errorId}
             </p>
           </div>

@@ -776,6 +776,7 @@ const App = () => {
           <Route path="/restaurant/auth" element={<RestaurantAuth />} />
           <Route path="/merchant/signup" element={<MerchantLandingPage />} />
           <Route path="/restaurant/register" element={<RestaurantRegister />} />
+          <Route path="/merchant-portal/delete-account" element={<Navigate to="/merchant-portal?tab=settings&section=delete-account" replace />} />
           <Route path="/merchant-portal" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Portal" />}><MerchantPortal /></Suspense>} />
           <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
           <Route path="/restaurant/:id" element={<RestaurantDetail />} />

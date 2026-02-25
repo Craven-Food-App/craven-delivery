@@ -301,12 +301,13 @@ export default function StoreActivation({
         style={{
           fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
           background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-          padding: "28px 32px",
-          maxWidth: 860,
-          margin: "0 auto",
+          borderTop: "1px solid #e5e7eb",
+          borderBottom: "1px solid #e5e7eb",
+          borderRadius: 0,
+          boxShadow: "none",
+          padding: "24px 28px 18px",
+          width: "100%",
+          margin: 0,
         }}
       >
         {/* Header */}

@@ -101,18 +101,25 @@ const formatRestaurantType = (type: string | null | undefined): string => {
   ).join(' ');
 };
 
+const VALID_TABS = ['home','insights','reports','customers','orders','menu','products','inventory','availability','financials','settings','request-delivery'] as const;
+
 const RestaurantSetup = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const sectionParam = searchParams.get('section') ?? searchParams.get('subtab');
+  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>(
+    (tabParam && VALID_TABS.includes(tabParam as any)) ? (tabParam as any) : 'home'
+  );
+  const [settingsTab, setSettingsTab] = useState<string>(
+    sectionParam && tabParam === 'settings' ? (sectionParam === 'bank-account' ? 'bank' : sectionParam) : 'account'
+  );
   const [authChecked, setAuthChecked] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'insights' | 'reports' | 'customers' | 'orders' | 'menu' | 'products' | 'inventory' | 'availability' | 'financials' | 'settings' | 'request-delivery'>('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
-  const [settingsTab, setSettingsTab] = useState<string>("account");
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
-
-  const [searchParams, setSearchParams] = useSearchParams();
   const { restaurants, selectedRestaurant: restaurant, loading: restaurantLoading, selectRestaurant, refetchRestaurants } = useRestaurantSelector();
   const { progress, readiness, loading: onboardingLoading, refreshData } = useRestaurantOnboarding(restaurant?.id);
   const labels = getMerchantLabels(restaurant?.restaurant_type);
@@ -142,15 +149,19 @@ const RestaurantSetup = () => {
     }
   }, [searchParams]);
 
-  // Keep URL in sync when tab changes
+  // Keep URL in sync when tab changes. Only include section=delete-account when actually on that page.
   useEffect(() => {
     const currentTab = searchParams.get('tab');
-    if (currentTab !== activeTab) {
+    const currentSection = searchParams.get('section');
+    const wantSection = activeTab === 'settings' && settingsTab === 'delete-account' ? 'delete-account' : null;
+    if (currentTab !== activeTab || currentSection !== wantSection) {
       const next = new URLSearchParams(searchParams);
       next.set('tab', activeTab);
+      if (wantSection) next.set('section', wantSection);
+      else next.delete('section');
       setSearchParams(next, { replace: true });
     }
-  }, [activeTab]);
+  }, [activeTab, settingsTab]);
   const merchantGroup = getMerchantGroup(restaurant?.restaurant_type);
   const isRetail = merchantGroup === 'retail' || merchantGroup === 'grocery';
   const isGrocery = merchantGroup === 'grocery';
@@ -580,16 +591,27 @@ const RestaurantSetup = () => {
         </Box>
       </Box>
 
-      {/* Main Content */}
+      {/* Main Content - full width unibody for all tabs */}
+      <style>{`
+        .merchant-portal-content > * { max-width: none; width: 100%; box-sizing: border-box; }
+      `}</style>
       <ScrollArea style={{ flex: 1, minWidth: 0 }} scrollbarSize={8} type="auto">
-        <Box p="xl">
+        <Box
+          className="merchant-portal-content"
+          style={{
+            width: '100%',
+            padding: '52px 48px 80px',
+            boxSizing: 'border-box',
+            minHeight: '100%',
+          }}
+        >
           {activeTab === 'home' ? (
             allStepsComplete ? (
-              <Box style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                <Stack gap="xl" mb="xl">
+              <>
+                <div style={{ marginBottom: 24 }}>
                   <Text size="sm" c="dimmed">Welcome back, {userName}</Text>
                   <Title order={1}>Dashboard</Title>
-                </Stack>
+                </div>
                 {isGrocery ? (
                   <GroceryHomeDashboard
                     restaurantId={restaurant?.id || ''}
@@ -610,67 +632,64 @@ const RestaurantSetup = () => {
                     readiness={readiness}
                   />
                 )}
-              </Box>
+              </>
             ) : (
-              <Box style={{ maxWidth: '1024px', margin: '0 auto' }}>
-                <Stack gap="xl" mb="xl">
-                  <Text size="sm" c="dimmed">Welcome, {userName}</Text>
-                  <Title order={1}>Set up your store</Title>
-                  <Text size="sm" c="dimmed">
-                    Complete these steps to go live with your store by <Text component="span" fw={500}>{deadline}</Text>.
-                  </Text>
-                </Stack>
+              <Box style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <div style={{ fontSize: 13.5, color: '#7A726E', marginBottom: 6 }}>Welcome, {userName}</div>
+                  <h1 style={{ fontSize: 34, fontWeight: 800, color: '#141210', letterSpacing: '-0.025em', lineHeight: 1.1, margin: '0 0 6px' }}>
+                    Set up your store
+                  </h1>
+                  <div style={{ fontSize: 14, color: '#7A726E' }}>
+                    Complete these steps to go live with your store by <strong style={{ color: '#141210', fontWeight: 600 }}>{deadline}</strong>.
+                  </div>
+                </div>
 
-          {/* Prepare your store section */}
-          <Box mb="lg">
-            <StoreActivation
-              progress={progress}
-              restaurant={restaurant}
-              labels={labels}
-              onNavigateToSettings={(tab) => {
-                setSettingsTab(tab);
-                setActiveTab('settings');
-              }}
-              onContactSupport={() => {
-                window.open('/support', '_blank');
-              }}
-            />
-          </Box>
+                <StoreActivation
+                  progress={progress}
+                  restaurant={restaurant}
+                  labels={labels}
+                  onNavigateToSettings={(tab) => {
+                    setSettingsTab(tab);
+                    setActiveTab('settings');
+                  }}
+                  onContactSupport={() => {
+                    window.open('/support', '_blank');
+                  }}
+                />
 
-          {/* Go live section */}
-          <GoLiveSection
-            readiness={readiness}
-            targetDate={deadline}
-            onNavigateToSettings={(tab) => {
-              setSettingsTab(tab);
-              setActiveTab("settings");
-            }}
-            onNavigateToAvailability={() => setActiveTab("availability")}
-          />
+                <GoLiveSection
+                  readiness={readiness}
+                  targetDate={deadline}
+                  onNavigateToSettings={(tab) => {
+                    setSettingsTab(tab);
+                    setActiveTab("settings");
+                  }}
+                  onNavigateToAvailability={() => setActiveTab("availability")}
+                />
 
-          {/* Continue Crave'n setup */}
-          <CraveNSetupSection
-            labels={labels}
-            onAddStoreOrBusiness={() => setAddLocationModalOpen(true)}
-          />
-        </Box>
-      )
-      ) : !restaurant ? (
-        <div className="p-6 text-center">
-          <p className="text-muted-foreground">Please select a store to continue.</p>
-        </div>
-      ) : activeTab === 'insights' ? <InsightsDashboard restaurantId={restaurant?.id} /> 
-        : activeTab === 'reports' ? <ReportsDashboard restaurantId={restaurant?.id} /> 
-        : activeTab === 'customers' ? <CustomersDashboard restaurantId={restaurant?.id} /> 
-        : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} /> 
-        : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} /> 
-        : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
-        : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} /> 
-: activeTab === 'availability' ? <StoreAvailabilityDashboard restaurantId={restaurant?.id} />
-        : activeTab === 'financials' ? <FinancialsDashboard restaurantId={restaurant?.id} />
-        : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} restaurantId={restaurant?.id} /> 
-        : activeTab === 'request-delivery' ? <RequestDeliveryDashboard restaurantId={restaurant?.id} /> 
-        : null}
+                <CraveNSetupSection
+                  labels={labels}
+                  onAddStoreOrBusiness={() => setAddLocationModalOpen(true)}
+                />
+              </Box>
+            )
+          ) : !restaurant ? (
+            <div className="p-6 text-center">
+              <p className="text-muted-foreground">Please select a store to continue.</p>
+            </div>
+          ) : activeTab === 'insights' ? <InsightsDashboard restaurantId={restaurant?.id} />
+            : activeTab === 'reports' ? <ReportsDashboard restaurantId={restaurant?.id} />
+            : activeTab === 'customers' ? <CustomersDashboard restaurantId={restaurant?.id} />
+            : activeTab === 'orders' ? <RestaurantCustomerOrderManagement restaurantId={restaurant.id} />
+            : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} />
+            : activeTab === 'products' ? <RetailProductCatalog restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} />
+            : activeTab === 'inventory' ? <RetailInventoryDashboard restaurantId={restaurant.id} restaurantType={restaurant?.restaurant_type} />
+            : activeTab === 'availability' ? <StoreAvailabilityDashboard restaurantId={restaurant?.id} />
+            : activeTab === 'financials' ? <FinancialsDashboard restaurantId={restaurant?.id} />
+            : activeTab === 'settings' ? <SettingsDashboard defaultTab={settingsTab} restaurantId={restaurant?.id} onSettingsTabChange={setSettingsTab} />
+            : activeTab === 'request-delivery' ? <RequestDeliveryDashboard restaurantId={restaurant?.id} />
+            : null}
         </Box>
       </ScrollArea>
 

@@ -1,11 +1,25 @@
+// Dev/local origins always allowed so local and tablet dev work even when ALLOWED_ORIGINS is set in prod
+const DEV_ORIGINS = [
+  "http://localhost:8080",
+  "http://localhost:8081",
+  "http://localhost:5173",
+  "http://localhost:8092",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8081",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:8092",
+  "capacitor://localhost",
+  "ionic://localhost",
+  "http://localhost",
+  "https://localhost",
+];
+
 // Get allowed origins from environment or use defaults
 const getAllowedOrigins = (): string[] => {
   const envOrigins = Deno.env.get("ALLOWED_ORIGINS");
-  if (envOrigins) {
-    return envOrigins.split(",").map(o => o.trim());
-  }
-  // Default allowed origins - PRODUCTION SECURE
-  return [
+  const fromEnv = envOrigins ? envOrigins.split(",").map((o) => o.trim()).filter(Boolean) : [];
+  // When env is set, merge with dev origins so local/tablet dev always works
+  const production = fromEnv.length > 0 ? fromEnv : [
     "https://44d88461-c1ea-4d22-93fe-ebc1a7d81db9.lovableproject.com",
     "https://cravenusa.com",
     "https://www.cravenusa.com",
@@ -17,16 +31,9 @@ const getAllowedOrigins = (): string[] => {
     "https://cfo.cravenusa.com",
     "https://coo.cravenusa.com",
     "https://cto.cravenusa.com",
-    "http://localhost:8080",
-    "http://localhost:8081",
-    "http://localhost:5173",
-    "http://localhost:8092",
-    // Mobile app origins
-    "capacitor://localhost",
-    "ionic://localhost",
-    "http://localhost",
-    "https://localhost",
   ];
+  const combined = [...new Set([...DEV_ORIGINS, ...production])];
+  return combined;
 };
 
 export const getCorsHeaders = (origin: string | null) => {

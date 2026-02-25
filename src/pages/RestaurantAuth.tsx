@@ -17,8 +17,8 @@ import {
 import { notifications } from '@mantine/notifications';
 import cravenCLogo from '@/assets/craven-c-new.png';
 
-// Background: craven-merchant-app-bg.png from public folder (also in apps/tablet/public)
-const MERCHANT_AUTH_BG = '/craven-merchant-app-bg.png';
+// Background: craven-merchant-app-bg.png from public folder (base-relative so it loads in Capacitor/mobile)
+const MERCHANT_AUTH_BG = `${import.meta.env.BASE_URL || '/'}craven-merchant-app-bg.png`;
 
 const RestaurantAuth: React.FC = () => {
   const [email, setEmail] = useState('');

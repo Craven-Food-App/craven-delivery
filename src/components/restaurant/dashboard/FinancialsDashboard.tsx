@@ -286,11 +286,12 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
         style={{
           fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif",
           background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-          maxWidth: 920,
-          margin: "0 auto",
+          borderTop: "1px solid #e5e7eb",
+          borderBottom: "1px solid #e5e7eb",
+          borderRadius: 0,
+          boxShadow: "none",
+          width: "100%",
+          margin: "32px 0 0 0",
           overflow: "hidden",
         }}
       >

@@ -678,7 +678,7 @@ export default function RetailInventoryDashboard({ restaurantId, restaurantType 
   return (
     <>
       <FontLoader />
-      <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 2px 16px rgba(0,0,0,0.07)", maxWidth: 1160, margin: "40px auto", overflow: "hidden" }}>
+      <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderTop: "1px solid #e5e7eb", borderBottom: "1px solid #e5e7eb", borderRadius: 0, boxShadow: "none", width: "100%", margin: "32px 0 0 0", overflow: "hidden" }}>
         <div style={{ padding: "20px 28px 16px", borderBottom: "1px solid #f3f4f6" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div>

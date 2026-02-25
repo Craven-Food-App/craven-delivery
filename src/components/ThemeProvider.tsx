@@ -21,11 +21,21 @@ export function ThemeProvider({
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add('light');
-    setResolvedTheme('light');
-    localStorage.setItem('theme', 'light');
+    try {
+      const root = window.document.documentElement;
+      if (root) {
+        root.classList.remove('light', 'dark');
+        root.classList.add('light');
+      }
+      setResolvedTheme('light');
+      try {
+        localStorage.setItem('theme', 'light');
+      } catch {
+        // localStorage can throw in Capacitor WebView, private mode, or restricted environments
+      }
+    } catch {
+      setResolvedTheme('light');
+    }
   }, []);
 
   return (

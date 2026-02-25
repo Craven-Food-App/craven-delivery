@@ -59,17 +59,20 @@ console.error = (...args: any[]) => {
     return;
   }
 
-  const first = strings[0] ?? '';
-  if (
-    first.includes('Failed %s type') &&
-    strings.some(
-      (s) =>
-        s.includes('ThemeProvider') ||
-        s.includes('DefaultPropsProvider') ||
-        s.includes('RtlProvider')
-    )
-  ) {
-    return;
+  // Only suppress known MUI warning in production to avoid hiding real errors in dev
+  if (import.meta.env.PROD) {
+    const first = strings[0] ?? '';
+    if (
+      first.includes('Failed %s type') &&
+      strings.some(
+        (s) =>
+          s.includes('ThemeProvider') ||
+          s.includes('DefaultPropsProvider') ||
+          s.includes('RtlProvider')
+      )
+    ) {
+      return;
+    }
   }
 
   originalError(...args);

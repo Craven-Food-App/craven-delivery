@@ -35,9 +35,17 @@ const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerI
       try {
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         if (error) throw error;
-        setMapboxToken(data.token);
+        if (data?.token) {
+          setMapboxToken(data.token);
+          return;
+        }
       } catch (error) {
         console.error('Error fetching Mapbox token:', error);
+      }
+      // Fallback for local dev when Edge Function is blocked (e.g. CORS on localhost)
+      const devToken = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+      if (devToken) {
+        setMapboxToken(devToken);
       }
     };
 

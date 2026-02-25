@@ -5,16 +5,8 @@ import path from "path";
 const rootSrc = path.resolve(__dirname, "../../..", "src");
 
 export default defineConfig(({ mode }) => {
-  const isCapacitorBuild =
-    process.env.CAPACITOR === "true" ||
-    process.env.BUILD_TARGET === "capacitor";
-
-  const base =
-    mode === "production"
-      ? isCapacitorBuild
-        ? "./"
-        : "/"
-      : "/";
+  // Merchant app is only used as Capacitor/mobile; production build must use relative base so assets load in WebView
+  const base = mode === "production" ? "./" : "/";
 
   return {
     base,
@@ -51,6 +43,22 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       sourcemap: mode === "development",
       commonjsOptions: { transformMixedEsModules: true },
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes("node_modules")) {
+              if (id.includes("@mantine") || id.includes("@emotion")) return "mantine";
+              if (id.includes("react-dom")) return "react-dom";
+              if (id.includes("react")) return "react";
+              return "vendor";
+            }
+          },
+          chunkFileNames: "assets/[name]-[hash].js",
+          entryFileNames: "assets/[name]-[hash].js",
+        },
+      },
+      target: "esnext",
+      minify: "esbuild",
     },
     optimizeDeps: {
       entries: ["index.html"],
