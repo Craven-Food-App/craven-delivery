@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getMerchantLabels } from "@/utils/merchantCategoryLabels";
 
@@ -22,7 +22,12 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
   const [specialHours, setSpecialHours] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isActive, setIsActive] = useState(false);
+  const [storeStatus, setStoreStatus] = useState<'open' | 'paused' | 'closed'>('open');
+  const [pausedUntil, setPausedUntil] = useState<string | null>(null);
   const [showSpecialHoursDialog, setShowSpecialHoursDialog] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [pauseMinutes, setPauseMinutes] = useState(30);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [newSpecialHours, setNewSpecialHours] = useState({
     name: "",
     start_date: "",
@@ -66,7 +71,9 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
       if (!restaurantData) return;
 
       setRestaurant(restaurantData);
-      setIsActive(restaurantData.is_active || false);
+      setIsActive(restaurantData.is_active ?? true);
+      setStoreStatus((restaurantData.store_status as 'open' | 'paused' | 'closed') || 'open');
+      setPausedUntil(restaurantData.paused_until ?? null);
 
       const { data: hoursData } = await supabase
         .from('restaurant_hours')
@@ -150,6 +157,51 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
     }
   };
 
+  const acceptingOrders = storeStatus === 'open' && (pausedUntil ? new Date(pausedUntil) <= new Date() : true);
+  const effectiveStatus = storeStatus === 'paused' && pausedUntil && new Date(pausedUntil) > new Date() ? 'paused' : storeStatus;
+
+  const updateStoreStatus = async (status: 'open' | 'paused' | 'closed', until?: string | null) => {
+    if (!restaurant?.id) return;
+    setUpdatingStatus(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          store_status: status,
+          paused_until: until ?? null,
+          is_active: status === 'open' && !until,
+        })
+        .eq('id', restaurant.id);
+      if (error) throw error;
+      await supabase.from('merchant_activity_log').insert({
+        restaurant_id: restaurant.id,
+        actor_id: user?.id ?? null,
+        action: 'store_status_change',
+        entity_type: 'restaurant',
+        entity_id: restaurant.id,
+        metadata: { store_status: status, paused_until: until ?? null },
+      });
+      setStoreStatus(status);
+      setPausedUntil(until ?? null);
+      setIsActive(status === 'open');
+      toast({ title: "Updated", description: "Store status updated.", variant: "default" });
+      setShowPauseDialog(false);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const startTemporaryPause = () => {
+    const until = new Date();
+    until.setMinutes(until.getMinutes() + pauseMinutes);
+    updateStoreStatus('paused', until.toISOString());
+  };
+
   if (loading) return <div>Loading...</div>;
 
   return (
@@ -157,31 +209,85 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
       <div className="max-w-7xl mx-auto px-6 py-8">
         <h1 className="text-3xl font-bold mb-8">{labels.availabilityLabel}</h1>
 
-        {/* Store Status - Read Only */}
+        {/* Store Status - Merchant controlled */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
               <CardTitle>Store status</CardTitle>
+              <CardDescription>
+                Control whether your store accepts new orders right now.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className={`p-4 rounded-lg border-2 ${isActive ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-lg mb-1">
-                        {isActive ? "Active" : "Inactive"}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {isActive 
-                          ? "Your store is currently accepting orders" 
-                          : "Your store is not accepting orders"}
-                      </p>
-                    </div>
+                <div className={`p-4 rounded-lg border-2 ${
+                  effectiveStatus === 'open' ? 'bg-green-50 border-green-200' :
+                  effectiveStatus === 'paused' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="font-semibold text-lg mb-1">
+                    {effectiveStatus === 'open' ? 'Open' : effectiveStatus === 'paused' ? 'Paused' : 'Closed'}
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    {effectiveStatus === 'open'
+                      ? 'Your store is accepting orders'
+                      : effectiveStatus === 'paused'
+                        ? (pausedUntil && new Date(pausedUntil) > new Date()
+                          ? `Paused until ${new Date(pausedUntil).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                          : 'Paused — resume below')
+                        : 'Your store is not accepting orders'}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Only Crave'n administrators can change your store's active status. Contact support if you need assistance.
-                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={effectiveStatus === 'open' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => updateStoreStatus('open', null)}
+                    disabled={updatingStatus}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPauseDialog(true)}
+                    disabled={updatingStatus}
+                  >
+                    Pause for 15/30/60 min
+                  </Button>
+                  <Button
+                    variant={effectiveStatus === 'closed' ? 'destructive' : 'outline'}
+                    size="sm"
+                    onClick={() => updateStoreStatus('closed', null)}
+                    disabled={updatingStatus}
+                  >
+                    Close
+                  </Button>
+                </div>
+                {showPauseDialog && (
+                  <Dialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Temporary pause</DialogTitle>
+                        <DialogDescription>Resume accepting orders after:</DialogDescription>
+                      </DialogHeader>
+                      <div className="flex gap-2 items-center">
+                        {[15, 30, 60].map((m) => (
+                          <Button
+                            key={m}
+                            variant={pauseMinutes === m ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPauseMinutes(m)}
+                          >
+                            {m} min
+                          </Button>
+                        ))}
+                      </div>
+                      <Button onClick={startTemporaryPause} disabled={updatingStatus}>
+                        Pause store
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             </CardContent>
           </Card>

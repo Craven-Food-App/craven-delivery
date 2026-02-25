@@ -47,6 +47,8 @@ import {
   IconLogout,
 } from "@tabler/icons-react";
 import { useRestaurantSelector } from "@/hooks/useRestaurantSelector";
+
+const MERCHANT_PORTAL_VERSION = "1.0.1";
 import { useRestaurantOnboarding } from "@/hooks/useRestaurantOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -586,6 +588,10 @@ const RestaurantSetup = () => {
               >
                 Log out
               </Menu.Item>
+              <Menu.Divider />
+              <Menu.Label style={{ fontSize: 11, color: "var(--mantine-color-dimmed)" }}>
+                Version {MERCHANT_PORTAL_VERSION}
+              </Menu.Label>
             </Menu.Dropdown>
           </Menu>
         </Box>

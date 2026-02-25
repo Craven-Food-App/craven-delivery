@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export interface CustomerOrderForList {
   id: string;
@@ -113,10 +120,15 @@ interface OrderRowProps {
   order: CustomerOrderForList;
   getStatusLabel: (s: string) => string;
   onUpdateStatus?: (orderId: string, newStatus: string) => void;
+  onRefund?: (orderId: string, amountCents?: number) => void;
+  canRefund?: (order: CustomerOrderForList) => boolean;
 }
 
-function OrderRow({ order, getStatusLabel, onUpdateStatus }: OrderRowProps) {
+function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }: OrderRowProps) {
   const [open, setOpen] = useState(false);
+  const [showPartialRefund, setShowPartialRefund] = useState(false);
+  const [partialAmount, setPartialAmount] = useState("");
+  const [showPrintTicket, setShowPrintTicket] = useState(false);
   const statusLabel = getStatusLabel(order.order_status);
   const s = getStatusStyle(order.order_status);
 
@@ -142,6 +154,86 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus }: OrderRowProps) {
     };
   });
 
+  const openPrintTicket = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowPrintTicket(true);
+  };
+
+  const ticketContent = (
+    <div
+      className="print-ticket-content"
+      style={{
+        fontFamily: "system-ui, sans-serif",
+        padding: 16,
+        fontSize: 14,
+        color: "#111",
+        minWidth: 320,
+      }}
+    >
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .print-ticket-content,
+          .print-ticket-content * { visibility: visible; }
+          .print-ticket-content {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+            background: white !important;
+            padding: 16px !important;
+          }
+          .print-ticket-actions { visibility: hidden !important; }
+        }
+      `}</style>
+      <h1 style={{ fontSize: 18, margin: "0 0 12px", borderBottom: "2px solid #ea580c", paddingBottom: 6 }}>
+        Order #{displayId}
+      </h1>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Date</span>
+        <span>{dateStr}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Pickup code</span>
+        <span style={{ fontWeight: 700 }}>{pickupCode}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Customer</span>
+        <span>{order.customer_name}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>{order.delivery_method === "delivery" ? "Address" : "Pickup"}</span>
+        <span>{address || "—"}</span>
+      </div>
+      <div style={{ margin: "12px 0", borderTop: "1px solid #eee", paddingTop: 8 }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ margin: "6px 0" }}>
+            {item.qty}× {item.name} — {item.price}
+            {item.note && <><br /><small>Note: {item.note}</small></>}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Subtotal</span>
+        <span>{subtotalStr}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Shipping</span>
+        <span>{shippingStr}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+        <span>Tax</span>
+        <span>{taxStr}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 8, borderTop: "2px solid #111", fontSize: 16, fontWeight: 700 }}>
+        <span>Total</span>
+        <span>{totalStr}</span>
+      </div>
+    </div>
+  );
+
+  const allowRefund = (canRefund ?? (() => true))(order) && onRefund && order.order_status !== "cancelled";
   const canUpdateStatus = order.order_status !== "delivered" && order.order_status !== "cancelled";
   const nextStatusMap: Record<string, string | null> = {
     pending: "confirmed",
@@ -354,8 +446,144 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus }: OrderRowProps) {
                   </div>
                 </div>
 
+                <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <a
+                    href={`/support?order=${encodeURIComponent(displayId)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#6b7280",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Report issue / Contact support
+                  </a>
+                  <button
+                    type="button"
+                    onClick={openPrintTicket}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 6,
+                      border: "1px solid #6b7280",
+                      background: "#fff",
+                      color: "#374151",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Print ticket
+                  </button>
+                  {allowRefund && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowPartialRefund(true);
+                        }}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 6,
+                          border: "1px solid #b91c1c",
+                          background: "#fff",
+                          color: "#b91c1c",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Partial refund
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRefund(order.id);
+                        }}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 6,
+                          border: "none",
+                          background: "#b91c1c",
+                          color: "#fff",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Full refund
+                      </button>
+                      {showPartialRefund && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                          <input
+                            type="number"
+                            min="1"
+                            max={Math.floor(order.total_cents / 100)}
+                            step="0.01"
+                            placeholder="Amount (e.g. 10.50)"
+                            value={partialAmount}
+                            onChange={(e) => setPartialAmount(e.target.value)}
+                            style={{
+                              width: 120,
+                              padding: "6px 10px",
+                              borderRadius: 6,
+                              border: "1px solid #e5e7eb",
+                              fontSize: 12,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span style={{ fontSize: 11.5, color: "#6b7280" }}>Max ${(order.total_cents / 100).toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const dollars = parseFloat(partialAmount);
+                              if (!Number.isFinite(dollars) || dollars <= 0 || dollars * 100 > order.total_cents) return;
+                              onRefund(order.id, Math.round(dollars * 100));
+                              setShowPartialRefund(false);
+                              setPartialAmount("");
+                            }}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              border: "none",
+                              background: "#b91c1c",
+                              color: "#fff",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Refund amount
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowPartialRefund(false);
+                              setPartialAmount("");
+                            }}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              border: "1px solid #d1d5db",
+                              background: "#fff",
+                              fontSize: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 {canUpdateStatus && onUpdateStatus && (
-                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <>
                     {nextStatus && (
                       <button
                         type="button"
@@ -400,13 +628,32 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus }: OrderRowProps) {
                         </button>
                       </>
                     )}
-                  </div>
+                  </>
                 )}
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      <Dialog open={showPrintTicket} onOpenChange={setShowPrintTicket}>
+        <DialogContent className="max-w-md overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Order #{displayId} — Print ticket</DialogTitle>
+          </DialogHeader>
+          {ticketContent}
+          <div className="print-ticket-actions" style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <Button
+              type="button"
+              onClick={() => window.print()}
+              className="bg-[#ea580c] hover:bg-[#c2410c]"
+            >
+              Print
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -415,9 +662,11 @@ interface MerchantOrderListProps {
   orders: CustomerOrderForList[];
   getStatusLabel: (status: string) => string;
   onUpdateStatus?: (orderId: string, newStatus: string) => void;
+  onRefund?: (orderId: string, amountCents?: number) => void;
+  canRefund?: (order: CustomerOrderForList) => boolean;
 }
 
-export default function MerchantOrderList({ orders, getStatusLabel, onUpdateStatus }: MerchantOrderListProps) {
+export default function MerchantOrderList({ orders, getStatusLabel, onUpdateStatus, onRefund, canRefund }: MerchantOrderListProps) {
   return (
     <>
       <style>{`
@@ -500,6 +749,8 @@ export default function MerchantOrderList({ orders, getStatusLabel, onUpdateStat
               order={order}
               getStatusLabel={getStatusLabel}
               onUpdateStatus={onUpdateStatus}
+              onRefund={onRefund}
+              canRefund={canRefund}
             />
           ))
         )}

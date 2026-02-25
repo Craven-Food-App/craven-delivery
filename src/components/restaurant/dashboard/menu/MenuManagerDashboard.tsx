@@ -177,6 +177,69 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
     setIsEditorOpen(true);
   };
 
+  const handleDuplicateItem = async (item: MenuItem) => {
+    try {
+      const { data: row } = await supabase.from("menu_items").select("*").eq("id", item.id).single();
+      if (!row) return;
+      const { id: _id, created_at: _c, updated_at: _u, ...rest } = row as Record<string, unknown>;
+      const { error } = await supabase.from("menu_items").insert({
+        ...rest,
+        name: `${row.name} (Copy)`,
+        restaurant_id: restaurantId,
+        category_id: row.category_id ?? item.category_id,
+      });
+      if (error) throw error;
+      toast.success("Item duplicated");
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to duplicate item");
+    }
+  };
+
+  const handleDuplicateCategory = async (categoryName: string, categoryId: string | undefined) => {
+    if (!categoryId) {
+      toast.error("Cannot duplicate uncategorized items");
+      return;
+    }
+    try {
+      const { data: cat } = await supabase.from("menu_categories").select("*").eq("id", categoryId).single();
+      if (!cat) return;
+      const maxOrder = Math.max(0, ...categories.map((c) => c.display_order));
+      const { data: newCat, error: catErr } = await supabase
+        .from("menu_categories")
+        .insert({
+          restaurant_id: restaurantId,
+          name: `${cat.name} (Copy)`,
+          display_order: maxOrder + 1,
+          is_active: true,
+        })
+        .select()
+        .single();
+      if (catErr || !newCat) throw catErr || new Error("Failed to create category");
+      const { data: itemsInCat } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("category_id", categoryId);
+      if (itemsInCat?.length) {
+        for (const row of itemsInCat) {
+          const { id: _id, created_at: _c, updated_at: _u, ...rest } = row as Record<string, unknown>;
+          await supabase.from("menu_items").insert({
+            ...rest,
+            name: `${row.name} (Copy)`,
+            restaurant_id: restaurantId,
+            category_id: newCat.id,
+          });
+        }
+      }
+      toast.success("Category duplicated");
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to duplicate category");
+    }
+  };
+
   const handleEditItem = (item: MenuItem) => {
     setSelectedItem(item);
     setIsEditorOpen(true);
@@ -326,11 +389,23 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
                             <span>
                               {categoryName} - Available Category - {items.length} items
                             </span>
-                            {isCollapsed ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronUp className="h-4 w-4" />
-                            )}
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs"
+                                onClick={() => handleDuplicateCategory(categoryName, items[0]?.category_id)}
+                                title="Duplicate category and its items"
+                              >
+                                <Copy className="h-3.5 w-3.5 mr-1" />
+                                Duplicate category
+                              </Button>
+                              {isCollapsed ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4" />
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -376,9 +451,10 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  title="Duplicate (clone into same category)"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleCopyItem(item);
+                                    handleDuplicateItem(item);
                                   }}
                                 >
                                   <Copy className="h-4 w-4" />
@@ -390,6 +466,7 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
                                     e.stopPropagation();
                                     handleEditItem(item);
                                   }}
+                                  title="Edit"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>

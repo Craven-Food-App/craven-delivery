@@ -243,6 +243,25 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
     return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  const handleRefund = async (orderId: string, amountCents?: number) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("refund-order", {
+        body: { order_id: orderId, amount_cents: amountCents },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      notifications.show({
+        title: "Refund started",
+        message: amountCents != null ? "Partial refund submitted." : "Full refund submitted.",
+        color: "green",
+      });
+      fetchOrders();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Refund failed";
+      notifications.show({ title: "Refund failed", message: msg, color: "red" });
+    }
+  };
+
   const filterOrdersByStatus = (status?: string) => {
     if (!status || status === 'all') return orders;
     return orders.filter(order => order.order_status === status);
@@ -318,6 +337,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
                 orders={filtered}
                 getStatusLabel={getStatusLabel}
                 onUpdateStatus={updateOrderStatus}
+                onRefund={handleRefund}
               />
             </Tabs.Panel>
           );

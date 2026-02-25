@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
@@ -253,6 +253,184 @@ function TabPricing(_props: SettingsTabProps) {
       <InfoBox>
         Growth tools like promoted listings and sponsored placement are available to stores on the Enhanced and Premium tiers. <span style={{ color: "#ea580c", fontWeight: 500, cursor: "pointer" }}>Learn more →</span>
       </InfoBox>
+    </div>
+  );
+}
+
+// ── TAB: Promotions ────────────────────────────────────────────────────────────
+function TabPromotions({ restaurant, loading: rLoading }: SettingsTabProps) {
+  const [promos, setPromos] = useState<Array<{ id: string; code: string; name: string; type: string; discount_percentage?: number; discount_amount_cents?: number; minimum_order_cents: number; valid_from: string; valid_until?: string | null; usage_limit?: number | null; usage_count: number; is_active: boolean }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    type: "percentage" as "percentage" | "fixed_amount",
+    discount_percentage: "10",
+    discount_amount_cents: "500",
+    minimum_order_cents: "0",
+    valid_from: new Date().toISOString().slice(0, 16),
+    valid_until: "",
+    usage_limit: "",
+    description: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const fetchPromos = useCallback(() => {
+    if (!restaurant?.id) return;
+    setLoading(true);
+    supabase
+      .from("promo_codes")
+      .select("id, code, name, type, discount_percentage, discount_amount_cents, minimum_order_cents, valid_from, valid_until, usage_limit, usage_count, is_active")
+      .eq("restaurant_id", restaurant.id)
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!error) setPromos((data as typeof promos) || []);
+      })
+      .finally(() => setLoading(false));
+  }, [restaurant?.id]);
+
+  useEffect(() => {
+    fetchPromos();
+  }, [fetchPromos]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restaurant?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("promo_codes").insert({
+        restaurant_id: restaurant.id,
+        code: form.code.toUpperCase().trim(),
+        name: form.name.trim(),
+        type: form.type,
+        discount_percentage: form.type === "percentage" ? parseFloat(form.discount_percentage) || null : null,
+        discount_amount_cents: form.type === "fixed_amount" ? parseInt(form.discount_amount_cents, 10) || null : null,
+        minimum_order_cents: parseInt(form.minimum_order_cents, 10) || 0,
+        valid_from: new Date(form.valid_from).toISOString(),
+        valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
+        usage_limit: form.usage_limit ? parseInt(form.usage_limit, 10) : null,
+        description: form.description.trim() || null,
+        customer_eligibility: "all",
+        applicable_to: "all",
+        is_active: true,
+        per_user_limit: 1,
+      });
+      if (error) throw error;
+      toast.success("Promo created");
+      setForm({ code: "", name: "", type: "percentage", discount_percentage: "10", discount_amount_cents: "500", minimum_order_cents: "0", valid_from: new Date().toISOString().slice(0, 16), valid_until: "", usage_limit: "", description: "" });
+      setShowForm(false);
+      fetchPromos();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to create promo");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (rLoading) return <div className="fade-up" style={{ padding: 24, color: "#6b7280" }}>Loading…</div>;
+
+  return (
+    <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SHead>Your promos</SHead>
+      <p style={{ fontSize: 12, color: "#6b7280" }}>Create promo codes for your restaurant. Customers enter the code at checkout.</p>
+      <button
+        type="button"
+        className="save-btn"
+        onClick={() => setShowForm(!showForm)}
+        style={{ alignSelf: "flex-start", padding: "8px 16px", fontSize: 13, borderRadius: 8, border: "none", background: "#ea580c", color: "#fff", fontWeight: 600, cursor: "pointer" }}
+      >
+        {showForm ? "Cancel" : "Create promo"}
+      </button>
+      {showForm && (
+        <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, border: "1px solid #f3f4f6", borderRadius: 10, background: "#fafafa" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div><FL required>Code</FL><input className="field-input" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="SAVE10" /></div>
+            <div><FL required>Name</FL><input className="field-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="10% off" /></div>
+            <div><FL>Type</FL><Sel><select className="select-input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as "percentage" | "fixed_amount" }))}><option value="percentage">Percentage off</option><option value="fixed_amount">Fixed amount off</option></select></Sel></div>
+            {form.type === "percentage" && <div><FL>Discount %</FL><input type="number" className="field-input" min={1} max={100} value={form.discount_percentage} onChange={e => setForm(f => ({ ...f, discount_percentage: e.target.value }))} /></div>}
+            {form.type === "fixed_amount" && <div><FL>Discount ($)</FL><input type="number" className="field-input" step="0.01" min={0} value={Number(form.discount_amount_cents) / 100} onChange={e => setForm(f => ({ ...f, discount_amount_cents: String(Math.round(parseFloat(e.target.value || "0") * 100)) }))} /></div>}
+            <div><FL>Min order ($)</FL><input type="number" className="field-input" step="0.01" min={0} value={Number(form.minimum_order_cents) / 100} onChange={e => setForm(f => ({ ...f, minimum_order_cents: String(Math.round(parseFloat(e.target.value || "0") * 100)) }))} /></div>
+            <div><FL>Valid from</FL><input type="datetime-local" className="field-input" value={form.valid_from} onChange={e => setForm(f => ({ ...f, valid_from: e.target.value }))} /></div>
+            <div><FL>Valid until</FL><input type="datetime-local" className="field-input" value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} /></div>
+            <div><FL>Usage limit</FL><input type="number" className="field-input" min={0} placeholder="Unlimited" value={form.usage_limit} onChange={e => setForm(f => ({ ...f, usage_limit: e.target.value }))} /></div>
+          </div>
+          <div><FL>Description (optional)</FL><textarea className="field-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+          <button type="submit" className="save-btn" disabled={saving} style={{ alignSelf: "flex-start" }}>{saving ? "Saving…" : "Save promo"}</button>
+        </form>
+      )}
+      {loading ? <p style={{ color: "#9ca3af", fontSize: 13 }}>Loading promos…</p> : promos.length === 0 && !showForm ? <p style={{ color: "#9ca3af", fontSize: 13 }}>No promos yet. Create one above.</p> : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {promos.map((p) => (
+            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 8, border: "1px solid #f3f4f6", background: "#fff" }}>
+              <div>
+                <span style={{ fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: "#ea580c" }}>{p.code}</span>
+                <span style={{ marginLeft: 8, fontSize: 13, color: "#374151" }}>{p.name}</span>
+                <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 8 }}>{p.usage_count} uses</span>
+              </div>
+              <span style={{ fontSize: 11, color: p.is_active ? "#16a34a" : "#9ca3af", fontWeight: 600 }}>{p.is_active ? "Active" : "Inactive"}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TAB: Activity log ──────────────────────────────────────────────────────────
+function TabActivity({ restaurant, loading: rLoading }: SettingsTabProps) {
+  const [entries, setEntries] = useState<Array<{ id: string; action: string; entity_type: string | null; entity_id: string | null; metadata: unknown; created_at: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!restaurant?.id) return;
+    setLoading(true);
+    supabase
+      .from("merchant_activity_log")
+      .select("id, action, entity_type, entity_id, metadata, created_at")
+      .eq("restaurant_id", restaurant.id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data, error }) => {
+        if (!error) setEntries((data as typeof entries) || []);
+      })
+      .finally(() => setLoading(false));
+  }, [restaurant?.id]);
+
+  if (rLoading) return <div className="fade-up" style={{ padding: 24, color: "#6b7280" }}>Loading…</div>;
+
+  const actionLabel = (action: string) => {
+    const map: Record<string, string> = {
+      store_status_change: "Store status changed",
+      full_refund: "Full refund",
+      partial_refund: "Partial refund",
+    };
+    return map[action] || action.replace(/_/g, " ");
+  };
+
+  return (
+    <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SHead>Recent activity</SHead>
+      <p style={{ fontSize: 12, color: "#6b7280" }}>Audit log of recent actions for your store.</p>
+      {loading ? (
+        <p style={{ color: "#9ca3af", fontSize: 13 }}>Loading…</p>
+      ) : entries.length === 0 ? (
+        <p style={{ color: "#9ca3af", fontSize: 13 }}>No activity yet.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {entries.map((e) => (
+            <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "10px 12px", borderRadius: 8, border: "1px solid #f3f4f6", background: "#fff", fontSize: 12 }}>
+              <div>
+                <span style={{ fontWeight: 600, color: "#374151" }}>{actionLabel(e.action)}</span>
+                {e.entity_type && <span style={{ color: "#9ca3af", marginLeft: 6 }}>{e.entity_type}</span>}
+                {e.entity_id && <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280", marginLeft: 4 }}>{e.entity_id.slice(0, 8)}…</span>}
+              </div>
+              <span style={{ color: "#9ca3af", flexShrink: 0 }}>{new Date(e.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1072,12 +1250,14 @@ function TabDeleteAccount(_props: SettingsTabProps) {
 const NAV: { id: string; label: string; icon: React.ReactNode; danger?: boolean }[] = [
   { id: "account",        label: "Account Settings",     icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></> },
   { id: "pricing",        label: "Pricing & Performance",icon: <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></> },
+  { id: "promotions",     label: "Promotions",            icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></> },
   { id: "store",          label: "Store Settings",        icon: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></> },
   { id: "users",          label: "Manage Users",          icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></> },
   { id: "communications", label: "Communications",        icon: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></> },
   { id: "bank",           label: "Bank Account",          icon: <><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></> },
   { id: "inventory",      label: "Inventory",             icon: <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></> },
   { id: "integrations",   label: "Integrations",          icon: <><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></> },
+  { id: "activity",       label: "Activity log",          icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></> },
   { id: "delete-store",   label: "Delete Store",          icon: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></>, danger: true },
   { id: "delete-account", label: "Delete Account",        icon: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>, danger: true },
 ];
@@ -1085,12 +1265,14 @@ const NAV: { id: string; label: string; icon: React.ReactNode; danger?: boolean 
 const CONTENT: Record<string, (p: SettingsTabProps) => React.ReactElement> = {
   account: TabAccount,
   pricing: TabPricing,
+  promotions: TabPromotions,
   store: TabStore,
   users: TabUsers,
   communications: TabCommunications,
   bank: TabBank,
   inventory: TabInventory,
   integrations: TabIntegrations,
+  activity: TabActivity,
   "delete-store": TabDeleteStore,
   "delete-account": TabDeleteAccount,
 };

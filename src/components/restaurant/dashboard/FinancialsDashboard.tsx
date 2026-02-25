@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,58 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   })();
 
+  const downloadCSV = () => {
+    const rows: string[][] = [
+      ["Order ID", "Date", "Gross", "Commission", "Net", "Status", "Type"],
+      ...transactionsForList.map((tx) => [tx.id, tx.date, tx.amount, tx.commission, tx.net, tx.status, tx.type]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `financials-transactions-${range.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPDF = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    let y = 24;
+    doc.setFontSize(16);
+    doc.text("Financials Summary", 20, y);
+    y += 20;
+    doc.setFontSize(10);
+    doc.text(`Period: ${range} · Generated ${new Date().toLocaleDateString("en-US")}`, 20, y);
+    y += 24;
+    doc.setFontSize(11);
+    doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 20, y);
+    y += 16;
+    doc.text(`Commission (${commissionRate}%): ${formatCurrency(totalCommission)}`, 20, y);
+    y += 16;
+    doc.text(`Net Payout: ${formatCurrency(netPayout)}`, 20, y);
+    y += 24;
+    doc.setFontSize(10);
+    doc.text("Recent Transactions", 20, y);
+    y += 14;
+    const colWidths = [50, 50, 35, 40, 35, 30];
+    const headers = ["Order ID", "Date", "Gross", "Commission", "Net", "Status"];
+    doc.setFont(undefined, "bold");
+    headers.forEach((h, i) => doc.text(h, 20 + colWidths.slice(0, i).reduce((s, w) => s + w, 0), y));
+    doc.setFont(undefined, "normal");
+    y += 10;
+    transactionsForList.slice(0, 20).forEach((tx) => {
+      const line = [tx.id, tx.date, tx.amount, tx.commission, tx.net, tx.status];
+      let x = 20;
+      line.forEach((cell, i) => {
+        doc.text(String(cell).slice(0, 12), x, y);
+        x += colWidths[i];
+      });
+      y += 12;
+    });
+    doc.save(`financials-${range.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <>
       <FinancialsStyles />
@@ -301,19 +354,59 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
               <div style={{ width: 3, height: 18, background: "#ea580c", borderRadius: 2 }} />
               <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", letterSpacing: "-0.4px" }}>Financials</h2>
             </div>
-            <div className="select-wrap">
-              <select
-                className="select-input"
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-              >
-                {RANGES.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              {!loading && (
+                <>
+                  <button
+                    type="button"
+                    onClick={downloadCSV}
+                    style={{
+                      padding: "7px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#ea580c",
+                      background: "#fff7ed",
+                      border: "1px solid #fed7aa",
+                      borderRadius: 7,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadPDF}
+                    style={{
+                      padding: "7px 12px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#374151",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 7,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )}
+              <div className="select-wrap">
+                <select
+                  className="select-input"
+                  value={range}
+                  onChange={(e) => setRange(e.target.value)}
+                >
+                  {RANGES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 4 }}>
