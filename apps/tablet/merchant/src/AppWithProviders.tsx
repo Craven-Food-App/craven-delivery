@@ -5,7 +5,6 @@ import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import "@/index.css";
 import App from "./App";
 import "./index.css";
 

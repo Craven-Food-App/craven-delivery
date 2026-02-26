@@ -117,7 +117,7 @@ const RestaurantSetup = () => {
     sectionParam && tabParam === 'settings' ? (sectionParam === 'bank-account' ? 'bank' : sectionParam) : 'account'
   );
   const [authChecked, setAuthChecked] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
@@ -280,53 +280,12 @@ const RestaurantSetup = () => {
     );
   }
 
-  // Portrait: show rotate-device overlay (merchant portal is landscape-only, tablet-first)
-  if (isPortrait) {
-    return (
-      <Box
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'var(--mantine-color-gray-0)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 24,
-          zIndex: 9999,
-        }}
-      >
-        <Box
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 16,
-            background: 'var(--mantine-color-orange-1)',
-            color: 'var(--mantine-color-orange-6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 24,
-          }}
-        >
-          <IconDeviceTablet size={48} style={{ transform: 'rotate(-90deg)' }} />
-        </Box>
-        <Title order={2} ta="center" mb="xs">
-          Rotate your device
-        </Title>
-        <Text c="dimmed" ta="center" maw={320}>
-          The Merchant Portal is designed for tablet in landscape. Please rotate your device to continue.
-        </Text>
-      </Box>
-    );
-  }
-
   return (
     <Box
       style={{
         display: 'flex',
         height: '100vh',
-        minWidth: 1024,
+        minWidth: 0,
         width: '100%',
         background: '#ffffff',
         color: '#18181b',

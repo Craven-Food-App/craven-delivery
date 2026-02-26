@@ -35,12 +35,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to console in development
+    // Always log message and stack so they appear in mobile/Android console (expandable Object is easy to miss)
+    const msg = error?.message ?? String(error);
+    const stack = error?.stack ?? errorInfo?.componentStack ?? '';
+    console.error('ErrorBoundary caught:', msg);
+    if (stack) console.error(stack);
     if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+      console.error('ErrorBoundary full:', error, errorInfo);
     }
-
-    // Report error to external service in production
     if (process.env.NODE_ENV === 'production') {
       this.reportError(error, errorInfo);
     }
@@ -94,6 +96,13 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
+    // Use hash for in-app routing (e.g. Capacitor HashRouter); fallback to full reload
+    try {
+      if (window.location.hash !== undefined) {
+        window.location.hash = '#/';
+        return;
+      }
+    } catch {}
     window.location.href = '/';
   };
 
@@ -106,7 +115,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI: minimal HTML + inline styles so it never throws (e.g. in Capacitor if Button/icons fail)
       const err = this.state.error;
-      const showDetails = !!err?.message;
+      const displayMessage = (err?.message ?? (err ? String(err) : '')) || 'Unknown error';
+      const displayStack = err?.stack ?? this.state.errorInfo?.componentStack ?? '';
       return (
         <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div style={{ maxWidth: 448, width: '100%', background: '#fff', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: 24, textAlign: 'center' }}>
@@ -116,23 +126,20 @@ export class ErrorBoundary extends Component<Props, State> {
             <p style={{ color: '#4b5563', marginBottom: 16 }}>
               We're sorry, but something unexpected happened.
             </p>
-            {/* Always show error message so users can report it (especially in Capacitor/mobile builds) */}
-            {showDetails && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: 12, marginBottom: 16, textAlign: 'left' }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#991b1b', marginBottom: 4 }}>Error:</p>
-                <p style={{ fontSize: '0.75rem', color: '#b91c1c', fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                  {err.message}
-                </p>
-                {err.stack && (
-                  <details style={{ marginTop: 8 }}>
-                    <summary style={{ fontSize: '0.75rem', color: '#b91c1c', cursor: 'pointer' }}>Stack trace</summary>
-                    <pre style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: 4, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                      {err.stack}
-                    </pre>
-                  </details>
-                )}
-              </div>
-            )}
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: 12, marginBottom: 16, textAlign: 'left' }}>
+              <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#991b1b', marginBottom: 4 }}>Error:</p>
+              <p style={{ fontSize: '0.75rem', color: '#b91c1c', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                {displayMessage}
+              </p>
+              {displayStack && (
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ fontSize: '0.75rem', color: '#b91c1c', cursor: 'pointer' }}>Stack trace</summary>
+                  <pre style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: 4, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                    {displayStack}
+                  </pre>
+                </details>
+              )}
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
                 type="button"
