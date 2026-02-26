@@ -1349,7 +1349,7 @@ export default function SettingsDashboard({ defaultTab = "account", onSettingsTa
   return (
     <>
       <FontLoader />
-      <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderTop: "1px solid #e5e7eb", borderBottom: "1px solid #e5e7eb", borderRadius: 0, boxShadow: "none", width: "100%", margin: "32px 0 0 0", overflow: "hidden", display: "grid", gridTemplateColumns: "220px 1fr", minHeight: 600 }}>
+      <div className="settings-dashboard-root" style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderTop: "1px solid #e5e7eb", borderBottom: "1px solid #e5e7eb", borderRadius: 0, boxShadow: "none", width: "100%", margin: "32px 0 0 0", overflow: "hidden", display: "grid", gridTemplateColumns: "220px 1fr", minHeight: 600 }}>
 
         {/* ── Left nav ── */}
         <div style={{ borderRight: "1px solid #f3f4f6", background: "#fafafa", display: "flex", flexDirection: "column" }}>

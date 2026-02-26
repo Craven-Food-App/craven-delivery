@@ -1,0 +1,100 @@
+/* Tablet-responsive overrides when merchant app runs in tablet/Capacitor viewport.
+   Body has class .merchant-tablet-app so these only apply in the tablet build. */
+
+.merchant-tablet-app {
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.merchant-tablet-app #root {
+  overflow: hidden;
+  min-height: 100%;
+}
+
+/* Portal shell: ensure flex layout fills viewport and content scrolls */
+.merchant-tablet-app .merchant-portal-root {
+  min-height: 100%;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.merchant-tablet-app .merchant-portal-sidebar {
+  flex-shrink: 0;
+}
+
+/* Main content: tighter padding so everything fits on screen */
+.merchant-tablet-app .merchant-portal-content {
+  padding: 16px 20px 24px !important;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Settings dashboard: single column on tablet so nav + content stack */
+.merchant-tablet-app .settings-dashboard-root {
+  grid-template-columns: 1fr !important;
+  min-height: 400px !important;
+  margin-top: 12px !important;
+}
+
+/* Allow horizontal scroll for wide tables/cards instead of squashing */
+.merchant-tablet-app .merchant-portal-content [style*="gridTemplateColumns"],
+.merchant-tablet-app .merchant-portal-content [style*="grid-template-columns"] {
+  min-width: 0;
+}
+
+.merchant-tablet-app .merchant-portal-content table,
+.merchant-tablet-app .merchant-portal-content [role="grid"],
+.merchant-tablet-app .merchant-portal-content .overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ScrollArea in portal should take remaining height */
+.merchant-tablet-app .merchant-portal-root .mantine-ScrollArea-viewport {
+  min-height: 0;
+}
+
+/* Typography: slightly smaller headings so more fits */
+.merchant-tablet-app .merchant-portal-content h1,
+.merchant-tablet-app .merchant-portal-content [class*="text-3xl"] {
+  font-size: 1.5rem !important;
+  line-height: 1.3 !important;
+}
+
+.merchant-tablet-app .merchant-portal-content h2,
+.merchant-tablet-app .merchant-portal-content [class*="text-2xl"] {
+  font-size: 1.25rem !important;
+}
+
+/* Dashboard content area: allow scroll and prevent overflow */
+.merchant-tablet-app .merchant-portal-content > div {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Settings nav + content: side-by-side when width allows, else stack */
+.merchant-tablet-app .merchant-portal-content > div > div:first-child {
+  min-width: 0;
+}
+
+/* Ensure buttons and inputs are touch-friendly */
+.merchant-tablet-app .merchant-portal-content button,
+.merchant-tablet-app .merchant-portal-content [role="button"],
+.merchant-tablet-app .merchant-portal-content a[class*="btn"] {
+  min-height: 40px;
+  min-width: 44px;
+}
+
+/* Card and section spacing */
+.merchant-tablet-app .merchant-portal-content .space-y-6 > * + * {
+  margin-top: 1rem;
+}
+
+.merchant-tablet-app .merchant-portal-content [class*="gap-6"] {
+  gap: 1rem !important;
+}
+
+.merchant-tablet-app .merchant-portal-content [class*="gap-8"] {
+  gap: 1.25rem !important;
+}

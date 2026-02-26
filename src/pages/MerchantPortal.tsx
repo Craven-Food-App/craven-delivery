@@ -117,7 +117,7 @@ const RestaurantSetup = () => {
     sectionParam && tabParam === 'settings' ? (sectionParam === 'bank-account' ? 'bank' : sectionParam) : 'account'
   );
   const [authChecked, setAuthChecked] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024);
   const [userName, setUserName] = useState("User");
   const [fullName, setFullName] = useState<string | null>(null);
   const [showWelcomeConfetti, setShowWelcomeConfetti] = useState(false);
@@ -138,6 +138,13 @@ const RestaurantSetup = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  // Collapse sidebar when viewport is narrow (tablet), expand when wide
+  useEffect(() => {
+    const check = () => setSidebarCollapsed(window.innerWidth < 1024);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Sync tab from URL on mount and when URL changes
   useEffect(() => {
@@ -282,6 +289,7 @@ const RestaurantSetup = () => {
 
   return (
     <Box
+      className="merchant-portal-root"
       style={{
         display: 'flex',
         height: '100vh',
@@ -292,7 +300,7 @@ const RestaurantSetup = () => {
       }}
     >
       {/* Left Sidebar */}
-      <Box style={{ width: sidebarCollapsed ? '72px' : '256px', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', flexDirection: 'column', transition: 'width 200ms ease-in-out', overflow: 'hidden' }}>
+      <Box className="merchant-portal-sidebar" style={{ width: sidebarCollapsed ? '72px' : '256px', borderRight: '1px solid var(--mantine-color-gray-3)', display: 'flex', flexDirection: 'column', transition: 'width 200ms ease-in-out', overflow: 'hidden' }}>
         {/* Logo + Collapse Toggle */}
         <Box p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
           {!sidebarCollapsed && (

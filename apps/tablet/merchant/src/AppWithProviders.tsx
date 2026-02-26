@@ -4,8 +4,11 @@ import { DatesProvider } from "@mantine/dates";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import "@mantine/core/styles.css";
-import "@mantine/dates/styles.css"; // ADD: prevents broken date picker styles
+import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
+// Root app styles: Tailwind + design tokens so portal (customers, insights, reports, business hours, etc.) render correctly
+import "@root/index.css";
+import "./merchant-tablet.css";
 import App from "./App";
 import "./index.css";
 
