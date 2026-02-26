@@ -2,6 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { AppWithProviders } from "./AppWithProviders";
 
+console.log("HREF:", window.location.href);
+console.log("ORIGIN:", window.location.origin);
 // No StrictMode in Capacitor build to avoid double-render issues in Android WebView
 createRoot(document.getElementById("root") as HTMLElement).render(
   <AppWithProviders />

@@ -148,6 +148,24 @@ function TabAccount({ restaurant, loading: rLoading, refetchRestaurant }: Settin
   const [pickupInstructions, setPickupInstructions] = useState(notes.pickup_instructions ?? "");
   const [customerPickupInstructions, setCustomerPickupInstructions] = useState(notes.customer_pickup_instructions ?? "");
   const [saving, setSaving] = useState(false);
+  const [merchantId, setMerchantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data: row } = await supabase.from("merchant_accounts").select("merchant_id").eq("user_id", user.id).maybeSingle();
+      if (cancelled) return;
+      if (row?.merchant_id) {
+        setMerchantId(row.merchant_id);
+        return;
+      }
+      const { data: ensured } = await supabase.rpc("ensure_merchant_account", { p_user_id: user.id });
+      if (!cancelled && typeof ensured === "string") setMerchantId(ensured);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const n = (restaurant?.verification_notes as Record<string, string> | undefined) || {};
@@ -184,6 +202,15 @@ function TabAccount({ restaurant, loading: rLoading, refetchRestaurant }: Settin
 
   return (
     <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SHead>Your account</SHead>
+      <div style={{ padding: "14px 16px", borderRadius: 10, border: "1.5px solid #f3f4f6", background: "#fafafa" }}>
+        <p style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>Merchant ID</p>
+        <p style={{ fontSize: 15, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.05em", color: "#111827" }}>
+          {merchantId ?? "…"}
+        </p>
+        <p style={{ fontSize: 11.5, color: "#9ca3af", marginTop: 6 }}>One ID for all your stores. Use the last 4 characters when signing in on the tablet.</p>
+      </div>
+
       <SHead>Menu Settings</SHead>
       <ToggleRow label="Auto-generate Descriptions" desc="AI will automatically generate product descriptions for items missing one." active={auto} onToggle={() => setAuto(!auto)} />
 

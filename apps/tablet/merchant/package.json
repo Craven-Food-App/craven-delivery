@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite --config vite.config.ts",
     "deploy:merchant-functions": "cd ../../.. && npm run deploy:merchant-functions",
-    "build": "vite build --config vite.config.ts && node -e \"var fs=require('fs'),path=require('path');var s=path.join(process.cwd(),'../../../public/craven-merchant-app-bg.png');var d=path.join(process.cwd(),'dist/craven-merchant-app-bg.png');if(fs.existsSync(s)){fs.copyFileSync(s,d);console.log('Copied merchant bg');}\"",
+    "build": "vite build --config vite.config.ts && node scripts/copy-assets.mjs",
     "preview": "vite preview --config vite.config.ts",
     "sync": "npx cap sync android",
+    "release": "npm run build && npx cap sync android",
+    "release:copy": "npm run build && node scripts/copy-to-android.cjs",
     "open:android": "npx cap open android"
   },
   "dependencies": {

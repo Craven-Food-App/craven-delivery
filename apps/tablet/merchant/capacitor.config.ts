@@ -5,8 +5,12 @@ const config: CapacitorConfig = {
   appName: "Crave'n Merchant",
   webDir: 'dist',
 
+  // Native Capacitor app — loads from bundled file:// assets.
+  // No server.url, no hostname override. Capacitor handles the bridge internally.
+  // If you ever see "localhost/assets" errors it means cap sync was not run
+  // after build, or the dist/ folder is stale.
   server: {
-    cleartext: false,
+    androidScheme: 'https',
   },
 
   android: {
