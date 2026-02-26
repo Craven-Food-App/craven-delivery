@@ -157,35 +157,37 @@ function TabAccount({ restaurant, loading: rLoading, refetchRestaurant }: Settin
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        console.log("[MerchantID] user:", user?.id, user?.email);
         if (!user || cancelled) return;
         const { data: row, error: selectError } = await supabase
           .from("merchant_accounts")
           .select("merchant_id")
           .eq("user_id", user.id)
           .maybeSingle();
+        console.log("[MerchantID] select result:", { row, selectError });
         if (cancelled) return;
         if (row?.merchant_id) {
           setMerchantId(row.merchant_id);
           return;
         }
-        // No row (or table not migrated yet): ensure one exists and use it
         const { data: ensured, error: rpcError } = await supabase.rpc("ensure_merchant_account", {
           p_user_id: user.id,
         });
+        console.log("[MerchantID] ensure_merchant_account result:", { ensured, rpcError });
         if (cancelled) return;
         if (typeof ensured === "string") {
           setMerchantId(ensured);
           return;
         }
-        // Re-fetch in case RPC returns differently or we just created the row
-        const { data: row2 } = await supabase
+        const { data: row2, error: refetchError } = await supabase
           .from("merchant_accounts")
           .select("merchant_id")
           .eq("user_id", user.id)
           .maybeSingle();
+        console.log("[MerchantID] re-fetch result:", { row2, refetchError });
         if (!cancelled && row2?.merchant_id) setMerchantId(row2.merchant_id);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error("[MerchantID] unexpected error:", err);
       } finally {
         if (!cancelled) setMerchantIdLoading(false);
       }
