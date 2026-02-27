@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   Tabs,
@@ -7,11 +7,15 @@ import {
   Group,
   Box,
   Loader,
-  Grid,
+  Modal,
+  Button,
 } from "@mantine/core";
+import { IconClock, IconTruck, IconCurrencyDollar, IconPackage } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { supabase } from "@/integrations/supabase/client";
 import MerchantOrderList, { type CustomerOrderForList } from "@/components/restaurant/MerchantOrderList";
+
+const NEW_ORDER_SOUND_VOLUME = 0.85;
 
 interface CustomerOrder {
   id: string;
@@ -33,20 +37,42 @@ interface CustomerOrder {
   created_at: string;
   order_number?: string;
   pickup_code?: string;
+  driver_id?: string | null;
+  driver_name?: string | null;
+  driver_vehicle?: string | null;
 }
 
 interface RestaurantCustomerOrderManagementProps {
   restaurantId: string;
+  /** When true, play sound on new order (default true). Controlled by Settings > Communications. */
+  playSoundForNewOrders?: boolean;
 }
 
-export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCustomerOrderManagementProps) => {
+/** Minimal new-order payload from Supabase realtime INSERT */
+interface NewOrderRealtimePayload {
+  id: string;
+  total_cents?: number;
+  order_number?: string | null;
+  delivery_address?: unknown;
+}
+
+export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNewOrders = true }: RestaurantCustomerOrderManagementProps) => {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newOrderAlert, setNewOrderAlert] = useState<NewOrderRealtimePayload | null>(null);
+  const newOrderSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    newOrderSoundRef.current = new Audio("/craven-notification.wav");
+    newOrderSoundRef.current.volume = NEW_ORDER_SOUND_VOLUME;
+    return () => {
+      newOrderSoundRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     fetchOrders();
-    
-    // Set up real-time subscription for new orders
+
     const subscription = supabase
       .channel('orders_changes')
       .on(
@@ -57,7 +83,22 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
           table: 'orders',
           filter: `restaurant_id=eq.${restaurantId}`,
         },
-        () => {
+        (payload: { eventType?: string; new?: NewOrderRealtimePayload }) => {
+          if (payload?.eventType === 'INSERT' && payload?.new) {
+            setNewOrderAlert({
+              id: payload.new.id,
+              total_cents: payload.new.total_cents,
+              order_number: payload.new.order_number ?? null,
+              delivery_address: payload.new.delivery_address,
+            });
+            if (playSoundForNewOrders) {
+              try {
+                newOrderSoundRef.current?.play().catch(() => {});
+              } catch {
+                // ignore
+              }
+            }
+          }
           fetchOrders();
         }
       )
@@ -66,7 +107,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
     return () => {
       subscription.unsubscribe();
     };
-  }, [restaurantId]);
+  }, [restaurantId, playSoundForNewOrders]);
 
   const fetchOrders = async () => {
     try {
@@ -134,11 +175,36 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
               // This is expected due to RLS policies - restaurant owners can't see customer profiles
             }
 
+            let driverName: string | null = null;
+            let driverVehicle: string | null = null;
+            if (order.driver_id) {
+              try {
+                const [{ data: driverProfile }, { data: driverUserProfile }] = await Promise.all([
+                  supabase
+                    .from('driver_profiles')
+                    .select('vehicle_type')
+                    .eq('user_id', order.driver_id)
+                    .maybeSingle(),
+                  supabase
+                    .from('user_profiles')
+                    .select('full_name')
+                    .eq('user_id', order.driver_id)
+                    .maybeSingle(),
+                ]);
+                driverVehicle = driverProfile?.vehicle_type ?? null;
+                driverName = (driverUserProfile?.full_name as string) ?? null;
+              } catch (driverErr) {
+                console.log('Could not fetch driver info (RLS may restrict):', driverErr);
+              }
+            }
+
             return {
               ...order,
               customer_name: customerName,
               customer_email: customerEmail,
               customer_phone: customerPhone,
+              driver_name: driverName,
+              driver_vehicle: driverVehicle,
               order_items: orderItems?.map((item: any) => ({
                 ...item,
                 name: item.menu_items?.name || 'Unknown Item',
@@ -155,6 +221,8 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
               customer_name: 'Customer',
               customer_email: '',
               customer_phone: '',
+              driver_name: null,
+              driver_vehicle: null,
               order_items: [],
               delivery_method: order.delivery_address ? 'delivery' as const : 'pickup' as const,
               payment_status: 'paid' as const
@@ -279,42 +347,120 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
   const activeOrders = orders.filter(o => ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.order_status));
   const completedOrders = filterOrdersByStatus('delivered');
 
+  const todayRevenueCents = orders.reduce(
+    (sum, order) =>
+      order.order_status === "delivered" &&
+      new Date(order.created_at).toDateString() === new Date().toDateString()
+        ? sum + order.total_cents
+        : sum,
+    0
+  );
+
+  const closeNewOrderModal = () => setNewOrderAlert(null);
+  const isDelivery = newOrderAlert?.delivery_address != null && typeof newOrderAlert.delivery_address === "object";
+
   return (
-    <Stack gap="xl">
-      <Grid gutter="md">
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card p="md" withBorder>
-            <Stack gap="xs">
-              <Text size="sm" fw={500}>Pending Orders</Text>
-              <Text size="xl" fw={700}>{pendingOrders.length}</Text>
-            </Stack>
-          </Card>
-        </Grid.Col>
-        
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card p="md" withBorder>
-            <Stack gap="xs">
-              <Text size="sm" fw={500}>Active Orders</Text>
-              <Text size="xl" fw={700}>{activeOrders.length}</Text>
-            </Stack>
-          </Card>
-        </Grid.Col>
-        
-        <Grid.Col span={{ base: 12, md: 4 }}>
-          <Card p="md" withBorder>
-            <Stack gap="xs">
-              <Text size="sm" fw={500}>Today's Revenue</Text>
-              <Text size="xl" fw={700}>
-                ${(orders.reduce((sum, order) => 
-                  order.order_status === 'delivered' && 
-                  new Date(order.created_at).toDateString() === new Date().toDateString()
-                    ? sum + order.total_cents : sum, 0
-                ) / 100).toFixed(2)}
-              </Text>
-            </Stack>
-          </Card>
-        </Grid.Col>
-      </Grid>
+    <Stack gap="md">
+      <Modal
+        opened={newOrderAlert != null}
+        onClose={closeNewOrderModal}
+        title={
+          <Group gap="sm">
+            <IconPackage size={24} style={{ color: "var(--mantine-color-orange-6)" }} />
+            <Text size="lg" fw={600}>New order received</Text>
+          </Group>
+        }
+        centered
+        size="sm"
+        styles={{
+          title: { fontWeight: 600 },
+        }}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            {newOrderAlert?.order_number
+              ? `Order #${newOrderAlert.order_number}`
+              : `Order ${newOrderAlert?.id?.slice(-8).toUpperCase() ?? ""}`}
+            {newOrderAlert?.total_cents != null && (
+              <> · ${(newOrderAlert.total_cents / 100).toFixed(2)}</>
+            )}
+          </Text>
+          <Text size="xs" c="dimmed">
+            The order is in your list below. {isDelivery
+              ? "For delivery orders, a Feeder is notified and can accept in the Feeder app."
+              : "Mark it ready when the customer can pick up."}
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="light" color="orange" onClick={closeNewOrderModal}>
+              View order
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Box
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          alignItems: "stretch",
+        }}
+      >
+        <Box
+          style={{
+            flex: "1 1 0",
+            minWidth: 100,
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid var(--mantine-color-gray-3)",
+            background: "var(--mantine-color-gray-0)",
+          }}
+        >
+          <Group gap="xs" wrap="nowrap">
+            <IconClock size={18} style={{ color: "var(--mantine-color-orange-6)", flexShrink: 0 }} />
+            <Box style={{ minWidth: 0 }}>
+              <Text size="xs" c="dimmed" fw={500}>Pending</Text>
+              <Text size="lg" fw={700}>{pendingOrders.length}</Text>
+            </Box>
+          </Group>
+        </Box>
+        <Box
+          style={{
+            flex: "1 1 0",
+            minWidth: 100,
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid var(--mantine-color-gray-3)",
+            background: "var(--mantine-color-gray-0)",
+          }}
+        >
+          <Group gap="xs" wrap="nowrap">
+            <IconTruck size={18} style={{ color: "var(--mantine-color-orange-6)", flexShrink: 0 }} />
+            <Box style={{ minWidth: 0 }}>
+              <Text size="xs" c="dimmed" fw={500}>Active</Text>
+              <Text size="lg" fw={700}>{activeOrders.length}</Text>
+            </Box>
+          </Group>
+        </Box>
+        <Box
+          style={{
+            flex: "1 1 0",
+            minWidth: 100,
+            padding: "10px 14px",
+            borderRadius: 10,
+            border: "1px solid var(--mantine-color-gray-3)",
+            background: "var(--mantine-color-gray-0)",
+          }}
+        >
+          <Group gap="xs" wrap="nowrap">
+            <IconCurrencyDollar size={18} style={{ color: "var(--mantine-color-orange-6)", flexShrink: 0 }} />
+            <Box style={{ minWidth: 0 }}>
+              <Text size="xs" c="dimmed" fw={500}>Today</Text>
+              <Text size="lg" fw={700}>${(todayRevenueCents / 100).toFixed(2)}</Text>
+            </Box>
+          </Group>
+        </Box>
+      </Box>
 
       <Tabs defaultValue="all">
         <Tabs.List>
@@ -332,7 +478,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId }: RestaurantCu
                 : tab === "all" || order.order_status === tab
           ) as CustomerOrderForList[];
           return (
-            <Tabs.Panel key={tab} value={tab} pt="md">
+            <Tabs.Panel key={tab} value={tab} pt="sm">
               <MerchantOrderList
                 orders={filtered}
                 getStatusLabel={getStatusLabel}

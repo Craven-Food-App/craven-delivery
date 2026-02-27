@@ -30,6 +30,8 @@ export interface CustomerOrderForList {
   created_at: string;
   order_number?: string | null;
   pickup_code?: string | null;
+  driver_name?: string | null;
+  driver_vehicle?: string | null;
 }
 
 const STATUS_MAP: Record<string, { label: string; bg: string; text: string; border: string }> = {
@@ -206,6 +208,16 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
         <span>{order.delivery_method === "delivery" ? "Address" : "Pickup"}</span>
         <span>{address || "—"}</span>
       </div>
+      {order.delivery_method === "delivery" && (
+        <div style={{ display: "flex", justifyContent: "space-between", margin: "4px 0" }}>
+          <span>Driver</span>
+          <span>
+            {order.driver_name || order.driver_vehicle
+              ? [order.driver_name, order.driver_vehicle].filter(Boolean).join(order.driver_name && order.driver_vehicle ? " · " : "")
+              : "No driver assigned"}
+          </span>
+        </div>
+      )}
       <div style={{ margin: "12px 0", borderTop: "1px solid #eee", paddingTop: 8 }}>
         {items.map((item, i) => (
           <div key={i} style={{ margin: "6px 0" }}>
@@ -365,6 +377,9 @@ function OrderRow({ order, getStatusLabel, onUpdateStatus, onRefund, canRefund }
                   { icon: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6", val: order.customer_email || "—" },
                   { icon: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.5 2 2 0 0 1 3.6 1.32h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16.92z", val: order.customer_phone || "—" },
                   { icon: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", val: address || "—" },
+                  ...(order.delivery_method === "delivery"
+                    ? [{ icon: "M18 18H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z", val: order.driver_name || order.driver_vehicle ? [order.driver_name, order.driver_vehicle].filter(Boolean).join(order.driver_name && order.driver_vehicle ? " · " : "") : "No driver assigned", bold: false as boolean }]
+                    : []),
                 ].map((r, i) => (
                   <div key={i} style={{ display: "flex", gap: 7, alignItems: "flex-start", marginBottom: 5 }}>
                     <span style={{ color: "#9ca3af", flexShrink: 0, marginTop: 1 }}>

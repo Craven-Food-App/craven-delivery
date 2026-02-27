@@ -756,6 +756,7 @@ function TabCommunications({ restaurant, loading: rLoading, refetchRestaurant }:
   const notes = (restaurant?.verification_notes as Record<string, boolean | string> | undefined) || {};
   const [s, setS] = useState({
     newOrder: notes.notif_newOrder !== false,
+    newOrderSound: notes.notif_newOrderSound !== false,
     lowStock: notes.notif_lowStock !== false,
     reviews: notes.notif_reviews === true,
     payouts: notes.notif_payouts !== false,
@@ -772,6 +773,7 @@ function TabCommunications({ restaurant, loading: rLoading, refetchRestaurant }:
     const n = (restaurant?.verification_notes as Record<string, boolean | string> | undefined) || {};
     setS({
       newOrder: n.notif_newOrder !== false,
+      newOrderSound: n.notif_newOrderSound !== false,
       lowStock: n.notif_lowStock !== false,
       reviews: n.notif_reviews === true,
       payouts: n.notif_payouts !== false,
@@ -795,6 +797,7 @@ function TabCommunications({ restaurant, loading: rLoading, refetchRestaurant }:
         verification_notes: {
           ...existing,
           notif_newOrder: s.newOrder,
+          notif_newOrderSound: s.newOrderSound,
           notif_lowStock: s.lowStock,
           notif_reviews: s.reviews,
           notif_payouts: s.payouts,
@@ -824,6 +827,7 @@ function TabCommunications({ restaurant, loading: rLoading, refetchRestaurant }:
       <SHead>Notification Events</SHead>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <ToggleRow label="New Order Received"      desc="Get notified immediately when a customer places an order." active={s.newOrder} onToggle={() => tog("newOrder")} />
+        <ToggleRow label="Play sound for new orders" desc="Play a short sound when a new order arrives (Merchant Portal)." active={s.newOrderSound} onToggle={() => tog("newOrderSound")} />
         <ToggleRow label="Low Stock Alert"         desc="Receive alerts when a product variant drops below 5 units." active={s.lowStock} onToggle={() => tog("lowStock")} />
         <ToggleRow label="New Customer Review"     desc="Be notified when a customer leaves a rating or review." active={s.reviews}  onToggle={() => tog("reviews")} />
         <ToggleRow label="Payout Processed"        desc="Confirmation when your weekly payout has been sent." active={s.payouts}  onToggle={() => tog("payouts")} />
@@ -1353,13 +1357,6 @@ export default function SettingsDashboard({ defaultTab = "account", onSettingsTa
 
         {/* ── Left nav ── */}
         <div style={{ borderRight: "1px solid #f3f4f6", background: "#fafafa", display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "20px 20px 14px", borderBottom: "1px solid #f3f4f6" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 3, height: 16, background: "#ea580c", borderRadius: 2 }} />
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: "#111827", letterSpacing: "-0.3px" }}>Settings</h2>
-            </div>
-          </div>
-
           <nav style={{ padding: "10px 10px", flex: 1 }}>
             {NAV.map(item => {
               const isActive = active === item.id;
