@@ -270,6 +270,30 @@ const CustomerSupportChat: React.FC = () => {
           width: '100%',
           overflow: 'hidden',
         }}>
+          {showDriverChat && activeOrder?.id && (
+            <Box style={{ flexShrink: 0, padding: '8px 12px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    toast({ title: 'Connecting…', description: 'Your phone will ring from the delivery number.' });
+                    const { data, error } = await supabase.functions.invoke('start-masked-call', {
+                      body: { order_id: activeOrder.id, caller_role: 'customer' },
+                    });
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                    toast({ title: 'Call started', description: 'Your phone will ring shortly.', variant: 'default' });
+                  } catch (e: any) {
+                    toast({ title: 'Could not start call', description: e?.message ?? 'Try again.', variant: 'destructive' });
+                  }
+                }}
+              >
+                <Truck size={14} style={{ marginRight: 6 }} />
+                Call driver
+              </Button>
+            </Box>
+          )}
           <ChatInterface
             conversationId={conversationId}
             conversationType={chatType}

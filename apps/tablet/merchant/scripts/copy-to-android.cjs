@@ -7,12 +7,12 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const distDir = path.join(root, 'dist');
+const distDir = path.join(root, 'dist-build');
 const publicDir = path.join(root, 'android', 'app', 'src', 'main', 'assets', 'public');
 const assetsDir = path.join(root, 'android', 'app', 'src', 'main', 'assets');
 
 if (!fs.existsSync(distDir)) {
-  console.error('Run npm run build first. dist/ not found.');
+  console.error('Run npm run build first. dist-build/ not found.');
   process.exit(1);
 }
 
@@ -42,7 +42,7 @@ if (!fs.existsSync(capConfigJson)) {
   const config = {
     appId: 'com.craven.delivery.tablet.merchant',
     appName: "Crave'n Merchant",
-    webDir: 'dist',
+    webDir: 'dist-build',
     server: { cleartext: false },
     android: { allowMixedContent: false, captureInput: true, webContentsDebuggingEnabled: false },
     plugins: { SplashScreen: { launchShowDuration: 0, launchAutoHide: true, backgroundColor: '#ffffff', showSpinner: false, androidScaleType: 'CENTER_CROP' } },

@@ -73,7 +73,7 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      outDir: path.resolve(__dirname, "./dist"),
+      outDir: path.resolve(__dirname, "./dist-build"),
       emptyOutDir: true,
       sourcemap: mode === "development",
       commonjsOptions: { transformMixedEsModules: true },

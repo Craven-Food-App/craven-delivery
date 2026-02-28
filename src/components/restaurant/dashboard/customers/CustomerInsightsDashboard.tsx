@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, TrendingUp } from "lucide-react";
+import { Users, UserPlus, Repeat, Sparkles } from "lucide-react";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from "@/integrations/supabase/client";
@@ -18,12 +17,16 @@ interface CustomerStats {
 
 interface CustomerInsightsDashboardProps {
   restaurantId?: string;
+  dateRange?: string;
+  onDateRangeChange?: (value: string) => void;
 }
 
-const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerInsightsDashboardProps) => {
+const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp, dateRange: dateRangeProp, onDateRangeChange }: CustomerInsightsDashboardProps) => {
   const { restaurant } = useRestaurantData();
   const restaurantId = restaurantIdProp ?? restaurant?.id;
-  const [dateRange, setDateRange] = useState("this-month");
+  const [internalDateRange, setInternalDateRange] = useState("this-month");
+  const dateRange = dateRangeProp ?? internalDateRange;
+  const setDateRange = onDateRangeChange ?? setInternalDateRange;
   const [customerType, setCustomerType] = useState("all");
   const [stats, setStats] = useState<CustomerStats>({ total: 0, new: 0, occasional: 0, frequent: 0 });
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
@@ -120,22 +123,47 @@ const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerI
     };
   }, [mapboxToken]);
 
-  const MetricCard = ({ title, value, subValue, isActive }: any) => (
-    <Card className={isActive ? "border-primary" : ""}>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-            <Users className="w-6 h-6 text-muted-foreground" />
+  const metricCards: { key: keyof CustomerStats; title: string; icon: typeof Users }[] = [
+    { key: "total", title: "Total customers", icon: Users },
+    { key: "new", title: "New", icon: UserPlus },
+    { key: "occasional", title: "Occasional", icon: Repeat },
+    { key: "frequent", title: "Frequent", icon: Sparkles },
+  ];
+
+  const MetricCard = ({
+    title,
+    value,
+    subValue,
+    icon: Icon,
+    isActive,
+  }: {
+    title: string;
+    value: number;
+    subValue: number;
+    icon: typeof Users;
+    isActive: boolean;
+  }) => (
+    <Card
+      className={
+        isActive
+          ? "border-primary min-w-0"
+          : "border-border/80 bg-card min-w-0"
+      }
+    >
+      <CardContent className="p-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
           </div>
+          <span className="text-xs text-muted-foreground truncate">{title}</span>
         </div>
-        <div className="text-sm text-muted-foreground mb-2">{title}</div>
-        <div className="flex items-baseline gap-2 mb-2">
-          <div className="text-3xl font-bold">{value}</div>
-          <div className="text-sm text-muted-foreground">- - -</div>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{subValue}</span>
-          <span className="text-primary"><CraveMoreText /> customers</span>
+        <p className="text-lg font-bold tabular-nums">{value}</p>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0 mt-1.5 text-xs text-muted-foreground leading-none">
+          <span className="leading-none">{subValue}</span>
+          <span className="inline-flex items-center leading-none text-primary">
+            <CraveMoreText className="[&_img]:w-3 [&_img]:h-[13px]" />
+          </span>
+          <span className="leading-none text-primary">customers</span>
         </div>
       </CardContent>
     </Card>
@@ -147,19 +175,6 @@ const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerI
         Understand your customers and discover opportunities to grow and retain your customer base.
       </p>
 
-      <div className="flex gap-4 items-center">
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this-month">This month</SelectItem>
-            <SelectItem value="last-month">Last month</SelectItem>
-            <SelectItem value="last-3-months">Last 3 months</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <div>
         <h2 className="text-lg font-semibold mb-4">Overview</h2>
         <p className="text-sm text-muted-foreground mb-4">
@@ -167,37 +182,22 @@ const CustomerInsightsDashboard = ({ restaurantId: restaurantIdProp }: CustomerI
           {dateRange === "last-month" && "Previous month data"}
           {dateRange === "last-3-months" && "Last 3 months data"}
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <MetricCard 
-            title="Total customers" 
-            value={stats.total} 
-            subValue="0"
-            isActive={customerType === "all"}
-          />
-          <MetricCard 
-            title="New" 
-            value={stats.new} 
-            subValue="0"
-            isActive={customerType === "new"}
-          />
-          <MetricCard 
-            title="Occasional" 
-            value={stats.occasional} 
-            subValue="0"
-            isActive={customerType === "occasional"}
-          />
-          <MetricCard 
-            title="Frequent" 
-            value={stats.frequent} 
-            subValue="0"
-            isActive={customerType === "frequent"}
-          />
+        <div className="flex flex-nowrap gap-2 w-full min-w-0">
+          {metricCards.map(({ key, title, icon }) => (
+            <div key={key} className="min-w-0 flex-1">
+              <MetricCard
+                title={title}
+                value={stats[key]}
+                subValue={0}
+                icon={icon}
+                isActive={customerType === key}
+              />
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-4">
-          <CraveMoreText /> is a loyalty subscription service for customers. <CraveMoreText /> customers frequently place high-value orders.
-        </p>
-        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-          <span>Last updated on {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-0 text-xs text-muted-foreground leading-none">
+          <span className="inline-flex items-center leading-none"><CraveMoreText /></span>
+          <span className="leading-none">is a loyalty subscription for customers. Updated {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.</span>
         </div>
       </div>
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -9,12 +8,24 @@ import { useRestaurantData } from "@/hooks/useRestaurantData";
 
 interface SalesDashboardProps {
   restaurantId?: string;
+  dateRange?: string;
+  onDateRangeChange?: (value: string) => void;
+  priorRange?: string;
+  onPriorRangeChange?: (value: string) => void;
 }
 
-const SalesDashboard = ({ restaurantId: restaurantIdProp }: SalesDashboardProps) => {
+const SalesDashboard = ({
+  restaurantId: restaurantIdProp,
+  dateRange: dateRangeProp,
+  onDateRangeChange,
+  priorRange: priorRangeProp,
+  onPriorRangeChange,
+}: SalesDashboardProps) => {
   const { restaurant } = useRestaurantData();
   const restaurantId = restaurantIdProp ?? restaurant?.id;
-  const [dateRange, setDateRange] = useState("last7");
+  const [internalDateRange, setInternalDateRange] = useState("last7");
+  const dateRange = dateRangeProp ?? internalDateRange;
+  const setDateRange = onDateRangeChange ?? setInternalDateRange;
   const [chartView, setChartView] = useState<"sales" | "orders" | "ticket">("sales");
   const [salesData, setSalesData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -155,31 +166,6 @@ const SalesDashboard = ({ restaurantId: restaurantIdProp }: SalesDashboardProps)
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Date Range Selector */}
-      <div className="flex gap-4 items-center">
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="last7">Last 7 days</SelectItem>
-            <SelectItem value="last30">Last 30 days</SelectItem>
-            <SelectItem value="custom">Custom range</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-muted-foreground">vs</span>
-        <Select defaultValue="7days-prior">
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7days-prior">7 days prior</SelectItem>
-            <SelectItem value="14days-prior">14 days prior</SelectItem>
-            <SelectItem value="30days-prior">30 days prior</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard 

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import feederNavButton from '@/assets/feeder_nav_button_compressed.png';
 
+/** Flame icon URL from public/assets (root: public/assets, feeder: copy to apps/feeder/public/assets). */
+const CRAVEN_POPULAR_FLAME_ICON = '/assets/craven-popular-flame-icon.png';
+
 interface Restaurant {
   id: string;
   name: string;
@@ -14,6 +17,8 @@ interface Restaurant {
   activeOrders: number;
   avgPayout: number;
   cuisineType: string;
+  /** Set in Craven admin (restaurants.is_promoted). When true, card shows "POPULAR TODAY" in bottom right. */
+  is_promoted?: boolean;
 }
 
 interface NearbyRestaurantCardsProps {
@@ -26,16 +31,16 @@ const DEFAULT_DEV_LOCATION = {
   longitude: -84.3880
 };
 
-// Mock restaurant data - in production this would come from Supabase
+// Mock restaurant data - in production this would come from Supabase (restaurants.is_promoted set in admin)
 const MOCK_RESTAURANTS: Omit<Restaurant, 'distanceMinutes' | 'distanceMiles'>[] = [
-  { id: '1', name: "Chick-fil-A", latitude: 33.7490, longitude: -84.3880, address: "123 Peachtree St", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100&h=100&fit=crop", rating: 4.8, activeOrders: 12, avgPayout: 8.50, cuisineType: "Fast Food" },
-  { id: '2', name: "McDonald's", latitude: 33.7510, longitude: -84.3900, address: "456 Main St", image: "https://images.unsplash.com/photo-1586816001966-79b736744398?w=100&h=100&fit=crop", rating: 4.2, activeOrders: 18, avgPayout: 6.75, cuisineType: "Fast Food" },
-  { id: '3', name: "Wendy's", latitude: 33.7530, longitude: -84.3850, address: "789 Oak Ave", image: "https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=100&h=100&fit=crop", rating: 4.5, activeOrders: 8, avgPayout: 7.25, cuisineType: "Fast Food" },
-  { id: '4', name: "Taco Bell", latitude: 33.7480, longitude: -84.3920, address: "321 Elm St", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=100&h=100&fit=crop", rating: 4.3, activeOrders: 15, avgPayout: 7.00, cuisineType: "Mexican" },
-  { id: '5', name: "Subway", latitude: 33.7550, longitude: -84.3870, address: "555 Pine Rd", image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=100&h=100&fit=crop", rating: 4.0, activeOrders: 5, avgPayout: 6.00, cuisineType: "Sandwiches" },
-  { id: '6', name: "Chipotle", latitude: 33.7470, longitude: -84.3840, address: "777 Cedar Ln", image: "https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=100&h=100&fit=crop", rating: 4.6, activeOrders: 22, avgPayout: 9.25, cuisineType: "Mexican" },
-  { id: '7', name: "Panda Express", latitude: 33.7520, longitude: -84.3910, address: "888 Maple Dr", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=100&h=100&fit=crop", rating: 4.4, activeOrders: 10, avgPayout: 7.50, cuisineType: "Chinese" },
-  { id: '8', name: "Five Guys", latitude: 33.7540, longitude: -84.3860, address: "999 Birch Blvd", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100&h=100&fit=crop", rating: 4.7, activeOrders: 14, avgPayout: 10.00, cuisineType: "Burgers" },
+  { id: '1', name: "Chick-fil-A", latitude: 33.7490, longitude: -84.3880, address: "123 Peachtree St", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100&h=100&fit=crop", rating: 4.8, activeOrders: 12, avgPayout: 8.50, cuisineType: "Fast Food", is_promoted: true },
+  { id: '2', name: "McDonald's", latitude: 33.7510, longitude: -84.3900, address: "456 Main St", image: "https://images.unsplash.com/photo-1586816001966-79b736744398?w=100&h=100&fit=crop", rating: 4.2, activeOrders: 18, avgPayout: 6.75, cuisineType: "Fast Food", is_promoted: false },
+  { id: '3', name: "Wendy's", latitude: 33.7530, longitude: -84.3850, address: "789 Oak Ave", image: "https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=100&h=100&fit=crop", rating: 4.5, activeOrders: 8, avgPayout: 7.25, cuisineType: "Fast Food", is_promoted: true },
+  { id: '4', name: "Taco Bell", latitude: 33.7480, longitude: -84.3920, address: "321 Elm St", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=100&h=100&fit=crop", rating: 4.3, activeOrders: 15, avgPayout: 7.00, cuisineType: "Mexican", is_promoted: false },
+  { id: '5', name: "Subway", latitude: 33.7550, longitude: -84.3870, address: "555 Pine Rd", image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=100&h=100&fit=crop", rating: 4.0, activeOrders: 5, avgPayout: 6.00, cuisineType: "Sandwiches", is_promoted: false },
+  { id: '6', name: "Chipotle", latitude: 33.7470, longitude: -84.3840, address: "777 Cedar Ln", image: "https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=100&h=100&fit=crop", rating: 4.6, activeOrders: 22, avgPayout: 9.25, cuisineType: "Mexican", is_promoted: true },
+  { id: '7', name: "Panda Express", latitude: 33.7520, longitude: -84.3910, address: "888 Maple Dr", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=100&h=100&fit=crop", rating: 4.4, activeOrders: 10, avgPayout: 7.50, cuisineType: "Chinese", is_promoted: false },
+  { id: '8', name: "Five Guys", latitude: 33.7540, longitude: -84.3860, address: "999 Birch Blvd", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100&h=100&fit=crop", rating: 4.7, activeOrders: 14, avgPayout: 10.00, cuisineType: "Burgers", is_promoted: false },
 ];
 
 // Calculate distance in miles and minutes
@@ -68,6 +73,10 @@ const getTimeColor = (minutes: number): string => {
   return 'text-red-500';
 };
 
+/** Order-count thresholds: popularity label + flame only show when orders > 10. */
+const POPULARITY_GOOD_ORDERS = 10;   // > 10: "GETTING POPULAR" (orange); flame shows
+const POPULARITY_LARGE_ORDERS = 15;  // >= 15: "POPULAR TODAY" (red)
+
 const NavigationIcon: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     onClick={onClick}
@@ -94,19 +103,50 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant; onNavigate: (restaurant
   const demandBg = demandLevel === 'high' ? 'bg-green-50' : demandLevel === 'medium' ? 'bg-orange-50' : 'bg-gray-50';
   const isHighDemand = restaurant.activeOrders >= 15;
   const isHighValue = restaurant.avgPayout >= 9.00;
+
+  // Popularity label + flame only when restaurant has more than 10 orders
+  const popularityLabel =
+    restaurant.activeOrders >= POPULARITY_LARGE_ORDERS
+      ? { text: 'POPULAR TODAY' as const, className: 'text-xs font-bold text-red-500 flex-shrink-0' }
+      : restaurant.activeOrders > POPULARITY_GOOD_ORDERS
+        ? { text: 'GETTING POPULAR' as const, className: 'text-xs font-bold text-orange-500 flex-shrink-0' }
+        : null;
+  const showFlame = popularityLabel !== null; // flame only when we show GETTING POPULAR or POPULAR TODAY
   
   return (
     <div className="w-full bg-white rounded-xl shadow-md border border-gray-200" style={{ minHeight: '120px' }}>
       <div className="p-3">
-        {/* Top Row: Restaurant Name, Badges, Rating, and Image - All in one line */}
-        <div className="flex items-center justify-between gap-2 mb-2">
+        {/* Top Row: Food picture left, then restaurant name, badges, rating */}
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+            <img 
+              src={restaurant.image} 
+              alt={restaurant.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&background=f97316&color=fff&size=100`;
+              }}
+            />
+          </div>
           <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
             <h3 className="text-base font-bold text-gray-900 leading-tight">
               {restaurant.name}
             </h3>
-            {isHighDemand && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-orange-500 to-red-500 text-white">
-                🔥
+            {showFlame && (
+              <span className="inline-flex flex-shrink-0 w-5 h-5 items-center justify-center" style={{ mixBlendMode: 'screen' }}>
+                <img
+                  src={CRAVEN_POPULAR_FLAME_ICON}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 object-contain"
+                  loading="eager"
+                  aria-hidden
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
               </span>
             )}
             {isHighValue && (
@@ -118,17 +158,6 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant; onNavigate: (restaurant
               <span className="text-yellow-500">★</span>
               <span className="font-semibold">{restaurant.rating}</span>
             </div>
-          </div>
-          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-            <img 
-              src={restaurant.image} 
-              alt={restaurant.name}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(restaurant.name)}&background=f97316&color=fff&size=100`;
-              }}
-            />
           </div>
         </div>
 
@@ -169,11 +198,14 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant; onNavigate: (restaurant
           </button>
         </div>
 
-        {/* Address Row */}
-        <div className="mt-1.5 pt-1.5 border-t border-gray-100">
-          <p className="text-xs text-gray-500 truncate">
+        {/* Address Row + popularity label by order count (bottom right) */}
+        <div className="mt-1.5 pt-1.5 border-t border-gray-100 flex items-center justify-between gap-2">
+          <p className="text-xs text-gray-500 truncate min-w-0">
             📍 {restaurant.address}
           </p>
+          {popularityLabel && (
+            <span className={popularityLabel.className}>{popularityLabel.text}</span>
+          )}
         </div>
       </div>
     </div>

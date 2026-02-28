@@ -94,6 +94,7 @@ const FontLoader = () => (
     .inv-row { transition: background 0.12s; cursor: pointer; }
     .inv-row:hover { background: #fffaf7 !important; }
     .inv-row.alert-row { background: #fffaf7; border-left: 3px solid #ef4444 !important; }
+    .inv-row .cell-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
     .stat-card { transition: box-shadow 0.15s, transform 0.14s; cursor: default; }
     .stat-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.08) !important; transform: translateY(-1px); }
@@ -125,7 +126,7 @@ const FontLoader = () => (
     @keyframes fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
     .fade-up { animation: fadeUp 0.22s ease both; }
 
-    .qty-input { width: 52px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 6px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; text-align: center; outline: none; transition: border-color 0.15s; }
+    .qty-input { width: 44px; max-width: 100%; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 4px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; text-align: center; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
     .qty-input:focus { border-color: #ea580c; }
   `}</style>
 );
@@ -213,11 +214,15 @@ function TabProductStock({
       return availB - availA; // stock: highest first
     });
 
+  const COLS = "44px minmax(0, 2.4fr) 56px minmax(0, 1.6fr) minmax(96px, 1fr) 56px 56px 72px 72px 110px";
+  const HEADERS = ["", "Product", "On Hand", "SKU", "Category", "Reserved", "Avail", "Unit Cost", "Price", "Actions"];
+  const ALIGN: (React.CSSProperties["textAlign"])[] = ["center", "left", "center", "center", "left", "center", "center", "right", "right", "center"];
+
   return (
-    <div className="fade-up" style={{ borderRadius: 8, border: "1px solid #f3f4f6", overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "44px 2.4fr 1.6fr 1fr 90px 80px 90px 90px 90px 110px", padding: "8px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-        {["", "Product", "SKU", "Category", "On Hand", "Reserved", "Available", "Unit Cost", "Price", "Actions"].map((h, i) => (
-          <span key={i} style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af" }}>{h}</span>
+    <div className="fade-up" style={{ borderRadius: 8, border: "1px solid #f3f4f6", overflow: "hidden", minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "8px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6", alignItems: "center" }}>
+        {HEADERS.map((h, i) => (
+          <span key={i} style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af", whiteSpace: "nowrap", textAlign: ALIGN[i], paddingLeft: i === 1 ? 10 : undefined }}>{h}</span>
         ))}
       </div>
 
@@ -233,14 +238,15 @@ function TabProductStock({
             className={`inv-row${status === "out" ? " alert-row" : ""}`}
             style={{
               display: "grid",
-              gridTemplateColumns: "44px 2.4fr 1.6fr 1fr 90px 80px 90px 90px 90px 110px",
+              gridTemplateColumns: COLS,
               padding: "11px 20px",
               borderBottom: i < filtered.length - 1 ? "1px solid #f9fafb" : "none",
               alignItems: "center",
               borderLeft: status === "out" ? "3px solid #ef4444" : "3px solid transparent",
+              minWidth: 0,
             }}
           >
-            <div style={{ width: 34, height: 34, borderRadius: 8, overflow: "hidden", border: "1px solid #f3f4f6", flexShrink: 0 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 8, overflow: "hidden", border: "1px solid #f3f4f6", flexShrink: 0, minWidth: 34 }}>
               <img
                 src={item.product_image_url || PLACEHOLDER_IMG}
                 alt=""
@@ -248,29 +254,31 @@ function TabProductStock({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             </div>
-            <div style={{ paddingLeft: 10 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>{item.product_name || "—"}</p>
-              <p style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 1 }}>Reorder at {reorder} units</p>
+            <div style={{ paddingLeft: 10, minWidth: 0, overflow: "hidden" }}>
+              <p className="cell-truncate" title={item.product_name || "—"} style={{ fontSize: 13, fontWeight: 600, color: "#111827", lineHeight: 1.3 }}>{item.product_name || "—"}</p>
+              <p className="cell-truncate" title={`Reorder at ${reorder} units`} style={{ fontSize: 10.5, color: "#9ca3af", marginTop: 1 }}>Reorder at {reorder} units</p>
             </div>
-            <span style={{ fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280" }}>{item.sku || "—"}</span>
-            <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99, background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{item.category_name || "Uncategorized"}</span>
-            <input
-              className="qty-input"
-              type="number"
-              min={0}
-              value={item.quantity_on_hand}
-              onChange={(e) => onQtyChange(item.id, Math.max(0, parseInt(e.target.value, 10) || 0))}
-              onBlur={(e) => {
-                const v = Math.max(0, parseInt((e.target as HTMLInputElement).value, 10) || 0);
-                onQtyChange(item.id, v);
-              }}
-              style={{ color: status === "out" ? "#ef4444" : status === "low" ? "#ca8a04" : "#111827", fontWeight: 700 }}
-            />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <input
+                className="qty-input"
+                type="number"
+                min={0}
+                value={item.quantity_on_hand}
+                onChange={(e) => onQtyChange(item.id, Math.max(0, parseInt(e.target.value, 10) || 0))}
+                onBlur={(e) => {
+                  const v = Math.max(0, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+                  onQtyChange(item.id, v);
+                }}
+                style={{ color: status === "out" ? "#ef4444" : status === "low" ? "#ca8a04" : "#111827", fontWeight: 700 }}
+              />
+            </div>
+            <span className="cell-truncate" title={item.sku || "—"} style={{ fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280", textAlign: "center" }}>{item.sku || "—"}</span>
+            <span className="cell-truncate" title={item.category_name || "Uncategorized"} style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 99, background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{item.category_name || "Uncategorized"}</span>
             <span style={{ fontSize: 13, fontFamily: "'IBM Plex Mono', monospace", color: "#9ca3af", textAlign: "center" }}>{item.quantity_reserved || "—"}</span>
             <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: available <= 0 ? "#ef4444" : available <= reorder ? "#ca8a04" : "#111827", textAlign: "center" }}>{available}</span>
-            <span style={{ fontSize: 12.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280" }}>{item.cost_cents != null ? `$${(item.cost_cents / 100).toFixed(2)}` : "—"}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", color: "#111827" }}>{item.product_price_cents != null ? `$${(item.product_price_cents / 100).toFixed(2)}` : "—"}</span>
-            <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 12.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280", textAlign: "right" }}>{item.cost_cents != null ? `$${(item.cost_cents / 100).toFixed(2)}` : "—"}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", color: "#111827", textAlign: "right" }}>{item.product_price_cents != null ? `$${(item.product_price_cents / 100).toFixed(2)}` : "—"}</span>
+            <div style={{ display: "flex", gap: 2, justifyContent: "center" }}>
               <button type="button" className="icon-btn add" onClick={() => onAdjust(item.id, 1)} style={{ color: "#16a34a", fontSize: 16, fontWeight: 700 }}>+</button>
               <button type="button" className="icon-btn sub" onClick={() => onAdjust(item.id, -1)} style={{ color: "#ef4444", fontSize: 16, fontWeight: 700 }}>−</button>
               <button type="button" className="icon-btn edit" onClick={() => onEdit(item)} style={{ color: "#9ca3af" }} title="Edit">
@@ -300,10 +308,10 @@ function TabVariantStock({ variants, search }: { variants: VariantStock[]; searc
   );
 
   return (
-    <div className="fade-up" style={{ borderRadius: 8, border: "1px solid #f3f4f6", overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1.6fr 80px 80px 80px 80px 80px 100px 100px", padding: "8px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
-        {["Product", "SKU", "Size", "Color", "On Hand", "Reserved", "Available", "Price", "Status"].map((h, i) => (
-          <span key={i} style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af" }}>{h}</span>
+    <div className="fade-up" style={{ borderRadius: 8, border: "1px solid #f3f4f6", overflow: "hidden", minWidth: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.6fr) 80px 80px 80px 80px 80px 100px 100px", padding: "8px 20px", background: "#f9fafb", borderBottom: "1px solid #f3f4f6", alignItems: "center" }}>
+        {["Product", "SKU", "Size", "Color", "On Hand", "Reserved", "Avail", "Price", "Status"].map((h, i) => (
+          <span key={i} style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9ca3af", whiteSpace: "nowrap" }}>{h}</span>
         ))}
       </div>
 
@@ -319,19 +327,20 @@ function TabVariantStock({ variants, search }: { variants: VariantStock[]; searc
             className="inv-row"
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1.6fr 80px 80px 80px 80px 80px 100px 100px",
+              gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.6fr) 80px 80px 80px 80px 80px 100px 100px",
               padding: "10px 20px",
               borderBottom: i < filtered.length - 1 ? "1px solid #f9fafb" : "none",
               alignItems: "center",
               borderLeft: `3px solid ${status === "out" ? "#ef4444" : status === "low" ? "#ca8a04" : "transparent"}`,
+              minWidth: 0,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{v.product_name}</span>
-            <span style={{ fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280" }}>{v.sku || "—"}</span>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", textAlign: "center" }}>{size}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span className="cell-truncate" title={v.product_name} style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{v.product_name}</span>
+            <span className="cell-truncate" title={v.sku || "—"} style={{ fontSize: 11.5, fontFamily: "'IBM Plex Mono', monospace", color: "#6b7280" }}>{v.sku || "—"}</span>
+            <span className="cell-truncate" title={size} style={{ fontSize: 12.5, fontWeight: 600, color: "#374151", textAlign: "center" }}>{size}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
               <div style={{ width: 12, height: 12, borderRadius: "50%", background: colorDot, border: "1px solid #e5e7eb", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: "#374151" }}>{color}</span>
+              <span className="cell-truncate" title={color} style={{ fontSize: 12, color: "#374151" }}>{color}</span>
             </div>
             <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: v.quantity_on_hand === 0 ? "#ef4444" : v.quantity_on_hand <= (v.reorder_point ?? 0) ? "#ca8a04" : "#111827", textAlign: "center" }}>{v.quantity_on_hand}</span>
             <span style={{ fontSize: 12.5, fontFamily: "'IBM Plex Mono', monospace", color: "#9ca3af", textAlign: "center" }}>{v.quantity_reserved || "—"}</span>
@@ -679,37 +688,6 @@ export default function RetailInventoryDashboard({ restaurantId, restaurantType 
     <>
       <FontLoader />
       <div style={{ fontFamily: "'IBM Plex Sans', 'Segoe UI', sans-serif", background: "#fff", borderTop: "1px solid #e5e7eb", borderBottom: "1px solid #e5e7eb", borderRadius: 0, boxShadow: "none", width: "100%", margin: "32px 0 0 0", overflow: "hidden" }}>
-        <div style={{ padding: "20px 28px 16px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                <div style={{ width: 3, height: 16, background: "#ea580c", borderRadius: 2 }} />
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", letterSpacing: "-0.4px" }}>Inventory Management</h2>
-              </div>
-              <p style={{ fontSize: 13, color: "#9ca3af" }}>Track stock for your {labels.itemNounPlural} and set reorder alerts</p>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="ghost-btn" onClick={exportInventory} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Export
-              </button>
-              <button type="button" className="ghost-btn" onClick={() => fetchInventory()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Refresh
-              </button>
-              {menuItems.length > 0 && (
-                <button type="button" className="ghost-btn" onClick={handleSeedInventory} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
-                  Track All {labels.itemNounPlural} ({menuItems.length})
-                </button>
-              )}
-              <button type="button" className="action-btn-main" onClick={() => setAddDialogOpen(true)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 8, border: "none", background: "#ea580c", color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "inherit", boxShadow: "0 2px 8px rgba(234,88,12,0.22)" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Item
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
           {items.length === 0 && !loading ? (
             <div style={{ padding: 48, textAlign: "center", border: "1px dashed #e5e7eb", borderRadius: 12, background: "#fafafa" }}>
@@ -754,27 +732,48 @@ export default function RetailInventoryDashboard({ restaurantId, restaurantType 
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #f3f4f6", paddingBottom: 0 }}>
-                {[
-                  { id: "products" as const, label: `Product Stock (${items.length})` },
-                  { id: "variants" as const, label: "Variant Stock", badge: variantAlerts },
-                ].map((t) => {
-                  const active = tab === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className="tab-btn"
-                      onClick={() => setTab(t.id)}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: 13, fontWeight: active ? 600 : 500, color: active ? "#ea580c" : "#6b7280", borderBottom: active ? "2px solid #ea580c" : "2px solid transparent", marginBottom: -1 }}
-                    >
-                      {t.label}
-                      {"badge" in t && t.badge > 0 && (
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 99, background: "#ef4444", color: "#fff" }}>{t.badge}</span>
-                      )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderBottom: "1px solid #f3f4f6", paddingBottom: 0 }}>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[
+                    { id: "products" as const, label: `Product Stock (${items.length})` },
+                    { id: "variants" as const, label: "Variant Stock", badge: variantAlerts },
+                  ].map((t) => {
+                    const active = tab === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className="tab-btn"
+                        onClick={() => setTab(t.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", fontSize: 13, fontWeight: active ? 600 : 500, color: active ? "#ea580c" : "#6b7280", borderBottom: active ? "2px solid #ea580c" : "2px solid transparent", marginBottom: -1 }}
+                      >
+                        {t.label}
+                        {"badge" in t && t.badge > 0 && (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 99, background: "#ef4444", color: "#fff" }}>{t.badge}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button type="button" className="ghost-btn" onClick={exportInventory} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export
+                  </button>
+                  <button type="button" className="ghost-btn" onClick={() => fetchInventory()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Refresh
+                  </button>
+                  {menuItems.length > 0 && (
+                    <button type="button" className="ghost-btn" onClick={handleSeedInventory} disabled={saving} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "inherit" }}>
+                      Track All {labels.itemNounPlural} ({menuItems.length})
                     </button>
-                  );
-                })}
+                  )}
+                  <button type="button" className="action-btn-main" onClick={() => setAddDialogOpen(true)} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 8, border: "none", background: "#ea580c", color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "inherit", boxShadow: "0 2px 8px rgba(234,88,12,0.22)" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Item
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

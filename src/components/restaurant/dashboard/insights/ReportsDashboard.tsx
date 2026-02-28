@@ -77,7 +77,7 @@ const ReportsDashboard = ({ restaurantId: restaurantIdProp }: ReportsDashboardPr
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-3xl font-bold mb-2">Reports</h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Create and manage the reports that provide access to sales, operations, and financial data for your store on Crave'n.
           </p>
         </div>

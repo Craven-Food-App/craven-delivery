@@ -28,6 +28,11 @@ interface FullscreenCameraProps {
   onVisibilityChange?: (isVisible: boolean) => void;
 }
 
+const MIN_WIDTH = 1280;
+const MIN_HEIGHT = 720;
+const IDEAL_WIDTH = 1920;
+const IDEAL_HEIGHT = 1080;
+
 const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
   isOpen,
   onClose,
@@ -44,6 +49,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
   const [cameraError, setCameraError] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
+  const [resolutionWarning, setResolutionWarning] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -61,26 +67,60 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
     try {
       setCameraError(false);
       setIsFocused(false);
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+      setResolutionWarning(null);
+
+      const constraintsToTry: MediaStreamConstraints['video'][] = [
+        {
           facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { min: MIN_WIDTH, ideal: IDEAL_WIDTH },
+          height: { min: MIN_HEIGHT, ideal: IDEAL_HEIGHT },
+        },
+        {
+          facingMode: 'environment',
+          width: { ideal: IDEAL_WIDTH },
+          height: { ideal: IDEAL_HEIGHT },
+        },
+        { facingMode: 'environment' },
+      ];
+
+      let mediaStream: MediaStream | null = null;
+      for (const videoConstraints of constraintsToTry) {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: videoConstraints,
+          });
+          break;
+        } catch {
+          continue;
         }
-      });
-      
+      }
+
+      if (!mediaStream) {
+        setCameraError(true);
+        return;
+      }
+
       setStream(mediaStream);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
-        // Simulate focus detection after camera is ready
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          // Wait a moment for camera to stabilize, then show focused state
-          setTimeout(() => {
-            setIsFocused(true);
-          }, 800);
-        });
+
+        videoRef.current.addEventListener(
+          'loadedmetadata',
+          () => {
+            const v = videoRef.current;
+            if (!v) return;
+            const w = v.videoWidth;
+            const h = v.videoHeight;
+            if (w < MIN_WIDTH || h < MIN_HEIGHT) {
+              setResolutionWarning(
+                'Camera resolution is limited. For clearer proof photos, use a device with a higher-resolution camera or ensure good lighting.'
+              );
+            }
+            setTimeout(() => setIsFocused(true), 800);
+          },
+          { once: true }
+        );
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -140,7 +180,7 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0);
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     setCapturedImage(dataUrl);
     setIsCapturing(false);
     stopCamera();
@@ -379,18 +419,43 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
               }}
               p="md"
             >
-              <Text 
-                style={{ 
-                  textAlign: 'center', 
-                  color: 'rgba(255, 255, 255, 0.95)', 
-                  fontWeight: 500,
-                  fontSize: '13px',
-                  letterSpacing: '0.01em',
-                  lineHeight: 1.4,
-                }}
-              >
-                {description}
-              </Text>
+              <Stack gap={4} align="center">
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    letterSpacing: '0.01em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {description}
+                </Text>
+                <Text
+                  size="xs"
+                  style={{
+                    textAlign: 'center',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: 400,
+                  }}
+                >
+                  Hold steady. Good lighting helps.
+                </Text>
+                {resolutionWarning && (
+                  <Text
+                    size="xs"
+                    style={{
+                      textAlign: 'center',
+                      color: 'rgba(255, 193, 7, 0.95)',
+                      fontWeight: 500,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {resolutionWarning}
+                  </Text>
+                )}
+              </Stack>
             </Box>
           </>
         )}

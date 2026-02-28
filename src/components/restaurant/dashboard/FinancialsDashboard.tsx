@@ -349,10 +349,35 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
         }}
       >
         <div style={{ padding: "20px 28px 0", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 3, height: 18, background: "#ea580c", borderRadius: 2 }} />
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", letterSpacing: "-0.4px" }}>Financials</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[
+                { id: "transactions" as const, label: "Transactions" },
+                { id: "payouts" as const, label: "Payouts" },
+                { id: "statements" as const, label: "Statements" },
+              ].map((t) => {
+                const active = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="tab-pill"
+                    onClick={() => setTab(t.id)}
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: "7px 7px 0 0",
+                      fontSize: 13,
+                      fontWeight: active ? 600 : 500,
+                      color: active ? "#ea580c" : "#6b7280",
+                      background: active ? "#fff" : "transparent",
+                      borderBottom: active ? "2px solid #ea580c" : "2px solid transparent",
+                      marginBottom: -1,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               {!loading && (
@@ -408,35 +433,6 @@ export default function FinancialsDashboard({ restaurantId: restaurantIdProp }: 
                 </svg>
               </div>
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {[
-              { id: "transactions" as const, label: "Transactions" },
-              { id: "payouts" as const, label: "Payouts" },
-              { id: "statements" as const, label: "Statements" },
-            ].map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="tab-pill"
-                  onClick={() => setTab(t.id)}
-                  style={{
-                    padding: "9px 16px",
-                    borderRadius: "7px 7px 0 0",
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 500,
-                    color: active ? "#ea580c" : "#6b7280",
-                    background: active ? "#fff" : "transparent",
-                    borderBottom: active ? "2px solid #ea580c" : "2px solid transparent",
-                    marginBottom: -1,
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
           </div>
         </div>
 

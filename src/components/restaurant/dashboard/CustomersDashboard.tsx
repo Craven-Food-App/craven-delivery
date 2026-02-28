@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, TrendingUp, DollarSign, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,7 @@ interface CustomersDashboardProps {
 const CustomersDashboard = ({ restaurantId: restaurantIdProp }: CustomersDashboardProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState("this-month");
   const [stats, setStats] = useState({
     totalCustomers: 0,
     repeatRate: 0,
@@ -99,8 +101,6 @@ const CustomersDashboard = ({ restaurantId: restaurantIdProp }: CustomersDashboa
     <div className="w-full h-full bg-background">
       <div className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold mb-4">Customers</h1>
-
           {/* Stats Overview */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -151,13 +151,28 @@ const CustomersDashboard = ({ restaurantId: restaurantIdProp }: CustomersDashboa
           )}
           
           <Tabs defaultValue="insights" className="w-full">
-            <TabsList className="bg-muted">
-              <TabsTrigger value="insights">Customer Insights</TabsTrigger>
-              <TabsTrigger value="ratings">Ratings & Reviews</TabsTrigger>
-            </TabsList>
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-3 mt-2">
+              <TabsList className="h-9 bg-background border shadow-sm">
+                <TabsTrigger value="insights" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">Customer Insights</TabsTrigger>
+                <TabsTrigger value="ratings">Ratings & Reviews</TabsTrigger>
+              </TabsList>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Period</span>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-40 h-9 bg-background border shadow-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="this-month">This month</SelectItem>
+                    <SelectItem value="last-month">Last month</SelectItem>
+                    <SelectItem value="last-3-months">Last 3 months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <TabsContent value="insights" className="mt-6">
-              <CustomerInsightsDashboard restaurantId={restaurantIdProp} />
+              <CustomerInsightsDashboard restaurantId={restaurantIdProp} dateRange={dateRange} onDateRangeChange={setDateRange} />
             </TabsContent>
 
             <TabsContent value="ratings" className="mt-6">

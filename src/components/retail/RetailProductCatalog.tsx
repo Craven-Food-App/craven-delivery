@@ -661,15 +661,39 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
         }}
       >
         <div style={{ padding: "20px 28px 0", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                <div style={{ width: 3, height: 16, background: "#ea580c", borderRadius: 2 }} />
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "#111827", letterSpacing: "-0.4px" }}>{labels.catalogLabel} Catalog</h2>
-              </div>
-              <p style={{ fontSize: 13, color: "#9ca3af" }}>{products.length} {labels.itemNounPlural.toLowerCase()} across {categories.length} collection{categories.length !== 1 ? "s" : ""}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: -1 }}>
+            <div style={{ display: "flex", gap: 0 }}>
+              {[
+                { id: "products", label: `All ${labels.itemNounPlural}` },
+                { id: "collections", label: "Collections" },
+                { id: "pricing", label: "Pricing" },
+              ].map((t) => {
+                const active = tab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="tab-btn"
+                    onClick={() => setTab(t.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "10px 16px",
+                      fontSize: 13,
+                      fontWeight: active ? 600 : 500,
+                      color: active ? "#ea580c" : "#6b7280",
+                      borderBottom: active ? "2px solid #ea580c" : "2px solid transparent",
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
-            <button
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>{products.length} {labels.itemNounPlural.toLowerCase()} across {categories.length} collection{categories.length !== 1 ? "s" : ""}</p>
+              <button
               type="button"
               className="add-btn"
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 9, border: "none", background: "#ea580c", color: "#fff", fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", boxShadow: "0 2px 8px rgba(234,88,12,0.22)" }}
@@ -678,37 +702,7 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add {labels.itemNoun.charAt(0).toUpperCase() + labels.itemNoun.slice(1)}
             </button>
-          </div>
-
-          <div style={{ display: "flex", gap: 0 }}>
-            {[
-              { id: "products", label: `All ${labels.itemNounPlural}` },
-              { id: "collections", label: "Collections" },
-              { id: "pricing", label: "Pricing" },
-            ].map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="tab-btn"
-                  onClick={() => setTab(t.id)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 500,
-                    color: active ? "#ea580c" : "#6b7280",
-                    borderBottom: active ? "2px solid #ea580c" : "2px solid transparent",
-                    marginBottom: -1,
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
+            </div>
           </div>
         </div>
 

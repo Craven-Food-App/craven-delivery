@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import { DeliveryFlowStepOne } from './DeliveryFlowStepOne';
+import { DeliveryFlowStepTwo } from './DeliveryFlowStepTwo';
+import { DeliveryFlowStepThree } from './DeliveryFlowStepThree';
+import { OrderChatOverlay } from './OrderChatOverlay';
 import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
@@ -312,6 +316,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
   const [showCamera, setShowCamera] = useState(false);
+  const [showOrderChat, setShowOrderChat] = useState(false);
   const [photoType, setPhotoType] = useState<'pickup' | 'delivery'>('pickup');
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
@@ -901,6 +906,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     );
   }
 
+  // In-app order chat (messages stored for customer service / security lookup)
+  if (showOrderChat && orderDetails?.order_id) {
+    return (
+      <OrderChatOverlay
+        orderId={orderDetails.order_id}
+        customerId={orderDetails?.customer_id}
+        onClose={() => setShowOrderChat(false)}
+      />
+    );
+  }
+
   // Transition animation overlay
   if (showTransition) {
     // Arrival animation - full screen squiggly route
@@ -1301,6 +1317,131 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       );
     }
 
+    if (status === DRIVER_STATUS.TO_STORE) {
+      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const pa = orderDetails?.pickup_address;
+      const storeLat = typeof pa === 'object' && pa != null ? (pa.latitude ?? pa.lat) : undefined;
+      const storeLng = typeof pa === 'object' && pa != null ? (pa.longitude ?? pa.lng) : undefined;
+      return (
+        <DeliveryFlowStepOne
+          restaurantName={currentOrder.store.name}
+          pickupAddress={currentOrder.store.address}
+          storeLat={storeLat != null ? Number(storeLat) : undefined}
+          storeLng={storeLng != null ? Number(storeLng) : undefined}
+          orderNumber={orderNum}
+          customerName={currentOrder.customer.name}
+          isTestOrder={isTestOrder}
+          estimatedPay={payAmount}
+          distanceMi={currentOrder.distanceToStore ?? 0.8}
+          estArrivalMin={currentOrder.timeEstimate ?? 4}
+          onNavigate={() => {
+            openExternalNavigation({
+              address: currentOrder.store.address || '',
+              name: currentOrder.store.name,
+            });
+          }}
+          onArrived={handleConfirmArrivalAtStore}
+        />
+      );
+    }
+
+    if (status === DRIVER_STATUS.AT_STORE) {
+      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const pa = orderDetails?.pickup_address;
+      const storeLat = typeof pa === 'object' && pa != null ? (pa.latitude ?? pa.lat) : undefined;
+      const storeLng = typeof pa === 'object' && pa != null ? (pa.longitude ?? pa.lng) : undefined;
+      const stepTwoItems = orderItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        special_instructions: item.special_instructions,
+      }));
+      return (
+        <DeliveryFlowStepTwo
+          restaurantName={currentOrder.store.name}
+          pickupAddress={currentOrder.store.address}
+          storeLat={storeLat != null ? Number(storeLat) : undefined}
+          storeLng={storeLng != null ? Number(storeLng) : undefined}
+          orderNumber={orderNum}
+          customerName={currentOrder.customer.name}
+          isTestOrder={isTestOrder}
+          estimatedPay={payAmount}
+          distanceMi={currentOrder.distanceToStore ?? 0.8}
+          orderItems={stepTwoItems}
+          checkedItemIds={checkedItems}
+          onToggleItem={handleItemCheck}
+          onNavigate={() => {
+            openExternalNavigation({
+              address: currentOrder.store.address || '',
+              name: currentOrder.store.name,
+            });
+          }}
+          onConfirmPickup={handleStartPickupVerification}
+        />
+      );
+    }
+
+    if (status === DRIVER_STATUS.TO_CUSTOMER) {
+      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const dropoff = orderDetails?.dropoff_address;
+      const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
+      const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
+      return (
+        <DeliveryFlowStepThree
+          customerName={currentOrder.customer.name}
+          customerAddress={currentOrder.customer.address}
+          customerLat={customerLat != null ? Number(customerLat) : undefined}
+          customerLng={customerLng != null ? Number(customerLng) : undefined}
+          orderNumber={orderNum}
+          isTestOrder={isTestOrder}
+          estimatedPay={payAmount}
+          distanceMi={currentOrder.distanceToCustomer ?? 5.1}
+          deliveryNotes={currentOrder.customer.deliveryNotes}
+          customerPhone={currentOrder.customer.phone}
+          onNavigate={() => {
+            openExternalNavigation({
+              address: currentOrder.customer.address || '',
+              name: currentOrder.customer.name,
+            });
+          }}
+          onCall={
+            orderDetails?.order_id
+              ? async () => {
+                  try {
+                    notifications.show({ id: 'masked-call', message: 'Connecting… Your phone will ring.', loading: true });
+                    const { data, error } = await supabase.functions.invoke('start-masked-call', {
+                      body: { order_id: orderDetails.order_id, caller_role: 'driver' },
+                    });
+                    notifications.hide('masked-call');
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                    notifications.show({ message: 'Your phone will ring from the delivery number.', color: 'green' });
+                  } catch (e) {
+                    notifications.show({ message: (e as Error)?.message ?? 'Could not start call.', color: 'red' });
+                  }
+                }
+              : undefined
+          }
+          onMessage={
+            currentOrder.customer.phone || orderDetails?.order_id
+              ? () => { setShowOrderChat(true); }
+              : undefined
+          }
+          onSpeakInstructions={
+            currentOrder.customer.deliveryNotes
+              ? () => speakDeliveryInstructions(currentOrder.customer.deliveryNotes!)
+              : undefined
+          }
+          onCopyInstructions={
+            currentOrder.customer.deliveryNotes
+              ? () => copyToClipboard(currentOrder.customer.deliveryNotes!)
+              : undefined
+          }
+          onArrived={handleConfirmArrivalAtCustomer}
+        />
+      );
+    }
+
     return (
       <Box 
         style={{ 
@@ -1315,23 +1456,25 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
         }} 
         data-testid="delivery-flow"
       >
-        {/* Compact map section */}
-        <Box 
-          style={{ 
-            height: 140,
-            flexShrink: 0,
-            position: 'relative',
-          }}
-        >
-          <SimulatedMapView isToStore={isToStore} /> 
-          <MapHeader
-            title={currentFlow.title}
-            status={currentFlow.statusText || ''}
-            locationIcon={currentFlow.icon}
-            distance={currentFlow.distance || 0}
-            pay={payAmount}
-          />
-        </Box>
+        {/* Compact map section - hidden at drop-off so this step is full screen */}
+        {(status !== DRIVER_STATUS.AT_CUSTOMER && status !== DRIVER_STATUS.AWAITING_DELIVERY_PHOTO) && (
+          <Box 
+            style={{ 
+              height: 140,
+              flexShrink: 0,
+              position: 'relative',
+            }}
+          >
+            <SimulatedMapView isToStore={isToStore} /> 
+            <MapHeader
+              title={currentFlow.title}
+              status={currentFlow.statusText || ''}
+              locationIcon={currentFlow.icon}
+              distance={currentFlow.distance || 0}
+              pay={payAmount}
+            />
+          </Box>
+        )}
 
         {/* Content section - scrollable */}
         <Box 

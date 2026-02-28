@@ -1,0 +1,281 @@
+/**
+ * Mapbox map for delivery step one: driver location, store (restaurant) marker, and selectable route options.
+ */
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useDriverLocation } from '@/hooks/useDriverLocation';
+import driverNavIcon from '@/assets/driver_nav_icon.png';
+
+export interface StepOneMapProps {
+  /** Store (restaurant) location. If not provided, storeAddress will be geocoded. Ignored when destination* are set. */
+  storeLat?: number;
+  storeLng?: number;
+  storeAddress?: string;
+  storeName?: string;
+  /** When set, map shows route to customer (home marker) instead of store. */
+  destinationLat?: number;
+  destinationLng?: number;
+  destinationAddress?: string;
+  destinationName?: string;
+  className?: string;
+}
+
+interface RouteOption {
+  index: number;
+  durationMin: number;
+  distanceMi: number;
+  geometry: GeoJSON.LineString;
+}
+
+export const StepOneMap: React.FC<StepOneMapProps> = ({
+  storeLat,
+  storeLng,
+  storeAddress,
+  storeName = 'Store',
+  destinationLat,
+  destinationLng,
+  destinationAddress,
+  destinationName = 'Customer',
+  className = '',
+}) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<any>(null);
+  const driverMarkerRef = useRef<any>(null);
+  const destinationMarkerRef = useRef<any>(null);
+  const useCustomerDestination =
+    (destinationLat != null && destinationLng != null) || !!destinationAddress?.trim();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [routeOptions, setRouteOptions] = useState<RouteOption[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+  const { location } = useDriverLocation();
+
+  const driverLngLat = location ? [location.longitude, location.latitude] as [number, number] : null;
+
+  const geocode = useCallback(async (address: string, token: string): Promise<[number, number] | null> => {
+    if (!address?.trim()) return null;
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1`
+      );
+      const data = await res.json();
+      if (data.features?.[0]?.center) return data.features[0].center;
+    } catch (e) {
+      console.warn('Geocode error:', e);
+    }
+    return null;
+  }, []);
+
+  useEffect(() => {
+    if (!mapContainer.current || map.current) return;
+
+    let cancelled = false;
+    const initMap = async () => {
+      try {
+        const { data: tokenData, error: tokenError } = await supabase.functions.invoke('get-mapbox-token');
+        if (tokenError || !tokenData?.token) {
+          setError('Map unavailable');
+          setIsLoading(false);
+          return;
+        }
+        const token = tokenData.token;
+        const mapboxgl = (window as any).mapboxgl;
+        if (!mapboxgl) {
+          setError('Map library not loaded');
+          setIsLoading(false);
+          return;
+        }
+        mapboxgl.accessToken = token;
+
+        let destCoords: [number, number] | null = null;
+        if (useCustomerDestination) {
+          if (destinationLat != null && destinationLng != null) {
+            destCoords = [destinationLng, destinationLat];
+          } else if (destinationAddress) {
+            destCoords = await geocode(destinationAddress, token);
+          }
+        } else {
+          if (storeLat != null && storeLng != null) {
+            destCoords = [storeLng, storeLat];
+          } else if (storeAddress) {
+            destCoords = await geocode(storeAddress, token);
+          }
+        }
+        const origin = driverLngLat ?? ([-84.388, 33.749] as [number, number]);
+        const destination = destCoords ?? ([-84.39, 33.75] as [number, number]);
+
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: destination,
+          zoom: 13,
+        });
+
+        map.current.on('load', async () => {
+          if (cancelled) return;
+          const mapInstance = map.current;
+          if (!mapInstance) return;
+
+          const driverEl = document.createElement('div');
+          driverEl.className = 'step-one-driver-marker';
+          driverEl.style.cssText = `
+            width: 40px; height: 40px;
+            background-image: url('${driverNavIcon}');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+          `;
+          driverMarkerRef.current = new mapboxgl.Marker({ element: driverEl, anchor: 'center' })
+            .setLngLat(origin)
+            .addTo(mapInstance);
+
+          const destEl = document.createElement('div');
+          destEl.style.cssText = `
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #fff; border: 2px solid ${useCustomerDestination ? '#2563eb' : '#f26419'};
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          `;
+          destEl.textContent = useCustomerDestination ? '🏠' : '🍴';
+          destinationMarkerRef.current = new mapboxgl.Marker({ element: destEl, anchor: 'center' })
+            .setLngLat(destination)
+            .addTo(mapInstance);
+
+          try {
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?geometries=geojson&alternatives=true&access_token=${token}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (cancelled) return;
+            if (data.routes?.length) {
+              const options: RouteOption[] = data.routes.map((r: any, i: number) => ({
+                index: i,
+                durationMin: (r.duration || 0) / 60,
+                distanceMi: (r.distance || 0) * 0.000621371,
+                geometry: r.geometry,
+              }));
+              setRouteOptions(options);
+              const bounds = new mapboxgl.LngLatBounds();
+              bounds.extend(origin);
+              bounds.extend(destination);
+              mapInstance.fitBounds(bounds, { padding: 80, maxZoom: 16 });
+            } else {
+              const bounds = new mapboxgl.LngLatBounds();
+              bounds.extend(origin);
+              bounds.extend(destination);
+              mapInstance.fitBounds(bounds, { padding: 80 });
+            }
+          } catch (routeErr) {
+            console.warn('Directions error:', routeErr);
+            const bounds = new mapboxgl.LngLatBounds();
+            bounds.extend(origin);
+            bounds.extend(destination);
+            mapInstance.fitBounds(bounds, { padding: 80 });
+          }
+          setIsLoading(false);
+        });
+      } catch (err) {
+        console.error('StepOneMap init:', err);
+        setError('Map failed to load');
+        setIsLoading(false);
+      }
+    };
+
+    if ((window as any).mapboxgl) {
+      initMap();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js';
+      script.onload = () => {
+        const link = document.createElement('link');
+        link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        initMap();
+      };
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      driverMarkerRef.current = null;
+      destinationMarkerRef.current = null;
+    };
+  }, []);
+
+  // Update driver position when location changes
+  useEffect(() => {
+    if (!map.current || !driverMarkerRef.current || !driverLngLat) return;
+    driverMarkerRef.current.setLngLat(driverLngLat);
+  }, [driverLngLat]);
+
+  // Draw selected route when route options or selection change
+  useEffect(() => {
+    const mapInstance = map.current;
+    if (!mapInstance?.getSource || !routeOptions.length) return;
+    const route = routeOptions[selectedRouteIndex];
+    if (!route?.geometry) return;
+
+    try {
+      if (mapInstance.getSource('step-one-route')) {
+        (mapInstance.getSource('step-one-route') as any).setData({
+          type: 'Feature',
+          properties: {},
+          geometry: route.geometry,
+        });
+      } else {
+        mapInstance.addSource('step-one-route', {
+          type: 'geojson',
+          data: { type: 'Feature', properties: {}, geometry: route.geometry },
+        });
+        mapInstance.addLayer({
+          id: 'step-one-route-line',
+          type: 'line',
+          source: 'step-one-route',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#f26419', 'line-width': 4 },
+        });
+      }
+    } catch (e) {
+      console.warn('Route layer update:', e);
+    }
+  }, [routeOptions, selectedRouteIndex]);
+
+  if (error) {
+    return (
+      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
+        <p className="text-sm text-gray-600">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-full ${className}`}>
+      {isLoading && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
+          <p className="text-sm text-gray-600">Loading map…</p>
+        </div>
+      )}
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+      {routeOptions.length > 1 && (
+        <div className="absolute top-2 left-2 right-2 flex flex-wrap gap-2 z-10 pointer-events-auto">
+          {routeOptions.map((opt, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setSelectedRouteIndex(i)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium shadow bg-white border border-gray-200 hover:border-orange-400 hover:bg-orange-50 transition-colors"
+              style={{
+                borderColor: selectedRouteIndex === i ? '#f26419' : undefined,
+                backgroundColor: selectedRouteIndex === i ? '#fff4ed' : undefined,
+              }}
+            >
+              Route {i + 1}: ~{Math.round(opt.durationMin)} min · {opt.distanceMi.toFixed(1)} mi
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};

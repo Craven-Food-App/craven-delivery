@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.craven.delivery.tablet.merchant',
   appName: "Crave'n Merchant",
-  webDir: 'dist',
+  webDir: 'dist-build',
 
   // Native Capacitor app — loads from bundled file:// assets.
   // No server.url, no hostname override. Capacitor handles the bridge internally.

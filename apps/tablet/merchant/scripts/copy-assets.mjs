@@ -3,8 +3,8 @@
 // The package is "type": "module" so require() throws ERR_REQUIRE_ESM.
 // This ESM script handles the background image copy safely.
 
-import { existsSync, copyFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { existsSync, copyFileSync, mkdirSync } from 'fs';
+import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -14,7 +14,7 @@ const repoRoot = resolve(__dirname, '../../..');
 const assets = [
   {
     src: join(repoRoot, 'public', 'craven-merchant-app-bg.png'),
-    dest: join(projectRoot, 'dist', 'craven-merchant-app-bg.png'),
+    dest: join(projectRoot, 'dist-build', 'craven-merchant-app-bg.png'),
     label: 'merchant bg image',
   },
 ];
@@ -22,6 +22,7 @@ const assets = [
 let allOk = true;
 for (const { src, dest, label } of assets) {
   if (existsSync(src)) {
+    mkdirSync(dirname(dest), { recursive: true });
     copyFileSync(src, dest);
     console.log(`✓ Copied ${label}: ${src} → ${dest}`);
   } else {

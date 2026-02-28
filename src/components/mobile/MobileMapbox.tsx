@@ -26,11 +26,20 @@ interface MerchantLocation {
   active_order_count?: number;
 }
 
+/** When driver is on delivery (e.g. step one), show restaurant pin and fit map to driver + restaurant. */
+export interface DeliveryPickupLocation {
+  latitude: number;
+  longitude: number;
+  name?: string;
+}
+
 interface MobileMapboxProps {
   className?: string;
   onZoneStatusChange?: (info: { isInZone: boolean; zone: DeliveryZone | null }) => void;
   resetToDefaultZoom?: boolean; // When true, resets map to default zoom
   onScheduleClick?: () => void; // Open schedule page
+  /** Active delivery pickup (restaurant) – map shows driver + this pin and fits bounds. */
+  deliveryPickupLocation?: DeliveryPickupLocation | null;
 }
 
 const ZONE_SOURCE_ID = 'delivery-zones';
@@ -42,10 +51,12 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   onZoneStatusChange,
   resetToDefaultZoom = false,
   onScheduleClick,
+  deliveryPickupLocation = null,
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
+  const deliveryPickupMarkerRef = useRef<any>(null);
   const navigationControlAdded = useRef<boolean>(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const { location, startTracking, isTracking } = useDriverLocation();
@@ -544,6 +555,58 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     };
   }, [isMapReady, merchants]);
 
+  // Delivery pickup (restaurant) marker and fit bounds when on delivery – same map shows driver + restaurant
+  useEffect(() => {
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl || !map.current || !isMapReady) return;
+
+    if (deliveryPickupLocation) {
+      // Remove existing delivery pickup marker
+      if (deliveryPickupMarkerRef.current) {
+        deliveryPickupMarkerRef.current.remove();
+        deliveryPickupMarkerRef.current = null;
+      }
+      const el = document.createElement('div');
+      el.className = 'delivery-pickup-marker';
+      el.style.cssText = `
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #f26419;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      `;
+      el.textContent = '🍴';
+      deliveryPickupMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([deliveryPickupLocation.longitude, deliveryPickupLocation.latitude])
+        .addTo(map.current);
+
+      // Fit bounds to driver + restaurant so distance between them is visible
+      const driver = location ? [location.longitude, location.latitude] : null;
+      const pickup: [number, number] = [deliveryPickupLocation.longitude, deliveryPickupLocation.latitude];
+      if (driver) {
+        const bounds = new mapboxgl.LngLatBounds();
+        bounds.extend(driver);
+        bounds.extend(pickup);
+        map.current.fitBounds(bounds, { padding: 80, maxZoom: 16, duration: 600 });
+      } else {
+        map.current.flyTo({ center: pickup, zoom: 14, duration: 400 });
+      }
+    } else {
+      if (deliveryPickupMarkerRef.current) {
+        deliveryPickupMarkerRef.current.remove();
+        deliveryPickupMarkerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (deliveryPickupMarkerRef.current) {
+        deliveryPickupMarkerRef.current.remove();
+        deliveryPickupMarkerRef.current = null;
+      }
+    };
+  }, [isMapReady, deliveryPickupLocation, location]);
 
   // Gas station brand logo mapping
   const getGasStationLogo = useCallback((name: string): string | null => {

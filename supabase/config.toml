@@ -198,3 +198,9 @@ verify_jwt = false
 
 [functions.get-feeder-earnings]
 verify_jwt = false
+
+[functions.start-masked-call]
+verify_jwt = true
+
+[functions.twilio-voice-webhook]
+verify_jwt = false

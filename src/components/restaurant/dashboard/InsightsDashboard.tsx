@@ -19,6 +19,9 @@ const InsightsDashboard = ({ restaurantId: restaurantIdProp }: InsightsDashboard
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState("last-7-days");
+  const [salesPrimaryRange, setSalesPrimaryRange] = useState("last7");
+  const [salesPriorRange, setSalesPriorRange] = useState("7days-prior");
+  const [activeTab, setActiveTab] = useState("sales");
   const [metrics, setMetrics] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -145,16 +148,47 @@ const InsightsDashboard = ({ restaurantId: restaurantIdProp }: InsightsDashboard
             </div>
           )}
           
-          <Tabs defaultValue="sales" className="w-full">
-            <TabsList className="bg-muted">
-              <TabsTrigger value="sales">Sales</TabsTrigger>
-              <TabsTrigger value="product-mix">Product Mix</TabsTrigger>
-              <TabsTrigger value="operations">Operations Quality</TabsTrigger>
-              <TabsTrigger value="most-loved">Most Loved</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex flex-wrap items-center gap-4">
+              <TabsList className="bg-muted">
+                <TabsTrigger value="sales">Sales</TabsTrigger>
+                <TabsTrigger value="product-mix">Product Mix</TabsTrigger>
+                <TabsTrigger value="operations">Operations Quality</TabsTrigger>
+                <TabsTrigger value="most-loved">Most Loved</TabsTrigger>
+              </TabsList>
+              <div className="flex flex-nowrap items-center gap-2">
+                <Select value={salesPrimaryRange} onValueChange={setSalesPrimaryRange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last7">Last 7 days</SelectItem>
+                    <SelectItem value="last30">Last 30 days</SelectItem>
+                    <SelectItem value="custom">Custom range</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground shrink-0">vs</span>
+                <Select value={salesPriorRange} onValueChange={setSalesPriorRange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days-prior">7 days prior</SelectItem>
+                    <SelectItem value="14days-prior">14 days prior</SelectItem>
+                    <SelectItem value="30days-prior">30 days prior</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <TabsContent value="sales" className="mt-6">
-              <SalesDashboard restaurantId={restaurantIdProp} />
+              <SalesDashboard
+                restaurantId={restaurantIdProp}
+                dateRange={salesPrimaryRange}
+                onDateRangeChange={setSalesPrimaryRange}
+                priorRange={salesPriorRange}
+                onPriorRangeChange={setSalesPriorRange}
+              />
             </TabsContent>
 
             <TabsContent value="product-mix" className="mt-6">

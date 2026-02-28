@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import { MapPin, Settings, Pause, Play, Square, Clock, Car, DollarSign, Calendar, Bell, User, Star, ChevronRight, Menu, X, Home, TrendingUp, HelpCircle, LogOut, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import { getRatingColor, getRatingTier, formatRating, getTrendIcon, getTrendColo
 import NotificationsPage from '@/components/notifications/NotificationsPage';
 import FeederSidebarMenu from './FeederSidebarMenu';
 import CravenFillCountdownFlow from '@/components/CravenFillCountdownFlow';
+import cravenCLogo from '@/assets/craven-c-new.png';
 import NearbyRestaurantCards from './NearbyRestaurantCards';
 import ActiveFeedingMenu from './ActiveFeedingMenu';
 import GetBackToFeedingCard from './GetBackToFeedingCard';
@@ -630,6 +631,19 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
   const [loadingError, setLoadingError] = useState(false);
+  const deliveryPickupLocation = useMemo(() => {
+    if (!activeDelivery?.pickup_address) return null;
+    const pa = activeDelivery.pickup_address;
+    if (typeof pa !== 'object') return null;
+    const lat = pa.latitude ?? pa.lat;
+    const lng = pa.longitude ?? pa.lng;
+    if (lat == null || lng == null) return null;
+    return {
+      latitude: Number(lat),
+      longitude: Number(lng),
+      name: activeDelivery.restaurant_name,
+    };
+  }, [activeDelivery]);
   const {
     playNotification
   } = useNotificationSettings();
@@ -1512,6 +1526,7 @@ export const MobileDriverDashboard: React.FC = () => {
           onZoneStatusChange={handleZoneStatusChange}
           resetToDefaultZoom={resetMapZoom}
           onScheduleClick={() => setShowQuickScheduler(true)}
+          deliveryPickupLocation={driverState === 'on_delivery' ? deliveryPickupLocation : null}
         />
       </div>
 
@@ -1763,7 +1778,7 @@ export const MobileDriverDashboard: React.FC = () => {
                     {/* Rotating C logo */}
                     <div className="w-6 h-6">
                       <img 
-                        src="/crave-c-logo.png" 
+                        src={cravenCLogo} 
                         alt="Crave'n C logo" 
                         className="animate-spin w-full h-full object-contain"
                       />
@@ -1799,23 +1814,8 @@ export const MobileDriverDashboard: React.FC = () => {
               {/* Title */}
               <h1 className="text-xl font-bold text-gray-900">Feeding Paused</h1>
               
-              {/* Orange buttons */}
-              <div className="flex items-center space-x-3">
-                <button 
-                  onClick={handleAddTime}
-                  className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"
-                >
-                  <span className="text-lg text-white font-bold">+</span>
-                </button>
-                <button 
-                  onClick={handleContactSupport}
-                  className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-lg"
-                >
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+              {/* Spacer to keep title centered */}
+              <div className="w-10" aria-hidden />
             </div>
 
             {/* Main Content */}
@@ -1825,7 +1825,7 @@ export const MobileDriverDashboard: React.FC = () => {
                 <CravenFillCountdownFlow 
                   duration={1800} // 30 minutes in seconds
                   size={256}
-                  logoPng="/crave-c-logo.png"
+                  logoPng={cravenCLogo}
                 />
               </div>
 
