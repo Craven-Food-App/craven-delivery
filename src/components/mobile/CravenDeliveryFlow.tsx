@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck, IconVolume } from '@tabler/icons-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { IconMapPin, IconNavigation, IconCurrencyDollar, IconClock, IconPackage, IconHome, IconBell, IconCopy, IconToolsKitchen2, IconCheck, IconVolume, IconMenu2 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCustomerNameForDriver } from '@/utils/nameFormatting';
 import { notifications } from '@mantine/notifications';
 import FullscreenCamera from './FullscreenCamera';
+import ContactlessDeliveryFlow from './ContactlessDeliveryFlow';
 import { DeliveryFlowStepOne } from './DeliveryFlowStepOne';
 import { DeliveryFlowStepTwo } from './DeliveryFlowStepTwo';
 import { DeliveryFlowStepThree } from './DeliveryFlowStepThree';
 import { OrderChatOverlay } from './OrderChatOverlay';
 import { useNavigation } from '@/hooks/useNavigation';
 import { speakDeliveryInstructions } from './ActiveFeedingMenu';
+import SlideToConfirm from '@/components/SlideToConfirm';
 import feederAppIcon from '@/assets/feeder_app_icon.png';
 import {
   Box,
@@ -53,6 +56,18 @@ interface ActiveDeliveryProps {
   onCompleteDelivery: () => void;
   onProgressChange?: (progress: DeliveryProgress) => void;
   onCameraStateChange?: (isOpen: boolean) => void;
+  /** Optional initial driver status (retail/grocery can skip straight to customer leg) */
+  initialDriverStatus?: typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
+  /** Multi-stop route: list of order details; when length > 1, show stops list between deliveries */
+  deliveryStops?: any[];
+  /** Index of the current stop to deliver (0-based); completed stops are 0..currentStopIndex-1 */
+  currentStopIndex?: number;
+  /** 'stops_list' = show route list with slide to start next; 'delivering' = show delivery flow for current stop */
+  routeView?: 'stops_list' | 'delivering';
+  /** Called when one stop is completed (before last); parent should advance and show list or finish */
+  onStopComplete?: (stopIndex: number) => void;
+  /** Called when driver slides to start a stop; parent should set routeView to 'delivering' */
+  onStartStop?: (stopIndex: number) => void;
 }
 
 // ===== DRIVER STATUS =====
@@ -308,10 +323,16 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   orderDetails, 
   onCompleteDelivery, 
   onProgressChange,
-  onCameraStateChange 
+  onCameraStateChange,
+  initialDriverStatus,
+  deliveryStops,
+  currentStopIndex = 0,
+  routeView = 'delivering',
+  onStopComplete,
+  onStartStop,
 }) => {
   // All hooks must be called before any early returns
-  const [status, setStatus] = useState(DRIVER_STATUS.TO_STORE);
+  const [status, setStatus] = useState(initialDriverStatus || DRIVER_STATUS.TO_STORE);
   const [pickupCode, setPickupCode] = useState<string | null>(null);
   const [pickupPhotoUrl, setPickupPhotoUrl] = useState<string>();
   const [deliveryPhotoUrl, setDeliveryPhotoUrl] = useState<string>();
@@ -329,7 +350,21 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const [orderStartTime, setOrderStartTime] = useState<Date | null>(null);
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
-  
+  const prevStopIndexRef = useRef<number>(currentStopIndex);
+
+  // Multi-stop: when parent advances to next stop (not after last), reset to "Head to your stop"
+  useEffect(() => {
+    if (
+      deliveryStops &&
+      deliveryStops.length > 1 &&
+      currentStopIndex !== prevStopIndexRef.current &&
+      currentStopIndex < deliveryStops.length
+    ) {
+      prevStopIndexRef.current = currentStopIndex;
+      setStatus(DRIVER_STATUS.TO_CUSTOMER);
+    }
+  }, [deliveryStops, currentStopIndex]);
+
   // GPS tracking for automatic instruction reading
   const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [hasSpokenInstructions, setHasSpokenInstructions] = useState(false);
@@ -840,6 +875,42 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     onCameraStateChange?.(false);
   };
 
+  const handleCompleteContactlessDropOff = async (opts: {
+    deliveryPhotoUrl?: string;
+    dropOffLocation?: string;
+  }) => {
+    let uploadedUrl: string | null = null;
+    if (opts.deliveryPhotoUrl) {
+      uploadedUrl = await uploadPhoto(opts.deliveryPhotoUrl, 'delivery');
+      if (uploadedUrl) setDeliveryPhotoUrl(uploadedUrl);
+    }
+    if (!isTestOrder && orderDetails.order_id) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.functions.invoke('finalize-delivery', {
+          body: {
+            orderId: orderDetails.order_id,
+            driverId: user?.id,
+            pickupPhotoUrl: pickupPhotoUrl,
+            deliveryPhotoUrl: uploadedUrl ?? undefined,
+            dropOffLocation: opts.dropOffLocation,
+          }
+        });
+      } catch (error) {
+        console.error('Error finalizing delivery:', error);
+      }
+    }
+    // Multi-stop route: tell parent this stop is done; parent shows list or stays for completion
+    if (deliveryStops && deliveryStops.length > 1 && onStopComplete != null) {
+      onStopComplete(currentStopIndex);
+      if (currentStopIndex === deliveryStops.length - 1) {
+        setStatus(DRIVER_STATUS.COMPLETE);
+      }
+      return;
+    }
+    setStatus(DRIVER_STATUS.COMPLETE);
+  };
+
   const handleCancelPhoto = () => {
     if (status === DRIVER_STATUS.AWAITING_PICKUP_PHOTO) {
       setStatus(DRIVER_STATUS.AT_STORE);
@@ -1308,6 +1379,131 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     const payAmount = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const isToStore = currentFlow?.isPickup ?? true;
 
+    // Multi-stop route: show list of stops; completed ones with checkmark, next one with slide to start
+    if (deliveryStops && deliveryStops.length > 1 && routeView === 'stops_list' && onStartStop != null) {
+      const formatStopAddress = (addr: any) => {
+        if (!addr) return '—';
+        if (typeof addr === 'string') return addr;
+        const parts = [addr.street || addr.address, addr.city, addr.state, addr.zip || addr.zip_code].filter(Boolean);
+        return parts.join(', ');
+      };
+      const headerHeightPx = 'calc(env(safe-area-inset-top, 0px) + 56px)';
+      const stopsListContent = (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99999,
+            background: '#F9FAFB',
+            fontFamily: 'system-ui, sans-serif',
+            display: 'block',
+          }}
+        >
+          {/* Blue header – fixed height; scroll area starts strictly below via top offset */}
+          <header
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: headerHeightPx,
+              minHeight: 56,
+              background: '#2563EB',
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              paddingLeft: 16,
+              paddingRight: 16,
+              display: 'flex',
+              alignItems: 'center',
+              zIndex: 1,
+            }}
+          >
+            <ActionIcon
+              variant="white"
+              color="dark"
+              size="lg"
+              radius="xl"
+              aria-label="Menu"
+              style={{ flexShrink: 0 }}
+            >
+              <IconMenu2 size={20} stroke={2} />
+            </ActionIcon>
+          </header>
+          {/* Scroll area: positioned below header with exact pixel offset so nothing is ever behind it */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: headerHeightPx,
+              bottom: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              padding: '20px 16px calc(20px + env(safe-area-inset-bottom, 0px)) 16px',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, marginBottom: 8, color: '#111' }}>Your stops</p>
+            <p style={{ margin: 0, fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
+              {currentStopIndex === 0
+                ? "Start the top order when you're ready to go."
+                : `${currentStopIndex} of ${deliveryStops.length} completed. Slide to start the next stop.`}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {deliveryStops.map((stop: any, index: number) => {
+                const isCompleted = index < currentStopIndex;
+                const isNext = index === currentStopIndex;
+                const name = stop.customer_name || stop.customerName || 'Customer';
+                const address = formatStopAddress(stop.dropoff_address || stop.dropoff_address?.address || stop.address);
+                const orderNum = stop.order_id?.slice(-4) || stop.order_number || String(index + 1);
+                const stopNumber = index + 1;
+                return (
+                  <div
+                    key={stop.order_id || stop.id || index}
+                    style={{
+                      borderRadius: 16,
+                      background: '#fff',
+                      border: isNext ? '2px solid #2563EB' : '1px solid #E5E7EB',
+                      boxShadow: isNext ? '0 4px 14px rgba(37, 99, 235, 0.12)' : 'none',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>
+                          <span style={{ color: '#2563EB', marginRight: 4 }}>Stop {stopNumber}.</span> {name}
+                        </span>
+                        {orderNum && <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', flexShrink: 0 }}>Order: {orderNum}</span>}
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{address}</p>
+                    </div>
+                    {isCompleted && (
+                      <div style={{ padding: 12, background: '#F0FDF4', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <IconCheck size={14} style={{ color: '#16a34a', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: '#15803d' }}>Completed</span>
+                      </div>
+                    )}
+                    {isNext && (
+                      <div style={{ padding: 16 }}>
+                        <p style={{ margin: '0 0 8px 0', fontSize: 12, color: '#6b7280', textAlign: 'center' }}>Slide to confirm to start this stop</p>
+                        <SlideToConfirm
+                          label="Slide to confirm to start"
+                          onConfirm={() => onStartStop(currentStopIndex)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+      return createPortal(stopsListContent, document.body);
+    }
+
     if (!currentFlow || !currentFlow.title) {
       return (
         <Stack flex={1} align="center" justify="center" p="xl">
@@ -1386,6 +1582,17 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
       const dropoff = orderDetails?.dropoff_address;
       const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
       const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
+      const deliveryByRaw =
+        orderDetails?.estimated_delivery_time ??
+        orderDetails?.max_delivery_time ??
+        orderDetails?.delivery_by;
+      const deliveryByTime =
+        deliveryByRaw != null
+          ? (deliveryByRaw instanceof Date ? deliveryByRaw : new Date(deliveryByRaw)).toLocaleTimeString([], {
+              hour: 'numeric',
+              minute: '2-digit',
+            })
+          : undefined;
       return (
         <DeliveryFlowStepThree
           customerName={currentOrder.customer.name}
@@ -1398,6 +1605,9 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
           distanceMi={currentOrder.distanceToCustomer ?? 5.1}
           deliveryNotes={currentOrder.customer.deliveryNotes}
           customerPhone={currentOrder.customer.phone}
+          headlineLabel="Head to your stop"
+          deliveryByTime={deliveryByTime}
+          useSlideToConfirm
           onNavigate={() => {
             openExternalNavigation({
               address: currentOrder.customer.address || '',
@@ -1438,6 +1648,58 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
               : undefined
           }
           onArrived={handleConfirmArrivalAtCustomer}
+        />
+      );
+    }
+
+    if (status === DRIVER_STATUS.AT_CUSTOMER) {
+      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const deliveryByRaw =
+        orderDetails?.estimated_delivery_time ??
+        orderDetails?.max_delivery_time ??
+        orderDetails?.delivery_by;
+      const dropoffTimeLabel =
+        deliveryByRaw != null
+          ? (deliveryByRaw instanceof Date ? deliveryByRaw : new Date(deliveryByRaw)).toLocaleTimeString([], {
+              hour: 'numeric',
+              minute: '2-digit',
+            }) + ' drop-off'
+          : 'drop-off';
+      return (
+        <ContactlessDeliveryFlow
+          customerName={currentOrder.customer.name}
+          customerAddress={currentOrder.customer.address}
+          dropoffTimeLabel={dropoffTimeLabel}
+          propertyType="House"
+          orderNumber={orderNum}
+          orderId={orderDetails?.order_id}
+          itemsToScanCount={Math.max(1, orderItems.length)}
+          deliveryNotes={currentOrder.customer.deliveryNotes}
+          onNavigate={() => {
+            openExternalNavigation({
+              address: currentOrder.customer.address || '',
+              name: currentOrder.customer.name,
+            });
+          }}
+          onContact={
+            orderDetails?.order_id
+              ? async () => {
+                  try {
+                    notifications.show({ id: 'masked-call', message: 'Connecting…', loading: true });
+                    const { data, error } = await supabase.functions.invoke('start-masked-call', {
+                      body: { order_id: orderDetails.order_id, caller_role: 'driver' },
+                    });
+                    notifications.hide('masked-call');
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                    notifications.show({ message: 'Your phone will ring.', color: 'green' });
+                  } catch (e) {
+                    notifications.show({ message: (e as Error)?.message ?? 'Could not start call.', color: 'red' });
+                  }
+                }
+              : undefined
+          }
+          onCompleteDropOff={handleCompleteContactlessDropOff}
         />
       );
     }
@@ -1783,9 +2045,16 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
   const renderComplete = () => {
     const totalEarned = typeof currentOrder.pay === 'number' ? currentOrder.pay : parseFloat(String(currentOrder.pay || 0));
     const tipAmount = (orderDetails?.tip_cents || 0) / 100;
-    const orderId = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+    // Use canonical order ID (same as merchant and customer) – full id, not derived
+    const displayOrderId = orderDetails?.order_id ?? orderDetails?.id ?? currentOrder.id ?? '';
     const totalMiles = currentOrder.totalDistance || 0;
-    
+    const mileagePayCents = orderDetails?.mileage_pay_cents ?? 0;
+    const mileagePay = mileagePayCents / 100;
+    const deliveryPayCents = deliveryStops?.length
+      ? deliveryStops.reduce((sum: number, s: any) => sum + (s.payout_cents ?? 0), 0)
+      : (orderDetails?.payout_cents ?? 0);
+    const deliveryPay = deliveryPayCents / 100;
+
     // Calculate elapsed time
     let elapsedTime = '0 min';
     if (orderStartTime) {
@@ -1920,7 +2189,25 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                   Order ID
                 </Text>
                 <Text size="sm" fw={600} c="dark" style={{ fontFamily: 'monospace' }}>
-                  {orderId}
+                  {displayOrderId}
+                </Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Delivery pay{deliveryStops && deliveryStops.length > 1 ? ` (${deliveryStops.length} stops)` : ''}
+                </Text>
+                <Text size="sm" fw={600} c="dark">
+                  ${deliveryPay.toFixed(2)}
+                </Text>
+              </Group>
+              <Divider />
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500} c="dimmed">
+                  Mileage pay
+                </Text>
+                <Text size="sm" fw={600} c="dark">
+                  ${mileagePay.toFixed(2)}
                 </Text>
               </Group>
               <Divider />

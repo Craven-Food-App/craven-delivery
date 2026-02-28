@@ -6,6 +6,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Box } from '@mantine/core';
 import { IconNavigation, IconHome, IconBell, IconPhone, IconMessage } from '@tabler/icons-react';
 import { StepOneMap } from './StepOneMap';
+import SlideToConfirm from '@/components/SlideToConfirm';
 
 const STEP_THREE_CSS = `
   .dfl-step-three-root { font-family: 'DM Sans', sans-serif; }
@@ -184,6 +185,12 @@ export interface DeliveryFlowStepThreeProps {
   deliveryNotes?: string;
   /** Customer phone for contact. When set, Call and Message actions are shown. */
   customerPhone?: string;
+  /** e.g. "Head to your stop" – shown when provided; no step/readiness line in that case. */
+  headlineLabel?: string;
+  /** Deliver-by time e.g. "9:55 AM" – shown with headline when provided. */
+  deliveryByTime?: string;
+  /** When true, footer shows Slide to confirm "I am here" instead of Arrived button. */
+  useSlideToConfirm?: boolean;
   onNavigate: () => void;
   onCall?: () => void;
   onMessage?: () => void;
@@ -203,6 +210,9 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
   distanceMi,
   deliveryNotes,
   customerPhone,
+  headlineLabel,
+  deliveryByTime,
+  useSlideToConfirm,
   onNavigate,
   onCall,
   onMessage,
@@ -338,20 +348,36 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
                 <div className="dfl-step-three-status-dot" />
               </div>
               <div>
-                <div className="dfl-step-three-status-eyebrow">En Route to Customer</div>
-                <div className="dfl-step-three-status-name">{customerName}</div>
+                {headlineLabel ? (
+                  <>
+                    <div className="dfl-step-three-status-eyebrow">{headlineLabel}</div>
+                    {deliveryByTime && (
+                      <div className="dfl-step-three-status-name">Deliver by {deliveryByTime}</div>
+                    )}
+                    {!deliveryByTime && (
+                      <div className="dfl-step-three-status-name">{customerName}</div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="dfl-step-three-status-eyebrow">En Route to Customer</div>
+                    <div className="dfl-step-three-status-name">{customerName}</div>
+                  </>
+                )}
               </div>
             </div>
             <div className="dfl-step-three-dist-chip">{distStr} MI</div>
           </div>
 
           <div ref={bodyRef} className="dfl-step-three-body" style={{ overflowY: 'auto' }}>
-            <div className="dfl-step-three-steps">
-              <div className="dfl-step-three-step done" />
-              <div className="dfl-step-three-step done" />
-              <div className="dfl-step-three-step active" />
-              <span className="dfl-step-three-step-lbl">Step 3 of 3</span>
-            </div>
+            {!headlineLabel && (
+              <div className="dfl-step-three-steps">
+                <div className="dfl-step-three-step done" />
+                <div className="dfl-step-three-step done" />
+                <div className="dfl-step-three-step active" />
+                <span className="dfl-step-three-step-lbl">Step 3 of 3</span>
+              </div>
+            )}
 
             <div className="dfl-step-three-customer-line">Customer · {customerShort}</div>
             <div className="dfl-step-three-order-row">
@@ -471,15 +497,24 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
           </div>
 
           <div className="dfl-step-three-footer">
-            <button
-              type="button"
-              className="dfl-step-three-cta"
-              onClick={onArrived}
-              data-testid="arrived-at-customer-button"
-            >
-              <span>Arrived at Customer&apos;s Location</span>
-              <div className="dfl-step-three-cta-arrow" />
-            </button>
+            {useSlideToConfirm ? (
+              <>
+                <div style={{ fontSize: 12, color: 'rgba(28,28,30,0.6)', marginBottom: 10, textAlign: 'center' }}>
+                  When you arrive at the customer&apos;s home, close GPS and slide to confirm.
+                </div>
+                <SlideToConfirm label="I am here" onConfirm={onArrived} />
+              </>
+            ) : (
+              <button
+                type="button"
+                className="dfl-step-three-cta"
+                onClick={onArrived}
+                data-testid="arrived-at-customer-button"
+              >
+                <span>Arrived at Customer&apos;s Location</span>
+                <div className="dfl-step-three-cta-arrow" />
+              </button>
+            )}
           </div>
         </div>
       </div>

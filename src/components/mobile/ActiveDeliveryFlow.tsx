@@ -27,6 +27,7 @@ interface ActiveDeliveryProps {
   onCompleteDelivery: () => void;
   onProgressChange?: (progress: DeliveryProgress) => void;
   onCameraStateChange?: (isOpen: boolean) => void;
+  initialDriverStatus?: typeof DRIVER_STATUS[keyof typeof DRIVER_STATUS];
 }
 
 const ActiveDeliveryFlow: React.FC<ActiveDeliveryProps> = (props) => {

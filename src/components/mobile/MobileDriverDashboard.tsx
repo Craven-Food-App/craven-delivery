@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { NewDeliveryRequest } from './NewDeliveryRequest';
+import { RetailGroceryOfferFlow } from './RetailGroceryOfferFlow';
+import RetailGroceryPickupFlow from './RetailGroceryPickupFlow';
 import { DeliveryMap } from './DeliveryMap';
 import ActiveDeliveryFlow from './ActiveDeliveryFlow';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
@@ -47,7 +49,7 @@ import { useCrashReporting } from '@/hooks/useCrashReporting';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { LoadingState, LoadingOverlay } from '@/components/LoadingStates';
 import OfflineIndicator from '@/components/OfflineIndicator';
-type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery';
+type DriverState = 'offline' | 'online_searching' | 'online_paused' | 'on_delivery' | 'on_retail_pickup';
 type VehicleType = 'car' | 'bike' | 'scooter' | 'walk' | 'motorcycle';
 type EarningMode = 'perHour' | 'perOffer';
 interface OrderAssignment {
@@ -65,6 +67,10 @@ interface OrderAssignment {
   customer_name?: string; // Customer name
   subtotal_cents?: number; // Order subtotal
   tip_cents?: number; // Tip amount
+  mileage_pay_cents?: number; // Mileage pay (retail/grocery)
+  storeType?: string; // 'retail_store' | 'grocery' | etc. — used to show retail offer flow
+  storeLogoUrl?: string; // Store/restaurant logo for retail offer / pickup cards
+  parking_spot_count?: number; // Number of curbside parking spots configured by merchant
   items?: Array<{
     id: string;
     name: string;
@@ -427,6 +433,9 @@ export const MobileDriverDashboard: React.FC = () => {
   const [isViewingHomeWhileFeeding, setIsViewingHomeWhileFeeding] = useState(false);
   const [resetMapZoom, setResetMapZoom] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [retailOfferStep, setRetailOfferStep] = useState<1 | 2 | null>(null);
+  const [hasCompletedRetailPickup, setHasCompletedRetailPickup] = useState(false);
+  const [previewRetailStep, setPreviewRetailStep] = useState<1 | 2>(1);
   const [showQuickScheduler, setShowQuickScheduler] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'schedule' | 'earnings' | 'onfire' | 'notifications' | 'account' | 'ratings' | 'promos' | 'preferences' | 'help' | 'messages'>('home');
   const [driverRating, setDriverRating] = useState<number>(5.0);
@@ -452,6 +461,10 @@ export const MobileDriverDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
+  // Dev: preview retail offer flow or force all offers to use retail flow
+  const previewRetailOffer = searchParams.get('previewRetailOffer') === '1';
+  const forceRetailFlow = searchParams.get('retailFlow') === '1';
+
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -624,6 +637,9 @@ export const MobileDriverDashboard: React.FC = () => {
   const [currentOrderAssignment, setCurrentOrderAssignment] = useState<OrderAssignment | null>(null);
   const [orderTimeLeft, setOrderTimeLeft] = useState<number>(33);
   const [activeDelivery, setActiveDelivery] = useState<any>(null);
+  const [deliveryRouteStops, setDeliveryRouteStops] = useState<any[]>([]);
+  const [currentStopIndex, setCurrentStopIndex] = useState(0);
+  const [routeView, setRouteView] = useState<'stops_list' | 'delivering'>('delivering');
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [tripCount, setTripCount] = useState(0);
   const [isAvailable, setIsAvailable] = useState(false);
@@ -644,6 +660,66 @@ export const MobileDriverDashboard: React.FC = () => {
       name: activeDelivery.restaurant_name,
     };
   }, [activeDelivery]);
+
+  // Build delivery stops for route: backend list, or from ordersForPickup (retail), or dropoff_count, or single stop
+  const deliveryStops = useMemo(() => {
+    if (!activeDelivery) return [];
+    const fromBackend = (activeDelivery as any).deliveryStops;
+    if (Array.isArray(fromBackend) && fromBackend.length > 0) return fromBackend;
+    const orders = (activeDelivery as any).ordersForPickup;
+    const dropoffCount = (activeDelivery as any).dropoff_count ?? (activeDelivery as any).dropoffCount ?? 0;
+    const baseAddress = activeDelivery.dropoff_address || 'Delivery Address';
+    const addressStr = typeof baseAddress === 'string' ? baseAddress : (baseAddress?.address || [baseAddress?.street, baseAddress?.city, baseAddress?.state, baseAddress?.zip_code].filter(Boolean).join(', '));
+    if (Array.isArray(orders) && orders.length > 0) {
+      const list = orders.map((o: any, i: number) => ({
+        order_id: o.id || `${activeDelivery.order_id}-${i}`,
+        id: o.id || `stop-${i}`,
+        order_number: o.order_number ?? (typeof o.id === 'string' ? o.id.replace(/\D/g, '').slice(-4) || String(i + 1).padStart(3, '0') : String(i + 1).padStart(3, '0')),
+        customer_name: o.label || o.customer_name || 'Customer',
+        dropoff_address: o.address || addressStr,
+        payout_cents: Math.round((activeDelivery.payout_cents || 0) / Math.max(1, orders.length)),
+        delivery_notes: activeDelivery.delivery_notes,
+        customer_phone: activeDelivery.customer_phone,
+        items: activeDelivery.items || [],
+        estimated_delivery_time: activeDelivery.estimated_delivery_time,
+      }));
+      return list;
+    }
+    // Route has 23 drop-offs but no per-stop list: build N stops from dropoff_count so we don't show completion early
+    const n = Math.max(1, Number(dropoffCount) || 0);
+    if (n > 1) {
+      return Array.from({ length: n }, (_, i) => ({
+        order_id: `${activeDelivery.order_id || 'route'}-${i}`,
+        id: `stop-${i}`,
+        customer_name: activeDelivery.customer_name || `Stop ${i + 1}`,
+        dropoff_address: addressStr,
+        payout_cents: Math.round((activeDelivery.payout_cents || 0) / n),
+        delivery_notes: activeDelivery.delivery_notes,
+        customer_phone: activeDelivery.customer_phone,
+        items: activeDelivery.items || [],
+        estimated_delivery_time: activeDelivery.estimated_delivery_time,
+      }));
+    }
+    return [activeDelivery];
+  }, [activeDelivery]);
+
+  // Only set initial route list view when we first start this delivery (new activeDelivery), not on every render
+  const prevActiveDeliveryRef = React.useRef<any>(null);
+  useEffect(() => {
+    if (driverState !== 'on_delivery' || !activeDelivery) {
+      if (!activeDelivery) prevActiveDeliveryRef.current = null;
+      return;
+    }
+    if (deliveryStops.length <= 1) {
+      setRouteView('delivering');
+      return;
+    }
+    if (prevActiveDeliveryRef.current !== activeDelivery) {
+      prevActiveDeliveryRef.current = activeDelivery;
+      setCurrentStopIndex(0);
+      setRouteView('stops_list');
+    }
+  }, [driverState, activeDelivery, deliveryStops.length]);
   const {
     playNotification
   } = useNotificationSettings();
@@ -693,23 +769,27 @@ export const MobileDriverDashboard: React.FC = () => {
     const broadcastChannel = supabase.channel(`driver_${userId}`).on('broadcast', {
       event: 'order_assignment'
     }, payload => {
+      const pp: any = payload.payload || {};
       setCurrentOrderAssignment({
-        assignment_id: payload.payload.assignment_id,
-        order_id: payload.payload.order_id,
-        restaurant_name: payload.payload.restaurant_name,
-        pickup_address: payload.payload.pickup_address,
-        dropoff_address: payload.payload.dropoff_address,
-        payout_cents: payload.payload.payout_cents || payload.payload.payout_cents,
-        distance_km: payload.payload.distance_km,
-        distance_mi: payload.payload.distance_mi,
-        expires_at: payload.payload.expires_at,
-        estimated_time: payload.payload.estimated_time,
-        isTestOrder: payload.payload.isTestOrder, // Add test order flag
-        items: payload.payload.items || [], // Include order items from payload
-        customer_name: payload.payload.customer_name, // Include customer name
-        subtotal_cents: payload.payload.subtotal_cents, // Include subtotal
-        tip_cents: payload.payload.tip_cents, // Include tip
-        mileage_pay_cents: payload.payload.mileage_pay_cents || 0, // Include mileage pay
+        assignment_id: pp.assignment_id,
+        order_id: pp.order_id,
+        restaurant_name: pp.restaurant_name,
+        pickup_address: pp.pickup_address,
+        dropoff_address: pp.dropoff_address,
+        payout_cents: pp.payout_cents || pp.payout_cents,
+        distance_km: pp.distance_km,
+        distance_mi: pp.distance_mi,
+        expires_at: pp.expires_at,
+        estimated_time: pp.estimated_time,
+        isTestOrder: pp.isTestOrder, // Add test order flag
+        items: pp.items || [], // Include order items from payload
+        customer_name: pp.customer_name, // Include customer name
+        subtotal_cents: pp.subtotal_cents, // Include subtotal
+        tip_cents: pp.tip_cents, // Include tip
+        mileage_pay_cents: pp.mileage_pay_cents || 0, // Include mileage pay
+        storeType: pp.store_type || pp.restaurant_type,
+        storeLogoUrl: pp.store_logo_url || pp.logo_url || pp.image_url,
+        parking_spot_count: pp.parking_spot_count || pp.pickup_parking_spots || pp.curbside_spot_count,
       });
       setShowOrderModal(true);
 
@@ -746,12 +826,15 @@ export const MobileDriverDashboard: React.FC = () => {
       // Fetch order summary to populate modal
       const {
         data: order
-      } = await supabase.from('orders').select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name)').eq('id', assignment.order_id).maybeSingle();
+      } = await supabase.from('orders').select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name, restaurant_type, logo_url, image_url)').eq('id', assignment.order_id).maybeSingle();
       if (order) {
-        // Resolve actual restaurant name from the joined restaurants table
-        const restaurantName = (order as any).restaurants?.name
+        // Resolve actual restaurant name, store type, and logo from the joined restaurants table
+        const restaurants = (order as any).restaurants;
+        const restaurantName = restaurants?.name
           || (typeof order.pickup_address === 'object' && order.pickup_address !== null ? (order.pickup_address as any).name : null)
           || 'New Order';
+        const storeType = restaurants?.restaurant_type;
+        const storeLogoUrl = restaurants?.logo_url || restaurants?.image_url;
         setCurrentOrderAssignment({
           assignment_id: assignment.id,
           order_id: assignment.order_id,
@@ -762,7 +845,9 @@ export const MobileDriverDashboard: React.FC = () => {
           distance_km: Number(order.distance_km) || 0,
           distance_mi: ((Number(order.distance_km) || 0) * 0.621371).toFixed(1),
           expires_at: assignment.expires_at,
-          estimated_time: Math.ceil((Number(order.distance_km) || 0) * 2.5)
+          estimated_time: Math.ceil((Number(order.distance_km) || 0) * 2.5),
+          storeType: storeType || undefined,
+          storeLogoUrl: storeLogoUrl || undefined
         });
         setShowOrderModal(true);
 
@@ -820,6 +905,35 @@ export const MobileDriverDashboard: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [showOrderModal, currentOrderAssignment]);
+
+  // Fetch store type for assignment when missing (e.g. from broadcast payload)
+  useEffect(() => {
+    if (!currentOrderAssignment?.order_id || currentOrderAssignment.storeType !== undefined) return;
+    let cancelled = false;
+    (async () => {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('restaurant_id, restaurants(restaurant_type, logo_url, image_url, curbside_spot_count)')
+        .eq('id', currentOrderAssignment.order_id)
+        .maybeSingle();
+      if (cancelled || !order) return;
+      const r = (order as any).restaurants;
+      const storeType = r?.restaurant_type;
+      const storeLogoUrl = r?.logo_url || r?.image_url;
+      const parkingSpotCount = r?.curbside_spot_count;
+      setCurrentOrderAssignment((prev) =>
+        prev
+          ? {
+              ...prev,
+              storeType: storeType || prev.storeType,
+              storeLogoUrl: storeLogoUrl || prev.storeLogoUrl,
+              parking_spot_count: parkingSpotCount ?? prev.parking_spot_count,
+            }
+          : prev
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [currentOrderAssignment?.order_id, currentOrderAssignment?.storeType]);
 
   // Check session persistence and onboarding on component mount
   useEffect(() => {
@@ -1863,98 +1977,318 @@ export const MobileDriverDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* ON DELIVERY STATE */}
-        {activeTab === 'home' && driverState === 'on_delivery' && activeDelivery && <div className="pointer-events-auto">
-          <ActiveDeliveryFlow 
-            orderDetails={{
-              id: activeDelivery.id || activeDelivery.order_id || 'missing-order-id',
-              order_id: activeDelivery.order_id || activeDelivery.id, // Ensure order_id is passed for pickup code lookup
-              order_number: activeDelivery.order_number || 'MISSING-ORDER',
-              restaurant_name: activeDelivery.restaurant_name || 'Restaurant',
-              pickup_address: activeDelivery.pickup_address || 'Pickup Address',
-              dropoff_address: activeDelivery.dropoff_address || 'Delivery Address',
-              customer_name: activeDelivery.customer_name || 'Customer',
-              customer_phone: activeDelivery.customer_phone,
-              delivery_notes: activeDelivery.delivery_notes,
-              payout_cents: activeDelivery.payout_cents || 0,
-              subtotal_cents: activeDelivery.subtotal_cents || activeDelivery.payout_cents || 1200,
-              estimated_time: activeDelivery.estimated_time || 30,
-              items: activeDelivery.items && activeDelivery.items.length > 0 ? activeDelivery.items : [{
-                name: 'Order Items',
-                quantity: 1,
-                price_cents: activeDelivery.subtotal_cents || 1200
-              }],
-              isTestOrder: activeDelivery.isTestOrder || false // Only true if explicitly marked as test
-            }} onCompleteDelivery={async () => {
-            // Add delivery earnings to session total
-            const deliveryPayout = (activeDelivery.payout_cents || 0) / 100; // Convert cents to dollars
-            setSessionEarnings(prev => prev + deliveryPayout);
-            
-            // Record final driver earnings (ON FIRE game points handled in edge function)
-            try {
-              const {
-                data: {
-                  user
-                }
-              } = await supabase.auth.getUser();
+        {/* RETAIL / GROCERY PICKUP FLOW (arrival + parking spot selection) */}
+        {activeTab === 'home' && driverState === 'on_retail_pickup' && activeDelivery && (
+          <div className="pointer-events-auto">
+            <RetailGroceryPickupFlow
+              storeName={activeDelivery.restaurant_name || 'Store'}
+              storeAddress={
+                typeof activeDelivery.pickup_address === 'string'
+                  ? activeDelivery.pickup_address
+                  : activeDelivery.pickup_address?.address ||
+                    [activeDelivery.pickup_address?.street, activeDelivery.pickup_address?.city, activeDelivery.pickup_address?.state, activeDelivery.pickup_address?.zip_code]
+                      .filter(Boolean)
+                      .join(', ')
+              }
+              orderId={activeDelivery.order_id || activeDelivery.id}
+              ordersForPickup={
+                (activeDelivery as any).ordersForPickup ??
+                [
+                  { id: 'order-021', label: 'J. SMITH', totalPackages: 1 },
+                  { id: 'order-782', label: 'E. EMERS', totalPackages: 1 },
+                  { id: 'order-445', label: 'M. JONES', totalPackages: 3 },
+                ]
+              }
+              pickupTimeLabel="Curbside pickup"
+              storeLogoUrl={(activeDelivery as any).storeLogoUrl}
+              pickupTagLabel="Curbside pickup"
+              tripLabel={activeDelivery.order_id ? `Trip ${activeDelivery.order_id.slice(-4)}` : undefined}
+              parkingSpotCount={(activeDelivery as any).parking_spot_count}
+              onArrivalConfirmed={async () => {
+                // Placeholder for future: update order status to at_store / arrived_for_pickup
+              }}
+              onParkingSpotSelected={async () => {
+                // Parking spot chosen – QR step will show next
+              }}
+              onQrConfirmed={async () => {
+                // Clerk scanned QR – could log event or update order status here
+              }}
+              onStartScanning={async () => {
+                // After starting scanning, transition into the main delivery flow (to customer)
+                setHasCompletedRetailPickup(true);
+                setDriverState('on_delivery');
+              }}
+            />
+          </div>
+        )}
 
-              // Finalize delivery in backend
-              await supabase.functions.invoke('finalize-delivery', {
-                body: {
-                  orderId: activeDelivery.order_id,
-                  driverId: user?.id
+        {/* ON DELIVERY STATE */}
+        {activeTab === 'home' && driverState === 'on_delivery' && activeDelivery && (() => {
+          const stops = deliveryStops.length > 0 ? deliveryStops : [activeDelivery];
+          const currentStop = stops[currentStopIndex] || activeDelivery;
+          const toOrderDetails = (s: any) => ({
+            id: s.id || s.order_id || 'missing-order-id',
+            order_id: s.order_id || s.id,
+            order_number: s.order_number || s.order_id?.slice(-4) || 'MISSING-ORDER',
+            restaurant_name: s.restaurant_name || activeDelivery.restaurant_name || 'Restaurant',
+            pickup_address: s.pickup_address || activeDelivery.pickup_address || 'Pickup Address',
+            dropoff_address: s.dropoff_address || s.dropoff_address?.address || activeDelivery.dropoff_address || 'Delivery Address',
+            customer_name: s.customer_name || s.customerName || activeDelivery.customer_name || 'Customer',
+            customer_phone: s.customer_phone || activeDelivery.customer_phone,
+            delivery_notes: s.delivery_notes || activeDelivery.delivery_notes,
+            payout_cents: s.payout_cents ?? activeDelivery.payout_cents ?? 0,
+            mileage_pay_cents: s.mileage_pay_cents ?? (activeDelivery as any).mileage_pay_cents ?? 0,
+            subtotal_cents: s.subtotal_cents ?? activeDelivery.subtotal_cents ?? 1200,
+            estimated_time: s.estimated_time ?? activeDelivery.estimated_time ?? 30,
+            estimated_delivery_time: s.estimated_delivery_time ?? activeDelivery.estimated_delivery_time,
+            items: (s.items && s.items.length > 0 ? s.items : activeDelivery.items)?.length > 0
+              ? (s.items || activeDelivery.items)
+              : [{ name: 'Order Items', quantity: 1, price_cents: s.subtotal_cents || 1200 }],
+            isTestOrder: (s.isTestOrder ?? activeDelivery.isTestOrder) || false,
+          });
+          const orderDetails = toOrderDetails(currentStop);
+          const isMultiStop = stops.length > 1;
+          return (
+            <div className="pointer-events-auto">
+              <ActiveDeliveryFlow
+                orderDetails={orderDetails}
+                initialDriverStatus={
+                  hasCompletedRetailPickup &&
+                  ((activeDelivery as any).storeType === 'retail_store' || (activeDelivery as any).storeType === 'grocery')
+                    ? 'to_customer'
+                    : undefined
                 }
-              });
-            } catch (e) {
-              console.error('finalize-delivery failed', e);
-            }
-            // Reset state
-            setActiveDelivery(null);
-            setDriverState('online_searching');
-          }} 
-          onCameraStateChange={setIsCameraOpen}
-        />
-        </div>}
+                deliveryStops={isMultiStop ? stops : undefined}
+                currentStopIndex={isMultiStop ? currentStopIndex : 0}
+                routeView={isMultiStop ? routeView : 'delivering'}
+                onStopComplete={isMultiStop ? (stopIndex: number) => {
+                  const stop = stops[stopIndex];
+                  const payout = (stop?.payout_cents ?? 0) / 100;
+                  setSessionEarnings((prev) => prev + payout);
+                  setCurrentStopIndex(stopIndex + 1);
+                  if (stopIndex + 1 >= stops.length) {
+                    // Last stop done – flow will show completion screen; don't clear until onCompleteDelivery
+                  } else {
+                    setRouteView('stops_list');
+                  }
+                } : undefined}
+                onStartStop={isMultiStop ? () => setRouteView('delivering') : undefined}
+                onCompleteDelivery={async () => {
+                  const deliveryPayout = (currentStop?.payout_cents ?? activeDelivery.payout_cents ?? 0) / 100;
+                  setSessionEarnings((prev) => prev + deliveryPayout);
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    await supabase.functions.invoke('finalize-delivery', {
+                      body: { orderId: currentStop?.order_id || activeDelivery.order_id, driverId: user?.id },
+                    });
+                  } catch (e) {
+                    console.error('finalize-delivery failed', e);
+                  }
+                  setActiveDelivery(null);
+                  setDriverState('online_searching');
+                  setHasCompletedRetailPickup(false);
+                }}
+                onCameraStateChange={setIsCameraOpen}
+              />
+            </div>
+          );
+        })()}
 
       </div>
 
+      {/* Dev: ?previewRetailOffer=1 — show retail offer flow with mock data to work on UI (Accept → step 2, Start Route → pickup flow) */}
+      {previewRetailOffer && !showOrderModal && !activeDelivery && (
+        <RetailGroceryOfferFlow
+          step={previewRetailStep}
+          estimateAmount={74.73}
+          mileageEarnings={12.45}
+          stops={24}
+          totalMiles={45.9}
+          durationText="2 hrs, 34 mins"
+          pickupLabel="ASAP • Pickup"
+          pickupStoreName="Walmart HOLLAND #3445"
+          dropoffCount={23}
+          tags={['Apartment', 'Bulky item']}
+          getOffersUntil="1:00 PM"
+          onAccept={() => setPreviewRetailStep(2)}
+          onReject={() => navigate('/mobile')}
+          onStartRoute={() => {
+            // Simulate a retail/grocery assignment (24 stops = 1 pickup + 23 drop-offs)
+            const mockOrderId = 'PREVIEW-9718';
+            const dropoffCount = 23;
+            const names = ['J. SMITH', 'E. EMERS', 'M. JONES'];
+            setActiveDelivery({
+              order_id: mockOrderId,
+              id: mockOrderId,
+              order_number: mockOrderId,
+              restaurant_name: 'Walmart HOLLAND #3445',
+              pickup_address: '123 Test St, Holland, MI',
+              dropoff_address: '123 Test St, Holland, MI',
+              payout_cents: 7473,
+              mileage_pay_cents: 1245,
+              distance_km: 73.9,
+              distance_mi: '45.9',
+              estimated_time: 154,
+              items: [],
+              isTestOrder: true,
+              storeType: 'grocery',
+              storeLogoUrl: undefined,
+              parking_spot_count: 24,
+              dropoff_count: dropoffCount,
+              ordersForPickup: Array.from({ length: dropoffCount }, (_, i) => ({
+                id: `order-${String(i + 1).padStart(3, '0')}`,
+                label: names[i % names.length],
+                address: '123 Test St, Holland, MI',
+              })),
+            } as any);
+            setHasCompletedRetailPickup(false);
+            setDriverState('on_retail_pickup');
+          }}
+        />
+      )}
+
       {/* New Delivery Request Modal */}
       {showOrderModal && currentOrderAssignment && (() => {
-        // Calculate total seconds from assignment (default to 33 if not available)
-        const totalSeconds = 33; // Default timeout from create-test-order
+        const isRetailGrocery = forceRetailFlow || currentOrderAssignment.storeType === 'retail_store' || currentOrderAssignment.storeType === 'grocery';
+        const distance = parseFloat(currentOrderAssignment.distance_mi || '0') || 0;
+        const payoutCents = currentOrderAssignment.payout_cents || 0;
+        const estimateAmount = payoutCents / 100;
+        const mileagePayCents = currentOrderAssignment.mileage_pay_cents ?? Math.round(distance * 0.5 * 100);
+        const mileageEarnings = mileagePayCents / 100;
+        const eta = currentOrderAssignment.estimated_time ?? Math.ceil(distance * 2.5);
+        const expiresAt = currentOrderAssignment.expires_at ? new Date(currentOrderAssignment.expires_at) : null;
+        const getOffersUntil = expiresAt ? expiresAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : undefined;
 
-        // Extract merchant info
+        const runAcceptAndStartDelivery = async () => {
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select(`
+              id,
+              subtotal_cents,
+              customer_name,
+              customer_id,
+              customer_phone,
+              delivery_notes
+            `)
+            .eq('id', currentOrderAssignment.order_id)
+            .maybeSingle();
+
+          let resolvedCustomerName = orderData?.customer_name;
+          if (!resolvedCustomerName && orderData?.customer_id) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('full_name')
+              .eq('user_id', orderData.customer_id)
+              .maybeSingle();
+            if (profile?.full_name) resolvedCustomerName = profile.full_name;
+          }
+
+          const { data: orderItemsData } = await supabase
+            .from('order_items')
+            .select(`
+              id,
+              quantity,
+              price_cents,
+              special_instructions,
+              menu_items (
+                name,
+                image_url
+              )
+            `)
+            .eq('order_id', currentOrderAssignment.order_id);
+
+          const formattedItems = (orderItemsData || []).map((item: any) => ({
+            id: item.id,
+            name: item.menu_items?.name || 'Menu Item',
+            quantity: item.quantity,
+            price_cents: item.price_cents,
+            special_instructions: item.special_instructions,
+            image_url: item.menu_items?.image_url,
+          }));
+
+          const itemsToUse = (currentOrderAssignment as any).items?.length > 0
+            ? (currentOrderAssignment as any).items
+            : formattedItems;
+
+          setActiveDelivery({
+            ...currentOrderAssignment,
+            order_id: currentOrderAssignment.order_id,
+            assignment_id: currentOrderAssignment.assignment_id,
+            restaurant_name: currentOrderAssignment.restaurant_name,
+            pickup_address: currentOrderAssignment.pickup_address,
+            dropoff_address: currentOrderAssignment.dropoff_address,
+            payout_cents: currentOrderAssignment.payout_cents,
+            distance_mi: currentOrderAssignment.distance_mi,
+            isTestOrder: currentOrderAssignment.isTestOrder,
+            items: itemsToUse,
+            subtotal_cents: orderData?.subtotal_cents ?? (currentOrderAssignment as any).subtotal_cents ?? currentOrderAssignment.payout_cents ?? 0,
+            tip_cents: orderData?.tip_cents ?? (currentOrderAssignment as any).tip_cents ?? 0,
+            customer_name: resolvedCustomerName ?? orderData?.customer_name ?? (currentOrderAssignment as any).customer_name,
+            customer_phone: orderData?.customer_phone,
+            delivery_notes: orderData?.delivery_notes,
+          });
+
+          if (isRetailGrocery) {
+            setHasCompletedRetailPickup(false);
+            setDriverState('on_retail_pickup');
+          } else {
+            setDriverState('on_delivery');
+          }
+          setShowOrderModal(false);
+          setCurrentOrderAssignment(null);
+          setRetailOfferStep(null);
+        };
+
+        const closeModal = () => {
+          setShowOrderModal(false);
+          setCurrentOrderAssignment(null);
+          setRetailOfferStep(null);
+        };
+
+        if (isRetailGrocery) {
+          const durationText = eta < 60 ? `${eta} mins` : `${Math.floor(eta / 60)} hr${Math.floor(eta / 60) > 1 ? 's' : ''}${eta % 60 ? `, ${eta % 60} mins` : ''}`;
+          return (
+            <RetailGroceryOfferFlow
+              step={(retailOfferStep ?? 1) as 1 | 2}
+              estimateAmount={estimateAmount}
+              mileageEarnings={mileageEarnings}
+              stops={1}
+              totalMiles={distance}
+              durationText={durationText}
+              pickupLabel="ASAP • Pickup"
+              pickupStoreName={currentOrderAssignment.restaurant_name || 'Store'}
+              pickupStoreLogoUrl={currentOrderAssignment.storeLogoUrl}
+              dropoffCount={1}
+              tags={[]}
+              getOffersUntil={getOffersUntil}
+              onAccept={() => setRetailOfferStep(2)}
+              onReject={closeModal}
+              onStartRoute={runAcceptAndStartDelivery}
+            />
+          );
+        }
+
+        // Default: single-order restaurant flow
+        const totalSeconds = 33;
         const pickupAddr = currentOrderAssignment.pickup_address;
         const merchantName = currentOrderAssignment.restaurant_name || (typeof pickupAddr === 'object' ? pickupAddr?.name : 'Restaurant');
-        const merchantAddress = typeof pickupAddr === 'string' 
-          ? pickupAddr 
+        const merchantAddress = typeof pickupAddr === 'string'
+          ? pickupAddr
           : pickupAddr?.address || [pickupAddr?.street, pickupAddr?.city, pickupAddr?.state, pickupAddr?.zip_code].filter(Boolean).join(', ');
 
-        // Extract customer info
         const dropoffAddr = currentOrderAssignment.dropoff_address;
-        const customerName = (typeof dropoffAddr === 'object' && dropoffAddr?.name) 
-          ? dropoffAddr.name 
+        const customerName = (typeof dropoffAddr === 'object' && dropoffAddr?.name)
+          ? dropoffAddr.name
           : (currentOrderAssignment as any).customer_name || 'Customer';
         const customerAddress = typeof dropoffAddr === 'string'
           ? dropoffAddr
           : dropoffAddr?.address || [dropoffAddr?.street, dropoffAddr?.city, dropoffAddr?.state, dropoffAddr?.zip_code].filter(Boolean).join(', ');
 
-        // Calculate earnings
         const subtotalCents = (currentOrderAssignment as any).subtotal_cents || 0;
         const tipCents = (currentOrderAssignment as any).tip_cents || 0;
-        const payoutCents = currentOrderAssignment.payout_cents || 0;
         const earnings = payoutCents / 100;
-        
-        // Calculate fee percentage (if subtotal > 0)
-        const feePercentage = subtotalCents > 0 
-          ? Math.round((payoutCents / subtotalCents) * 100)
-          : 70; // Default 70%
-
-        // Distance and ETA
-        const distance = parseFloat(currentOrderAssignment.distance_mi || '0') || 0;
-        const eta = currentOrderAssignment.estimated_time || Math.ceil(distance * 2.5);
-
-        // Order ID (last 6 chars)
+        const feePercentage = subtotalCents > 0 ? Math.round((payoutCents / subtotalCents) * 100) : 70;
+        const etaRest = currentOrderAssignment.estimated_time || Math.ceil(distance * 2.5);
         const orderId = currentOrderAssignment.order_id.slice(-6);
 
         return (
@@ -1962,16 +2296,10 @@ export const MobileDriverDashboard: React.FC = () => {
             orderId={orderId}
             timeLeft={orderTimeLeft}
             totalSeconds={totalSeconds}
-            merchant={{
-              name: merchantName,
-              address: merchantAddress || 'Address unavailable'
-            }}
-            customer={{
-              name: customerName,
-              address: customerAddress || 'Address unavailable'
-            }}
+            merchant={{ name: merchantName, address: merchantAddress || 'Address unavailable' }}
+            customer={{ name: customerName, address: customerAddress || 'Address unavailable' }}
             distance={distance}
-            eta={eta}
+            eta={etaRest}
             earnings={earnings}
             subtotal={subtotalCents / 100}
             tip={tipCents / 100}
@@ -1983,94 +2311,9 @@ export const MobileDriverDashboard: React.FC = () => {
                 showRoute={true}
               />
             }
-            onAccept={async () => {
-              // Fetch order details including items when accepting
-              const { data: orderData } = await supabase
-                .from('orders')
-                .select(`
-                  id,
-                  subtotal_cents,
-                  customer_name,
-                  customer_id,
-                  customer_phone,
-                  delivery_notes
-                `)
-                .eq('id', currentOrderAssignment.order_id)
-                .maybeSingle();
-
-              // If customer_name is not in order, try to fetch from user_profiles
-              let resolvedCustomerName = orderData?.customer_name;
-              if (!resolvedCustomerName && orderData?.customer_id) {
-                const { data: profile } = await supabase
-                  .from('user_profiles')
-                  .select('full_name')
-                  .eq('user_id', orderData.customer_id)
-                  .maybeSingle();
-                
-                if (profile?.full_name) {
-                  resolvedCustomerName = profile.full_name;
-                }
-              }
-
-              // Fetch order items
-              const { data: orderItemsData } = await supabase
-                .from('order_items')
-                .select(`
-                  id,
-                  quantity,
-                  price_cents,
-                  special_instructions,
-                  menu_items (
-                    name,
-                    image_url
-                  )
-                `)
-                .eq('order_id', currentOrderAssignment.order_id);
-
-              // Format items for activeDelivery
-              const formattedItems = (orderItemsData || []).map((item: any) => ({
-                id: item.id,
-                name: item.menu_items?.name || 'Menu Item',
-                quantity: item.quantity,
-                price_cents: item.price_cents,
-                special_instructions: item.special_instructions,
-                image_url: item.menu_items?.image_url,
-              }));
-
-              // Use items from assignment payload if available, otherwise use fetched items
-              const itemsToUse = (currentOrderAssignment as any).items && (currentOrderAssignment as any).items.length > 0 
-                ? (currentOrderAssignment as any).items 
-                : formattedItems;
-
-              setActiveDelivery({
-                ...currentOrderAssignment,
-                order_id: currentOrderAssignment.order_id,
-                assignment_id: currentOrderAssignment.assignment_id,
-                restaurant_name: currentOrderAssignment.restaurant_name,
-                pickup_address: currentOrderAssignment.pickup_address,
-                dropoff_address: currentOrderAssignment.dropoff_address,
-                payout_cents: currentOrderAssignment.payout_cents,
-                distance_mi: currentOrderAssignment.distance_mi,
-                isTestOrder: currentOrderAssignment.isTestOrder,
-                items: itemsToUse,
-                subtotal_cents: orderData?.subtotal_cents || (currentOrderAssignment as any).subtotal_cents || currentOrderAssignment.payout_cents || 0,
-                tip_cents: orderData?.tip_cents || (currentOrderAssignment as any).tip_cents || 0,
-                customer_name: resolvedCustomerName || orderData?.customer_name || (currentOrderAssignment as any).customer_name,
-                customer_phone: orderData?.customer_phone,
-                delivery_notes: orderData?.delivery_notes,
-              });
-              setDriverState('on_delivery');
-              setShowOrderModal(false);
-              setCurrentOrderAssignment(null);
-            }}
-            onDecline={() => {
-              setShowOrderModal(false);
-              setCurrentOrderAssignment(null);
-            }}
-            onClose={() => {
-              setShowOrderModal(false);
-              setCurrentOrderAssignment(null);
-            }}
+            onAccept={runAcceptAndStartDelivery}
+            onDecline={closeModal}
+            onClose={closeModal}
           />
         );
       })()}
