@@ -59,7 +59,6 @@ const mantineTheme = createTheme({
 
 import FeederHub from "@/pages/FeederHub";
 import DriverAuth from "@/pages/DriverAuth";
-import { MobileDriverDashboard } from "@/components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "@/components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "@/components/mobile/MobilePasswordReset";
 import { EnhancedDriverOnboarding } from "@/pages/EnhancedDriverOnboarding";
@@ -106,34 +105,49 @@ function FeederApp() {
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<MobileDriverDashboard />} />
-                <Route path="/mobile" element={<MobileDriverDashboard />} />
-                <Route path="/feeder" element={<FeederHub />} />
-                <Route path="/driver/auth" element={<DriverAuth />} />
-                <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
-                <Route path="/executive/profile" element={<ExecutiveProfile />} />
-                <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
-                <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
-                <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
-                <Route path="/enhanced-onboarding/vehicle-photos" element={<VehiclePhotosUpload />} />
-                <Route path="/enhanced-onboarding/payout" element={<PayoutSetup />} />
-                <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
-                <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
-                <Route path="/mobile" element={<MobileDriverDashboard />} />
-                <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
-                <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
-                <Route
-                  path="/delivery-flow"
-                  element={
-                    <ActiveDeliveryFlow
-                      orderDetails={MOCK_DELIVERY_ORDER}
-                      onCompleteDelivery={() => console.log("Delivery complete (dev)")}
-                    />
-                  }
-                />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                    <Routes>
+                      <Route
+                        path="/"
+                        element={
+                          <ActiveDeliveryFlow
+                            orderDetails={MOCK_DELIVERY_ORDER}
+                            onCompleteDelivery={() => console.log("Delivery complete (dev)")}
+                          />
+                        }
+                      />
+                      <Route
+                        path="/mobile"
+                        element={
+                          <ActiveDeliveryFlow
+                            orderDetails={MOCK_DELIVERY_ORDER}
+                            onCompleteDelivery={() => console.log("Delivery complete (dev)")}
+                          />
+                        }
+                      />
+                      <Route path="/feeder" element={<FeederHub />} />
+                      <Route path="/driver/auth" element={<DriverAuth />} />
+                      <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
+                      <Route path="/executive/profile" element={<ExecutiveProfile />} />
+                      <Route path="/executive/reset-password" element={<ExecutiveResetPassword />} />
+                      <Route path="/enhanced-onboarding" element={<EnhancedDriverOnboarding />} />
+                      <Route path="/enhanced-onboarding/profile" element={<ProfileCompletionForm />} />
+                      <Route path="/enhanced-onboarding/vehicle-photos" element={<VehiclePhotosUpload />} />
+                      <Route path="/enhanced-onboarding/payout" element={<PayoutSetup />} />
+                      <Route path="/enhanced-onboarding/safety-quiz" element={<SafetyQuiz />} />
+                      <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
+                      <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
+                      <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
+                      <Route
+                        path="/delivery-flow"
+                        element={
+                          <ActiveDeliveryFlow
+                            orderDetails={MOCK_DELIVERY_ORDER}
+                            onCompleteDelivery={() => console.log("Delivery complete (dev)")}
+                          />
+                        }
+                      />
+                      <Route path="*" element={<Navigate to="/delivery-flow" replace />} />
+                    </Routes>
                   </BrowserRouter>
                 </TooltipProvider>
               </CartProvider>

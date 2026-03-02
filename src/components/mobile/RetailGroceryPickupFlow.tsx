@@ -16,7 +16,7 @@ const C = {
   border: '#E5E7EB',
   textPrimary: '#111827',
   textSecondary: '#6B7280',
-  accent: '#2563EB', // blue header like reference screenshots
+  accent: '#EA580C', // orange header for retail/grocery flow
   perishable: '#F97316',
 } as const;
 
@@ -368,7 +368,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
         background: '#F9FAFB', // Full-screen background – hide underlying map
       }}
     >
-      {/* Top blue bar / header overlay to match reference styling */}
+      {/* Top orange bar / header overlay */}
       <div
         style={{
           position: 'absolute',
@@ -411,16 +411,16 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 marginBottom: 6,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#1D4ED8' }}>{headerTitle}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: C.accent }}>{headerTitle}</div>
               {tripLabel && (
                 <div
                   style={{
                     fontSize: 11,
                     fontWeight: 500,
-                    color: '#1D4ED8',
+                    color: C.accent,
                     padding: '3px 8px',
                     borderRadius: 999,
-                    background: 'rgba(59, 130, 246, 0.10)',
+                    background: 'rgba(234, 88, 12, 0.10)',
                   }}
                 >
                   {tripLabel}
@@ -447,7 +447,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                   width: 40,
                   height: 40,
                   borderRadius: 12,
-                  background: storeLogoUrl ? 'transparent' : '#EFF6FF',
+                  background: storeLogoUrl ? 'transparent' : '#FFF7ED',
                   border: storeLogoUrl ? `1px solid ${C.border}` : 'none',
                   display: 'flex',
                   alignItems: 'center',
@@ -472,7 +472,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      border: '2px solid #2563EB',
+                      border: `2px solid ${C.accent}`,
                       boxSizing: 'border-box',
                     }}
                   />
@@ -656,7 +656,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                           padding: '8px 12px',
                           fontSize: 14,
                           cursor: 'pointer',
-                          background: isSelected ? '#F3F4FF' : 'transparent',
+                          background: isSelected ? '#FFF7ED' : 'transparent',
                         }}
                         onClick={(e) => {
                           e.preventDefault();
@@ -672,7 +672,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             handleSelectSpot(spot);
                             setIsSpotDropdownOpen(false);
                           }}
-                          style={{ accentColor: '#2563EB' }}
+                          style={{ accentColor: C.accent }}
                         />
                         <span>Spot #{spot}</span>
                       </label>
@@ -938,12 +938,12 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 padding: '14px 16px',
                 borderRadius: 999,
                 border: 'none',
-                background: '#2563EB',
+                background: C.accent,
                 color: '#FFFFFF',
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: '0 6px 18px rgba(37, 99, 235, 0.35)',
+                boxShadow: '0 6px 18px rgba(234, 88, 12, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -996,7 +996,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                         style={{
                           borderRadius: 16,
                           background: '#FFFFFF',
-                          border: isTop ? '2px solid #2563EB' : '1px solid #E5E7EB',
+                          border: isTop ? `2px solid ${C.accent}` : '1px solid #E5E7EB',
                           overflow: 'hidden',
                           boxShadow: isTop ? '0 4px 14px rgba(37, 99, 235, 0.12)' : 'none',
                         }}
@@ -1009,11 +1009,11 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
                             <span style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>
-                              <span style={{ color: '#2563EB', marginRight: 4 }}>Stop {stopNumber}.</span>
+                              <span style={{ color: C.accent, marginRight: 4 }}>Stop {stopNumber}.</span>
                               {order.label}
                             </span>
                             {orderNum && (
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB', flexShrink: 0 }}>Order: {orderNum}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: C.accent, flexShrink: 0 }}>Order: {orderNum}</span>
                             )}
                           </div>
                           <div style={{ fontSize: 12, color: C.textSecondary, lineHeight: 1.4 }}>
@@ -1225,7 +1225,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                             <div
                               style={{
                                 fontSize: 11,
-                                color: '#2563EB',
+                                color: C.accent,
                                 fontWeight: 600,
                               }}
                             >
@@ -1309,9 +1309,9 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                                   style={{
                                     padding: '5px 9px',
                                     borderRadius: 999,
-                                    border: '1px solid #2563EB',
+                                    border: `1px solid ${C.accent}`,
                                     background: 'white',
-                                    color: '#2563EB',
+                                    color: C.accent,
                                     fontSize: 11,
                                     fontWeight: 500,
                                   }}
@@ -1353,12 +1353,12 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 padding: '12px 16px',
                 borderRadius: 999,
                 border: 'none',
-                background: '#2563EB',
+                background: C.accent,
                 color: '#FFFFFF',
                 fontSize: 15,
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: '0 6px 18px rgba(37, 99, 235, 0.35)',
+                boxShadow: '0 6px 18px rgba(234, 88, 12, 0.35)',
                 marginBottom: 8,
               }}
             >

@@ -2096,49 +2096,48 @@ export const MobileDriverDashboard: React.FC = () => {
 
       </div>
 
-      {/* Dev: ?previewRetailOffer=1 — show retail offer flow with mock data to work on UI (Accept → step 2, Start Route → pickup flow) */}
+      {/* Dev: ?previewRetailOffer=1 — generic retail offer preview (no real store data) */}
       {previewRetailOffer && !showOrderModal && !activeDelivery && (
         <RetailGroceryOfferFlow
           step={previewRetailStep}
-          estimateAmount={74.73}
-          mileageEarnings={12.45}
-          stops={24}
-          totalMiles={45.9}
-          durationText="2 hrs, 34 mins"
-          pickupLabel="ASAP • Pickup"
-          pickupStoreName="Walmart HOLLAND #3445"
-          dropoffCount={23}
-          tags={['Apartment', 'Bulky item']}
-          getOffersUntil="1:00 PM"
+          estimateAmount={50}
+          mileageEarnings={10}
+          stops={5}
+          totalMiles={15}
+          durationText="45 mins"
+          pickupLabel="Pickup"
+          pickupStoreName="Retail pickup location"
+          dropoffCount={4}
+          tags={['Multi-stop route']}
+          getOffersUntil={undefined}
           onAccept={() => setPreviewRetailStep(2)}
           onReject={() => navigate('/mobile')}
           onStartRoute={() => {
-            // Simulate a retail/grocery assignment (24 stops = 1 pickup + 23 drop-offs)
-            const mockOrderId = 'PREVIEW-9718';
-            const dropoffCount = 23;
-            const names = ['J. SMITH', 'E. EMERS', 'M. JONES'];
+            // Simulate a generic retail/grocery assignment for preview
+            const mockOrderId = 'PREVIEW-ROUTE';
+            const dropoffCount = 4;
             setActiveDelivery({
               order_id: mockOrderId,
               id: mockOrderId,
               order_number: mockOrderId,
-              restaurant_name: 'Walmart HOLLAND #3445',
-              pickup_address: '123 Test St, Holland, MI',
-              dropoff_address: '123 Test St, Holland, MI',
-              payout_cents: 7473,
-              mileage_pay_cents: 1245,
-              distance_km: 73.9,
-              distance_mi: '45.9',
-              estimated_time: 154,
+              restaurant_name: 'Retail pickup location',
+              pickup_address: 'Pickup address',
+              dropoff_address: 'Multiple nearby customers',
+              payout_cents: 5000,
+              mileage_pay_cents: 1000,
+              distance_km: 24,
+              distance_mi: '15.0',
+              estimated_time: 45,
               items: [],
               isTestOrder: true,
               storeType: 'grocery',
               storeLogoUrl: undefined,
-              parking_spot_count: 24,
+              parking_spot_count: 10,
               dropoff_count: dropoffCount,
               ordersForPickup: Array.from({ length: dropoffCount }, (_, i) => ({
                 id: `order-${String(i + 1).padStart(3, '0')}`,
-                label: names[i % names.length],
-                address: '123 Test St, Holland, MI',
+                label: `Customer ${i + 1}`,
+                address: 'Customer address',
               })),
             } as any);
             setHasCompletedRetailPickup(false);
