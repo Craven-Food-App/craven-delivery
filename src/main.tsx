@@ -5,6 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { LocalNotifications } from '@capacitor/local-notifications';
+import 'barcode-detector/polyfill';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';

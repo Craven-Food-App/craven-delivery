@@ -139,6 +139,7 @@
     "@types/recharts": "^1.8.29",
     "@vitejs/plugin-react": "^5.1.0",
     "antd": "^5.27.6",
+    "barcode-detector": "^3.1.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
     "browserslist": "^4.28.1",

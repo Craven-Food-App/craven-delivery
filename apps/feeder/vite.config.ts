@@ -100,6 +100,7 @@ export default defineConfig({
       "@tanstack/react-query",
       "sonner", "lucide-react", "@tabler/icons-react",
       "hoist-non-react-statics", "prop-types", "deepmerge",
+      "barcode-detector", "barcode-detector/ponyfill",
     ],
     esbuildOptions: {
       target: "es2020",

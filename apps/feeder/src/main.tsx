@@ -27,6 +27,7 @@ function captureFirstError() {
 }
 captureFirstError();
 
+import "barcode-detector/polyfill";
 import "@/index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
@@ -59,6 +60,7 @@ const mantineTheme = createTheme({
 
 import FeederHub from "@/pages/FeederHub";
 import DriverAuth from "@/pages/DriverAuth";
+import { MobileDriverDashboard } from "@/components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "@/components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "@/components/mobile/MobilePasswordReset";
 import { EnhancedDriverOnboarding } from "@/pages/EnhancedDriverOnboarding";
@@ -106,24 +108,9 @@ function FeederApp() {
                   <Sonner />
                   <BrowserRouter>
                     <Routes>
-                      <Route
-                        path="/"
-                        element={
-                          <ActiveDeliveryFlow
-                            orderDetails={MOCK_DELIVERY_ORDER}
-                            onCompleteDelivery={() => console.log("Delivery complete (dev)")}
-                          />
-                        }
-                      />
-                      <Route
-                        path="/mobile"
-                        element={
-                          <ActiveDeliveryFlow
-                            orderDetails={MOCK_DELIVERY_ORDER}
-                            onCompleteDelivery={() => console.log("Delivery complete (dev)")}
-                          />
-                        }
-                      />
+                      {/* Main feeder driver dashboard */}
+                      <Route path="/" element={<MobileDriverDashboard />} />
+                      <Route path="/mobile" element={<MobileDriverDashboard />} />
                       <Route path="/feeder" element={<FeederHub />} />
                       <Route path="/driver/auth" element={<DriverAuth />} />
                       <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />
@@ -137,6 +124,7 @@ function FeederApp() {
                       <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
                       <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
                       <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
+                      {/* New delivery flow preview route */}
                       <Route
                         path="/delivery-flow"
                         element={
@@ -146,7 +134,7 @@ function FeederApp() {
                           />
                         }
                       />
-                      <Route path="*" element={<Navigate to="/delivery-flow" replace />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </BrowserRouter>
                 </TooltipProvider>

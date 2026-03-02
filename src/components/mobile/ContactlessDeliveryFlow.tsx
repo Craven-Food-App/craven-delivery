@@ -12,6 +12,20 @@ import { IconX, IconNavigation, IconPhone, IconFileText, IconMapPin, IconCamera 
 import SlideToConfirm from '@/components/SlideToConfirm';
 import FullscreenCamera from './FullscreenCamera';
 
+// Ensure BarcodeDetector is available; pre-load WASM when using polyfill.
+async function getBarcodeDetector(): Promise<{ new (opts: { formats: string[] }): any } | null> {
+  const native = (window as any).BarcodeDetector;
+  if (native) return native;
+  try {
+    const { BarcodeDetector: Pony, prepareZXingModule } = await import('barcode-detector/ponyfill');
+    await prepareZXingModule();
+    return Pony;
+  } catch (e) {
+    console.warn('BarcodeDetector polyfill failed:', e);
+    return null;
+  }
+}
+
 const DROPOFF_OPTIONS = [
   { value: 'front_door', label: 'Front door' },
   { value: 'back_door', label: 'Back door' },
@@ -30,6 +44,8 @@ export interface ContactlessDeliveryFlowProps {
   orderId?: string;
   /** Number of items/labels to scan for this delivery (default 1) */
   itemsToScanCount?: number;
+  /** Optional list of valid barcodes for this order; if provided, scan must match one */
+  expectedBarcodes?: string[];
   deliveryNotes?: string;
   onNavigate: () => void;
   onContact?: () => void;
@@ -47,6 +63,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
   orderNumber,
   orderId,
   itemsToScanCount = 1,
+  expectedBarcodes,
   deliveryNotes,
   onNavigate,
   onContact,
@@ -125,6 +142,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
         orderNumber={orderNumber}
         totalItems={step1Total}
         initialScanned={step1Scanned}
+        expectedBarcodes={expectedBarcodes}
         onScannedUpdate={setStep1Scanned}
         onDone={handleDoneScanning}
         onClose={() => setShowScanView(false)}
@@ -159,7 +177,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
         >
           <Group justify="space-between" mb="md">
             <Group gap="xs">
-              <IconMapPin size={20} color="#2563EB" />
+                <IconMapPin size={20} color="#EA580C" />
               <Text fw={700} size="lg">Where did you leave the order?</Text>
             </Group>
             <ActionIcon variant="subtle" onClick={() => setShowLocationModal(false)}>
@@ -176,8 +194,8 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                   gap: 12,
                   padding: '12px 14px',
                   borderRadius: 12,
-                  border: selectedLocationValue === opt.value ? '2px solid #2563EB' : '1px solid #E5E7EB',
-                  background: selectedLocationValue === opt.value ? '#EFF6FF' : '#fff',
+                  border: selectedLocationValue === opt.value ? '2px solid #EA580C' : '1px solid #E5E7EB',
+                  background: selectedLocationValue === opt.value ? '#FFF7ED' : '#fff',
                   cursor: 'pointer',
                 }}
               >
@@ -187,7 +205,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                   value={opt.value}
                   checked={selectedLocationValue === opt.value}
                   onChange={() => setSelectedLocationValue(opt.value)}
-                  style={{ accentColor: '#2563EB' }}
+                  style={{ accentColor: '#EA580C' }}
                 />
                 <span style={{ fontWeight: 500 }}>{opt.label}</span>
               </label>
@@ -197,7 +215,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
             fullWidth
             mt="lg"
             size="md"
-            color="blue"
+            color="orange"
             onClick={handleLocationSubmit}
             disabled={!selectedLocationValue}
           >
@@ -326,8 +344,8 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: node.complete ? '#2563EB' : node.current ? '#2563EB' : '#E5E7EB',
-                color: node.complete ? '#fff' : node.current ? '#fff' : '#9CA3AF',
+                background: node.complete ? '#EA580C' : node.current ? '#EA580C' : '#E5E7EB',
+                color: node.complete || node.current ? '#fff' : '#9CA3AF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -365,7 +383,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     <Button
                       fullWidth
                       mt="md"
-                      color="blue"
+                      color="orange"
                       onClick={() => setShowScanView(true)}
                     >
                       START SCANNING
@@ -377,7 +395,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 <>
                   <Group justify="space-between">
                     <Group gap={6}>
-                      <IconMapPin size={18} color="#2563EB" />
+                      <IconMapPin size={18} color="#EA580C" />
                       <Text fw={600} size="sm">House/unit number confirmation</Text>
                     </Group>
                   </Group>
@@ -386,7 +404,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     <Button
                       fullWidth
                       mt="md"
-                      color="blue"
+                      color="orange"
                       onClick={() => setStep2Done(true)}
                     >
                       YES, I&apos;M HERE
@@ -398,7 +416,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 <>
                   <Group justify="space-between">
                     <Group gap={6}>
-                      <IconFileText size={18} color="#2563EB" />
+                      <IconFileText size={18} color="#EA580C" />
                       <Text fw={600} size="sm">Drop-off notes</Text>
                     </Group>
                   </Group>
@@ -411,7 +429,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     <Text size="sm" c="dimmed" mt={4}>No special instructions.</Text>
                   )}
                   {!step3Complete && (
-                    <Button fullWidth mt="md" color="blue" onClick={() => setStep3Done(true)}>
+                    <Button fullWidth mt="md" color="orange" onClick={() => setStep3Done(true)}>
                       GOT IT
                     </Button>
                   )}
@@ -421,7 +439,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 <>
                   <Group justify="space-between">
                     <Group gap={6}>
-                      <IconMapPin size={18} color="#2563EB" />
+                      <IconMapPin size={18} color="#EA580C" />
                       <Text fw={600} size="sm">Drop-off location</Text>
                     </Group>
                   </Group>
@@ -433,7 +451,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                       </Button>
                     </Group>
                   ) : (
-                    <Button fullWidth mt="md" color="blue" onClick={() => setShowLocationModal(true)}>
+                    <Button fullWidth mt="md" color="orange" onClick={() => setShowLocationModal(true)}>
                       SELECT
                     </Button>
                   )}
@@ -443,7 +461,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 <>
                   <Group justify="space-between">
                     <Group gap={6}>
-                      <IconCamera size={18} color="#2563EB" />
+                      <IconCamera size={18} color="#EA580C" />
                       <Text fw={600} size="sm">Proof of delivery</Text>
                     </Group>
                   </Group>
@@ -451,7 +469,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                     Customers appreciate including the address number or the front of the home/apt in the delivery photo.
                   </Text>
                   {!deliveryPhotoUrl ? (
-                    <Button fullWidth mt="md" color="blue" onClick={() => setShowPhotoCamera(true)}>
+                    <Button fullWidth mt="md" color="orange" onClick={() => setShowPhotoCamera(true)}>
                       TAKE PHOTO
                     </Button>
                   ) : (
@@ -504,9 +522,31 @@ interface DeliveryLabelScanViewProps {
   orderNumber: string;
   totalItems: number;
   initialScanned: number;
+  /** Optional list of valid barcodes for this order; if provided, scan must match one of these */
+  expectedBarcodes?: string[];
   onScannedUpdate: (n: number) => void;
   onDone: () => void;
   onClose: () => void;
+}
+
+function barcodeMatchesOrder(
+  scannedValue: string,
+  orderNumber: string,
+  expectedBarcodes?: string[]
+): boolean {
+  const normalized = scannedValue.trim().toLowerCase();
+  const orderNorm = orderNumber.trim().toLowerCase();
+  if (expectedBarcodes?.length) {
+    return expectedBarcodes.some(
+      (exp) => exp.trim().toLowerCase() === normalized || normalized.endsWith(exp.trim().toLowerCase())
+    );
+  }
+  const digitsScanned = normalized.replace(/\D/g, '');
+  const digitsOrder = orderNorm.replace(/\D/g, '');
+  if (digitsOrder.length >= 4 && digitsScanned.length >= 4) {
+    if (digitsScanned.slice(-4) === digitsOrder.slice(-4)) return true;
+  }
+  return normalized.includes(orderNorm) || normalized.endsWith(orderNorm);
 }
 
 const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
@@ -514,11 +554,14 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
   orderNumber,
   totalItems,
   initialScanned,
+  expectedBarcodes,
   onScannedUpdate,
   onDone,
   onClose,
 }) => {
   const [scanned, setScanned] = useState(initialScanned);
+  const [showWrongBarcode, setShowWrongBarcode] = useState(false);
+  const wrongBarcodeTimeoutRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
@@ -529,23 +572,62 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
     onScannedUpdate(scanned);
   }, [scanned, onScannedUpdate]);
 
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!(typeof window !== 'undefined' && (window as any).BarcodeDetector)) return;
     let mounted = true;
     const start = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setCameraError('Camera not available on this device.');
+          return;
+        }
+        const BarcodeDetectorClass = await getBarcodeDetector();
+        if (!mounted) return;
+        if (!BarcodeDetectorClass) {
+          setCameraError('Barcode scanning not supported. Use Chrome on Android or add the barcode-detector polyfill.');
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
         if (!mounted) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        const BarcodeDetector = (window as any).BarcodeDetector;
-        const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'qr_code'] });
+        setCameraError(null);
+        const video = videoRef.current;
+        if (!video) return;
+        video.srcObject = stream;
+        await video.play();
+        if (!mounted) return;
+        await new Promise<void>((resolve, reject) => {
+          const onReady = () => {
+            video.removeEventListener('loadeddata', onReady);
+            video.removeEventListener('playing', onReady);
+            video.removeEventListener('error', onErr);
+            resolve();
+          };
+          const onErr = () => {
+            video.removeEventListener('loadeddata', onReady);
+            video.removeEventListener('playing', onReady);
+            video.removeEventListener('error', onErr);
+            reject(new Error('Video failed to load'));
+          };
+          if (video.readyState >= 2 && video.videoWidth > 0) {
+            resolve();
+            return;
+          }
+          video.addEventListener('loadeddata', onReady);
+          video.addEventListener('playing', onReady);
+          video.addEventListener('error', onErr);
+          setTimeout(() => onReady(), 3000);
+        });
+        if (!mounted) return;
+        const detector = new BarcodeDetectorClass({
+          formats: ['code_128', 'code_93', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'],
+        });
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
@@ -563,19 +645,38 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
             if (value === lastValueRef.current && now - lastTimeRef.current < 2000) return;
             lastValueRef.current = value;
             lastTimeRef.current = now;
-            setScanned((prev) => Math.min(prev + 1, totalItems));
-          } catch (_) {}
+            if (barcodeMatchesOrder(value, orderNumber, expectedBarcodes)) {
+              setScanned((prev) => Math.min(prev + 1, totalItems));
+              setShowWrongBarcode(false);
+            } else {
+              setShowWrongBarcode(true);
+              if (wrongBarcodeTimeoutRef.current)
+                window.clearTimeout(wrongBarcodeTimeoutRef.current);
+              wrongBarcodeTimeoutRef.current = window.setTimeout(() => {
+                setShowWrongBarcode(false);
+                wrongBarcodeTimeoutRef.current = null;
+              }, 1500);
+            }
+          } catch (e) {
+            if (import.meta.env.DEV) console.warn('Barcode detect error:', e);
+          }
         };
-        intervalRef.current = window.setInterval(run, 600);
-      } catch (_) {}
+        intervalRef.current = window.setInterval(run, 400);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Could not access camera.';
+        setCameraError(msg);
+      }
     };
     start();
     return () => {
       mounted = false;
       if (intervalRef.current) window.clearInterval(intervalRef.current);
+      if (wrongBarcodeTimeoutRef.current)
+        window.clearTimeout(wrongBarcodeTimeoutRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
-  }, [totalItems]);
+  }, [totalItems, orderNumber, expectedBarcodes]);
 
   const allScanned = scanned >= totalItems;
 
@@ -609,7 +710,12 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
         <Box style={{ width: 40 }} />
       </Box>
       <Box style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Text size="sm" c="dimmed">Total scanned: <strong style={{ color: '#2563EB' }}>{scanned}/{totalItems}</strong></Text>
+        <Text size="sm" c="dimmed">
+          Total scanned:{' '}
+          <strong style={{ color: '#EA580C' }}>
+            {scanned}/{totalItems}
+          </strong>
+        </Text>
       </Box>
       <Box
         style={{
@@ -654,6 +760,52 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
         >
           Please position the label barcode within this scanner box.
         </Box>
+        {cameraError && (
+          <Box
+            style={{
+              position: 'absolute',
+              bottom: 36,
+              left: 12,
+              right: 12,
+              fontSize: 12,
+              color: '#FEE2E2',
+              background: 'rgba(0,0,0,0.6)',
+              padding: 8,
+              borderRadius: 8,
+            }}
+          >
+            {cameraError}
+          </Box>
+        )}
+        {showWrongBarcode && (
+          <Box
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(220, 38, 38, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              borderRadius: 12,
+            }}
+          >
+            <Box
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: '50%',
+                background: 'rgba(220, 38, 38, 0.95)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <IconX size={56} stroke={3} />
+            </Box>
+          </Box>
+        )}
       </Box>
       <Box
         style={{
@@ -665,8 +817,10 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
         }}
       >
         <Group justify="space-between">
-          <Text fw={600} size="sm" c="blue">{customerName}</Text>
-          <Text size="sm" c="dimmed">{scanned}/{totalItems} Scanned</Text>
+          <Text fw={600} size="sm">{customerName}</Text>
+          <Text size="sm" c="dimmed">
+            {scanned}/{totalItems} Scanned
+          </Text>
         </Group>
         <Text size="xs" c="dimmed" mt={4}>Order: {orderNumber}</Text>
       </Box>
@@ -686,7 +840,7 @@ const DeliveryLabelScanView: React.FC<DeliveryLabelScanViewProps> = ({
         <Button
           fullWidth
           size="md"
-          color="blue"
+          color="orange"
           onClick={allScanned ? onDone : undefined}
           disabled={!allScanned}
           leftSection={<span style={{ fontSize: 18 }}>››</span>}

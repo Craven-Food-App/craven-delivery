@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { NewDeliveryRequest } from './NewDeliveryRequest';
 import { RetailGroceryOfferFlow } from './RetailGroceryOfferFlow';
 import RetailGroceryPickupFlow from './RetailGroceryPickupFlow';
 import { DeliveryMap } from './DeliveryMap';
@@ -2146,9 +2145,10 @@ export const MobileDriverDashboard: React.FC = () => {
         />
       )}
 
-      {/* New Delivery Request Modal */}
+      {/* New Delivery Request Modal – uses RetailGroceryOfferFlow visual for all orders */}
       {showOrderModal && currentOrderAssignment && (() => {
-        const isRetailGrocery = forceRetailFlow || currentOrderAssignment.storeType === 'retail_store' || currentOrderAssignment.storeType === 'grocery';
+        const isRetailOrder =
+          forceRetailFlow || currentOrderAssignment.storeType === 'retail_store';
         const distance = parseFloat(currentOrderAssignment.distance_mi || '0') || 0;
         const payoutCents = currentOrderAssignment.payout_cents || 0;
         const estimateAmount = payoutCents / 100;
@@ -2227,7 +2227,7 @@ export const MobileDriverDashboard: React.FC = () => {
             delivery_notes: orderData?.delivery_notes,
           });
 
-          if (isRetailGrocery) {
+          if (isRetailOrder) {
             setHasCompletedRetailPickup(false);
             setDriverState('on_retail_pickup');
           } else {
@@ -2244,75 +2244,46 @@ export const MobileDriverDashboard: React.FC = () => {
           setRetailOfferStep(null);
         };
 
-        if (isRetailGrocery) {
-          const durationText = eta < 60 ? `${eta} mins` : `${Math.floor(eta / 60)} hr${Math.floor(eta / 60) > 1 ? 's' : ''}${eta % 60 ? `, ${eta % 60} mins` : ''}`;
-          return (
-            <RetailGroceryOfferFlow
-              step={(retailOfferStep ?? 1) as 1 | 2}
-              estimateAmount={estimateAmount}
-              mileageEarnings={mileageEarnings}
-              stops={1}
-              totalMiles={distance}
-              durationText={durationText}
-              pickupLabel="ASAP • Pickup"
-              pickupStoreName={currentOrderAssignment.restaurant_name || 'Store'}
-              pickupStoreLogoUrl={currentOrderAssignment.storeLogoUrl}
-              dropoffCount={1}
-              tags={[]}
-              getOffersUntil={getOffersUntil}
-              onAccept={() => setRetailOfferStep(2)}
-              onReject={closeModal}
-              onStartRoute={runAcceptAndStartDelivery}
-            />
-          );
-        }
+        const durationText =
+          eta < 60
+            ? `${eta} mins`
+            : `${Math.floor(eta / 60)} hr${Math.floor(eta / 60) > 1 ? 's' : ''}${
+                eta % 60 ? `, ${eta % 60} mins` : ''
+              }`;
 
-        // Default: single-order restaurant flow
-        const totalSeconds = 33;
-        const pickupAddr = currentOrderAssignment.pickup_address;
-        const merchantName = currentOrderAssignment.restaurant_name || (typeof pickupAddr === 'object' ? pickupAddr?.name : 'Restaurant');
-        const merchantAddress = typeof pickupAddr === 'string'
-          ? pickupAddr
-          : pickupAddr?.address || [pickupAddr?.street, pickupAddr?.city, pickupAddr?.state, pickupAddr?.zip_code].filter(Boolean).join(', ');
+        const offerStep: 1 | 2 = isRetailOrder ? ((retailOfferStep ?? 1) as 1 | 2) : 1;
 
-        const dropoffAddr = currentOrderAssignment.dropoff_address;
-        const customerName = (typeof dropoffAddr === 'object' && dropoffAddr?.name)
-          ? dropoffAddr.name
-          : (currentOrderAssignment as any).customer_name || 'Customer';
-        const customerAddress = typeof dropoffAddr === 'string'
-          ? dropoffAddr
-          : dropoffAddr?.address || [dropoffAddr?.street, dropoffAddr?.city, dropoffAddr?.state, dropoffAddr?.zip_code].filter(Boolean).join(', ');
+        const handleAccept = () => {
+          if (isRetailOrder) {
+            setRetailOfferStep(2);
+          } else {
+            // Non-retail: accept immediately and start delivery
+            void runAcceptAndStartDelivery();
+          }
+        };
 
-        const subtotalCents = (currentOrderAssignment as any).subtotal_cents || 0;
-        const tipCents = (currentOrderAssignment as any).tip_cents || 0;
-        const earnings = payoutCents / 100;
-        const feePercentage = subtotalCents > 0 ? Math.round((payoutCents / subtotalCents) * 100) : 70;
-        const etaRest = currentOrderAssignment.estimated_time || Math.ceil(distance * 2.5);
-        const orderId = currentOrderAssignment.order_id.slice(-6);
+        const handleStartRoute = () => {
+          // Retail: step 2 "Start route" → begin pickup/delivery flow
+          void runAcceptAndStartDelivery();
+        };
 
         return (
-          <NewDeliveryRequest
-            orderId={orderId}
-            timeLeft={orderTimeLeft}
-            totalSeconds={totalSeconds}
-            merchant={{ name: merchantName, address: merchantAddress || 'Address unavailable' }}
-            customer={{ name: customerName, address: customerAddress || 'Address unavailable' }}
-            distance={distance}
-            eta={etaRest}
-            earnings={earnings}
-            subtotal={subtotalCents / 100}
-            tip={tipCents / 100}
-            feePercentage={feePercentage}
-            mapComponent={
-              <DeliveryMap
-                pickupAddress={currentOrderAssignment.pickup_address}
-                dropoffAddress={currentOrderAssignment.dropoff_address}
-                showRoute={true}
-              />
-            }
-            onAccept={runAcceptAndStartDelivery}
-            onDecline={closeModal}
-            onClose={closeModal}
+          <RetailGroceryOfferFlow
+            step={offerStep}
+            estimateAmount={estimateAmount}
+            mileageEarnings={mileageEarnings}
+            stops={1}
+            totalMiles={distance}
+            durationText={durationText}
+            pickupLabel="Pickup"
+            pickupStoreName={currentOrderAssignment.restaurant_name || 'Store'}
+            pickupStoreLogoUrl={currentOrderAssignment.storeLogoUrl}
+            dropoffCount={1}
+            tags={[]}
+            getOffersUntil={getOffersUntil}
+            onAccept={handleAccept}
+            onReject={closeModal}
+            onStartRoute={handleStartRoute}
           />
         );
       })()}
