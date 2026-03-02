@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import feederNavButton from '@/assets/feeder_nav_button_compressed.png';
+import { supabase } from '@/integrations/supabase/client';
+import { MAPBOX_CONFIG } from '@/config/mapbox';
 
 /** Flame icon URL from public/assets (root: public/assets, feeder: copy to apps/feeder/public/assets). */
 const CRAVEN_POPULAR_FLAME_ICON = '/assets/craven-popular-flame-icon.png';
@@ -25,23 +27,16 @@ interface NearbyRestaurantCardsProps {
   driverLocation: { latitude: number; longitude: number } | null;
 }
 
-// Default location for development (Atlanta, GA)
-const DEFAULT_DEV_LOCATION = {
-  latitude: 33.7490,
-  longitude: -84.3880
+// Fallback when driver location unavailable (uses app default from mapbox config)
+const DEFAULT_LOCATION = {
+  latitude: MAPBOX_CONFIG.center[1],
+  longitude: MAPBOX_CONFIG.center[0],
 };
 
-// Mock restaurant data - in production this would come from Supabase (restaurants.is_promoted set in admin)
-const MOCK_RESTAURANTS: Omit<Restaurant, 'distanceMinutes' | 'distanceMiles'>[] = [
-  { id: '1', name: "Chick-fil-A", latitude: 33.7490, longitude: -84.3880, address: "123 Peachtree St", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=100&h=100&fit=crop", rating: 4.8, activeOrders: 12, avgPayout: 8.50, cuisineType: "Fast Food", is_promoted: true },
-  { id: '2', name: "McDonald's", latitude: 33.7510, longitude: -84.3900, address: "456 Main St", image: "https://images.unsplash.com/photo-1586816001966-79b736744398?w=100&h=100&fit=crop", rating: 4.2, activeOrders: 18, avgPayout: 6.75, cuisineType: "Fast Food", is_promoted: false },
-  { id: '3', name: "Wendy's", latitude: 33.7530, longitude: -84.3850, address: "789 Oak Ave", image: "https://images.unsplash.com/photo-1551782450-a2132b4ba21d?w=100&h=100&fit=crop", rating: 4.5, activeOrders: 8, avgPayout: 7.25, cuisineType: "Fast Food", is_promoted: true },
-  { id: '4', name: "Taco Bell", latitude: 33.7480, longitude: -84.3920, address: "321 Elm St", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=100&h=100&fit=crop", rating: 4.3, activeOrders: 15, avgPayout: 7.00, cuisineType: "Mexican", is_promoted: false },
-  { id: '5', name: "Subway", latitude: 33.7550, longitude: -84.3870, address: "555 Pine Rd", image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?w=100&h=100&fit=crop", rating: 4.0, activeOrders: 5, avgPayout: 6.00, cuisineType: "Sandwiches", is_promoted: false },
-  { id: '6', name: "Chipotle", latitude: 33.7470, longitude: -84.3840, address: "777 Cedar Ln", image: "https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=100&h=100&fit=crop", rating: 4.6, activeOrders: 22, avgPayout: 9.25, cuisineType: "Mexican", is_promoted: true },
-  { id: '7', name: "Panda Express", latitude: 33.7520, longitude: -84.3910, address: "888 Maple Dr", image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=100&h=100&fit=crop", rating: 4.4, activeOrders: 10, avgPayout: 7.50, cuisineType: "Chinese", is_promoted: false },
-  { id: '8', name: "Five Guys", latitude: 33.7540, longitude: -84.3860, address: "999 Birch Blvd", image: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100&h=100&fit=crop", rating: 4.7, activeOrders: 14, avgPayout: 10.00, cuisineType: "Burgers", is_promoted: false },
-];
+const formatRestaurantAddress = (r: { address?: string | null; city?: string | null; state?: string | null; zip_code?: string | null }): string => {
+  const parts = [r.address, r.city, r.state, r.zip_code].filter(Boolean);
+  return parts.length ? parts.join(', ') : '';
+};
 
 // Calculate distance in miles and minutes
 const calculateDistance = (
@@ -215,30 +210,60 @@ const RestaurantCard: React.FC<{ restaurant: Restaurant; onNavigate: (restaurant
 export const NearbyRestaurantCards: React.FC<NearbyRestaurantCardsProps> = ({ driverLocation }) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
 
   // Use provided location or fallback to default for development
-  const effectiveLocation = driverLocation || DEFAULT_DEV_LOCATION;
+  const effectiveLocation = driverLocation || DEFAULT_LOCATION;
 
-  const fetchNearbyRestaurants = useCallback(() => {
-    // Calculate distances and sort by nearest
-    const restaurantsWithDistance = MOCK_RESTAURANTS.map(r => {
-      const distance = calculateDistance(
-        effectiveLocation.latitude,
-        effectiveLocation.longitude,
-        r.latitude,
-        r.longitude
-      );
-      return {
-        ...r,
-        distanceMinutes: distance.minutes,
-        distanceMiles: distance.miles
-      };
-    })
-    .sort((a, b) => a.distanceMinutes - b.distanceMinutes)
-    .slice(0, 5); // Get 5 nearest
+  const fetchNearbyRestaurants = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: rows, error } = await supabase
+        .from('restaurants')
+        .select('id, name, latitude, longitude, address, city, state, zip_code, logo_url, image_url, rating, cuisine_type, is_promoted')
+        .eq('is_active', true)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .limit(50);
 
-    setRestaurants(restaurantsWithDistance);
-    setLastRefresh(new Date());
+      if (error) {
+        console.warn('NearbyRestaurantCards fetch error:', error);
+        setRestaurants([]);
+        return;
+      }
+
+      const withDistance = (rows || [])
+        .map((r) => {
+          const lat = r.latitude ?? 0;
+          const lon = r.longitude ?? 0;
+          const distance = calculateDistance(effectiveLocation.latitude, effectiveLocation.longitude, lat, lon);
+          return {
+            id: r.id,
+            name: r.name,
+            latitude: lat,
+            longitude: lon,
+            address: formatRestaurantAddress(r),
+            distanceMinutes: distance.minutes,
+            distanceMiles: distance.miles,
+            image: r.logo_url || r.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=f97316&color=fff&size=100`,
+            rating: r.rating ?? 0,
+            activeOrders: 0,
+            avgPayout: 0,
+            cuisineType: r.cuisine_type || 'Restaurant',
+            is_promoted: r.is_promoted ?? false,
+          } as Restaurant;
+        })
+        .sort((a, b) => a.distanceMinutes - b.distanceMinutes)
+        .slice(0, 5);
+
+      setRestaurants(withDistance);
+      setLastRefresh(new Date());
+    } catch (e) {
+      console.warn('NearbyRestaurantCards error:', e);
+      setRestaurants([]);
+    } finally {
+      setLoading(false);
+    }
   }, [effectiveLocation]);
 
   // Initial fetch
@@ -261,10 +286,12 @@ export const NearbyRestaurantCards: React.FC<NearbyRestaurantCardsProps> = ({ dr
     window.open(url, '_blank');
   };
 
-  if (restaurants.length === 0) {
+  if (loading || restaurants.length === 0) {
     return (
       <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-gray-100">
-        <p className="text-sm text-gray-500 text-center">Loading nearby restaurants...</p>
+        <p className="text-sm text-gray-500 text-center">
+          {loading ? 'Loading nearby restaurants...' : 'No nearby restaurants found.'}
+        </p>
       </div>
     );
   }

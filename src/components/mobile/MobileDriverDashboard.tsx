@@ -464,6 +464,35 @@ export const MobileDriverDashboard: React.FC = () => {
   const previewRetailOffer = searchParams.get('previewRetailOffer') === '1';
   const forceRetailFlow = searchParams.get('retailFlow') === '1';
 
+  // Real retail store data for preview (fetched from DB when ?previewRetailOffer=1)
+  const [previewRetailStore, setPreviewRetailStore] = useState<{
+    name: string;
+    address: string;
+    logoUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!previewRetailOffer) return;
+    const fetchRetailStore = async () => {
+      const { data } = await supabase
+        .from('restaurants')
+        .select('id, name, address, city, state, zip_code, logo_url, image_url')
+        .in('restaurant_type', ['retail_store', 'grocery'])
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        const parts = [data.address, data.city, data.state, data.zip_code].filter(Boolean);
+        setPreviewRetailStore({
+          name: data.name,
+          address: parts.length ? parts.join(', ') : data.address || '',
+          logoUrl: data.logo_url || data.image_url || undefined,
+        });
+      }
+    };
+    fetchRetailStore();
+  }, [previewRetailOffer]);
+
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -1991,12 +2020,9 @@ export const MobileDriverDashboard: React.FC = () => {
               }
               orderId={activeDelivery.order_id || activeDelivery.id}
               ordersForPickup={
-                (activeDelivery as any).ordersForPickup ??
-                [
-                  { id: 'order-021', label: 'J. SMITH', totalPackages: 1 },
-                  { id: 'order-782', label: 'E. EMERS', totalPackages: 1 },
-                  { id: 'order-445', label: 'M. JONES', totalPackages: 3 },
-                ]
+                (activeDelivery as any).ordersForPickup?.length > 0
+                  ? (activeDelivery as any).ordersForPickup
+                  : [{ id: 'order-001', label: '—', totalPackages: 1 }]
               }
               pickupTimeLabel="Curbside pickup"
               storeLogoUrl={(activeDelivery as any).storeLogoUrl}
@@ -2028,21 +2054,21 @@ export const MobileDriverDashboard: React.FC = () => {
           const toOrderDetails = (s: any) => ({
             id: s.id || s.order_id || 'missing-order-id',
             order_id: s.order_id || s.id,
-            order_number: s.order_number || s.order_id?.slice(-4) || 'MISSING-ORDER',
-            restaurant_name: s.restaurant_name || activeDelivery.restaurant_name || 'Restaurant',
-            pickup_address: s.pickup_address || activeDelivery.pickup_address || 'Pickup Address',
-            dropoff_address: s.dropoff_address || s.dropoff_address?.address || activeDelivery.dropoff_address || 'Delivery Address',
-            customer_name: s.customer_name || s.customerName || activeDelivery.customer_name || 'Customer',
-            customer_phone: s.customer_phone || activeDelivery.customer_phone,
-            delivery_notes: s.delivery_notes || activeDelivery.delivery_notes,
+            order_number: s.order_number || s.order_id?.slice(-4) || undefined,
+            restaurant_name: s.restaurant_name || activeDelivery.restaurant_name || '',
+            pickup_address: s.pickup_address ?? activeDelivery.pickup_address ?? '',
+            dropoff_address: s.dropoff_address ?? (typeof s.dropoff_address === 'object' ? s.dropoff_address?.address : null) ?? activeDelivery.dropoff_address ?? '',
+            customer_name: s.customer_name ?? s.customerName ?? activeDelivery.customer_name ?? '',
+            customer_phone: s.customer_phone ?? activeDelivery.customer_phone,
+            delivery_notes: s.delivery_notes ?? activeDelivery.delivery_notes ?? '',
             payout_cents: s.payout_cents ?? activeDelivery.payout_cents ?? 0,
             mileage_pay_cents: s.mileage_pay_cents ?? (activeDelivery as any).mileage_pay_cents ?? 0,
-            subtotal_cents: s.subtotal_cents ?? activeDelivery.subtotal_cents ?? 1200,
+            subtotal_cents: s.subtotal_cents ?? activeDelivery.subtotal_cents ?? 0,
             estimated_time: s.estimated_time ?? activeDelivery.estimated_time ?? 30,
             estimated_delivery_time: s.estimated_delivery_time ?? activeDelivery.estimated_delivery_time,
             items: (s.items && s.items.length > 0 ? s.items : activeDelivery.items)?.length > 0
               ? (s.items || activeDelivery.items)
-              : [{ name: 'Order Items', quantity: 1, price_cents: s.subtotal_cents || 1200 }],
+              : [],
             isTestOrder: (s.isTestOrder ?? activeDelivery.isTestOrder) || false,
           });
           const orderDetails = toOrderDetails(currentStop);
@@ -2095,7 +2121,7 @@ export const MobileDriverDashboard: React.FC = () => {
 
       </div>
 
-      {/* Dev: ?previewRetailOffer=1 — generic retail offer preview (no real store data) */}
+      {/* Dev: ?previewRetailOffer=1 — retail offer preview with real store from database */}
       {previewRetailOffer && !showOrderModal && !activeDelivery && (
         <RetailGroceryOfferFlow
           step={previewRetailStep}
@@ -2105,22 +2131,23 @@ export const MobileDriverDashboard: React.FC = () => {
           totalMiles={15}
           durationText="45 mins"
           pickupLabel="Pickup"
-          pickupStoreName="Retail pickup location"
+          pickupStoreName={previewRetailStore?.name ?? 'Loading…'}
           dropoffCount={4}
           tags={['Multi-stop route']}
           getOffersUntil={undefined}
           onAccept={() => setPreviewRetailStep(2)}
           onReject={() => navigate('/mobile')}
           onStartRoute={() => {
-            // Simulate a generic retail/grocery assignment for preview
             const mockOrderId = 'PREVIEW-ROUTE';
             const dropoffCount = 4;
+            const storeName = previewRetailStore?.name ?? 'Retail pickup location';
+            const storeAddress = previewRetailStore?.address ?? 'Pickup address';
             setActiveDelivery({
               order_id: mockOrderId,
               id: mockOrderId,
               order_number: mockOrderId,
-              restaurant_name: 'Retail pickup location',
-              pickup_address: 'Pickup address',
+              restaurant_name: storeName,
+              pickup_address: storeAddress,
               dropoff_address: 'Multiple nearby customers',
               payout_cents: 5000,
               mileage_pay_cents: 1000,
@@ -2129,14 +2156,14 @@ export const MobileDriverDashboard: React.FC = () => {
               estimated_time: 45,
               items: [],
               isTestOrder: true,
-              storeType: 'grocery',
-              storeLogoUrl: undefined,
+              storeType: 'retail_store',
+              storeLogoUrl: previewRetailStore?.logoUrl,
               parking_spot_count: 10,
               dropoff_count: dropoffCount,
               ordersForPickup: Array.from({ length: dropoffCount }, (_, i) => ({
                 id: `order-${String(i + 1).padStart(3, '0')}`,
                 label: `Customer ${i + 1}`,
-                address: 'Customer address',
+                address: '—',
               })),
             } as any);
             setHasCompletedRetailPickup(false);

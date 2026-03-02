@@ -72,27 +72,9 @@ import { DriverReferralPage } from "@/components/onboarding/DriverReferralPage";
 import { PostWaitlistOnboarding } from "@/pages/driverOnboarding/PostWaitlistOnboarding";
 import ExecutiveProfile from "@/pages/ExecutiveProfile";
 import ExecutiveResetPassword from "@/pages/ExecutiveResetPassword";
-import ActiveDeliveryFlow from "@/components/mobile/ActiveDeliveryFlow";
+import DeliveryFlowWithRealData from "@/components/mobile/DeliveryFlowWithRealData";
 
 const queryClient = new QueryClient();
-
-/** Mock order for /delivery-flow dev route – work on the flow in isolation. */
-const MOCK_DELIVERY_ORDER = {
-  id: "dev-order-1",
-  order_id: "dev-order-1",
-  order_number: "DEV-001",
-  restaurant_name: "Test Restaurant",
-  pickup_address: "123 Pickup St",
-  dropoff_address: "456 Dropoff Ave",
-  customer_name: "Test Customer",
-  customer_phone: "+15551234567",
-  delivery_notes: "Leave at door",
-  payout_cents: 850,
-  subtotal_cents: 1200,
-  estimated_time: 25,
-  items: [{ name: "Sample Item", quantity: 1, price_cents: 1200 }],
-  isTestOrder: true,
-};
 
 function FeederApp() {
   return (
@@ -124,12 +106,11 @@ function FeederApp() {
                       <Route path="/enhanced-onboarding/referral" element={<DriverReferralPage />} />
                       <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
                       <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
-                      {/* New delivery flow preview route */}
+                      {/* New delivery flow preview route – uses real data from database */}
                       <Route
                         path="/delivery-flow"
                         element={
-                          <ActiveDeliveryFlow
-                            orderDetails={MOCK_DELIVERY_ORDER}
+                          <DeliveryFlowWithRealData
                             onCompleteDelivery={() => console.log("Delivery complete (dev)")}
                           />
                         }

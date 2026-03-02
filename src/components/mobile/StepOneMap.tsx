@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { MAPBOX_CONFIG } from '@/config/mapbox';
 import driverNavIcon from '@/assets/driver_nav_icon.png';
 
 export interface StepOneMapProps {
@@ -55,8 +56,13 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
   const geocode = useCallback(async (address: string, token: string): Promise<[number, number] | null> => {
     if (!address?.trim()) return null;
     try {
+      const params = new URLSearchParams({
+        access_token: token,
+        limit: '1',
+        country: 'US',
+      });
       const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?${params}`
       );
       const data = await res.json();
       if (data.features?.[0]?.center) return data.features[0].center;
@@ -101,8 +107,13 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
             destCoords = await geocode(storeAddress, token);
           }
         }
-        const origin = driverLngLat ?? ([-84.388, 33.749] as [number, number]);
-        const destination = destCoords ?? ([-84.39, 33.75] as [number, number]);
+        const hasDriverLocation = !!driverLngLat;
+        const fallbackCenter = MAPBOX_CONFIG.center as [number, number];
+        const destination = destCoords ?? fallbackCenter;
+        const hasRealDestination = !!destCoords;
+        const shouldFetchRoute = hasDriverLocation && destCoords && (
+          Math.abs((origin[0] - destination[0]) as number) > 0.01 || Math.abs((origin[1] - destination[1]) as number) > 0.01
+        );
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
@@ -116,58 +127,62 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
           const mapInstance = map.current;
           if (!mapInstance) return;
 
-          const driverEl = document.createElement('div');
-          driverEl.className = 'step-one-driver-marker';
-          driverEl.style.cssText = `
-            width: 40px; height: 40px;
-            background-image: url('${driverNavIcon}');
-            background-size: contain; background-repeat: no-repeat; background-position: center;
-          `;
-          driverMarkerRef.current = new mapboxgl.Marker({ element: driverEl, anchor: 'center' })
-            .setLngLat(origin)
-            .addTo(mapInstance);
+          if (hasDriverLocation && driverLngLat) {
+            const driverEl = document.createElement('div');
+            driverEl.className = 'step-one-driver-marker';
+            driverEl.style.cssText = `
+              width: 40px; height: 40px;
+              background-image: url('${driverNavIcon}');
+              background-size: contain; background-repeat: no-repeat; background-position: center;
+            `;
+            driverMarkerRef.current = new mapboxgl.Marker({ element: driverEl, anchor: 'center' })
+              .setLngLat(driverLngLat)
+              .addTo(mapInstance);
+          }
 
-          const destEl = document.createElement('div');
-          destEl.style.cssText = `
-            width: 32px; height: 32px; border-radius: 50%;
-            background: #fff; border: 2px solid ${useCustomerDestination ? '#2563eb' : '#f26419'};
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-          `;
-          destEl.textContent = useCustomerDestination ? '🏠' : '🍴';
-          destinationMarkerRef.current = new mapboxgl.Marker({ element: destEl, anchor: 'center' })
-            .setLngLat(destination)
-            .addTo(mapInstance);
+          if (hasRealDestination) {
+            const destEl = document.createElement('div');
+            destEl.style.cssText = `
+              width: 32px; height: 32px; border-radius: 50%;
+              background: #fff; border: 2px solid ${useCustomerDestination ? '#2563eb' : '#f26419'};
+              display: flex; align-items: center; justify-content: center;
+              font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            `;
+            destEl.textContent = useCustomerDestination ? '🏠' : '🍴';
+            destinationMarkerRef.current = new mapboxgl.Marker({ element: destEl, anchor: 'center' })
+              .setLngLat(destCoords)
+              .addTo(mapInstance);
+          }
 
           try {
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destination[0]},${destination[1]}?geometries=geojson&alternatives=true&access_token=${token}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            if (cancelled) return;
-            if (data.routes?.length) {
-              const options: RouteOption[] = data.routes.map((r: any, i: number) => ({
-                index: i,
-                durationMin: (r.duration || 0) / 60,
-                distanceMi: (r.distance || 0) * 0.000621371,
-                geometry: r.geometry,
-              }));
-              setRouteOptions(options);
-              const bounds = new mapboxgl.LngLatBounds();
-              bounds.extend(origin);
-              bounds.extend(destination);
-              mapInstance.fitBounds(bounds, { padding: 80, maxZoom: 16 });
+            if (shouldFetchRoute && driverLngLat && destCoords) {
+              const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLngLat[0]},${driverLngLat[1]};${destCoords[0]},${destCoords[1]}?geometries=geojson&alternatives=true&access_token=${token}`;
+              const res = await fetch(url);
+              const data = await res.json();
+              if (cancelled) return;
+              if (data.routes?.length) {
+                const options: RouteOption[] = data.routes.map((r: any, i: number) => ({
+                  index: i,
+                  durationMin: (r.duration || 0) / 60,
+                  distanceMi: (r.distance || 0) * 0.000621371,
+                  geometry: r.geometry,
+                }));
+                setRouteOptions(options);
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend(driverLngLat);
+                bounds.extend(destCoords);
+                mapInstance.fitBounds(bounds, { padding: 80, maxZoom: 16 });
+              } else {
+                const bounds = new mapboxgl.LngLatBounds();
+                bounds.extend(destCoords);
+                mapInstance.fitBounds(bounds, { padding: 80 });
+              }
             } else {
-              const bounds = new mapboxgl.LngLatBounds();
-              bounds.extend(origin);
-              bounds.extend(destination);
-              mapInstance.fitBounds(bounds, { padding: 80 });
+              mapInstance.flyTo({ center: destination, zoom: 14, duration: 400 });
             }
           } catch (routeErr) {
             console.warn('Directions error:', routeErr);
-            const bounds = new mapboxgl.LngLatBounds();
-            bounds.extend(origin);
-            bounds.extend(destination);
-            mapInstance.fitBounds(bounds, { padding: 80 });
+            mapInstance.flyTo({ center: destination, zoom: 14, duration: 400 });
           }
           setIsLoading(false);
         });

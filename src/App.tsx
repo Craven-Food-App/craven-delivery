@@ -16,6 +16,7 @@ import IndependentContractorAgreement from "./pages/IndependentContractorAgreeme
 import FeederPrivacyPolicy from "./pages/FeederPrivacyPolicy";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import { MobileDriverDashboard } from "./components/mobile/MobileDriverDashboard";
+import DeliveryFlowWithRealData from "./components/mobile/DeliveryFlowWithRealData";
 import { TestMobileScreen } from "./components/mobile/TestMobileScreen";
 import MobileBackgroundCheckStatus from "./components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "./components/mobile/MobilePasswordReset";
@@ -773,6 +774,7 @@ const App = () => {
           <Route path="/mobile" element={<MobileDriverDashboard />} />
           <Route path="/mobile/background-check-status" element={<MobileBackgroundCheckStatus />} />
           <Route path="/mobile/reset-password" element={<MobilePasswordReset />} />
+          <Route path="/delivery-flow" element={<DeliveryFlowWithRealData onCompleteDelivery={() => window.history.back()} />} />
           <Route path="/restaurant/auth" element={<RestaurantAuth />} />
           <Route path="/merchant/signup" element={<MerchantLandingPage />} />
           <Route path="/restaurant/register" element={<RestaurantRegister />} />

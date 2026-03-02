@@ -535,24 +535,27 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
 
   const currentOrder = useMemo(() => {
     const resolvedCustomerName = customerName || orderDetails?.customer_name;
+    const rawId = orderDetails?.id || orderDetails?.order_id;
+    const shortId = rawId && typeof rawId === 'string' ? (rawId.split('-')[1] || rawId.slice(-6)) : null;
     return {
-      id: orderDetails?.id || orderDetails?.order_id || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
+      id: rawId || 'CRAVEN-' + Math.floor(Math.random() * 9000 + 1000),
+      order_number: orderDetails?.order_number || shortId || undefined,
       pay: orderDetails?.payout_cents ? (orderDetails.payout_cents / 100) : (orderDetails?.pay || orderDetails?.total || 16.25),
       distanceToStore: orderDetails?.distance_mi || (orderDetails?.distance_km ? orderDetails.distance_km * 0.621371 : 0.8),
       distanceToCustomer: orderDetails?.distance_mi || (orderDetails?.distance_km ? orderDetails.distance_km * 0.621371 : 5.1),
       totalDistance: orderDetails?.distance_mi || (orderDetails?.distance_km ? orderDetails.distance_km * 0.621371 : 5.9),
       timeEstimate: orderDetails?.estimated_time || 30,
       store: {
-        name: orderDetails?.restaurant_name || 'Craven Restaurant',
-        address: formatAddress(orderDetails?.pickup_address) || '123 Main St',
+        name: orderDetails?.restaurant_name || '—',
+        address: formatAddress(orderDetails?.pickup_address) || '—',
         pickupCode: pickupCode || 'LOADING...',
-        phone: orderDetails?.customer_phone || '(555) 555-5555',
+        phone: orderDetails?.customer_phone || '—',
       },
       customer: {
-        name: formatCustomerNameForDriver(resolvedCustomerName),
-        address: formatAddress(orderDetails?.dropoff_address) || '456 Oak Ave',
-        deliveryNotes: orderDetails?.delivery_notes || 'Ring doorbell',
-        phone: orderDetails?.customer_phone || '(555) 555-1234',
+        name: formatCustomerNameForDriver(resolvedCustomerName) || '—',
+        address: formatAddress(orderDetails?.dropoff_address) || '—',
+        deliveryNotes: orderDetails?.delivery_notes || '',
+        phone: orderDetails?.customer_phone || '—',
       },
       items: orderDetails?.items || [],
     };
@@ -1514,7 +1517,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
 
     if (status === DRIVER_STATUS.TO_STORE) {
-      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const orderNum = currentOrder.order_number ?? currentOrder.id.split('-')[1] ?? currentOrder.id.slice(-6);
       const pa = orderDetails?.pickup_address;
       const storeLat = typeof pa === 'object' && pa != null ? (pa.latitude ?? pa.lat) : undefined;
       const storeLng = typeof pa === 'object' && pa != null ? (pa.longitude ?? pa.lng) : undefined;
@@ -1542,7 +1545,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
 
     if (status === DRIVER_STATUS.AT_STORE) {
-      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const orderNum = currentOrder.order_number ?? currentOrder.id.split('-')[1] ?? currentOrder.id.slice(-6);
       const pa = orderDetails?.pickup_address;
       const storeLat = typeof pa === 'object' && pa != null ? (pa.latitude ?? pa.lat) : undefined;
       const storeLng = typeof pa === 'object' && pa != null ? (pa.longitude ?? pa.lng) : undefined;
@@ -1578,7 +1581,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
     }
 
     if (status === DRIVER_STATUS.TO_CUSTOMER) {
-      const orderNum = currentOrder.id.split('-')[1] || currentOrder.id.slice(-8);
+      const orderNum = currentOrder.order_number ?? currentOrder.id.split('-')[1] ?? currentOrder.id.slice(-6);
       const dropoff = orderDetails?.dropoff_address;
       const customerLat = typeof dropoff === 'object' && dropoff != null ? (dropoff.latitude ?? dropoff.lat) : undefined;
       const customerLng = typeof dropoff === 'object' && dropoff != null ? (dropoff.longitude ?? dropoff.lng) : undefined;
@@ -1756,7 +1759,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 </Text>
                 <Group justify="space-between" align="center">
                   <Title order={2} fw={700} c="dark" style={{ lineHeight: 1.2 }}>
-                    Order #{currentOrder.id.split('-')[1] || currentOrder.id.slice(-8)}
+                    Order #{currentOrder.order_number ?? currentOrder.id.split('-')[1] ?? currentOrder.id.slice(-6)}
                   </Title>
                   {isTestOrder && (
                     <Badge color="orange" variant="outline">
