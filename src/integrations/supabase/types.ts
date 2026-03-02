@@ -18872,6 +18872,32 @@ export type Database = {
           },
         ]
       }
+      merchant_accounts: {
+        Row: {
+          created_at: string
+          merchant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          merchant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          merchant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       merchant_category_config: {
         Row: {
           category: Database["public"]["Enums"]["merchant_category"]
@@ -29477,6 +29503,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      ensure_merchant_account: { Args: { p_user_id: string }; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       evaluate_feeder_tier: {
         Args: { p_feeder_id: string }
@@ -29511,6 +29538,7 @@ export type Database = {
       generate_investor_demo_access_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_journal_entry_number: { Args: never; Returns: string }
+      generate_merchant_id: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_payroll_invoice: {
         Args: { payroll_end: string; payroll_start: string }
@@ -29725,6 +29753,10 @@ export type Database = {
       get_merchant_category_config: {
         Args: { p_restaurant_id: string }
         Returns: Json
+      }
+      get_merchant_id_prefix_by_email: {
+        Args: { p_email: string }
+        Returns: string
       }
       get_or_create_conversation: {
         Args: {

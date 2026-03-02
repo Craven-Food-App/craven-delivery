@@ -1,24 +1,20 @@
 /**
- * TORRANCE STROMAN & JUSTIN SWEET FULL ACCESS UTILITY
+ * EXECUTIVE ACCESS UTILITY
  * 
- * Torrance Stroman (tstroman.ceo@cravenusa.com) - CEO has FULL ACCESS to EVERYTHING.
- * Justin Sweet (jsweet.cfo@cravenusa.com) - CFO has FULL ACCESS to INVESTOR MATERIALS.
- * This utility function should be used in ALL authorization checks to ensure
- * these executives bypass all restrictions.
+ * Checks executive access via database roles (exec_users / user_roles tables).
+ * All authorization is enforced server-side via RLS and edge function checks.
  */
 
 export const TORRANCE_EMAIL = 'tstroman.ceo@cravenusa.com';
 export const JUSTIN_EMAIL = 'jsweet.cfo@cravenusa.com';
 
 /**
- * Checks if the given email belongs to Torrance Stroman
+ * Checks if the given email belongs to Torrance Stroman (CEO)
+ * Uses exact email match only - no partial matching.
  */
 export const isTorrance = (email: string | null | undefined): boolean => {
   if (!email) return false;
-  const emailLower = email.toLowerCase();
-  return emailLower === TORRANCE_EMAIL.toLowerCase() || 
-         emailLower.includes('torrance') ||
-         emailLower.includes('tstroman');
+  return email.toLowerCase() === TORRANCE_EMAIL.toLowerCase();
 };
 
 /**
@@ -26,15 +22,11 @@ export const isTorrance = (email: string | null | undefined): boolean => {
  */
 export const isJustin = (email: string | null | undefined): boolean => {
   if (!email) return false;
-  const emailLower = email.toLowerCase();
-  return emailLower === JUSTIN_EMAIL.toLowerCase() || 
-         emailLower.includes('jsweet') ||
-         (emailLower.includes('justin') && emailLower.includes('sweet'));
+  return email.toLowerCase() === JUSTIN_EMAIL.toLowerCase();
 };
 
 /**
  * Checks if the current authenticated user is Torrance
- * Use this in components that need to check access
  */
 export const isTorranceUser = async (): Promise<boolean> => {
   const { supabase } = await import('@/integrations/supabase/client');
@@ -43,19 +35,16 @@ export const isTorranceUser = async (): Promise<boolean> => {
 };
 
 /**
- * Universal access check - returns true if user is Torrance (CEO)
- * Use this to bypass ALL authorization checks
+ * Universal access check - returns true if user is CEO.
+ * NOTE: This should be backed by server-side role checks (RLS/edge functions).
  */
 export const hasFullAccess = (email: string | null | undefined): boolean => {
   return isTorrance(email);
 };
 
 /**
- * Investor access check - returns true if user is Torrance (CEO) or Justin (CFO)
- * Use this for investor materials access
+ * Investor access check - returns true if user is CEO or CFO.
  */
 export const hasInvestorAccess = (email: string | null | undefined): boolean => {
   return isTorrance(email) || isJustin(email);
 };
-
-
