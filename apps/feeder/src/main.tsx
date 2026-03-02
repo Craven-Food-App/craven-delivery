@@ -2,10 +2,42 @@
  * Feeder app entry – dev server only. Uses root src via alias @.
  * Same routes as App.tsx feeder subdomain block. Root files left unchanged.
  */
+
+// Capture first error so it’s visible in WebView (e.g. Android) even if React never mounts
+function captureFirstError() {
+  const show = (title: string, body: string) => {
+    try {
+      const root = document.getElementById("root");
+      if (root) {
+        root.innerHTML = `<div style="padding:16px;font-family:system-ui;max-width:480px;margin:0 auto;"><h2 style="color:#b91c1c;">${title}</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;border-radius:8px;">${body}</pre></div>`;
+      }
+    } catch {}
+  };
+  window.onerror = (msg, url, line, col, err) => {
+    const body = [err?.message ?? msg, err?.stack, `at ${url}:${line}:${col}`].filter(Boolean).join("\n\n");
+    show("Feeder load error", body);
+    console.error("Feeder load error:", msg, url, line, col, err);
+    return false;
+  };
+  window.onunhandledrejection = (e) => {
+    const body = (e.reason?.message ?? String(e.reason)) + (e.reason?.stack ? "\n\n" + e.reason.stack : "");
+    show("Feeder unhandled rejection", body);
+    console.error("Feeder unhandled rejection:", e.reason);
+  };
+}
+captureFirstError();
+
 import "@/index.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import { initSentry } from "@/integrations/sentry";
 import React from "react";
+
+try {
+  initSentry();
+} catch (e) {
+  console.warn("Sentry init failed:", e);
+}
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

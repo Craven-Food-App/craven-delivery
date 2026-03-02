@@ -8,6 +8,7 @@ import { IconPlus, IconRocket, IconList, IconTimeline, IconChartBar, IconUsers, 
 import { useExecAuth } from '@/hooks/useExecAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useEmbeddedToast';
+import { EmbeddedToastProvider } from '@/components/cfo/EmbeddedToast';
 
 const featureColumns: ColumnDef<any>[] = [
   {
@@ -57,7 +58,7 @@ const featureColumns: ColumnDef<any>[] = [
   },
 ];
 
-export default function ProductCommandCenter() {
+function ProductCommandCenterContent() {
   const { loading: authLoading, user, execUser, isAuthorized, signOut } = useExecAuth('cto');
   const navigate = useNavigate();
   const location = useLocation();
@@ -254,6 +255,14 @@ export default function ProductCommandCenter() {
         </Stack>
       </DetailDrawer>
     </PortalLayout>
+  );
+}
+
+export default function ProductCommandCenter() {
+  return (
+    <EmbeddedToastProvider>
+      <ProductCommandCenterContent />
+    </EmbeddedToastProvider>
   );
 }
 

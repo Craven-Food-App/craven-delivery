@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import path, { resolve } from "path";
 
 const componentTagger = (): any => ({
@@ -47,6 +47,9 @@ export default defineConfig(({ mode }) => {
       strictPort: false,
       open: false,
       cors: true,
+      warmup: {
+        clientFiles: ["./index.html", "./src/main.tsx", "./src/App.tsx"],
+      },
       hmr: {
         overlay: true,
         protocol: "ws",
@@ -98,22 +101,28 @@ export default defineConfig(({ mode }) => {
         "deepmerge",
         "@mui/utils",
         "@tabler/icons-react",
+        "@mantine/core",
+        "@mantine/hooks",
+        "@mantine/notifications",
+        "@mantine/dates",
+        "@mantine/carousel",
+        "@mantine/modals",
+        "@mantine/form",
+        "dayjs",
+        "mapbox-gl",
+        "react",
+        "react-dom",
       ],
       exclude: [
-        "@mui/material",
-        "@mui/system",
-        "@mui/icons-material",
-        "@mui/x-data-grid",
-        "@mui/x-date-pickers",
         "@huggingface/transformers",
         "onnxruntime-common",
         "onnxruntime-web",
       ],
       esbuildOptions: {
-        // Handle CommonJS modules properly
         target: "es2020",
       },
     },
+    cacheDir: "node_modules/.vite",
 
     build: {
       chunkSizeWarningLimit: 1000,

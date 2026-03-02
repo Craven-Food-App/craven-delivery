@@ -29,8 +29,9 @@ export const useCrashReporting = () => {
         return;
       }
 
-      if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
-        Sentry.captureException(event.error || new Error(event.message), {
+      try {
+        if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+          Sentry.captureException(event.error || new Error(event.message), {
           contexts: {
             error: {
               message: event.message,
@@ -43,6 +44,9 @@ export const useCrashReporting = () => {
             errorType: 'global_error',
           },
         });
+        }
+      } catch (_) {
+        // Sentry not ready or captureException failed (e.g. in WebView)
       }
     };
 
@@ -54,8 +58,9 @@ export const useCrashReporting = () => {
         return;
       }
 
-      if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
-        Sentry.captureException(
+      try {
+        if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+          Sentry.captureException(
           new Error(event.reason?.toString() || 'Unhandled Promise Rejection'),
           {
             contexts: {
@@ -68,6 +73,9 @@ export const useCrashReporting = () => {
             },
           }
         );
+        }
+      } catch (_) {
+        // Sentry not ready or failed in WebView
       }
     };
 
@@ -99,22 +107,26 @@ export const useCrashReporting = () => {
   }, []);
 
   const reportCustomError = (error: Error, context?: string) => {
-    if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
-      Sentry.captureException(error, {
-        tags: {
-          context: context || 'custom_error',
-        },
-        extra: {
-          componentStack: context,
-        },
-      });
-    } else {
-      console.error('Crash Report:', {
-        error: error.message,
-        stack: error.stack,
-        context,
-        timestamp: new Date().toISOString(),
-      });
+    try {
+      if (errorReportingConfig.ENABLED && errorReportingConfig.DSN) {
+        Sentry.captureException(error, {
+          tags: {
+            context: context || 'custom_error',
+          },
+          extra: {
+            componentStack: context,
+          },
+        });
+      } else {
+        console.error('Crash Report:', {
+          error: error.message,
+          stack: error.stack,
+          context,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (_) {
+      console.error('Crash Report:', error?.message, context);
     }
   };
 

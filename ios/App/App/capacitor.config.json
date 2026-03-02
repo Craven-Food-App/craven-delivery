@@ -28,7 +28,6 @@
 		"GeolocationPlugin",
 		"HapticsPlugin",
 		"LocalNotificationsPlugin",
-		"PushNotificationsPlugin",
-		"StatusBarPlugin"
+		"PushNotificationsPlugin"
 	]
 }

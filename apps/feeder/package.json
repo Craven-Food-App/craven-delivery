@@ -7,13 +7,16 @@
   "scripts": {
     "dev": "vite --config vite.config.ts",
     "build": "vite build --config vite.config.ts",
-    "preview": "vite preview --config vite.config.ts"
+    "preview": "vite preview --config vite.config.ts",
+    "sync": "node ../../scripts/clean-android-before-sync.cjs && npx cap sync android",
+    "build:android": "cd ../.. && npm run feeder:build",
+    "build:android:full": "cd ../.. && npm run feeder:build:android"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
     "@capacitor/android": "^7.4.3",
-    "@capacitor/cli": "^8.0.2",
+    "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.7",
     "@capacitor/haptics": "^7.0.3",
@@ -92,7 +95,6 @@
     "react-router-dom": "^6.26.2",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
     "zod": "^3.23.8"
   },
@@ -101,7 +103,6 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.1.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.24",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",

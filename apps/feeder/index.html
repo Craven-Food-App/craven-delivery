@@ -18,6 +18,22 @@
     <div id="root">
       <div style="display:flex;align-items:center;justify-content:center;height:100%;background:#fafafa;font:600 16px/1.5 system-ui,sans-serif;color:#666;">Loading…</div>
     </div>
+    <script>
+      window.__feederLoadError = null;
+      window.onerror = function(msg, url, line, col, err) {
+        var body = (err && err.message) ? err.message + (err.stack ? '\n\n' + err.stack : '') : msg + ' at ' + url + ':' + line + ':' + col;
+        window.__feederLoadError = body;
+        var root = document.getElementById('root');
+        if (root) root.innerHTML = '<div style="padding:16px;font-family:system-ui;"><h2 style="color:#b91c1c;">Feeder load error</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;">' + body.replace(/</g,'&lt;') + '</pre></div>';
+        return false;
+      };
+      window.onunhandledrejection = function(e) {
+        var body = (e.reason && e.reason.message) ? e.reason.message + (e.reason.stack ? '\n\n' + e.reason.stack : '') : String(e.reason);
+        window.__feederLoadError = body;
+        var root = document.getElementById('root');
+        if (root) root.innerHTML = '<div style="padding:16px;font-family:system-ui;"><h2 style="color:#b91c1c;">Unhandled rejection</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;">' + body.replace(/</g,'&lt;') + '</pre></div>';
+      };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

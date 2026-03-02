@@ -12,46 +12,42 @@ export const usePerformanceMonitoring = (componentName: string) => {
   const renderStartTime = useRef<number>(0);
 
   useEffect(() => {
-    // Track component load time
-    const loadTime = Date.now() - startTime.current;
-    
-    // Track memory usage if available
-    const memoryUsage = (performance as any).memory ? 
-      (performance as any).memory.usedJSHeapSize : 0;
+    try {
+      // Track component load time
+      const loadTime = Date.now() - startTime.current;
+      const perf = performance as Performance & { memory?: { usedJSHeapSize: number } };
+      const memoryUsage = perf?.memory?.usedJSHeapSize ?? 0;
+      const renderTime = Date.now() - renderStartTime.current;
 
-    // Track render time
-    const renderTime = Date.now() - renderStartTime.current;
+      const metrics: PerformanceMetrics = {
+        loadTime,
+        renderTime,
+        memoryUsage,
+        networkLatency: 0
+      };
 
-    // Log performance metrics
-    const metrics: PerformanceMetrics = {
-      loadTime,
-      renderTime,
-      memoryUsage,
-      networkLatency: 0 // Would be measured from API calls
-    };
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`Performance metrics for ${componentName}:`, metrics);
+      }
 
-    // In production, send to analytics service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Send to analytics
-      console.log(`Performance metrics for ${componentName}:`, metrics);
-    }
-
-    // Track long tasks
-    if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.duration > 50) { // Tasks longer than 50ms
-            console.warn(`Long task detected in ${componentName}:`, {
-              duration: entry.duration,
-              startTime: entry.startTime
-            });
-          }
+      // longtask is not supported in all WebViews (e.g. Android) - guard to avoid throw
+      if (typeof PerformanceObserver !== 'undefined') {
+        try {
+          const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              if (entry.duration > 50) {
+                console.warn(`Long task in ${componentName}:`, entry.duration);
+              }
+            }
+          });
+          observer.observe({ entryTypes: ['longtask'] });
+          return () => observer.disconnect();
+        } catch {
+          // longtask unsupported in this environment
         }
-      });
-      
-      observer.observe({ entryTypes: ['longtask'] });
-      
-      return () => observer.disconnect();
+      }
+    } catch (e) {
+      console.warn('usePerformanceMonitoring:', e);
     }
   }, [componentName]);
 

@@ -1,13 +1,15 @@
 import { CapacitorConfig } from '@capacitor/cli';
+import path from 'path';
 
 const config: CapacitorConfig = {
   appId: 'com.craven.delivery.feeder',
   appName: "Crave'n Feeder",
-  webDir: '../../dist',
+  // Absolute path so it resolves correctly regardless of where the build is invoked from
+  webDir: path.resolve(__dirname, '../../dist'),
 
-  // COMMENT OUT OR REMOVE THIS SERVER SECTION for local development
+  // Uncomment and set URL for live reload against a dev server:
   // server: {
-  //   url: 'https://cravenusa.com/mobile',
+  //   url: 'http://YOUR_LOCAL_IP:8080',
   //   cleartext: true
   // },
 
@@ -33,4 +35,3 @@ const config: CapacitorConfig = {
 };
 
 export default config;
-

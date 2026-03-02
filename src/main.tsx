@@ -21,6 +21,7 @@ import { Notifications } from '@mantine/notifications';
 import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
 
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 import App from './App';
 import './index.css';
@@ -124,11 +125,14 @@ const muiTheme = createMUITheme({
  * Capacitor Push Notifications
  * ------------------------------ */
 const initPush = async () => {
+  // Only run on native Android/iOS — Capacitor bridge is not available on web
+  if (!Capacitor.isNativePlatform()) return;
+
   try {
     const perm = await PushNotifications.requestPermissions();
     if (perm.receive !== 'granted') return;
 
-     // 🔊 Create Android notification channel (REQUIRED for sound)
+    // Create Android notification channel (REQUIRED for sound)
     await LocalNotifications.createChannel({
       id: 'default',
       name: 'Default',
@@ -136,7 +140,6 @@ const initPush = async () => {
       sound: 'default',
     });
 
-    // Listener FIRST is fine (it will fire when register completes)
     PushNotifications.addListener('registration', (token) => {
       console.log('FCM TOKEN:', token.value);
     });
@@ -145,12 +148,10 @@ const initPush = async () => {
       console.error('Push registration error:', error);
     });
 
-    // (Optional) notification received while app is foregrounded
     PushNotifications.addListener('pushNotificationReceived', (notification) => {
       console.log('📬 Push received:', notification);
     });
 
-    // (Optional) user tapped a notification
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       console.log('👉 Push action performed:', action);
     });
@@ -162,7 +163,19 @@ const initPush = async () => {
   }
 };
 
-void initPush();
+/** -----------------------------
+ * Wait for Capacitor bridge before initializing plugins.
+ * On Android, the bridge is not ready synchronously at module
+ * load time — we must wait for the 'deviceready' event.
+ * On web, we just call initPush directly (it will no-op).
+ * ------------------------------ */
+if (Capacitor.isNativePlatform()) {
+  document.addEventListener('deviceready', () => {
+    void initPush();
+  }, { once: true });
+} else {
+  void initPush();
+}
 
 /** -----------------------------
  * Render
@@ -187,9 +200,9 @@ createRoot(rootEl).render(
 );
 
 /** -----------------------------
- * Service Worker (PROD only)
+ * Service Worker (PROD only, web only)
  * ------------------------------ */
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator && import.meta.env.PROD) {
   const waitForLoad = () =>
     new Promise<void>((resolve) => {
       if (document.readyState === 'complete') resolve();
@@ -218,20 +231,17 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
       await waitForLoad();
 
-      // safe states
       if (document.readyState !== 'complete' && document.readyState !== 'interactive') return;
 
       const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
       console.log('✅ Service Worker registered:', registration.scope);
 
-      // hourly update check
       setInterval(() => {
         registration.update().catch((err) => {
           console.warn('Service worker update check failed:', err);
         });
       }, 60 * 60 * 1000);
 
-      // update listener
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         if (!worker) return;
