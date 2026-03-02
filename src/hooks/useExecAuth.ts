@@ -172,36 +172,8 @@ export const useExecAuth = (requiredRole?: 'ceo' | 'board_member' | 'cfo' | 'coo
 
       setUser(currentUser);
 
-      // TORRANCE STROMAN: FULL ACCESS TO EVERYTHING - NO RESTRICTIONS - CHECK FIRST
-      // Check email in multiple ways to be absolutely sure
-      const email = currentUser.email?.toLowerCase() || '';
-      const emailNormalized = email.trim();
-      const isTorranceEmail = 
-        emailNormalized === 'tstroman.ceo@cravenusa.com' || 
-        emailNormalized.includes('torrance') || 
-        emailNormalized.includes('tstroman') ||
-        currentUser.email?.toLowerCase().includes('torrance') ||
-        currentUser.email?.toLowerCase().includes('tstroman') ||
-        hasFullAccess(currentUser.email);
-      
-      if (isTorranceEmail) {
-        console.log('✅ TORRANCE ACCESS GRANTED - FULL ACCESS:', currentUser.email);
-        const ownerExec: ExecUser = {
-          id: currentUser.id,
-          user_id: currentUser.id,
-          role: 'ceo',
-          access_level: 10,
-          title: 'Owner & CEO',
-          department: 'Executive',
-        };
-        setExecUser(ownerExec);
-        // Torrance has FULL ACCESS to ALL portals - bypass all checks
-        setIsAuthorized(true);
-        setLoading(false);
-        return;
-      }
-      
-      console.log('❌ Not Torrance, checking other auth methods:', currentUser.email);
+      // Check if user has CEO/exec role via database (exec_users table)
+      // hasFullAccess does exact email match only - no partial matching
 
       const { data: execData } = await supabase
         .from('exec_users' as any)

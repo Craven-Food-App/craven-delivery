@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import { hasFullAccess } from '@/utils/torranceAccess';
 
 interface AdminAccessGuardProps {
   children: React.ReactNode;
@@ -22,18 +21,6 @@ const AdminAccessGuard: React.FC<AdminAccessGuardProps> = ({ children, fallback 
       }
 
       setUser(user);
-
-      // TORRANCE STROMAN: FULL ACCESS TO EVERYTHING
-      if (hasFullAccess(user.email)) {
-        setIsAdmin(true);
-        return;
-      }
-
-      // OWNER ACCOUNT: craven@usa.com has universal admin access
-      if (user.email === 'craven@usa.com') {
-        setIsAdmin(true);
-        return;
-      }
 
       const { data, error } = await (supabase as any)
         .from('user_roles')
