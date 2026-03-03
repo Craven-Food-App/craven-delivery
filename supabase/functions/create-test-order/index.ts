@@ -114,6 +114,14 @@ serve(async (req) => {
     const expiresAt = new Date(Date.now() + expiresInMs).toISOString();
     const estimatedTime = Math.ceil(distanceKm * 3);
 
+    // Derive store type for driver flows:
+    // - "retail" test orders should always drive the retail pickup flow
+    // - restaurant orders fall back to restaurant.restaurant_type, if present
+    const storeType: string | null =
+      orderType === "retail"
+        ? "retail_store"
+        : (restaurant as any).restaurant_type ?? null;
+
     // Get real customer profile data
     const { data: customerProfile } = await service
       .from("user_profiles")
@@ -372,6 +380,7 @@ serve(async (req) => {
       order_id: order.id,
       restaurant_name: restaurant.name || "Test Restaurant",
       restaurant_id: restaurant.id,
+      store_type: storeType,
       pickup_address: {
         name: restaurant.name || "Restaurant",
         street: restaurant.address || restaurant.street_address || "Restaurant Address",
