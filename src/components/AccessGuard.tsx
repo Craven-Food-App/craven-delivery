@@ -1,7 +1,6 @@
 import React, { useEffect, useState, startTransition, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { hasFullAccess } from '@/utils/torranceAccess';
 
 interface AccessGuardProps {
   children: React.ReactNode;
@@ -119,25 +118,22 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
       setUser(user);
         }
 
-        // Step 3: Check if user has full access (Torrance/CEO)
-      if (hasFullAccess(user.email)) {
-          if (isMountedRef.current) {
-            setAccessState('granted');
-        setOnboardingComplete(true);
-          }
-          saveCachedState(true, true, user.id);
-        return;
-      }
+        // Step 3: Check if user has admin or owner role in user_roles (server-side backed)
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .in('role', ['admin', 'owner'])
+          .maybeSingle();
 
-        // Step 4: Check owner account
-      if (user.email === 'craven@usa.com') {
+        if (adminRole) {
           if (isMountedRef.current) {
             setAccessState('granted');
-        setOnboardingComplete(true);
+            setOnboardingComplete(true);
           }
           saveCachedState(true, true, user.id);
-        return;
-      }
+          return;
+        }
 
         // Step 5: Validate driver application status (with timeout)
         if (isMountedRef.current) {
@@ -215,21 +211,6 @@ const AccessGuard: React.FC<AccessGuardProps> = ({ children, fallback }) => {
       }
       } catch (error) {
         console.error('[AccessGuard] Unexpected error:', error);
-        
-        // On error, check if user is Torrance - if so, grant access anyway
-        try {
-          const { data: { user: errorUser } } = await supabase.auth.getUser();
-          if (errorUser && hasFullAccess(errorUser.email)) {
-            if (isMountedRef.current) {
-              setAccessState('granted');
-              setOnboardingComplete(true);
-            }
-            saveCachedState(true, true, errorUser.id);
-            return;
-          }
-        } catch (fallbackError) {
-          console.error('[AccessGuard] Error in fallback check:', fallbackError);
-        }
 
         // Use cached state if available
         const cached = loadCachedState();

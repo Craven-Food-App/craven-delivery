@@ -10,12 +10,62 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(
+    // Authentication check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await userSupabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Authorization: check if user is an executive (CEO/CFO/board)
+    const adminSupabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: equityRows, error } = await supabase
+    const { data: execUser } = await adminSupabase
+      .from('exec_users')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!execUser) {
+      // Also check user_roles for admin
+      const { data: adminRole } = await adminSupabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (!adminRole) {
+        return new Response(JSON.stringify({ ok: false, error: 'Insufficient privileges' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        });
+      }
+    }
+
+    const { data: equityRows, error } = await adminSupabase
       .from('employee_equity')
       .select('id, employee_id, shares_percentage, shares_total, equity_type, grant_date, strike_price, vesting_schedule');
 
@@ -25,7 +75,7 @@ serve(async (req: Request) => {
 
     let employeesById: Record<string, any> = {};
     if (employeeIds.length > 0) {
-      const { data: employees, error: empErr } = await supabase
+      const { data: employees, error: empErr } = await adminSupabase
         .from('employees')
         .select('id, first_name, last_name, position, email, salary, salary_status, funding_trigger')
         .in('id', employeeIds);
@@ -62,7 +112,7 @@ serve(async (req: Request) => {
       status: 200,
     });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e) }), {
+    return new Response(JSON.stringify({ ok: false, error: 'Internal server error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });

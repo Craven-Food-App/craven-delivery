@@ -226,7 +226,7 @@ export async function confirmPaymentIntent(
   return {
     id: paymentIntent.id,
     status: paymentIntent.status,
-    charges: paymentIntent.charges.data.map((charge) => ({
+    charges: paymentIntent.charges.data.map((charge: any) => ({
       id: charge.id,
       amount: charge.amount,
     })),
@@ -354,7 +354,7 @@ export async function listCustomerPaymentMethods(
     type: 'card',
   });
   
-  return paymentMethods.data.map((pm) => ({
+  return paymentMethods.data.map((pm: any) => ({
     id: pm.id,
     type: pm.type,
     card: pm.card ? {
