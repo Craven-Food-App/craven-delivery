@@ -20,18 +20,38 @@
     </div>
     <script>
       window.__feederLoadError = null;
+      window.__showFeederErrorOverlay = function(title, body) {
+        try {
+          var root = document.getElementById('root');
+          if (root) root.style.display = 'none';
+          var overlay = document.getElementById('feeder-error-overlay');
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'feeder-error-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;overflow:auto;';
+            document.body.appendChild(overlay);
+          }
+          overlay.innerHTML =
+            '<div style="padding:16px;font-family:system-ui;max-width:480px;margin:0 auto;">' +
+              '<h2 style="color:#b91c1c;margin-bottom:8px;">' + title + '</h2>' +
+              '<pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;border-radius:8px;">' +
+                String(body).replace(/</g,'&lt;') +
+              '</pre>' +
+            '</div>';
+        } catch (e) {
+          console.error('Feeder error overlay failed:', e);
+        }
+      };
       window.onerror = function(msg, url, line, col, err) {
         var body = (err && err.message) ? err.message + (err.stack ? '\n\n' + err.stack : '') : msg + ' at ' + url + ':' + line + ':' + col;
         window.__feederLoadError = body;
-        var root = document.getElementById('root');
-        if (root) root.innerHTML = '<div style="padding:16px;font-family:system-ui;"><h2 style="color:#b91c1c;">Feeder load error</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;">' + body.replace(/</g,'&lt;') + '</pre></div>';
+        window.__showFeederErrorOverlay('Feeder load error', body);
         return false;
       };
       window.onunhandledrejection = function(e) {
         var body = (e.reason && e.reason.message) ? e.reason.message + (e.reason.stack ? '\n\n' + e.reason.stack : '') : String(e.reason);
         window.__feederLoadError = body;
-        var root = document.getElementById('root');
-        if (root) root.innerHTML = '<div style="padding:16px;font-family:system-ui;"><h2 style="color:#b91c1c;">Unhandled rejection</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;">' + body.replace(/</g,'&lt;') + '</pre></div>';
+        window.__showFeederErrorOverlay('Unhandled rejection', body);
       };
     </script>
     <script type="module" src="/src/main.tsx"></script>

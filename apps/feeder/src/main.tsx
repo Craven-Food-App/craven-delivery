@@ -6,11 +6,26 @@
 // Capture first error so it’s visible in WebView (e.g. Android) even if React never mounts
 function captureFirstError() {
   const show = (title: string, body: string) => {
+    const globalShow = (window as any).__showFeederErrorOverlay as
+      | ((t: string, b: string) => void)
+      | undefined;
+    if (globalShow) {
+      globalShow(title, body);
+      return;
+    }
     try {
       const root = document.getElementById("root");
-      if (root) {
-        root.innerHTML = `<div style="padding:16px;font-family:system-ui;max-width:480px;margin:0 auto;"><h2 style="color:#b91c1c;">${title}</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;border-radius:8px;">${body}</pre></div>`;
+      if (root) root.style.display = "none";
+      let overlay = document.getElementById("feeder-error-overlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "feeder-error-overlay";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:9999;background:#fff;overflow:auto;";
+        document.body.appendChild(overlay);
       }
+      overlay.innerHTML = `<div style="padding:16px;font-family:system-ui;max-width:480px;margin:0 auto;"><h2 style="color:#b91c1c;margin-bottom:8px;">${title}</h2><pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;background:#fef2f2;padding:12px;border-radius:8px;">${String(
+        body
+      ).replace(/</g, "&lt;")}</pre></div>`;
     } catch {}
   };
   window.onerror = (msg, url, line, col, err) => {

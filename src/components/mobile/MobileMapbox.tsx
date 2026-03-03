@@ -223,37 +223,43 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         // Use config default for initial center - location will update via separate effect
         const initialCenter = [MAPBOX_CONFIG.center[0], MAPBOX_CONFIG.center[1]];
         
-        map.current = new (window as any).mapboxgl.Map({
+        const mapboxgl = (window as any).mapboxgl;
+        const mapInstance = new mapboxgl.Map({
           container: mapContainer.current,
           style: MAPBOX_CONFIG.style,
           center: initialCenter,
           zoom: MAPBOX_CONFIG.zoom,
           attributionControl: false, // Disable the default attribution (i) button
         });
+        map.current = mapInstance;
 
-        map.current.on('load', () => {
+        mapInstance.on('load', () => {
+          const m = map.current;
+          if (!m) return;
+
           setIsMapReady(true);
           
           // Track user panning to stop auto-centering
-          map.current.on('dragstart', () => {
+          m.on('dragstart', () => {
+            if (!map.current) return;
             userHasPanned.current = true;
             setShowRecenter(true);
           });
           
-          if (map.current) {
+          if (m) {
             // Add navigation control only once
             if (!navigationControlAdded.current) {
               try {
                 // Remove any existing navigation controls first
-                const existingControls = map.current.getContainer().querySelectorAll('.mapboxgl-ctrl-group');
+                const existingControls = m.getContainer().querySelectorAll('.mapboxgl-ctrl-group');
                 existingControls.forEach((ctrl: any) => {
                   if (ctrl.closest('.mapboxgl-ctrl-top-right')) {
                     ctrl.remove();
                   }
                 });
                 
-                const ctrl = new (window as any).mapboxgl.NavigationControl({ visualizePitch: true });
-                map.current.addControl(ctrl, 'top-right');
+                const ctrl = new mapboxgl.NavigationControl({ visualizePitch: true });
+                m.addControl(ctrl, 'top-right');
                 navigationControlAdded.current = true;
               } catch (error) {
                 console.error('Failed to add navigation control', error);
@@ -261,17 +267,17 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             }
             
             // Wait for style to be fully loaded before adding zones
-            if (map.current.isStyleLoaded()) {
+            if (m.isStyleLoaded()) {
               updateZoneLayers(zones);
             } else {
-              map.current.once('style.load', () => {
+              m.once('style.load', () => {
                 updateZoneLayers(zones);
               });
             }
           }
         });
 
-        map.current.on('error', (e: any) => {
+        mapInstance.on('error', (e: any) => {
           console.error('Mapbox error:', e);
         });
 
