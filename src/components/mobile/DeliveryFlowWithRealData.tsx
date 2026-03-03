@@ -52,6 +52,7 @@ const DeliveryFlowWithRealData: React.FC<DeliveryFlowWithRealDataProps> = ({ onC
             restaurants (name, address, city, state, zip_code, phone, logo_url)
           `)
           .not('restaurant_id', 'is', null)
+          .in('restaurants.name', ['CMIH Kitchen', "Crave'n Stylz"])
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -82,37 +83,10 @@ const DeliveryFlowWithRealData: React.FC<DeliveryFlowWithRealDataProps> = ({ onC
           return;
         }
 
-        // 2. Fallback: fetch a restaurant and build minimal dev order
-        const { data: restaurant, error: restErr } = await supabase
-          .from('restaurants')
-          .select('id, name, address, city, state, zip_code, phone')
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle();
-
-        if (restErr || !restaurant) {
-          setError('No orders or restaurants found in database.');
-          setLoading(false);
-          return;
-        }
-
-        const pickupStr = [restaurant.address, restaurant.city, restaurant.state, restaurant.zip_code].filter(Boolean).join(', ');
-        setOrderDetails({
-          id: 'dev-' + restaurant.id,
-          order_id: 'dev-' + restaurant.id,
-          order_number: 'DEV-' + restaurant.id.slice(0, 6).toUpperCase(),
-          restaurant_name: restaurant.name,
-          pickup_address: pickupStr || restaurant.address,
-          dropoff_address: '',
-          customer_name: 'Customer',
-          customer_phone: restaurant.phone,
-          delivery_notes: '',
-          payout_cents: 850,
-          subtotal_cents: 0,
-          estimated_time: 25,
-          items: [],
-          isTestOrder: true,
-        });
+        // 2. If we didn't find any recent orders, don't fabricate one.
+        setError('No recent delivery orders with restaurants found in the database. Create a real test order to use this flow.');
+        setLoading(false);
+        return;
       } catch (e) {
         console.error('DeliveryFlowWithRealData fetch error:', e);
         setError(e instanceof Error ? e.message : 'Failed to load data');

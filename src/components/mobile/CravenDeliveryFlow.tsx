@@ -1925,7 +1925,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                     data-testid="arrived-at-restaurant-button"
                     style={{ borderRadius: '8px' }}
                   >
-                    Arrived at Craven Kitchen
+                    Arrived at {orderDetails.restaurant_name || 'pickup location'}
                   </Button>
                 )}
                 

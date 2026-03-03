@@ -27,6 +27,14 @@ function captureFirstError() {
 }
 captureFirstError();
 
+// Lock to portrait when supported (Capacitor WebView, PWA standalone)
+try {
+  const screen = (window as any).screen;
+  if (screen?.orientation?.lock) {
+    screen.orientation.lock('portrait').catch(() => {});
+  }
+} catch (_) {}
+
 import "barcode-detector/polyfill";
 import "@/index.css";
 import "@mantine/core/styles.css";

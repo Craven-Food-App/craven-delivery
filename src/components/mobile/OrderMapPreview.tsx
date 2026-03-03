@@ -322,14 +322,14 @@ const OrderMapPreview: React.FC<OrderMapPreviewProps> = ({
 const App = () => {
     // Mock addresses for demonstration (these will be geocoded by Mapbox)
     const mockPickup = useMemo(() => ({
-        street: '151 3rd St',
-        city: 'San Francisco',
-        state: 'CA',
-        zip_code: '94103'
+        street: '6759 Nebraska Ave',
+        city: 'Toledo',
+        state: 'OH',
+        zip_code: '43617'
     }), []);
 
     const mockDropoff = useMemo(() => ({
-        address: '1088 Howard St, San Francisco, CA 94103'
+        address: '123 Main St, Toledo, OH 43604'
     }), []);
     
     // Optional: Pre-calculated route info (will be overwritten by Mapbox Directions API result)

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
 import { Car, MapPin, Zap, Send, Clock, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ export const LiveDriverTesting = () => {
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [orderType, setOrderType] = useState<'restaurant' | 'retail'>('restaurant');
   const { toast } = useToast();
 
   // Fixed useEffect with async function inside
@@ -151,7 +153,7 @@ export const LiveDriverTesting = () => {
     try {
       // Step 1: Create order (must complete first)
       const { data: result, error: fnError } = await supabase.functions.invoke('create-test-order', {
-        body: { driverId: selectedDriver }
+        body: { driverId: selectedDriver, orderType }
       });
       if (fnError || !result) {
         throw new Error((fnError as any)?.message || 'Failed to create test order');
@@ -319,6 +321,19 @@ export const LiveDriverTesting = () => {
           <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" />Send Test Order</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">Order Type</Label>
+            <Select value={orderType} onValueChange={(v) => setOrderType(v as 'restaurant' | 'retail')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose order type..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="restaurant">Driver delivery flow – CMIH Kitchen</SelectItem>
+                <SelectItem value="retail">Retail driver flow – Crave&apos;n Stylz</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <Select value={selectedDriver} onValueChange={setSelectedDriver}>
             <SelectTrigger><SelectValue placeholder="Choose a feeder..." /></SelectTrigger>
             <SelectContent>

@@ -396,7 +396,7 @@ export const DeliveryFlowStepOne: React.FC<DeliveryFlowStepOneProps> = ({
 
           <div className="dfl-step-one-footer">
             <button type="button" className="dfl-step-one-cta" onClick={onArrived} data-testid="arrived-at-restaurant-button">
-              <span>Arrived at Craven Kitchen</span>
+              <span>Arrived at {restaurantName || 'pickup location'}</span>
               <div className="dfl-step-one-cta-arrow" />
             </button>
           </div>

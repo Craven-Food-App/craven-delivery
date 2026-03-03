@@ -121,9 +121,9 @@ const supabase = {
     select: (cols) => ({
       eq: (key, value) => ({
         single: async () => {
-          // Mock fetch for restaurant address
+          // Mock fetch for restaurant address – use real Toledo location for demos
           if (table === 'restaurants' && key === 'id') {
-            return { data: { address: "123 Mock Street, Unit B" }, error: null };
+            return { data: { address: "6759 Nebraska Ave, Toledo, OH 43617" }, error: null };
           }
           return { data: null, error: new Error("Mock DB Error") };
         }

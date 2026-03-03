@@ -183,14 +183,14 @@ const DoorDashStyleDeliveryFlow: React.FC<DoorDashStyleDeliveryFlowProps> = ({
   const customer: Customer = {
     name: orderDetails.customer?.name || 'John Smith',
     phone: orderDetails.customer?.phone || '(555) 123-4567',
-    address: orderDetails.customer?.address || '456 Customer St, City, State 12345',
+    address: orderDetails.customer?.address || '456 Oak St, Toledo, OH 43602',
     instructions: orderDetails.customer?.instructions || 'Leave at door, ring doorbell',
     rating: 4.8
   };
 
   const restaurant: Restaurant = {
-    name: orderDetails.restaurant?.name || 'McDonald\'s',
-    address: orderDetails.restaurant?.address || '123 Main St, City, State 12345',
+    name: orderDetails.restaurant?.name || 'Crave\'n Merch',
+    address: orderDetails.restaurant?.address || '123 Main St, Toledo, OH 43604',
     phone: orderDetails.restaurant?.phone || '(555) 987-6543',
     estimated_prep_time: 8,
     rating: 4.2

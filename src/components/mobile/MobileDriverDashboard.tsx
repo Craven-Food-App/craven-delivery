@@ -852,9 +852,12 @@ export const MobileDriverDashboard: React.FC = () => {
         expires_at: string;
       };
       // Fetch order summary to populate modal
-      const {
-        data: order
-      } = await supabase.from('orders').select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name, restaurant_type, logo_url, image_url)').eq('id', assignment.order_id).maybeSingle();
+      const { data: order } = await supabase
+        .from('orders')
+        .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name, restaurant_type, logo_url, image_url)')
+        .eq('id', assignment.order_id)
+        .in('restaurants.name', ['CMIH Kitchen', "Crave'n Stylz"])
+        .maybeSingle();
       if (order) {
         // Resolve actual restaurant name, store type, and logo from the joined restaurants table
         const restaurants = (order as any).restaurants;
@@ -1034,7 +1037,8 @@ export const MobileDriverDashboard: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        // No user - show welcome screen with login
+        setIsLoading(false);
+        setShowWelcomeScreen(true);
         return;
       }
 
@@ -1060,12 +1064,14 @@ export const MobileDriverDashboard: React.FC = () => {
 
       if (error) {
         console.warn('⚠️ Could not check onboarding status:', error.message);
-        // Continue - don't block user if query fails
+        setIsLoading(false);
+        setShowWelcomeScreen(true);
         return;
       }
 
       if (!application) {
-        // No application - show welcome screen with login (they can apply)
+        setIsLoading(false);
+        setShowWelcomeScreen(true);
         return;
       }
 
@@ -1085,7 +1091,8 @@ export const MobileDriverDashboard: React.FC = () => {
       await checkSessionPersistence();
     } catch (error) {
       console.warn('⚠️ Error checking onboarding (non-critical):', error);
-      // Continue - don't block user if check fails
+      setIsLoading(false);
+      setShowWelcomeScreen(true);
     }
   };
   const checkSessionPersistence = async () => {

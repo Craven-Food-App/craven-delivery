@@ -15,6 +15,7 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const driverId: string | undefined = body.driverId;
+    const orderType: string = (body.orderType as string) || "restaurant";
     
     // Randomize distance: 1-3 miles ($0.67-$2.00 mileage pay cap)
     const distanceMiles = Math.random() * 2 + 1; // 1-3 miles
@@ -76,32 +77,35 @@ serve(async (req) => {
       });
     }
 
-    // Pick a restaurant (active preferred)
-    let { data: restaurant, error: restErr } = await service
+    // Pick a specific restaurant for testing:
+    // - "restaurant" orders use CMIH Kitchen (driver delivery flow)
+    // - "retail" orders use Crave'n Stylz (retail driver flow)
+    let restaurantQuery = service
       .from("restaurants")
       .select("*")
-      .eq("is_active", true)
+      .eq("is_active", true);
+
+    if (orderType === "retail") {
+      restaurantQuery = restaurantQuery.eq("name", "Crave'n Stylz");
+    } else {
+      // Default: restaurant flow
+      restaurantQuery = restaurantQuery.eq("name", "CMIH Kitchen");
+    }
+
+    const { data: restaurant, error: restErr } = await restaurantQuery
       .limit(1)
       .maybeSingle();
 
     if (restErr) {
-      console.warn("Active restaurant lookup failed:", restErr.message);
+      console.error("Restaurant lookup failed:", restErr.message);
+      return new Response(JSON.stringify({ error: "Restaurant lookup failed" }), {
+        status: 500,
+        headers: jsonHeaders,
+      });
     }
 
     if (!restaurant) {
-      const { data: fallback, error: restAnyErr } = await service
-        .from("restaurants")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
-      if (restAnyErr) {
-        console.error("Restaurant lookup failed:", restAnyErr.message);
-      }
-      restaurant = fallback as any;
-    }
-
-    if (!restaurant) {
-      return new Response(JSON.stringify({ error: "No restaurants found" }), {
+      return new Response(JSON.stringify({ error: "Required test restaurant not found" }), {
         status: 400,
         headers: jsonHeaders,
       });
@@ -137,8 +141,8 @@ serve(async (req) => {
         zip: addr.zip_code,
         zip_code: addr.zip_code,
         apt_suite: addr.apt_suite || null,
-        latitude: addr.latitude || (restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.1 : 40.7128),
-        longitude: addr.longitude || (restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.1 : -74.0060),
+        latitude: addr.latitude || (restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.01 : 41.6528),
+        longitude: addr.longitude || (restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.01 : -83.5555),
         address: `${addr.street_address}${addr.apt_suite ? `, ${addr.apt_suite}` : ''}, ${addr.city}, ${addr.state} ${addr.zip_code}`,
       };
     } else {
@@ -155,8 +159,8 @@ serve(async (req) => {
         zip: restaurant.zip_code || "12345",
         zip_code: restaurant.zip_code || "12345",
         apt_suite: null,
-        latitude: restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.1 : 40.7128,
-        longitude: restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.1 : -74.0060,
+        latitude: restaurant.latitude ? restaurant.latitude + (Math.random() - 0.5) * 0.01 : 41.6528,
+        longitude: restaurant.longitude ? restaurant.longitude + (Math.random() - 0.5) * 0.01 : -83.5555,
         address: `${randomStreet}, ${restaurant.city || "Test City"}, ${restaurant.state || "TS"} ${restaurant.zip_code || "12345"}`,
       };
     }
