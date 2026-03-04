@@ -499,7 +499,7 @@ export const DeliveryFlowStepThree: React.FC<DeliveryFlowStepThreeProps> = ({
           <div className="dfl-step-three-footer">
             {useSlideToConfirm ? (
               <>
-                <div style={{ fontSize: 12, color: 'rgba(28,28,30,0.6)', marginBottom: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: 'rgba(28,28,30,0.6)', marginBottom: 10, textAlign: 'center', whiteSpace: 'nowrap' }}>
                   When you arrive at the customer&apos;s home, close GPS and slide to confirm.
                 </div>
                 <SlideToConfirm label="I am here" onConfirm={onArrived} />

@@ -56,6 +56,11 @@ export interface RetailGroceryPickupFlowProps {
   onQrConfirmed?: () => Promise<void> | void;
   /** Called when feeder completes all label scanning (ready to leave pickup) */
   onStartScanning?: () => Promise<void> | void;
+  /**
+   * Order status step for the curbside status bar: 0 = Not ready, 1 = Getting Ready, 2 = Packaging order, 3 = Ready.
+   * When provided (e.g. from API), the bar reflects this; otherwise uses internal state.
+   */
+  orderStatusStep?: number;
 }
 
 type PickupStep = 'arrival' | 'spot_and_qr' | 'scan' | 'stops_summary' | 'stops_list';
@@ -79,6 +84,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   onParkingSpotSelected,
   onQrConfirmed,
   onStartScanning,
+  orderStatusStep: orderStatusStepProp,
 }) => {
   const [step, setStep] = useState<PickupStep>('arrival');
   const [selectedSpot, setSelectedSpot] = useState<number | null>(null);
@@ -106,6 +112,19 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   const lastScannedValueRef = useRef<string>('');
   const lastScannedTimeRef = useRef<number>(0);
 
+  // Order status for curbside pickup: 0 = Not ready, 1 = Getting Ready, 2 = Packaging order, 3 = Ready
+  const ORDER_STATUS_STEPS = [
+    { key: 0, label: 'Not ready' },
+    { key: 1, label: 'Getting Ready' },
+    { key: 2, label: 'Packaging order' },
+    { key: 3, label: 'Ready' },
+  ] as const;
+  const [orderStatusStepLocal, setOrderStatusStepLocal] = useState<number>(0);
+  const orderStatusStep =
+    typeof orderStatusStepProp === 'number' && orderStatusStepProp >= 0 && orderStatusStepProp <= 3
+      ? orderStatusStepProp
+      : orderStatusStepLocal;
+
   const safeSpotCount = useMemo(() => {
     const n = parkingSpotCount ?? 6;
     if (!Number.isFinite(n) || n <= 0) return 6;
@@ -117,6 +136,9 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
   }, [safeSpotCount]);
 
   const handleConfirmArrival = async () => {
+    if (typeof orderStatusStepProp !== 'number') {
+      setOrderStatusStepLocal((prev) => (prev < 1 ? 1 : prev)); // advance to "Getting Ready"
+    }
     if (onArrivalConfirmed) {
       await onArrivalConfirmed();
     }
@@ -125,6 +147,9 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
 
   const handleSelectSpot = async (spot: number) => {
     setSelectedSpot(spot);
+    if (typeof orderStatusStepProp !== 'number') {
+      setOrderStatusStepLocal((prev) => (prev < 2 ? 2 : prev)); // advance to "Packaging order"
+    }
     if (onParkingSpotSelected) {
       await onParkingSpotSelected(spot);
     }
@@ -200,7 +225,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
         name: 'Scan barcode',
         scanned: false,
         orderId: orderId,
-        orderLabel: 'Order',
+        orderLabel: 'Customer',
         orderNumber: orderNum,
       }));
     }
@@ -526,35 +551,80 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
               </div>
             )}
 
-            {/* Fake status slider row (Not started → Finding items → Packing up → Ready) */}
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 4 }}>
-                Order status {/* eslint-disable-next-line react/no-unescaped-entities */}Updated just now
+            {/* Order status step bar: Not ready → Getting Ready → Packaging order → Ready */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 8 }}>
+                Order status
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 10,
-                  color: C.textSecondary,
-                }}
-              >
-                <span>Not started</span>
-                <div style={{ flex: 1, position: 'relative', height: 4, borderRadius: 999, background: '#E5E7EB' }}>
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: '100%',
-                      borderRadius: 999,
-                      background: '#22C55E',
-                    }}
-                  />
-                </div>
-                <span>Ready</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0 }}>
+                {ORDER_STATUS_STEPS.map((s, index) => {
+                  const isCompleted = orderStatusStep > s.key;
+                  const isCurrent = orderStatusStep === s.key;
+                  const isLast = index === ORDER_STATUS_STEPS.length - 1;
+                  const segmentColor = isCompleted ? '#22C55E' : isCurrent ? C.accent : '#E5E7EB';
+                  return (
+                    <div
+                      key={s.key}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        minWidth: 0,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+                          {index > 0 && (
+                            <div
+                              style={{
+                                flex: 1,
+                                height: 3,
+                                borderRadius: 2,
+                                background: orderStatusStep >= s.key ? '#22C55E' : '#E5E7EB',
+                              }}
+                            />
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            background: isCompleted ? '#22C55E' : isCurrent ? C.accent : '#E5E7EB',
+                            border: `2px solid ${segmentColor}`,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+                          {!isLast && (
+                            <div
+                              style={{
+                                flex: 1,
+                                height: 3,
+                                borderRadius: 2,
+                                background: isCompleted ? '#22C55E' : '#E5E7EB',
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 9,
+                          color: isCurrent ? C.accent : C.textSecondary,
+                          fontWeight: isCurrent ? 600 : 400,
+                          marginTop: 4,
+                          textAlign: 'center',
+                          lineHeight: 1.2,
+                          width: '100%',
+                        }}
+                      >
+                        {s.label}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -566,9 +636,10 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             <div
               style={{
                 textAlign: 'center',
-                fontSize: 13,
+                fontSize: 12,
                 color: C.textSecondary,
                 marginBottom: 12,
+                whiteSpace: 'nowrap',
               }}
             >
               Slide to confirm when you have arrived at the curbside pickup area.
@@ -685,10 +756,11 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
             {selectedSpot && (
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: 12,
                   color: '#15803D',
                   fontWeight: 600,
                   textAlign: 'center',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Spot #{selectedSpot} selected. Stay in your vehicle while the order is brought out.
@@ -718,12 +790,13 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 </div>
                 <div
                   style={{
-                    fontSize: 12,
+                    fontSize: 11,
                     color: C.textSecondary,
                     marginBottom: 10,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  They&apos;ll scan it to confirm they&apos;re at the right spot, with the right driver and order.
+                  They&apos;ll scan this QR for verifications
                 </div>
                 <div
                   style={{
@@ -760,6 +833,9 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                   type="button"
                   onClick={async () => {
                     setIsQrCompleted(true);
+                    if (typeof orderStatusStepProp !== 'number') {
+                      setOrderStatusStepLocal(3); // advance to "Ready"
+                    }
                     if (onQrConfirmed) {
                       await onQrConfirmed();
                     }
@@ -813,8 +889,10 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 >();
                 scanLabels.forEach((pkg) => {
                   const key = pkg.orderId || 'default';
+                  const rawLabel = pkg.orderLabel?.trim();
+                  const customerName = rawLabel && rawLabel !== '—' ? rawLabel : 'Customer';
                   const group = groups.get(key) || {
-                    label: pkg.orderLabel || 'Order',
+                    label: customerName,
                     orderNumber: pkg.orderNumber || (pkg.orderId ? (pkg.orderId).replace(/\D/g, '').slice(-4) : ''),
                     packages: [] as typeof scanLabels,
                   };
@@ -824,7 +902,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 return Array.from(groups.entries()).map(([orderKey, group]) => {
                   const total = group.packages.length;
                   const scanned = group.packages.filter((p) => p.scanned).length;
-                  const initial = (group.label || 'O').charAt(0).toUpperCase();
+                  const initial = (group.label || 'C').charAt(0).toUpperCase();
                   return (
                     <div
                       key={orderKey}
@@ -983,11 +1061,12 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {((ordersForPickup && ordersForPickup.length > 0)
                     ? ordersForPickup
-                    : [{ id: orderId || 'order', label: 'Order', totalPackages: 1, address: storeAddress }]
+                    : [{ id: orderId || 'order', label: 'Customer', totalPackages: 1, address: storeAddress }]
                   ).map((order, index) => {
                     const last4 = (id: string) => (id || '').replace(/\D/g, '').slice(-4) || id?.slice(-4) || '';
                     const orderNum = order.orderNumber ?? last4(order.id);
                     const address = order.address || storeAddress || '—';
+                    const customerName = (order.label?.trim() && order.label.trim() !== '—') ? order.label.trim() : 'Customer';
                     const isTop = index === 0;
                     const stopNumber = index + 1;
                     return (
@@ -1010,7 +1089,7 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
                             <span style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>
                               <span style={{ color: C.accent, marginRight: 4 }}>Stop {stopNumber}.</span>
-                              {order.label}
+                              {customerName}
                             </span>
                             {orderNum && (
                               <span style={{ fontSize: 12, fontWeight: 600, color: C.accent, flexShrink: 0 }}>Order: {orderNum}</span>
@@ -1178,8 +1257,10 @@ const RetailGroceryPickupFlow: React.FC<RetailGroceryPickupFlowProps> = ({
                 >();
                 scanLabels.forEach((pkg) => {
                   const key = pkg.orderId || 'default';
+                  const rawLabel = pkg.orderLabel?.trim();
+                  const customerName = rawLabel && rawLabel !== '—' ? rawLabel : 'Customer';
                   const group = groups.get(key) || {
-                    label: pkg.orderLabel || 'Order',
+                    label: customerName,
                     orderNumber: pkg.orderNumber || (pkg.orderId ? (pkg.orderId).replace(/\D/g, '').slice(-4) : ''),
                     packages: [] as typeof scanLabels,
                   };

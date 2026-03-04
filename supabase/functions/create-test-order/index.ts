@@ -393,6 +393,8 @@ serve(async (req) => {
         address: restaurant.address || `${restaurant.street_address || "Restaurant Address"}, ${restaurant.city || "City"}, ${restaurant.state || "ST"} ${restaurant.zip_code || "12345"}`,
         phone: restaurant.phone || null,
       },
+      // Hint for mobile app to show correct brand logo in retail pickup flow
+      store_logo_url: (restaurant as any).logo_url || (restaurant as any).image_url || null,
       dropoff_address: delivery_address,
       customer_name: customerProfile?.full_name || "Test Customer",
       payout_cents: payoutCents,

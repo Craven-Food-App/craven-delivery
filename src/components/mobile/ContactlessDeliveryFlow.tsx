@@ -8,7 +8,7 @@
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Text, Button, Stack, Group, ActionIcon } from '@mantine/core';
-import { IconX, IconNavigation, IconPhone, IconFileText, IconMapPin, IconCamera } from '@tabler/icons-react';
+import { IconX, IconNavigation, IconPhone, IconFileText, IconMapPin, IconCamera, IconBarcode } from '@tabler/icons-react';
 import SlideToConfirm from '@/components/SlideToConfirm';
 import FullscreenCamera from './FullscreenCamera';
 
@@ -369,7 +369,7 @@ const ContactlessDeliveryFlow: React.FC<ContactlessDeliveryFlowProps> = ({
                 <>
                   <Group justify="space-between" mb="xs">
                     <Group gap={6}>
-                      <span style={{ fontSize: 16 }}>📊</span>
+                      <IconBarcode size={18} />
                       <Text fw={600} size="sm">Labels scanned: {step1Scanned}/{step1Total}</Text>
                     </Group>
                   </Group>
