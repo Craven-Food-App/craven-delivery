@@ -210,7 +210,7 @@ const CraveMoreSubscription: React.FC = () => {
             fontWeight: 700,
             color: '#111827',
             lineHeight: 1.2,
-            marginTop: '8px'
+            marginTop: '64px'
           }}
         >
           Get $0 delivery fees plus exclusive benefits

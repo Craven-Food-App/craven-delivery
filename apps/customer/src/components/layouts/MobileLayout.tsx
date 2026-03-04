@@ -62,7 +62,7 @@ export function MobileLayout({ children, showBottomNav = true }: MobileLayoutPro
           flex: 1,
           width: '100%',
           overflowY: 'auto',
-          overflowX: 'auto', // Allow horizontal scrolling for horizontal restaurant rows
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           // Space for bottom navigation
           paddingBottom: shouldShowNav 

@@ -12,9 +12,11 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Crave'n Food App Design System */
-    --background: 0 0% 100%;
+    /* App shell background: slightly warm gray so content cards feel elevated */
+    --background: 0 0% 96%;
     --foreground: 24 24% 12%;
 
+    /* Primary content cards remain white on top of the shell */
     --card: 0 0% 100%;
     --card-foreground: 24 24% 12%;
 
@@ -46,7 +48,7 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 6% 90%;
+    --border: 24 6% 88%;
     --input: 24 6% 90%;
     --ring: 14 90% 53%;
 
@@ -56,7 +58,7 @@ All colors MUST be HSL.
     --gradient-accent: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(150 65% 48%) 100%);
 
     /* Shadows for depth */
-    --shadow-card: 0 4px 16px -4px hsl(24 24% 12% / 0.1);
+    --shadow-card: 0 4px 12px -4px hsl(24 24% 12% / 0.15);
     --shadow-hover: 0 8px 24px -8px hsl(var(--primary) / 0.3);
     --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.2);
 
@@ -158,8 +160,8 @@ All colors MUST be HSL.
   /* Horizontal safe areas for landscape mode */
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  /* Prevent overflow into navigation area */
-  overflow-y: auto;
+  /* Let inner mobile layout control scrolling so the app feels like a single native scroll view */
+  overflow-y: hidden;
   overflow-x: hidden;
   /* Ensure content doesn't extend beyond safe area */
   min-height: 0;

@@ -32,7 +32,7 @@
       html {
         height: 100%;
         height: 100dvh;
-        background-color: #ffffff !important;
+        background-color: #f3f4f6 !important;
         /* Safe area insets handled by SafeAreaProvider component */
         padding: 0;
         margin: 0;
@@ -43,8 +43,9 @@
         padding: 0;
         height: 100%;
         height: 100dvh;
-        overflow-x: hidden;
-        background-color: #ffffff !important;
+        /* Lock the viewport so all scrolling happens inside the app shell */
+        overflow: hidden;
+        background-color: #f3f4f6 !important;
         /* Prevent body from adding extra padding - SafeAreaProvider handles it */
         padding-top: 0 !important;
         padding-bottom: 0 !important;
@@ -69,7 +70,7 @@
         width: 100%;
         margin: 0;
         padding: 0;
-        background-color: #ffffff !important;
+        background-color: #f3f4f6 !important;
       }
       
       /* Safe area insets are handled by SafeAreaProvider component */
