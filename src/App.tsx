@@ -364,8 +364,6 @@ const App = () => {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
             <HashRouter>
               <Routes>
                 <Route path="/mobile" element={<MobileDriverDashboard />} />
