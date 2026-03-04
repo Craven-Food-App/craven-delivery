@@ -335,7 +335,14 @@ const RestaurantMenuPage = () => {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [promos, setPromos] = useState<PromoCode[]>([]);
-  const { cartItems, cartCount, addToCart: addToCartContext, removeFromCart: removeFromCartContext, clearCart } = useCart();
+  const {
+    cartItems,
+    cartCount,
+    addToCart: addToCartContext,
+    removeFromCart: removeFromCartContext,
+    updateCartItem: updateCartItemContext,
+    clearCart,
+  } = useCart();
   const [loading, setLoading] = useState(true);
 
   // New state for header and side menu
@@ -1290,7 +1297,7 @@ const RestaurantMenuPage = () => {
             );
         }
 
-        // --- Food Item Card (original) ---
+        // --- Food Item Card (original + inline quantity controls) ---
         return (
             <Box
                 style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden', backgroundColor: 'white' }}
@@ -1306,26 +1313,112 @@ const RestaurantMenuPage = () => {
                     />
                 </Box>
 
-                <Stack gap="xs" p="sm">
-                    <Text size="sm" fw={800} lineClamp={2} style={{ lineHeight: '1.3' }}>{item.name}</Text>
-                    <Stack gap={0}>
-                        <Text size="sm" fw={600} c="gray.7">{formatPrice(item.price_cents)}</Text>
-                        <Text size="xs" c="dimmed">{rating}% ({reviews})</Text>
-                    </Stack>
-                </Stack>
+            <Stack gap="xs" p="sm">
+              <Text size="sm" fw={800} lineClamp={2} style={{ lineHeight: '1.3' }}>
+                {item.name}
+              </Text>
+              <Stack gap={0}>
+                <Text size="sm" fw={600} c="gray.7">
+                  {formatPrice(item.price_cents)}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {rating}% ({reviews})
+                </Text>
+              </Stack>
+            </Stack>
 
-                <ActionIcon
+            {/* Inline quantity controls in bottom-right corner */}
+            {(() => {
+              const cartItem = cartItems.find((ci) => ci.id === item.id);
+              const quantity = cartItem?.quantity ?? 0;
+
+              // Helper to add one item to cart
+              const addOne = async () => {
+                if (!restaurant?.id) return;
+                if (quantity === 0) {
+                  // First add goes through addToCart to respect cross-restaurant checks
+                  await addToCartContext(
+                    {
+                      id: item.id,
+                      name: item.name,
+                      price_cents: item.price_cents,
+                      quantity: 1,
+                      modifiers: [],
+                      restaurant_id: restaurant.id,
+                      image_url: item.image_url,
+                    },
+                    restaurant.id
+                  );
+                } else {
+                  // Subsequent adds just bump quantity
+                  await updateCartItemContext(item.id, quantity + 1);
+                }
+              };
+
+              const removeOne = async () => {
+                if (quantity <= 0) return;
+                await updateCartItemContext(item.id, quantity - 1);
+              };
+
+              // When quantity is 0, show a simple "+" FAB
+              if (quantity === 0) {
+                return (
+                  <ActionIcon
                     onClick={(e) => {
-                        e.stopPropagation();
-                        openItemModal(item);
+                      e.stopPropagation();
+                      void addOne();
                     }}
                     color="orange"
                     variant="filled"
                     style={{ position: 'absolute', bottom: 8, right: 8 }}
                     size="sm"
-                >
+                  >
                     <IconPlus size={14} />
-                </ActionIcon>
+                  </ActionIcon>
+                );
+              }
+
+              // When quantity > 0, show - [qty] + pill
+              return (
+                <Box
+                  style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    right: 8,
+                    backgroundColor: 'white',
+                    borderRadius: 999,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '2px 6px',
+                    gap: 4,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ActionIcon
+                    size="xs"
+                    variant="subtle"
+                    color="gray"
+                    radius="xl"
+                    onClick={() => void removeOne()}
+                  >
+                    <IconMinus size={12} />
+                  </ActionIcon>
+                  <Text size="xs" fw={700} style={{ minWidth: 14, textAlign: 'center' }}>
+                    {quantity}
+                  </Text>
+                  <ActionIcon
+                    size="xs"
+                    variant="subtle"
+                    color="orange"
+                    radius="xl"
+                    onClick={() => void addOne()}
+                  >
+                    <IconPlus size={12} />
+                  </ActionIcon>
+                </Box>
+              );
+            })()}
             </Box>
         );
     };
