@@ -378,6 +378,7 @@ serve(async (req) => {
       type: "order_assignment",
       assignment_id: assignment.id,
       order_id: order.id,
+      order_number: (order as any).order_number,
       restaurant_name: restaurant.name || "Test Restaurant",
       restaurant_id: restaurant.id,
       store_type: storeType,

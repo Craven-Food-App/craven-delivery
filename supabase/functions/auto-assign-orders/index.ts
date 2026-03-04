@@ -21,7 +21,7 @@ serve(async (req) => {
     const { orderId } = await req.json();
     console.log('Auto-assigning order:', orderId);
 
-    // Fetch order with restaurant coordinates
+    // Fetch order with restaurant coordinates and public order number
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`*, restaurants!inner(id, name, latitude, longitude)`)
@@ -103,6 +103,7 @@ serve(async (req) => {
           type: 'order_assignment',
           assignment_id: assignment.id,
           order_id: orderId,
+          order_number: (order as any).order_number,
           restaurant_name: restaurant.name,
           pickup_address: order.pickup_address,
           dropoff_address: order.dropoff_address,

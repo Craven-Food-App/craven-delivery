@@ -120,7 +120,7 @@ const NotificationsPage = ({ userId }: NotificationsPageProps) => {
             if (!existingNotif || existingNotif.length === 0) {
               alertsToCreate.push({
                 title: 'Order Ready for Pickup',
-                message: `Order #${order.id.slice(0, 8)} is ready for pickup`,
+                message: `Order #${order.order_number || order.id.slice(0, 8)} is ready for pickup`,
                 notification_type: 'order_ready_pickup',
                 order_id: order.id
               });
@@ -147,7 +147,7 @@ const NotificationsPage = ({ userId }: NotificationsPageProps) => {
                 const minutesLeft = Math.ceil(timeUntilDelivery / 60000);
                 alertsToCreate.push({
                   title: 'Delivery Time Approaching',
-                  message: `You have ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} until delivery time for order #${order.id.slice(0, 8)}`,
+                  message: `You have ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''} until delivery time for order #${order.order_number || order.id.slice(0, 8)}`,
                   notification_type: 'delivery_time_near',
                   order_id: order.id
                 });

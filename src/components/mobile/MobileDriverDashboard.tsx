@@ -805,6 +805,7 @@ export const MobileDriverDashboard: React.FC = () => {
       setCurrentOrderAssignment({
         assignment_id: pp.assignment_id,
         order_id: pp.order_id,
+        order_number: pp.order_number,
         restaurant_name: pp.restaurant_name,
         pickup_address: pp.pickup_address,
         dropoff_address: pp.dropoff_address,
@@ -858,7 +859,7 @@ export const MobileDriverDashboard: React.FC = () => {
       // Fetch order summary to populate modal
       const { data: order } = await supabase
         .from('orders')
-        .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, restaurants(name, restaurant_type, logo_url, image_url)')
+        .select('pickup_address, dropoff_address, payout_cents, distance_km, restaurant_id, order_number, restaurants(name, restaurant_type, logo_url, image_url)')
         .eq('id', assignment.order_id)
         .in('restaurants.name', ['CMIH Kitchen', "Crave'n Stylz"])
         .maybeSingle();
@@ -873,6 +874,7 @@ export const MobileDriverDashboard: React.FC = () => {
         setCurrentOrderAssignment({
           assignment_id: assignment.id,
           order_id: assignment.order_id,
+          order_number: (order as any).order_number,
           restaurant_name: restaurantName,
           pickup_address: order.pickup_address,
           dropoff_address: order.dropoff_address,
@@ -2065,7 +2067,7 @@ export const MobileDriverDashboard: React.FC = () => {
           const toOrderDetails = (s: any) => ({
             id: s.id || s.order_id || 'missing-order-id',
             order_id: s.order_id || s.id,
-            order_number: s.order_number || s.order_id?.slice(-4) || undefined,
+            order_number: s.order_number || activeDelivery.order_number || undefined,
             restaurant_name: s.restaurant_name || activeDelivery.restaurant_name || '',
             pickup_address: s.pickup_address ?? activeDelivery.pickup_address ?? '',
             dropoff_address: s.dropoff_address ?? (typeof s.dropoff_address === 'object' ? s.dropoff_address?.address : null) ?? activeDelivery.dropoff_address ?? '',
@@ -2201,6 +2203,7 @@ export const MobileDriverDashboard: React.FC = () => {
             .from('orders')
             .select(`
               id,
+              order_number,
               subtotal_cents,
               customer_name,
               customer_id,
@@ -2251,6 +2254,7 @@ export const MobileDriverDashboard: React.FC = () => {
             ...currentOrderAssignment,
             order_id: currentOrderAssignment.order_id,
             assignment_id: currentOrderAssignment.assignment_id,
+            order_number: orderData?.order_number ?? (currentOrderAssignment as any).order_number,
             restaurant_name: currentOrderAssignment.restaurant_name,
             pickup_address: currentOrderAssignment.pickup_address,
             dropoff_address: currentOrderAssignment.dropoff_address,

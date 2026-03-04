@@ -83,7 +83,7 @@ export function OrderNotificationSystem({ restaurantId }: { restaurantId: string
 
           const notification: OrderNotification = {
             orderId: order.id,
-            orderNumber: order.id.substring(0, 8).toUpperCase(),
+            orderNumber: (order as any).order_number || order.id.substring(0, 8).toUpperCase(),
             customerName: order.customer_name || 'Customer',
             totalAmount: order.total_amount,
             items: (order.order_items || []) as any,

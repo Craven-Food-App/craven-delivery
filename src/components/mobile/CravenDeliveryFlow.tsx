@@ -1460,7 +1460,7 @@ const CravenDeliveryFlow: React.FC<ActiveDeliveryProps> = ({
                 const isNext = index === currentStopIndex;
                 const name = stop.customer_name || stop.customerName || 'Customer';
                 const address = formatStopAddress(stop.dropoff_address || stop.dropoff_address?.address || stop.address);
-                const orderNum = stop.order_id?.slice(-4) || stop.order_number || String(index + 1);
+                const orderNum = stop.order_number || stop.order_id?.slice(-4) || String(index + 1);
                 const stopNumber = index + 1;
                 return (
                   <div
