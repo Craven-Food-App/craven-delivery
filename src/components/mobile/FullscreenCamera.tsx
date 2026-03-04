@@ -17,6 +17,7 @@ import {
   IconCheck,
   IconArrowLeft
 } from '@tabler/icons-react';
+import { generateBeep } from '@/utils/audioUtils';
 
 interface FullscreenCameraProps {
   isOpen: boolean;
@@ -138,7 +139,12 @@ const FullscreenCamera: React.FC<FullscreenCameraProps> = ({
     }
   };
 
+  const playShutterSound = () => {
+    generateBeep(1200, 80).catch(() => {});
+  };
+
   const capturePhoto = () => {
+    playShutterSound();
     if (cameraError) {
       setIsCapturing(true);
       setTimeout(() => {

@@ -19,6 +19,7 @@ import LoadingScreen from './LoadingScreen';
 import MobileDriverWelcomeScreen from './MobileDriverWelcomeScreen';
 import { SpeedLimitSign } from './SpeedLimitSign';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useResumeAudioOnGesture } from '@/hooks/useResumeAudioOnGesture';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FeederPromotionsTab from './FeederPromotionsTab';
 import { DeliveryZone, getZoneForLocation } from '@/data/deliveryZones';
@@ -455,6 +456,9 @@ export const MobileDriverDashboard: React.FC = () => {
     startTracking,
     stopTracking
   } = useDriverLocation();
+
+  // Resume AudioContext and prime TTS on first tap (required for sounds/read-out-loud in built Android app)
+  useResumeAudioOnGesture();
   
   // Navigation
   const navigate = useNavigate();

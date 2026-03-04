@@ -118,8 +118,9 @@ public class CravenFirebaseMessagingService extends FirebaseMessagingService {
             channel.setVibrationPattern(new long[]{0, 300, 200, 300});
             channel.enableLights(true);
             channel.setShowBadge(true);
+            channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
 
-            // Use default notification sound
+            // Explicitly enable default notification sound (required for sounds to play on many devices)
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -130,7 +131,7 @@ public class CravenFirebaseMessagingService extends FirebaseMessagingService {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
-                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
+                Log.d(TAG, "Notification channel created: " + CHANNEL_ID + " with sound");
             }
         }
     }
