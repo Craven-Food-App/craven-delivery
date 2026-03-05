@@ -185,122 +185,183 @@ export default function Favorites() {
     );
   }
 
+  const cardStyles = {
+    border: '1px solid var(--mantine-color-gray-2)',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'var(--mantine-color-white)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+  };
+
   return (
-    <Box style={{ minHeight: '100vh', backgroundColor: 'var(--mantine-color-gray-0)', paddingBottom: '80px' }}>
-      <Box style={{ maxWidth: isMobile ? '100%' : '1200px', margin: '0 auto', padding: '16px' }}>
-        <Stack gap="lg">
+    <Box style={{ minHeight: '100vh', backgroundColor: '#f8fafc', paddingBottom: '80px' }}>
+      <Box style={{ maxWidth: isMobile ? '100%' : 1120, margin: '0 auto', padding: isMobile ? 20 : 24 }}>
+        <Stack gap={28}>
           {/* Header */}
-          <Box>
-            <Text fw={700} size="2xl" mb="xs">
+          <Box style={{ paddingBottom: 4 }}>
+            <Text fw={600} size="22px" lh={1.3} c="dark.8" mb={4}>
               Your Favorites
             </Text>
-            <Text c="dimmed">
+            <Text size="sm" c="dimmed" style={{ letterSpacing: '0.01em' }}>
               Restaurants and dishes you've saved
             </Text>
           </Box>
 
           {/* Tabs */}
           <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'restaurants')}>
-            <Tabs.List>
-              <Tabs.Tab value="restaurants">
+            <Tabs.List
+              style={{
+                borderBottom: '1px solid var(--mantine-color-gray-2)',
+                gap: 0,
+                marginBottom: 0,
+              }}
+            >
+              <Tabs.Tab
+                value="restaurants"
+                style={{
+                  paddingBottom: 12,
+                  paddingTop: 0,
+                  fontWeight: 500,
+                  fontSize: 14,
+                  color: activeTab === 'restaurants' ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-gray-6)',
+                  borderBottom: activeTab === 'restaurants' ? '2px solid #ff7a00' : '2px solid transparent',
+                  marginBottom: -1,
+                }}
+              >
                 Restaurants ({favoriteRestaurants.length})
               </Tabs.Tab>
-              <Tabs.Tab value="dishes">
+              <Tabs.Tab
+                value="dishes"
+                style={{
+                  paddingBottom: 12,
+                  paddingTop: 0,
+                  fontWeight: 500,
+                  fontSize: 14,
+                  color: activeTab === 'dishes' ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-gray-6)',
+                  borderBottom: activeTab === 'dishes' ? '2px solid #ff7a00' : '2px solid transparent',
+                  marginBottom: -1,
+                }}
+              >
                 Dishes ({favoriteMenuItems.length})
               </Tabs.Tab>
             </Tabs.List>
 
             {/* Restaurants Tab */}
-            <Tabs.Panel value="restaurants" pt="lg">
+            <Tabs.Panel value="restaurants" pt={24}>
               {favoriteRestaurants.length === 0 ? (
-                <Card p="xl">
+                <Card p={40} radius={12} style={{ ...cardStyles, textAlign: 'center' }}>
                   <Stack align="center" gap="md">
-                    <IconHeart size={48} style={{ color: 'var(--mantine-color-gray-4)' }} />
-                    <Text fw={600} size="lg">No Favorite Restaurants</Text>
-                    <Text c="dimmed" ta="center">
-                      Start exploring restaurants and add them to your favorites!
+                    <Box style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--mantine-color-gray-1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <IconHeart size={28} style={{ color: 'var(--mantine-color-gray-4)' }} />
+                    </Box>
+                    <Text fw={600} size="lg" c="dark.7">No favorite restaurants</Text>
+                    <Text size="sm" c="dimmed" ta="center" maw={320}>
+                      Start exploring and add restaurants to your favorites to see them here.
                     </Text>
-                    <Button onClick={() => navigate('/restaurants')} color="#ff7a00">
-                      Browse Restaurants
+                    <Button onClick={() => navigate('/restaurants')} size="sm" variant="light" color="orange" style={{ fontWeight: 500 }}>
+                      Browse restaurants
                     </Button>
                   </Stack>
                 </Card>
               ) : (
-                <Grid gutter="md">
+                <Grid gutter="sm">
                   {favoriteRestaurants.map((restaurant) => (
-                    <Grid.Col key={restaurant.id} span={{ base: 12, sm: 6, md: 4 }}>
+                    <Grid.Col key={restaurant.id} span={{ base: 6, sm: 6, md: 6 }}>
                       <Card
-                        withBorder
-                        p="md"
-                        style={{ cursor: 'pointer', height: '100%' }}
+                        p={0}
+                        radius={12}
+                        style={{ ...cardStyles, cursor: 'pointer', height: '100%' }}
                         onClick={() => navigate(`/restaurant/${restaurant.id}`)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                          e.currentTarget.style.borderColor = 'var(--mantine-color-gray-3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                          e.currentTarget.style.borderColor = 'var(--mantine-color-gray-2)';
+                        }}
                       >
-                        <Stack gap="md">
+                        <Box style={{ position: 'relative' }}>
                           {restaurant.image_url ? (
                             <Image
                               src={restaurant.image_url}
                               alt={restaurant.name}
-                              height={160}
-                              radius="md"
+                              height={140}
                               style={{ objectFit: 'cover' }}
                             />
                           ) : (
                             <Box
                               style={{
-                                height: 160,
-                                backgroundColor: 'var(--mantine-color-gray-2)',
-                                borderRadius: '8px',
+                                height: 140,
+                                backgroundColor: 'var(--mantine-color-gray-1)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                               }}
                             >
-                              <IconMapPin size={48} style={{ color: 'var(--mantine-color-gray-5)' }} />
+                              <IconMapPin size={32} style={{ color: 'var(--mantine-color-gray-4)' }} />
                             </Box>
                           )}
-                          <Stack gap="xs">
-                            <Group justify="space-between">
-                              <Text fw={600} size="lg" lineClamp={1}>
-                                {restaurant.name}
-                              </Text>
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveRestaurantFavorite(restaurant.id);
-                                }}
-                              >
-                                <IconHeart size={20} fill="currentColor" />
-                              </ActionIcon>
-                            </Group>
-                            {restaurant.cuisine_type && (
-                              <Badge variant="outline" size="sm">
-                                {restaurant.cuisine_type}
-                              </Badge>
-                            )}
-                            <Group gap="xs">
-                              {restaurant.rating && (
-                                <Group gap={4}>
-                                  <IconStar size={14} style={{ color: '#f59e0b', fill: '#f59e0b' }} />
-                                  <Text size="sm">{restaurant.rating.toFixed(1)}</Text>
-                                </Group>
-                              )}
-                              {restaurant.delivery_fee_cents !== undefined && (
-                                <Text size="sm" c="dimmed">
-                                  ${(restaurant.delivery_fee_cents / 100).toFixed(2)} delivery
-                                </Text>
-                              )}
-                            </Group>
-                            {restaurant.address && (
-                              <Group gap={4}>
-                                <IconMapPin size={14} style={{ color: 'var(--mantine-color-gray-6)' }} />
-                                <Text size="xs" c="dimmed" lineClamp={1}>
-                                  {restaurant.address}, {restaurant.city}
-                                </Text>
+                          <ActionIcon
+                            variant="white"
+                            size="md"
+                            radius="xl"
+                            style={{
+                              position: 'absolute',
+                              top: 10,
+                              right: 10,
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                              color: '#dc2626',
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRestaurantFavorite(restaurant.id);
+                            }}
+                          >
+                            <IconHeart size={18} fill="currentColor" />
+                          </ActionIcon>
+                        </Box>
+                        <Stack gap="xs" p="sm" style={{ paddingTop: 12, paddingBottom: 14 }}>
+                          <Text fw={600} size="sm" lineClamp={1} c="dark.7">
+                            {restaurant.name}
+                          </Text>
+                          {restaurant.cuisine_type && (
+                            <Badge
+                              variant="light"
+                              size="xs"
+                              color="gray"
+                              style={{
+                                fontWeight: 500,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                width: 'fit-content',
+                              }}
+                            >
+                              {restaurant.cuisine_type}
+                            </Badge>
+                          )}
+                          <Group gap="xs" wrap="nowrap">
+                            {restaurant.rating != null && (
+                              <Group gap={4} wrap="nowrap">
+                                <IconStar size={12} style={{ color: '#f59e0b', fill: '#f59e0b', flexShrink: 0 }} />
+                                <Text size="xs" c="dark.6">{restaurant.rating.toFixed(1)}</Text>
                               </Group>
                             )}
-                          </Stack>
+                            {restaurant.delivery_fee_cents !== undefined && (
+                              <Text size="xs" c="dimmed">
+                                ${(restaurant.delivery_fee_cents / 100).toFixed(2)} delivery
+                              </Text>
+                            )}
+                          </Group>
+                          {restaurant.address && (
+                            <Group gap={6} wrap="nowrap" style={{ marginTop: 2 }}>
+                              <IconMapPin size={12} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
+                              <Text size="xs" c="dimmed" lineClamp={1}>
+                                {restaurant.address}{restaurant.city ? `, ${restaurant.city}` : ''}
+                              </Text>
+                            </Group>
+                          )}
                         </Stack>
                       </Card>
                     </Grid.Col>
@@ -310,82 +371,93 @@ export default function Favorites() {
             </Tabs.Panel>
 
             {/* Dishes Tab */}
-            <Tabs.Panel value="dishes" pt="lg">
+            <Tabs.Panel value="dishes" pt={24}>
               {favoriteMenuItems.length === 0 ? (
-                <Card p="xl">
+                <Card p={40} radius={12} style={{ ...cardStyles, textAlign: 'center' }}>
                   <Stack align="center" gap="md">
-                    <IconHeart size={48} style={{ color: 'var(--mantine-color-gray-4)' }} />
-                    <Text fw={600} size="lg">No Favorite Dishes</Text>
-                    <Text c="dimmed" ta="center">
-                      Browse menus and add your favorite dishes!
+                    <Box style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--mantine-color-gray-1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <IconHeart size={28} style={{ color: 'var(--mantine-color-gray-4)' }} />
+                    </Box>
+                    <Text fw={600} size="lg" c="dark.7">No favorite dishes</Text>
+                    <Text size="sm" c="dimmed" ta="center" maw={320}>
+                      Save dishes from restaurant menus to see them here.
                     </Text>
-                    <Button onClick={() => navigate('/restaurants')} color="#ff7a00">
-                      Browse Restaurants
+                    <Button onClick={() => navigate('/restaurants')} size="sm" variant="light" color="orange" style={{ fontWeight: 500 }}>
+                      Browse restaurants
                     </Button>
                   </Stack>
                 </Card>
               ) : (
-                <Stack gap="md">
+                <Stack gap="sm">
                   {favoriteMenuItems.map((item) => (
                     <Card
                       key={item.id}
-                      withBorder
-                      p="md"
+                      p="sm"
+                      radius={12}
+                      style={{ ...cardStyles, cursor: 'pointer' }}
                       onClick={() => navigate(`/restaurant/${item.restaurant.id}`)}
-                      style={{ cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                        e.currentTarget.style.borderColor = 'var(--mantine-color-gray-3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                        e.currentTarget.style.borderColor = 'var(--mantine-color-gray-2)';
+                      }}
                     >
-                      <Group gap="md" align="flex-start">
-                        {item.image_url ? (
-                          <Image
-                            src={item.image_url}
-                            alt={item.name}
-                            width={80}
-                            height={80}
-                            radius="md"
-                            style={{ objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <Box
-                            style={{
-                              width: 80,
-                              height: 80,
-                              backgroundColor: 'var(--mantine-color-gray-2)',
-                              borderRadius: '8px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <IconShoppingCart size={32} style={{ color: 'var(--mantine-color-gray-5)' }} />
-                          </Box>
-                        )}
-                        <Stack gap="xs" style={{ flex: 1 }}>
-                          <Group justify="space-between">
-                            <Text fw={600} size="md">
+                      <Group gap="md" align="center" wrap="nowrap">
+                        <Box
+                          style={{
+                            width: 72,
+                            height: 72,
+                            borderRadius: 10,
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            backgroundColor: 'var(--mantine-color-gray-1)',
+                          }}
+                        >
+                          {item.image_url ? (
+                            <Image
+                              src={item.image_url}
+                              alt={item.name}
+                              width={72}
+                              height={72}
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <Box style={{ width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <IconShoppingCart size={28} style={{ color: 'var(--mantine-color-gray-4)' }} />
+                            </Box>
+                          )}
+                        </Box>
+                        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                          <Group justify="space-between" wrap="nowrap" gap="xs">
+                            <Text fw={600} size="sm" lineClamp={1} c="dark.7">
                               {item.name}
                             </Text>
                             <ActionIcon
                               variant="subtle"
                               color="red"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRemoveMenuItemFavorite(item.id);
                               }}
                             >
-                              <IconHeart size={18} fill="currentColor" />
+                              <IconHeart size={16} fill="currentColor" />
                             </ActionIcon>
                           </Group>
                           {item.description && (
-                            <Text size="sm" c="dimmed" lineClamp={2}>
+                            <Text size="xs" c="dimmed" lineClamp={2}>
                               {item.description}
                             </Text>
                           )}
-                          <Group justify="space-between">
-                            <Text fw={700} size="lg" c="#ff7a00">
+                          <Group justify="space-between" wrap="nowrap" gap="xs">
+                            <Text fw={600} size="sm" c="#ff7a00">
                               ${(item.price_cents / 100).toFixed(2)}
                             </Text>
-                            <Text size="sm" c="dimmed">
-                              from {item.restaurant.name}
+                            <Text size="xs" c="dimmed" lineClamp={1}>
+                              {item.restaurant.name}
                             </Text>
                           </Group>
                         </Stack>

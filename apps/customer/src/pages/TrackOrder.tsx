@@ -61,6 +61,7 @@ const TrackOrder: React.FC = () => {
   const [feederLocation, setFeederLocation] = useState<{lat: number, lng: number} | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [route, setRoute] = useState<any>(null);
   
   const mapRef = useRef<HTMLDivElement>(null);
@@ -134,6 +135,7 @@ const TrackOrder: React.FC = () => {
   // Initialize map
   useEffect(() => {
     if (!mapLoaded && mapRef.current && (restaurant || order)) {
+      setMapError(null);
       initializeMap();
     }
   }, [mapLoaded, restaurant, order]);
@@ -196,7 +198,17 @@ const TrackOrder: React.FC = () => {
 
       if (feederError) throw feederError;
       
-      setFeeder(feederData);
+      // Fetch feeder's display name from user_profiles
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('user_id', feederId)
+        .maybeSingle();
+
+      setFeeder({
+        ...feederData,
+        full_name: profileData?.full_name ?? null,
+      });
       
       // Set initial feeder location
       if (feederData?.current_latitude && feederData?.current_longitude) {
@@ -222,7 +234,12 @@ const TrackOrder: React.FC = () => {
           link.href = 'https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css';
           link.rel = 'stylesheet';
           document.head.appendChild(link);
-          createMap();
+          link.onload = () => createMap();
+          link.onerror = () => createMap();
+        };
+        script.onerror = () => {
+          setMapError('Map could not be loaded');
+          setMapLoaded(true);
         };
         document.head.appendChild(script);
       } else {
@@ -244,15 +261,29 @@ const TrackOrder: React.FC = () => {
       ? [restaurant.longitude, restaurant.latitude]
       : [-83.5555, 41.6639]; // Toledo default
 
-    mapInstance.current = new mapboxgl.Map({
-      container: mapRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: center,
-      zoom: 13,
-      accessToken: MAPBOX_ACCESS_TOKEN
+    try {
+      mapInstance.current = new mapboxgl.Map({
+        container: mapRef.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: center,
+        zoom: 13,
+      });
+    } catch (err) {
+      console.error('Mapbox Map constructor error:', err);
+      setMapError('Map could not be loaded');
+      setMapLoaded(true);
+      return;
+    }
+
+    const map = mapInstance.current;
+
+    map.on('error', (e: any) => {
+      console.error('Mapbox map error:', e);
+      setMapError('Map could not be loaded');
+      setMapLoaded(true);
     });
 
-    mapInstance.current.on('load', () => {
+    map.on('load', () => {
       setMapLoaded(true);
       
       // Add restaurant marker
@@ -432,6 +463,16 @@ const TrackOrder: React.FC = () => {
     }
   };
 
+  const formatFeederDisplayName = (fullName: string | null | undefined): string => {
+    if (!fullName || typeof fullName !== 'string') return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    const first = parts[0];
+    const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+    return `${first} ${lastInitial}.`;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'yellow';
@@ -577,7 +618,7 @@ const TrackOrder: React.FC = () => {
                   )}
                 </Group>
                 
-                <Box style={{ position: 'relative', height: isMobile ? '200px' : '280px', borderRadius: '6px', overflow: 'hidden', backgroundColor: 'white' }}>
+                <Box style={{ position: 'relative', height: isMobile ? '200px' : '280px', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#f1f5f9' }}>
                   {!mapLoaded && (
                     <Box style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
                       <Stack align="center" gap={4}>
@@ -586,7 +627,12 @@ const TrackOrder: React.FC = () => {
                       </Stack>
                     </Box>
                   )}
-                  <div ref={mapRef} style={{ width: '100%', height: '100%', opacity: mapLoaded ? 1 : 0 }} />
+                  {mapLoaded && mapError && (
+                    <Box style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, backgroundColor: '#f1f5f9' }}>
+                      <Text size="sm" c="dimmed">{mapError}</Text>
+                    </Box>
+                  )}
+                  <div ref={mapRef} style={{ width: '100%', height: '100%', opacity: mapLoaded && !mapError ? 1 : 0, position: mapLoaded && !mapError ? 'relative' : 'absolute' }} />
                 </Box>
 
                 {!feeder && (
@@ -667,7 +713,9 @@ const TrackOrder: React.FC = () => {
                     </Avatar>
                     <Box style={{ flex: 1 }}>
                       <Group justify="space-between" mb={2}>
-                        <Title order={5} style={{ fontSize: '14px', fontWeight: 600 }}>Your Feeder</Title>
+                        <Title order={5} style={{ fontSize: '14px', fontWeight: 600 }}>
+                          {formatFeederDisplayName((feeder as any).full_name) || 'Your Feeder'}
+                        </Title>
                         <Badge color="green" variant="light" size="xs">Assigned</Badge>
                       </Group>
                       <Group gap={4} mb={2}>

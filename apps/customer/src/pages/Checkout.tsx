@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/contexts/CartContext';
+import { useDeliveryAddress } from '@/contexts/DeliveryAddressContext';
+import { safeLocalStorage } from '@/utils/safeStorage';
 import { AddressSelector } from '@/components/checkout/AddressSelector';
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector';
 import { PromoCodeInput } from '@/components/checkout/PromoCodeInput';
@@ -323,6 +325,7 @@ const Checkout: React.FC = () => {
     }
   }, []);
   const { cartItems: contextCartItems, restaurantId: contextRestaurantId, removeFromCart, addToCart: addToCartContext, clearCart } = useCart();
+  const { setSelectedAddress: setDeliveryAddress } = useDeliveryAddress();
   const [cart, setCart] = useState<any[]>([]);
   const [restaurant, setRestaurant] = useState<any>(null);
   const [menuItemImages, setMenuItemImages] = useState<Record<string, string>>({});
@@ -721,23 +724,44 @@ const Checkout: React.FC = () => {
           leaveAtDoor: prefs.default_leave_at_door || settings.default_leave_at_door || false,
         });
 
+        // Delivery address: only from header selection (localStorage) or user's saved default—never hardcoded.
+        let deliveryAddressToUse = address ?? undefined;
+        try {
+          const stored = safeLocalStorage.getItem('selected_delivery_address');
+          if (stored) {
+            const parsed = JSON.parse(stored) as { street_address?: string; city?: string; state?: string; zip_code?: string; apt_suite?: string };
+            if (parsed?.street_address && parsed?.city && parsed?.state && parsed?.zip_code) {
+              deliveryAddressToUse = {
+                street_address: parsed.street_address,
+                apt_suite: parsed.apt_suite,
+                city: parsed.city,
+                state: parsed.state,
+                zip_code: parsed.zip_code,
+                ...(address && { id: address.id, label: address.label, is_default: address.is_default }),
+              } as any;
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+
         // Update form data with profile info (used for order creation, not displayed)
-        if (profile || address || user.email) {
+        if (profile || deliveryAddressToUse || user.email) {
           setFormData(prev => ({
             ...prev,
             name: profile?.full_name || prev.name,
             phone: profile?.phone || prev.phone,
             email: user.email || prev.email,
-            address: address?.street_address || prev.address,
-            aptSuite: address?.apt_suite || prev.aptSuite,
-            city: address?.city || prev.city,
-            state: address?.state || prev.state,
-            zip: address?.zip_code || prev.zip,
+            address: deliveryAddressToUse?.street_address || prev.address,
+            aptSuite: deliveryAddressToUse?.apt_suite || prev.aptSuite,
+            city: deliveryAddressToUse?.city || prev.city,
+            state: deliveryAddressToUse?.state || prev.state,
+            zip: deliveryAddressToUse?.zip_code || prev.zip,
           }));
           
           // Store customer address for card billing address
-          if (address) {
-            setCustomerAddress(address);
+          if (deliveryAddressToUse) {
+            setCustomerAddress(deliveryAddressToUse);
             // Note: CardForm component handles its own state for cardholder name and ZIP
           }
         }
@@ -1041,15 +1065,24 @@ const Checkout: React.FC = () => {
   );
 
   const handleAddressSelect = (address: any) => {
-    setFormData({
-      ...formData,
-      name: address.name || '',
+    setFormData(prev => ({
+      ...prev,
+      name: address.name || prev.name,
       address: address.address || '',
       aptSuite: address.apt_suite || '',
       city: address.city || '',
       state: address.state || '',
       zip: address.zip || ''
-    });
+    }));
+    if (address?.address && address?.city && address?.state && address?.zip) {
+      setDeliveryAddress({
+        street_address: address.address,
+        apt_suite: address.apt_suite || undefined,
+        city: address.city,
+        state: address.state,
+        zip_code: address.zip,
+      });
+    }
   };
 
   // Format phone number for display
@@ -2338,46 +2371,36 @@ const Checkout: React.FC = () => {
           <div
             style={{
               background: '#ffffff',
-              padding: '20px 24px 16px',
+              padding: '12px 16px 8px',
               animation: 'vaultHeaderGlow 0.4s ease-out both',
               position: 'relative',
             }}
           >
-            <div className="flex items-center justify-center mb-4">
-              <div style={{
-                width: '40px', height: '4px', borderRadius: '4px',
-                background: '#e5e7eb',
-              }} />
+            <div className="flex items-center justify-center mb-1">
+              <div style={{ width: '24px', height: '2px', borderRadius: '2px', background: '#e5e7eb' }} />
             </div>
 
             <SheetHeader className="mb-0">
-              <div className="flex items-center justify-center gap-2.5 mb-1">
-                {/* Orange shield icon */}
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ animation: 'vaultShieldPulse 3s ease-in-out infinite' }}>
+              <div className="flex items-center justify-center gap-1.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ animation: 'vaultShieldPulse 3s ease-in-out infinite' }}>
                   <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7L12 2z" fill="url(#shieldGrad)" stroke="rgba(234,119,8,0.15)" strokeWidth="0.5"/>
                   <path d="M10 12l2 2 4-4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <defs><linearGradient id="shieldGrad" x1="3" y1="2" x2="21" y2="22"><stop stopColor="#f97316"/><stop offset="1" stopColor="#ea580c"/></linearGradient></defs>
                 </svg>
-                <SheetTitle className="text-center text-lg font-bold text-gray-900 tracking-tight" style={{ letterSpacing: '-0.02em' }}>
+                <SheetTitle className="text-center text-sm font-bold text-gray-900 tracking-tight" style={{ letterSpacing: '-0.02em' }}>
                   Payment
                 </SheetTitle>
               </div>
-              <SheetDescription className="text-center text-[11px] text-gray-400 font-medium" style={{ letterSpacing: '0.05em' }}>
+              <SheetDescription className="text-center text-[9px] text-gray-400 font-medium" style={{ letterSpacing: '0.04em' }}>
                 SECURE • ENCRYPTED • INSTANT
               </SheetDescription>
             </SheetHeader>
 
-            {/* Subtle separator */}
-            <div style={{
-              height: '1px', marginTop: '14px',
-              background: 'linear-gradient(90deg, transparent, #e5e7eb, transparent)',
-              animation: 'vaultLineExpand 0.6s ease-out 0.2s both',
-              transformOrigin: 'center',
-            }} />
+            <div style={{ height: '1px', marginTop: '6px', background: 'linear-gradient(90deg, transparent, #e5e7eb, transparent)', transformOrigin: 'center' }} />
           </div>
 
           {!showPaymentSetup ? (
-            <div style={{ padding: '12px 20px 28px', background: '#ffffff' }}>
+            <div style={{ padding: '4px 12px 12px', background: '#ffffff' }}>
               {/* Saved card — highlighted at top */}
               {hasPaymentMethods && selectedPaymentMethod && (
                 <button
@@ -2385,33 +2408,33 @@ const Checkout: React.FC = () => {
                   className="vault-card-deal"
                   style={{
                     animationDelay: '0.05s',
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '14px 16px', marginBottom: '10px',
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 10px', marginBottom: '4px',
                     background: '#fff',
-                    border: '2px solid #f97316',
-                    borderRadius: '16px', cursor: 'pointer',
-                    boxShadow: '0 2px 12px rgba(249,115,22,0.1)',
+                    border: '1.5px solid #f97316',
+                    borderRadius: '10px', cursor: 'pointer',
+                    boxShadow: '0 1px 4px rgba(249,115,22,0.1)',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(249,115,22,0.15)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(249,115,22,0.1)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 2px 10px rgba(249,115,22,0.12)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(249,115,22,0.1)'; }}
                 >
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '12px',
+                    width: '30px', height: '30px', borderRadius: '8px',
                     background: 'linear-gradient(135deg, #f97316, #ea580c)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>
-                    <CreditCard className="w-5 h-5 text-white" />
+                    <CreditCard className="text-white" style={{ width: 14, height: 14 }} />
                   </div>
                   <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: 600, fontSize: '12px', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {selectedPaymentMethod.type === 'card'
                         ? `${(selectedPaymentMethod.brand || 'Card').charAt(0).toUpperCase() + (selectedPaymentMethod.brand || 'card').slice(1)} •••• ${selectedPaymentMethod.last4}`
                         : `Bank Account •••• ${selectedPaymentMethod.last4}`}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#f97316', fontWeight: 500, letterSpacing: '0.03em' }}>Saved • Tap to pay now</div>
+                    <div style={{ fontSize: '9px', color: '#f97316', fontWeight: 500 }}>Saved • Tap to pay now</div>
                   </div>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#f97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
               )}
 
@@ -2496,29 +2519,29 @@ const Checkout: React.FC = () => {
                   className="vault-card-deal"
                   style={{
                     animationDelay: `${0.08 + i * 0.07}s`,
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '14px 16px', marginBottom: '8px',
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 10px', marginBottom: '3px',
                     background: method.bgGrad,
                     border: method.iconBorder,
-                    borderRadius: '16px', cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
-                    transition: 'transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s',
+                    borderRadius: '10px', cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.08)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)'; }}
                 >
                   <div style={{
-                    width: '48px', height: '34px', borderRadius: '8px', overflow: 'hidden',
+                    width: '34px', height: '24px', borderRadius: '5px', overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                   }}>
                     {method.logo}
                   </div>
-                  <div style={{ flex: 1, textAlign: 'left' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#111827', letterSpacing: '-0.01em' }}>{method.label}</div>
-                    <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 400, marginTop: '1px' }}>{method.sub}</div>
+                  <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '12px', color: '#111827' }}>{method.label}</div>
+                    <div style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 400 }}>{method.sub}</div>
                   </div>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.3 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.3 }}>
                     <path d="M9 18l6-6-6-6" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
@@ -2527,8 +2550,8 @@ const Checkout: React.FC = () => {
               {/* Security footer */}
               <div className="vault-card-deal" style={{
                 animationDelay: '0.6s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                padding: '12px 0 4px', opacity: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px',
+                padding: '4px 0 0', opacity: 0,
               }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                   <rect x="3" y="11" width="18" height="11" rx="2" stroke="#d1d5db" strokeWidth="2"/>
@@ -2540,17 +2563,17 @@ const Checkout: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div style={{ padding: '20px 20px 28px', background: '#ffffff' }}>
+            <div style={{ padding: '8px 12px 12px', background: '#ffffff' }}>
               <button
                 onClick={() => { setShowPaymentSetup(false); setSelectedPaymentType(null); }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  fontSize: '13px', color: '#6b7280', fontWeight: 500,
+                  display: 'flex', alignItems: 'center', gap: '3px',
+                  fontSize: '11px', color: '#6b7280', fontWeight: 500,
                   background: 'none', border: 'none', cursor: 'pointer',
-                  marginBottom: '16px', padding: '4px 0',
+                  marginBottom: '8px', padding: '0',
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Back to methods
               </button>
               
@@ -3699,7 +3722,7 @@ const GiftForm: React.FC<{
           </div>
           <div>
             <label className={labelCls}>Phone *</label>
-            <input type="tel" placeholder="(567) 225-1495" value={formData.recipientPhone}
+            <input type="tel" placeholder="(555) 000-0000" value={formData.recipientPhone}
               onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
               required className={inputCls} />
           </div>
@@ -3816,7 +3839,7 @@ const AddPhoneForm: React.FC<{
           <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
           <input
             type="tel"
-            placeholder="(567) 225-1495"
+            placeholder="(555) 000-0000"
             value={phoneNumber}
             onChange={handlePhoneChange}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"

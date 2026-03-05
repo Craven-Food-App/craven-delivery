@@ -27,6 +27,7 @@ import AuthModal from "./auth/AuthModal";
 import AddressSelector from "./address/AddressSelector";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { useCart } from "@/contexts/CartContext";
+import { useDeliveryAddress } from "@/contexts/DeliveryAddressContext";
 import {
   Popover,
   PopoverContent,
@@ -54,8 +55,9 @@ const Header = () => {
   const { isMerchant, merchantLoading } = useMerchantStatus(user?.id || null);
   const restaurantsVisible = useFeatureFlag('feature_restaurants_visible');
   
-  // Get cart from context
+  // Get cart and delivery address from context
   const { cartItems, cartCount, removeFromCart, updateCartItem, getCartTotal, clearCart } = useCart();
+  const { setSelectedAddress: setDeliveryAddress } = useDeliveryAddress();
   
   // Check if on feeder subdomain
   const isFeederSubdomain = typeof window !== 'undefined' && 
@@ -227,7 +229,22 @@ const Header = () => {
               {user ? (
                 <AddressSelector 
                   userId={user.id} 
-                  onAddressChange={(address) => setSelectedAddress(address)} 
+                  onAddressChange={(address) => {
+                    setSelectedAddress(address);
+                    if (address) {
+                      setDeliveryAddress({
+                        id: address.id,
+                        label: address.label,
+                        street_address: address.street_address,
+                        city: address.city,
+                        state: address.state,
+                        zip_code: address.zip_code,
+                        is_default: address.is_default,
+                      });
+                    } else {
+                      setDeliveryAddress(null);
+                    }
+                  }} 
                 />
               ) : (
                 <div className="flex items-center space-x-2 text-muted-foreground">

@@ -90,6 +90,7 @@ import {
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useDeliveryAddress } from '@/contexts/DeliveryAddressContext';
 import { Capacitor } from '@capacitor/core';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravenCLogo from "@/assets/craven-c-new.png";
@@ -241,12 +242,12 @@ const RestaurantCard = ({
   );
 };
 
-// Legacy hardcoded address: treat as empty so URL/bookmarks don't keep using it
-const LEGACY_DEFAULT_ADDRESS = '6759 Nebraska Ave';
+// Legacy placeholder: treat as empty so this is never used in cart/checkout or as default (address comes from DeliveryAddressContext or saved addresses only).
+const LEGACY_PLACEHOLDER_ADDRESS = '6759 Nebraska Ave';
 function normalizeInitialLocation(urlLocation: string | null): string {
   const s = (urlLocation || '').trim();
   if (!s) return '';
-  if (s === LEGACY_DEFAULT_ADDRESS || s.startsWith(LEGACY_DEFAULT_ADDRESS + ',') || s.includes('6759 Nebraska Ave')) return '';
+  if (s === LEGACY_PLACEHOLDER_ADDRESS || s.startsWith(LEGACY_PLACEHOLDER_ADDRESS + ',') || s.includes(LEGACY_PLACEHOLDER_ADDRESS)) return '';
   return s;
 }
 
@@ -354,8 +355,9 @@ const Restaurants = () => {
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
   const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
   
-  // Get cart from context
+  // Get cart and delivery address from context
   const { cartCount, cartItems: contextCartItems, getCartTotal, removeFromCart: removeFromCartContext } = useCart();
+  const { setSelectedAddress: setDeliveryAddress, selectedAddress } = useDeliveryAddress();
   
   // Emoji mapping for cuisine types
   const getCuisineEmoji = (cuisine: string) => {
@@ -830,6 +832,12 @@ const Restaurants = () => {
             color: 'orange',
           });
         }
+        setDeliveryAddress({
+          street_address: parsed.street_address,
+          city: parsed.city,
+          state: parsed.state,
+          zip_code: parsed.zip_code,
+        });
       } else {
         // If we don't have full data, just set the location
         notifications.show({
@@ -903,6 +911,15 @@ const Restaurants = () => {
     setAddressSuggestions([]);
     setAddressSuggestionsData([]);
     setShowAddressSelector(false);
+    setDeliveryAddress({
+      id: address.id,
+      label: address.label,
+      street_address: address.street_address,
+      city: address.city,
+      state: address.state,
+      zip_code: address.zip_code,
+      is_default: address.is_default,
+    });
     notifications.show({
       title: "Location Updated",
       message: `Delivery address set to ${address.label || fullAddress}`,
@@ -1201,6 +1218,14 @@ const Restaurants = () => {
     fetchAdPlacements();
     fetchSavedAddresses();
   }, []);
+
+  // Sync header-selected delivery address to this page's location so the bar shows the same address
+  useEffect(() => {
+    if (selectedAddress?.street_address && selectedAddress?.city && selectedAddress?.state && selectedAddress?.zip_code) {
+      const full = `${selectedAddress.street_address}, ${selectedAddress.city}, ${selectedAddress.state} ${selectedAddress.zip_code}`;
+      setLocation((prev) => (prev === full ? prev : full));
+    }
+  }, [selectedAddress?.street_address, selectedAddress?.city, selectedAddress?.state, selectedAddress?.zip_code]);
 
   // Fetch addresses when selector opens
   useEffect(() => {

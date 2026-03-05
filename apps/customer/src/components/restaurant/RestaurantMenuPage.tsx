@@ -73,6 +73,7 @@ import { supabase } from '@/integrations/supabase/client';
 import cravenLogo from "@/assets/craven-logo.png";
 import cravemoreIcon from "@/assets/cravemore-icon.png";
 import { useCart } from '@/contexts/CartContext';
+import { useDeliveryAddress } from '@/contexts/DeliveryAddressContext';
 import { getLogoBackgroundColor } from '@/utils/logoUtils';
 import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 import RetailItemDetailModal from '@/components/retail/RetailItemDetailModal';
@@ -343,6 +344,7 @@ const RestaurantMenuPage = () => {
     updateCartItem: updateCartItemContext,
     clearCart,
   } = useCart();
+  const { selectedAddress: contextDeliveryAddress } = useDeliveryAddress();
   const [loading, setLoading] = useState(true);
 
   // New state for header and side menu
@@ -534,8 +536,12 @@ const RestaurantMenuPage = () => {
     setIsMenuCompressed(true);
   }, [id]);
 
-  // Set location from customer's saved default address only (no hardcoded address)
+  // Set location from header-selected delivery address (context) or customer's saved default
   useEffect(() => {
+    if (contextDeliveryAddress?.street_address && contextDeliveryAddress?.city && contextDeliveryAddress?.state && contextDeliveryAddress?.zip_code) {
+      setLocation(`${contextDeliveryAddress.street_address}, ${contextDeliveryAddress.city}, ${contextDeliveryAddress.state} ${contextDeliveryAddress.zip_code}`);
+      return;
+    }
     const loadDefaultAddress = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -551,7 +557,7 @@ const RestaurantMenuPage = () => {
       }
     };
     loadDefaultAddress();
-  }, []);
+  }, [contextDeliveryAddress?.street_address, contextDeliveryAddress?.city, contextDeliveryAddress?.state, contextDeliveryAddress?.zip_code]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
+import { DeliveryAddressProvider } from "@/contexts/DeliveryAddressContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SuspenseLoader from "@/components/SuspenseLoader";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -139,6 +140,7 @@ function App() {
               >
                 <ScrollToTop />
                 <CartProvider>
+                  <DeliveryAddressProvider>
                   <SafeAreaProvider>
                     <InstallAppBanner />
                     
@@ -204,6 +206,7 @@ function App() {
                     {/* Global bottom navigation */}
                     <GlobalMobileBottomNav />
                   </SafeAreaProvider>
+                  </DeliveryAddressProvider>
                 </CartProvider>
               </BrowserRouter>
             </TooltipProvider>
