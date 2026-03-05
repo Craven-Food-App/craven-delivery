@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Modal, Stack, Text, Title, Button, Group } from '@mantine/core';
 import { IconLock, IconShoppingCart, IconUser, IconArrowLeft } from '@tabler/icons-react';
+import LocationDisclosure from '@/components/LocationDisclosure';
+import { hasLocationDisclosureConsent } from '@/utils/locationDisclosure';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +19,7 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showLocationDisclosure, setShowLocationDisclosure] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,10 +28,13 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       const { data: { session } } = await supabase.auth.getSession();
       const authenticated = !!session;
       setIsAuthenticated(authenticated);
-      
-      // Show modal if not authenticated
+
       if (!authenticated) {
+        // Show modal if not authenticated
         setShowAuthModal(true);
+      } else if (!hasLocationDisclosureConsent()) {
+        // User is authenticated but has not seen the prominent location disclosure yet
+        setShowLocationDisclosure(true);
       }
     };
 
@@ -39,6 +45,9 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       setIsAuthenticated(authenticated);
       if (authenticated) {
         setShowAuthModal(false);
+        if (!hasLocationDisclosureConsent()) {
+          setShowLocationDisclosure(true);
+        }
       }
     });
 
@@ -61,6 +70,20 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // If authenticated but we still need to show the location disclosure, gate here.
+  if (isAuthenticated && showLocationDisclosure) {
+    return (
+      <LocationDisclosure
+        onDone={() => {
+          // We don't need the enabled flag here yet; the important part is that
+          // the user saw the disclosure immediately before any permission request.
+          setShowLocationDisclosure(false);
+        }}
+        privacyPolicyUrl="https://cravenusa.com/privacy"
+      />
     );
   }
 

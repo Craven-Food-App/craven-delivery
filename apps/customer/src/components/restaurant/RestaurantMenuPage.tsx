@@ -648,65 +648,93 @@ const RestaurantMenuPage = () => {
 
     // Set pickup info when restaurant data is loaded
   useEffect(() => {
-        if (restaurant && deliveryMethod === 'pickup' && restaurant.latitude && restaurant.longitude) {
-            // Try to get user's current location with high accuracy
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const userLat = position.coords.latitude;
-                        const userLng = position.coords.longitude;
-                        const accuracy = position.coords.accuracy; // Accuracy in meters
-                        const walkingInfo = calculateWalkingDistance(
-                            userLat,
-                            userLng,
-                            restaurant.latitude!,
-                            restaurant.longitude!
-                        );
-                        
-                        console.log('Walking distance calculation:', {
-                            userLat: userLat.toFixed(8),
-                            userLng: userLng.toFixed(8),
-                            restaurantLat: restaurant.latitude!.toFixed(8),
-                            restaurantLng: restaurant.longitude!.toFixed(8),
-                            accuracy: `${accuracy}m`,
-                            walkTime: walkingInfo.time,
-                            walkDistance: walkingInfo.distance
-                        });
-                        
-            setPickupInfo({
-                address: restaurant.address,
-                            walkTime: walkingInfo.time,
-                            walkDistance: walkingInfo.distance,
-                readyTime: restaurant.min_delivery_time || 15
-            });
-                    },
-                    (error) => {
-                        // If geolocation fails, default to minimal values
-                        console.error('Error getting location:', error);
-                        setPickupInfo({
-                            address: restaurant.address,
-                            walkTime: 1,
-                            walkDistance: '0 ft',
-                            readyTime: restaurant.min_delivery_time || 15
-                        });
-                    },
-                    {
-                        enableHighAccuracy: true, // Use GPS if available for maximum precision
-                        timeout: 15000, // Increased timeout for high accuracy
-                        maximumAge: 0 // Don't use cached location, get fresh one
-                    }
-                );
-            } else {
-                // Browser doesn't support geolocation, default to minimal values
-                setPickupInfo({
-                    address: restaurant.address,
-                    walkTime: 1,
-                    walkDistance: '0 ft',
-                    readyTime: restaurant.min_delivery_time || 15
-                });
-            }
+    if (!restaurant || deliveryMethod !== 'pickup' || !restaurant.latitude || !restaurant.longitude) {
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const seen = localStorage.getItem('craven_location_disclosure_v1') === 'true';
+      if (!seen) {
+        // Do not trigger OS geolocation permission before disclosure; show defaults.
+        setPickupInfo({
+          address: restaurant.address,
+          walkTime: 1,
+          walkDistance: '0 ft',
+          readyTime: restaurant.min_delivery_time || 15
+        });
+        return;
+      }
+    } catch {
+      setPickupInfo({
+        address: restaurant.address,
+        walkTime: 1,
+        walkDistance: '0 ft',
+        readyTime: restaurant.min_delivery_time || 15
+      });
+      return;
+    }
+
+    // Try to get user's current location with high accuracy
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+          const accuracy = position.coords.accuracy; // Accuracy in meters
+          const walkingInfo = calculateWalkingDistance(
+            userLat,
+            userLng,
+            restaurant.latitude!,
+            restaurant.longitude!
+          );
+
+          console.log('Walking distance calculation:', {
+            userLat: userLat.toFixed(8),
+            userLng: userLng.toFixed(8),
+            restaurantLat: restaurant.latitude!.toFixed(8),
+            restaurantLng: restaurant.longitude!.toFixed(8),
+            accuracy: `${accuracy}m`,
+            walkTime: walkingInfo.time,
+            walkDistance: walkingInfo.distance
+          });
+
+          setPickupInfo({
+            address: restaurant.address,
+            walkTime: walkingInfo.time,
+            walkDistance: walkingInfo.distance,
+            readyTime: restaurant.min_delivery_time || 15
+          });
+        },
+        (error) => {
+          // If geolocation fails, default to minimal values
+          console.error('Error getting location:', error);
+          setPickupInfo({
+            address: restaurant.address,
+            walkTime: 1,
+            walkDistance: '0 ft',
+            readyTime: restaurant.min_delivery_time || 15
+          });
+        },
+        {
+          enableHighAccuracy: true, // Use GPS if available for maximum precision
+          timeout: 15000, // Increased timeout for high accuracy
+          maximumAge: 0 // Don't use cached location, get fresh one
         }
-    }, [restaurant, deliveryMethod]);
+      );
+    } else {
+      // Browser doesn't support geolocation, default to minimal values
+      setPickupInfo({
+        address: restaurant.address,
+        walkTime: 1,
+        walkDistance: '0 ft',
+        readyTime: restaurant.min_delivery_time || 15
+      });
+    }
+  }, [restaurant, deliveryMethod]);
 
   const fetchRestaurantData = async () => {
     try {

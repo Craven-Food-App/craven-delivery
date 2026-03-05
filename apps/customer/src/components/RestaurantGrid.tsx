@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import RestaurantCard from "./RestaurantCard";
+import { hasLocationDisclosureConsent } from "@/utils/locationDisclosure";
 
 // Module-level geolocation cache — request location once, share across all instances
 let _geoCache: { lat: number; lng: number } | null = null;
@@ -12,6 +13,14 @@ function getSharedUserLocation(cb: (loc: { lat: number; lng: number } | null) =>
   _geoCallbacks.push(cb);
   if (_geoRequested) return; // already in-flight
   _geoRequested = true;
+  if (!hasLocationDisclosureConsent()) {
+    // User has not seen the prominent disclosure yet; do not trigger OS
+    // location permission. Resolve callbacks with null so callers can fall
+    // back to default behavior.
+    _geoCallbacks.forEach((fn) => fn(null));
+    _geoCallbacks = [];
+    return;
+  }
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {

@@ -466,8 +466,16 @@ const Restaurants = () => {
     });
   }, []);
 
-  // Get user's current location for distance calculations
+  // Get user's current location for distance calculations, but only after the
+  // prominent location disclosure has been shown at least once.
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const seen = localStorage.getItem('craven_location_disclosure_v1') === 'true';
+      if (!seen) return;
+    } catch {
+      return;
+    }
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
