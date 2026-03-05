@@ -2917,9 +2917,13 @@ const Checkout: React.FC = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Deals Modal */}
+      {/* Deals Modal — cap height so it never goes behind the checkout (CMIH Kitchen) header */}
       <Sheet open={showDealsModal} onOpenChange={setShowDealsModal}>
-        <SheetContent side="bottom" className="h-auto max-h-[60vh] rounded-t-2xl px-4 pt-3 pb-4 overflow-hidden">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl px-4 pt-3 pb-4 overflow-hidden"
+          style={{ maxHeight: 'min(50vh, calc(100vh - 80px))' }}
+        >
           <div className="flex items-center justify-center mb-1.5">
             <div className="w-10 h-1 bg-gray-300 rounded-full"></div>
           </div>

@@ -505,8 +505,33 @@ const Restaurants = () => {
     setSearchParams(params);
   }, [searchQuery, location, cuisineFilter, sortBy, setSearchParams]);
 
+  // Scroll to results section. Works when the scroll container is window OR an inner div (e.g. MobileLayout).
+  const scrollToResults = useCallback(() => {
+    const el = resultsRef.current;
+    if (!el) return;
+    const scrollParent = (() => {
+      let p: HTMLElement | null = el.parentElement;
+      while (p) {
+        const style = getComputedStyle(p);
+        const oy = style.overflowY || style.overflow;
+        if ((oy === 'auto' || oy === 'scroll' || oy === 'overlay') && p.scrollHeight > p.clientHeight) return p;
+        p = p.parentElement;
+      }
+      return null;
+    })();
+    const offset = 80;
+    if (scrollParent) {
+      const elRect = el.getBoundingClientRect();
+      const parentRect = scrollParent.getBoundingClientRect();
+      const targetScrollTop = scrollParent.scrollTop + (elRect.top - parentRect.top) - offset;
+      scrollParent.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   const handleSearch = () => {
-    resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToResults();
   };
 
   // Handle login submission - phone or email
@@ -1316,11 +1341,8 @@ const Restaurants = () => {
           setTimeout(() => {
             window.scrollBy({ top: -100, behavior: 'smooth' });
           }, 300);
-        } else if (resultsRef.current) {
-          resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          setTimeout(() => {
-            window.scrollBy({ top: -100, behavior: 'smooth' });
-          }, 300);
+        } else {
+          setTimeout(() => scrollToResults(), 100);
         }
       }, 100);
     }
@@ -2292,7 +2314,8 @@ const Restaurants = () => {
               }} className="scrollbar-hide">
                 {allFilters.slice(0, Math.ceil(allFilters.length / 2)).map((filter) => {
                   const emoji = getFilterEmoji(filter);
-                  const isActive = cuisineFilter === filter.toLowerCase();
+                  const slug = filter.toLowerCase().replace(/\s+/g, '-');
+                  const isActive = cuisineFilter === slug;
                   return (
                     <Button
                       key={filter}
@@ -2300,8 +2323,8 @@ const Restaurants = () => {
                       size="xs"
                       radius="md"
                       onClick={() => {
-                        const slug = filter.toLowerCase().replace(/\s+/g, '-');
-                        navigate(`/restaurants/cuisine/${slug}`);
+                        setCuisineFilter(slug);
+                        setTimeout(() => scrollToResults(), 150);
                       }}
                       style={{ 
                         backgroundColor: isActive ? '#ff5f1f' : 'white', 
@@ -2338,7 +2361,8 @@ const Restaurants = () => {
               }} className="scrollbar-hide">
                 {allFilters.slice(Math.ceil(allFilters.length / 2)).map((filter) => {
                   const emoji = getFilterEmoji(filter);
-                  const isActive = cuisineFilter === filter.toLowerCase();
+                  const slug = filter.toLowerCase().replace(/\s+/g, '-');
+                  const isActive = cuisineFilter === slug;
                   return (
                     <Button
                       key={filter}
@@ -2346,8 +2370,8 @@ const Restaurants = () => {
                       size="xs"
                       radius="md"
                       onClick={() => {
-                        const slug = filter.toLowerCase().replace(/\s+/g, '-');
-                        navigate(`/restaurants/cuisine/${slug}`);
+                        setCuisineFilter(slug);
+                        setTimeout(() => scrollToResults(), 150);
                       }}
                       style={{ 
                         backgroundColor: isActive ? '#ff5f1f' : 'white', 
@@ -2785,35 +2809,38 @@ const Restaurants = () => {
 
             {/* Restaurants (excluding retail/apparel) */}
             <Box ref={restaurantsSectionRef} id="restaurants-section" data-section="restaurants">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
                 cuisineFilter={undefined}
                 excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                 sectionTitle="Restaurants Near You"
                 horizontal={true}
+                useMarketplaceCatalog={true}
               />
             </Box>
 
             {/* Late Nate Hunger */}
             <div ref={lateNateHungerSectionRef}>
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
                 cuisineFilter="late nate hunger"
                 sectionTitle="🌙 Late Nate Hunger"
                 horizontal={true}
+                useMarketplaceCatalog={true}
               />
             </div>
 
             {/* Kids */}
             <div ref={kidsSectionRef} id="kids-section" data-section="kids">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
                 cuisineFilter="kids"
                 sectionTitle="🧒 Kids Menu"
                 horizontal={true}
+                useMarketplaceCatalog={true}
               />
             </div>
 
@@ -2830,23 +2857,25 @@ const Restaurants = () => {
 
             {/* Apparel */}
             <Box ref={apparelSectionRef} id="apparel-section" data-section="apparel">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
                 cuisineFilter="apparel"
                 sectionTitle="👗 Apparel & Fashion"
                 horizontal={true}
+                useMarketplaceCatalog={true}
               />
             </Box>
 
             {/* Retail */}
             <div ref={retailSectionRef} id="retail-section" data-section="retail">
-              <RestaurantGrid 
-                searchQuery={searchQuery} 
-                deliveryAddress={location} 
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
                 cuisineFilter="retail"
                 sectionTitle="🏪 Retail Stores"
                 horizontal={true}
+                useMarketplaceCatalog={true}
               />
             </div>
 
@@ -2856,11 +2885,12 @@ const Restaurants = () => {
                 <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
                   <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Browse All</Title>
                 </Group>
-                <RestaurantGrid 
-                  searchQuery={searchQuery} 
-                  deliveryAddress={location} 
+                <RestaurantGrid
+                  searchQuery={searchQuery}
+                  deliveryAddress={location}
                   cuisineFilter={cuisineFilter}
                   columns={2}
+                  useMarketplaceCatalog={true}
                 />
               </Box>
             </Box>
@@ -3355,7 +3385,7 @@ const Restaurants = () => {
                     radius="md"
                     onClick={() => {
                       setCuisineFilter(cuisine.toLowerCase());
-                      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setTimeout(() => scrollToResults(), 150);
                     }}
                     style={{ 
                       backgroundColor: isActive ? '#ff5f1f' : 'white', 
@@ -3401,7 +3431,7 @@ const Restaurants = () => {
                     radius="md"
                     onClick={() => {
                       setCuisineFilter(cuisine.toLowerCase());
-                      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setTimeout(() => scrollToResults(), 150);
                     }}
                     style={{ 
                       backgroundColor: isActive ? '#ff5f1f' : 'white', 
@@ -3611,26 +3641,29 @@ const Restaurants = () => {
                       excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                       sectionTitle="Restaurants Near You"
                       horizontal={true}
+                      useMarketplaceCatalog={true}
                     />
                   </div>
 
                   <div className="mb-4">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
                       cuisineFilter="late nate hunger"
                       sectionTitle="🌙 Late Nate Hunger"
                       horizontal={true}
+                      useMarketplaceCatalog={true}
                     />
                   </div>
 
                   <div className="mb-4">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
                       cuisineFilter="kids"
                       sectionTitle="🧒 Kids Menu"
                       horizontal={true}
+                      useMarketplaceCatalog={true}
                     />
                   </div>
 
@@ -3644,22 +3677,24 @@ const Restaurants = () => {
                   </div>
 
                   <div className="mb-4">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
                       cuisineFilter="apparel"
                       sectionTitle="👗 Apparel & Fashion"
                       horizontal={true}
+                      useMarketplaceCatalog={true}
                     />
                   </div>
 
                   <div className="mb-8">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
                       cuisineFilter="retail"
                       sectionTitle="🏪 Retail Stores"
                       horizontal={true}
+                      useMarketplaceCatalog={true}
                     />
                   </div>
                 </>
@@ -3716,13 +3751,14 @@ const Restaurants = () => {
                   </div>
 
                   {/* Apparel Stores - Horizontal Scrollable Row */}
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
+                  <RestaurantGrid
+                    searchQuery={searchQuery}
+                    deliveryAddress={location}
                     cuisineFilter="apparel"
                     sectionTitle="Apparel Stores"
                     horizontal={true}
                     categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
+                    useMarketplaceCatalog={true}
                   />
                 </>
               ) : (
@@ -3732,6 +3768,7 @@ const Restaurants = () => {
                   deliveryAddress={location} 
                   cuisineFilter={cuisineFilter}
                   horizontal={true}
+                  useMarketplaceCatalog={true}
                 />
               )}
             </div>

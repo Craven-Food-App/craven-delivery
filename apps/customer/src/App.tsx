@@ -45,6 +45,7 @@ import MyCredits from "@/pages/MyCredits";
 import InviteFriends from "@/pages/InviteFriends";
 import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
+import MarketDemand from "@/pages/admin/MarketDemand";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance.tsx";
@@ -194,6 +195,7 @@ function App() {
                     {/* Support & Admin - Protected */}
                     <Route path="/customer-support" element={<ProtectedRoute><CustomerSupportChat /></ProtectedRoute>} />
                     <Route path="/admin/promo" element={<ProtectedRoute><PromoManagement /></ProtectedRoute>} />
+                    <Route path="/admin/market-demand" element={<ProtectedRoute><MarketDemand /></ProtectedRoute>} />
                     
                     {/* Redirects & Fallback */}
                     <Route path="/customer-dashboard" element={<Navigate to="/restaurants" replace />} />

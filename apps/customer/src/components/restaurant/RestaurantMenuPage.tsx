@@ -1054,24 +1054,22 @@ const RestaurantMenuPage = () => {
         // Try to find the section by ID (desktop) or ID-mobile (mobile)
         let section = document.getElementById(sectionId);
         if (!section) {
-            // Try mobile version
             section = document.getElementById(`${sectionId}-mobile`);
         }
-        if (!section) {
-            // Try desktop version if we were looking for mobile
-            if (sectionId.endsWith('-mobile')) {
-                section = document.getElementById(sectionId.replace('-mobile', ''));
-            }
+        if (!section && sectionId.endsWith('-mobile')) {
+            section = document.getElementById(sectionId.replace('-mobile', ''));
         }
-        
+        // "Most Ordered" and "Frequently Ordered" share the same content; map to the same section
+        if (!section && sectionId === 'most-ordered') {
+            section = document.getElementById('frequently-ordered') ?? document.getElementById('frequently-ordered-mobile');
+        }
         if (section) {
             const offset = tabsRef.current ? tabsRef.current.offsetHeight + 16 : 100;
             const elementPosition = section.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - offset;
-            
             window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
+                top: Math.max(0, offsetPosition),
+                behavior: 'smooth',
             });
         }
     }, []);
@@ -2903,7 +2901,16 @@ const RestaurantMenuPage = () => {
                     margin: '0 -16px',
                   }}
                 >
-                  <ScrollArea scrollbars="x" style={{ width: '100%' }}>
+                  <Box
+                    style={{
+                      width: '100%',
+                      overflowX: 'auto',
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
+                    className="scrollbar-hide"
+                  >
                     <Group gap={0} style={{ flexWrap: 'nowrap', padding: '0 16px' }}>
                       {/* Search Icon */}
                       <Box
@@ -2989,7 +2996,7 @@ const RestaurantMenuPage = () => {
                         </Box>
                     ))}
                   </Group>
-                </ScrollArea>
+                </Box>
                 </Box>
 
                 {/* Mobile Menu Items - Compact List */}
