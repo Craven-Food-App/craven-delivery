@@ -2815,16 +2815,39 @@ const Restaurants = () => {
               </Box>
             )}
 
-            {/* Restaurants (excluding retail/apparel) */}
+            {/* Restaurants Near You — location-based nearby (radius 10–50 mi) */}
             <Box ref={restaurantsSectionRef} id="restaurants-section" data-section="restaurants">
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
-                cuisineFilter={undefined}
-                excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                 sectionTitle="Restaurants Near You"
                 horizontal={true}
-                useMarketplaceCatalog={true}
+                useNearbyByLocation={true}
+                marketplaceType="restaurant"
+              />
+            </Box>
+
+            {/* Retail Near You — location-based */}
+            <Box id="retail-nearby-section">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Retail Near You"
+                horizontal={true}
+                useNearbyByLocation={true}
+                marketplaceType="retail"
+              />
+            </Box>
+
+            {/* Shopping Centers Near You — location-based */}
+            <Box id="shopping-centers-section">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Shopping Centers Near You"
+                horizontal={true}
+                useNearbyByLocation={true}
+                marketplaceType="mall"
               />
             </Box>
 
@@ -2875,7 +2898,7 @@ const Restaurants = () => {
               />
             </Box>
 
-            {/* Retail */}
+            {/* Retail (category filter fallback) */}
             <div ref={retailSectionRef} id="retail-section" data-section="retail">
               <RestaurantGrid
                 searchQuery={searchQuery}
@@ -3642,14 +3665,35 @@ const Restaurants = () => {
                   </div>
 
                   <div className="mb-4">
-                    <RestaurantGrid 
-                      searchQuery={searchQuery} 
-                      deliveryAddress={location} 
-                      cuisineFilter={undefined}
-                      excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
                       sectionTitle="Restaurants Near You"
                       horizontal={true}
-                      useMarketplaceCatalog={true}
+                      useNearbyByLocation={true}
+                      marketplaceType="restaurant"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
+                      sectionTitle="Retail Near You"
+                      horizontal={true}
+                      useNearbyByLocation={true}
+                      marketplaceType="retail"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
+                      sectionTitle="Shopping Centers Near You"
+                      horizontal={true}
+                      useNearbyByLocation={true}
+                      marketplaceType="mall"
                     />
                   </div>
 

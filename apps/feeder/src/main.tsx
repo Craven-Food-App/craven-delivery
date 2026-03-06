@@ -83,6 +83,7 @@ const mantineTheme = createTheme({
 
 import FeederHub from "@/pages/FeederHub";
 import DriverAuth from "@/pages/DriverAuth";
+import { PostLoginLocationGate } from "@/components/PostLoginLocationGate";
 import { MobileDriverDashboard } from "@/components/mobile/MobileDriverDashboard";
 import MobileBackgroundCheckStatus from "@/components/mobile/MobileBackgroundCheckStatus";
 import { MobilePasswordReset } from "@/components/mobile/MobilePasswordReset";
@@ -113,9 +114,9 @@ function FeederApp() {
                   <Sonner />
                   <BrowserRouter>
                     <Routes>
-                      {/* Main feeder driver dashboard */}
-                      <Route path="/" element={<MobileDriverDashboard />} />
-                      <Route path="/mobile" element={<MobileDriverDashboard />} />
+                      {/* Main feeder driver dashboard – post-login location disclosure gate before any location API */}
+                      <Route path="/" element={<PostLoginLocationGate><MobileDriverDashboard /></PostLoginLocationGate>} />
+                      <Route path="/mobile" element={<PostLoginLocationGate><MobileDriverDashboard /></PostLoginLocationGate>} />
                       <Route path="/feeder" element={<FeederHub />} />
                       <Route path="/driver/auth" element={<DriverAuth />} />
                       <Route path="/driver/post-waitlist-onboarding" element={<PostWaitlistOnboarding />} />

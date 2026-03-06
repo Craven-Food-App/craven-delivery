@@ -62,6 +62,7 @@ interface Restaurant {
   longitude?: number;
   /** From marketplace catalog: ACTIVE | REQUESTABLE | COMING_SOON */
   marketplaceStatus?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
+  request_count?: number;
 }
 interface RestaurantGridProps {
   searchQuery?: string;
@@ -75,6 +76,10 @@ interface RestaurantGridProps {
   columns?: number;
   /** When true, fetch unified catalog (active + requestable + coming_soon) so marketplace looks full */
   useMarketplaceCatalog?: boolean;
+  /** When true, fetch location-based nearby via get_business_nearby (radius 10mi, expand to 20/35/50 if low results) */
+  useNearbyByLocation?: boolean;
+  /** Filter nearby results by marketplace_type: restaurant | retail | mall */
+  marketplaceType?: 'restaurant' | 'retail' | 'mall' | null;
 }
 const RestaurantGrid = ({
   searchQuery,
@@ -87,6 +92,8 @@ const RestaurantGrid = ({
   customRestaurants,
   columns,
   useMarketplaceCatalog = false,
+  useNearbyByLocation = false,
+  marketplaceType = null,
 }: RestaurantGridProps = {}) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,12 +129,63 @@ const RestaurantGrid = ({
       }));
       setRestaurants(formatted);
       setLoading(false);
+    } else if (useNearbyByLocation) {
+      fetchNearbyByLocation();
     } else if (useMarketplaceCatalog) {
       fetchMarketplaceRestaurants();
     } else {
       fetchRestaurants();
     }
-  }, [searchQuery, deliveryAddress, cuisineFilter, userLocation, categoryFilter, customRestaurants, useMarketplaceCatalog]);
+  }, [searchQuery, deliveryAddress, cuisineFilter, userLocation, categoryFilter, customRestaurants, useMarketplaceCatalog, useNearbyByLocation, marketplaceType]);
+
+  const fetchNearbyByLocation = async () => {
+    setLoading(true);
+    const lat = userLocation?.lat ?? 41.65;
+    const lng = userLocation?.lng ?? -83.54;
+    const radii = [10, 20, 35, 50];
+    const minResults = 6;
+    try {
+      let list: Restaurant[] = [];
+      for (const radius of radii) {
+        const { data, error } = await (supabase as any).rpc('get_business_nearby', {
+          p_lat: lat,
+          p_lng: lng,
+          p_radius_miles: radius,
+          p_marketplace_type: marketplaceType || null,
+          p_search: searchQuery || null,
+          p_limit: 300,
+        });
+        if (error) throw error;
+        list = (data || []).map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          cuisine_type: row.cuisine_type || '',
+          image_url: row.image_url || row.logo_url,
+          latitude: row.lat != null ? Number(row.lat) : undefined,
+          longitude: row.lng != null ? Number(row.lng) : undefined,
+          rating: row.rating != null ? Number(row.rating) : undefined,
+          min_delivery_time: row.min_delivery_time,
+          max_delivery_time: row.max_delivery_time,
+          delivery_fee_cents: row.delivery_fee_cents,
+          is_promoted: row.is_promoted ?? false,
+          marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+          request_count: row.request_count,
+        }));
+        if (list.length >= minResults || radius === 50) break;
+      }
+      if (excludeCuisine) {
+        const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
+        setRestaurants(list.filter(r => !r.cuisine_type || !excludeList.includes(r.cuisine_type.toLowerCase())));
+      } else {
+        setRestaurants(list);
+      }
+    } catch (err) {
+      console.error('Error fetching nearby businesses:', err);
+      await fetchMarketplaceRestaurants();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchMarketplaceRestaurants = async () => {
     setLoading(true);

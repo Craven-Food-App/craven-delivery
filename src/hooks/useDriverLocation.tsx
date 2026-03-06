@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { hasLocationDisclosureConsent } from '@/utils/locationDisclosure';
 
 interface LocationData {
   latitude: number;
@@ -70,17 +71,26 @@ export const useDriverLocation = (): UseDriverLocationReturn => {
   };
 
   const startTracking = () => {
+    // Do not call any location API until user has seen the in-app disclosure (Google Play requirement).
+    if (!hasLocationDisclosureConsent()) {
+      return;
+    }
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by this browser');
       return;
     }
 
-    // Request permission explicitly first
+    // Do not trigger the system permission dialog unless user already chose "Continue" on our disclosure.
+    // When state is "prompt", user either chose "Not now" or hasn't been asked; don't call getCurrentPosition.
     if ('permissions' in navigator) {
       navigator.permissions.query({ name: 'geolocation' }).then((result) => {
         console.log('Geolocation permission status:', result.state);
         if (result.state === 'denied') {
           setError('GPS permission denied. Please enable location access in your browser settings.');
+          return;
+        }
+        if (result.state === 'prompt') {
+          // Avoid showing system dialog; only track after user granted via our disclosure flow.
           return;
         }
         startLocationTracking();

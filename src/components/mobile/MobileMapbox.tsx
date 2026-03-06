@@ -24,6 +24,10 @@ interface MerchantLocation {
   address?: string | null;
   phone?: string | null;
   active_order_count?: number;
+  /** ACTIVE = live merchant, REQUESTABLE = request flow, COMING_SOON = coming soon */
+  status?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
+  marketplace_type?: string | null;
+  parent_location?: string | null;
 }
 
 /** When driver is on delivery (e.g. step one), show restaurant pin and fit map to driver + restaurant. */
@@ -65,6 +69,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const merchantMarkersRef = useRef<any[]>([]);
   const gasStationMarkersRef = useRef<any[]>([]);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
+  /** Stable key so we only recreate markers when merchant list actually changes (not on every ref change) */
+  const merchantMarkerKeyRef = useRef<string>('');
   const userHasPanned = useRef(false);
 
   const driverLocation = useMemo<[number, number] | null>(() => {
@@ -382,18 +388,37 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     });
   }, [resetToDefaultZoom, isMapReady]);
 
-  // Fetch merchant locations
+  // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map
   useEffect(() => {
     const fetchMerchants = async () => {
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select('id, name, logo_url, latitude, longitude, merchant_category, cuisine_type, address, phone')
-        .eq('is_active', true)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+      const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
+        p_lat: null,
+        p_lng: null,
+        p_search: null,
+        p_cuisine: null,
+        p_limit: 2000,
+      });
 
-      if (!error && data) {
-        // Fetch active order counts per merchant for demand glow
+      if (!error && data && Array.isArray(data)) {
+        const withCoords = (data as any[])
+          .filter((row: any) => row.lat != null && row.lng != null)
+          .map((row: any) => ({
+            id: row.id,
+            name: row.name,
+            logo_url: row.image_url || row.logo_url || null,
+            latitude: Number(row.lat),
+            longitude: Number(row.lng),
+            merchant_category: row.marketplace_type || null,
+            cuisine_type: row.cuisine_type || null,
+            address: null,
+            phone: null,
+            active_order_count: 0,
+            status: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+            marketplace_type: row.marketplace_type || null,
+            parent_location: row.parent_location || null,
+          } as MerchantLocation));
+
+        // Fetch active order counts for ACTIVE merchants (demand glow)
         let countMap: Record<string, number> = {};
         try {
           const { data: orderCounts } = await supabase
@@ -407,34 +432,51 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           console.warn('Could not fetch order counts for demand glow:', e);
         }
 
-        setMerchants((data as MerchantLocation[]).map(m => ({
+        setMerchants(withCoords.map(m => ({
           ...m,
-          active_order_count: countMap[m.id] || 0,
+          active_order_count: m.status === 'ACTIVE' ? (countMap[m.id] || 0) : 0,
         })));
       }
     };
     fetchMerchants();
   }, []);
 
-  // Render merchant markers on map
+  // Render merchant markers on map (only when list actually changes to avoid markers jumping)
   useEffect(() => {
     if (!isMapReady || !map.current || merchants.length === 0) return;
-
-    // Clear existing merchant markers
-    merchantMarkersRef.current.forEach(m => m.remove());
-    merchantMarkersRef.current = [];
 
     const mapboxgl = (window as any).mapboxgl;
     if (!mapboxgl) return;
 
-    merchants.forEach((merchant) => {
-      if (!merchant.latitude || !merchant.longitude) return;
+    // Stable key: only recreate markers when id+lat+lng actually change
+    const newKey = merchants
+      .map((m) => `${m.id},${Number(m.latitude)},${Number(m.longitude)}`)
+      .sort()
+      .join('|');
+    if (merchantMarkerKeyRef.current === newKey) return;
+    merchantMarkerKeyRef.current = newKey;
 
-      // Demand glow: yellow (1-2 orders), orange (3-4), red (5+)
+    // Clear existing merchant markers
+    merchantMarkersRef.current.forEach((m) => m.remove());
+    merchantMarkersRef.current = [];
+
+    merchants.forEach((merchant) => {
+      const lat = Number(merchant.latitude);
+      const lng = Number(merchant.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+
+      // Marker style by status: ACTIVE → orange (with optional demand glow), REQUESTABLE → gray, COMING_SOON → hollow
+      const status = merchant.status || 'ACTIVE';
       const demand = merchant.active_order_count || 0;
       let glowStyle = '';
       let borderColor = '#ff6600';
-      if (demand >= 5) {
+      let isHollow = false;
+      if (status === 'REQUESTABLE') {
+        borderColor = '#6b7280';
+      } else if (status === 'COMING_SOON') {
+        borderColor = '#9ca3af';
+        isHollow = true;
+      } else if (demand >= 5) {
         glowStyle = 'box-shadow: 0 0 8px 5px rgba(239,68,68,0.55), 0 0 18px 10px rgba(239,68,68,0.25), 0 0 30px 15px rgba(239,68,68,0.1);';
         borderColor = '#ef4444';
       } else if (demand >= 3) {
@@ -445,17 +487,21 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         borderColor = '#eab308';
       }
 
-      // Pin-shaped marker: circular logo head + pointed tail
+      // Pin-shaped marker: circular logo head + pointed tail (position:absolute so Mapbox transform is the only positioning)
       const el = document.createElement('div');
       el.className = 'merchant-map-marker';
+      el.setAttribute('data-merchant-id', merchant.id);
 
       const hasPng = isPngLogo(merchant.logo_url);
-      const bgColor = hasPng ? '#ffffff' : '#f9fafb';
+      const bgColor = isHollow ? 'rgba(255,255,255,0.9)' : (hasPng ? '#ffffff' : '#f9fafb');
       const headSize = 24;
       const tailHeight = 8;
       const totalHeight = headSize + tailHeight;
 
       el.style.cssText = `
+        position: absolute;
+        left: 0;
+        top: 0;
         width: ${headSize}px;
         height: ${totalHeight}px;
         display: flex;
@@ -464,6 +510,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         cursor: pointer;
         transition: transform 0.15s ease;
         filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+        pointer-events: auto;
         ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
       `;
 
@@ -473,8 +520,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         width: ${headSize}px;
         height: ${headSize}px;
         border-radius: 50%;
-        background: ${merchant.logo_url ? 'transparent' : bgColor};
-        border: 1.5px solid ${borderColor};
+        background: ${merchant.logo_url && !isHollow ? 'transparent' : bgColor};
+        border: ${isHollow ? '2px dashed' : '1.5px solid'} ${borderColor};
         overflow: hidden;
         display: flex;
         align-items: center;
@@ -527,18 +574,22 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.2)'; });
       el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
 
-      // Navigate popup with merchant info
-      const demandLabel = demand >= 5 ? '🔴 High Demand' : demand >= 3 ? '🟠 Moderate' : demand >= 1 ? '🟡 Building' : '';
-      const categoryLabel = merchant.cuisine_type || merchant.merchant_category || 'Restaurant';
+      // Popup: name, category/parent, status line for non-ACTIVE, navigate link
+      const demandLabel = status === 'ACTIVE' && (demand >= 5 ? '🔴 High Demand' : demand >= 3 ? '🟠 Moderate' : demand >= 1 ? '🟡 Building' : '') || '';
+      const categoryLabel = merchant.cuisine_type || merchant.merchant_category || merchant.marketplace_type || 'Restaurant';
+      const parentLine = merchant.parent_location ? `<p style="margin:2px 0;font-size:11px;color:#6b7280;">${merchant.parent_location}</p>` : '';
+      const statusLine = status !== 'ACTIVE' ? `<p style="margin:4px 0;font-size:11px;color:#6b7280;">Status: Not on Crave'n yet</p>` : '';
       const addressText = merchant.address ? `<p style="margin:2px 0;font-size:11px;color:#6b7280;">${merchant.address}</p>` : '';
-      const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${merchant.latitude},${merchant.longitude}`;
+      const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
       const popup = new mapboxgl.Popup({ offset: [0, -totalHeight], closeButton: true, maxWidth: '220px' })
         .setHTML(`
           <div style="padding:8px;font-family:system-ui,sans-serif;">
             <p style="margin:0 0 2px;font-size:13px;font-weight:700;">${merchant.name}</p>
             <p style="margin:0 0 4px;font-size:10px;color:#9ca3af;text-transform:uppercase;">${categoryLabel}</p>
+            ${parentLine}
             ${addressText}
+            ${statusLine}
             ${demandLabel ? `<p style="margin:4px 0;font-size:11px;font-weight:600;">${demandLabel}</p>` : ''}
             <a href="${navUrl}" target="_blank" rel="noopener noreferrer"
                style="display:block;margin-top:6px;padding:6px 0;background:#ff6600;color:#fff;text-align:center;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">
@@ -548,7 +599,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         `);
 
       const markerInstance = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([merchant.longitude, merchant.latitude])
+        .setLngLat([lng, lat])
         .setPopup(popup)
         .addTo(map.current);
 
