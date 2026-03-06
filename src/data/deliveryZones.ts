@@ -18,41 +18,42 @@ export interface ZoneStyle {
   textClass: string;
 }
 
+// Toledo, OH and surrounding areas (no Chicago zones)
 export const DELIVERY_ZONES: DeliveryZone[] = [
   {
     id: 1,
-    name: 'North Lake Zone',
-    demand: 0.8,
+    name: 'Downtown Toledo',
+    demand: 0.7,
     coordinates: [
-      [41.98, -87.63],
-      [41.98, -87.69],
-      [41.94, -87.72],
-      [41.9, -87.69],
-      [41.9, -87.62],
+      [41.662, -83.555],
+      [41.662, -83.528],
+      [41.638, -83.528],
+      [41.638, -83.555],
+      [41.662, -83.555],
     ],
   },
   {
     id: 2,
-    name: 'West Loop/Downtown',
-    demand: 0.4,
+    name: 'West Toledo / Sylvania',
+    demand: 0.5,
     coordinates: [
-      [41.9, -87.75],
-      [41.87, -87.75],
-      [41.85, -87.69],
-      [41.88, -87.64],
-      [41.91, -87.68],
+      [41.673, -83.692],
+      [41.673, -83.618],
+      [41.708, -83.618],
+      [41.708, -83.692],
+      [41.673, -83.692],
     ],
   },
   {
     id: 3,
-    name: 'South Side Suburbs',
-    demand: 0.1,
+    name: 'Perrysburg / Maumee',
+    demand: 0.3,
     coordinates: [
-      [41.8, -87.69],
-      [41.8, -87.75],
-      [41.74, -87.75],
-      [41.74, -87.69],
-      [41.77, -87.65],
+      [41.562, -83.722],
+      [41.562, -83.618],
+      [41.518, -83.618],
+      [41.518, -83.722],
+      [41.562, -83.722],
     ],
   },
 ];

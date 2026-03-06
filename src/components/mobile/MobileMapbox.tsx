@@ -69,8 +69,11 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const merchantMarkersRef = useRef<any[]>([]);
   const gasStationMarkersRef = useRef<any[]>([]);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
+  const [merchantsLoaded, setMerchantsLoaded] = useState(false);
+  const [merchantsLoadError, setMerchantsLoadError] = useState<string | null>(null);
   /** Stable key so we only recreate markers when merchant list actually changes (not on every ref change) */
   const merchantMarkerKeyRef = useRef<string>('');
+  const hasFittedBoundsToMerchantsRef = useRef(false);
   const userHasPanned = useRef(false);
 
   const driverLocation = useMemo<[number, number] | null>(() => {
@@ -391,6 +394,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map
   useEffect(() => {
     const fetchMerchants = async () => {
+      setMerchantsLoadError(null);
       const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
         p_lat: null,
         p_lng: null,
@@ -399,44 +403,56 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         p_limit: 2000,
       });
 
-      if (!error && data && Array.isArray(data)) {
-        const withCoords = (data as any[])
-          .filter((row: any) => row.lat != null && row.lng != null)
-          .map((row: any) => ({
-            id: row.id,
-            name: row.name,
-            logo_url: row.image_url || row.logo_url || null,
-            latitude: Number(row.lat),
-            longitude: Number(row.lng),
-            merchant_category: row.marketplace_type || null,
-            cuisine_type: row.cuisine_type || null,
-            address: null,
-            phone: null,
-            active_order_count: 0,
-            status: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
-            marketplace_type: row.marketplace_type || null,
-            parent_location: row.parent_location || null,
-          } as MerchantLocation));
-
-        // Fetch active order counts for ACTIVE merchants (demand glow)
-        let countMap: Record<string, number> = {};
-        try {
-          const { data: orderCounts } = await supabase
-            .from('orders')
-            .select('restaurant_id')
-            .or('status.eq.pending,status.eq.confirmed,status.eq.preparing,status.eq.ready');
-          (orderCounts || []).forEach((o: any) => {
-            countMap[o.restaurant_id] = (countMap[o.restaurant_id] || 0) + 1;
-          });
-        } catch (e) {
-          console.warn('Could not fetch order counts for demand glow:', e);
-        }
-
-        setMerchants(withCoords.map(m => ({
-          ...m,
-          active_order_count: m.status === 'ACTIVE' ? (countMap[m.id] || 0) : 0,
-        })));
+      if (error) {
+        console.error('get_marketplace_restaurants error:', error);
+        setMerchantsLoadError(error.message || 'Could not load locations');
+        setMerchantsLoaded(true);
+        return;
       }
+
+      if (!data || !Array.isArray(data)) {
+        setMerchantsLoadError('No data returned');
+        setMerchantsLoaded(true);
+        return;
+      }
+
+      const withCoords = (data as any[])
+        .filter((row: any) => row.lat != null && row.lng != null)
+        .map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          logo_url: row.image_url || row.logo_url || null,
+          latitude: Number(row.lat),
+          longitude: Number(row.lng),
+          merchant_category: row.marketplace_type || null,
+          cuisine_type: row.cuisine_type || null,
+          address: null,
+          phone: null,
+          active_order_count: 0,
+          status: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+          marketplace_type: row.marketplace_type || null,
+          parent_location: row.parent_location || null,
+        } as MerchantLocation));
+
+      // Fetch active order counts for ACTIVE merchants (demand glow)
+      let countMap: Record<string, number> = {};
+      try {
+        const { data: orderCounts } = await supabase
+          .from('orders')
+          .select('restaurant_id')
+          .or('status.eq.pending,status.eq.confirmed,status.eq.preparing,status.eq.ready');
+        (orderCounts || []).forEach((o: any) => {
+          countMap[o.restaurant_id] = (countMap[o.restaurant_id] || 0) + 1;
+        });
+      } catch (e) {
+        console.warn('Could not fetch order counts for demand glow:', e);
+      }
+
+      setMerchants(withCoords.map(m => ({
+        ...m,
+        active_order_count: m.status === 'ACTIVE' ? (countMap[m.id] || 0) : 0,
+      })));
+      setMerchantsLoaded(true);
     };
     fetchMerchants();
   }, []);
@@ -487,7 +503,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         borderColor = '#eab308';
       }
 
-      // Pin-shaped marker: circular logo head + pointed tail (position:absolute so Mapbox transform is the only positioning)
+      // Pin-shaped marker: outer div is positioned by Mapbox (do not set transform on it). Inner div gets hover scale.
       const el = document.createElement('div');
       el.className = 'merchant-map-marker';
       el.setAttribute('data-merchant-id', merchant.id);
@@ -508,11 +524,22 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         flex-direction: column;
         align-items: center;
         cursor: pointer;
-        transition: transform 0.15s ease;
         filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
         pointer-events: auto;
+        z-index: 5;
         ${demand >= 1 ? 'animation: demandPulse 2s ease-in-out infinite;' : ''}
       `;
+
+      const inner = document.createElement('div');
+      inner.style.cssText = `
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.15s ease;
+      `;
+      el.appendChild(inner);
 
       // Circular logo head
       const head = document.createElement('div');
@@ -567,12 +594,12 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
         margin-top: -1px;
       `;
 
-      el.appendChild(head);
-      el.appendChild(tail);
+      inner.appendChild(head);
+      inner.appendChild(tail);
 
-      // Hover effect
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.2)'; });
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+      // Hover effect on inner only so Mapbox's position transform on el is never overwritten
+      el.addEventListener('mouseenter', () => { inner.style.transform = 'scale(1.2)'; });
+      el.addEventListener('mouseleave', () => { inner.style.transform = 'scale(1)'; });
 
       // Popup: name, category/parent, status line for non-ACTIVE, navigate link
       const demandLabel = status === 'ACTIVE' && (demand >= 5 ? '🔴 High Demand' : demand >= 3 ? '🟠 Moderate' : demand >= 1 ? '🟡 Building' : '') || '';
@@ -605,6 +632,20 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
 
       merchantMarkersRef.current.push(markerInstance);
     });
+
+    // Once when merchants first load, fit map bounds so all pins (and zones) are visible
+    if (!hasFittedBoundsToMerchantsRef.current && merchantMarkersRef.current.length > 0) {
+      hasFittedBoundsToMerchantsRef.current = true;
+      const lngs = merchants.map((m) => Number(m.longitude)).filter(Number.isFinite);
+      const lats = merchants.map((m) => Number(m.latitude)).filter(Number.isFinite);
+      if (lngs.length && lats.length) {
+        const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+        const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+        setTimeout(() => {
+          map.current?.fitBounds([sw, ne], { padding: 50, maxZoom: 13, duration: 800 });
+        }, 100);
+      }
+    }
 
     return () => {
       merchantMarkersRef.current.forEach(m => m.remove());
@@ -1010,6 +1051,20 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
             <p className="text-sm text-gray-600">Loading map...</p>
           </div>
+        </div>
+      )}
+
+      {isMapReady && merchantsLoaded && merchants.length === 0 && !merchantsLoadError && (
+        <div className="absolute bottom-20 left-4 right-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 shadow-sm z-10">
+          <p className="text-sm text-amber-800 font-medium">No locations to show</p>
+          <p className="text-xs text-amber-700 mt-0.5">Run Supabase migrations: seed marketplace (20260306000002) then real locations (20260306000003).</p>
+        </div>
+      )}
+      {isMapReady && merchantsLoadError && (
+        <div className="absolute bottom-20 left-4 right-4 rounded-lg bg-red-50 border border-red-200 px-3 py-2 shadow-sm z-10">
+          <p className="text-sm text-red-800 font-medium">Could not load locations</p>
+          <p className="text-xs text-red-700 mt-0.5 break-all">{merchantsLoadError}</p>
+          <p className="text-xs text-red-600 mt-1">Ensure migrations are applied and get_marketplace_restaurants exists.</p>
         </div>
       )}
     </div>
