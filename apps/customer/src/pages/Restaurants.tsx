@@ -86,8 +86,10 @@ import {
   IconLayersLinked,
   IconCompass,
   IconPackage,
-  IconShirt
+  IconShirt,
+  IconMap2
 } from '@tabler/icons-react';
+import CustomerMerchantMap from '@/components/CustomerMerchantMap';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useDeliveryAddress } from '@/contexts/DeliveryAddressContext';
@@ -353,6 +355,7 @@ const Restaurants = () => {
   const [filteredRestaurants, setFilteredRestaurants] = useState<any[]>([]);
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
+  const [showMapView, setShowMapView] = useState(false);
   const [availableCuisines, setAvailableCuisines] = useState<string[]>([]);
   
   // Get cart and delivery address from context
@@ -1928,16 +1931,17 @@ const Restaurants = () => {
   if (isMobile) {
     if (showMain) {
       return (
-        <Box style={{ 
-          width: '100%', 
-          maxWidth: '430px', 
-          margin: '0 auto', 
-          minHeight: '100vh', 
-          backgroundColor: 'white', 
-          display: 'flex', 
+        <Box style={{
+          width: '100%',
+          maxWidth: '430px',
+          margin: '0 auto',
+          minHeight: '100vh',
+          backgroundColor: 'white',
+          display: 'flex',
           flexDirection: 'column',
           paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
         }}>
+        {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
         {/* Search & Address Bar (Fixed Header - Matching Source App) */}
         <Box component="header" style={{ 
           backgroundColor: 'white', 
@@ -1981,6 +1985,15 @@ const Restaurants = () => {
               </Button>
             </Box>
 
+            <ActionIcon
+              onClick={() => setShowMapView(true)}
+              variant="subtle"
+              size="lg"
+              radius="xl"
+              style={{ flexShrink: 0 }}
+            >
+              <IconMap2 size={24} style={{ color: '#171717' }} />
+            </ActionIcon>
             <Group
               gap="xs"
               wrap="nowrap"
@@ -2932,6 +2945,7 @@ const Restaurants = () => {
   if (!isMobile) {
     return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
+      {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
       {/* Mobile Header - Mantine UI */}
       <Box 
         component="header"
@@ -2958,18 +2972,26 @@ const Restaurants = () => {
               >
                 <IconBell size={20} style={{ color: '#4b5563' }} />
                 {notificationsList.filter(n => !n.read).length > 0 && (
-                  <Box 
-                    style={{ 
-                      position: 'absolute', 
-                      top: 4, 
-                      right: 4, 
-                      width: '8px', 
-                      height: '8px', 
-                      backgroundColor: '#ff6b35', 
-                      borderRadius: '50%' 
-                    }} 
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: '#ff6b35',
+                      borderRadius: '50%'
+                    }}
                   />
                 )}
+              </ActionIcon>
+              <ActionIcon
+                onClick={() => setShowMapView(true)}
+                variant="subtle"
+                size="lg"
+                radius="xl"
+              >
+                <IconMap2 size={20} style={{ color: '#4b5563' }} />
               </ActionIcon>
             </Group>
             <ActionIcon
@@ -3195,6 +3217,15 @@ const Restaurants = () => {
                   </div>
                 )}
               </div>
+
+              {/* Map View */}
+              <button
+                onClick={() => setShowMapView(true)}
+                className="p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
+                title="View map"
+              >
+                <IconMap2 className="w-6 h-6" />
+              </button>
 
               {/* Delivery/Pickup Toggle */}
               <div className="flex bg-white rounded-lg p-1">
