@@ -392,13 +392,14 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   }, [resetToDefaultZoom, isMapReady]);
 
   // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map.
-  // Request restaurant, retail, and mall separately so retail/mall are not cut off by limit.
+  // Prefer 6-param RPC (restaurant, retail, mall separately); fallback to 5-param for older DBs (e.g. mobile web).
   useEffect(() => {
     const fetchMerchants = async () => {
       setMerchantsLoadError(null);
       const limit = 1500;
       const types: string[] = ['restaurant', 'retail', 'mall'];
-      const allRows: any[] = [];
+      let allRows: any[] = [];
+      let useFallback = false;
       for (const pType of types) {
         const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
           p_lat: null,
@@ -409,12 +410,27 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           p_marketplace_type: pType,
         });
         if (error) {
+          console.warn('get_marketplace_restaurants (6-param) error, trying 5-param:', error);
+          useFallback = true;
+          break;
+        }
+        if (data && Array.isArray(data)) allRows.push(...data);
+      }
+      if (useFallback) {
+        const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
+          p_lat: null,
+          p_lng: null,
+          p_search: null,
+          p_cuisine: null,
+          p_limit: limit,
+        });
+        if (error) {
           console.error('get_marketplace_restaurants error:', error);
           setMerchantsLoadError(error.message || 'Could not load locations');
           setMerchantsLoaded(true);
           return;
         }
-        if (data && Array.isArray(data)) allRows.push(...data);
+        if (data && Array.isArray(data)) allRows = data;
       }
       // Dedupe by id (e.g. if a row appears in more than one call)
       const byId = new Map<string, any>();

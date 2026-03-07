@@ -52,15 +52,28 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch all marketplace locations (restaurant, retail, mall)
+  // Fetch all marketplace locations (restaurant, retail, mall). Prefer 6-param RPC; fallback to 5-param if not deployed.
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
+      const mapRow = (r: any): MerchantLocation => ({
+        id: r.id,
+        name: r.name,
+        logo_url: r.image_url || r.logo_url || null,
+        latitude: Number(r.lat),
+        longitude: Number(r.lng),
+        marketplace_type: r.marketplace_type || null,
+        cuisine_type: r.cuisine_type || null,
+        address: r.address != null ? String(r.address).trim() || null : null,
+        status: r.status === 'ACTIVE' ? 'ACTIVE' : r.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+        parent_location: r.parent_location || null,
+      });
+      let allRows: any[] = [];
       const types = ['restaurant', 'retail', 'mall'];
-      const allRows: any[] = [];
+      let useFallback = false;
       for (const pType of types) {
         const { data, err } = await (supabase as any).rpc('get_marketplace_restaurants', {
           p_lat: null,
@@ -71,28 +84,31 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
           p_marketplace_type: pType,
         });
         if (err) {
-          if (!cancelled) setError(err.message || 'Could not load locations');
+          useFallback = true;
+          break;
+        }
+        if (data && Array.isArray(data)) allRows.push(...data);
+      }
+      if (useFallback) {
+        const { data, err } = await (supabase as any).rpc('get_marketplace_restaurants', {
+          p_lat: null,
+          p_lng: null,
+          p_search: null,
+          p_cuisine: null,
+          p_limit: 1500,
+        });
+        if (err && !cancelled) {
+          setError(err.message || 'Could not load locations');
           setLoading(false);
           return;
         }
-        if (data && Array.isArray(data)) allRows.push(...data);
+        if (data && Array.isArray(data)) allRows = data;
       }
       const byId = new Map<string, any>();
       for (const row of allRows) byId.set(row.id, row);
       const list = (Array.from(byId.values()) as any[])
         .filter((r: any) => r.lat != null && r.lng != null)
-        .map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          logo_url: r.image_url || r.logo_url || null,
-          latitude: Number(r.lat),
-          longitude: Number(r.lng),
-          marketplace_type: r.marketplace_type || null,
-          cuisine_type: r.cuisine_type || null,
-          address: r.address != null ? String(r.address).trim() || null : null,
-          status: r.status === 'ACTIVE' ? 'ACTIVE' : r.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
-          parent_location: r.parent_location || null,
-        } as MerchantLocation));
+        .map((r: any) => mapRow(r));
       if (!cancelled) {
         setMerchants(list);
         setError(list.length === 0 ? 'No locations to show' : null);
