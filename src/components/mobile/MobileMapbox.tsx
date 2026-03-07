@@ -452,7 +452,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           latitude: Number(row.lat),
           longitude: Number(row.lng),
           merchant_category: row.marketplace_type || null,
-          cuisine_type: row.cuisine_type || null,
+          cuisine_type: row.cuisine_type || row.category || null,
           address: row.address != null ? String(row.address).trim() || null : null,
           phone: null,
           active_order_count: 0,

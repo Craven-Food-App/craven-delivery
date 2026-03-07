@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { notifications } from "@mantine/notifications";
 import RestaurantCard from "./RestaurantCard";
 import { hasLocationDisclosureConsent } from "@/utils/locationDisclosure";
 
@@ -423,9 +424,28 @@ const RestaurantGrid = ({
       </section>;
   }
   const requestRestaurant = async (masterId: string) => {
-    const { data } = await (supabase as any).rpc('request_restaurant', { p_restaurant_master_id: masterId });
+    const { data, error } = await (supabase as any).rpc('request_restaurant', { p_restaurant_master_id: masterId });
+    if (error) {
+      notifications.show({
+        title: 'Request failed',
+        message: error.message || 'Could not submit request. Try again.',
+        color: 'red',
+      });
+      return;
+    }
     if (data?.ok) {
       setRestaurants(prev => prev.map(r => r.id === masterId ? { ...r, request_count: (data.request_count as number) } : r));
+      notifications.show({
+        title: 'Request recorded',
+        message: "We'll let this business know you want them on Crave'n!",
+        color: 'green',
+      });
+    } else {
+      notifications.show({
+        title: 'Request failed',
+        message: (data as any)?.error || 'Could not submit request. Try again.',
+        color: 'red',
+      });
     }
   };
   const notifyMeRestaurant = async (masterId: string, email?: string) => {
@@ -459,12 +479,15 @@ const RestaurantGrid = ({
       onNotifyMe: restaurant.marketplaceStatus === 'COMING_SOON' ? (email?: string) => notifyMeRestaurant(restaurant.id, email) : undefined,
     };
   };
-  // Don't show a category/section when there's nothing in it
-  if (restaurants.length === 0 && !loading) {
+  const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
+  const isEmpty = restaurants.length === 0 && !loading;
+
+  // When we have a section title (e.g. Cosmetic Stores, Pet Stores), always show the section; show empty state if no results
+  if (isEmpty && !sectionTitle) {
     return null;
   }
 
-  const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
+  const emptyMessage = sectionTitle ? `No ${sectionTitle.toLowerCase()} to show yet.` : 'No results.';
 
   return <section className="py-6" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
       {horizontal ? (
@@ -474,6 +497,9 @@ const RestaurantGrid = ({
               <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
             </div>
           )}
+          {isEmpty ? (
+            <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">{emptyMessage}</div>
+          ) : (
           <div className="w-full overflow-x-auto scrollbar-hide" style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
@@ -492,6 +518,7 @@ const RestaurantGrid = ({
               ))}
             </div>
           </div>
+          )}
         </>
       ) : (
         <div className="container mx-auto px-4">
@@ -505,13 +532,17 @@ const RestaurantGrid = ({
             
           </div>}
 
-          <div className={`grid gap-4 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
+          {isEmpty ? (
+            <div className="py-6 text-center text-gray-500 text-sm">{emptyMessage}</div>
+          ) : (
+          <div className={`grid gap-4 ${columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
             {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
               animationDelay: `${index * 100}ms`
             }}>
               <RestaurantCard {...formatRestaurantData(restaurant)} />
             </div>)}
           </div>
+          )}
         </div>
       )}
     </section>;

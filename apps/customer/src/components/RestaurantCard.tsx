@@ -40,6 +40,7 @@ const RestaurantCard = ({
   const [notifyEmail, setNotifyEmail] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [notifySent, setNotifySent] = useState(false);
+  const [showNotifyInline, setShowNotifyInline] = useState(false);
 
   const isActive = marketplaceStatus === 'ACTIVE';
   const isRequestable = marketplaceStatus === 'REQUESTABLE';
@@ -76,160 +77,123 @@ const RestaurantCard = ({
     }
   };
 
-  // Plan: when no logo, display business name only (no placeholder graphics)
+  // All cards: use image when available, else placeholder (name or default)
   const hasLogo = Boolean(image);
-  const displayImage = hasLogo ? image : (isActive && !isRequestable && !isComingSoon ? DEFAULT_IMAGE : '');
+  const displayImage = hasLogo ? image : (isActive ? DEFAULT_IMAGE : '');
+
+  // Unified content: same layout for all (name + rating · time, then tag line + right badge)
+  const ratingDisplay = isActive ? rating : '—';
+  const timeDisplay = isActive ? deliveryTime : (isComingSoon ? 'Soon' : '—');
+  const tagLine = isRequestable
+    ? "Not on Crave'n yet"
+    : isComingSoon
+    ? "Coming soon to Crave'n"
+    : deliveryFee === "Free"
+    ? "$0 delivery fee, first order"
+    : `${deliveryFee} delivery fee`;
+  const rightBadge = isActive && isPromoted ? (isRetail ? 'Featured' : 'Sponsored') : null;
 
   return (
     <div className={`group ${isActive ? 'cursor-pointer' : ''}`} onClick={handleClick}>
-      <div className="bg-white rounded-xl overflow-hidden border border-gray-100" style={{ width: '100%', maxWidth: '100%' }}>
-        {/* Image or name-only when no logo (marketplace requestable/coming soon) */}
-        <div className={`relative ${isRetail ? 'h-48 sm:h-56 bg-gray-50' : 'h-44 sm:h-52'} overflow-hidden rounded-xl ${!isActive ? 'bg-gray-50' : ''} flex items-center justify-center`}>
+      <div className="bg-white rounded-t-xl overflow-hidden border border-gray-100 rounded-b-xl" style={{ width: '100%', maxWidth: '100%' }}>
+        {/* Image: same treatment for all cards — rounded top, object-cover */}
+        <div className={`relative h-32 overflow-hidden rounded-t-xl bg-gray-100 flex items-center justify-center`}>
           {displayImage ? (
-            <img 
-              src={displayImage} 
+            <img
+              src={displayImage}
               alt={name}
-              className={`w-full h-full ${isRetail || !isActive ? 'object-contain p-2' : 'object-cover'} ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
+              className={`w-full h-full object-cover ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
             />
           ) : (
-            <span className="text-gray-700 font-semibold text-center px-3 line-clamp-3" style={{ fontSize: '1rem' }}>{name}</span>
+            <span className="text-gray-600 font-semibold text-center px-3 line-clamp-2 text-sm">{name}</span>
           )}
-          {isRequestable && (
-            <div className="absolute top-2 left-2 right-2 flex justify-center">
-              <span className="bg-gray-800 text-white px-2 py-1 rounded-full text-xs font-medium">Not on Crave&apos;n yet</span>
-            </div>
+          {/* Small overlay button at bottom-right for request / notify */}
+          {isRequestable && onRequest && (
+            <button
+              type="button"
+              onClick={handleRequest}
+              disabled={requesting}
+              className="absolute bottom-2 right-2 z-10 py-1.5 px-2.5 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 disabled:opacity-70 flex items-center gap-1 shadow-lg"
+            >
+              <Send className="h-3 w-3" />
+              {requesting ? '…' : 'Request'}
+            </button>
           )}
-          {isComingSoon && (
-            <div className="absolute top-2 left-2 right-2 flex justify-center">
-              <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">Coming soon to Crave&apos;n</span>
-            </div>
+          {isComingSoon && !notifySent && !showNotifyInline && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowNotifyInline(true);
+              }}
+              className="absolute bottom-2 right-2 py-1.5 px-2.5 rounded-md bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 flex items-center gap-1 shadow-lg"
+            >
+              <Bell className="h-3 w-3" />
+              Notify me
+            </button>
           )}
           {isRetail && isActive && (
-            <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+            <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
               <Package className="h-3 w-3" />
               Ships Free
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="pt-2.5 pb-1 px-0.5">
-          {isRequestable && (
-            <>
-              <h3 className="font-bold text-base text-gray-900 line-clamp-1 mb-1">{name}</h3>
-              {cuisine && <p className="text-xs text-gray-500 capitalize mb-2">{cuisine}</p>}
+        {/* Unified content: same layout for ACTIVE, REQUESTABLE, COMING_SOON */}
+        <div className="pt-2.5 pb-2 px-2">
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <h3 className="font-bold text-base text-gray-900 line-clamp-1 flex-1 min-w-0">{name}</h3>
+            <div className="flex items-center gap-1 text-sm text-gray-700 flex-shrink-0">
+              {isActive && (
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              )}
+              <span className="font-semibold">{ratingDisplay}</span>
+              <span className="text-gray-400">·</span>
+              <span className="text-gray-600">{timeDisplay}</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center gap-2">
+            <p className="text-sm text-gray-500 truncate flex-1 min-w-0">{tagLine}</p>
+            {rightBadge && (
+              <span className="text-sm font-medium text-blue-600 flex-shrink-0">{rightBadge}</span>
+            )}
+            {isRequestable && (
+              <a
+                href="https://cravenusa.com/merchant"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-orange-500 font-medium hover:underline inline-flex items-center gap-0.5 text-xs flex-shrink-0"
+              >
+                <Share2 className="h-3 w-3" />
+                Share with business
+              </a>
+            )}
+          </div>
+          {/* Inline notify form (COMING_SOON) */}
+          {isComingSoon && showNotifyInline && !notifySent && (
+            <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="email"
+                placeholder="Your email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 min-w-0"
+              />
               <button
                 type="button"
-                onClick={handleRequest}
+                onClick={handleNotifyMe}
                 disabled={requesting}
-                className="w-full py-2 px-3 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 disabled:opacity-70 flex items-center justify-center gap-1.5"
+                className="py-1.5 px-2.5 rounded-lg bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 disabled:opacity-70"
               >
-                <Send className="h-3.5 w-3.5" />
-                {requesting ? 'Requesting…' : "Request this business on Crave'n"}
+                {requesting ? '…' : 'Send'}
               </button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Invite this business —{' '}
-                <a
-                  href="https://cravenusa.com/merchant"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-orange-500 font-medium hover:underline inline-flex items-center gap-0.5"
-                >
-                  <Share2 className="h-3 w-3" />
-                  Share with them
-                </a>
-              </p>
-            </>
+            </div>
           )}
-          {isComingSoon && (
-            <>
-              <h3 className="font-bold text-base text-gray-900 line-clamp-1 mb-1">{name}</h3>
-              {cuisine && <p className="text-xs text-gray-500 capitalize mb-2">{cuisine}</p>}
-              {!notifySent ? (
-                <>
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    value={notifyEmail}
-                    onChange={(e) => setNotifyEmail(e.target.value)}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-2"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleNotifyMe}
-                    disabled={requesting}
-                    className="w-full py-2 px-3 rounded-lg bg-gray-800 text-white text-sm font-semibold hover:bg-gray-700 disabled:opacity-70 flex items-center justify-center gap-1.5"
-                  >
-                    <Bell className="h-3.5 w-3.5" />
-                    {requesting ? 'Sending…' : 'Notify me when available'}
-                  </button>
-                </>
-              ) : (
-                <p className="text-sm text-green-600 font-medium">We&apos;ll notify you!</p>
-              )}
-            </>
+          {isComingSoon && notifySent && (
+            <p className="text-xs text-green-600 font-medium mt-1">We&apos;ll notify you!</p>
           )}
-          {isActive && isRetail ? (
-            <>
-              {/* Retail Card Layout */}
-              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                <h3 className="font-bold text-base text-gray-900 line-clamp-1">
-                  {name}
-                </h3>
-                <div className="flex items-center gap-1 text-sm text-gray-700">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-semibold">{rating}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-500 mb-0.5">
-                <ShoppingBag className="h-3 w-3" />
-                <span className="capitalize">{cuisine}</span>
-                {distance && <span>· {distance}</span>}
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Tag className="h-3 w-3 text-orange-500" />
-                    Shop Now
-                  </span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3 w-3" />
-                    {deliveryTime}
-                  </span>
-                </div>
-                {isPromoted && (
-                  <span className="text-xs font-medium text-blue-600">Featured</span>
-                )}
-              </div>
-            </>
-          ) : isActive ? (
-            <>
-              {/* Food Card Layout (original) */}
-              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                <h3 className="font-bold text-base text-gray-900 line-clamp-1">
-                  {name}
-                </h3>
-                <div className="flex items-center gap-1 text-sm text-gray-700">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-semibold">{rating}</span>
-                </div>
-                <span className="text-sm text-gray-500">
-                  {distance ? `· ${distance}` : ""} · {deliveryTime}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500">
-                  {deliveryFee === "Free" ? "$0 delivery fee, first order" : `${deliveryFee} delivery fee`}
-                </p>
-                {isPromoted && (
-                  <span className="text-sm font-medium text-blue-600">Sponsored</span>
-                )}
-              </div>
-            </>
-          ) : null}
         </div>
       </div>
     </div>

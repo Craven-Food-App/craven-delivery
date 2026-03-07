@@ -66,7 +66,7 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         latitude: Number(r.lat),
         longitude: Number(r.lng),
         marketplace_type: r.marketplace_type || null,
-        cuisine_type: r.cuisine_type || null,
+        cuisine_type: r.cuisine_type || r.category || null,
         address: r.address != null ? String(r.address).trim() || null : null,
         status: r.status === 'ACTIVE' ? 'ACTIVE' : r.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
         parent_location: r.parent_location || null,
@@ -242,9 +242,16 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
   }, [token, merchants]);
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col" style={{ touchAction: 'none' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
-        <h2 className="text-lg font-semibold text-gray-900">Restaurants & stores near you</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Restaurants & stores near you
+          {merchants.length > 0 && (
+            <span className="block text-xs font-normal text-gray-500 mt-0.5">
+              {merchants.length} location{merchants.length !== 1 ? 's' : ''} on map
+            </span>
+          )}
+        </h2>
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close map">
           <X className="w-5 h-5" />
         </Button>

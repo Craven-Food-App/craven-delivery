@@ -1318,7 +1318,7 @@ const Restaurants = () => {
     { id: 'apparel', label: 'Apparel', icon: IconShirt, active: activeCategory === 'apparel' },
     { id: 'pets', label: 'Animals', icon: IconHeart, active: activeCategory === 'pets' },
     { id: 'health', label: 'Self Care', icon: IconShield, active: activeCategory === 'health' },
-    { id: 'browse', label: 'Browse All', icon: IconSearch, active: activeCategory === 'browse' },
+    { id: 'browse', label: 'View more', icon: IconSearch, active: activeCategory === 'browse' },
     { id: 'orders', label: 'Orders', icon: IconClock, active: activeCategory === 'orders' },
     { id: 'account', label: 'Account', icon: IconUser, active: activeCategory === 'account' }
   ];
@@ -2435,6 +2435,27 @@ const Restaurants = () => {
         }}>
           <Box component="main">
 
+            {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
+            {(() => {
+              const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
+              if (!mainAd) return null;
+              const Wrapper = mainAd.click_url ? 'a' : 'div';
+              const wrapperProps = mainAd.click_url
+                ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
+                : {};
+              return (
+                <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
+                  <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                    {mainAd.ad_code ? (
+                      <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+                    ) : mainAd.image_url ? (
+                      <MantineImage src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+                    ) : null}
+                  </Wrapper>
+                </Box>
+              );
+            })()}
+
             {/* Craven Quick Picks - Promoted Restaurants */}
             {weeklyDeals.length > 0 && (
               <Box style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
@@ -2852,13 +2873,13 @@ const Restaurants = () => {
               />
             </Box>
 
-            {/* Late Nate Hunger — restaurants only */}
+            {/* Late Night Hunger — restaurants open late */}
             <div ref={lateNateHungerSectionRef}>
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
-                cuisineFilter="late nate hunger"
-                sectionTitle="🌙 Late Nate Hunger"
+                cuisineFilter="late night hunger"
+                sectionTitle="🌙 Late Night Hunger"
                 horizontal={true}
                 useMarketplaceCatalog={true}
                 marketplaceType="restaurant"
@@ -2898,17 +2919,43 @@ const Restaurants = () => {
               />
             </Box>
 
-            {/* All Restaurants Section - Mobile */}
+            {/* Cosmetic Stores - Mobile */}
+            <Box px="md" pt="md" pb="xs">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Cosmetic Stores"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="retail"
+                cuisineFilter="Cosmetics"
+              />
+            </Box>
+
+            {/* Pet Stores - Mobile */}
+            <Box px="md" pt="xs" pb="md">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Pet Stores"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="retail"
+                cuisineFilter="Pet"
+              />
+            </Box>
+
+            {/* View more Section - Mobile (one card per row) */}
             <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-              <Box ref={resultsRef} id="browse-all-section" data-section="browse-all">
+              <Box ref={resultsRef} id="view-more-section" data-section="view-more">
                 <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
-                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Browse All</Title>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>View more</Title>
                 </Group>
                 <RestaurantGrid
                   searchQuery={searchQuery}
                   deliveryAddress={location}
                   cuisineFilter={cuisineFilter}
-                  columns={2}
+                  columns={1}
                   useMarketplaceCatalog={true}
                   marketplaceType="restaurant"
                 />
@@ -3626,6 +3673,27 @@ const Restaurants = () => {
               {/* Show organized sections when filter is 'all' or no filter */}
               {(!cuisineFilter || cuisineFilter === 'all') ? (
                 <>
+                  {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
+                  {(() => {
+                    const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
+                    if (!mainAd) return null;
+                    const Wrapper = mainAd.click_url ? 'a' : 'div';
+                    const wrapperProps = mainAd.click_url
+                      ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
+                      : {};
+                    return (
+                      <div className="mb-8">
+                        <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                          {mainAd.ad_code ? (
+                            <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
+                          ) : mainAd.image_url ? (
+                            <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
+                          ) : null}
+                        </Wrapper>
+                      </div>
+                    );
+                  })()}
+
                   {/* Craven Quick Picks - Promoted Restaurants */}
                   {weeklyDeals.length > 0 && (
                     <div className="mb-8">
@@ -3697,8 +3765,8 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
-                      cuisineFilter="late nate hunger"
-                      sectionTitle="🌙 Late Nate Hunger"
+                      cuisineFilter="late night hunger"
+                      sectionTitle="🌙 Late Night Hunger"
                       horizontal={true}
                       useMarketplaceCatalog={true}
                       marketplaceType="restaurant"
@@ -3734,6 +3802,30 @@ const Restaurants = () => {
                       horizontal={true}
                       useNearbyByLocation={true}
                       marketplaceType="retail"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
+                      sectionTitle="Cosmetic Stores"
+                      horizontal={true}
+                      useMarketplaceCatalog={true}
+                      marketplaceType="retail"
+                      cuisineFilter="Cosmetics"
+                    />
+                  </div>
+
+                  <div className="mb-8">
+                    <RestaurantGrid
+                      searchQuery={searchQuery}
+                      deliveryAddress={location}
+                      sectionTitle="Pet Stores"
+                      horizontal={true}
+                      useMarketplaceCatalog={true}
+                      marketplaceType="retail"
+                      cuisineFilter="Pet"
                     />
                   </div>
                 </>

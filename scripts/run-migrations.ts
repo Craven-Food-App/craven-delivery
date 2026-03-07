@@ -27,6 +27,8 @@ const PENDING_MIGRATIONS = [
   '20260308000002_marketplace_rpcs_return_address.sql',
   '20260309000001_ensure_marketplace_seed_if_empty.sql',
   '20260306000003_update_marketplace_real_locations.sql',
+  '20260310000001_seed_convenience_cosmetics_pet_stores.sql',
+  '20260311000001_late_night_hunger_category.sql',
 ];
 
 async function runMigrations(files: string[]) {
