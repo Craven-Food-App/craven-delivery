@@ -87,6 +87,7 @@ const PAGE_PATHS = [
 ];
 
 const PLACEMENT_KEYS = [
+  { value: 'main_customer_ad', label: 'Main Customer Ad (Above Quick Picks)' },
   { value: 'below_quick_picks', label: 'Below Quick Picks' },
   { value: 'above_premium', label: 'Above Premium Selections' },
   { value: 'sidebar', label: 'Sidebar' },

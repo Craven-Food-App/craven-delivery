@@ -151,7 +151,7 @@ const MarketingPortal: React.FC = () => {
       items: [
         { id: 'promo-codes', label: 'Promo Codes', icon: Tag },
         { id: 'promotional-banners', label: 'Promotional Banners', icon: ImageIcon },
-        { id: 'ad-placements', label: 'Ad Placements', icon: Megaphone },
+        { id: 'ad-placements', label: 'Ad Placements (incl. Main Customer Ad)', icon: Megaphone },
         { id: 'hero-image', label: 'Hero Image', icon: ImageIcon },
         { id: 'feeder-hero-image', label: 'Feeder Hero Image', icon: ImageIcon },
         { id: 'partner-hero-image', label: 'Partner Hero Image', icon: ImageIcon },
