@@ -25,6 +25,8 @@ const PENDING_MIGRATIONS = [
   '20260307000001_get_marketplace_restaurants_by_type.sql',
   '20260308000001_marketplace_parent_location_and_logos.sql',
   '20260308000002_marketplace_rpcs_return_address.sql',
+  '20260309000001_ensure_marketplace_seed_if_empty.sql',
+  '20260306000003_update_marketplace_real_locations.sql',
 ];
 
 async function runMigrations(files: string[]) {

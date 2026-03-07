@@ -6,6 +6,10 @@
 -- file in Supabase Dashboard → SQL Editor for project xaxbucnjlrfkccsfiddq.
 -- ============================================================================
 
+-- Drop so we can change signature/return type (idempotent when re-running)
+DROP FUNCTION IF EXISTS public.get_marketplace_restaurants(numeric, numeric, text, text, integer, text);
+DROP FUNCTION IF EXISTS public.get_marketplace_restaurants(numeric, numeric, text, text, integer);
+
 CREATE OR REPLACE FUNCTION public.get_marketplace_restaurants(
   p_lat numeric DEFAULT NULL,
   p_lng numeric DEFAULT NULL,
