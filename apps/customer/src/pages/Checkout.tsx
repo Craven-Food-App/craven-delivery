@@ -1684,19 +1684,19 @@ const Checkout: React.FC = () => {
                 onClick={() => setShowGiftModal(true)}
                 className={`w-full flex items-center gap-3 p-3 border rounded-lg transition-colors ${
                   giftInfo.isGift
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-orange-500 hover:border-orange-600 bg-orange-50'
+                    ? 'border-orange-500 bg-orange-500 text-white'
+                    : 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:border-orange-600'
                 }`}
               >
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                 </svg>
                 <div className="flex-1 text-left">
-                  <div className="font-medium text-sm text-orange-500">
+                  <div className="font-medium text-sm text-white">
                     {giftInfo.isGift ? `Gift to ${giftInfo.recipientName || 'Recipient'}` : 'Gift It'}
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -1725,7 +1725,7 @@ const Checkout: React.FC = () => {
                   const modifierTotal = item.modifiers?.reduce((sum: number, mod: any) => sum + (mod.price_cents || 0), 0) || 0;
                   const itemTotal = ((item.price_cents + modifierTotal) * item.quantity) / 100;
                   const modifiersText = item.modifiers?.map((m: any) => m.name).join(', ') || '';
-                  
+                  const itemImage = menuItemImages[item.id] || item.image_url || null;
                   return (
                     <SwipeToDelete
                       key={item.id || i}
@@ -1738,8 +1738,18 @@ const Checkout: React.FC = () => {
                         }
                       }}
                     >
-                      <div className="flex items-start justify-between py-2">
-                        <div className="flex-1">
+                      <div className="flex items-start gap-3 py-2">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-gray-100">
+                          {itemImage ? (
+                            <img
+                              src={itemImage}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          ) : null}
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-gray-900">
                             {item.quantity} x {item.name}
                           </div>
@@ -1747,7 +1757,7 @@ const Checkout: React.FC = () => {
                             <div className="text-xs text-gray-600 mt-0.5">{modifiersText}</div>
                           )}
                         </div>
-                        <div className="text-sm font-semibold text-gray-900">
+                        <div className="flex-shrink-0 text-sm font-semibold text-gray-900">
                           ${itemTotal.toFixed(2)}
                         </div>
                       </div>
@@ -1762,13 +1772,13 @@ const Checkout: React.FC = () => {
               {/* Deals */}
               <button 
                 onClick={() => setShowDealsModal(true)}
-                className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-orange-500 transition-colors"
+                className="w-full flex items-center justify-between p-3 border border-black rounded-lg hover:border-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
-                  <span className="text-sm font-medium text-gray-900">Deals</span>
+                  <span className="text-sm font-medium text-red-600">Deals</span>
                   {availableDeals.length > 0 && (
                     <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full">
                       {availableDeals.length}
@@ -1971,7 +1981,7 @@ const Checkout: React.FC = () => {
                     <div className="flex items-start gap-2.5 pb-3 border-b last:border-0">
                       {/* Image with quantity badge */}
                       <div className="relative flex-shrink-0">
-                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100">
                           {itemImage ? (
                             <img 
                               src={itemImage} 

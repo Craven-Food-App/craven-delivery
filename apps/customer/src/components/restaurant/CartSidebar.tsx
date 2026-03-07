@@ -327,8 +327,8 @@ export const CartSidebar = ({
                     <Box style={{ position: 'relative', flexShrink: 0 }}>
                       <Box
                         style={{
-                          width: '80px',
-                          height: '80px',
+                          width: '52px',
+                          height: '52px',
                           borderRadius: '8px',
                           overflow: 'hidden',
                           backgroundColor: 'var(--mantine-color-gray-1)',
@@ -341,7 +341,7 @@ export const CartSidebar = ({
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             fit="cover"
                             onError={(e) => {
-                              e.currentTarget.src = 'https://placehold.co/80x80/CCCCCC/666666?text=Item';
+                              e.currentTarget.src = 'https://placehold.co/52x52/CCCCCC/666666?text=Item';
                             }}
                           />
                         ) : (
