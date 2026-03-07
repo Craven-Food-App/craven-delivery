@@ -1344,8 +1344,8 @@ const Restaurants = () => {
     // Scroll to results section for restaurant categories
     if (['all', 'browse', 'grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(categoryId)) {
       setTimeout(() => {
-        if (categoryId === 'apparel' && apparelSectionRef.current) {
-          apparelSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (categoryId === 'apparel' && retailSectionRef.current) {
+          retailSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
           setTimeout(() => {
             window.scrollBy({ top: -100, behavior: 'smooth' });
           }, 300);
@@ -2827,19 +2827,7 @@ const Restaurants = () => {
               />
             </Box>
 
-            {/* Retail Near You — location-based */}
-            <Box id="retail-nearby-section">
-              <RestaurantGrid
-                searchQuery={searchQuery}
-                deliveryAddress={location}
-                sectionTitle="Retail Near You"
-                horizontal={true}
-                useNearbyByLocation={true}
-                marketplaceType="retail"
-              />
-            </Box>
-
-            {/* Shopping Centers Near You — location-based */}
+            {/* Shopping Centers Near You — location-based (malls, not restaurants) */}
             <Box id="shopping-centers-section">
               <RestaurantGrid
                 searchQuery={searchQuery}
@@ -2851,7 +2839,7 @@ const Restaurants = () => {
               />
             </Box>
 
-            {/* Late Nate Hunger */}
+            {/* Late Nate Hunger — restaurants only */}
             <div ref={lateNateHungerSectionRef}>
               <RestaurantGrid
                 searchQuery={searchQuery}
@@ -2860,10 +2848,11 @@ const Restaurants = () => {
                 sectionTitle="🌙 Late Nate Hunger"
                 horizontal={true}
                 useMarketplaceCatalog={true}
+                marketplaceType="restaurant"
               />
             </div>
 
-            {/* Kids */}
+            {/* Kids — restaurants only */}
             <div ref={kidsSectionRef} id="kids-section" data-section="kids">
               <RestaurantGrid
                 searchQuery={searchQuery}
@@ -2872,43 +2861,29 @@ const Restaurants = () => {
                 sectionTitle="🧒 Kids Menu"
                 horizontal={true}
                 useMarketplaceCatalog={true}
+                marketplaceType="restaurant"
               />
             </div>
 
-            {/* ═══ RETAIL & SHOPPING ═══ */}
-            {!Capacitor.isNativePlatform() && (
-              <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-                <Group gap="xs" mb={4}>
-                  <Text style={{ fontSize: '20px' }}>🛍️</Text>
-                  <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
-                </Group>
-                <Text size="xs" c="dimmed">Shop apparel, accessories & more — delivered</Text>
-              </Box>
-            )}
-
-            {/* Apparel */}
-            <Box ref={apparelSectionRef} id="apparel-section" data-section="apparel">
-              <RestaurantGrid
-                searchQuery={searchQuery}
-                deliveryAddress={location}
-                cuisineFilter="apparel"
-                sectionTitle="👗 Apparel & Fashion"
-                horizontal={true}
-                useMarketplaceCatalog={true}
-              />
+            {/* ═══ RETAIL & SHOPPING — one section, all retail (apparel + stores), never under restaurants ═══ */}
+            <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+              <Group gap="xs" mb={4}>
+                <Text style={{ fontSize: '20px' }}>🛍️</Text>
+                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
+              </Group>
+              <Text size="xs" c="dimmed">Stores, apparel, accessories & more — delivered</Text>
             </Box>
 
-            {/* Retail (category filter fallback) */}
-            <div ref={retailSectionRef} id="retail-section" data-section="retail">
+            <Box ref={retailSectionRef} id="retail-section" data-section="retail">
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
-                cuisineFilter="retail"
-                sectionTitle="🏪 Retail Stores"
+                sectionTitle="Retail Stores Near You"
                 horizontal={true}
-                useMarketplaceCatalog={true}
+                useNearbyByLocation={true}
+                marketplaceType="retail"
               />
-            </div>
+            </Box>
 
             {/* All Restaurants Section - Mobile */}
             <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
@@ -2922,6 +2897,7 @@ const Restaurants = () => {
                   cuisineFilter={cuisineFilter}
                   columns={2}
                   useMarketplaceCatalog={true}
+                  marketplaceType="restaurant"
                 />
               </Box>
             </Box>
@@ -3679,17 +3655,6 @@ const Restaurants = () => {
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
-                      sectionTitle="Retail Near You"
-                      horizontal={true}
-                      useNearbyByLocation={true}
-                      marketplaceType="retail"
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <RestaurantGrid
-                      searchQuery={searchQuery}
-                      deliveryAddress={location}
                       sectionTitle="Shopping Centers Near You"
                       horizontal={true}
                       useNearbyByLocation={true}
@@ -3705,6 +3670,7 @@ const Restaurants = () => {
                       sectionTitle="🌙 Late Nate Hunger"
                       horizontal={true}
                       useMarketplaceCatalog={true}
+                      marketplaceType="restaurant"
                     />
                   </div>
 
@@ -3716,37 +3682,27 @@ const Restaurants = () => {
                       sectionTitle="🧒 Kids Menu"
                       horizontal={true}
                       useMarketplaceCatalog={true}
+                      marketplaceType="restaurant"
                     />
                   </div>
 
-                  {/* ═══════ RETAIL & SHOPPING SECTION ═══════ */}
+                  {/* ═══════ RETAIL & SHOPPING — one section, all retail (apparel + stores), not under Food & Restaurants ═══════ */}
                   <div className="bg-gradient-to-r from-gray-50 to-white py-6 mt-4 border-t-2 border-gray-100 px-4">
                     <div className="flex items-center gap-3 mb-2">
                       <span style={{ fontSize: '28px' }}>🛍️</span>
                       <h2 className="text-2xl font-bold text-gray-900">Retail & Shopping</h2>
                     </div>
-                    <p className="text-gray-500 text-sm mb-4">Shop apparel, accessories, and more — delivered to your door</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <RestaurantGrid
-                      searchQuery={searchQuery}
-                      deliveryAddress={location}
-                      cuisineFilter="apparel"
-                      sectionTitle="👗 Apparel & Fashion"
-                      horizontal={true}
-                      useMarketplaceCatalog={true}
-                    />
+                    <p className="text-gray-500 text-sm mb-4">Stores, apparel, accessories & more — delivered to your door</p>
                   </div>
 
                   <div className="mb-8">
                     <RestaurantGrid
                       searchQuery={searchQuery}
                       deliveryAddress={location}
-                      cuisineFilter="retail"
-                      sectionTitle="🏪 Retail Stores"
+                      sectionTitle="Retail Stores Near You"
                       horizontal={true}
-                      useMarketplaceCatalog={true}
+                      useNearbyByLocation={true}
+                      marketplaceType="retail"
                     />
                   </div>
                 </>
@@ -3811,16 +3767,18 @@ const Restaurants = () => {
                     horizontal={true}
                     categoryFilter={apparelCategoryFilter !== 'all' ? apparelCategoryFilter : undefined}
                     useMarketplaceCatalog={true}
+                    marketplaceType="retail"
                   />
                 </>
               ) : (
-                /* Single section when filtering by specific cuisine or searching */
+                /* Single section when filtering by specific cuisine or searching — restaurants only */
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
                   cuisineFilter={cuisineFilter}
                   horizontal={true}
                   useMarketplaceCatalog={true}
+                  marketplaceType="restaurant"
                 />
               )}
             </div>

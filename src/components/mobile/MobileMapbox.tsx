@@ -391,26 +391,37 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     });
   }, [resetToDefaultZoom, isMapReady]);
 
-  // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map
+  // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map.
+  // Request restaurant, retail, and mall separately so retail/mall are not cut off by limit.
   useEffect(() => {
     const fetchMerchants = async () => {
       setMerchantsLoadError(null);
-      const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-        p_lat: null,
-        p_lng: null,
-        p_search: null,
-        p_cuisine: null,
-        p_limit: 2000,
-      });
-
-      if (error) {
-        console.error('get_marketplace_restaurants error:', error);
-        setMerchantsLoadError(error.message || 'Could not load locations');
-        setMerchantsLoaded(true);
-        return;
+      const limit = 1500;
+      const types: string[] = ['restaurant', 'retail', 'mall'];
+      const allRows: any[] = [];
+      for (const pType of types) {
+        const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
+          p_lat: null,
+          p_lng: null,
+          p_search: null,
+          p_cuisine: null,
+          p_limit: limit,
+          p_marketplace_type: pType,
+        });
+        if (error) {
+          console.error('get_marketplace_restaurants error:', error);
+          setMerchantsLoadError(error.message || 'Could not load locations');
+          setMerchantsLoaded(true);
+          return;
+        }
+        if (data && Array.isArray(data)) allRows.push(...data);
       }
+      // Dedupe by id (e.g. if a row appears in more than one call)
+      const byId = new Map<string, any>();
+      for (const row of allRows) byId.set(row.id, row);
+      const data = Array.from(byId.values());
 
-      if (!data || !Array.isArray(data)) {
+      if (data.length === 0) {
         setMerchantsLoadError('No data returned');
         setMerchantsLoaded(true);
         return;
@@ -426,7 +437,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
           longitude: Number(row.lng),
           merchant_category: row.marketplace_type || null,
           cuisine_type: row.cuisine_type || null,
-          address: null,
+          address: row.address != null ? String(row.address).trim() || null : null,
           phone: null,
           active_order_count: 0,
           status: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',

@@ -46,6 +46,14 @@ function getSharedUserLocation(cb: (loc: { lat: number; lng: number } | null) =>
   }
 }
 
+// Cuisine/category keywords that mean retail/apparel — never show these in "Restaurants Near You"
+const RETAIL_CUISINE_KEYWORDS = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail', 'retail_store'];
+
+function isRetailOrApparel(cuisineType?: string): boolean {
+  const cat = (cuisineType || '').toLowerCase();
+  return RETAIL_CUISINE_KEYWORDS.some((k) => cat.includes(k));
+}
+
 interface Restaurant {
   id: string;
   name: string;
@@ -63,6 +71,8 @@ interface Restaurant {
   /** From marketplace catalog: ACTIVE | REQUESTABLE | COMING_SOON */
   marketplaceStatus?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
   request_count?: number;
+  /** restaurant | retail | mall – used for catalog fallback filtering */
+  marketplace_type?: string;
 }
 interface RestaurantGridProps {
   searchQuery?: string;
@@ -159,7 +169,7 @@ const RestaurantGrid = ({
         list = (data || []).map((row: any) => ({
           id: row.id,
           name: row.name,
-          cuisine_type: row.cuisine_type || '',
+          cuisine_type: row.cuisine_type || row.category || '',
           image_url: row.image_url || row.logo_url,
           latitude: row.lat != null ? Number(row.lat) : undefined,
           longitude: row.lng != null ? Number(row.lng) : undefined,
@@ -170,8 +180,49 @@ const RestaurantGrid = ({
           is_promoted: row.is_promoted ?? false,
           marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
           request_count: row.request_count,
+          marketplace_type: row.marketplace_type || 'restaurant',
         }));
         if (list.length >= minResults || radius === 50) break;
+      }
+      // When retail/mall sections get 0 from nearby, show full catalog filtered by type so sections aren't empty
+      if (list.length === 0 && (marketplaceType === 'retail' || marketplaceType === 'mall')) {
+        const { data: catalogData, error: catalogError } = await (supabase as any).rpc('get_marketplace_restaurants', {
+          p_lat: null,
+          p_lng: null,
+          p_search: searchQuery || null,
+          p_cuisine: null,
+          p_limit: 500,
+          p_marketplace_type: marketplaceType,
+        });
+        if (!catalogError && catalogData && Array.isArray(catalogData)) {
+          const filtered = (catalogData as any[])
+            .filter((row: any) => row.marketplace_type === marketplaceType && row.lat != null && row.lng != null)
+            .map((row: any) => ({
+              id: row.id,
+              name: row.name,
+              cuisine_type: row.cuisine_type || row.category || '',
+              image_url: row.image_url || row.logo_url,
+              latitude: row.lat != null ? Number(row.lat) : undefined,
+              longitude: row.lng != null ? Number(row.lng) : undefined,
+              rating: row.rating != null ? Number(row.rating) : undefined,
+              min_delivery_time: row.min_delivery_time,
+              max_delivery_time: row.max_delivery_time,
+              delivery_fee_cents: row.delivery_fee_cents,
+              is_promoted: row.is_promoted ?? false,
+              marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+              request_count: row.request_count,
+              marketplace_type: row.marketplace_type || 'restaurant',
+            }));
+          list = filtered;
+        }
+      }
+      // Never show wrong type: strict client-side filter so restaurant section never shows retail and vice versa
+      if (marketplaceType) {
+        list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
+      }
+      // Restaurant section must never show apparel/retail: API treats all restaurants table rows as 'restaurant'
+      if (marketplaceType === 'restaurant') {
+        list = list.filter((r) => !isRetailOrApparel(r.cuisine_type));
       }
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
@@ -181,7 +232,12 @@ const RestaurantGrid = ({
       }
     } catch (err) {
       console.error('Error fetching nearby businesses:', err);
-      await fetchMarketplaceRestaurants();
+      // Fallback must respect type: only call catalog when we have marketplaceType so we filter correctly
+      if (marketplaceType) {
+        await fetchMarketplaceRestaurants();
+      } else {
+        setRestaurants([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -196,13 +252,14 @@ const RestaurantGrid = ({
         p_search: searchQuery || null,
         p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
         p_limit: 300,
+        p_marketplace_type: marketplaceType && marketplaceType !== 'restaurant' ? marketplaceType : null,
       });
       if (error) throw error;
-      const list: Restaurant[] = (data || []).map((row: any) => ({
+      let list: Restaurant[] = (data || []).map((row: any) => ({
         id: row.id,
         name: row.name,
-        cuisine_type: row.cuisine_type || '',
-        image_url: row.image_url,
+        cuisine_type: row.cuisine_type || row.category || '',
+        image_url: row.image_url || row.logo_url,
         latitude: row.lat != null ? Number(row.lat) : undefined,
         longitude: row.lng != null ? Number(row.lng) : undefined,
         rating: row.rating != null ? Number(row.rating) : undefined,
@@ -211,7 +268,17 @@ const RestaurantGrid = ({
         delivery_fee_cents: row.delivery_fee_cents,
         is_promoted: row.is_promoted ?? false,
         marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
+        marketplace_type: row.marketplace_type || 'restaurant',
       }));
+      // Never mix types: strict filter so restaurant sections never show retail/mall and vice versa
+      if (marketplaceType === 'restaurant') {
+        list = list.filter((r) => (r.marketplace_type || 'restaurant') === 'restaurant' && !isRetailOrApparel(r.cuisine_type));
+      } else if (marketplaceType === 'retail') {
+        // Retail section = catalog retail (marketplace_type 'retail') OR apparel/retail by category (active merchants)
+        list = list.filter((r) => (r.marketplace_type || 'restaurant') === 'retail' || isRetailOrApparel(r.cuisine_type));
+      } else if (marketplaceType === 'mall') {
+        list = list.filter((r) => (r.marketplace_type || 'restaurant') === 'mall');
+      }
       if (excludeCuisine) {
         const excludeList = excludeCuisine.split(',').map(c => c.trim().toLowerCase());
         setRestaurants(list.filter(r => !r.cuisine_type || !excludeList.includes(r.cuisine_type.toLowerCase())));
@@ -392,7 +459,7 @@ const RestaurantGrid = ({
       onNotifyMe: restaurant.marketplaceStatus === 'COMING_SOON' ? (email?: string) => notifyMeRestaurant(restaurant.id, email) : undefined,
     };
   };
-  // Don't render if no restaurants (conditional rendering)
+  // Don't show a category/section when there's nothing in it
   if (restaurants.length === 0 && !loading) {
     return null;
   }
@@ -414,29 +481,15 @@ const RestaurantGrid = ({
             scrollBehavior: 'smooth'
           }}>
             <div className="flex space-x-4 px-4 pb-4" style={{ minWidth: 'max-content' }}>
-              {restaurants.length === 0 ? (
-                <div className="text-center py-12 px-4">
-                  <p className="text-muted-foreground text-lg">
-                    {cuisineFilter && cuisineFilter !== 'all' 
-                      ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
-                      : searchQuery 
-                        ? `No restaurants found for "${searchQuery}"${deliveryAddress ? ` near ${deliveryAddress}` : ''}` 
-                        : deliveryAddress 
-                          ? `No restaurants found within ${deliveryAddress}` 
-                          : "No restaurants available right now. Be the first to register your restaurant!"}
-                  </p>
+              {restaurants.map((restaurant, index) => (
+                <div
+                  key={restaurant.id}
+                  className="flex-shrink-0 w-[280px] animate-slide-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <RestaurantCard {...formatRestaurantData(restaurant)} />
                 </div>
-              ) : (
-                restaurants.map((restaurant, index) => (
-                  <div
-                    key={restaurant.id}
-                    className="flex-shrink-0 w-[280px] animate-slide-up"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <RestaurantCard {...formatRestaurantData(restaurant)} />
-                  </div>
-                ))
-              )}
+              ))}
             </div>
           </div>
         </>
@@ -452,25 +505,13 @@ const RestaurantGrid = ({
             
           </div>}
 
-          {restaurants.length === 0 ? <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              {cuisineFilter && cuisineFilter !== 'all' 
-                ? "Sorry there is nothing available in this category as of yet. Please check back at a later date"
-                : searchQuery 
-                  ? `No restaurants found for "${searchQuery}"${deliveryAddress ? ` near ${deliveryAddress}` : ''}` 
-                  : deliveryAddress 
-                    ? `No restaurants found within ${deliveryAddress}` 
-                    : "No restaurants available right now. Be the first to register your restaurant!"}
-            </p>
-          </div> : (
-            <div className={`grid gap-4 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
-              {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
-                animationDelay: `${index * 100}ms`
-              }}>
-                <RestaurantCard {...formatRestaurantData(restaurant)} />
-              </div>)}
-            </div>
-          )}
+          <div className={`grid gap-4 ${columns === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
+            {restaurants.map((restaurant, index) => <div key={restaurant.id} className="animate-slide-up" style={{
+              animationDelay: `${index * 100}ms`
+            }}>
+              <RestaurantCard {...formatRestaurantData(restaurant)} />
+            </div>)}
+          </div>
         </div>
       )}
     </section>;

@@ -76,18 +76,24 @@ const RestaurantCard = ({
     }
   };
 
-  const displayImage = image || DEFAULT_IMAGE;
+  // Plan: when no logo, display business name only (no placeholder graphics)
+  const hasLogo = Boolean(image);
+  const displayImage = hasLogo ? image : (isActive && !isRequestable && !isComingSoon ? DEFAULT_IMAGE : '');
 
   return (
     <div className={`group ${isActive ? 'cursor-pointer' : ''}`} onClick={handleClick}>
       <div className="bg-white rounded-xl overflow-hidden border border-gray-100" style={{ width: '100%', maxWidth: '100%' }}>
-        {/* Image */}
-        <div className={`relative ${isRetail ? 'h-48 sm:h-56 bg-gray-50' : 'h-44 sm:h-52'} overflow-hidden rounded-xl ${!isActive ? 'bg-gray-50' : ''}`}>
-          <img 
-            src={displayImage} 
-            alt={name}
-            className={`w-full h-full ${isRetail || !isActive ? 'object-contain p-2' : 'object-cover'} ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
-          />
+        {/* Image or name-only when no logo (marketplace requestable/coming soon) */}
+        <div className={`relative ${isRetail ? 'h-48 sm:h-56 bg-gray-50' : 'h-44 sm:h-52'} overflow-hidden rounded-xl ${!isActive ? 'bg-gray-50' : ''} flex items-center justify-center`}>
+          {displayImage ? (
+            <img 
+              src={displayImage} 
+              alt={name}
+              className={`w-full h-full ${isRetail || !isActive ? 'object-contain p-2' : 'object-cover'} ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
+            />
+          ) : (
+            <span className="text-gray-700 font-semibold text-center px-3 line-clamp-3" style={{ fontSize: '1rem' }}>{name}</span>
+          )}
           {isRequestable && (
             <div className="absolute top-2 left-2 right-2 flex justify-center">
               <span className="bg-gray-800 text-white px-2 py-1 rounded-full text-xs font-medium">Not on Crave&apos;n yet</span>
@@ -119,10 +125,10 @@ const RestaurantCard = ({
                 className="w-full py-2 px-3 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 disabled:opacity-70 flex items-center justify-center gap-1.5"
               >
                 <Send className="h-3.5 w-3.5" />
-                {requesting ? 'Requesting…' : 'Request this restaurant'}
+                {requesting ? 'Requesting…' : "Request this business on Crave'n"}
               </button>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Invite this restaurant yourself —{' '}
+                Invite this business —{' '}
                 <a
                   href="https://cravenusa.com/merchant"
                   target="_blank"

@@ -65,6 +65,10 @@
     "tablet:merchant:sync": "cd apps/tablet/merchant && npm run sync",
     "tablet:merchant:open:android": "cd apps/tablet/merchant && npm run open:android",
     "tablet:merchant:build:android": "cd apps/tablet/merchant && npm run build && npm run sync && npx cap build android",
+    "db:push": "npx supabase db push",
+    "db:migrate": "tsx scripts/run-migrations.ts",
+    "db:migrate:all": "tsx scripts/run-migrations.ts -- --all",
+    "deploy:functions": "tsx scripts/deploy-functions.ts",
     "deploy:pos-functions": "npx supabase functions deploy pos-oauth-start --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy pos-oauth-callback --project-ref xaxbucnjlrfkccsfiddq",
     "deploy:merchant-functions": "npx supabase functions deploy get-mapbox-token --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy calculate-restaurant-readiness --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy calculate-restaurant-payouts --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy get-stripe-connect-status --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy pos-oauth-start --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy pos-oauth-callback --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy pos-sync-menu --project-ref xaxbucnjlrfkccsfiddq && npx supabase functions deploy delete-merchant-account --project-ref xaxbucnjlrfkccsfiddq"
   },
@@ -220,6 +224,7 @@
     "jsdom": "^23.0.1",
     "lovable-tagger": "^1.1.7",
     "node-releases": "^2.0.27",
+    "pg": "^8.20.0",
     "postcss": "^8.4.47",
     "react-is": "^19.2.4",
     "sharp": "^0.34.5",
