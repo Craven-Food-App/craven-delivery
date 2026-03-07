@@ -1,10 +1,10 @@
-// Preferred map style (matches customer app map view — light, clean)
+// Preferred map style (customer map view — light, clean). Keep in sync with root src/config/mapbox.ts.
 export const MAPBOX_STYLE = 'mapbox://styles/mapbox/light-v11';
 
 export const MAPBOX_CONFIG = {
-  accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWZpbXN4NmUwMG0wMmpxNDNkc2lmNWhiIn0._lEfvdpBUJpz-RYDV02ZAA',
+  accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWVxb21qbTQyNTRnMm1vaHg5bDZwcmw2In0.aOsYrL2B0cjfcCGW1jHAdw',
   style: MAPBOX_STYLE,
-  center: [-83.5555, 41.6528], // Toledo, OH default
+  center: [-83.5555, 41.6528] as [number, number],
   zoom: 10
 };
 
@@ -26,6 +26,6 @@ export const ZONE_STYLES = {
     fillOpacity: 0.1,
     stroke: '#ff6600',
     strokeWidth: 2,
-    strokeDasharray: [5, 5]
+    strokeDasharray: [5, 5] as [number, number]
   }
 };

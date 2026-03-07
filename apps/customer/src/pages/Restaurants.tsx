@@ -1927,7 +1927,7 @@ const Restaurants = () => {
     );
   }
 
-  // Mobile App Main Interface - Always show mobile UI when on mobile (web browser or native app)
+  // Mobile UI (mobile web + native app): same layout, map view, and list/map toggle for both.
   if (isMobile) {
     if (showMain) {
       return (
@@ -1941,6 +1941,7 @@ const Restaurants = () => {
           flexDirection: 'column',
           paddingTop: 'calc(120px + env(safe-area-inset-top, 0px))'
         }}>
+        {/* Map view with location beacon — shown for mobile web and native app */}
         {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
         {/* Search & Address Bar (Fixed Header - Matching Source App) */}
         <Box component="header" style={{ 
@@ -1986,13 +1987,18 @@ const Restaurants = () => {
             </Box>
 
             <ActionIcon
-              onClick={() => setShowMapView(true)}
+              onClick={() => setShowMapView((prev) => !prev)}
               variant="subtle"
               size="lg"
               radius="xl"
               style={{ flexShrink: 0 }}
+              title={showMapView ? 'View list' : 'View map'}
             >
-              <IconMap2 size={24} style={{ color: '#171717' }} />
+              {showMapView ? (
+                <IconBuildingStore size={24} style={{ color: '#171717' }} />
+              ) : (
+                <IconMap2 size={24} style={{ color: '#171717' }} />
+              )}
             </ActionIcon>
             <Group
               gap="xs"
@@ -2628,216 +2634,6 @@ const Restaurants = () => {
               </Box>
             )}
 
-            {/* Advertisement Banner - Auto-Rotating Carousel */}
-            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {loadingAds || loadingBanners ? (
-                <Box
-                  style={{
-                    width: '380px',
-                    height: '200px',
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Loader size="sm" />
-                </Box>
-              ) : randomizedAds.length > 0 ? (
-                <Box
-                  style={{
-                    width: '380px',
-                    maxWidth: '100%',
-                    height: '200px',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    borderRadius: '16px',
-                    isolation: 'isolate',
-                    transform: 'translateZ(0)',
-                    boxShadow: '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)',
-                  }}
-                >
-                  {randomizedAds.map((ad, index) => {
-                    const isActive = index === currentAdIndex;
-                    const isPrevious = index === (currentAdIndex - 1 + randomizedAds.length) % randomizedAds.length;
-                    
-                    // Calculate transform based on position
-                    let transform = 'translateX(100%)'; // Default: off-screen to the right
-                    let zIndex = 1;
-                    if (isActive) {
-                      transform = 'translateX(0)'; // Current: center
-                      zIndex = 3;
-                    } else if (isPrevious) {
-                      transform = 'translateX(-100%)'; // Previous: off-screen to the left
-                      zIndex = 2;
-                    }
-                    
-                    return (
-                      <Box
-                        key={`${ad.type}-${ad.id || index}`}
-                        component={ad.click_url || ad.action_url || ad.link_url ? "a" : "div"}
-                        href={ad.click_url || ad.action_url || ad.link_url || undefined}
-                        onClick={(e) => {
-                          if (!ad.click_url && !ad.action_url && !ad.link_url) {
-                            e.preventDefault();
-                            return;
-                          }
-                          e.preventDefault();
-                          const link = ad.click_url || ad.action_url || ad.link_url;
-                          if (link) {
-                            navigate(link);
-                          }
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          width: '100%',
-                          height: '100%',
-                          transform: transform,
-                          transition: 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                          pointerEvents: isActive ? 'auto' : 'none',
-                          zIndex: zIndex,
-                          willChange: 'transform',
-                          backfaceVisibility: 'hidden',
-                          WebkitBackfaceVisibility: 'hidden',
-                          background: ad.type === 'promotional_banner' && !ad.image_url
-                            ? 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)'
-                            : ad.background || 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
-                          borderRadius: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: (ad.click_url || ad.action_url || ad.link_url) ? 'pointer' : 'default',
-                          overflow: 'hidden',
-                          textDecoration: 'none',
-                          boxShadow: '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)',
-                          border: '2px solid rgba(255, 255, 255, 0.2)',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (isActive) {
-                            e.currentTarget.style.transform = 'translateX(0) translateY(-4px)';
-                            e.currentTarget.style.boxShadow = '0 16px 48px rgba(255, 107, 53, 0.5), 0 0 60px rgba(255, 107, 53, 0.3)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (isActive) {
-                            e.currentTarget.style.transform = 'translateX(0) translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 8px 32px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2)';
-                          }
-                        }}
-                      >
-                        {ad.ad_code ? (
-                          <div 
-                            dangerouslySetInnerHTML={{ __html: ad.ad_code }} 
-                            style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}
-                          />
-                        ) : ad.image_url ? (
-                          <MantineImage
-                            src={ad.image_url}
-                            alt={ad.title || "Advertisement"}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1 }}
-                          />
-                        ) : (
-                          <Box style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                            <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
-                              {ad.title || 'Advertisement'}
-                              <br />
-                              {ad.width || 380} × {ad.height || 200}
-                            </Text>
-                          </Box>
-                        )}
-                        {/* Overlay gradient for better text readability */}
-                        <Box
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)',
-                            pointerEvents: 'none',
-                            zIndex: 2,
-                          }}
-                        />
-                      </Box>
-                    );
-                  })}
-                </Box>
-              ) : (
-                <Box
-                  component="a"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/promotion-details');
-                  }}
-                  style={{
-                    width: '380px',
-                    maxWidth: '100%',
-                    height: '200px',
-                    background: 'linear-gradient(135deg, #ff6b35 0%, #f97316 50%, #ea580c 100%)',
-                    borderRadius: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)',
-                    border: '2px solid rgba(255, 255, 255, 0.2)',
-                    textDecoration: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(255, 107, 53, 0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 53, 0.3)';
-                  }}
-                >
-                  <Text size="sm" c="white" fw={600} style={{ textAlign: 'center' }}>
-                    Advertisement
-                    <br />
-                    380 × 200
-                  </Text>
-                </Box>
-              )}
-            </Box>
-
-            {/* Promotional Banner Carousel */}
-            {loadingBanners ? (
-              <Box py="xl" px="md">
-                <Group gap="md">
-                  {[...Array(4)].map((_, i) => (
-                    <Card key={i} style={{ height: '340px', width: '100%' }}>
-                      <Loader />
-                    </Card>
-                  ))}
-                </Group>
-              </Box>
-            ) : promotionalBanners.length > 0 ? (
-              <Box py="xl" px="md">
-                <Carousel
-                  slideSize="100%"
-                  slideGap="md"
-                  withControls
-                >
-                  {promotionalBanners.map((banner) => (
-                    <Carousel.Slide key={banner.id}>
-                      <PromoCard 
-                        title={banner.title} 
-                        subtitle={banner.description || banner.subtitle || ''}
-                        image={banner.image_url || ''}
-                        bannerId={banner.id}
-                      />
-                    </Carousel.Slide>
-                  ))}
-                </Carousel>
-              </Box>
-            ) : null}
-
             {/* ═══ FOOD & RESTAURANTS ═══ */}
             {!Capacitor.isNativePlatform() && (
               <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
@@ -2988,10 +2784,11 @@ const Restaurants = () => {
     }
   }
 
-  // Desktop Layout - Only show when NOT on mobile
+  // Desktop Layout (wide viewport — includes desktop web and tablet)
   if (!isMobile) {
     return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
+      {/* Map view with location beacon — same component on desktop */}
       {showMapView && <CustomerMerchantMap onClose={() => setShowMapView(false)} />}
       {/* Mobile Header - Mantine UI */}
       <Box 
@@ -3033,12 +2830,17 @@ const Restaurants = () => {
                 )}
               </ActionIcon>
               <ActionIcon
-                onClick={() => setShowMapView(true)}
+                onClick={() => setShowMapView((prev) => !prev)}
                 variant="subtle"
                 size="lg"
                 radius="xl"
+                title={showMapView ? 'View list' : 'View map'}
               >
-                <IconMap2 size={20} style={{ color: '#4b5563' }} />
+                {showMapView ? (
+                  <IconBuildingStore size={20} style={{ color: '#4b5563' }} />
+                ) : (
+                  <IconMap2 size={20} style={{ color: '#4b5563' }} />
+                )}
               </ActionIcon>
             </Group>
             <ActionIcon
@@ -3265,13 +3067,17 @@ const Restaurants = () => {
                 )}
               </div>
 
-              {/* Map View */}
+              {/* Map / List View Toggle */}
               <button
-                onClick={() => setShowMapView(true)}
+                onClick={() => setShowMapView((prev) => !prev)}
                 className="p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
-                title="View map"
+                title={showMapView ? 'View list' : 'View map'}
               >
-                <IconMap2 className="w-6 h-6" />
+                {showMapView ? (
+                  <IconBuildingStore className="w-6 h-6" />
+                ) : (
+                  <IconMap2 className="w-6 h-6" />
+                )}
               </button>
 
               {/* Delivery/Pickup Toggle */}

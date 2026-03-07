@@ -189,7 +189,7 @@ const DriverTrackingModal: React.FC<DriverTrackingModalProps> = ({
 
       const mapInstance = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/light-v11',
         center: [-83.5552, 41.6639], // Default to Toledo, OH
         zoom: 13
       });

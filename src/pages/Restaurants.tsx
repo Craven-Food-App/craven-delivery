@@ -1445,37 +1445,6 @@ const Restaurants = () => {
           })()
         }}>
           <Box component="main">
-            {/* Promo Carousel */}
-            {loadingBanners ? (
-              <Box py="xl" px="md">
-                <Group gap="md">
-                  {[...Array(4)].map((_, i) => (
-                  <Card key={i} style={{ height: '300px', width: '100%' }}>
-                      <Loader />
-                    </Card>
-                  ))}
-                </Group>
-              </Box>
-            ) : promotionalBanners.length > 0 ? (
-              <Box py="xl" px="md">
-                <Carousel
-                  slideSize="100%"
-                  slideGap="md"
-                  withControls
-                >
-                  {promotionalBanners.map((banner) => (
-                    <Carousel.Slide key={banner.id}>
-                      <PromoCard 
-                        title={banner.title} 
-                        subtitle={banner.subtitle}
-                        image={banner.image_url} 
-                      />
-                    </Carousel.Slide>
-                  ))}
-                </Carousel>
-              </Box>
-            ) : null}
-
             {/* Fastest near you */}
             <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '4px', paddingBottom: '4px', height: '345px' }}>
               <Group justify="space-between" mb="md">
@@ -1496,96 +1465,6 @@ const Restaurants = () => {
                 ))}
               </Group>
             </Box>
-
-            {/* Advertisement Banner - Dynamic */}
-            <Box px="md" py="md" style={{ backgroundColor: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {loadingAds ? (
-                <Box
-                  style={{
-                    width: '380px',
-                    height: '200px',
-                    backgroundColor: '#f3f4f6',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Loader size="sm" />
-                </Box>
-              ) : (() => {
-                const adPlacement = adPlacements.find(ad => ad.placement_key === 'below_quick_picks');
-                return adPlacement ? (
-                    <Box
-                      component="a"
-                      href={adPlacement.click_url || '#'}
-                      target={adPlacement.click_url ? '_blank' : undefined}
-                      rel={adPlacement.click_url ? 'noopener noreferrer' : undefined}
-                      style={{
-                        width: `${adPlacement.width}px`,
-                        height: `${adPlacement.height}px`,
-                        backgroundColor: '#f3f4f6',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: adPlacement.click_url ? 'pointer' : 'default',
-                        transition: 'opacity 0.2s',
-                        overflow: 'hidden',
-                        textDecoration: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (adPlacement.click_url) {
-                          e.currentTarget.style.opacity = '0.9';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                    >
-                      {adPlacement.ad_code ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: adPlacement.ad_code }} 
-                          style={{ width: '100%', height: '100%' }}
-                        />
-                      ) : adPlacement.image_url ? (
-                        <MantineImage
-                          src={adPlacement.image_url}
-                          alt="Advertisement"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
-                          Advertisement
-                          <br />
-                          {adPlacement.width} × {adPlacement.height}
-                        </Text>
-                      )}
-                    </Box>
-                  ) : (
-                    <Box
-                      style={{
-                        width: '380px',
-                        height: '200px',
-                        backgroundColor: '#f3f4f6',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text size="sm" c="dimmed" style={{ textAlign: 'center' }}>
-                        Advertisement
-                        <br />
-                        380 × 200
-                      </Text>
-                    </Box>
-                  );
-                })()}
-              </Box>
 
             {/* Premium Selections */}
             <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '0px', paddingBottom: '0px' }}>

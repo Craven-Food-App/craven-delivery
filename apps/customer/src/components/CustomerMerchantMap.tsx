@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { createCravenMarkerElement } from '@/utils/createCravenMapPin';
 
 const DEFAULT_CENTER: [number, number] = [-83.55, 41.65]; // Toledo, OH
 const HEAD_SIZE = 28;
@@ -30,9 +31,12 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const hasFittedRef = useRef(false);
+  const hasFittedWithUserRef = useRef(false);
   const [token, setToken] = useState<string | null>(null);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,11 +135,38 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
     m.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.current = m;
     return () => {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
       markersRef.current.forEach((mr) => mr.remove());
       markersRef.current = [];
       m.remove();
       map.current = null;
     };
+  }, [token]);
+
+  // User location beacon (Craven pin) — works on mobile web and native app; no platform check.
+  useEffect(() => {
+    if (!map.current || !navigator.geolocation) return;
+    const m = map.current;
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled || !map.current) return;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setUserLocation({ lat, lng });
+        userMarkerRef.current?.remove();
+        const el = createCravenMarkerElement(40, 'You are here');
+        el.style.zIndex = '10';
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([lng, lat])
+          .addTo(m);
+        userMarkerRef.current = marker;
+      },
+      () => { /* user denied or unavailable — no beacon */ },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+    return () => { cancelled = true; };
   }, [token]);
 
   // Add markers when map and merchants ready
@@ -229,17 +260,26 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       markersRef.current.push(marker);
     });
 
-    if (!hasFittedRef.current && merchants.length > 0) {
-      hasFittedRef.current = true;
-      const lngs = merchants.map((x) => x.longitude).filter(Number.isFinite);
-      const lats = merchants.map((x) => x.latitude).filter(Number.isFinite);
-      if (lngs.length && lats.length) {
-        const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
-        const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
-        m.fitBounds([sw, ne], { padding: 60, maxZoom: 14, duration: 800 });
-      }
+    const lngs = merchants.map((x) => x.longitude).filter(Number.isFinite);
+    const lats = merchants.map((x) => x.latitude).filter(Number.isFinite);
+    if (userLocation) {
+      lngs.push(userLocation.lng);
+      lats.push(userLocation.lat);
     }
-  }, [token, merchants]);
+    const shouldFit = lngs.length > 0 && lats.length > 0;
+    if (shouldFit && !hasFittedRef.current) {
+      hasFittedRef.current = true;
+      if (userLocation) hasFittedWithUserRef.current = true;
+      const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+      const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+      m.fitBounds([sw, ne], { padding: 80, maxZoom: 14, duration: 800 });
+    } else if (shouldFit && userLocation && !hasFittedWithUserRef.current) {
+      hasFittedWithUserRef.current = true;
+      const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+      const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+      m.fitBounds([sw, ne], { padding: 80, maxZoom: 14, duration: 600 });
+    }
+  }, [token, merchants, userLocation]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col" style={{ touchAction: 'none' }}>

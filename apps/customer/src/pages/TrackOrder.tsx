@@ -264,7 +264,7 @@ const TrackOrder: React.FC = () => {
     try {
       mapInstance.current = new mapboxgl.Map({
         container: mapRef.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/light-v11',
         center: center,
         zoom: 13,
       });

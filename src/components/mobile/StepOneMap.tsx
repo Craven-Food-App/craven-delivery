@@ -117,7 +117,7 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
+          style: 'mapbox://styles/mapbox/light-v11',
           center: destination,
           zoom: 13,
         });

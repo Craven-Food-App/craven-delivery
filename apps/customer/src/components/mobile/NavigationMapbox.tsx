@@ -117,7 +117,7 @@ export const NavigationMapbox: React.FC<NavigationMapboxProps> = ({
 
       map.current = new window.mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/navigation-day-v1',
+        style: 'mapbox://styles/mapbox/light-v11',
         center: location ? [location.longitude, location.latitude] : [-74.006, 40.7128],
         zoom: 15,
         pitch: 60,

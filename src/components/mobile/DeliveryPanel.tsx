@@ -84,7 +84,7 @@ const MapboxStaticMap = ({ destinationName, type, currentCoords, destinationCoor
   // The style is 'mapbox/navigation-preview-day'
   // The center is calculated as the midpoint between driver and destination
   // Zoom is set to 12 for a good city view, and the image size is 600x480
-  const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/navigation-preview-day/static/${markers}/${centerLng},${centerLat},12,0/600x480?access_token=${MAPBOX_ACCESS_TOKEN}&attribution=false&logo=false`;
+  const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/${markers}/${centerLng},${centerLat},12,0/600x480?access_token=${MAPBOX_ACCESS_TOKEN}&attribution=false&logo=false`;
 
   return (
     <div className="w-full h-48 relative overflow-hidden rounded-t-xl">

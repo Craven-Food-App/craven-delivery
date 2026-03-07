@@ -180,7 +180,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
         // Initialize map — always interactive so we can toggle drag later
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/streets-v12',
+          style: 'mapbox://styles/mapbox/light-v11',
           center: dropoffCoords || center,
           zoom: 15,
           interactive: true

@@ -134,7 +134,7 @@ const TrackOrder: React.FC = () => {
 
     mapInstance.current = new mapboxgl.Map({
       container: mapRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/light-v11',
       center: [center.lng, center.lat],
       zoom: 13,
       accessToken: 'pk.eyJ1IjoiY3JhdmVuLWRlbGl2ZXJ5IiwiYSI6ImNsdGJ0dGJ0dGJ0dGIifQ.example' // Replace with real token

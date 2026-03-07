@@ -1171,7 +1171,7 @@ const RestaurantMenuPage = () => {
 
             map.current = new window.mapboxgl.Map({
                 container: mapContainer.current,
-                style: 'mapbox://styles/mapbox/streets-v12',
+                style: 'mapbox://styles/mapbox/light-v11',
                 center: [restaurant.longitude, restaurant.latitude],
                 zoom: 15,
                 interactive: true
