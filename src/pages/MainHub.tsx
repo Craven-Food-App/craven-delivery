@@ -93,7 +93,7 @@ const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
         "testing",
       ].includes(portalId);
     case "marketing":
-      return ["marketing"].includes(portalId);
+      return ["marketing", "market-demand"].includes(portalId);
     case "hr":
       return [
         "hr",
@@ -1474,10 +1474,16 @@ const MainHub: React.FC = () => {
       portalIds: ["hr", "talent-management", "intern-sponsor"],
     },
     {
+      id: "marketing-section",
+      title: "Marketing",
+      subtitle: "Marketing, demand, and merchant outreach",
+      portalIds: ["marketing", "market-demand"],
+    },
+    {
       id: "growth-support",
       title: "Growth & Support",
       subtitle: "Growth, customer relationships, and support",
-      portalIds: ["marketing", "support-operations", "customer-success", "market-demand"],
+      portalIds: ["support-operations", "customer-success"],
     },
     {
       id: "finance-legal",
@@ -1541,6 +1547,7 @@ const MainHub: React.FC = () => {
       case 'company': return hasCompanyAccess;
       case 'admin': return canAdmin;
       case 'marketing': return canMarketing;
+      case 'market-demand': return canMarketing;
       case 'ceo': return canCEO;
       case 'cfo': return canCFO;
       case 'coo': return canCOO;
@@ -2178,7 +2185,7 @@ const MainHub: React.FC = () => {
                             badgeLabel = "People / HR";
                             badgeBg = "#fed7aa";
                             badgeColor = "#9a3412";
-                          } else if (portal.id === "marketing") {
+                          } else if (["marketing", "market-demand"].includes(portal.id)) {
                             badgeLabel = "Marketing";
                             badgeBg = "#fce7f3";
                             badgeColor = "#9f1239";
