@@ -1,8 +1,9 @@
-import { Star, Clock, Truck, Package, Tag, ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star, Package, Bell, Send, Share2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const RETAIL_TYPES = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail'];
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop";
 
 interface RestaurantCardProps {
   id: string;
@@ -12,105 +13,187 @@ interface RestaurantCardProps {
   deliveryTime: string;
   deliveryFee: string;
   cuisine: string;
+  distance?: string;
   isPromoted?: boolean;
+  marketplaceStatus?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
+  onRequest?: () => void | Promise<void>;
+  onNotifyMe?: (email?: string) => void | Promise<void>;
+  onShareWithBusiness?: (business: { id: string; name: string; image?: string; cuisine?: string }) => void;
 }
 
-const RestaurantCard = ({ 
+const RestaurantCard = ({
   id,
-  name, 
-  image, 
-  rating, 
-  deliveryTime, 
-  deliveryFee, 
+  name,
+  image,
+  rating,
+  deliveryTime,
+  deliveryFee,
   cuisine,
-  isPromoted = false 
+  distance,
+  isPromoted = false,
+  marketplaceStatus = 'ACTIVE',
+  onRequest,
+  onNotifyMe,
+  onShareWithBusiness,
 }: RestaurantCardProps) => {
   const navigate = useNavigate();
   const isRetail = RETAIL_TYPES.some(t => cuisine?.toLowerCase().includes(t));
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [notifySent, setNotifySent] = useState(false);
+  const [showNotifyInline, setShowNotifyInline] = useState(false);
 
-  const handleClick = () => {
+  const isActive = marketplaceStatus === 'ACTIVE';
+  const isRequestable = marketplaceStatus === 'REQUESTABLE';
+  const isComingSoon = marketplaceStatus === 'COMING_SOON';
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isActive) {
+      e.stopPropagation();
+      return;
+    }
     navigate(`/restaurant/${id}/menu`);
   };
 
+  const handleRequest = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onRequest || requesting) return;
+    setRequesting(true);
+    try {
+      await onRequest();
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const handleNotifyMe = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onNotifyMe || notifySent) return;
+    setRequesting(true);
+    try {
+      await onNotifyMe(notifyEmail || undefined);
+      setNotifySent(true);
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const hasLogo = Boolean(image);
+  const displayImage = hasLogo ? image : (isActive ? DEFAULT_IMAGE : '');
+
+  const ratingDisplay = isActive ? rating : '—';
+  const timeDisplay = isActive ? deliveryTime : (isComingSoon ? 'Soon' : '—');
+  const tagLine = isRequestable
+    ? "Not on Crave'n yet"
+    : isComingSoon
+    ? "Coming soon to Crave'n"
+    : deliveryFee === "Free"
+    ? "$0 delivery fee, first order"
+    : `${deliveryFee} delivery fee`;
+  const rightBadge = isActive && isPromoted ? (isRetail ? 'Featured' : 'Sponsored') : null;
+
   return (
-    <div className="group cursor-pointer" onClick={handleClick}>
-      <div className="bg-card rounded-lg shadow-card hover:shadow-hover transition-all duration-300 transform hover:scale-105 overflow-hidden w-full">
-        {/* Image */}
-        <div className={`relative ${isRetail ? 'h-48 sm:h-56 bg-gray-50' : 'h-40 sm:h-48'} overflow-hidden`}>
-          <img 
-            src={image} 
-            alt={name}
-            className={`w-full h-full ${isRetail ? 'object-contain p-2' : 'object-cover'} group-hover:scale-110 transition-transform duration-500`}
-          />
-          
-          {/* Promoted Badge */}
-          {isPromoted && (
-            <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-              {isRetail ? 'Featured' : 'Promoted'}
-            </div>
+    <div className={`group ${isActive ? 'cursor-pointer' : ''}`} onClick={handleClick}>
+      <div className="bg-white rounded-t-xl overflow-hidden border border-gray-100 rounded-b-xl" style={{ width: '100%', maxWidth: '100%' }}>
+        <div className={`relative h-32 overflow-hidden rounded-t-xl bg-gray-100 flex items-center justify-center`}>
+          {displayImage ? (
+            <img
+              src={displayImage}
+              alt={name}
+              className={`w-full h-full object-cover ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
+            />
+          ) : (
+            <span className="text-gray-600 font-semibold text-center px-3 line-clamp-2 text-sm">{name}</span>
           )}
-          
-          {/* Delivery Fee / Shipping Badge */}
-          {isRetail ? (
-            <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+          {isRequestable && onRequest && (
+            <button
+              type="button"
+              onClick={handleRequest}
+              disabled={requesting}
+              className="absolute bottom-2 right-2 z-10 py-1.5 px-2.5 rounded-md bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 disabled:opacity-70 flex items-center gap-1 shadow-lg"
+            >
+              <Send className="h-3 w-3" />
+              {requesting ? '…' : 'Request'}
+            </button>
+          )}
+          {isComingSoon && !notifySent && !showNotifyInline && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowNotifyInline(true);
+              }}
+              className="absolute bottom-2 right-2 py-1.5 px-2.5 rounded-md bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 flex items-center gap-1 shadow-lg"
+            >
+              <Bell className="h-3 w-3" />
+              Notify me
+            </button>
+          )}
+          {isRetail && isActive && (
+            <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1">
               <Package className="h-3 w-3" />
               Ships Free
             </div>
-          ) : (
-            deliveryFee === "Free" && (
-              <div className="absolute top-3 right-3 bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs font-medium">
-                Free Delivery
-              </div>
-            )
           )}
         </div>
 
-        {/* Content */}
-        <div className="p-3 sm:p-4">
-          <div className="flex justify-between items-center mb-1">
-            <h3 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1 min-w-0">
-              {name}
-            </h3>
-            <div className="flex items-center space-x-1 text-sm flex-shrink-0">
-              <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-medium" style={{ fontSize: '24px' }}>{rating}</span>
+        <div className="pt-2.5 pb-2 px-2">
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <h3 className="font-bold text-base text-gray-900 line-clamp-1 flex-1 min-w-0">{name}</h3>
+            <div className="flex items-center gap-1 text-sm text-gray-700 flex-shrink-0">
+              {isActive && (
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              )}
+              <span className="font-semibold">{ratingDisplay}</span>
+              <span className="text-gray-400">·</span>
+              <span className="text-gray-600">{timeDisplay}</span>
             </div>
           </div>
-
-          {isRetail ? (
-            <>
-              <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground mb-2">
-                <ShoppingBag className="h-3 w-3" />
-                <span className="capitalize">{cuisine}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Tag className="h-3 w-3 text-orange-500" />
-                  <span>Shop Now</span>
-                </div>
-                <span className="text-gray-300">•</span>
-                <div className="flex items-center gap-1">
-                  <Truck className="h-3 w-3" />
-                  <span>{deliveryTime}</span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-muted-foreground text-xs sm:text-sm mb-3 line-clamp-1">{cuisine}</p>
-              <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="text-xs">{deliveryTime}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Truck className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="text-xs">{deliveryFee}</span>
-                  </div>
-                </div>
-              </div>
-            </>
+          <div className="flex justify-between items-center gap-2">
+            <p className="text-sm text-gray-500 truncate flex-1 min-w-0">{tagLine}</p>
+            {rightBadge && (
+              <span className="text-sm font-medium text-blue-600 flex-shrink-0">{rightBadge}</span>
+            )}
+            {isRequestable && (onShareWithBusiness ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareWithBusiness({ id, name, image, cuisine });
+                }}
+                className="text-orange-500 font-medium hover:underline inline-flex items-center gap-0.5 text-xs flex-shrink-0"
+              >
+                <Share2 className="h-3 w-3" />
+                Share with business
+              </button>
+            ) : (
+              <span className="text-orange-500 font-medium inline-flex items-center gap-0.5 text-xs flex-shrink-0">
+                <Share2 className="h-3 w-3" />
+                Share with business
+              </span>
+            ))}
+          </div>
+          {isComingSoon && showNotifyInline && !notifySent && (
+            <div className="mt-2 flex gap-2" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="email"
+                placeholder="Your email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 min-w-0"
+              />
+              <button
+                type="button"
+                onClick={handleNotifyMe}
+                disabled={requesting}
+                className="py-1.5 px-2.5 rounded-lg bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 disabled:opacity-70"
+              >
+                {requesting ? '…' : 'Send'}
+              </button>
+            </div>
+          )}
+          {isComingSoon && notifySent && (
+            <p className="text-xs text-green-600 font-medium mt-1">We&apos;ll notify you!</p>
           )}
         </div>
       </div>

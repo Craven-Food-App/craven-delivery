@@ -1507,6 +1507,8 @@ const Restaurants = () => {
                     excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                     sectionTitle="Restaurants Near You"
                     horizontal={true}
+                    useNearbyByLocation={true}
+                    marketplaceType="restaurant"
                   />
                 </Box>
 
@@ -2231,6 +2233,8 @@ const Restaurants = () => {
                     excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
                     sectionTitle="Restaurants Near You"
                     horizontal={true}
+                    useNearbyByLocation={true}
+                    marketplaceType="restaurant"
                   />
                 </div>
               </div>

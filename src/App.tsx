@@ -16,6 +16,7 @@ const getCapacitor = (): { isNativePlatform: () => boolean } => {
 const Capacitor = getCapacitor();
 import { supabase } from "@/integrations/supabase/client";
 import { CartProvider } from "@/contexts/CartContext";
+import { DeliveryAddressProvider } from "@/contexts/DeliveryAddressContext";
 import Index from "./pages/Index";
 import Favorites from "./pages/Favorites";
 import OrderHistory from "./pages/OrderHistory";
@@ -722,6 +723,7 @@ const App = () => {
                 v7_relativeSplatPath: true,
               }}
             >
+            <DeliveryAddressProvider>
             <CartProvider>
             {/* iOS PWA Install Banner */}
             <InstallAppBanner />
@@ -957,6 +959,7 @@ const App = () => {
         </div>
 
         </CartProvider>
+            </DeliveryAddressProvider>
       </BrowserRouter>
     </TooltipProvider>
     </ThemeProvider>
