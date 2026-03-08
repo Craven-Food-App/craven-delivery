@@ -136,10 +136,6 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         external: [
-          "@capacitor/core",
-          "@capacitor/geolocation",
-          "@capacitor/push-notifications",
-          "@capacitor/local-notifications",
           "pdfjs-dist",
         ],
         output: {
