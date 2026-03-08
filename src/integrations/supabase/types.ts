@@ -23870,6 +23870,45 @@ export type Database = {
           },
         ]
       }
+      restaurant_notify_me: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          restaurant_master_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          restaurant_master_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          restaurant_master_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_notify_me_restaurant_master_id_fkey"
+            columns: ["restaurant_master_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_notify_me_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       restaurant_onboarding: {
         Row: {
           admin_notes: string | null
@@ -24730,6 +24769,90 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      restaurants_master: {
+        Row: {
+          address: string | null
+          category: string | null
+          city: string | null
+          created_at: string | null
+          header_image_url: string | null
+          id: string
+          image_url: string | null
+          last_requested_at: string | null
+          lat: number | null
+          lng: number | null
+          logo_url: string | null
+          marketplace_type: string | null
+          name: string
+          parent_location: string | null
+          request_count: number
+          restaurant_id: string | null
+          state: string | null
+          status: string
+          subcategory: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          header_image_url?: string | null
+          id?: string
+          image_url?: string | null
+          last_requested_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          marketplace_type?: string | null
+          name: string
+          parent_location?: string | null
+          request_count?: number
+          restaurant_id?: string | null
+          state?: string | null
+          status?: string
+          subcategory?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string | null
+          header_image_url?: string | null
+          id?: string
+          image_url?: string | null
+          last_requested_at?: string | null
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          marketplace_type?: string | null
+          name?: string
+          parent_location?: string | null
+          request_count?: number
+          restaurant_id?: string | null
+          state?: string | null
+          status?: string
+          subcategory?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_master_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_health_by_category"
+            referencedColumns: ["restaurant_id"]
+          },
+          {
+            foreignKeyName: "restaurants_master_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_assessments: {
         Row: {
@@ -29672,6 +29795,41 @@ export type Database = {
           total_errors: number
         }[]
       }
+      get_business_nearby: {
+        Args: {
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_marketplace_type?: string
+          p_radius_miles?: number
+          p_search?: string
+        }
+        Returns: {
+          address: string
+          city: string
+          cuisine_type: string
+          delivery_fee_cents: number
+          delivery_radius_miles: number
+          description: string
+          distance_miles: number
+          header_image_url: string
+          id: string
+          image_url: string
+          is_promoted: boolean
+          lat: number
+          lng: number
+          logo_url: string
+          marketplace_type: string
+          max_delivery_time: number
+          min_delivery_time: number
+          name: string
+          parent_location: string
+          rating: number
+          request_count: number
+          state: string
+          status: string
+        }[]
+      }
       get_cfo_email: { Args: never; Returns: string }
       get_cravemore_price: { Args: { p_plan_key: string }; Returns: number }
       get_current_user_email: { Args: never; Returns: string }
@@ -29748,6 +29906,39 @@ export type Database = {
           failed_count: number
           feature_name: string
           total_attempts: number
+        }[]
+      }
+      get_marketplace_restaurants: {
+        Args: {
+          p_cuisine?: string
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_marketplace_type?: string
+          p_search?: string
+        }
+        Returns: {
+          address: string
+          city: string
+          cuisine_type: string
+          delivery_fee_cents: number
+          delivery_radius_miles: number
+          description: string
+          header_image_url: string
+          id: string
+          image_url: string
+          is_promoted: boolean
+          lat: number
+          lng: number
+          marketplace_type: string
+          max_delivery_time: number
+          min_delivery_time: number
+          name: string
+          parent_location: string
+          rating: number
+          request_count: number
+          state: string
+          status: string
         }[]
       }
       get_merchant_category_config: {
@@ -30028,6 +30219,10 @@ export type Database = {
         }
         Returns: Json
       }
+      notify_me_restaurant: {
+        Args: { p_email?: string; p_restaurant_master_id: string }
+        Returns: Json
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -30113,6 +30308,10 @@ export type Database = {
           p_stripe_auth_id: string
         }
         Returns: undefined
+      }
+      request_restaurant: {
+        Args: { p_restaurant_master_id: string }
+        Returns: Json
       }
       reserve_inventory: {
         Args: { p_items: Json; p_restaurant_id: string }
