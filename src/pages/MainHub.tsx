@@ -1355,7 +1355,7 @@ const MainHub: React.FC = () => {
       name: "Market Demand",
       description: "Partnership requests, demand metrics, and merchant reports",
       icon: BarChartOutlined,
-      path: "/admin/market-demand",
+      path: "/hub/market-demand",
       color: "#f97316",
     },
     {

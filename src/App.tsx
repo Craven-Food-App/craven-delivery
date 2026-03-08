@@ -410,6 +410,7 @@ const App = () => {
                   <Route path="/investor-demo/merchant" element={<Suspense fallback={<SuspenseLoader message="Loading Merchant Demo" />}><InvestorDemoMerchant /></Suspense>} />
                   <Route path="/investor-demo/driver" element={<Suspense fallback={<SuspenseLoader message="Loading Driver Demo" />}><InvestorDemoDriver /></Suspense>} />
                   <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Department" />}><DepartmentHub /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/hub/market-demand" element={<BusinessAuthGuard><MarketDemand /></BusinessAuthGuard>} />
                   <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/main-hub" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Hub" />}><MainHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/admin" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Admin" />}><Admin /></Suspense></BusinessAuthGuard>} />
@@ -766,7 +767,6 @@ const App = () => {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/notification-settings" element={<NotificationSettings />} />
           <Route path="/admin/promo" element={<BusinessAuthGuard><PromoManagement /></BusinessAuthGuard>} />
-          <Route path="/admin/market-demand" element={<BusinessAuthGuard><MarketDemand /></BusinessAuthGuard>} />
           <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
           <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/legal/terms" element={<TermsOfServicePage />} />
@@ -794,6 +794,7 @@ const App = () => {
           <Route path="/testing" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Portal" />}><TestingPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/hub/foundational/invites" element={<BusinessAuthGuard><HubFoundationalInvites /></BusinessAuthGuard>} />
           <Route path="/hub/department/:departmentName" element={<BusinessAuthGuard><DepartmentHub /></BusinessAuthGuard>} />
+          <Route path="/hub/market-demand" element={<BusinessAuthGuard><MarketDemand /></BusinessAuthGuard>} />
           <Route path="/hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
           <Route path="/technology/developer-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Developer Portal" />}><DeveloperPortal /></Suspense></BusinessAuthGuard>} />
           <Route path="/main-hub" element={<BusinessAuthGuard><MainHub /></BusinessAuthGuard>} />
