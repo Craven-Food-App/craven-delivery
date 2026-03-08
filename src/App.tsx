@@ -61,6 +61,7 @@ import PromotionDetails from "./pages/PromotionDetails";
 import Notifications from "./pages/Notifications";
 import NotificationSettings from "./pages/NotificationSettings";
 import PromoManagement from "./pages/admin/PromoManagement";
+import MarketDemand from "./pages/admin/MarketDemand";
 import CraveMoreSubscription from "./pages/CraveMoreSubscription";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
@@ -765,6 +766,7 @@ const App = () => {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/notification-settings" element={<NotificationSettings />} />
           <Route path="/admin/promo" element={<BusinessAuthGuard><PromoManagement /></BusinessAuthGuard>} />
+          <Route path="/admin/market-demand" element={<BusinessAuthGuard><MarketDemand /></BusinessAuthGuard>} />
           <Route path="/crave-more-subscription" element={<CraveMoreSubscription />} />
           <Route path="/legal/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/legal/terms" element={<TermsOfServicePage />} />

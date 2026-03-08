@@ -1351,6 +1351,14 @@ const MainHub: React.FC = () => {
       color: "#1890ff",
     },
     {
+      id: "market-demand",
+      name: "Market Demand",
+      description: "Partnership requests, demand metrics, and merchant reports",
+      icon: BarChartOutlined,
+      path: "/admin/market-demand",
+      color: "#f97316",
+    },
+    {
       id: "support-operations",
       name: "Support Operations",
       description: "Refunds, disputes, tickets, and audit logs",
@@ -1469,7 +1477,7 @@ const MainHub: React.FC = () => {
       id: "growth-support",
       title: "Growth & Support",
       subtitle: "Growth, customer relationships, and support",
-      portalIds: ["marketing", "support-operations", "customer-success"],
+      portalIds: ["marketing", "support-operations", "customer-success", "market-demand"],
     },
     {
       id: "finance-legal",
