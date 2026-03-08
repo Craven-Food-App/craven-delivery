@@ -1,6 +1,9 @@
 // Preferred map style (matches customer app map view — light, clean)
 export const MAPBOX_STYLE = 'mapbox://styles/mapbox/light-v11';
 
+/** Orange color for highway overlay on feeder maps (motorway, trunk, primary). */
+export const HIGHWAY_OVERLAY_COLOR = '#f97316';
+
 export const MAPBOX_CONFIG = {
   accessToken: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiY3JhdmUtbiIsImEiOiJjbWZpbXN4NmUwMG0wMmpxNDNkc2lmNWhiIn0._lEfvdpBUJpz-RYDV02ZAA',
   style: MAPBOX_STYLE,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MAPBOX_CONFIG } from '@/config/mapbox';
+import { MAPBOX_CONFIG, HIGHWAY_OVERLAY_COLOR } from '@/config/mapbox';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import {
   DeliveryZone,
@@ -48,6 +48,7 @@ interface MobileMapboxProps {
 const ZONE_SOURCE_ID = 'delivery-zones';
 const ZONE_FILL_LAYER_ID = 'delivery-zones-fill';
 const ZONE_LINE_LAYER_ID = 'delivery-zones-outline';
+const HIGHWAY_OVERLAY_LAYER_ID = 'feeder-highways-orange';
 
 export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   className = '',
@@ -289,13 +290,39 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
               }
             }
             
-            // Wait for style to be fully loaded before adding zones
-            if (m.isStyleLoaded()) {
+            // Wait for style to be fully loaded before adding zones and highway overlay
+            const applyStyleLayers = () => {
               updateZoneLayers(zones);
+              // Orange overlay for highways (motorway, trunk, primary) on feeder map
+              if (!m.getLayer(HIGHWAY_OVERLAY_LAYER_ID) && m.getSource('composite')) {
+                try {
+                  m.addLayer(
+                    {
+                      id: HIGHWAY_OVERLAY_LAYER_ID,
+                      type: 'line',
+                      source: 'composite',
+                      'source-layer': 'road',
+                      filter: [
+                        'in',
+                        ['get', 'class'],
+                        ['literal', ['motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link']],
+                      ],
+                      paint: {
+                        'line-color': HIGHWAY_OVERLAY_COLOR,
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2, 14, 4, 18, 8],
+                      },
+                    },
+                    'road-label-simple'
+                  );
+                } catch (e) {
+                  console.warn('Could not add highway overlay layer:', e);
+                }
+              }
+            };
+            if (m.isStyleLoaded()) {
+              applyStyleLayers();
             } else {
-              m.once('style.load', () => {
-                updateZoneLayers(zones);
-              });
+              m.once('style.load', applyStyleLayers);
             }
           }
         });
