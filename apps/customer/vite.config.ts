@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        "@shared": path.resolve(__dirname, "../src"),
       },
       dedupe: ['react', 'react-dom'], // Add this to fix React context issue
     },

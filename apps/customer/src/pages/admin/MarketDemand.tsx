@@ -1,6 +1,6 @@
 /**
  * Admin: Market Demand
- * View restaurants_master (REQUESTABLE, COMING_SOON, LEAD_READY), request counts, and actions.
+ * View restaurants_master (REQUESTABLE, COMING_SOON, LEAD_READY), request counts, partnership requests, and report metrics.
  */
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,14 +16,44 @@ import {
   Paper,
   ActionIcon,
   Group,
+  Drawer,
+  Divider,
+  SimpleGrid,
 } from '@mantine/core';
-import { IconMail, IconUserPlus, IconRefresh } from '@tabler/icons-react';
+import { IconMail, IconUserPlus, IconRefresh, IconChartBar } from '@tabler/icons-react';
 
 const MERCHANT_SIGNUP_URL = 'https://cravenusa.com/merchant';
+
+const ORDER_FREQ_LABELS: Record<string, string> = {
+  frequently: 'Frequently',
+  weekly: 'Weekly',
+  '2_3_per_month': '2–3×/month',
+  monthly: 'Monthly',
+  rarely: 'Rarely',
+};
+
+const WOULD_REFER_LABELS: Record<string, string> = {
+  yes: 'Yes',
+  probably: 'Probably',
+  maybe: 'Maybe',
+  no: 'No',
+};
+
+const WHAT_MATTERS_LABELS: Record<string, string> = {
+  delivery_speed: 'Delivery speed',
+  support_local: 'Supporting local',
+  variety: 'Variety',
+  price: 'Price',
+  quality: 'Quality',
+};
 
 export default function MarketDemand() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reportDrawerOpen, setReportDrawerOpen] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<{ id: string; name: string } | null>(null);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   const fetchDemand = async () => {
     setLoading(true);
@@ -53,6 +83,40 @@ export default function MarketDemand() {
     navigator.clipboard.writeText(MERCHANT_SIGNUP_URL);
   };
 
+  const openReport = async (r: { id: string; name: string }) => {
+    setSelectedRestaurant(r);
+    setReportDrawerOpen(true);
+    setRequestsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('merchant_partnership_requests')
+        .select('id, requester_email, requester_name, order_frequency, would_refer, what_matters_most, message_to_business, created_at')
+        .eq('restaurant_master_id', r.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setRequests(data || []);
+    } catch (err) {
+      console.error('Error fetching partnership requests:', err);
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const reportMetrics = (() => {
+    const total = requests.length;
+    if (total === 0) return null;
+    const byFreq: Record<string, number> = {};
+    const byRefer: Record<string, number> = {};
+    const byMatters: Record<string, number> = {};
+    requests.forEach((req) => {
+      if (req.order_frequency) byFreq[req.order_frequency] = (byFreq[req.order_frequency] || 0) + 1;
+      if (req.would_refer) byRefer[req.would_refer] = (byRefer[req.would_refer] || 0) + 1;
+      (req.what_matters_most || []).forEach((v: string) => { byMatters[v] = (byMatters[v] || 0) + 1; });
+    });
+    return { total, byFreq, byRefer, byMatters };
+  })();
+
   return (
     <Box p="md">
       <Stack gap="lg">
@@ -63,7 +127,7 @@ export default function MarketDemand() {
           </Button>
         </Group>
         <Text size="sm" c="dimmed">
-          Restaurants requested by customers. When request count reaches 15, status becomes LEAD_READY for outreach.
+          Restaurants requested by customers. Use &quot;Partnership report&quot; to view structured demand data for merchant outreach. When request count reaches 15, status becomes LEAD_READY.
         </Text>
 
         {loading ? (
@@ -126,9 +190,18 @@ export default function MarketDemand() {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
+                          <Button
+                            size="xs"
+                            variant="light"
+                            leftSection={<IconChartBar size={14} />}
+                            onClick={() => openReport(r)}
+                            title="View partnership requests and report metrics"
+                          >
+                            Report
+                          </Button>
                           <ActionIcon
                             variant="light"
-                            title="Invite Restaurant"
+                            title="Copy invite link"
                             onClick={copyInviteLink}
                           >
                             <IconMail size={16} />
@@ -162,6 +235,80 @@ export default function MarketDemand() {
             </Table>
           </Paper>
         )}
+
+        <Drawer
+          opened={reportDrawerOpen}
+          onClose={() => { setReportDrawerOpen(false); setSelectedRestaurant(null); setRequests([]); }}
+          title={selectedRestaurant ? `Partnership report: ${selectedRestaurant.name}` : 'Partnership report'}
+          position="right"
+          size="lg"
+        >
+          {selectedRestaurant && (
+            <Stack gap="md">
+              {requestsLoading ? (
+                <Loader />
+              ) : (
+                <>
+                  {reportMetrics && (
+                    <>
+                      <Text size="sm" fw={600}>Summary metrics</Text>
+                      <SimpleGrid cols={2} spacing="sm">
+                        <Paper p="sm" withBorder>
+                          <Text size="xs" c="dimmed">Total requests</Text>
+                          <Text fw={700}>{reportMetrics.total}</Text>
+                        </Paper>
+                        {Object.keys(reportMetrics.byFreq).length > 0 && (
+                          <Paper p="sm" withBorder>
+                            <Text size="xs" c="dimmed">Order intent</Text>
+                            {Object.entries(reportMetrics.byFreq).map(([k, v]) => (
+                              <Text key={k} size="sm">{ORDER_FREQ_LABELS[k] || k}: {v}</Text>
+                            ))}
+                          </Paper>
+                        )}
+                        {Object.keys(reportMetrics.byRefer).length > 0 && (
+                          <Paper p="sm" withBorder>
+                            <Text size="xs" c="dimmed">Would refer</Text>
+                            {Object.entries(reportMetrics.byRefer).map(([k, v]) => (
+                              <Text key={k} size="sm">{WOULD_REFER_LABELS[k] || k}: {v}</Text>
+                            ))}
+                          </Paper>
+                        )}
+                      </SimpleGrid>
+                      <Divider />
+                    </>
+                  )}
+                  <Text size="sm" fw={600}>Individual requests</Text>
+                  {requests.length === 0 ? (
+                    <Text size="sm" c="dimmed">No structured requests yet. Consumers can submit via &quot;Share with business&quot; on the app.</Text>
+                  ) : (
+                    <Table striped>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th>Date</Table.Th>
+                          <Table.Th>Order frequency</Table.Th>
+                          <Table.Th>Would refer</Table.Th>
+                          <Table.Th>What matters</Table.Th>
+                          <Table.Th>Message</Table.Th>
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {requests.map((req) => (
+                          <Table.Tr key={req.id}>
+                            <Table.Td>{req.created_at ? new Date(req.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</Table.Td>
+                            <Table.Td>{ORDER_FREQ_LABELS[req.order_frequency] || req.order_frequency || '—'}</Table.Td>
+                            <Table.Td>{WOULD_REFER_LABELS[req.would_refer] || req.would_refer || '—'}</Table.Td>
+                            <Table.Td>{((req.what_matters_most || []).map((v: string) => WHAT_MATTERS_LABELS[v] || v).join(', ')) || '—'}</Table.Td>
+                            <Table.Td>{req.message_to_business ? (req.message_to_business.length > 60 ? req.message_to_business.slice(0, 60) + '…' : req.message_to_business) : '—'}</Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  )}
+                </>
+              )}
+            </Stack>
+          )}
+        </Drawer>
       </Stack>
     </Box>
   );

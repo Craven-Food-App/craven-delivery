@@ -19,6 +19,8 @@ interface RestaurantCardProps {
   marketplaceStatus?: 'ACTIVE' | 'REQUESTABLE' | 'COMING_SOON';
   onRequest?: () => void | Promise<void>;
   onNotifyMe?: (email?: string) => void | Promise<void>;
+  /** Opens enterprise "Request this business" modal with structured metrics (for REQUESTABLE cards) */
+  onShareWithBusiness?: (business: { id: string; name: string; image?: string; cuisine?: string }) => void;
 }
 
 const RestaurantCard = ({ 
@@ -34,6 +36,7 @@ const RestaurantCard = ({
   marketplaceStatus = 'ACTIVE',
   onRequest,
   onNotifyMe,
+  onShareWithBusiness,
 }: RestaurantCardProps) => {
   const navigate = useNavigate();
   const isRetail = RETAIL_TYPES.some(t => cuisine?.toLowerCase().includes(t));
@@ -158,18 +161,24 @@ const RestaurantCard = ({
             {rightBadge && (
               <span className="text-sm font-medium text-blue-600 flex-shrink-0">{rightBadge}</span>
             )}
-            {isRequestable && (
-              <a
-                href="https://cravenusa.com/merchant"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+            {isRequestable && (onShareWithBusiness ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareWithBusiness({ id, name, image, cuisine });
+                }}
                 className="text-orange-500 font-medium hover:underline inline-flex items-center gap-0.5 text-xs flex-shrink-0"
               >
                 <Share2 className="h-3 w-3" />
                 Share with business
-              </a>
-            )}
+              </button>
+            ) : (
+              <span className="text-orange-500 font-medium inline-flex items-center gap-0.5 text-xs flex-shrink-0">
+                <Share2 className="h-3 w-3" />
+                Share with business
+              </span>
+            ))}
           </div>
           {/* Inline notify form (COMING_SOON) */}
           {isComingSoon && showNotifyInline && !notifySent && (

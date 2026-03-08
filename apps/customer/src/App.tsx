@@ -46,6 +46,7 @@ import InviteFriends from "@/pages/InviteFriends";
 import CuisineResults from "@/pages/CuisineResults";
 import PromoManagement from "@/pages/admin/PromoManagement";
 import MarketDemand from "@/pages/admin/MarketDemand";
+import MerchantLandingPage from "@/components/merchant/MerchantLandingPage";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance.tsx";
@@ -158,6 +159,8 @@ function App() {
                     <Route path="/legal/terms" element={<TermsOfServicePage />} />
                     <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
                     <Route path="/promotion-details" element={<PromotionDetails />} />
+                    <Route path="/merchant/signup" element={<MerchantLandingPage />} />
+                    <Route path="/merchant" element={<Navigate to="/merchant/signup" replace />} />
                     
                     {/* Protected Routes - Require authentication */}
                     <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

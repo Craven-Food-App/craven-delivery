@@ -4,7 +4,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { LocalNotifications } from '@capacitor/local-notifications';
 import 'barcode-detector/polyfill';
 
 import '@mantine/core/styles.css';
@@ -20,9 +19,6 @@ import { Notifications } from '@mantine/notifications';
 
 // @ts-ignore - MUI optional dependency
 import { ThemeProvider as MUIThemeProvider, createTheme as createMUITheme, CssBaseline } from '@mui/material';
-
-import { PushNotifications } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
 
 import App from './App';
 import './index.css';
@@ -124,12 +120,15 @@ const muiTheme = createMUITheme({
 
 /** -----------------------------
  * Capacitor Push Notifications
+ * All @capacitor/* imports are dynamic so builds (e.g. feeder) never need to resolve them.
  * ------------------------------ */
-const initPush = async () => {
-  // Only run on native Android/iOS — Capacitor bridge is not available on web
-  if (!Capacitor.isNativePlatform()) return;
+const initPush = async (Capacitor: { isNativePlatform: () => boolean } | null) => {
+  if (!Capacitor?.isNativePlatform()) return;
 
   try {
+    const { PushNotifications } = await import(/* @vite-ignore */ '@capacitor/push-notifications');
+    const { LocalNotifications } = await import(/* @vite-ignore */ '@capacitor/local-notifications');
+
     const perm = await PushNotifications.requestPermissions();
     if (perm.receive !== 'granted') return;
 
@@ -165,18 +164,29 @@ const initPush = async () => {
 };
 
 /** -----------------------------
- * Wait for Capacitor bridge before initializing plugins.
- * On Android, the bridge is not ready synchronously at module
- * load time — we must wait for the 'deviceready' event.
- * On web, we just call initPush directly (it will no-op).
+ * Capacitor + push init + service worker.
+ * Dynamic import of @capacitor/core so it is never required at build time.
  * ------------------------------ */
-if (Capacitor.isNativePlatform()) {
-  document.addEventListener('deviceready', () => {
-    void initPush();
-  }, { once: true });
-} else {
-  void initPush();
-}
+(async () => {
+  let Capacitor: { isNativePlatform: () => boolean } | null = null;
+  try {
+    const cap = await import('@capacitor/core');
+    Capacitor = cap.Capacitor;
+  } catch {
+    // Not available (web or build-time) — skip native-only logic
+  }
+
+  if (Capacitor?.isNativePlatform()) {
+    document.addEventListener('deviceready', () => {
+      void initPush(Capacitor);
+    }, { once: true });
+  } else {
+    void initPush(Capacitor);
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      initServiceWorker();
+    }
+  }
+})();
 
 /** -----------------------------
  * Render
@@ -202,8 +212,9 @@ createRoot(rootEl).render(
 
 /** -----------------------------
  * Service Worker (PROD only, web only)
+ * Runs only when Capacitor is not native (checked asynchronously below).
  * ------------------------------ */
-if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator && import.meta.env.PROD) {
+const initServiceWorker = () => {
   const waitForLoad = () =>
     new Promise<void>((resolve) => {
       if (document.readyState === 'complete') resolve();

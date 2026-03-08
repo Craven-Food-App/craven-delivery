@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { notifications } from "@mantine/notifications";
 import RestaurantCard from "./RestaurantCard";
+import { RequestBusinessModal } from "@/components/restaurant/RequestBusinessModal";
 import { hasLocationDisclosureConsent } from "@/utils/locationDisclosure";
 
 // Module-level geolocation cache — request location once, share across all instances
@@ -109,6 +110,8 @@ const RestaurantGrid = ({
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string; image?: string; cuisine?: string } | null>(null);
 
   // Get user's current location for delivery radius filtering (shared across instances)
   useEffect(() => {
@@ -477,6 +480,10 @@ const RestaurantGrid = ({
       marketplaceStatus: restaurant.marketplaceStatus ?? 'ACTIVE',
       onRequest: restaurant.marketplaceStatus === 'REQUESTABLE' ? () => requestRestaurant(restaurant.id) : undefined,
       onNotifyMe: restaurant.marketplaceStatus === 'COMING_SOON' ? (email?: string) => notifyMeRestaurant(restaurant.id, email) : undefined,
+      onShareWithBusiness: restaurant.marketplaceStatus === 'REQUESTABLE' ? (business) => {
+        setSelectedBusiness(business);
+        setRequestModalOpen(true);
+      } : undefined,
     };
   };
   const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
@@ -545,6 +552,16 @@ const RestaurantGrid = ({
           )}
         </div>
       )}
+      <RequestBusinessModal
+        open={requestModalOpen}
+        onClose={() => { setRequestModalOpen(false); setSelectedBusiness(null); }}
+        business={selectedBusiness ?? { id: '', name: '' }}
+        onSuccess={() => {
+          if (selectedBusiness) {
+            setRestaurants((prev) => prev.map((r) => r.id === selectedBusiness.id ? { ...r, request_count: (r.request_count ?? 0) + 1 } : r));
+          }
+        }}
+      />
     </section>;
 };
 export default RestaurantGrid;

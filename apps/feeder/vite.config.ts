@@ -36,6 +36,7 @@ const pinnedPackages = [
   "@tanstack/react-query", "@tanstack/react-table",
   "@supabase/supabase-js",
   "@mui/material", "@mui/icons-material", "@mui/x-data-grid", "@mui/x-date-pickers",
+  "@capacitor/core", "@capacitor/geolocation", "@capacitor/local-notifications", "@capacitor/push-notifications",
   "sonner", "lucide-react", "@tabler/icons-react",
   "class-variance-authority", "clsx", "tailwind-merge",
 ];
@@ -98,6 +99,7 @@ export default defineConfig({
       "@mantine/modals", "@mantine/dates", "@mantine/carousel", "@mantine/form",
       "@emotion/react", "@emotion/styled",
       "@tanstack/react-query",
+      "@capacitor/core", "@capacitor/geolocation", "@capacitor/local-notifications", "@capacitor/push-notifications",
       "sonner", "lucide-react", "@tabler/icons-react",
       "hoist-non-react-statics", "prop-types", "deepmerge",
       "barcode-detector", "barcode-detector/ponyfill",

@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 
 const componentTagger = (): any => ({
@@ -108,6 +108,9 @@ export default defineConfig(({ mode }) => {
         "@mantine/carousel",
         "@mantine/modals",
         "@mantine/form",
+        "@capacitor/core",
+        "@capacitor/local-notifications",
+        "@capacitor/push-notifications",
         "dayjs",
         "mapbox-gl",
         "react",
@@ -132,6 +135,13 @@ export default defineConfig(({ mode }) => {
         transformMixedEsModules: true,
       },
       rollupOptions: {
+        external: [
+          "@capacitor/core",
+          "@capacitor/geolocation",
+          "@capacitor/push-notifications",
+          "@capacitor/local-notifications",
+          "pdfjs-dist",
+        ],
         output: {
           manualChunks: undefined,
         },

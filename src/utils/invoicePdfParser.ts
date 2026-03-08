@@ -3,12 +3,23 @@
  *
  * Uses pdfjs-dist to extract structured invoice data from uploaded PDF files.
  * Extracts: vendor info, invoice number, dates, line items, totals.
+ * Loaded dynamically so the build does not need to resolve pdfjs-dist.
  */
 
-import * as pdfjsLib from 'pdfjs-dist';
+let pdfjsLib: typeof import("pdfjs-dist") | null = null;
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+async function getPdfjs(): Promise<typeof import("pdfjs-dist")> {
+  if (pdfjsLib) return pdfjsLib;
+  try {
+    pdfjsLib = await import(/* @vite-ignore */ "pdfjs-dist");
+  } catch (e) {
+    throw new Error(
+      "PDF parsing is unavailable. If you need invoice PDF upload, ensure pdfjs-dist is installed and the build includes it."
+    );
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 export interface ParsedInvoice {
   vendor_name: string;
@@ -152,8 +163,9 @@ function parseLineItems(text: string): ParsedLineItem[] {
 // ── Main parser ──────────────────────────────────────────────────────
 
 export async function parseInvoicePdf(file: File): Promise<ParsedInvoice> {
+  const pdfjs = await getPdfjs();
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
 
   let fullText = '';
 
