@@ -4,7 +4,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, Navigate, HashRouter, useLocation } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
+// Dynamic Capacitor check — avoids breaking the web dev server
+const getCapacitor = (): { isNativePlatform: () => boolean } => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cap = (window as any)?.Capacitor;
+    if (cap && typeof cap.isNativePlatform === 'function') return cap;
+  } catch {}
+  return { isNativePlatform: () => false };
+};
+const Capacitor = getCapacitor();
 import { supabase } from "@/integrations/supabase/client";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
