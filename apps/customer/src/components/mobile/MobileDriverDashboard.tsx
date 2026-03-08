@@ -19,7 +19,7 @@ import { SpeedLimitSign } from './SpeedLimitSign';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FeederPromotionsTab from './FeederPromotionsTab';
-import { DeliveryZone, getZoneForLocation } from '@/data/deliveryZones';
+import { DeliveryZone, getZoneForLocation, useDeliveryZones } from '@/data/deliveryZones';
 import FeederScheduleTab from './FeederScheduleTab';
 import OnFireDashboard from './CorporateEarningsDashboard';
 import EarningsDashboard from './EarningsDashboard';
@@ -72,6 +72,7 @@ interface OrderAssignment {
   }>; // Order items
 }
 export const MobileDriverDashboard: React.FC = () => {
+  const { zones } = useDeliveryZones();
   // Production readiness hooks
   const { isOnline, isSlowConnection } = useNetworkStatus();
   const { data: offlineData, setData: setOfflineData } = useOfflineStorage({
@@ -145,7 +146,7 @@ export const MobileDriverDashboard: React.FC = () => {
   
   // Check delivery availability
   const checkDeliveryAvailability = async (lat: number, lng: number) => {
-    const zone = getZoneForLocation([lat, lng]);
+    const zone = getZoneForLocation([lat, lng], zones);
     return Boolean(zone);
   };
   
@@ -1216,7 +1217,7 @@ export const MobileDriverDashboard: React.FC = () => {
           };
           setUserLocation(location);
 
-          const zone = getZoneForLocation([location.lat, location.lng]);
+          const zone = getZoneForLocation([location.lat, location.lng], zones);
           const isInZone = Boolean(zone);
           setIsInDeliveryZone(isInZone);
           setLastZoneCheck(new Date());

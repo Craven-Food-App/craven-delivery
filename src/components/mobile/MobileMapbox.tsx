@@ -2,13 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MAPBOX_CONFIG } from '@/config/mapbox';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import {
-  DELIVERY_ZONES,
   DeliveryZone,
   getZoneForLocation,
   getZoneStyle,
-  randomizeZoneDemand,
   zonesToGeoJSON,
 } from '@/data/deliveryZones';
+import { useDeliveryZones } from '@/hooks/useDeliveryZones';
 import driverNavIcon from '@/assets/driver_nav_icon.png';
 import { supabase } from '@/integrations/supabase/client';
 import { isPngLogo } from '@/utils/logoUtils';
@@ -65,7 +64,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const [isMapReady, setIsMapReady] = useState(false);
   const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
-  const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
+  const { zones } = useDeliveryZones();
   const merchantMarkersRef = useRef<any[]>([]);
   const gasStationMarkersRef = useRef<any[]>([]);
   const [merchants, setMerchants] = useState<MerchantLocation[]>([]);
@@ -248,6 +247,21 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
 
           setIsMapReady(true);
           
+          // One-time request for precise initial position so map isn't stuck on Toledo
+          if (navigator.geolocation && marker.current) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                if (!map.current || !marker.current) return;
+                const lng = pos.coords.longitude;
+                const lat = pos.coords.latitude;
+                map.current.setCenter([lng, lat]);
+                marker.current.setLngLat([lng, lat]);
+              },
+              () => { /* keep Toledo fallback */ },
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+          }
+          
           // Track user panning to stop auto-centering
           m.on('dragstart', () => {
             if (!map.current) return;
@@ -344,8 +358,11 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     };
   }, []); // Only run once on mount
 
-  // Remove this useEffect - zones are updated in the map load handler
-  // This was causing duplicate calls and race conditions
+  // Update zone layers when zones load from API (or when map becomes ready after zones already loaded)
+  useEffect(() => {
+    if (!isMapReady || !map.current) return;
+    updateZoneLayers(zones);
+  }, [isMapReady, zones, updateZoneLayers]);
 
   // Update map when driver location changes (real-time updates)
   useEffect(() => {

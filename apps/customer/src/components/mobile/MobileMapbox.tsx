@@ -2,11 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MAPBOX_CONFIG } from '@/config/mapbox';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import {
-  DELIVERY_ZONES,
   DeliveryZone,
   getZoneForLocation,
   getZoneStyle,
-  randomizeZoneDemand,
+  useDeliveryZones,
   zonesToGeoJSON,
 } from '@/data/deliveryZones';
 import { createCravenMarkerElement, CRAVEN_PIN_URL } from '@/utils/createCravenMapPin';
@@ -33,7 +32,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
   const [isMapReady, setIsMapReady] = useState(false);
   const { location, startTracking, isTracking } = useDriverLocation();
   const [showRecenter, setShowRecenter] = useState(false);
-  const [zones, setZones] = useState<DeliveryZone[]>(() => DELIVERY_ZONES.map((zone) => ({ ...zone })));
+  const { zones } = useDeliveryZones();
 
   const driverLocation = useMemo<[number, number] | null>(() => {
     if (location) {
@@ -273,8 +272,11 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     };
   }, []); // Only run once on mount
 
-  // Remove this useEffect - zones are updated in the map load handler
-  // This was causing duplicate calls and race conditions
+  // Update zone layers when zones load from API (or when map becomes ready after zones already loaded)
+  useEffect(() => {
+    if (!isMapReady || !map.current) return;
+    updateZoneLayers(zones);
+  }, [isMapReady, zones, updateZoneLayers]);
 
   // Update map when driver location changes (real-time updates)
   useEffect(() => {
