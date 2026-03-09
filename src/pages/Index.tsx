@@ -5,8 +5,6 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import RestaurantGrid from "@/components/RestaurantGrid";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Utensils, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AndroidEnrollmentPopup } from "@/components/AndroidEnrollmentPopup";
 
@@ -18,30 +16,73 @@ const Index = () => {
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [neverShowAgain, setNeverShowAgain] = useState(false);
+  const [weeklyDeals, setWeeklyDeals] = useState<any[]>([]);
+  const [adPlacements, setAdPlacements] = useState<any[]>([]);
 
   useEffect(() => {
     const search = searchParams.get("search");
     const address = searchParams.get("address");
-
     if (search) setSearchQuery(search);
     if (address) setDeliveryAddress(address);
   }, [searchParams]);
 
+  // Fetch promoted restaurants for Craven Quick Picks
+  useEffect(() => {
+    const fetchWeeklyDeals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('restaurants')
+          .select(`*, promotion_title, promotion_description, promotion_discount_percentage, promotion_discount_amount_cents, promotion_minimum_order_cents, promotion_maximum_discount_cents, promotion_valid_until, promotion_image_url`)
+          .eq('is_promoted', true)
+          .eq('is_active', true)
+          .order('rating', { ascending: false })
+          .limit(6);
+        if (error) throw error;
+        setWeeklyDeals(data || []);
+      } catch {
+        setWeeklyDeals([]);
+      }
+    };
+    fetchWeeklyDeals();
+  }, []);
+
+  // Fetch ad placements
+  useEffect(() => {
+    const fetchAds = async () => {
+      try {
+        const now = new Date().toISOString();
+        const { data, error } = await supabase
+          .from('ad_placements')
+          .select('*')
+          .eq('page_path', '/restaurants')
+          .eq('is_active', true)
+          .lte('valid_from', now)
+          .or(`valid_until.is.null,valid_until.gt.${now}`)
+          .order('display_order', { ascending: true });
+        if (error) {
+          if (error.code === 'PGRST205' || error.message?.includes('not found')) {
+            setAdPlacements([]);
+          } else {
+            throw error;
+          }
+        } else {
+          setAdPlacements(data || []);
+        }
+      } catch {
+        setAdPlacements([]);
+      }
+    };
+    fetchAds();
+  }, []);
+
   // Check if user is on Android and show enrollment modal
   useEffect(() => {
     const checkAndShowModal = async () => {
-      // Detect Android device
       const userAgent = navigator.userAgent.toLowerCase();
       const isAndroidDevice = /android/.test(userAgent);
       setIsAndroid(isAndroidDevice);
-
-      // Check if modal was already dismissed
       const modalDismissed = localStorage.getItem('android_enrollment_modal_dismissed');
-      if (modalDismissed === 'true') {
-        return;
-      }
-
-      // Check if user is already enrolled (if logged in)
+      if (modalDismissed === 'true') return;
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) {
@@ -50,78 +91,39 @@ const Index = () => {
             .select('id')
             .eq('email', user.email)
             .maybeSingle();
-          
-          if (enrollment) {
-            // Already enrolled, don't show modal
-            return;
-          }
+          if (enrollment) return;
         }
-      } catch (error) {
-        // Silently handle - user might not be logged in
-      }
-
-      // Show modal for Android users after a short delay
+      } catch { /* user might not be logged in */ }
       if (isAndroidDevice) {
-        setTimeout(() => {
-          setShowEnrollmentModal(true);
-        }, 1500); // Show after 1.5 seconds
+        setTimeout(() => setShowEnrollmentModal(true), 1500);
       }
     };
-
     checkAndShowModal();
   }, []);
 
   // Auto-redirect drivers to /mobile when opening PWA
   useEffect(() => {
     const checkAndRedirectDriver = async () => {
-      // Only redirect if running as PWA (installed app)
-      const isPWA =
-        window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
-
-      if (!isPWA) {
-        return; // Don't redirect if browsing normally
-      }
-
-      // Check localStorage for cached driver status (faster)
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+      if (!isPWA) return;
       const cachedDriverStatus = localStorage.getItem("user_is_driver");
-      if (cachedDriverStatus === "true") {
-        navigate("/mobile", { replace: true });
-        return;
-      }
-
+      if (cachedDriverStatus === "true") { navigate("/mobile", { replace: true }); return; }
       try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          return;
-        }
-
-        // Check if user is an approved driver with completed onboarding
-        const { data: application, error: appError } = await supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: application } = await supabase
           .from("craver_applications")
           .select("status, onboarding_completed_at")
           .eq("user_id", user.id)
           .single();
-
         if (application?.onboarding_completed_at) {
-          // User is an approved driver with completed onboarding
-          // Cache the driver status for faster future loads
           localStorage.setItem("user_is_driver", "true");
           navigate("/mobile", { replace: true });
         } else {
-          // Clear cached status if it exists
           localStorage.removeItem("user_is_driver");
         }
-      } catch (error) {
-        console.error("Error checking driver status:", error);
-        // Silently fail - user stays on homepage
-      }
+      } catch { /* silently fail */ }
     };
-
-    // Run immediately
     checkAndRedirectDriver();
   }, [navigate]);
 
@@ -133,18 +135,17 @@ const Index = () => {
     description: "Food delivery from local restaurants",
     url: "https://craven.app",
     logo: "https://craven.app/craven-logo.png",
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "US",
-    },
+    address: { "@type": "PostalAddress", addressCountry: "US" },
     servesCuisine: ["American", "Italian", "Chinese", "Mexican", "Indian", "Japanese", "Thai"],
     priceRange: "$$",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "2500",
-    },
+    aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "2500" },
   };
+
+  // Find main customer ad
+  const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
+
+  // Deals with active promotions
+  const dealsWithPromos = weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents);
 
   return (
     <>
@@ -161,37 +162,130 @@ const Index = () => {
         <Header />
         <Hero />
 
-        {/* Fast Food */}
-        <RestaurantGrid
-          sectionTitle="Fast Food"
-          useNearbyByLocation={true}
-          marketplaceType="restaurant"
-          cuisineFilter="fast_food"
-          horizontal={true}
-        />
+        {/* Main Customer Ad - Above Quick Picks */}
+        {mainAd && (
+          <div className="px-4 pt-4 pb-2" style={{ backgroundColor: 'white' }}>
+            <div
+              onClick={() => mainAd.click_url && navigate(mainAd.click_url)}
+              style={{ 
+                cursor: mainAd.click_url ? 'pointer' : 'default', 
+                borderRadius: '16px', 
+                overflow: 'hidden', 
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)' 
+              }}
+            >
+              {mainAd.ad_code ? (
+                <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' as const }} />
+              ) : mainAd.image_url ? (
+                <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+              ) : null}
+            </div>
+          </div>
+        )}
 
-        {/* Desserts */}
+        {/* Craven Quick Picks - Promoted Restaurants */}
+        {weeklyDeals.length > 0 && (
+          <section style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
+            <div className="flex justify-between items-center px-4 pt-3" style={{ minHeight: 'auto' }}>
+              <h2 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Craven Quick Picks</h2>
+            </div>
+            <div style={{ marginTop: '-16px' }}>
+              <RestaurantGrid
+                horizontal={true}
+                customRestaurants={weeklyDeals}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Great Deals - Restaurants with Promotions */}
+        {dealsWithPromos.length > 0 && (
+          <section className="px-4 pt-4 pb-2" style={{ backgroundColor: 'white' }}>
+            <div className="flex items-center gap-2" style={{ margin: 0, padding: 0 }}>
+              <h2 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>
+                Great Deals
+              </h2>
+              <span style={{ fontSize: '20px' }}>🔥</span>
+            </div>
+            <RestaurantGrid
+              horizontal={true}
+              customRestaurants={dealsWithPromos}
+            />
+          </section>
+        )}
+
+        {/* ═══ FOOD & RESTAURANTS ═══ */}
+        <section className="px-4 pt-4 pb-1 mt-4" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span style={{ fontSize: '20px' }}>🍽️</span>
+            <h3 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Food & Restaurants</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">Order delivery from your favorites</p>
+        </section>
+
+        {/* Restaurants Near You */}
         <RestaurantGrid
-          sectionTitle="Desserts"
+          sectionTitle="Restaurants Near You"
+          horizontal={true}
           useNearbyByLocation={true}
           marketplaceType="restaurant"
-          cuisineFilter="desserts"
-          horizontal={true}
         />
 
         {/* Late Night Hunger */}
         <RestaurantGrid
-          sectionTitle="Late Night Hunger"
-          useNearbyByLocation={true}
-          marketplaceType="restaurant"
-          cuisineFilter="late_night"
+          cuisineFilter="late night hunger"
+          sectionTitle="🌙 Late Night Hunger"
           horizontal={true}
+          useMarketplaceCatalog={true}
+          marketplaceType="restaurant"
         />
 
-        {/* Browse All Restaurants */}
-        <section className="container mx-auto px-4 pb-12">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">Browse All Restaurants</h2>
+        {/* Kids Menu */}
+        <RestaurantGrid
+          cuisineFilter="kids"
+          sectionTitle="🧒 Kids Menu"
+          horizontal={true}
+          useMarketplaceCatalog={true}
+          marketplaceType="restaurant"
+        />
+
+        {/* ═══ RETAIL & SHOPPING ═══ */}
+        <section className="px-4 pt-6 pb-1" style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span style={{ fontSize: '20px' }}>🛍️</span>
+            <h3 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Retail & Shopping</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">Stores, apparel, accessories & more — delivered</p>
+        </section>
+
+        <RestaurantGrid
+          sectionTitle="Retail Stores Near You"
+          horizontal={true}
+          useNearbyByLocation={true}
+          marketplaceType="retail"
+        />
+
+        <RestaurantGrid
+          sectionTitle="Cosmetic Stores"
+          horizontal={true}
+          useMarketplaceCatalog={true}
+          marketplaceType="retail"
+          cuisineFilter="Cosmetics"
+        />
+
+        <RestaurantGrid
+          sectionTitle="Pet Stores"
+          horizontal={true}
+          useMarketplaceCatalog={true}
+          marketplaceType="retail"
+          cuisineFilter="Pet"
+        />
+
+        {/* View more - Browse All */}
+        <section className="px-4 py-3 mt-4" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+          <h2 className="text-lg font-extrabold text-foreground mb-4" style={{ lineHeight: 1.2 }}>View more</h2>
           <RestaurantGrid
+            columns={1}
             useMarketplaceCatalog={true}
             marketplaceType="restaurant"
           />
@@ -205,19 +299,13 @@ const Index = () => {
         opened={showEnrollmentModal}
         onClose={() => {
           setShowEnrollmentModal(false);
-          // Only prevent future shows if checkbox is checked
-          if (neverShowAgain) {
-            localStorage.setItem('android_enrollment_modal_dismissed', 'true');
-          }
-          setNeverShowAgain(false); // Reset checkbox
+          if (neverShowAgain) localStorage.setItem('android_enrollment_modal_dismissed', 'true');
+          setNeverShowAgain(false);
         }}
         onEnroll={() => {
           setShowEnrollmentModal(false);
-          // Only prevent future shows if checkbox is checked
-          if (neverShowAgain) {
-            localStorage.setItem('android_enrollment_modal_dismissed', 'true');
-          }
-          setNeverShowAgain(false); // Reset checkbox
+          if (neverShowAgain) localStorage.setItem('android_enrollment_modal_dismissed', 'true');
+          setNeverShowAgain(false);
           navigate('/android-tester-enrollment');
         }}
         neverShowAgain={neverShowAgain}
