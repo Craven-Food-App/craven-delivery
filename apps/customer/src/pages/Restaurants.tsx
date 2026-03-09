@@ -2696,7 +2696,7 @@ const Restaurants = () => {
             </div>
 
             {/* ═══ RETAIL & SHOPPING — one section, all retail (apparel + stores), never under restaurants ═══ */}
-            <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+            <Box px="md" pt="xs" pb={0} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
               <Group gap="xs" mb={4}>
                 <Text style={{ fontSize: '20px' }}>🛍️</Text>
                 <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
