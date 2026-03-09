@@ -704,7 +704,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('https://craven.app/privacy', '_blank')}
+              onClick={() => window.open('https://cravenusa.com/privacy', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
