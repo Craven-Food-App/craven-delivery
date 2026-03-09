@@ -771,7 +771,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
             </button>
 
             <button
-              onClick={() => window.open('mailto:support@craven.app', '_blank')}
+              onClick={() => window.open('mailto:support@cravenusa.com', '_blank')}
         style={{ 
                 display: 'flex',
                 alignItems: 'center',

@@ -56,7 +56,7 @@ const TesterInviteFriends: React.FC = () => {
     }
   };
 
-  const shareLink = referralCode ? `https://craven.app/r/${referralCode}` : '';
+  const shareLink = referralCode ? `https://cravenusa.com/r/${referralCode}` : '';
 
   const handleShare = async () => {
     if (!shareLink) {
