@@ -683,7 +683,7 @@ const AppSettingsPage: React.FC<AppSettingsPageProps> = ({ onBack }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
-              onClick={() => window.open('https://craven.app/terms', '_blank')}
+              onClick={() => window.open('https://cravenusa.com/terms', '_blank')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
