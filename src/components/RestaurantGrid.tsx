@@ -284,7 +284,7 @@ const RestaurantGrid = ({
         id: row.id,
         name: row.name,
         cuisine_type: row.cuisine_type || row.category || '',
-        image_url: row.image_url || row.logo_url,
+        image_url: row.logo_url || row.image_url,
         latitude: row.lat != null ? Number(row.lat) : undefined,
         longitude: row.lng != null ? Number(row.lng) : undefined,
         rating: row.rating != null ? Number(row.rating) : undefined,
