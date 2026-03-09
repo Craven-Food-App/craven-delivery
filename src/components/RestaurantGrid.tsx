@@ -44,6 +44,7 @@ function isRetailOrApparel(cuisineType?: string): boolean {
 }
 
 const SEEDED_LOGO_BASE = "https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos";
+const BRANDFETCH = "https://cdn.brandfetch.io";
 const SEEDED_LOGO_URLS: Record<string, string> = {
   "Tony Packo's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013555938.jpg`,
   "Applebee's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013585044.jpg`,
@@ -79,7 +80,48 @@ const SEEDED_LOGO_URLS: Record<string, string> = {
   "The Attic on Adams": `${SEEDED_LOGO_BASE}/FB_IMG_1773014580737.jpg`,
   "Ye Olde Dirty Bird": `${SEEDED_LOGO_BASE}/Picsart_26-03-08_20-07-48-171.jpg`,
   "Ye Olde Durty Bird": `${SEEDED_LOGO_BASE}/Picsart_26-03-08_20-07-48-171.jpg`,
+  // Brandfetch CDN logos for major chains
+  "Burger King": `${BRANDFETCH}/burgerking.com/logo`,
+  "Chick-fil-A": `${BRANDFETCH}/chick-fil-a.com/logo`,
+  "Chipotle": `${BRANDFETCH}/chipotle.com/logo`,
+  "Five Guys": `${BRANDFETCH}/fiveguys.com/logo`,
+  "Popeyes": `${BRANDFETCH}/popeyes.com/logo`,
+  "Panera Bread": `${BRANDFETCH}/panerabread.com/logo`,
+  "Jimmy John's": `${BRANDFETCH}/jimmyjohns.com/logo`,
+  "Little Caesars": `${BRANDFETCH}/littlecaesars.com/logo`,
+  "Pizza Hut": `${BRANDFETCH}/pizzahut.com/logo`,
+  "Domino's": `${BRANDFETCH}/dominos.com/logo`,
+  "Dairy Queen": `${BRANDFETCH}/dairyqueen.com/logo`,
+  "Wingstop": `${BRANDFETCH}/wingstop.com/logo`,
+  "Raising Cane's": `${BRANDFETCH}/raisingcanes.com/logo`,
+  "Qdoba": `${BRANDFETCH}/qdoba.com/logo`,
+  "Firehouse Subs": `${BRANDFETCH}/firehousesubs.com/logo`,
+  "Jersey Mike's": `${BRANDFETCH}/jerseymikes.com/logo`,
+  "Culver's": `${BRANDFETCH}/culvers.com/logo`,
+  "Buffalo Wild Wings": `${BRANDFETCH}/buffalowildwings.com/logo`,
+  "White Castle": `${BRANDFETCH}/whitecastle.com/logo`,
+  "Steak 'n Shake": `${BRANDFETCH}/steaknshake.com/logo`,
+  "Marco's Pizza": `${BRANDFETCH}/marcos.com/logo`,
+  "Papa Johns": `${BRANDFETCH}/papajohns.com/logo`,
+  "Papa John's": `${BRANDFETCH}/papajohns.com/logo`,
+  "Wendy's": `${BRANDFETCH}/wendys.com/logo`,
+  "KFC": `${BRANDFETCH}/kfc.com/logo`,
+  "Subway": `${BRANDFETCH}/subway.com/logo`,
+  "Waffle House": `${BRANDFETCH}/wafflehouse.com/logo`,
+  "Shake Shack": `${BRANDFETCH}/shakeshack.com/logo`,
+  "Krispy Kreme": `${BRANDFETCH}/krispykreme.com/logo`,
+  "Tim Hortons": `${BRANDFETCH}/timhortons.com/logo`,
+  "Del Taco": `${BRANDFETCH}/deltaco.com/logo`,
+  "Bojangles": `${BRANDFETCH}/bojangles.com/logo`,
+  "Golden Corral": `${BRANDFETCH}/goldencorral.com/logo`,
 };
+
+/** Check if a URL is a generic unsplash stock photo (not a real logo) */
+function isGenericStockPhoto(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.includes('images.unsplash.com');
+}
+
 function getSeededLogoUrl(name: string | null | undefined): string | undefined {
   return name ? SEEDED_LOGO_URLS[name] : undefined;
 }
@@ -193,7 +235,7 @@ const RestaurantGrid = ({
           id: row.id,
           name: row.name,
           cuisine_type: row.cuisine_type || row.category || '',
-          image_url: row.image_url || row.logo_url,
+          image_url: row.logo_url || row.image_url,
           latitude: row.lat != null ? Number(row.lat) : undefined,
           longitude: row.lng != null ? Number(row.lng) : undefined,
           rating: row.rating != null ? Number(row.rating) : undefined,
@@ -242,7 +284,7 @@ const RestaurantGrid = ({
         id: row.id,
         name: row.name,
         cuisine_type: row.cuisine_type || row.category || '',
-        image_url: row.image_url || row.logo_url,
+        image_url: row.logo_url || row.image_url,
         latitude: row.lat != null ? Number(row.lat) : undefined,
         longitude: row.lng != null ? Number(row.lng) : undefined,
         rating: row.rating != null ? Number(row.rating) : undefined,
@@ -417,7 +459,7 @@ const RestaurantGrid = ({
     return {
       id: restaurant.id,
       name: restaurant.name,
-      image: getSeededLogoUrl(restaurant.name) || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
+      image: getSeededLogoUrl(restaurant.name) || (restaurant.image_url && !isGenericStockPhoto(restaurant.image_url) ? restaurant.image_url : null) || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
       rating: restaurant.rating ?? 4,
       deliveryTime: `${minTime} min`,
       deliveryFee: feeCents === 0 ? "Free" : feeCents != null ? `$${(feeCents / 100).toFixed(2)}` : "—",
