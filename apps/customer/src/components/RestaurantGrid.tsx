@@ -541,7 +541,7 @@ const RestaurantGrid = ({
       {horizontal ? (
         <>
           {sectionTitle && (
-            <div className="container mx-auto px-4 mb-4">
+            <div className="container mx-auto px-4 mb-1">
               <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
             </div>
           )}

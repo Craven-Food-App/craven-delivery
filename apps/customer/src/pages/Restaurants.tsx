@@ -2742,7 +2742,7 @@ const Restaurants = () => {
             </Box>
 
             {/* View more Section - Mobile (one card per row) */}
-            <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+            <Box px="md" py="xs" mt="xs" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
               <Box ref={resultsRef} id="view-more-section" data-section="view-more">
                 <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
                   <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>View more</Title>
