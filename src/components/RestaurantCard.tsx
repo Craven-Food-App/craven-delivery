@@ -149,9 +149,10 @@ const RestaurantCard = ({
     }
   };
 
-  const hasLogo = Boolean(image);
+  // Prefer seeded logo map > non-stock image prop > text fallback
   const seededLogo = name ? SEEDED_LOGO_URLS[name] : undefined;
-  const displayImage = hasLogo ? image : (seededLogo ?? (isActive ? DEFAULT_IMAGE : ''));
+  const isStock = image && image.includes('images.unsplash.com');
+  const displayImage = seededLogo || (!isStock && image ? image : '') || '';
 
   const ratingDisplay = isActive ? rating : '—';
   const timeDisplay = isActive ? deliveryTime : (isComingSoon ? 'Soon' : '—');

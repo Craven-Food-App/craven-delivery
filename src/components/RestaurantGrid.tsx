@@ -459,7 +459,7 @@ const RestaurantGrid = ({
     return {
       id: restaurant.id,
       name: restaurant.name,
-      image: getSeededLogoUrl(restaurant.name) || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
+      image: getSeededLogoUrl(restaurant.name) || (restaurant.image_url && !isGenericStockPhoto(restaurant.image_url) ? restaurant.image_url : null) || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
       rating: restaurant.rating ?? 4,
       deliveryTime: `${minTime} min`,
       deliveryFee: feeCents === 0 ? "Free" : feeCents != null ? `$${(feeCents / 100).toFixed(2)}` : "—",
