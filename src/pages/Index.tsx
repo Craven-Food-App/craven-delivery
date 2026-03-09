@@ -161,15 +161,32 @@ const Index = () => {
         <Header />
         <Hero />
 
-        {/* Restaurants Near You */}
-        <section className="container mx-auto px-4 py-10">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">Restaurants Near You</h2>
-          <RestaurantGrid
-            useNearbyByLocation={true}
-            marketplaceType="restaurant"
-            horizontal={true}
-          />
-        </section>
+        {/* Fast Food */}
+        <RestaurantGrid
+          sectionTitle="Fast Food"
+          useNearbyByLocation={true}
+          marketplaceType="restaurant"
+          cuisineFilter="fast_food"
+          horizontal={true}
+        />
+
+        {/* Desserts */}
+        <RestaurantGrid
+          sectionTitle="Desserts"
+          useNearbyByLocation={true}
+          marketplaceType="restaurant"
+          cuisineFilter="desserts"
+          horizontal={true}
+        />
+
+        {/* Late Night Hunger */}
+        <RestaurantGrid
+          sectionTitle="Late Night Hunger"
+          useNearbyByLocation={true}
+          marketplaceType="restaurant"
+          cuisineFilter="late_night"
+          horizontal={true}
+        />
 
         {/* Browse All Restaurants */}
         <section className="container mx-auto px-4 pb-12">
