@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import RestaurantGrid from "@/components/RestaurantGrid";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { AndroidEnrollmentPopup } from "@/components/AndroidEnrollmentPopup";
@@ -16,8 +15,6 @@ const Index = () => {
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [neverShowAgain, setNeverShowAgain] = useState(false);
-  const [weeklyDeals, setWeeklyDeals] = useState<any[]>([]);
-  const [adPlacements, setAdPlacements] = useState<any[]>([]);
 
   useEffect(() => {
     const search = searchParams.get("search");
@@ -25,55 +22,6 @@ const Index = () => {
     if (search) setSearchQuery(search);
     if (address) setDeliveryAddress(address);
   }, [searchParams]);
-
-  // Fetch promoted restaurants for Craven Quick Picks
-  useEffect(() => {
-    const fetchWeeklyDeals = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('restaurants')
-          .select(`*, promotion_title, promotion_description, promotion_discount_percentage, promotion_discount_amount_cents, promotion_minimum_order_cents, promotion_maximum_discount_cents, promotion_valid_until, promotion_image_url`)
-          .eq('is_promoted', true)
-          .eq('is_active', true)
-          .order('rating', { ascending: false })
-          .limit(6);
-        if (error) throw error;
-        setWeeklyDeals(data || []);
-      } catch {
-        setWeeklyDeals([]);
-      }
-    };
-    fetchWeeklyDeals();
-  }, []);
-
-  // Fetch ad placements
-  useEffect(() => {
-    const fetchAds = async () => {
-      try {
-        const now = new Date().toISOString();
-        const { data, error } = await supabase
-          .from('ad_placements')
-          .select('*')
-          .eq('page_path', '/restaurants')
-          .eq('is_active', true)
-          .lte('valid_from', now)
-          .or(`valid_until.is.null,valid_until.gt.${now}`)
-          .order('display_order', { ascending: true });
-        if (error) {
-          if (error.code === 'PGRST205' || error.message?.includes('not found')) {
-            setAdPlacements([]);
-          } else {
-            throw error;
-          }
-        } else {
-          setAdPlacements(data || []);
-        }
-      } catch {
-        setAdPlacements([]);
-      }
-    };
-    fetchAds();
-  }, []);
 
   // Check if user is on Android and show enrollment modal
   useEffect(() => {
@@ -141,12 +89,6 @@ const Index = () => {
     aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "2500" },
   };
 
-  // Find main customer ad
-  const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
-
-  // Deals with active promotions
-  const dealsWithPromos = weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents);
-
   return (
     <>
       <Helmet>
@@ -161,136 +103,6 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <Hero />
-
-        {/* Main Customer Ad - Above Quick Picks */}
-        {mainAd && (
-          <div className="px-4 pt-4 pb-2" style={{ backgroundColor: 'white' }}>
-            <div
-              onClick={() => mainAd.click_url && navigate(mainAd.click_url)}
-              style={{ 
-                cursor: mainAd.click_url ? 'pointer' : 'default', 
-                borderRadius: '16px', 
-                overflow: 'hidden', 
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)' 
-              }}
-            >
-              {mainAd.ad_code ? (
-                <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' as const }} />
-              ) : mainAd.image_url ? (
-                <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
-              ) : null}
-            </div>
-          </div>
-        )}
-
-        {/* Craven Quick Picks - Promoted Restaurants */}
-        {weeklyDeals.length > 0 && (
-          <section style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <div className="flex justify-between items-center px-4 pt-3" style={{ minHeight: 'auto' }}>
-              <h2 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Craven Quick Picks</h2>
-            </div>
-            <div style={{ marginTop: '-16px' }}>
-              <RestaurantGrid
-                horizontal={true}
-                customRestaurants={weeklyDeals}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* Great Deals - Restaurants with Promotions */}
-        {dealsWithPromos.length > 0 && (
-          <section className="px-4 pt-4 pb-2" style={{ backgroundColor: 'white' }}>
-            <div className="flex items-center gap-2" style={{ margin: 0, padding: 0 }}>
-              <h2 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>
-                Great Deals
-              </h2>
-              <span style={{ fontSize: '20px' }}>🔥</span>
-            </div>
-            <RestaurantGrid
-              horizontal={true}
-              customRestaurants={dealsWithPromos}
-            />
-          </section>
-        )}
-
-        {/* ═══ FOOD & RESTAURANTS ═══ */}
-        <section className="px-4 pt-4 pb-1 mt-4" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <span style={{ fontSize: '20px' }}>🍽️</span>
-            <h3 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Food & Restaurants</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">Order delivery from your favorites</p>
-        </section>
-
-        {/* Restaurants Near You */}
-        <RestaurantGrid
-          sectionTitle="Restaurants Near You"
-          horizontal={true}
-          useNearbyByLocation={true}
-          marketplaceType="restaurant"
-        />
-
-        {/* Late Night Hunger */}
-        <RestaurantGrid
-          cuisineFilter="late night hunger"
-          sectionTitle="🌙 Late Night Hunger"
-          horizontal={true}
-          useMarketplaceCatalog={true}
-          marketplaceType="restaurant"
-        />
-
-        {/* Kids Menu */}
-        <RestaurantGrid
-          cuisineFilter="kids"
-          sectionTitle="🧒 Kids Menu"
-          horizontal={true}
-          useMarketplaceCatalog={true}
-          marketplaceType="restaurant"
-        />
-
-        {/* ═══ RETAIL & SHOPPING ═══ */}
-        <section className="px-4 pt-6 pb-1" style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <span style={{ fontSize: '20px' }}>🛍️</span>
-            <h3 className="text-lg font-extrabold text-foreground" style={{ margin: 0, lineHeight: 1.2 }}>Retail & Shopping</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">Stores, apparel, accessories & more — delivered</p>
-        </section>
-
-        <RestaurantGrid
-          sectionTitle="Retail Stores Near You"
-          horizontal={true}
-          useNearbyByLocation={true}
-          marketplaceType="retail"
-        />
-
-        <RestaurantGrid
-          sectionTitle="Cosmetic Stores"
-          horizontal={true}
-          useMarketplaceCatalog={true}
-          marketplaceType="retail"
-          cuisineFilter="Cosmetics"
-        />
-
-        <RestaurantGrid
-          sectionTitle="Pet Stores"
-          horizontal={true}
-          useMarketplaceCatalog={true}
-          marketplaceType="retail"
-          cuisineFilter="Pet"
-        />
-
-        {/* View more - Browse All */}
-        <section className="px-4 py-3 mt-4" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-          <h2 className="text-lg font-extrabold text-foreground mb-4" style={{ lineHeight: 1.2 }}>View more</h2>
-          <RestaurantGrid
-            columns={1}
-            useMarketplaceCatalog={true}
-            marketplaceType="restaurant"
-          />
-        </section>
-
         <Footer />
       </div>
 
