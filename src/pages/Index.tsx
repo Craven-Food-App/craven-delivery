@@ -160,6 +160,26 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <Hero />
+
+        {/* Restaurants Near You */}
+        <section className="container mx-auto px-4 py-10">
+          <h2 className="text-2xl font-bold mb-6 text-foreground">Restaurants Near You</h2>
+          <RestaurantGrid
+            useNearbyByLocation={true}
+            marketplaceType="restaurant"
+            horizontal={true}
+          />
+        </section>
+
+        {/* Browse All Restaurants */}
+        <section className="container mx-auto px-4 pb-12">
+          <h2 className="text-2xl font-bold mb-6 text-foreground">Browse All Restaurants</h2>
+          <RestaurantGrid
+            useMarketplaceCatalog={true}
+            marketplaceType="restaurant"
+          />
+        </section>
+
         <Footer />
       </div>
 
