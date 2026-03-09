@@ -2225,6 +2225,28 @@ const Restaurants = () => {
           {/* Show organized sections when filter is 'all' or no filter */}
           {(!cuisineFilter || cuisineFilter === 'all') ? (
             <>
+              {/* Main Customer Ad - Desktop (mirrors mobile ad placement) */}
+              {(() => {
+                const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
+                if (!mainAd) return null;
+                return (
+                  <div className="bg-white pt-6 pb-2">
+                    <div className="max-w-7xl mx-auto px-4">
+                      <div
+                        onClick={() => mainAd.click_url && navigate(mainAd.click_url)}
+                        style={{ cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
+                      >
+                        {mainAd.ad_code ? (
+                          <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 280, objectFit: 'cover' }} />
+                        ) : mainAd.image_url ? (
+                          <img src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }} />
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Craven Quick Picks - Promoted Restaurants */}
               {weeklyDeals.length > 0 && (
                 <div className="bg-white py-8 mb-8" style={{ height: '440px' }}>
