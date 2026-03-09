@@ -137,6 +137,17 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         external: [
           "pdfjs-dist",
+          "monaco-editor",
+          "nodemailer",
+          "express",
+          "helmet",
+          "body-parser",
+          "cors",
+          "stripe",
+          "pg",
+          "sharp",
+          "snyk",
+          "bcryptjs",
         ],
         output: {
           manualChunks: undefined,
