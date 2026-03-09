@@ -1448,184 +1448,220 @@ const Restaurants = () => {
         <Box style={{ 
           flex: 1, 
           overflowY: 'auto', 
-          backgroundColor: '#fafafa',
-          paddingTop: (() => {
-            const hasFilters = (activeCategory === 'all' || activeCategory === 'restaurants' || ['grocery', 'convenience', 'beauty', 'apparel', 'pets', 'health'].includes(activeCategory));
-            if (showMenuIcons && hasFilters) {
-              return '220px'; // Menu + filters
-            } else if (showMenuIcons) {
-              return '100px'; // Menu only
-            } else if (hasFilters) {
-              return '100px'; // Filters only
-            }
-            return '0px';
-          })()
+          backgroundColor: 'white',
+          paddingTop: '125px',
+          paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))'
         }}>
           <Box component="main">
-            {/* Fastest near you */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '4px', paddingBottom: '4px', height: '345px' }}>
-              <Group justify="space-between" mb="md">
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Craven Quick Picks</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={26} style={{ height: '26px', width: '26px' }} />
-                </ActionIcon>
-              </Group>
-              
-              <Group gap="md" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-                {RESTAURANTS_DATA.fastest.map((restaurant) => (
-                  <RestaurantCard 
-                    key={restaurant.id} 
-                    restaurant={restaurant} 
-                    likedItems={likedItems} 
-                    toggleLike={toggleLike} 
-                  />
-                ))}
-              </Group>
-            </Box>
 
-            {/* Premium Selections */}
-            <Box px="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', marginTop: 0, paddingTop: '0px', paddingBottom: '0px' }}>
-              <Group justify="space-between" mb="md">
-                <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Premium Selections</Title>
-                <ActionIcon variant="subtle" color="red" radius="xl">
-                  <IconChevronRight size={26} style={{ height: '26px', width: '26px' }} />
-                </ActionIcon>
-              </Group>
-              
-              <Stack gap="md">
-                {RESTAURANTS_DATA.premium.map((restaurant) => (
-                  <RestaurantCard 
-                    key={restaurant.id} 
-                    restaurant={restaurant} 
-                    likedItems={likedItems} 
-                    toggleLike={toggleLike} 
-                  />
-                ))}
-              </Stack>
-            </Box>
-
-            {/* Show organized sections when filter is 'all' or no filter */}
-            {(!cuisineFilter || cuisineFilter === 'all') ? (
-              <>
-                {/* ═══ FOOD & RESTAURANTS ═══ */}
-                <Box px="md" pt="md" pb={4} style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
-                  <Group gap="xs" mb={4}>
-                    <Text style={{ fontSize: '22px' }}>🍽️</Text>
-                    <Title order={3} fw={800} c="gray.9">Food & Restaurants</Title>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="sm">Order delivery from your favorites</Text>
+            {/* Main Customer Ad - Above Quick Picks (managed in company portal) */}
+            {(() => {
+              const mainAd = adPlacements.find((ad: any) => ad.placement_key === 'main_customer_ad');
+              if (!mainAd) return null;
+              const Wrapper = mainAd.click_url ? 'a' : 'div';
+              const wrapperProps = mainAd.click_url
+                ? { href: mainAd.click_url, onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(mainAd.click_url); } }
+                : {};
+              return (
+                <Box px="md" pt="md" pb="xs" style={{ backgroundColor: 'white' }}>
+                  <Wrapper {...wrapperProps} style={{ display: 'block', textDecoration: 'none', cursor: mainAd.click_url ? 'pointer' : 'default', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                    {mainAd.ad_code ? (
+                      <div dangerouslySetInnerHTML={{ __html: mainAd.ad_code }} style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+                    ) : mainAd.image_url ? (
+                      <MantineImage src={mainAd.image_url} alt="Promotion" style={{ width: '100%', maxHeight: 240, objectFit: 'cover' }} />
+                    ) : null}
+                  </Wrapper>
                 </Box>
+              );
+            })()}
 
-                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
+            {/* Craven Quick Picks - Promoted Restaurants */}
+            {weeklyDeals.length > 0 && (
+              <Box style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                <Group justify="space-between" gap="xs" px="md" pt="sm" mb={0} style={{ minHeight: 'auto', margin: 0, padding: '12px 16px 0 16px', height: 'auto' }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>Craven Quick Picks</Title>
+                  <ActionIcon variant="subtle" color="red" radius="xl" size="sm" style={{ margin: 0, padding: 0 }}>
+                    <IconChevronRight size={18} />
+                  </ActionIcon>
+                </Group>
+                <Box style={{ marginTop: '-16px' }}>
                   <RestaurantGrid 
                     searchQuery={searchQuery} 
                     deliveryAddress={location} 
                     cuisineFilter={undefined}
-                    excludeCuisine={['apparel', 'retail', 'kids', 'late nate hunger'].join(',')}
-                    sectionTitle="Restaurants Near You"
+                    excludeCuisine={undefined}
+                    sectionTitle={undefined}
                     horizontal={true}
-                    useNearbyByLocation={true}
-                    marketplaceType="restaurant"
+                    customRestaurants={weeklyDeals}
                   />
                 </Box>
+              </Box>
+            )}
 
-                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="late nate hunger"
-                    sectionTitle="🌙 Late Nate Hunger"
-                    horizontal={true}
-                  />
-                </Box>
-
-                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="kids"
-                    sectionTitle="🧒 Kids Menu"
-                    horizontal={true}
-                  />
-                </Box>
-
-                {/* ═══ RETAIL & SHOPPING ═══ */}
-                <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
-                  <Group gap="xs" mb={4}>
-                    <Text style={{ fontSize: '22px' }}>🛍️</Text>
-                    <Title order={3} fw={800} c="gray.9">Retail & Shopping</Title>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="sm">Shop apparel, accessories & more — delivered</Text>
-                </Box>
-
-                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="apparel"
-                    sectionTitle="👗 Apparel & Fashion"
-                    horizontal={true}
-                  />
-                </Box>
-
-                <Box px="md" py="sm" style={{ backgroundColor: 'white' }}>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter="retail"
-                    sectionTitle="🏪 Retail Stores"
-                    horizontal={true}
-                  />
-                </Box>
-
-                {/* Browse All Section */}
-                <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }} ref={resultsRef}>
-                  <Box mb="md">
-                    <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>Browse All</Title>
-                  </Box>
-                  <RestaurantGrid 
-                    searchQuery={searchQuery} 
-                    deliveryAddress={location} 
-                    cuisineFilter={cuisineFilter}
-                    columns={2}
-                  />
-                </Box>
-              </>
-            ) : (
-              /* Single section when filtering by specific cuisine or searching */
-              <Box px="md" py="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }} ref={resultsRef}>
-                {(searchQuery || location || cuisineFilter !== 'all') && (
-                  <Box mb="md">
-                    <Title order={2} fw={800} c="gray.9" style={{ fontSize: '24px' }}>
-                      {searchQuery 
-                        ? `Results for "${searchQuery}"` 
-                        : activeCategory && activeCategory !== 'all' && activeCategory !== 'browse'
-                          ? `${getCategoryLabel(activeCategory)} Near You`
-                          : 'Restaurants Near You'}
-                    </Title>
-                    {location && (
-                      <Text size="sm" c="gray.6" mt="xs" style={{ display: 'flex', alignItems: 'center' }}>
-                        <IconMapPin size={16} style={{ marginRight: '8px' }} />
-                        Delivering to: {location}
-                      </Text>
-                    )}
-                  </Box>
-                )}
+            {/* Great Deals - Restaurants with Promotions */}
+            {weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents).length > 0 && (
+              <Box px="md" pt="md" pb="sm" style={{ backgroundColor: 'white' }}>
+                <Group gap="xs" align="center" style={{ margin: 0, padding: 0 }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>
+                    Great Deals
+                  </Title>
+                  <IconFlame size={20} style={{ color: '#ff6b35' }} />
+                </Group>
                 <RestaurantGrid 
                   searchQuery={searchQuery} 
                   deliveryAddress={location} 
-                  cuisineFilter={cuisineFilter}
-                  columns={2}
+                  cuisineFilter={undefined}
+                  excludeCuisine={undefined}
+                  sectionTitle={undefined}
+                  horizontal={true}
+                  customRestaurants={weeklyDeals.filter((r: any) => r.promotion_title || r.promotion_discount_percentage || r.promotion_discount_amount_cents)}
                 />
               </Box>
             )}
+
+            {/* ═══ FOOD & RESTAURANTS ═══ */}
+            <Box px="md" pt="md" pb={4} mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Group gap="xs" mb={4}>
+                <Text style={{ fontSize: '20px' }}>🍽️</Text>
+                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Food & Restaurants</Title>
+              </Group>
+              <Text size="xs" c="dimmed">Order delivery from your favorites</Text>
+            </Box>
+
+            {/* Restaurants Near You — location-based nearby */}
+            <Box>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Restaurants Near You"
+                horizontal={true}
+                useNearbyByLocation={true}
+                marketplaceType="restaurant"
+              />
+            </Box>
+
+            {/* Shopping Centers Near You */}
+            <Box>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Shopping Centers Near You"
+                horizontal={true}
+                useNearbyByLocation={true}
+                marketplaceType="mall"
+              />
+            </Box>
+
+            {/* Late Night Hunger */}
+            <Box>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                cuisineFilter="late night hunger"
+                sectionTitle="🌙 Late Night Hunger"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="restaurant"
+              />
+            </Box>
+
+            {/* Kids Menu */}
+            <Box>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                cuisineFilter="kids"
+                sectionTitle="🧒 Kids Menu"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="restaurant"
+              />
+            </Box>
+
+            {/* ═══ RETAIL & SHOPPING ═══ */}
+            <Box px="md" pt="lg" pb={4} style={{ backgroundColor: '#fafafa', borderTop: '2px solid #f0f0f0' }}>
+              <Group gap="xs" mb={4}>
+                <Text style={{ fontSize: '20px' }}>🛍️</Text>
+                <Title order={3} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0 }}>Retail & Shopping</Title>
+              </Group>
+              <Text size="xs" c="dimmed">Stores, apparel, accessories & more — delivered</Text>
+            </Box>
+
+            <Box>
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Retail Stores Near You"
+                horizontal={true}
+                useNearbyByLocation={true}
+                marketplaceType="retail"
+              />
+            </Box>
+
+            {/* Cosmetic Stores */}
+            <Box px="md" pt="md" pb="xs">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Cosmetic Stores"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="retail"
+                cuisineFilter="Cosmetics"
+              />
+            </Box>
+
+            {/* Pet Stores */}
+            <Box px="md" pt="xs" pb="md">
+              <RestaurantGrid
+                searchQuery={searchQuery}
+                deliveryAddress={location}
+                sectionTitle="Pet Stores"
+                horizontal={true}
+                useMarketplaceCatalog={true}
+                marketplaceType="retail"
+                cuisineFilter="Pet"
+              />
+            </Box>
+
+            {/* View more Section (one card per row) */}
+            <Box px="md" py="sm" mt="md" style={{ backgroundColor: 'white', borderTop: '1px solid #e5e7eb' }}>
+              <Box ref={resultsRef}>
+                <Group justify="space-between" gap="xs" mb="sm" style={{ minHeight: 'auto', margin: 0, padding: 0, height: 'auto', marginBottom: '16px' }}>
+                  <Title order={2} fw={800} c="gray.9" style={{ fontSize: '18px', lineHeight: 1.2, margin: 0, padding: 0 }}>View more</Title>
+                </Group>
+                <RestaurantGrid
+                  searchQuery={searchQuery}
+                  deliveryAddress={location}
+                  cuisineFilter={cuisineFilter}
+                  columns={1}
+                  useMarketplaceCatalog={true}
+                  marketplaceType="restaurant"
+                />
+              </Box>
+            </Box>
 
             {/* Spacing for Nav */}
             <Box style={{ height: '64px' }} />
           </Box>
         </Box>
 
-        {/* Bottom Navigation removed - using global navigation */}
+        {/* White Bar at Bottom */}
+        <Box
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: '430px',
+            backgroundColor: '#ffffff',
+            height: '56px',
+            zIndex: 1000,
+            borderTop: '1px solid #e5e7eb',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        />
       </Box>
     );
   }
