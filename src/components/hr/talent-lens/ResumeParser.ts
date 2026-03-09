@@ -43,7 +43,7 @@ export async function parsePDFResume(file: File): Promise<ParsedResume> {
     let pdfjsLib: any;
     try {
       console.log('[ResumeParser] Attempting to import pdfjs-dist...');
-      pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib = await import(/* @vite-ignore */ 'pdfjs-dist');
       console.log('[ResumeParser] pdfjs-dist imported successfully, version:', pdfjsLib.version);
     } catch (importError: any) {
       console.error('[ResumeParser] Failed to import pdfjs-dist:', importError);
