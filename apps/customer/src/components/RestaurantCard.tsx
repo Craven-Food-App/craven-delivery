@@ -151,10 +151,10 @@ const RestaurantCard = ({
     }
   };
 
-  // All cards: use image when available, else seeded logo by name, else placeholder
-  const hasLogo = Boolean(image);
+  // Prefer seeded logo map > non-stock image prop > text fallback
   const seededLogo = name ? SEEDED_LOGO_URLS[name] : undefined;
-  const displayImage = hasLogo ? image : (seededLogo ?? (isActive ? DEFAULT_IMAGE : ''));
+  const isStock = image && image.includes('images.unsplash.com');
+  const displayImage = seededLogo || (!isStock && image ? image : '') || '';
 
   // Unified content: same layout for all (name + rating · time, then tag line + right badge)
   const ratingDisplay = isActive ? rating : '—';
