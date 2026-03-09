@@ -3,6 +3,43 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const RETAIL_TYPES = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail'];
+const BASE_LOGO = "https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos";
+const SEEDED_LOGO_URLS: Record<string, string> = {
+  "Tony Packo's": `${BASE_LOGO}/FB_IMG_1773013555938.jpg`,
+  "Applebee's": `${BASE_LOGO}/FB_IMG_1773013585044.jpg`,
+  "Arby's": `${BASE_LOGO}/FB_IMG_1773013601605.jpg`,
+  "Balance Grille": `${BASE_LOGO}/FB_IMG_1773013654751.jpg`,
+  "Bangkok Kitchen": `${BASE_LOGO}/FB_IMG_1773013751104.jpg`,
+  "Bar Louie": `${BASE_LOGO}/FB_IMG_1773013775224.jpg`,
+  "Bob Evans": `${BASE_LOGO}/FB_IMG_1773013792415.jpg`,
+  "Chili's": `${BASE_LOGO}/FB_IMG_1773013841352.jpg`,
+  "Cracker Barrel": `${BASE_LOGO}/FB_IMG_1773013861105.jpg`,
+  "Denny's": `${BASE_LOGO}/FB_IMG_1773013878790.jpg`,
+  "Dunkin'": `${BASE_LOGO}/FB_IMG_1773013952977.jpg`,
+  "Holland House": `${BASE_LOGO}/FB_IMG_1773014023637.jpg`,
+  "Home Slice Pizza": `${BASE_LOGO}/FB_IMG_1773014076682.jpg`,
+  "IHOP": `${BASE_LOGO}/FB_IMG_1773014105739.jpg`,
+  "McDonald's": `${BASE_LOGO}/FB_IMG_1773014131269.jpg`,
+  "McDonalds": `${BASE_LOGO}/FB_IMG_1773014131269.jpg`,
+  "Olive Garden": `${BASE_LOGO}/FB_IMG_1773014153763.jpg`,
+  "Outback Steakhouse": `${BASE_LOGO}/FB_IMG_1773014170637.jpg`,
+  "Panda Express": `${BASE_LOGO}/FB_IMG_1773014193727.jpg`,
+  "Red Lobster": `${BASE_LOGO}/FB_IMG_1773014220077.jpg`,
+  "Red Robin": `${BASE_LOGO}/FB_IMG_1773014242955.jpg`,
+  "Red Robbin": `${BASE_LOGO}/FB_IMG_1773014242955.jpg`,
+  "Rosiies": `${BASE_LOGO}/FB_IMG_1773014271528.jpg`,
+  "Rosie's": `${BASE_LOGO}/FB_IMG_1773014271528.jpg`,
+  "Rudy's Hot Dog": `${BASE_LOGO}/FB_IMG_1773014327092.jpg`,
+  "Schmucker's Restaurant": `${BASE_LOGO}/FB_IMG_1773014432347.jpg`,
+  "Sonic": `${BASE_LOGO}/FB_IMG_1773014452021.jpg`,
+  "Star Diner": `${BASE_LOGO}/FB_IMG_1773014472754.jpg`,
+  "Starbucks": `${BASE_LOGO}/FB_IMG_1773014488001.jpg`,
+  "Taco Bell": `${BASE_LOGO}/FB_IMG_1773014506899.jpg`,
+  "Texas Roadhouse": `${BASE_LOGO}/FB_IMG_1773014555948.jpg`,
+  "The Attic on Adams": `${BASE_LOGO}/FB_IMG_1773014580737.jpg`,
+  "Ye Olde Dirty Bird": `${BASE_LOGO}/Picsart_26-03-08_20-07-48-171.jpg`,
+  "Ye Olde Durty Bird": `${BASE_LOGO}/Picsart_26-03-08_20-07-48-171.jpg`,
+};
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop";
 
 interface RestaurantCardProps {
@@ -79,7 +116,8 @@ const RestaurantCard = ({
   };
 
   const hasLogo = Boolean(image);
-  const displayImage = hasLogo ? image : (isActive ? DEFAULT_IMAGE : '');
+  const seededLogo = name ? SEEDED_LOGO_URLS[name] : undefined;
+  const displayImage = hasLogo ? image : (seededLogo ?? (isActive ? DEFAULT_IMAGE : ''));
 
   const ratingDisplay = isActive ? rating : '—';
   const timeDisplay = isActive ? deliveryTime : (isComingSoon ? 'Soon' : '—');

@@ -43,6 +43,47 @@ function isRetailOrApparel(cuisineType?: string): boolean {
   return RETAIL_CUISINE_KEYWORDS.some((k) => cat.includes(k));
 }
 
+const SEEDED_LOGO_BASE = "https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos";
+const SEEDED_LOGO_URLS: Record<string, string> = {
+  "Tony Packo's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013555938.jpg`,
+  "Applebee's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013585044.jpg`,
+  "Arby's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013601605.jpg`,
+  "Balance Grille": `${SEEDED_LOGO_BASE}/FB_IMG_1773013654751.jpg`,
+  "Bangkok Kitchen": `${SEEDED_LOGO_BASE}/FB_IMG_1773013751104.jpg`,
+  "Bar Louie": `${SEEDED_LOGO_BASE}/FB_IMG_1773013775224.jpg`,
+  "Bob Evans": `${SEEDED_LOGO_BASE}/FB_IMG_1773013792415.jpg`,
+  "Chili's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013841352.jpg`,
+  "Cracker Barrel": `${SEEDED_LOGO_BASE}/FB_IMG_1773013861105.jpg`,
+  "Denny's": `${SEEDED_LOGO_BASE}/FB_IMG_1773013878790.jpg`,
+  "Dunkin'": `${SEEDED_LOGO_BASE}/FB_IMG_1773013952977.jpg`,
+  "Holland House": `${SEEDED_LOGO_BASE}/FB_IMG_1773014023637.jpg`,
+  "Home Slice Pizza": `${SEEDED_LOGO_BASE}/FB_IMG_1773014076682.jpg`,
+  "IHOP": `${SEEDED_LOGO_BASE}/FB_IMG_1773014105739.jpg`,
+  "McDonald's": `${SEEDED_LOGO_BASE}/FB_IMG_1773014131269.jpg`,
+  "McDonalds": `${SEEDED_LOGO_BASE}/FB_IMG_1773014131269.jpg`,
+  "Olive Garden": `${SEEDED_LOGO_BASE}/FB_IMG_1773014153763.jpg`,
+  "Outback Steakhouse": `${SEEDED_LOGO_BASE}/FB_IMG_1773014170637.jpg`,
+  "Panda Express": `${SEEDED_LOGO_BASE}/FB_IMG_1773014193727.jpg`,
+  "Red Lobster": `${SEEDED_LOGO_BASE}/FB_IMG_1773014220077.jpg`,
+  "Red Robin": `${SEEDED_LOGO_BASE}/FB_IMG_1773014242955.jpg`,
+  "Red Robbin": `${SEEDED_LOGO_BASE}/FB_IMG_1773014242955.jpg`,
+  "Rosiies": `${SEEDED_LOGO_BASE}/FB_IMG_1773014271528.jpg`,
+  "Rosie's": `${SEEDED_LOGO_BASE}/FB_IMG_1773014271528.jpg`,
+  "Rudy's Hot Dog": `${SEEDED_LOGO_BASE}/FB_IMG_1773014327092.jpg`,
+  "Schmucker's Restaurant": `${SEEDED_LOGO_BASE}/FB_IMG_1773014432347.jpg`,
+  "Sonic": `${SEEDED_LOGO_BASE}/FB_IMG_1773014452021.jpg`,
+  "Star Diner": `${SEEDED_LOGO_BASE}/FB_IMG_1773014472754.jpg`,
+  "Starbucks": `${SEEDED_LOGO_BASE}/FB_IMG_1773014488001.jpg`,
+  "Taco Bell": `${SEEDED_LOGO_BASE}/FB_IMG_1773014506899.jpg`,
+  "Texas Roadhouse": `${SEEDED_LOGO_BASE}/FB_IMG_1773014555948.jpg`,
+  "The Attic on Adams": `${SEEDED_LOGO_BASE}/FB_IMG_1773014580737.jpg`,
+  "Ye Olde Dirty Bird": `${SEEDED_LOGO_BASE}/Picsart_26-03-08_20-07-48-171.jpg`,
+  "Ye Olde Durty Bird": `${SEEDED_LOGO_BASE}/Picsart_26-03-08_20-07-48-171.jpg`,
+};
+function getSeededLogoUrl(name: string | null | undefined): string | undefined {
+  return name ? SEEDED_LOGO_URLS[name] : undefined;
+}
+
 interface Restaurant {
   id: string;
   name: string;
@@ -376,7 +417,7 @@ const RestaurantGrid = ({
     return {
       id: restaurant.id,
       name: restaurant.name,
-      image: restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
+      image: getSeededLogoUrl(restaurant.name) || restaurant.image_url || `https://placehold.co/600x400/f5f5f5/333?text=${encodeURIComponent(restaurant.name || 'Restaurant')}`,
       rating: restaurant.rating ?? 4,
       deliveryTime: `${minTime} min`,
       deliveryFee: feeCents === 0 ? "Free" : feeCents != null ? `$${(feeCents / 100).toFixed(2)}` : "—",

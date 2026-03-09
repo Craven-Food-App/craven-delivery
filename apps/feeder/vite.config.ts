@@ -6,6 +6,7 @@
  * apps/feeder/node_modules has its own copies which creates duplicate
  * instances → providers from one copy are invisible to the other → crash.
  */
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -36,7 +37,8 @@ const pinnedPackages = [
   "@tanstack/react-query", "@tanstack/react-table",
   "@supabase/supabase-js",
   "@mui/material", "@mui/icons-material", "@mui/x-data-grid", "@mui/x-date-pickers",
-  "@capacitor/core", "@capacitor/geolocation", "@capacitor/local-notifications", "@capacitor/push-notifications",
+  "@capacitor/core", "@capacitor/geolocation",
+  "@capacitor/local-notifications", "@capacitor/push-notifications",
   "sonner", "lucide-react", "@tabler/icons-react",
   "class-variance-authority", "clsx", "tailwind-merge",
 ];
@@ -99,7 +101,8 @@ export default defineConfig({
       "@mantine/modals", "@mantine/dates", "@mantine/carousel", "@mantine/form",
       "@emotion/react", "@emotion/styled",
       "@tanstack/react-query",
-      "@capacitor/core", "@capacitor/geolocation", "@capacitor/local-notifications", "@capacitor/push-notifications",
+      "@capacitor/core", "@capacitor/geolocation",
+      "@capacitor/local-notifications", "@capacitor/push-notifications",
       "sonner", "lucide-react", "@tabler/icons-react",
       "hoist-non-react-statics", "prop-types", "deepmerge",
       "barcode-detector", "barcode-detector/ponyfill",
@@ -119,39 +122,33 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+
     rollupOptions: {
+      // FIX: ignore synapse import from capacitor geolocation
+      external: ["@capacitor/synapse"],
+
       output: {
         manualChunks(id) {
           const n = id.replace(/\\/g, "/");
 
           if (!n.includes("node_modules")) return undefined;
 
-          // Only split packages that are:
-          // 1. Large
-          // 2. Do NOT use React hooks internally
-          // Everything React-dependent stays in the default chunk
-          // to avoid the duplicate React instance problem entirely.
-
-          // Mapbox — large, zero React deps
           if (n.includes("/mapbox-gl/") || n.includes("/@mapbox/")) {
             return "vendor-mapbox";
           }
 
-          // Supabase — large, zero React deps
           if (n.includes("/@supabase/")) {
             return "vendor-supabase";
           }
 
-          // Monaco editor — huge, zero React deps at runtime
           if (n.includes("/monaco-editor/") || n.includes("/@monaco-editor/")) {
             return "vendor-monaco";
           }
 
-          // Everything else (React, MUI, Mantine, Radix, Antd, Tanstack, etc.)
-          // stays bundled together to share one React instance.
           return undefined;
         },
       },
+
       onwarn(warning, warn) {
         if (
           warning.code === "CIRCULAR_DEPENDENCY" &&

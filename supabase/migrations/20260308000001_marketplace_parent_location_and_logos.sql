@@ -64,9 +64,14 @@ UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/kohls
 UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/target.com/logo'      WHERE name = 'Target';
 UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/walmart.com/logo'     WHERE name = 'Walmart';
 UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/dsw.com/logo'        WHERE name = 'DSW';
--- Local restaurants and remaining chains/retail: leave logo_url as-is (many already NULL); clear any invalid seed URLs for names we didn't verify above
+-- Tony Packo's & Applebee's: use seeded logos from Supabase Storage
+UPDATE public.restaurants_master SET logo_url = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos/FB_IMG_1773013555938.jpg' WHERE name = 'Tony Packo''s' AND city = 'Toledo' AND state = 'OH';
+UPDATE public.restaurants_master SET logo_url = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos/FB_IMG_1773013585044.jpg' WHERE name = 'Applebee''s' AND city = 'Toledo' AND state = 'OH';
+UPDATE public.restaurants_master SET logo_url = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos/FB_IMG_1773013601605.jpg' WHERE name = 'Arby''s' AND city = 'Toledo' AND state = 'OH';
+UPDATE public.restaurants_master SET logo_url = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos/FB_IMG_1773013654751.jpg' WHERE name = 'Balance Grille' AND city = 'Toledo' AND state = 'OH';
+-- Local restaurants and remaining chains/retail: clear any invalid seed URLs for names we didn't verify above (Tony Packo's excluded above)
 UPDATE public.restaurants_master SET logo_url = NULL WHERE name IN (
-  'Balance Grille', 'Tony Packo''s', 'Mancy''s Steakhouse', 'Home Slice Pizza', 'Fowl & Fodder',
+  'Balance Grille', 'Mancy''s Steakhouse', 'Home Slice Pizza', 'Fowl & Fodder',
   'Kengo Sushi', 'Ye Olde Durty Bird', 'Grumpy''s', 'Doc Watson''s'
 );
 UPDATE public.restaurants_master SET logo_url = NULL WHERE marketplace_type = 'retail' AND name NOT IN (
