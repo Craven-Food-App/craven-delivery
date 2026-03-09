@@ -374,7 +374,7 @@ const RestaurantGrid = ({
     }
   };
   if (loading) {
-    return <section className="py-6 bg-muted/30">
+    return <section className="py-2 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-4">
@@ -439,14 +439,14 @@ const RestaurantGrid = ({
   }
 
   // Determine padding and height based on props
-  const sectionPadding = (excludeCuisine && sectionTitle === "Restaurants") ? "py-1" : "py-6";
+  const sectionPadding = (excludeCuisine && sectionTitle === "Restaurants") ? "py-1" : "py-2";
   const sectionHeight = (customRestaurants && horizontal) ? "270px" : undefined;
 
   return <section className={sectionPadding} style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
       {horizontal ? (
         <>
           {sectionTitle && (
-            <div className="container mx-auto px-4 mb-4">
+            <div className="container mx-auto px-4 mb-1">
               <h2 className="text-2xl font-bold text-gray-900">{sectionTitle}</h2>
             </div>
           )}
