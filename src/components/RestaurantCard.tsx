@@ -4,6 +4,7 @@ import { useState } from "react";
 
 const RETAIL_TYPES = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail'];
 const BASE_LOGO = "https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/seed%20logos";
+const BRANDFETCH = "https://cdn.brandfetch.io";
 const SEEDED_LOGO_URLS: Record<string, string> = {
   "Tony Packo's": `${BASE_LOGO}/FB_IMG_1773013555938.jpg`,
   "Applebee's": `${BASE_LOGO}/FB_IMG_1773013585044.jpg`,
@@ -39,8 +40,41 @@ const SEEDED_LOGO_URLS: Record<string, string> = {
   "The Attic on Adams": `${BASE_LOGO}/FB_IMG_1773014580737.jpg`,
   "Ye Olde Dirty Bird": `${BASE_LOGO}/Picsart_26-03-08_20-07-48-171.jpg`,
   "Ye Olde Durty Bird": `${BASE_LOGO}/Picsart_26-03-08_20-07-48-171.jpg`,
+  // Brandfetch CDN logos for major chains
+  "Burger King": `${BRANDFETCH}/burgerking.com/logo`,
+  "Chick-fil-A": `${BRANDFETCH}/chick-fil-a.com/logo`,
+  "Chipotle": `${BRANDFETCH}/chipotle.com/logo`,
+  "Five Guys": `${BRANDFETCH}/fiveguys.com/logo`,
+  "Popeyes": `${BRANDFETCH}/popeyes.com/logo`,
+  "Panera Bread": `${BRANDFETCH}/panerabread.com/logo`,
+  "Jimmy John's": `${BRANDFETCH}/jimmyjohns.com/logo`,
+  "Little Caesars": `${BRANDFETCH}/littlecaesars.com/logo`,
+  "Pizza Hut": `${BRANDFETCH}/pizzahut.com/logo`,
+  "Domino's": `${BRANDFETCH}/dominos.com/logo`,
+  "Dairy Queen": `${BRANDFETCH}/dairyqueen.com/logo`,
+  "Wingstop": `${BRANDFETCH}/wingstop.com/logo`,
+  "Raising Cane's": `${BRANDFETCH}/raisingcanes.com/logo`,
+  "Qdoba": `${BRANDFETCH}/qdoba.com/logo`,
+  "Firehouse Subs": `${BRANDFETCH}/firehousesubs.com/logo`,
+  "Jersey Mike's": `${BRANDFETCH}/jerseymikes.com/logo`,
+  "Culver's": `${BRANDFETCH}/culvers.com/logo`,
+  "Buffalo Wild Wings": `${BRANDFETCH}/buffalowildwings.com/logo`,
+  "White Castle": `${BRANDFETCH}/whitecastle.com/logo`,
+  "Steak 'n Shake": `${BRANDFETCH}/steaknshake.com/logo`,
+  "Marco's Pizza": `${BRANDFETCH}/marcos.com/logo`,
+  "Papa Johns": `${BRANDFETCH}/papajohns.com/logo`,
+  "Papa John's": `${BRANDFETCH}/papajohns.com/logo`,
+  "Wendy's": `${BRANDFETCH}/wendys.com/logo`,
+  "KFC": `${BRANDFETCH}/kfc.com/logo`,
+  "Subway": `${BRANDFETCH}/subway.com/logo`,
+  "Waffle House": `${BRANDFETCH}/wafflehouse.com/logo`,
+  "Shake Shack": `${BRANDFETCH}/shakeshack.com/logo`,
+  "Krispy Kreme": `${BRANDFETCH}/krispykreme.com/logo`,
+  "Tim Hortons": `${BRANDFETCH}/timhortons.com/logo`,
+  "Del Taco": `${BRANDFETCH}/deltaco.com/logo`,
+  "Bojangles": `${BRANDFETCH}/bojangles.com/logo`,
+  "Golden Corral": `${BRANDFETCH}/goldencorral.com/logo`,
 };
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop";
 
 interface RestaurantCardProps {
   id: string;
