@@ -2729,7 +2729,7 @@ const Restaurants = () => {
             </Box>
 
             {/* Pet Stores - Mobile */}
-            <Box px="md" pt="xs" pb="md">
+            <Box px="md" pt={0} pb={0}>
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
