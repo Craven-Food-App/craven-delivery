@@ -271,6 +271,7 @@ const Restaurants = () => {
   const [showAccountPopup, setShowAccountPopup] = useState(false);
   const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 0, left: 0 });
   const [showMenuIcons, setShowMenuIcons] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
   // Default to Tampa HQ (6759 Nebraska Ave) — overwritten by browser geolocation if granted
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 27.9766, lng: -82.4563 });
   
