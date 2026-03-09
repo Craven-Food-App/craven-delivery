@@ -138,12 +138,12 @@ const RestaurantCard = ({
     <div className={`group ${isActive ? 'cursor-pointer' : ''}`} onClick={handleClick}>
       <div className="bg-white rounded-t-xl overflow-hidden border border-gray-100 rounded-b-xl" style={{ width: '100%', maxWidth: '100%' }}>
         {/* Image: same treatment for all cards — rounded top, object-cover */}
-        <div className={`relative h-32 overflow-hidden rounded-t-xl bg-gray-100 flex items-center justify-center`}>
+        <div className={`relative h-32 overflow-hidden rounded-t-xl bg-white flex items-center justify-center`}>
           {displayImage ? (
             <img
               src={displayImage}
               alt={name}
-              className={`w-full h-full object-cover ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
+              className={`max-w-[85%] max-h-[85%] object-contain ${isActive ? 'group-hover:scale-105' : ''} transition-transform duration-500`}
             />
           ) : (
             <span className="text-gray-600 font-semibold text-center px-3 line-clamp-2 text-sm">{name}</span>
