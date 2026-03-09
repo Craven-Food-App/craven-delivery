@@ -537,7 +537,7 @@ const RestaurantGrid = ({
 
   const emptyMessage = sectionTitle ? `No ${sectionTitle.toLowerCase()} to show yet.` : 'No results.';
 
-  return <section className="py-6" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
+  return <section className="py-2" style={{ backgroundColor: 'rgba(255, 255, 255, 1)', height: sectionHeight }}>
       {horizontal ? (
         <>
           {sectionTitle && (
