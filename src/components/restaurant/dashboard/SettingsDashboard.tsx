@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantData } from "@/hooks/useRestaurantData";
@@ -501,9 +501,13 @@ function TabStore({ restaurant, loading: rLoading, refetchRestaurant }: Settings
   const [phone, setPhone] = useState("");
   const [instagram, setInstagram] = useState("");
   const [description, setDescription] = useState("");
+  const [headerPhoto, setHeaderPhoto] = useState<string | null>(null);
+  const [logoPhoto, setLogoPhoto] = useState<string | null>(null);
   const [hours, setHours] = useState<{ day: string; open: boolean; from: string; to: string }[]>(DAYS.map(d => ({ day: d, open: true, from: "09:00", to: "21:00" })));
   const [hoursLoading, setHoursLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const headerInputRef = useRef<HTMLInputElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!restaurant) return;
@@ -513,7 +517,9 @@ function TabStore({ restaurant, loading: rLoading, refetchRestaurant }: Settings
     setPhone(restaurant.phone ?? "");
     setInstagram(restaurant.instagram_handle ?? "");
     setDescription(restaurant.description ?? "");
-  }, [restaurant?.id, restaurant?.name, restaurant?.restaurant_type, restaurant?.address, restaurant?.city, restaurant?.state, restaurant?.zip_code, restaurant?.phone, restaurant?.instagram_handle, restaurant?.description]);
+    setHeaderPhoto((restaurant.header_image_url as string | null) ?? null);
+    setLogoPhoto((restaurant.logo_url as string | null) ?? null);
+  }, [restaurant?.id, restaurant?.name, restaurant?.restaurant_type, restaurant?.address, restaurant?.city, restaurant?.state, restaurant?.zip_code, restaurant?.phone, restaurant?.instagram_handle, restaurant?.description, (restaurant as any)?.header_image_url, (restaurant as any)?.logo_url]);
 
   useEffect(() => {
     if (!restaurant?.id) return;
@@ -552,6 +558,58 @@ function TabStore({ restaurant, loading: rLoading, refetchRestaurant }: Settings
     }
   };
 
+  const handleImageUpload = async (file: File, type: "header" | "logo") => {
+    if (!restaurant?.id) return;
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${restaurant.id}/${type}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("restaurant-images")
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("restaurant-images")
+        .getPublicUrl(fileName);
+
+      const updateField = type === "header" ? "header_image_url" : "logo_url";
+      const { error: updateError } = await supabase
+        .from("restaurants")
+        .update({ [updateField]: publicUrl })
+        .eq("id", restaurant.id);
+      if (updateError) throw updateError;
+
+      if (type === "header") {
+        setHeaderPhoto(publicUrl);
+      } else {
+        setLogoPhoto(publicUrl);
+      }
+
+      toast.success(`${type === "header" ? "Store header" : "Store logo"} updated`);
+      refetchRestaurant();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to upload image");
+    }
+  };
+
+  const onHeaderFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void handleImageUpload(file, "header");
+    }
+    e.target.value = "";
+  };
+
+  const onLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void handleImageUpload(file, "logo");
+    }
+    e.target.value = "";
+  };
+
   if (rLoading) return <div className="fade-up" style={{ padding: 24, color: "#6b7280" }}>Loading…</div>;
 
   return (
@@ -570,18 +628,40 @@ function TabStore({ restaurant, loading: rLoading, refetchRestaurant }: Settings
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div>
           <FL hint="Recommended: 1200×400px (16:9)">Store Header Image</FL>
-          <div className="upload-zone" style={{ border: "1.5px dashed #e5e7eb", borderRadius: 8, padding: "20px", textAlign: "center", background: "#fafafa" }}>
-            {restaurant?.header_image_url ? <img src={restaurant.header_image_url as string} alt="Header" style={{ maxWidth: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} /> : null}
+          <div
+            className="upload-zone"
+            style={{ border: "1.5px dashed #e5e7eb", borderRadius: 8, padding: "20px", textAlign: "center", background: "#fafafa" }}
+            onClick={() => headerInputRef.current?.click()}
+          >
+            {headerPhoto ? <img src={headerPhoto} alt="Header" style={{ maxWidth: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8 }} /> : null}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.8" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <p style={{ fontSize: 12, color: "#6b7280" }}><span style={{ color: "#ea580c", fontWeight: 600 }}>Upload header</span> or drag & drop</p>
+            <input
+              ref={headerInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={onHeaderFileChange}
+            />
           </div>
         </div>
         <div>
           <FL hint="Recommended: 400×400px (square)">Store Logo</FL>
-          <div className="upload-zone" style={{ border: "1.5px dashed #e5e7eb", borderRadius: 8, padding: "20px", textAlign: "center", background: "#fafafa" }}>
-            {restaurant?.logo_url ? <img src={restaurant.logo_url as string} alt="Logo" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%" }} /> : null}
+          <div
+            className="upload-zone"
+            style={{ border: "1.5px dashed #e5e7eb", borderRadius: 8, padding: "20px", textAlign: "center", background: "#fafafa" }}
+            onClick={() => logoInputRef.current?.click()}
+          >
+            {logoPhoto ? <img src={logoPhoto} alt="Logo" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%" }} /> : null}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.8" style={{ display: "block", margin: "0 auto 8px" }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <p style={{ fontSize: 12, color: "#6b7280" }}><span style={{ color: "#ea580c", fontWeight: 600 }}>Upload logo</span> or drag & drop</p>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={onLogoFileChange}
+            />
           </div>
         </div>
       </div>
@@ -1343,9 +1423,9 @@ interface SettingsDashboardProps {
   onSettingsTabChange?: (tab: string) => void;
 }
 
-export default function SettingsDashboard({ defaultTab = "account", onSettingsTabChange }: SettingsDashboardProps) {
+export default function SettingsDashboard({ defaultTab = "account", restaurantId, onSettingsTabChange }: SettingsDashboardProps) {
   const [active, setActive] = useState(defaultTab);
-  const { restaurant, loading, refetch } = useRestaurantData();
+  const { restaurant, loading, refetch } = useRestaurantData(restaurantId);
   useEffect(() => setActive(defaultTab), [defaultTab]);
   const Content = CONTENT[active] ?? TabAccount;
   const tabProps: SettingsTabProps = { restaurant, loading, refetchRestaurant: refetch };
