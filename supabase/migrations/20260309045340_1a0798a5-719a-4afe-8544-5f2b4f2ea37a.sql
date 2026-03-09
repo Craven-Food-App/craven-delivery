@@ -1,0 +1,13 @@
+-- Add Kids Menu entries for restaurants that offer kids menus
+-- These use food images representing typical kids menu items
+INSERT INTO public.restaurants_master (name, city, state, address, lat, lng, category, marketplace_type, status, logo_url, image_url) VALUES
+('McDonald''s', 'Toledo', 'OH', '3146 W Central Ave', 41.6650, -83.5960, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/mcdonalds.com/logo', 'https://images.unsplash.com/photo-1619881590738-a111d176d936?w=400'),
+('Wendy''s', 'Toledo', 'OH', '3330 Secor Rd', 41.6700, -83.6070, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/wendys.com/logo', 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400'),
+('Chick-fil-A', 'Toledo', 'OH', '4840 Monroe St', 41.6730, -83.6310, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/chick-fil-a.com/logo', 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400'),
+('Culver''s', 'Toledo', 'OH', '5315 Airport Hwy', 41.6020, -83.6880, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/culvers.com/logo', 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400'),
+('Dairy Queen', 'Toledo', 'OH', '2114 W Laskey Rd', 41.6880, -83.6000, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/dairyqueen.com/logo', 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=400'),
+('KFC', 'Toledo', 'OH', '1900 W Laskey Rd', 41.6870, -83.5960, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/kfc.com/logo', 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400'),
+('Panera Bread', 'Toledo', 'OH', '4950 Monroe St', 41.6750, -83.6350, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/panerabread.com/logo', 'https://images.unsplash.com/photo-1509722747041-616f39b57569?w=400'),
+('Buffalo Wild Wings', 'Toledo', 'OH', '5100 Monroe St', 41.6760, -83.6380, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/buffalowildwings.com/logo', 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400'),
+('Taco Bell', 'Toledo', 'OH', '3432 Secor Rd', 41.6710, -83.6100, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/tacobell.com/logo', 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400'),
+('Applebee''s', 'Toledo', 'OH', '5601 Monroe St', 41.6790, -83.6450, 'Kids Menu', 'restaurant', 'REQUESTABLE', 'https://cdn.brandfetch.io/applebees.com/logo', 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400');
