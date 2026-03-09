@@ -1,0 +1,8 @@
+-- Pet store logos via Brandfetch CDN
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petsmart.com/logo', image_url = 'https://cdn.brandfetch.io/petsmart.com/logo' WHERE id = '7483c4d9-9877-4bdc-8c17-af3d2f570776';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petco.com/logo', image_url = 'https://cdn.brandfetch.io/petco.com/logo' WHERE id = '7ed76bbe-aaec-4c04-9e45-8464b02c6a89';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petsuppliesplus.com/logo', image_url = 'https://cdn.brandfetch.io/petsuppliesplus.com/logo' WHERE id = 'd5612a64-7913-4a17-af81-dfc5f985a66f';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petco.com/logo', image_url = 'https://cdn.brandfetch.io/petco.com/logo' WHERE id = 'ccae5852-8d4f-441c-bcc7-d0b4aa98d5bd';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petvalu.com/logo', image_url = 'https://cdn.brandfetch.io/petvalu.com/logo' WHERE id = '92a623a7-986c-4a51-8a41-4ed1d73a2c4f';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petsupermarket.com/logo', image_url = 'https://cdn.brandfetch.io/petsupermarket.com/logo' WHERE id = '0a53f703-e517-4666-a15d-08ef92bf128e';
+UPDATE public.restaurants_master SET logo_url = 'https://cdn.brandfetch.io/petfoodexpress.com/logo', image_url = 'https://cdn.brandfetch.io/petfoodexpress.com/logo' WHERE id = 'd61c64c8-4a91-44ee-a6e2-dc3da6c5b38a';
