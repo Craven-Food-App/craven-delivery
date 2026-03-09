@@ -87,7 +87,8 @@ import {
   IconList,
   IconLayersLinked,
   IconCompass,
-  IconPackage
+  IconPackage,
+  IconMap2
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
