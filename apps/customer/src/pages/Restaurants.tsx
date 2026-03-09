@@ -2716,7 +2716,7 @@ const Restaurants = () => {
             </Box>
 
             {/* Cosmetic Stores - Mobile */}
-            <Box px="md" pt="md" pb="xs">
+            <Box px="md" pt={0} pb={0}>
               <RestaurantGrid
                 searchQuery={searchQuery}
                 deliveryAddress={location}
