@@ -1046,6 +1046,21 @@ const Restaurants = () => {
               </Button>
             </Box>
 
+            <ActionIcon
+              onClick={() => setShowMapView((prev) => !prev)}
+              variant="subtle"
+              size="lg"
+              radius="xl"
+              style={{ flexShrink: 0 }}
+              title={showMapView ? 'View list' : 'View map'}
+            >
+              {showMapView ? (
+                <IconBuildingStore size={24} style={{ color: '#171717' }} />
+              ) : (
+                <IconMap2 size={24} style={{ color: '#171717' }} />
+              )}
+            </ActionIcon>
+
             <Group
               gap="xs"
               wrap="nowrap"
