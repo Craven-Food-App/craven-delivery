@@ -434,31 +434,20 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by delivery radius: only show merchants to customers within the merchant's set radius.
-      // Skip radius filter for retail/apparel stores (e.g. Crave'n Stylz) so they don't disappear when location loads.
-      const RETAIL_CUISINE_TYPES = ['apparel', 'retail', 'clothing', 'fashion', 'electronics', 'hardware', 'beauty', 'cosmetics', 'specialty_retail'];
-      const DEFAULT_DELIVERY_RADIUS_MILES = 30;
+      // Filter by 25-mile radius — exclude restaurants without coordinates
+      const MAX_RADIUS = 25;
       if (userLocation && filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          const cuisine = restaurant.cuisine_type?.toLowerCase();
-          const isRetailOrApparel = cuisine && RETAIL_CUISINE_TYPES.includes(cuisine);
-          if (isRetailOrApparel) {
-            return true; // Always show retail/apparel stores regardless of distance
-          }
           if (!restaurant.latitude || !restaurant.longitude) {
-            return true; // Include restaurants without location data
+            return false; // Exclude restaurants without location data
           }
-          const radiusMiles = restaurant.delivery_radius_miles != null
-            ? Number(restaurant.delivery_radius_miles)
-            : DEFAULT_DELIVERY_RADIUS_MILES;
-
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
             restaurant.latitude,
             restaurant.longitude
           );
-
+          const radiusMiles = Math.min(restaurant.delivery_radius_miles ?? MAX_RADIUS, MAX_RADIUS);
           return distance <= radiusMiles;
         });
       }
