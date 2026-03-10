@@ -144,6 +144,26 @@ const SEEDED_LOGO_URLS: Record<string, string> = {
   "Benchmark Restaurant": `${BRANDFETCH}/benchmarkrestaurant.com/logo`,
 };
 
+// National chains that exist everywhere — bypass 25-mile distance filter.
+// Local hotspots (Tony Packo's, Ye Olde Durty Bird, etc.) are Toledo-only.
+const NATIONAL_CHAINS = new Set([
+  "McDonald's", "McDonalds", "Burger King", "Wendy's", "Taco Bell", "KFC",
+  "Chick-fil-A", "Popeyes", "Subway", "Domino's", "Pizza Hut", "Papa Johns", "Papa John's",
+  "Little Caesars", "Sonic", "Arby's", "Dairy Queen", "Dunkin'", "Starbucks",
+  "Chipotle", "Panda Express", "Five Guys", "Panera Bread", "Jimmy John's",
+  "Wingstop", "Raising Cane's", "Qdoba", "Firehouse Subs", "Jersey Mike's",
+  "Culver's", "Buffalo Wild Wings", "White Castle", "Steak 'n Shake",
+  "Marco's Pizza", "Waffle House", "Shake Shack", "Krispy Kreme", "Tim Hortons",
+  "Del Taco", "Bojangles", "Golden Corral", "Applebee's", "Chili's",
+  "Olive Garden", "Red Lobster", "Red Robin", "Red Robbin", "Outback Steakhouse",
+  "Cracker Barrel", "Denny's", "IHOP", "Bob Evans", "Texas Roadhouse",
+  "Bar Louie",
+]);
+
+function isNationalChain(name: string | undefined | null): boolean {
+  return !!name && NATIONAL_CHAINS.has(name);
+}
+
 /** Check if a URL is a generic unsplash stock photo (not a real logo) */
 function isGenericStockPhoto(url: string | null | undefined): boolean {
   if (!url) return false;
