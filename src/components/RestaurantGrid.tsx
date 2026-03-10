@@ -216,9 +216,16 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    const lat = userLocation?.lat ?? 41.65;
-    const lng = userLocation?.lng ?? -83.54;
-    const radii = [10, 20, 35, 50];
+    // Require real GPS — no hardcoded fallback
+    if (!userLocation) {
+      setRestaurants([]);
+      setLoading(false);
+      return;
+    }
+    const lat = userLocation.lat;
+    const lng = userLocation.lng;
+    const MAX_RADIUS = 25; // 25 mile hard cap
+    const radii = [10, 15, 25];
     try {
       let list: Restaurant[] = [];
       for (const radius of radii) {
@@ -247,7 +254,12 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        if (list.length >= 6 || radius === 50) break;
+        // Enforce 25-mile hard cap client-side
+        list = list.filter((r) => {
+          if (r.latitude == null || r.longitude == null) return false;
+          return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
+        });
+        if (list.length >= 6 || radius === MAX_RADIUS) break;
       }
       if (marketplaceType) {
         list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
@@ -270,10 +282,16 @@ const RestaurantGrid = ({
 
   const fetchMarketplaceRestaurants = async () => {
     setLoading(true);
+    // Require real GPS — no hardcoded fallback
+    if (!userLocation) {
+      setRestaurants([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-        p_lat: userLocation?.lat ?? 41.65,
-        p_lng: userLocation?.lng ?? -83.54,
+        p_lat: userLocation.lat,
+        p_lng: userLocation.lng,
         p_search: searchQuery || null,
         p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
         p_limit: 300,
@@ -365,22 +383,21 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by delivery radius if user location is available
+      // Filter by 25-mile radius — exclude restaurants without coordinates
+      const MAX_RADIUS = 25;
       if (userLocation && filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          if (!restaurant.latitude || !restaurant.longitude || !restaurant.delivery_radius_miles) {
-            return true; // Include restaurants without location data
+          if (!restaurant.latitude || !restaurant.longitude) {
+            return false; // Exclude restaurants without location data
           }
-
-          // Calculate distance using Haversine formula
           const distance = calculateDistance(
             userLocation.lat, 
             userLocation.lng, 
             restaurant.latitude, 
             restaurant.longitude
           );
-          
-          return distance <= restaurant.delivery_radius_miles;
+          const radiusMiles = Math.min(restaurant.delivery_radius_miles ?? MAX_RADIUS, MAX_RADIUS);
+          return distance <= radiusMiles;
         });
       }
 
