@@ -88,6 +88,9 @@ export default defineConfig({
       "@": path.resolve(root, "src"),
       ...pinnedAliases,
       ...radixAliases(),
+      // Web shim for native-only Capacitor Synapse dependency so Vite/browser
+      // never try to load the real native module.
+      "@capacitor/synapse": path.resolve(__dirname, "src/shims/capacitorSynapse.ts"),
     },
     dedupe: [...pinnedPackages],
     conditions: ["import", "module", "browser", "default"],
@@ -124,9 +127,6 @@ export default defineConfig({
     },
 
     rollupOptions: {
-      // FIX: ignore synapse import from capacitor geolocation
-      external: ["@capacitor/synapse"],
-
       output: {
         manualChunks(id) {
           const n = id.replace(/\\/g, "/");
