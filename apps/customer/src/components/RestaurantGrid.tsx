@@ -252,9 +252,16 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    const lat = userLocation?.lat ?? 41.65;
-    const lng = userLocation?.lng ?? -83.54;
-    const radii = [10, 20, 35, 50];
+    // Require real GPS — no hardcoded fallback
+    if (!userLocation) {
+      setRestaurants([]);
+      setLoading(false);
+      return;
+    }
+    const lat = userLocation.lat;
+    const lng = userLocation.lng;
+    const MAX_RADIUS = 25; // 25 mile hard cap
+    const radii = [10, 15, 25];
     const minResults = 6;
     try {
       let list: Restaurant[] = [];
@@ -284,45 +291,17 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        if (list.length >= minResults || radius === 50) break;
-      }
-      // When retail/mall sections get 0 from nearby, show full catalog filtered by type so sections aren't empty
-      if (list.length === 0 && (marketplaceType === 'retail' || marketplaceType === 'mall')) {
-        const { data: catalogData, error: catalogError } = await (supabase as any).rpc('get_marketplace_restaurants', {
-          p_lat: null,
-          p_lng: null,
-          p_search: searchQuery || null,
-          p_cuisine: null,
-          p_limit: 500,
-          p_marketplace_type: marketplaceType,
+        // Enforce 25-mile hard cap client-side
+        list = list.filter((r) => {
+          if (r.latitude == null || r.longitude == null) return false;
+          return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
         });
-        if (!catalogError && catalogData && Array.isArray(catalogData)) {
-          const filtered = (catalogData as any[])
-            .filter((row: any) => row.marketplace_type === marketplaceType && row.lat != null && row.lng != null)
-            .map((row: any) => ({
-              id: row.id,
-              name: row.name,
-              cuisine_type: row.cuisine_type || row.category || '',
-              image_url: row.logo_url || row.image_url,
-              latitude: row.lat != null ? Number(row.lat) : undefined,
-              longitude: row.lng != null ? Number(row.lng) : undefined,
-              rating: row.rating != null ? Number(row.rating) : undefined,
-              min_delivery_time: row.min_delivery_time,
-              max_delivery_time: row.max_delivery_time,
-              delivery_fee_cents: row.delivery_fee_cents,
-              is_promoted: row.is_promoted ?? false,
-              marketplaceStatus: row.status === 'ACTIVE' ? 'ACTIVE' : row.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
-              request_count: row.request_count,
-              marketplace_type: row.marketplace_type || 'restaurant',
-            }));
-          list = filtered;
-        }
+        if (list.length >= minResults || radius === MAX_RADIUS) break;
       }
-      // Never show wrong type: strict client-side filter so restaurant section never shows retail and vice versa
+      // Never show wrong type
       if (marketplaceType) {
         list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
       }
-      // Restaurant section must never show apparel/retail: API treats all restaurants table rows as 'restaurant'
       if (marketplaceType === 'restaurant') {
         list = list.filter((r) => !isRetailOrApparel(r.cuisine_type));
       }
@@ -334,7 +313,6 @@ const RestaurantGrid = ({
       }
     } catch (err) {
       console.error('Error fetching nearby businesses:', err);
-      // Fallback must respect type: only call catalog when we have marketplaceType so we filter correctly
       if (marketplaceType) {
         await fetchMarketplaceRestaurants();
       } else {
