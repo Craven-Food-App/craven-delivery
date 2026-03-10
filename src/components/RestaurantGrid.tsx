@@ -216,9 +216,16 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    const lat = userLocation?.lat ?? 41.65;
-    const lng = userLocation?.lng ?? -83.54;
-    const radii = [10, 20, 35, 50];
+    // Require real GPS — no hardcoded fallback
+    if (!userLocation) {
+      setRestaurants([]);
+      setLoading(false);
+      return;
+    }
+    const lat = userLocation.lat;
+    const lng = userLocation.lng;
+    const MAX_RADIUS = 25; // 25 mile hard cap
+    const radii = [10, 15, 25];
     try {
       let list: Restaurant[] = [];
       for (const radius of radii) {
@@ -247,7 +254,12 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        if (list.length >= 6 || radius === 50) break;
+        // Enforce 25-mile hard cap client-side
+        list = list.filter((r) => {
+          if (r.latitude == null || r.longitude == null) return false;
+          return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
+        });
+        if (list.length >= 6 || radius === MAX_RADIUS) break;
       }
       if (marketplaceType) {
         list = list.filter((r) => (r.marketplace_type || 'restaurant') === marketplaceType);
