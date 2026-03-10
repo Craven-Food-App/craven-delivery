@@ -383,22 +383,21 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by delivery radius if user location is available
+      // Filter by 25-mile radius — exclude restaurants without coordinates
+      const MAX_RADIUS = 25;
       if (userLocation && filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          if (!restaurant.latitude || !restaurant.longitude || !restaurant.delivery_radius_miles) {
-            return true; // Include restaurants without location data
+          if (!restaurant.latitude || !restaurant.longitude) {
+            return false; // Exclude restaurants without location data
           }
-
-          // Calculate distance using Haversine formula
           const distance = calculateDistance(
             userLocation.lat, 
             userLocation.lng, 
             restaurant.latitude, 
             restaurant.longitude
           );
-          
-          return distance <= restaurant.delivery_radius_miles;
+          const radiusMiles = Math.min(restaurant.delivery_radius_miles ?? MAX_RADIUS, MAX_RADIUS);
+          return distance <= radiusMiles;
         });
       }
 
