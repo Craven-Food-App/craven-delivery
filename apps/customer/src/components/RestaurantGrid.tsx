@@ -325,10 +325,16 @@ const RestaurantGrid = ({
 
   const fetchMarketplaceRestaurants = async () => {
     setLoading(true);
+    // Require real GPS — no hardcoded fallback
+    if (!userLocation) {
+      setRestaurants([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-        p_lat: userLocation?.lat ?? 41.65,
-        p_lng: userLocation?.lng ?? -83.54,
+        p_lat: userLocation.lat,
+        p_lng: userLocation.lng,
         p_search: searchQuery || null,
         p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
         p_limit: 300,
