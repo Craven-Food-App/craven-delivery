@@ -272,14 +272,9 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    // Require real GPS — no hardcoded fallback
-    if (!userLocation) {
-      setRestaurants([]);
-      setLoading(false);
-      return;
-    }
-    const lat = userLocation.lat;
-    const lng = userLocation.lng;
+    const lat = userLocation?.lat ?? 41.65;
+    const lng = userLocation?.lng ?? -83.54;
+    const hasRealGps = !!userLocation;
     const MAX_RADIUS = 25; // 25 mile hard cap
     const radii = [10, 15, 25];
     const minResults = 6;
