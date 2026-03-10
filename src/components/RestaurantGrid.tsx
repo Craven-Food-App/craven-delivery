@@ -311,6 +311,7 @@ const RestaurantGrid = ({
         p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
         p_limit: 300,
         p_marketplace_type: marketplaceType && marketplaceType !== 'restaurant' ? marketplaceType : null,
+        p_radius_miles: 30,
       });
       if (error) throw error;
       let list: Restaurant[] = (data || []).map((row: any) => ({

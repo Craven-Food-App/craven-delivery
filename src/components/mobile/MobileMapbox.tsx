@@ -435,26 +435,29 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
     });
   }, [resetToDefaultZoom, isMapReady]);
 
-  // Fetch all marketplace locations (ACTIVE + REQUESTABLE + COMING_SOON) for feeder map.
-  // Prefer 6-param RPC (restaurant, retail, mall separately); fallback to 5-param for older DBs (e.g. mobile web).
+  // Fetch marketplace locations within 30 mi of driver (any US city). When location available, only nearby stores show.
+  const RADIUS_MILES = 30;
   useEffect(() => {
     const fetchMerchants = async () => {
       setMerchantsLoadError(null);
       const limit = 1500;
+      const lat = location?.latitude ?? null;
+      const lng = location?.longitude ?? null;
       const types: string[] = ['restaurant', 'retail', 'mall'];
       let allRows: any[] = [];
       let useFallback = false;
       for (const pType of types) {
         const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-          p_lat: null,
-          p_lng: null,
+          p_lat: lat,
+          p_lng: lng,
           p_search: null,
           p_cuisine: null,
           p_limit: limit,
           p_marketplace_type: pType,
+          p_radius_miles: RADIUS_MILES,
         });
         if (error) {
-          console.warn('get_marketplace_restaurants (6-param) error, trying 5-param:', error);
+          console.warn('get_marketplace_restaurants (7-param) error, trying 6-param:', error);
           useFallback = true;
           break;
         }
@@ -462,8 +465,8 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       }
       if (useFallback) {
         const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-          p_lat: null,
-          p_lng: null,
+          p_lat: lat,
+          p_lng: lng,
           p_search: null,
           p_cuisine: null,
           p_limit: limit,
@@ -526,7 +529,7 @@ export const MobileMapbox: React.FC<MobileMapboxProps> = ({
       setMerchantsLoaded(true);
     };
     fetchMerchants();
-  }, []);
+  }, [location?.latitude, location?.longitude]);
 
   // Render merchant markers on map (only when list actually changes to avoid markers jumping)
   useEffect(() => {

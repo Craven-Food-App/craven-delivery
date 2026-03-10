@@ -56,7 +56,8 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch all marketplace locations (restaurant, retail, mall). Prefer 6-param RPC; fallback to 5-param if not deployed.
+  // Fetch marketplace locations within 30 mi of user (any US city). Uses geolocation when available.
+  const RADIUS_MILES = 30;
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
@@ -75,16 +76,23 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
         status: r.status === 'ACTIVE' ? 'ACTIVE' : r.status === 'COMING_SOON' ? 'COMING_SOON' : 'REQUESTABLE',
         parent_location: r.parent_location || null,
       });
+      const lat = userLocation?.lat ?? null;
+      const lng = userLocation?.lng ?? null;
+      const rpcParams = {
+        p_lat: lat,
+        p_lng: lng,
+        p_search: null,
+        p_cuisine: null,
+        p_limit: 1500,
+        p_marketplace_type: null as string | null,
+        p_radius_miles: RADIUS_MILES,
+      };
       let allRows: any[] = [];
       const types = ['restaurant', 'retail', 'mall'];
       let useFallback = false;
       for (const pType of types) {
         const { data, err } = await (supabase as any).rpc('get_marketplace_restaurants', {
-          p_lat: null,
-          p_lng: null,
-          p_search: null,
-          p_cuisine: null,
-          p_limit: 1500,
+          ...rpcParams,
           p_marketplace_type: pType,
         });
         if (err) {
@@ -95,8 +103,8 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       }
       if (useFallback) {
         const { data, err } = await (supabase as any).rpc('get_marketplace_restaurants', {
-          p_lat: null,
-          p_lng: null,
+          p_lat: lat,
+          p_lng: lng,
           p_search: null,
           p_cuisine: null,
           p_limit: 1500,
@@ -120,9 +128,9 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, userLocation?.lat, userLocation?.lng]);
 
-  // Init map
+  // Init map (default center; user location applied when available)
   useEffect(() => {
     if (!token || !mapContainer.current) return;
     mapboxgl.accessToken = token;
@@ -143,6 +151,13 @@ export const CustomerMerchantMap: React.FC<CustomerMerchantMapProps> = ({ onClos
       map.current = null;
     };
   }, [token]);
+
+  // Center map on user when location is available (any US city)
+  useEffect(() => {
+    if (map.current && userLocation) {
+      map.current.setCenter([userLocation.lng, userLocation.lat]);
+    }
+  }, [userLocation?.lat, userLocation?.lng]);
 
   // User location beacon (Craven pin) — works on mobile web and native app; no platform check.
   useEffect(() => {
