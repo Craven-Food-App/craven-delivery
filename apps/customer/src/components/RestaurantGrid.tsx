@@ -447,13 +447,13 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by 25-mile radius — exclude restaurants without coordinates
+      // National chains show everywhere; local spots only within 25mi
       const MAX_RADIUS = 25;
-      if (userLocation && filteredData.length > 0) {
+      if (filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          if (!restaurant.latitude || !restaurant.longitude) {
-            return false; // Exclude restaurants without location data
-          }
+          if (isNationalChain(restaurant.name)) return true;
+          if (!restaurant.latitude || !restaurant.longitude) return false;
+          if (!userLocation) return false;
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
