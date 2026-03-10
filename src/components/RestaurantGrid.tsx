@@ -116,6 +116,27 @@ const SEEDED_LOGO_URLS: Record<string, string> = {
   "Golden Corral": `${BRANDFETCH}/goldencorral.com/logo`,
 };
 
+// National chains that exist everywhere — these bypass the 25-mile distance filter
+// because every city has them. Local hotspots (Tony Packo's, Ye Olde Durty Bird, etc.)
+// are Toledo-only and must stay within 25mi radius.
+const NATIONAL_CHAINS = new Set([
+  "McDonald's", "McDonalds", "Burger King", "Wendy's", "Taco Bell", "KFC",
+  "Chick-fil-A", "Popeyes", "Subway", "Domino's", "Pizza Hut", "Papa Johns", "Papa John's",
+  "Little Caesars", "Sonic", "Arby's", "Dairy Queen", "Dunkin'", "Starbucks",
+  "Chipotle", "Panda Express", "Five Guys", "Panera Bread", "Jimmy John's",
+  "Wingstop", "Raising Cane's", "Qdoba", "Firehouse Subs", "Jersey Mike's",
+  "Culver's", "Buffalo Wild Wings", "White Castle", "Steak 'n Shake",
+  "Marco's Pizza", "Waffle House", "Shake Shack", "Krispy Kreme", "Tim Hortons",
+  "Del Taco", "Bojangles", "Golden Corral", "Applebee's", "Chili's",
+  "Olive Garden", "Red Lobster", "Red Robin", "Red Robbin", "Outback Steakhouse",
+  "Cracker Barrel", "Denny's", "IHOP", "Bob Evans", "Texas Roadhouse",
+  "Bar Louie",
+]);
+
+function isNationalChain(name: string | undefined | null): boolean {
+  return !!name && NATIONAL_CHAINS.has(name);
+}
+
 /** Check if a URL is a generic unsplash stock photo (not a real logo) */
 function isGenericStockPhoto(url: string | null | undefined): boolean {
   if (!url) return false;
@@ -216,14 +237,9 @@ const RestaurantGrid = ({
 
   const fetchNearbyByLocation = async () => {
     setLoading(true);
-    // Require real GPS — no hardcoded fallback
-    if (!userLocation) {
-      setRestaurants([]);
-      setLoading(false);
-      return;
-    }
-    const lat = userLocation.lat;
-    const lng = userLocation.lng;
+    const lat = userLocation?.lat ?? 41.65;
+    const lng = userLocation?.lng ?? -83.54;
+    const hasRealGps = !!userLocation;
     const MAX_RADIUS = 25; // 25 mile hard cap
     const radii = [10, 15, 25];
     try {
@@ -254,9 +270,11 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        // Enforce 25-mile hard cap client-side
+        // National chains show everywhere; local hotspots only within 25mi
         list = list.filter((r) => {
+          if (isNationalChain(r.name)) return true; // exists in every city
           if (r.latitude == null || r.longitude == null) return false;
+          if (!hasRealGps) return false; // no GPS = only show national chains
           return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
         });
         if (list.length >= 6 || radius === MAX_RADIUS) break;
@@ -282,16 +300,13 @@ const RestaurantGrid = ({
 
   const fetchMarketplaceRestaurants = async () => {
     setLoading(true);
-    // Require real GPS — no hardcoded fallback
-    if (!userLocation) {
-      setRestaurants([]);
-      setLoading(false);
-      return;
-    }
+    const lat = userLocation?.lat ?? 41.65;
+    const lng = userLocation?.lng ?? -83.54;
+    const hasRealGps = !!userLocation;
     try {
       const { data, error } = await (supabase as any).rpc('get_marketplace_restaurants', {
-        p_lat: userLocation.lat,
-        p_lng: userLocation.lng,
+        p_lat: lat,
+        p_lng: lng,
         p_search: searchQuery || null,
         p_cuisine: cuisineFilter && cuisineFilter !== 'all' ? cuisineFilter : null,
         p_limit: 300,
@@ -383,13 +398,13 @@ const RestaurantGrid = ({
         );
       }
 
-      // Filter by 25-mile radius — exclude restaurants without coordinates
+      // National chains show everywhere; local spots only within 25mi
       const MAX_RADIUS = 25;
-      if (userLocation && filteredData.length > 0) {
+      if (filteredData.length > 0) {
         filteredData = filteredData.filter((restaurant: Restaurant) => {
-          if (!restaurant.latitude || !restaurant.longitude) {
-            return false; // Exclude restaurants without location data
-          }
+          if (isNationalChain(restaurant.name)) return true;
+          if (!restaurant.latitude || !restaurant.longitude) return false;
+          if (!userLocation) return false;
           const distance = calculateDistance(
             userLocation.lat, 
             userLocation.lng, 
