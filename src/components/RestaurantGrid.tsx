@@ -270,9 +270,11 @@ const RestaurantGrid = ({
           request_count: row.request_count,
           marketplace_type: row.marketplace_type || 'restaurant',
         }));
-        // Enforce 25-mile hard cap client-side
+        // National chains show everywhere; local hotspots only within 25mi
         list = list.filter((r) => {
+          if (isNationalChain(r.name)) return true; // exists in every city
           if (r.latitude == null || r.longitude == null) return false;
+          if (!hasRealGps) return false; // no GPS = only show national chains
           return calculateDistance(lat, lng, r.latitude, r.longitude) <= MAX_RADIUS;
         });
         if (list.length >= 6 || radius === MAX_RADIUS) break;
