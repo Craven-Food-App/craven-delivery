@@ -68,15 +68,12 @@ export function RequestBusinessModal({ open, onClose, business, onSuccess }: Req
     if (!business?.id || !orderFrequency || !wouldRefer) return;
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any).rpc("submit_partnership_request", {
+      const params: Record<string, unknown> = {
         p_restaurant_master_id: business.id,
-        p_requester_email: null,
-        p_requester_name: null,
         p_order_frequency: orderFrequency,
         p_would_refer: wouldRefer,
-        p_what_matters_most: null,
-        p_message_to_business: null,
-      });
+      };
+      const { data, error } = await (supabase as any).rpc("submit_partnership_request", params);
       if (error) throw error;
       if (data?.ok) {
         setSubmitted(true);

@@ -5,16 +5,12 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { AndroidEnrollmentPopup } from "@/components/AndroidEnrollmentPopup";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const navigate = useNavigate();
-  const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [neverShowAgain, setNeverShowAgain] = useState(false);
 
   useEffect(() => {
     const search = searchParams.get("search");
@@ -22,32 +18,6 @@ const Index = () => {
     if (search) setSearchQuery(search);
     if (address) setDeliveryAddress(address);
   }, [searchParams]);
-
-  // Check if user is on Android and show enrollment modal
-  useEffect(() => {
-    const checkAndShowModal = async () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isAndroidDevice = /android/.test(userAgent);
-      setIsAndroid(isAndroidDevice);
-      const modalDismissed = localStorage.getItem('android_enrollment_modal_dismissed');
-      if (modalDismissed === 'true') return;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          const { data: enrollment } = await supabase
-            .from('android_tester_enrollments')
-            .select('id')
-            .eq('email', user.email)
-            .maybeSingle();
-          if (enrollment) return;
-        }
-      } catch { /* user might not be logged in */ }
-      if (isAndroidDevice) {
-        setTimeout(() => setShowEnrollmentModal(true), 1500);
-      }
-    };
-    checkAndShowModal();
-  }, []);
 
   // Auto-redirect drivers to /mobile when opening PWA
   useEffect(() => {
@@ -105,24 +75,6 @@ const Index = () => {
         <Hero />
         <Footer />
       </div>
-
-      {/* Android Tester Enrollment Popup */}
-      <AndroidEnrollmentPopup
-        opened={showEnrollmentModal}
-        onClose={() => {
-          setShowEnrollmentModal(false);
-          if (neverShowAgain) localStorage.setItem('android_enrollment_modal_dismissed', 'true');
-          setNeverShowAgain(false);
-        }}
-        onEnroll={() => {
-          setShowEnrollmentModal(false);
-          if (neverShowAgain) localStorage.setItem('android_enrollment_modal_dismissed', 'true');
-          setNeverShowAgain(false);
-          navigate('/android-tester-enrollment');
-        }}
-        neverShowAgain={neverShowAgain}
-        onNeverShowAgainChange={setNeverShowAgain}
-      />
     </>
   );
 };

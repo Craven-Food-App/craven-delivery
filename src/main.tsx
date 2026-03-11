@@ -73,6 +73,11 @@ console.error = (...args: any[]) => {
     }
   }
 
+  // Mantine Notifications/TransitionGroup2 can pass empty array as children; PropTypes expects ReactNode
+  if (full.includes('TransitionGroup2') && full.includes('Invalid prop `children`')) {
+    return;
+  }
+
   originalError(...args);
 };
 

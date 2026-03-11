@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Smartphone, Trash2, AlertTriangle } from 'lucide-react';
+import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Smartphone, Trash2, AlertTriangle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -516,6 +516,21 @@ export const AccountSection = () => {
               <div className="text-left">
                 <p className="font-semibold text-gray-900">Notifications</p>
                 <p className="text-sm text-gray-600">Manage your preferences</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {/* What's New */}
+          <button 
+            onClick={() => navigate('/whats-new')}
+            className="w-full px-4 py-4 flex items-center justify-between hover:bg-white transition-colors border-b border-gray-200"
+          >
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-5 h-5 text-orange-500" />
+              <div className="text-left">
+                <p className="font-semibold text-gray-900">What&apos;s New</p>
+                <p className="text-sm text-gray-600">Latest updates and improvements</p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />

@@ -1,6 +1,8 @@
 -- ============================================================================
 -- Merchant Partnership Requests (enterprise demand capture)
 -- Per-request data for reporting and merchant outreach.
+-- Requires: restaurants_master + request_restaurant (e.g. 20260305000001).
+-- Deploy: npm run db:push (or supabase db push) so submit_partnership_request RPC exists.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS public.merchant_partnership_requests (

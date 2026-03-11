@@ -83,8 +83,20 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
         "react-is": resolve(__dirname, "node_modules/react-is"),
-        "@mui/utils/node_modules/react-is": resolve(__dirname, "node_modules/react-is"),
-        "@tabler/icons-react": resolve(__dirname, "node_modules/@tabler/icons-react/dist/cjs/tabler-icons-react.cjs"),
+        "@mui/utils/node_modules/react-is": resolve(
+          __dirname,
+          "node_modules/react-is",
+        ),
+        "@tabler/icons-react": resolve(
+          __dirname,
+          "node_modules/@tabler/icons-react/dist/cjs/tabler-icons-react.cjs",
+        ),
+        // Web shim for native-only Capacitor Synapse dependency so Vite/browser
+        // never try to load the real native module.
+        "@capacitor/synapse": resolve(
+          __dirname,
+          "src/shims/capacitorSynapse.ts",
+        ),
       },
       dedupe: ["react", "react-dom", "react-is"],
       conditions: ["import", "module", "browser", "default"],
@@ -120,6 +132,9 @@ export default defineConfig(({ mode }) => {
         "@huggingface/transformers",
         "onnxruntime-common",
         "onnxruntime-web",
+        // pdfjs-dist is loaded via dynamic import in invoicePdfParser and
+        // should not be dependency-scanned or pre-bundled.
+        "pdfjs-dist",
       ],
       esbuildOptions: {
         target: "es2020",

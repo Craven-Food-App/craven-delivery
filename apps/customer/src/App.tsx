@@ -39,6 +39,7 @@ import CraveMoreSubscription from "@/pages/CraveMoreSubscription";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/TermsOfServicePage";
 import CraveMoreTermsPage from "@/pages/CraveMoreTermsPage";
+import WhatsNew from "@/pages/WhatsNew";
 import Notifications from "@/pages/Notifications";
 import NotificationSettings from "@/pages/NotificationSettings";
 import MyCredits from "@/pages/MyCredits";
@@ -159,6 +160,7 @@ function App() {
                     <Route path="/legal/terms" element={<TermsOfServicePage />} />
                     <Route path="/legal/cravemore" element={<CraveMoreTermsPage />} />
                     <Route path="/promotion-details" element={<PromotionDetails />} />
+                    <Route path="/whats-new" element={<WhatsNew />} />
                     <Route path="/merchant/signup" element={<MerchantLandingPage />} />
                     <Route path="/merchant" element={<Navigate to="/merchant/signup" replace />} />
                     
