@@ -226,8 +226,10 @@ serve(async (req) => {
       throw new Error(`Failed to create payment session: ${sessionError.message}`);
     }
 
-    // Return payment session with redirect URL to payment page
-    const paymentUrl = `${frontendUrl}/cravemore/payment?session_id=${paymentSession.id}`;
+    // Return payment session with redirect URL to CraveMore subscription flow
+    // This page exists in both the main web app and the customer app and can
+    // read the session_id from the query string to complete membership setup.
+    const paymentUrl = `${frontendUrl}/crave-more-subscription?session_id=${paymentSession.id}`;
     
     return new Response(
       JSON.stringify({ 
