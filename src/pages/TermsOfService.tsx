@@ -17,7 +17,7 @@ const TermsOfService = () => {
             <div className="text-center space-y-1">
               <p className="text-muted-foreground">Effective: October 29, 2025</p>
               <p className="text-muted-foreground">Toledo, Ohio</p>
-              <p className="text-muted-foreground font-semibold">Last Updated: October 2025</p>
+              <p className="text-muted-foreground font-semibold">Last Updated: March 2026</p>
             </div>
           </CardHeader>
           
@@ -277,8 +277,7 @@ const TermsOfService = () => {
                 <p className="mb-2"><strong>Crave'n Inc.</strong></p>
                 <p className="mb-2">1121 W Sylvania Ave.</p>
                 <p className="mb-4">Toledo, OH 43612</p>
-                <p className="mb-2"><strong>General Support:</strong> customerservice@cravenusa.com</p>
-                <p className="mb-2"><strong>Privacy Matters:</strong> privacy@craven.com</p>
+                <p className="mb-2"><strong>Support & Privacy requests:</strong> support@cravenusa.com</p>
                 <p><strong>Phone:</strong> 216-435-0821</p>
               </div>
             </section>
@@ -292,7 +291,7 @@ const TermsOfService = () => {
 
             <section className="mb-8 p-6 bg-muted rounded-lg border-2 border-primary">
               <p className="text-sm text-muted-foreground text-center font-semibold">
-                © 2025 Crave'n Inc. All Rights Reserved.
+                © 2026 Crave'n Inc. All Rights Reserved.
               </p>
             </section>
           </CardContent>

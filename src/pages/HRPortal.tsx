@@ -41,6 +41,7 @@ import { useExecAuth } from '@/hooks/useExecAuth';
 import BusinessEmailSystem from '@/components/executive/BusinessEmailSystem';
 import ExecutiveWordProcessor from '@/components/executive/ExecutiveWordProcessor';
 import { ExitWorkflowManager } from '@/components/hr/ExitWorkflowManager';
+import TalentLensDashboard from '@/components/hr/talent-lens/TalentLensDashboard';
 
 const { Header, Content, Sider } = Layout;
 const { TabPane } = Tabs;
@@ -467,6 +468,7 @@ const HRPortal: React.FC = () => {
               </div>
               {[
                 { id: 'dashboard', label: 'Dashboard' },
+                { id: 'career_applications', label: 'Career Applications' },
                 { id: 'documents', label: 'Document Generator' },
                 { id: 'documents_dashboard', label: 'Document Dashboard' },
                 { id: 'word_processor', label: 'Word Processor' },
@@ -550,6 +552,18 @@ const HRPortal: React.FC = () => {
             key="dashboard"
           >
             <DashboardView />
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <BriefcaseOutlined />
+                Career Applications
+              </span>
+            }
+            key="career_applications"
+          >
+            <TalentLensDashboard />
           </TabPane>
 
           <TabPane

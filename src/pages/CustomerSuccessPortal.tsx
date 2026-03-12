@@ -4,10 +4,9 @@ import CustomerManagement from '@/components/admin/CustomerManagement';
 import { PromoCodeManager } from '@/components/admin/PromoCodeManager';
 import ChatPortal from '@/components/admin/ChatPortal';
 import CraveMoreAdminDashboard from '@/pages/admin/CraveMoreAdminDashboard';
-import TesterEnrollmentManagement from '@/components/admin/TesterEnrollmentManagement';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Users, Tags, MessageCircle, TrendingUp, Smartphone } from 'lucide-react';
+import { ArrowLeft, Users, Tags, MessageCircle, TrendingUp } from 'lucide-react';
 import cravenLogo from "@/assets/craven-logo.png";
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -24,7 +23,6 @@ const CustomerSuccessPortal: React.FC = () => {
   const navItems = [
     { id: 'management', label: 'Customer Accounts', icon: Users },
     { id: 'promo-codes', label: 'Promo Codes', icon: Tags },
-    { id: 'tester-enrollment', label: 'Tester Enrollment', icon: Smartphone },
     { id: 'support-chat', label: 'Support Chat', icon: MessageCircle },
     { id: 'cravemore', label: 'CraveMore Dashboard', icon: TrendingUp },
   ];
@@ -35,8 +33,6 @@ const CustomerSuccessPortal: React.FC = () => {
         return <CustomerManagement />;
       case 'promo-codes':
         return <PromoCodeManager />;
-      case 'tester-enrollment':
-        return <TesterEnrollmentManagement />;
       case 'support-chat':
         return <ChatPortal />;
       case 'cravemore':

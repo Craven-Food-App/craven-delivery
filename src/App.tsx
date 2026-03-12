@@ -55,17 +55,12 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import NotFound from "./pages/NotFound";
 import Restaurants from "./pages/Restaurants";
-import AndroidTesterEnrollment from "./pages/AndroidTesterEnrollment";
 // Import customer app pages - now copied to src/pages/
 import CuisineResults from "./pages/CuisineResults";
 import EditProfile from "./pages/EditProfile";
 import PaymentMethods from "./pages/PaymentMethods";
 import DeliveryAddresses from "./pages/DeliveryAddresses";
 import MyCredits from "./pages/MyCredits";
-import TesterHub from "./components/TesterHub";
-import TesterReferMerchant from "./pages/TesterReferMerchant";
-import TesterDriverInterest from "./pages/TesterDriverInterest";
-import TesterInviteFriends from "./pages/TesterInviteFriends";
 import CustomerSupportChat from "./pages/CustomerSupportChat";
 import PromotionDetails from "./pages/PromotionDetails";
 import Notifications from "./pages/Notifications";
@@ -76,11 +71,6 @@ import CraveMoreSubscription from "./pages/CraveMoreSubscription";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import CraveMoreTermsPage from "./pages/CraveMoreTermsPage";
-// Tester enrollment hooks
-import { useTesterCreditIssuance } from "./hooks/useTesterCreditIssuance";
-import { useTesterActivityTracking } from "./hooks/useTesterActivityTracking";
-import { useTesterActivation } from "./hooks/useTesterActivation";
-import { useTesterFeedbackPrompts } from "./hooks/useTesterFeedbackPrompts";
 import HelpCenter from "./pages/HelpCenter";
 import Safety from "./pages/Safety";
 import ContactUs from "./pages/ContactUs";
@@ -100,6 +90,7 @@ import ExecutiveSummary from "./pages/ExecutiveSummary";
 import FinancialProjections from "./pages/FinancialProjections";
 import UseOfFunds from "./pages/UseOfFunds";
 import Careers from "./pages/Careers";
+import CareerApplicationPage from "./pages/CareerApplicationPage";
 import InternshipProgram from "./pages/InternshipProgram";
 import Testing from "./pages/Testing";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -213,25 +204,6 @@ const DriverGuide = lazy(() => import("./pages/DriverGuide"));
 const InviteFriends = lazy(() => import("./pages/InviteFriends"));
 
 const queryClient = new QueryClient();
-
-// Wrapper component for tester enrollment hooks
-const TesterHooksWrapper = () => {
-  // Auto-issue tester credits when user signs up with enrolled email
-  const rewardModal = useTesterCreditIssuance();
-  // Track activity on app launch
-  useTesterActivityTracking();
-  // Activate enrollment when account is created
-  useTesterActivation();
-  // Auto-trigger feedback prompts
-  const feedbackPrompts = useTesterFeedbackPrompts();
-  
-  return (
-    <>
-      {rewardModal}
-      {feedbackPrompts}
-    </>
-  );
-};
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -727,16 +699,12 @@ const App = () => {
             <CartProvider>
             {/* iOS PWA Install Banner */}
             <InstallAppBanner />
-            {/* Tester enrollment hooks - auto-issue credits, track activity, activate enrollment, show feedback prompts */}
-            <TesterHooksWrapper />
-            
             <Routes>
               <Route path="/auth" element={<BusinessAuthWrapper />} />
               <Route path="/business-auth" element={<BusinessAuthWrapper />} />
               <Route path="/" element={<Index />} />
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/restaurants/cuisine/:cuisine" element={<CuisineResults />} />
-          <Route path="/android-tester-enrollment" element={<AndroidTesterEnrollment />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/crave-more" element={<CraveMore />} />
@@ -767,11 +735,6 @@ const App = () => {
           <Route path="/account/delivery-addresses" element={<DeliveryAddresses />} />
           <Route path="/account/my-credits" element={<MyCredits />} />
           <Route path="/my-credits" element={<MyCredits />} />
-          <Route path="/account/tester-hub" element={<TesterHub />} />
-          <Route path="/tester-hub" element={<TesterHub />} />
-          <Route path="/tester/refer-merchant" element={<TesterReferMerchant />} />
-          <Route path="/tester/driver-interest" element={<TesterDriverInterest />} />
-          <Route path="/tester/invite-friends" element={<TesterInviteFriends />} />
           <Route path="/invite-friends" element={<Suspense fallback={<SuspenseLoader message="Loading Invite Friends" />}><InviteFriends /></Suspense>} />
           <Route path="/customer-support" element={<CustomerSupportChat />} />
           <Route path="/promotion-details" element={<PromotionDetails />} />
@@ -929,6 +892,7 @@ const App = () => {
           <Route path="/investors/financial-projections" element={<FinancialProjections />} />
           <Route path="/investors/use-of-funds" element={<UseOfFunds />} />
           <Route path="/careers" element={<Careers />} />
+          <Route path="/careers/apply" element={<CareerApplicationPage />} />
           <Route path="/careers/internship" element={<InternshipProgram />} />
           <Route path="/testing" element={<Testing />} />
           

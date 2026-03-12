@@ -2,13 +2,54 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, DollarSign, Users, Code, Megaphone, BarChart, Mail, GraduationCap, ArrowRight } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Users, Code, Megaphone, BarChart, Mail, GraduationCap, ArrowRight, Briefcase, Handshake } from 'lucide-react';
 import Footer from '@/components/Footer';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Careers = () => {
-  // Currently no open positions - update this when hiring
-  const jobs = [];
+  const navigate = useNavigate();
+  const jobs = [
+    {
+      title: 'Chief Technology Officer (CTO)',
+      department: 'Technology',
+      type: 'Full-time',
+      location: 'Remote (US)',
+      salary: 'Competitive + equity',
+      icon: Code,
+    },
+    {
+      title: 'Director of Partnerships',
+      department: 'Sales & Partnerships',
+      type: 'Full-time',
+      location: 'Remote (US)',
+      salary: 'Competitive + equity',
+      icon: Handshake,
+    },
+    {
+      title: 'Chief Operating Officer (COO)',
+      department: 'Operations',
+      type: 'Full-time',
+      location: 'Remote (US)',
+      salary: 'Competitive + equity',
+      icon: Briefcase,
+    },
+    {
+      title: 'Head of Marketing',
+      department: 'Marketing',
+      type: 'Full-time',
+      location: 'Remote (US)',
+      salary: 'Competitive + equity',
+      icon: Megaphone,
+    },
+    {
+      title: 'Head of People',
+      department: 'People & HR',
+      type: 'Full-time',
+      location: 'Remote (US)',
+      salary: 'Competitive + equity',
+      icon: Users,
+    },
+  ];
   
   const benefits = [
     {
@@ -127,7 +168,11 @@ const Careers = () => {
                           </div>
                         </div>
                       </div>
-                      <Button>Apply Now</Button>
+                      <Button
+                            onClick={() => navigate('/careers/apply', { state: { positionTitle: job.title, department: job.department } })}
+                          >
+                            Apply Now
+                          </Button>
                     </div>
                   </CardHeader>
                   <CardContent>

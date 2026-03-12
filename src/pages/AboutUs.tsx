@@ -77,9 +77,10 @@ const AboutUs = () => {
       const existingEmails = new Set<string>();
       const teamMembers: TeamMember[] = [];
 
-      // Process exec_users
+      // Process exec_users (skip Nathan Curry — CTO position listed as Hiring)
       execUsersData.forEach((exec: any) => {
         const email = exec.email?.toLowerCase();
+        if (email === "natecurry.cto@cravenusa.com" || (exec.name || "").toLowerCase().includes("nathan curry")) return;
         if (email) existingEmails.add(email);
 
         const roleTitle = exec.title || exec.role?.toUpperCase() || "Executive";
@@ -96,14 +97,16 @@ const AboutUs = () => {
         });
       });
 
-      // Process employees with C-level positions
+      // Process employees with C-level positions (skip Nathan Curry — CTO listed as Hiring)
       employeesData
         .filter((emp: any) => isCLevelPosition(emp.position))
         .forEach((emp: any) => {
           const email = (emp.email || "").toLowerCase();
+          if (email === "natecurry.cto@cravenusa.com") return;
+          const name = `${emp.first_name || ""} ${emp.last_name || ""}`.trim();
+          if (name.toLowerCase().includes("nathan curry")) return;
           if (email && existingEmails.has(email)) return; // Skip if already added from exec_users
 
-          const name = `${emp.first_name} ${emp.last_name}`;
           const position = emp.position || "";
           const bio = emp.department
             ? `Leading ${emp.department} operations and strategic initiatives.`
@@ -119,23 +122,24 @@ const AboutUs = () => {
 
       // Add fallback executives if not already present
       FALLBACK_EXECUTIVES.forEach((fallback) => {
-        const emailLower = fallback.email.toLowerCase();
-        if (!existingEmails.has(emailLower)) {
-          const displayRole = fallback.role === "ceo" ? "CEO & Founder" : fallback.title;
-          const bio =
-            fallback.role === "ceo"
-              ? "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities."
-              : fallback.department
-              ? `Leading ${fallback.department} operations and strategic initiatives.`
-              : `Executive leadership team member driving company growth and innovation.`;
+        const emailLower = (fallback.email || "").toLowerCase();
+        if (emailLower && existingEmails.has(emailLower)) return;
+        const displayRole = fallback.role === "ceo" ? "CEO & Founder" : fallback.title;
+        const bio =
+          fallback.name === "Hiring"
+            ? "This position is open. Join our leadership team."
+            : fallback.role === "ceo"
+            ? "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities."
+            : fallback.department
+            ? `Leading ${fallback.department} operations and strategic initiatives.`
+            : `Executive leadership team member driving company growth and innovation.`;
 
-          teamMembers.push({
-            name: fallback.name,
-            role: displayRole,
-            bio,
-            department: fallback.department,
-          });
-        }
+        teamMembers.push({
+          name: fallback.name,
+          role: displayRole,
+          bio,
+          department: fallback.department,
+        });
       });
 
       // Sort: CEO first, then by role importance
@@ -179,7 +183,9 @@ const AboutUs = () => {
           name: exec.name,
           role: exec.role === "ceo" ? "CEO & Founder" : exec.title,
           bio:
-            exec.role === "ceo"
+            exec.name === "Hiring"
+              ? "This position is open. Join our leadership team."
+              : exec.role === "ceo"
               ? "Visionary entrepreneur with a passion for revolutionizing food delivery and supporting local communities."
               : `Leading ${exec.department} operations and strategic initiatives.`,
           department: exec.department,
@@ -271,7 +277,7 @@ const AboutUs = () => {
             opportunities for drivers in communities everywhere.
           </p>
           <Badge variant="secondary" className="bg-white/20 text-white text-lg px-4 py-2">
-            Founded in 2025 • 100+ Cities • Loyal Users
+            Founded in 2025 • United States • Loyal Users
           </Badge>
         </div>
       </div>

@@ -6,7 +6,7 @@ const TermsOfServicePage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Terms of Service</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: January 20, 2026
+          Last updated: March 2026
         </p>
 
         <p className="text-sm mb-4">
@@ -124,6 +124,7 @@ const TermsOfServicePage: React.FC = () => {
         <h2 className="text-lg font-semibold mt-6 mb-2">12. Contact Us</h2>
         <p className="text-sm mb-1 font-medium">Crave’n Inc.</p>
         <p className="text-sm">Email: support@cravenusa.com</p>
+        <p className="text-sm">Phone: 216-435-0821</p>
       </div>
     </div>
   );

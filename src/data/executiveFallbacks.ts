@@ -36,12 +36,12 @@ export const FALLBACK_EXECUTIVES: FallbackExecutive[] = [
     email: 'terri.crawford@cravenusa.com',
   },
   {
-    id: 'fallback-nathan-curry',
+    id: 'fallback-cto-hiring',
     role: 'cto',
     title: 'Chief Technology Officer',
     department: 'Technology',
-    name: 'Nathan Curry',
-    email: 'natecurry.cto@cravenusa.com',
+    name: 'Hiring',
+    email: '', // Position open
   },
 ];
 

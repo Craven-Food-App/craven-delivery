@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Smartphone, Trash2, AlertTriangle, Sparkles } from 'lucide-react';
+import { User, CreditCard, MapPin, Bell, Star, DollarSign, Clock, Package, ChevronRight, MessageCircle, Edit, Save, X, Camera, Trash2, AlertTriangle, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -355,11 +355,6 @@ export const AccountSection = () => {
   const openDeliveryAddresses = () => {
     navigate('/account/delivery-addresses');
   };
-
-  const openTesterHub = () => {
-    navigate('/tester-hub');
-  };
-
 
   const getDisplayName = (fullName: string | null | undefined) => {
     if (!fullName) return 'User';
@@ -727,26 +722,6 @@ export const AccountSection = () => {
                 onClick={() => navigate('/order-history')}
               >
                 View Orders
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Tester Hub */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-3">
-                <Smartphone className="w-5 h-5 text-orange-500" />
-                <span>Early Access Hub</span>
-              </CardTitle>
-              <CardDescription>Track your tester progress and rewards</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={openTesterHub}
-              >
-                Open Tester Hub
               </Button>
             </CardContent>
           </Card>

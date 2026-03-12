@@ -50,14 +50,6 @@ import MarketDemand from "@/pages/admin/MarketDemand";
 import MerchantLandingPage from "@/components/merchant/MerchantLandingPage";
 import NotFound from "@/pages/NotFound";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
-import { useTesterCreditIssuance } from "@/hooks/useTesterCreditIssuance.tsx";
-import { useTesterActivityTracking } from "@/hooks/useTesterActivityTracking";
-import { useTesterActivation } from "@/hooks/useTesterActivation";
-import { useTesterFeedbackPrompts } from "@/hooks/useTesterFeedbackPrompts.tsx";
-import TesterHub from "@/components/TesterHub";
-import TesterReferMerchant from "@/pages/TesterReferMerchant";
-import TesterDriverInterest from "@/pages/TesterDriverInterest";
-import TesterInviteFriends from "@/pages/TesterInviteFriends";
 import { SafeAreaProvider } from "@/components/SafeAreaProvider";
 import { MobileLayout } from "@/components/layouts/MobileLayout";
 import GlobalMobileBottomNav from "@/components/mobile/GlobalMobileBottomNav";
@@ -77,14 +69,6 @@ const queryClient = new QueryClient({
 function App() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const isMobile = useIsMobile();
-  // Auto-issue tester credits when user signs up with enrolled email
-  const rewardModal = useTesterCreditIssuance();
-  // Track activity on app launch
-  useTesterActivityTracking();
-  // Activate enrollment when account is created
-  useTesterActivation();
-  // Auto-trigger feedback prompts
-  const feedbackPrompts = useTesterFeedbackPrompts();
 
   useEffect(() => {
     // Wait for isMobile to be determined
@@ -181,13 +165,6 @@ function App() {
                     <Route path="/my-credits" element={<ProtectedRoute><MyCredits /></ProtectedRoute>} />
                     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                     <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-                    
-                    {/* Tester Program - Protected */}
-                    <Route path="/account/tester-hub" element={<ProtectedRoute><TesterHub /></ProtectedRoute>} />
-                    <Route path="/tester-hub" element={<ProtectedRoute><TesterHub /></ProtectedRoute>} />
-                    <Route path="/tester/refer-merchant" element={<ProtectedRoute><TesterReferMerchant /></ProtectedRoute>} />
-                    <Route path="/tester/driver-interest" element={<ProtectedRoute><TesterDriverInterest /></ProtectedRoute>} />
-                    <Route path="/tester/invite-friends" element={<ProtectedRoute><TesterInviteFriends /></ProtectedRoute>} />
                     <Route path="/invite-friends" element={<ProtectedRoute><InviteFriends /></ProtectedRoute>} />
                     
                     {/* Crave More Subscription - Protected */}
@@ -207,8 +184,6 @@ function App() {
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                     </MobileLayout>
-                    {rewardModal}
-                    {feedbackPrompts}
                     
                     {/* Global bottom navigation */}
                     <GlobalMobileBottomNav />

@@ -249,10 +249,6 @@ export default function MyCredits() {
   const [totalRedeemed, setTotalRedeemed] = useState(0);
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [testerCredits, setTesterCredits] = useState<any>(null);
-  const [testerEnrollmentStatus, setTesterEnrollmentStatus] = useState<string | null>(null);
-  const [showDriverPrompt, setShowDriverPrompt] = useState(false);
-  const [driverPromptShown, setDriverPromptShown] = useState(false);
 
   useEffect(() => {
     loadCreditsData();
@@ -283,46 +279,6 @@ export default function MyCredits() {
       } else if (data) {
         setCredits(data.balance_cents || 0);
         setTotalRedeemed(data.total_redeemed_cents || 0);
-      }
-
-      // Load tester credits
-      const { data: testerCreditsData, error: testerError } = await supabase.rpc(
-        'get_available_tester_credits',
-        { p_user_id: user.id }
-      );
-
-      if (!testerError && testerCreditsData) {
-        setTesterCredits(testerCreditsData);
-      }
-
-      // Load enrollment status to determine language
-      const { data: enrollment } = await supabase
-        .from('android_tester_enrollments')
-        .select('tester_reward_status, status')
-        .eq('email', user.email)
-        .maybeSingle();
-
-      if (enrollment) {
-        // Use status field if available, otherwise fall back to tester_reward_status
-        setTesterEnrollmentStatus(enrollment.status === 'issued' ? 'issued' : enrollment.tester_reward_status);
-      }
-
-      // Check if Tier A is issued and driver prompt hasn't been shown
-      if (enrollment && (enrollment.status === 'issued' || enrollment.tester_reward_status === 'issued')) {
-        const promptShown = sessionStorage.getItem(`driver_prompt_shown_${user.id}`);
-        if (!promptShown) {
-          // Check if Tier A reward exists
-          const { data: tierA } = await supabase
-            .from('tester_reward_issuances')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('tier', 'tier_a')
-            .maybeSingle();
-          
-          if (tierA) {
-            setShowDriverPrompt(true);
-          }
-        }
       }
     } catch (error: any) {
       // Table might not exist yet - that's okay, silently handle
@@ -425,116 +381,8 @@ export default function MyCredits() {
           {/* Premium Coupons Animation */}
           <CouponsBlowingAnimation />
 
-          {/* Tester Balance/Credits Section */}
-          {testerCredits && testerCredits.available_credit_cents > 0 && (
-            <Paper p="md" withBorder radius="md" style={{ width: '100%', maxWidth: '400px' }}>
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text fw={600} size="lg">
-                    {testerEnrollmentStatus === 'issued' ? 'Crave\'n Credits' : 'Available Balance'}
-                  </Text>
-                  <Badge color="orange" size="lg">
-                    ${(testerCredits.available_credit_cents / 100).toFixed(2)}
-                  </Badge>
-                </Group>
-                {testerEnrollmentStatus !== 'issued' && (
-                  <Text size="sm" c="dimmed">
-                    Your reward balance will be available after testing completion.
-                  </Text>
-                )}
-                {testerEnrollmentStatus === 'issued' && (
-                  <Text size="sm" c="dimmed">
-                    Available credits apply only to Crave'n platform fees
-                  </Text>
-                )}
-                {testerCredits.earliest_expires_at && (
-                  <Group gap="xs">
-                    <IconClock size={14} />
-                    <Text size="xs" c="dimmed">
-                      Expires: {new Date(testerCredits.earliest_expires_at).toLocaleDateString()}
-                    </Text>
-                  </Group>
-                )}
-                {testerCredits.grants && testerCredits.grants.length > 0 && testerEnrollmentStatus === 'issued' && (
-                  <Stack gap="xs" mt="xs">
-                    <Divider />
-                    {testerCredits.grants.map((grant: any, idx: number) => (
-                      <Group key={idx} justify="space-between">
-                        <Text size="xs" c="dimmed">
-                          {grant.grant_type === 'base_enrollment' ? 'Base Enrollment' : 'Selected Tester Bonus'}
-                        </Text>
-                        <Group gap="xs">
-                          <Text size="xs">
-                            ${((grant.available_cents || 0) / 100).toFixed(2)} available
-                          </Text>
-                          {new Date(grant.expires_at) < new Date() ? (
-                            <IconX size={12} color="red" />
-                          ) : (
-                            <IconCheck size={12} color="green" />
-                          )}
-                        </Group>
-                      </Group>
-                    ))}
-                  </Stack>
-                )}
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Driver Prompt - One-time only after Tier A */}
-          {showDriverPrompt && !driverPromptShown && (
-            <Paper 
-              p="md" 
-              withBorder 
-              radius="md" 
-              style={{ 
-                width: '100%', 
-                maxWidth: '400px',
-                background: 'linear-gradient(135deg, #ff6b00 0%, #ff8c1a 100%)',
-                color: 'white'
-              }}
-            >
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text fw={600} size="lg" c="white">
-                    Earn More Rewards
-                  </Text>
-                  <ActionIcon
-                    variant="subtle"
-                    color="white"
-                    onClick={async () => {
-                      setShowDriverPrompt(false);
-                      setDriverPromptShown(true);
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (user) {
-                        sessionStorage.setItem(`driver_prompt_shown_${user.id}`, 'true');
-                      }
-                    }}
-                  >
-                    <IconX size={18} />
-                  </ActionIcon>
-                </Group>
-                <Text size="sm" c="white" style={{ opacity: 0.9 }}>
-                  Become a driver and earn an additional $25 reward!
-                </Text>
-                <Button
-                  variant="white"
-                  color="orange"
-                  onClick={() => {
-                    setShowDriverPrompt(false);
-                    setDriverPromptShown(true);
-                    navigate('/tester/driver-interest');
-                  }}
-                  fullWidth
-                >
-                  Learn More
-                </Button>
-              </Stack>
-            </Paper>
-          )}
-
-          {/* Empty State Message - only show if no credits at all */}
-          {(!testerCredits || testerCredits.available_credit_cents === 0) && credits === 0 && (
+          {/* Empty State Message - only show if no credits */}
+          {credits === 0 && (
             <Stack gap="md" align="center" style={{ textAlign: 'center', marginTop: '16px' }}>
               <Title
                 order={3}

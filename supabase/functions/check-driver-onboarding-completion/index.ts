@@ -1,5 +1,5 @@
 // Edge Function: check-driver-onboarding-completion
-// Checks if driver onboarding is completed and updates tester_referrals
+// Checks if driver onboarding is completed (tester program removed; no referral updates)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -55,41 +55,10 @@ serve(async (req) => {
       );
     }
 
-    // Update tester_referrals status to completed
-    const { data: referral, error: referralError } = await supabaseAdmin
-      .from('tester_referrals')
-      .update({
-        status: 'completed',
-        completed_at: application.onboarding_completed_at,
-        updated_at: new Date().toISOString()
-      })
-      .eq('referrer_user_id', user_id)
-      .eq('referral_type', 'driver')
-      .in('status', ['started', 'invited'])
-      .select()
-      .maybeSingle();
-
-    if (referralError && referralError.code !== 'PGRST116') {
-      console.error('Referral update error:', referralError);
-    }
-
-    // Trigger evaluation to issue Tier C reward if referral was updated
-    if (referral) {
-      try {
-        await supabaseAdmin.functions.invoke('tester-evaluate-and-issue', {
-          body: { user_id: user_id }
-        });
-      } catch (evalError) {
-        console.error('Evaluation error:', evalError);
-        // Non-fatal, continue
-      }
-    }
-
     return new Response(
       JSON.stringify({
         completed: true,
-        onboarding_completed_at: application.onboarding_completed_at,
-        referral_updated: !!referral
+        onboarding_completed_at: application.onboarding_completed_at
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -6,7 +6,7 @@ const PrivacyPolicyPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-4">Crave’n Privacy Policy</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Last updated: January 20, 2026
+          Last updated: March 2026
         </p>
 
         <p className="mb-4 text-sm">
@@ -23,6 +23,8 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>Delivery and order information (addresses, order history, promotions, credits).</li>
           <li>Precise location data when you enable location services.</li>
           <li>Device and usage information (device type, IP address, app activity).</li>
+          <li>Demand or partnership request information (e.g., when you request a business: order frequency, referral intent, optional message).</li>
+          <li>Error and usage data sent to our monitoring providers (e.g., crash reporting) to improve app reliability.</li>
           <li>
             Limited payment information via our payment processors (e.g., Stripe). We do not store full
             card numbers on our servers.
@@ -46,8 +48,8 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>With Restaurants to prepare and fulfill your orders.</li>
           <li>With Feeders (independent delivery providers) to complete deliveries.</li>
           <li>
-            With service providers such as Supabase, Stripe, and notification providers that process data
-            on our behalf.
+            With service providers such as Supabase, Stripe, notification providers, and error/performance
+            monitoring providers that process data on our behalf.
           </li>
           <li>In connection with business transfers, where permitted.</li>
           <li>
@@ -70,7 +72,7 @@ const PrivacyPolicyPage: React.FC = () => {
           <li>Opt out of marketing communications while still receiving essential order updates.</li>
           <li>
             Request access, correction, or deletion of your data, subject to applicable law, by emailing{" "}
-            <span className="font-medium">privacy@cravenusa.com</span>.
+            <span className="font-medium">support@cravenusa.com</span>.
           </li>
         </ul>
 
@@ -87,6 +89,11 @@ const PrivacyPolicyPage: React.FC = () => {
           information from children under 13.
         </p>
 
+        <h2 className="text-lg font-semibold mt-6 mb-2">7a. California Residents</h2>
+        <p className="text-sm mb-4">
+          California residents may have additional rights (e.g., access, deletion, opt-out of sale of personal information). To exercise these rights, contact support@cravenusa.com.
+        </p>
+
         <h2 className="text-lg font-semibold mt-6 mb-2">8. International Use</h2>
         <p className="text-sm mb-4">
           The Services are currently intended for use in the United States. If you access the Services from
@@ -101,7 +108,7 @@ const PrivacyPolicyPage: React.FC = () => {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">10. Contact Us</h2>
         <p className="text-sm mb-1 font-medium">Crave’n Inc.</p>
-        <p className="text-sm">Email: support@cravenusa.com</p>
+        <p className="text-sm">Privacy & data requests: support@cravenusa.com</p>
         <p className="text-sm">Phone: 216-435-0821</p>
       </div>
     </div>

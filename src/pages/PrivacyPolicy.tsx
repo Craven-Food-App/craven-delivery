@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
               <div className="text-lg font-normal mt-2">(Master Version – U.S. & International)</div>
               <div className="text-base font-normal mt-1">(for Customers, Feeders, and Restaurant Partners)</div>
             </CardTitle>
-            <p className="text-center text-muted-foreground">Last Updated: October 2025</p>
+            <p className="text-center text-muted-foreground">Last Updated: March 2026</p>
           </CardHeader>
           
           <CardContent className="prose prose-slate max-w-none">
@@ -52,6 +52,7 @@ const PrivacyPolicy = () => {
                 <li>Name, email address, phone number, and delivery addresses</li>
                 <li>Order history, payment method (processed securely through third-party processors)</li>
                 <li>Device identifiers, location data, and preferences</li>
+                <li>Demand or partnership request data (e.g., when you request a business: order frequency, referral intent, optional message and contact details) used for merchant outreach and reporting</li>
               </ul>
               
               <p className="font-semibold text-muted-foreground mb-2">Feeders (Drivers):</p>
@@ -84,6 +85,7 @@ const PrivacyPolicy = () => {
                 <li>Cookies, SDKs, and analytics tools (e.g., Google Analytics)</li>
                 <li>Usage data (page views, click activity, frequency, time on app)</li>
                 <li>Delivery metrics for Feeders (accepted/canceled orders, mileage, delivery time)</li>
+                <li>Error and performance monitoring data (e.g., crash reports, session replay with text and media masked) and related identifiers; when you are logged in, we may associate your account identifier with such data. This data is sent to our service providers (e.g., Sentry) to improve reliability and fix issues.</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6">c. Information from Third Parties</h3>
@@ -157,7 +159,7 @@ const PrivacyPolicy = () => {
                 <li><strong>Feeders:</strong> Pickup and delivery instructions</li>
                 <li><strong>Payment Processors:</strong> Stripe, Cash App, and regulated ACH banking partners</li>
                 <li><strong>Tax Authorities:</strong> IRS or other government entities for compliance</li>
-                <li><strong>Vendors and Service Providers:</strong> Hosting, analytics, marketing, security, and support</li>
+                <li><strong>Vendors and Service Providers:</strong> Hosting, analytics, marketing, security, support, and error/performance monitoring (e.g., Sentry)</li>
                 <li><strong>Law Enforcement:</strong> When required by law or to protect safety and rights</li>
                 <li><strong>Business Transfers:</strong> In connection with mergers, acquisitions, or restructuring</li>
               </ul>
@@ -217,8 +219,7 @@ const PrivacyPolicy = () => {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4">8. Children's Privacy</h2>
               <p className="text-muted-foreground mb-4">
-                Crave'n's Services are intended only for individuals 18 years and older.
-                We do not knowingly collect information from minors.
+                The Services are not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us at support@cravenusa.com so we can delete it.
               </p>
             </section>
 
