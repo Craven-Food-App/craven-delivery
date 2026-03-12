@@ -35,7 +35,7 @@ export const CraveMoreAccount: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/login');
+        navigate('/auth');
         return;
       }
 
@@ -43,13 +43,13 @@ export const CraveMoreAccount: React.FC = () => {
         .from('user_memberships')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
-      setMembership(data);
+      setMembership(data ?? null);
     } catch (error) {
       console.error('Error fetching membership:', error);
       toast.error('Failed to load membership');
@@ -111,12 +111,32 @@ export const CraveMoreAccount: React.FC = () => {
     );
   }
 
-  if (!membership || membership.status !== 'active') {
+  const hasActiveMembership = membership && (membership.status === 'active' || membership.status === 'trialing');
+
+  if (!hasActiveMembership) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6">Join <CraveMoreText /></h1>
-          <CraveMorePaywall source="account" />
+        <div className="max-w-4xl mx-auto space-y-6">
+          <h1 className="text-3xl font-bold">My <CraveMoreText /> Membership</h1>
+          <Card>
+            <CardHeader>
+              <CardTitle>Membership Details</CardTitle>
+              <CardDescription>Your CraveMore membership status</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">You don&apos;t have an active membership yet.</p>
+              <p className="text-sm text-muted-foreground">
+                Just subscribed? It may take a few seconds for your membership to activate.
+              </p>
+              <Button onClick={() => { setLoading(true); fetchMembership(); }}>
+                Check again
+              </Button>
+            </CardContent>
+          </Card>
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Join <CraveMoreText /></h2>
+            <CraveMorePaywall source="account" />
+          </div>
         </div>
       </div>
     );

@@ -532,20 +532,23 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription, eventT
   if (eventType === 'customer.subscription.deleted') {
     await supabase
       .from('user_memberships')
-      .update({ status: 'cancelled' })
+      .update({ status: 'canceled' })
       .eq('provider_subscription_id', subscription.id);
   } else {
+    const membershipStatus = (subscription.status === 'active' || subscription.status === 'trialing')
+      ? 'active'
+      : 'canceled';
     await supabase
       .from('user_memberships')
       .upsert({
         user_id: userId,
         plan_key: subscription.metadata?.plan_key || 'monthly',
-        status: subscription.status === 'active' ? 'active' : 'cancelled',
+        status: membershipStatus,
         provider: 'stripe',
         provider_customer_id: subscription.customer as string,
         provider_subscription_id: subscription.id,
         started_at: new Date(subscription.created * 1000).toISOString(),
-        renews_at: subscription.current_period_end 
+        renews_at: subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null,
       }, {

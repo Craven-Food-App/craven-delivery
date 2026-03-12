@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@14.21.0";
 
 import { getCorsHeaders } from '../_shared/cors.ts';
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+  apiVersion: "2023-10-16",
+});
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -15,16 +20,19 @@ serve(async (req) => {
   }
 
   try {
-    // Validate required environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.");
     }
-    
-    // Note: MOOV_SECRET_KEY is optional for now - we're just creating a payment session
-    // The actual payment processing will happen later
+    if (!stripeSecretKey) {
+      return new Response(
+        JSON.stringify({ error: "Payment processing is not configured. STRIPE_SECRET_KEY is required for CraveMore checkout." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 }
+      );
+    }
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -177,64 +185,101 @@ serve(async (req) => {
       // Continue anyway
     }
 
-    // Create payment session in database
-    // Determine frontend URL for redirect:
-    // - Prefer the request origin (works for localhost and custom domains)
-    // - Fall back to FRONTEND_URL env var if set
-    // - Finally default to main marketing site
     const frontendUrl =
       origin ||
       Deno.env.get("FRONTEND_URL") ||
       "https://cravenusa.com";
-    
-    const totalAmountCents = priceCents + processingFeeCents;
-    
-    // Create a payment session record
-    // Use service role client which bypasses RLS
-    const { data: paymentSession, error: sessionError } = await supabase
-      .from("cravemore_payment_sessions")
-      .insert({
-        user_id: user.id,
-        plan_key: planKey,
-        plan_id: plan.id,
-        amount_cents: totalAmountCents,
-        base_price_cents: priceCents,
-        processing_fee_cents: processingFeeCents,
-        status: "pending",
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
-        preferred_payment_method: preferredPaymentMethod || null, // Store preferred payment method
-        is_trial: startTrial || false, // Store trial flag
-      })
-      .select()
-      .single();
-    
-    console.log("Payment session insert result:", { paymentSession, sessionError });
+    const successUrl = `${frontendUrl}/cravemore/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${frontendUrl}/crave-more-subscription`;
 
-    if (sessionError) {
-      console.error("Error creating payment session:", sessionError);
-      
-      // Check if it's a table doesn't exist error
-      if (sessionError.message?.includes("does not exist") || 
-          sessionError.message?.includes("relation") ||
-          sessionError.code === "42P01") {
-        throw new Error(
-          `Database migration required: cravemore_payment_sessions table is missing. ` +
-          `Please run migration: 20251224102610_create_cravemore_payment_sessions.sql`
-        );
-      }
-      
-      throw new Error(`Failed to create payment session: ${sessionError.message}`);
+    const metadata = {
+      user_id: user.id,
+      plan_key: planKey,
+      founding_member: planKey === "lifetime" ? "true" : "false",
+    };
+    const customerEmail = (user.email || "").trim() || undefined;
+
+    let stripeSession: Stripe.Checkout.Session;
+
+    if (planKey === "lifetime") {
+      // One-time payment
+      stripeSession = await stripe.checkout.sessions.create({
+        mode: "payment",
+        customer_email: customerEmail,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata,
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "usd",
+              unit_amount: priceCents + processingFeeCents,
+              product_data: {
+                name: "CraveMore Lifetime",
+                description: "Lifetime CraveMore access",
+              },
+            },
+          },
+        ],
+      });
+    } else {
+      // Subscription (monthly or annual) with optional 30-day trial
+      const interval = planKey === "annual" ? "year" : "month";
+      const productName =
+        planKey === "annual" ? "CraveMore Annual" : "CraveMore Monthly";
+      stripeSession = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer_email: customerEmail,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata,
+        subscription_data: {
+          trial_period_days: startTrial ? 30 : 0,
+          metadata: { user_id: user.id, plan_key: planKey },
+        },
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "usd",
+              unit_amount: priceCents,
+              recurring: { interval },
+              product_data: {
+                name: productName,
+                description: `CraveMore subscription (${planKey})`,
+              },
+            },
+          },
+        ],
+      });
     }
 
-    // Return payment session with redirect URL to CraveMore subscription flow
-    // This page exists in both the main web app and the customer app and can
-    // read the session_id from the query string to complete membership setup.
-    const paymentUrl = `${frontendUrl}/crave-more-subscription?session_id=${paymentSession.id}`;
-    
+    if (!stripeSession.url) {
+      throw new Error("Stripe did not return a checkout URL");
+    }
+
+    // Record in DB for analytics; webhook will create user_memberships
+    const totalAmountCents = priceCents + processingFeeCents;
+    await supabase.from("cravemore_payment_sessions").insert({
+      user_id: user.id,
+      plan_key: planKey,
+      plan_id: plan.id,
+      amount_cents: totalAmountCents,
+      base_price_cents: priceCents,
+      processing_fee_cents: processingFeeCents,
+      status: "pending",
+      payment_provider: "stripe",
+      payment_provider_transaction_id: stripeSession.id,
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      preferred_payment_method: preferredPaymentMethod || null,
+      is_trial: startTrial || false,
+    });
+
     return new Response(
-      JSON.stringify({ 
-        sessionId: paymentSession.id, 
-        url: paymentUrl,
+      JSON.stringify({
+        sessionId: stripeSession.id,
+        url: stripeSession.url,
         amount: totalAmountCents,
         planKey,
       }),

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,19 +125,15 @@ const CraveMoreSuccess = () => {
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            <Button asChild className="w-full">
-              <Link to="/">Start Ordering</Link>
+            <Button className="w-full" onClick={() => navigate('/')}>
+              Start Ordering
             </Button>
-            <Button variant="outline" asChild className="w-full">
-              <Link to="/account/cravemore">
-                View Membership Details
-              </Link>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/account/cravemore')}>
+              View Membership Details
             </Button>
-            <Button variant="ghost" asChild className="w-full">
-              <Link to="/cravemore">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to CraveMore
-              </Link>
+            <Button variant="ghost" className="w-full" onClick={() => navigate('/cravemore')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to CraveMore
             </Button>
           </div>
         </CardContent>
