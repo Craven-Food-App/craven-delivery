@@ -10,7 +10,7 @@ import {
   DashboardOutlined,
   UserOutlined,
   CalendarOutlined,
-  BriefcaseOutlined,
+  CarryOutOutlined,
   ThunderboltOutlined,
   DollarOutlined,
   HeartOutlined,
