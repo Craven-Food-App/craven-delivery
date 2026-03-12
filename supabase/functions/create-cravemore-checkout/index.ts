@@ -178,10 +178,14 @@ serve(async (req) => {
     }
 
     // Create payment session in database
-    // Get frontend URL from environment or use default
-    const frontendUrl = Deno.env.get("FRONTEND_URL") || 
-                       Deno.env.get("SUPABASE_URL")?.replace("/functions/v1", "") ||
-                       "https://cravenusa.com";
+    // Determine frontend URL for redirect:
+    // - Prefer the request origin (works for localhost and custom domains)
+    // - Fall back to FRONTEND_URL env var if set
+    // - Finally default to main marketing site
+    const frontendUrl =
+      origin ||
+      Deno.env.get("FRONTEND_URL") ||
+      "https://cravenusa.com";
     
     const totalAmountCents = priceCents + processingFeeCents;
     
