@@ -17670,6 +17670,7 @@ export type Database = {
           skills: string[] | null
           source: string | null
           status: string | null
+          submitted_from_ip: string | null
           summary: string | null
           updated_at: string | null
           years_experience: number | null
@@ -17695,6 +17696,7 @@ export type Database = {
           skills?: string[] | null
           source?: string | null
           status?: string | null
+          submitted_from_ip?: string | null
           summary?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -17720,6 +17722,7 @@ export type Database = {
           skills?: string[] | null
           source?: string | null
           status?: string | null
+          submitted_from_ip?: string | null
           summary?: string | null
           updated_at?: string | null
           years_experience?: number | null
@@ -18542,6 +18545,33 @@ export type Database = {
           },
         ]
       }
+      marketplace_chains: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          marketplace_type: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          marketplace_type?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          marketplace_type?: string
+          name?: string
+        }
+        Relationships: []
+      }
       membership_entitlements: {
         Row: {
           early_access: boolean | null
@@ -19031,6 +19061,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_partnership_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_to_business: string | null
+          order_frequency: string | null
+          requester_email: string | null
+          requester_name: string | null
+          restaurant_master_id: string
+          user_id: string | null
+          what_matters_most: string[] | null
+          would_refer: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_to_business?: string | null
+          order_frequency?: string | null
+          requester_email?: string | null
+          requester_name?: string | null
+          restaurant_master_id: string
+          user_id?: string | null
+          what_matters_most?: string[] | null
+          would_refer?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_to_business?: string | null
+          order_frequency?: string | null
+          requester_email?: string | null
+          requester_name?: string | null
+          restaurant_master_id?: string
+          user_id?: string | null
+          what_matters_most?: string[] | null
+          would_refer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_partnership_requests_restaurant_master_id_fkey"
+            columns: ["restaurant_master_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_partnership_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -29915,6 +29999,7 @@ export type Database = {
           p_limit?: number
           p_lng?: number
           p_marketplace_type?: string
+          p_radius_miles?: number
           p_search?: string
         }
         Returns: {
@@ -30222,6 +30307,18 @@ export type Database = {
       notify_me_restaurant: {
         Args: { p_email?: string; p_restaurant_master_id: string }
         Returns: Json
+      }
+      point_near_center: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_radius_miles?: number
+          p_seed: string
+        }
+        Returns: {
+          out_lat: number
+          out_lng: number
+        }[]
       }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -30944,6 +31041,38 @@ export type Database = {
       start_cto_test_evaluation: {
         Args: { p_cto_user_id: string }
         Returns: string
+      }
+      submit_career_application: {
+        Args: {
+          applicant_role?: string
+          current_company?: string
+          education?: string
+          email: string
+          job_posting_id?: string
+          linkedin_url?: string
+          location?: string
+          name: string
+          phone?: string
+          position_title?: string
+          resume_file_path?: string
+          skills?: string
+          submitted_from_ip?: string
+          summary?: string
+          years_experience?: number
+        }
+        Returns: string
+      }
+      submit_partnership_request: {
+        Args: {
+          p_message_to_business?: string
+          p_order_frequency?: string
+          p_requester_email?: string
+          p_requester_name?: string
+          p_restaurant_master_id: string
+          p_what_matters_most?: string[]
+          p_would_refer?: string
+        }
+        Returns: Json
       }
       submit_tester_feedback: {
         Args: {
