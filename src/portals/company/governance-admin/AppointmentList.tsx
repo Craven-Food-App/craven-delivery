@@ -79,9 +79,9 @@ interface ExecutiveAppointment {
   effective_date: string;
   term_length_months?: number;
   authority_granted?: string;
-  compensation_structure?: string;
+  compensation_structure?: string | Record<string, any> | null;
   equity_included: boolean;
-  equity_details?: string;
+  equity_details?: string | Record<string, any> | null;
   notes?: string;
   status: string;
   board_resolution_id?: string;
