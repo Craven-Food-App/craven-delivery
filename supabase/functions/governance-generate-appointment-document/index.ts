@@ -2,14 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from "../_shared/cors.ts";
 
-interface SignatureContext {
-  officerName?: string;
-  officerTitle?: string;
-  companyName: string;
-  torranceSignatureUrl: string;
-}
+const TORRANCE_SIG_URL = 'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/torrance_stroman_signature.png';
 
-// Helper function to format currency
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -19,12 +13,10 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-// Helper function to format numbers with commas
 function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num);
 }
 
-// Helper function to format dates nicely (e.g., "January 15, 2025")
 function formatDate(dateString: string): string {
   if (!dateString) return '';
   try {
@@ -39,182 +31,152 @@ function formatDate(dateString: string): string {
   }
 }
 
-// Helper to strip legacy company-side signature lines (Craven, Inc. block)
-// so that Torrance's image and title are the only company signature marks.
 function stripCompanySignatureLines(html: string): string {
   if (!html) return html;
-
-  // 1) Remove any standalone underline paragraph directly before a company
-  // name line like "Craven, Inc." (after templates are interpolated).
-  html = html.replace(
-    /<p[^>]*>_+\s*<\/p>\s*(<p[^>]*><strong>[^<]*Inc\.[^<]*<\/strong><\/p>)/gi,
-    '$1',
-  );
-
-  // 2) Remove any underline-only paragraphs anywhere (generic signature lines).
-  html = html.replace(
-    /<p[^>]*>_+\s*<\/p>\s*/gi,
-    '',
-  );
-
-  // 3) Remove a "By: ______" line that appears anywhere before a company
-  // signatory (we don't care what comes after, just drop the whole paragraph).
-  html = html.replace(
-    /<p[^>]*>By:\s*_+\s*<\/p>\s*/gi,
-    '',
-  );
-
+  html = html.replace(/<p[^>]*>_+\s*<\/p>\s*(<p[^>]*><strong>[^<]*Inc\.[^<]*<\/strong><\/p>)/gi, '$1');
+  html = html.replace(/<p[^>]*>_+\s*<\/p>\s*/gi, '');
+  html = html.replace(/<p[^>]*>By:\s*_+\s*<\/p>\s*/gi, '');
   return html;
 }
 
-// Helper to inject Torrance's signature image for Secretary as well as CEO.
-// Wherever we find a standalone "Secretary" line, we prepend the same
-// signature image used for the CEO.
-function injectSecretarySignature(html: string, torranceSignatureUrl: string): string {
-  if (!html || !torranceSignatureUrl) return html;
-
-  // Insert the image immediately before any paragraph that just says "Secretary".
+function injectSecretarySignature(html: string, sigUrl: string): string {
+  if (!html || !sigUrl) return html;
   return html.replace(
     /(<p[^>]*>\s*)Secretary(\s*<\/p>)/gi,
-    `$1<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Secretary$2`,
+    `$1<img src="${sigUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Secretary$2`,
   );
 }
 
-// Brutally ensure Torrance's signature image is present anywhere his name appears,
-// for all roles he holds (CEO, Chief Executive Officer, Secretary, Board, Chairman).
-// If the image URL is already in the HTML, we assume templates handled it and skip.
-function injectTorranceSignatureEverywhere(html: string, torranceSignatureUrl: string): string {
-  if (!html || !torranceSignatureUrl) return html;
-  if (html.includes(torranceSignatureUrl)) return html;
-
-  const signatureImg = `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Torrance A. Stroman`;
-
-  return html.replace(/Torrance\s+A\.?\s*Stroman|Torrance\s+Stroman/gi, signatureImg);
+function injectTorranceSignatureEverywhere(html: string, sigUrl: string): string {
+  if (!html || !sigUrl) return html;
+  if (html.includes(sigUrl)) return html;
+  const img = `<img src="${sigUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Torrance A. Stroman`;
+  return html.replace(/Torrance\s+A\.?\s*Stroman|Torrance\s+Stroman/gi, img);
 }
 
-// For the executive documents that are still rendering generic underline
-// signature lines, brutally overwrite the bottom signature block so that:
-// - Any CEO/Chair/Secretary/Board company-side signatures use Torrance's image
-// - The executive/appointee side is clearly labeled "Executive Signature"
-// This runs AFTER placeholder replacement but BEFORE generic line stripping.
-function forceExecutiveSignatureBlocks(
+// Nuclear approach: find the earliest signature/witness marker in the HTML,
+// CUT everything from that point to </body>, and APPEND a clean, hardcoded
+// signature block with Torrance's image ABOVE his name.
+function forceSignatureSection(
   html: string,
   documentType: string,
-  ctx: SignatureContext,
+  officerName: string,
+  officerTitle: string,
+  companyName: string,
 ): string {
   if (!html) return html;
 
-  const {
-    officerName = '',
-    officerTitle = 'Executive',
-    companyName,
-    torranceSignatureUrl,
-  } = ctx;
+  const handledTypes = [
+    'bylaws_acknowledgment',
+    'fiduciary_ethics_ack',
+    'conflict_disclosure',
+    'officer_indemnification',
+    'equity_incentive_plan',
+    'option_rsu_award',
+    'certificate',
+  ];
+  if (!handledTypes.includes(documentType)) return html;
 
-  const hasSignatureImage = !!torranceSignatureUrl;
-  const torranceImg = hasSignatureImage
-    ? `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;margin-top:16px;" />`
-    : 'Torrance A. Stroman';
+  const sigImg = `<img src="${TORRANCE_SIG_URL}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;display:block;margin-bottom:4px;" />`;
 
-  const execBlock = `
-<div style="width:45%;text-align:left;">
-  <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
-  <p><strong>Executive Signature</strong><br />${officerName || ''}<br />${officerTitle || 'Executive'}</p>
-</div>`;
+  // Find the earliest cut-point among known signature markers (case-insensitive)
+  const lowerHtml = html.toLowerCase();
+  const markers = [
+    'in witness whereof',
+    'class="signature-section"',
+    "class='signature-section'",
+    'class="signature-block"',
+    "class='signature-block'",
+  ];
 
-  const witnessRegex = /<p[^>]*>\s*IN WITNESS WHEREOF[\s\S]*?<\/p>[\s\S]*?(<\/body>|$)/i;
+  let cutIndex = -1;
+  for (const marker of markers) {
+    const idx = lowerHtml.indexOf(marker);
+    if (idx !== -1) {
+      const tagStart = html.lastIndexOf('<', idx);
+      if (tagStart !== -1 && (cutIndex === -1 || tagStart < cutIndex)) {
+        cutIndex = tagStart;
+      }
+    }
+  }
 
-  // Helper to brutally replace the tail of the document starting at the
-  // IN WITNESS WHEREOF paragraph with a custom signature section.
-  const replaceTail = (replacementBody: string): string => {
-    if (!witnessRegex.test(html)) return html;
-    return html.replace(
-      witnessRegex,
-      `<p>IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date first written above.</p>
-${replacementBody}
-$1`,
-    );
-  };
+  // If nothing found, cut right before </body>
+  if (cutIndex === -1) {
+    const bodyEnd = lowerHtml.lastIndexOf('</body>');
+    cutIndex = bodyEnd !== -1 ? bodyEnd : html.length;
+  }
 
+  const cleanHtml = html.substring(0, cutIndex);
+
+  let block = '';
   switch (documentType) {
     case 'bylaws_acknowledgment':
     case 'fiduciary_ethics_ack':
-    case 'conflict_disclosure': {
-      const body = `
-<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
-  <div style="width:45%;text-align:left;">
-    <p><strong>${companyName}</strong></p>
-    ${torranceImg}
-    <p>Torrance A. Stroman<br />Chief Executive Officer &amp; Corporate Secretary</p>
-  </div>
-  ${execBlock}
-</div>`;
-      return replaceTail(body);
-    }
-
-    case 'officer_indemnification': {
-      const body = `
-<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
-  <div style="width:45%;text-align:left;">
-    <p><strong>${companyName}</strong></p>
-    ${torranceImg}
-    <p>Torrance A. Stroman<br />Chief Executive Officer &amp; Corporate Secretary</p>
-  </div>
-  <div style="width:45%;text-align:left;">
-    <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
-    <p><strong>Executive Signature</strong><br />${officerName || ''}<br />${officerTitle || 'Executive'}</p>
+    case 'conflict_disclosure':
+    case 'officer_indemnification':
+      block = `
+<div style="margin-top:60px;border-top:1px solid #ccc;padding-top:30px;">
+  <p>IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date first written above.</p>
+  <div style="display:flex;justify-content:space-between;gap:40px;margin-top:30px;">
+    <div style="width:45%;">
+      <p><strong>${companyName}</strong></p>
+      ${sigImg}
+      <p>Torrance A. Stroman<br/>Chief Executive Officer &amp; Corporate Secretary</p>
+    </div>
+    <div style="width:45%;">
+      <div style="border-bottom:1px solid #000;width:280px;margin-top:76px;margin-bottom:5px;"></div>
+      <p><strong>Executive Signature</strong><br/>${officerName}<br/>${officerTitle}</p>
+    </div>
   </div>
 </div>`;
-      return replaceTail(body);
-    }
+      break;
 
-    case 'equity_incentive_plan': {
-      if (!witnessRegex.test(html)) return html;
-      return html.replace(
-        witnessRegex,
-        `<p>IN WITNESS WHEREOF, this Plan is adopted by the Board of Directors as of the Effective Date.</p>
-<div style="margin-top:40px;display:flex;flex-direction:column;gap:40px;max-width:420px;">
-  <div>
-    ${torranceImg}
-    <p>Torrance A. Stroman<br />Board Chair &amp; Chief Executive Officer</p>
+    case 'equity_incentive_plan':
+      block = `
+<div style="margin-top:60px;border-top:1px solid #ccc;padding-top:30px;">
+  <p>IN WITNESS WHEREOF, this Plan is adopted by the Board of Directors as of the Effective Date.</p>
+  <div style="margin-top:30px;">
+    <div style="margin-bottom:40px;">
+      ${sigImg}
+      <p>Torrance A. Stroman<br/>Board Chair &amp; Chief Executive Officer</p>
+    </div>
+    <div>
+      ${sigImg}
+      <p>Torrance A. Stroman<br/>Corporate Secretary</p>
+    </div>
   </div>
-  <div>
-    ${torranceImg}
-    <p>Torrance A. Stroman<br />Corporate Secretary</p>
-  </div>
-</div>
-$1`,
-      );
-    }
+</div>`;
+      break;
 
-    case 'option_rsu_award': {
-      if (!witnessRegex.test(html)) return html;
-      return html.replace(
-        witnessRegex,
-        `<p>IN WITNESS WHEREOF, the parties have executed this Equity Award Agreement as of the Effective Date.</p>
-<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
-  <div style="width:45%;text-align:left;">
-    <p><strong>Company</strong></p>
-    <p>${companyName}</p>
-    ${torranceImg}
-    <p>Torrance A. Stroman, Chief Executive Officer</p>
-    <p>Date: ______________________</p>
+    case 'option_rsu_award':
+      block = `
+<div style="margin-top:60px;border-top:1px solid #ccc;padding-top:30px;">
+  <p>IN WITNESS WHEREOF, the parties have executed this Equity Award Agreement as of the Effective Date.</p>
+  <div style="display:flex;justify-content:space-between;gap:40px;margin-top:30px;">
+    <div style="width:45%;">
+      <p><strong>Company</strong></p>
+      <p>${companyName}</p>
+      ${sigImg}
+      <p>Torrance A. Stroman, Chief Executive Officer</p>
+    </div>
+    <div style="width:45%;">
+      <p><strong>Participant</strong></p>
+      <p>${officerName}</p>
+      <div style="border-bottom:1px solid #000;width:280px;margin-top:40px;margin-bottom:5px;"></div>
+      <p><strong>Executive Signature</strong></p>
+    </div>
   </div>
-  <div style="width:45%;text-align:left;">
-    <p><strong>Participant</strong></p>
-    <p>${officerName || ''}</p>
-    <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
-    <p><strong>Executive Signature</strong></p>
-    <p>Date: ______________________</p>
-  </div>
-</div>
-$1`,
-      );
-    }
+</div>`;
+      break;
+
+    case 'certificate':
+      return html;
 
     default:
       return html;
   }
+
+  return cleanHtml + '\n' + block + '\n</body>\n</html>';
 }
 
 serve(async (req) => {
@@ -503,9 +465,7 @@ serve(async (req) => {
       company_state: governingState,
       issue_date: appointment.effective_date,
       // Torrance Stroman signature block - embed image when URL is configured
-      company_signatory_name: torranceSignatureUrl
-        ? `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" />`
-        : 'Torrance Stroman',
+      company_signatory_name: `<img src="${torranceSignatureUrl || TORRANCE_SIG_URL}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" />`,
       company_signatory_title: 'Chief Executive Officer',
       secretary_name: 'Corporate Secretary',
       
@@ -929,28 +889,18 @@ serve(async (req) => {
       });
     }
 
-    // For specific executive documents, brutally overwrite the bottom
-    // signature block so Torrance's image is used for all company-side
-    // roles and the appointee side is clearly labeled "Executive Signature".
-    html = forceExecutiveSignatureBlocks(html, document_type, {
-      officerName,
-      officerTitle,
-      companyName,
-      torranceSignatureUrl,
-    });
+    // Nuclear: cut the entire tail signature area and replace it with a
+    // hardcoded block that uses the Torrance signature image ABOVE his name.
+    html = forceSignatureSection(html, document_type, officerName || '', officerTitle || 'Executive', companyName);
 
-    // Strip legacy company-side signature lines (underline + "By: ______")
-    // so that Torrance's embedded image and title are the only signature mark.
+    // Strip leftover underline / "By: ______" paragraphs
     html = stripCompanySignatureLines(html);
 
-    // Ensure Secretary signature also uses Torrance's image wherever a
-    // standalone "Secretary" line appears.
-    html = injectSecretarySignature(html, torranceSignatureUrl);
+    // Secretary standalone lines -> Torrance image
+    html = injectSecretarySignature(html, torranceSignatureUrl || TORRANCE_SIG_URL);
 
-    // Brutally ensure Torrance's signature image is injected anywhere his
-    // name appears, covering CEO, Chief Executive Officer, Secretary, Board,
-    // and Chairman roles tied to him.
-    html = injectTorranceSignatureEverywhere(html, torranceSignatureUrl);
+    // Catch any remaining Torrance name text without an image
+    html = injectTorranceSignatureEverywhere(html, torranceSignatureUrl || TORRANCE_SIG_URL);
 
     // Keep signature field tags in place - they will be replaced during signing
     // Format: {{SIGNATURE_FIELD:role:type}} - these are board-tagged signature fields
