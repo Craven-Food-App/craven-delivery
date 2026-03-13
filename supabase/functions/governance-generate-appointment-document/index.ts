@@ -22,14 +22,55 @@ function formatDate(dateString: string): string {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   } catch (e) {
     return dateString;
   }
+}
+
+// Helper to strip legacy company-side signature lines (Craven, Inc. block)
+// so that Torrance's image and title are the only company signature marks.
+function stripCompanySignatureLines(html: string): string {
+  if (!html) return html;
+
+  // 1) Remove any standalone underline paragraph directly before a company
+  // name line like "Craven, Inc." (after templates are interpolated).
+  html = html.replace(
+    /<p[^>]*>_+\s*<\/p>\s*(<p[^>]*><strong>[^<]*Inc\.[^<]*<\/strong><\/p>)/gi,
+    '$1',
+  );
+
+  // 2) Remove any underline-only paragraphs anywhere (generic signature lines).
+  html = html.replace(
+    /<p[^>]*>_+\s*<\/p>\s*/gi,
+    '',
+  );
+
+  // 3) Remove a "By: ______" line that appears anywhere before a company
+  // signatory (we don't care what comes after, just drop the whole paragraph).
+  html = html.replace(
+    /<p[^>]*>By:\s*_+\s*<\/p>\s*/gi,
+    '',
+  );
+
+  return html;
+}
+
+// Helper to inject Torrance's signature image for Secretary as well as CEO.
+// Wherever we find a standalone "Secretary" line, we prepend the same
+// signature image used for the CEO.
+function injectSecretarySignature(html: string, torranceSignatureUrl: string): string {
+  if (!html || !torranceSignatureUrl) return html;
+
+  // Insert the image immediately before any paragraph that just says "Secretary".
+  return html.replace(
+    /(<p[^>]*>\s*)Secretary(\s*<\/p>)/gi,
+    `$1<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Secretary$2`,
+  );
 }
 
 serve(async (req) => {
@@ -743,6 +784,14 @@ serve(async (req) => {
         html = html.split(placeholder).join(defaultValue);
       });
     }
+
+    // Strip legacy company-side signature lines (underline + "By: ______")
+    // so that Torrance's embedded image and title are the only signature mark.
+    html = stripCompanySignatureLines(html);
+
+    // Ensure Secretary signature also uses Torrance's image wherever a
+    // standalone "Secretary" line appears.
+    html = injectSecretarySignature(html, torranceSignatureUrl);
 
     // Keep signature field tags in place - they will be replaced during signing
     // Format: {{SIGNATURE_FIELD:role:type}} - these are board-tagged signature fields
