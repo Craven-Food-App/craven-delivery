@@ -105,7 +105,7 @@ serve(async (req) => {
       if (execUser) {
         officerTitle = officerTitle || execUser.title || appointment.position;
         officerName = officerName || execUser.name;
-        officerEmail = officerEmail || execUser.email ?? null;
+        officerEmail = officerEmail || (execUser.email ?? null);
         if (execUser.user_id) {
           const { data: profile } = await supabaseAdmin
             .from('user_profiles')
@@ -114,11 +114,11 @@ serve(async (req) => {
             .maybeSingle();
           if (profile) {
             officerName = officerName || profile.full_name;
-            officerEmail = officerEmail || profile.email ?? officerEmail;
+            officerEmail = officerEmail || (profile.email ?? officerEmail);
           }
           if (!officerEmail) {
             const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(execUser.user_id);
-            officerEmail = officerEmail || user?.email ?? null;
+            officerEmail = officerEmail || (user?.email ?? null);
           }
         }
       }
@@ -136,14 +136,15 @@ serve(async (req) => {
       resolution = resData;
     }
 
-    // Fetch company settings for governing state and company name
+    // Fetch company settings for governing state, company name, and Torrance's signature image URL
     let governingState = 'Delaware'; // Default fallback
     let companyName = 'Crave\'n, Inc.'; // Default fallback
+    let torranceSignatureUrl = ''; // Will be used to render signature image in documents
     
     const { data: companySettings } = await supabaseAdmin
       .from('company_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['state_of_incorporation', 'company_name']);
+      .in('setting_key', ['state_of_incorporation', 'company_name', 'torrance_signature_url']);
     
     if (companySettings) {
       companySettings.forEach((setting) => {
@@ -153,7 +154,18 @@ serve(async (req) => {
         if (setting.setting_key === 'company_name' && setting.setting_value) {
           companyName = setting.setting_value;
         }
+        if (setting.setting_key === 'torrance_signature_url' && setting.setting_value) {
+          torranceSignatureUrl = setting.setting_value;
+        }
       });
+    }
+    
+    // Allow environment variable override for signature URL if needed
+    if (!torranceSignatureUrl) {
+      const envSignature = Deno.env.get('TORRANCE_SIGNATURE_URL');
+      if (envSignature) {
+        torranceSignatureUrl = envSignature;
+      }
     }
 
     // Parse JSON fields if they're strings, with safe fallback
@@ -305,7 +317,10 @@ serve(async (req) => {
       share_class: 'Common',
       company_state: governingState,
       issue_date: appointment.effective_date,
-      company_signatory_name: 'Torrance Stroman',
+      // Torrance Stroman signature block - embed image when URL is configured
+      company_signatory_name: torranceSignatureUrl
+        ? `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" />`
+        : 'Torrance Stroman',
       company_signatory_title: 'Chief Executive Officer',
       secretary_name: 'Corporate Secretary',
       
