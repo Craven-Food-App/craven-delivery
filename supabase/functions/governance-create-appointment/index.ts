@@ -65,24 +65,165 @@ serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Insert appointment
+    // --- Resolve or create auth user and user_profiles for the appointee ---
+    let appointeeUserId: string | null = null;
+    if (body.proposed_officer_email) {
+      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+      const foundUser = existingUser?.users.find((u: { email?: string }) => u.email === body.proposed_officer_email);
+      if (foundUser) {
+        appointeeUserId = foundUser.id;
+      } else {
+        const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+          email: body.proposed_officer_email,
+          email_confirm: true,
+          user_metadata: { full_name: body.proposed_officer_name },
+        });
+        if (!createUserError && newUser?.user) {
+          appointeeUserId = newUser.user.id;
+          await supabaseAdmin
+            .from('user_profiles')
+            .upsert({
+              user_id: newUser.user.id,
+              full_name: body.proposed_officer_name,
+              email: body.proposed_officer_email,
+            }, { onConflict: 'user_id' });
+        }
+      }
+    }
+
+    // --- Resolve or create exec_users; get executive_id ---
+    function titleToRole(title: string): string {
+      const t = (title || '').toLowerCase();
+      if (t.includes('ceo') || t.includes('chief executive')) return 'ceo';
+      if (t.includes('cfo') || t.includes('chief financial')) return 'cfo';
+      if (t.includes('coo') || t.includes('chief operating')) return 'coo';
+      if (t.includes('cto') || t.includes('chief technology')) return 'cto';
+      if (t.includes('advisor')) return 'advisor';
+      if (t.includes('board')) return 'board_member';
+      return 'board_member';
+    }
+
+    let executiveId: string;
+    if (appointeeUserId) {
+      const { data: existingExec } = await supabaseAdmin
+        .from('exec_users')
+        .select('id')
+        .eq('user_id', appointeeUserId)
+        .maybeSingle();
+      if (existingExec) {
+        executiveId = existingExec.id;
+        await supabaseAdmin
+          .from('exec_users')
+          .update({
+            title: body.proposed_title,
+            name: body.proposed_officer_name,
+            email: body.proposed_officer_email || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', executiveId);
+      } else {
+        const { data: newExec, error: execInsertErr } = await supabaseAdmin
+          .from('exec_users')
+          .insert({
+            user_id: appointeeUserId,
+            role: titleToRole(body.proposed_title),
+            title: body.proposed_title,
+            name: body.proposed_officer_name,
+            email: body.proposed_officer_email || null,
+          })
+          .select('id')
+          .single();
+        if (execInsertErr || !newExec) {
+          console.error('Error creating exec_users row:', execInsertErr);
+          return new Response(
+            JSON.stringify({ error: 'Could not create executive record. Email may be required.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        executiveId = newExec.id;
+      }
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Proposed officer email is required to create an appointment.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // --- Current user display name for appointed_by ---
+    const { data: creatorProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('full_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const appointedBy = creatorProfile?.full_name || user.email || user.id;
+
+    // --- Create board resolution first (we need resolution_id for executive_appointments) ---
+    let resolutionId: string | null = null;
+    try {
+      const year = new Date().getFullYear();
+      const { count } = await supabaseAdmin
+        .from('governance_board_resolutions')
+        .select('*', { count: 'exact', head: true })
+        .like('resolution_number', `${year}-%`);
+      const resolutionNumber = `${year}-${String((count || 0) + 1).padStart(4, '0')}`;
+      const { data: resolution, error: resolutionError } = await supabaseAdmin
+        .from('governance_board_resolutions')
+        .insert({
+          resolution_number: resolutionNumber,
+          title: `Appointment of ${body.proposed_officer_name} as ${body.proposed_title}`,
+          description: `Resolution to approve the appointment of ${body.proposed_officer_name} as ${body.proposed_title}. ${body.notes || ''}`,
+          type: 'EXECUTIVE_APPOINTMENT',
+          status: 'PENDING_VOTE',
+          meeting_date: body.board_meeting_date || body.effective_date || new Date().toISOString().split('T')[0],
+          created_by: user.id,
+          metadata: {
+            proposed_officer_name: body.proposed_officer_name,
+            proposed_officer_email: body.proposed_officer_email,
+            proposed_title: body.proposed_title,
+          },
+        })
+        .select()
+        .single();
+      if (!resolutionError && resolution) {
+        resolutionId = resolution.id;
+      }
+    } catch (err) {
+      console.error('Error creating board resolution:', err);
+    }
+
+    // --- Map appointment_type to new schema enum ---
+    const appointmentTypeMap: Record<string, string> = {
+      NEW: 'initial',
+      initial: 'initial',
+      reappointment: 'reappointment',
+      promotion: 'promotion',
+      lateral: 'lateral',
+    };
+    const appointmentType = appointmentTypeMap[body.appointment_type] || 'initial';
+
+    const equityDetails = body.equity_details != null
+      ? (typeof body.equity_details === 'string' ? (() => { try { return JSON.parse(body.equity_details); } catch { return body.equity_details; } })() : body.equity_details)
+      : null;
+
+    // --- Insert executive_appointments (new schema: executive_id, position, resolution_id, etc.) ---
     const { data: appointment, error: insertError } = await supabaseAdmin
       .from('executive_appointments')
       .insert({
-        proposed_officer_name: body.proposed_officer_name,
-        proposed_officer_email: body.proposed_officer_email || null,
-        proposed_title: body.proposed_title,
-        appointment_type: body.appointment_type || 'NEW',
-        board_meeting_date: body.board_meeting_date || null,
+        executive_id: executiveId,
+        position: body.proposed_title,
+        appointment_type: appointmentType,
         effective_date: body.effective_date,
-        term_length_months: body.term_length_months ? parseInt(body.term_length_months) : null,
-        authority_granted: body.authority_granted || null,
-        compensation_structure: body.compensation_structure || null,
-        equity_included: body.equity_included || false,
-        equity_details: body.equity_details || null,
+        appointed_by: appointedBy,
+        resolution_id: resolutionId,
+        status: 'pending',
         notes: body.notes || null,
+        equity_included: body.equity_included || false,
+        compensation_structure: body.compensation_structure || null,
+        equity_details: equityDetails,
         formation_mode: body.formation_mode || false,
-        status: 'DRAFT',
+        board_meeting_date: body.board_meeting_date || null,
+        term_length_months: body.term_length_months ? parseInt(body.term_length_months, 10) : null,
+        authority_granted: body.authority_granted || null,
         created_by: user.id,
       })
       .select()
@@ -96,108 +237,21 @@ serve(async (req) => {
       );
     }
 
-    // Get or create user for the appointee
-    let appointeeUserId: string | null = null;
-    if (body.proposed_officer_email) {
-      // Try to find existing user by email
-      const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-      const foundUser = existingUser?.users.find(u => u.email === body.proposed_officer_email);
-      
-      if (foundUser) {
-        appointeeUserId = foundUser.id;
-      } else {
-        // Create new user for the appointee
-        const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-          email: body.proposed_officer_email,
-          email_confirm: true,
-          user_metadata: {
-            full_name: body.proposed_officer_name,
-          },
-        });
-        
-        if (!createUserError && newUser?.user) {
-          appointeeUserId = newUser.user.id;
-          
-          // Create user profile
-          await supabaseAdmin
-            .from('user_profiles')
-            .upsert({
-              user_id: newUser.user.id,
-              full_name: body.proposed_officer_name,
-              email: body.proposed_officer_email,
-            }, {
-              onConflict: 'user_id',
-            });
-        }
-      }
-    }
-
-    // Create appointment in new appointments table (for governance system)
+    // --- Create row in appointments table (for workflow and cap table) ---
     let newAppointmentId: string | null = null;
-    if (appointeeUserId) {
-      const { data: newAppt, error: newApptError } = await supabaseAdmin
-        .from('appointments')
-        .insert({
-          appointee_user_id: appointeeUserId,
-          role_titles: [body.proposed_title],
-          effective_date: body.effective_date,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+    const { data: newAppt, error: newApptError } = await supabaseAdmin
+      .from('appointments')
+      .insert({
+        appointee_user_id: appointeeUserId,
+        role_titles: [body.proposed_title],
+        effective_date: body.effective_date,
+        created_by: user.id,
+      })
+      .select()
+      .single();
 
-      if (!newApptError && newAppt) {
-        newAppointmentId = newAppt.id;
-      }
-    }
-
-    // Create board resolution for this appointment (as per user requirements)
-    let boardResolutionId: string | null = null;
-    try {
-      const year = new Date().getFullYear();
-      const { count } = await supabaseAdmin
-        .from('governance_board_resolutions')
-        .select('*', { count: 'exact', head: true })
-        .like('resolution_number', `${year}-%`);
-      
-      const resolutionNumber = `${year}-${String((count || 0) + 1).padStart(4, '0')}`;
-
-      const { data: resolution, error: resolutionError } = await supabaseAdmin
-        .from('governance_board_resolutions')
-        .insert({
-          resolution_number: resolutionNumber,
-          title: `Appointment of ${body.proposed_officer_name} as ${body.proposed_title}`,
-          description: `Resolution to approve the appointment of ${body.proposed_officer_name} as ${body.proposed_title}. ${body.notes || ''}`,
-          type: 'EXECUTIVE_APPOINTMENT',
-          status: 'PENDING_VOTE',
-          meeting_date: body.board_meeting_date || body.effective_date || new Date().toISOString().split('T')[0],
-          created_by: user.id,
-          metadata: {
-            appointment_id: appointment.id,
-            proposed_officer_name: body.proposed_officer_name,
-            proposed_officer_email: body.proposed_officer_email,
-            proposed_title: body.proposed_title,
-          },
-        })
-        .select()
-        .single();
-
-      if (resolutionError) {
-        console.error('Error creating board resolution:', resolutionError);
-        // Don't fail the appointment creation if resolution creation fails
-      } else if (resolution) {
-        boardResolutionId = resolution.id;
-        console.log(`Created board resolution ${resolutionNumber} (${resolution.id}) for appointment ${appointment.id}`);
-        
-        // Link resolution to appointment
-        await supabaseAdmin
-          .from('executive_appointments')
-          .update({ board_resolution_id: resolution.id })
-          .eq('id', appointment.id);
-      }
-    } catch (err) {
-      console.error('Error creating board resolution:', err);
-      // Don't fail the appointment creation if resolution creation fails
+    if (!newApptError && newAppt) {
+      newAppointmentId = newAppt.id;
     }
 
     // Log the action
@@ -213,7 +267,7 @@ serve(async (req) => {
         effective_date: body.effective_date,
         title: body.proposed_title,
         new_appointment_id: newAppointmentId,
-        board_resolution_id: boardResolutionId,
+        resolution_id: resolutionId,
       },
     });
 

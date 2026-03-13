@@ -117,13 +117,38 @@ serve(async (req) => {
 
     const results: ResultItem[] = [];
 
+    // Resolve officer name for an appointment (new schema: executive_id -> exec_users/user_profiles)
+    async function getAppointmentOfficerName(apt: any): Promise<string> {
+      if (apt.proposed_officer_name) return apt.proposed_officer_name;
+      if (!apt.executive_id) return 'Unknown';
+      const { data: execUser } = await supabaseAdmin
+        .from('exec_users')
+        .select('user_id, name')
+        .eq('id', apt.executive_id)
+        .single();
+      if (execUser?.name) return execUser.name;
+      if (execUser?.user_id) {
+        const { data: profile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('full_name')
+          .eq('user_id', execUser.user_id)
+          .maybeSingle();
+        if (profile?.full_name) return profile.full_name;
+      }
+      return 'Unknown';
+    }
+
     // FORTUNE 500 DOCUMENT GENERATION FLOW (14 Documents)
     for (const appointment of appointments) {
       const docTypes: string[] = [];
+      const appointmentName = await getAppointmentOfficerName(appointment);
       
       // Determine which documents to generate based on status
       // If force_regenerate is true, ignore existing documents and regenerate all
       // IMPORTANT: When force_regenerate is true, we ALWAYS regenerate, regardless of existing URLs
+      
+      // Normalize status: new schema uses 'pending'; backfill treats it like DRAFT
+      const statusForDocs = (appointment.status === 'pending' ? 'DRAFT' : appointment.status) as string;
       
       // Check existing documents (only if not force_regenerate)
       const hasAppointmentLetter = !force_regenerate && appointment.appointment_letter_url && String(appointment.appointment_letter_url).trim() !== '';
@@ -147,7 +172,7 @@ serve(async (req) => {
       const hasEquityPlan = !force_regenerate && (appointment as any).equity_plan_url && String((appointment as any).equity_plan_url).trim() !== '';
       const hasOptionRSUAward = !force_regenerate && (appointment as any).option_rsu_award_url && String((appointment as any).option_rsu_award_url).trim() !== '';
       
-      console.log(`Processing appointment ${appointment.id}: force_regenerate=${force_regenerate}, status=${appointment.status}`);
+      console.log(`Processing appointment ${appointment.id}: force_regenerate=${force_regenerate}, status=${appointment.status} (doc status=${statusForDocs})`);
       console.log(`Existing documents check (ignored if force_regenerate):`, {
         hasAppointmentLetter,
         hasBoardResolution,
@@ -213,8 +238,8 @@ serve(async (req) => {
           compensation_structure: appointment.compensation_structure,
         });
       } else {
-        // Normal flow: generate based on status
-        switch (appointment.status) {
+        // Normal flow: generate based on status (pending = DRAFT for doc purposes)
+        switch (statusForDocs) {
         case 'DRAFT':
           // FORTUNE 500: Generate ALL 14 documents for DRAFT status
           // Core Employment Documents
@@ -254,8 +279,9 @@ serve(async (req) => {
         
         case 'SENT_TO_BOARD':
           // Appointment letter + board resolution + governance docs
+          const resolutionIdSent = appointment.resolution_id ?? (appointment as any).board_resolution_id;
           if (!hasAppointmentLetter) docTypes.push('appointment_letter');
-          if (!hasBoardResolution && appointment.board_resolution_id) docTypes.push('board_resolution');
+          if (!hasBoardResolution && resolutionIdSent) docTypes.push('board_resolution');
           if (!hasBylaws) docTypes.push('bylaws');
           if (!hasBylawsAcknowledgment) docTypes.push('bylaws_acknowledgment');
           break;
@@ -268,7 +294,8 @@ serve(async (req) => {
           if (!hasConfidentialityIP) docTypes.push('confidentiality_ip');
           
           // Board & Formation Documents
-          if (!hasBoardResolution && appointment.board_resolution_id) docTypes.push('board_resolution');
+          const resolutionIdApproved = appointment.resolution_id ?? (appointment as any).board_resolution_id;
+          if (!hasBoardResolution && resolutionIdApproved) docTypes.push('board_resolution');
           if ((appointment as any).formation_mode) {
             if (!hasPreIncorporationConsent) docTypes.push('pre_incorporation_consent');
             if (!hasCertificateOfIncorporation) docTypes.push('certificate_of_incorporation');
@@ -497,7 +524,7 @@ serve(async (req) => {
 
       results.push({
         appointment_id: appointment.id,
-        appointment_name: appointment.proposed_officer_name,
+        appointment_name: appointmentName,
         status: appointment.status,
         documents_generated: generatedDocs,
         documents_queued: docTypes,

@@ -62,6 +62,51 @@ serve(async (req) => {
       );
     }
 
+    // Ensure executive identity (SSN / tax info) has been provided before completing appointment
+    // This protects against accidentally finalizing an executive without required tax/identity data.
+    try {
+      const { data: execUser } = await supabaseAdmin
+        .from('exec_users')
+        .select('id')
+        .eq('user_id', appointment.appointee_user_id)
+        .maybeSingle();
+
+      if (execUser?.id) {
+        const { data: execIdentity } = await supabaseAdmin
+          .from('executive_identity_admin')
+          .select('id, ssn_last4, w9_storage_path')
+          .eq('executive_id', execUser.id)
+          .maybeSingle();
+
+        const hasIdentity = !!execIdentity?.id;
+        const hasLast4 = !!execIdentity?.ssn_last4;
+        const hasW9 = !!execIdentity?.w9_storage_path;
+
+        if (!hasIdentity || !hasLast4 || !hasW9) {
+          return new Response(
+            JSON.stringify({
+              error: 'Executive tax and identity information is incomplete. Please collect SSN (last 4) and W‑9 before completing this appointment.',
+              missing: {
+                identity_record: !hasIdentity,
+                ssn_last4: !hasLast4,
+                w9: !hasW9,
+              },
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        // If there is no exec_users row yet, we allow completion but log for follow‑up
+        console.warn(
+          'governance-complete-appointment: No exec_users record found for appointee_user_id; skipping executive_identity check.',
+          appointment.appointee_user_id,
+        );
+      }
+    } catch (identityCheckError) {
+      console.error('Error checking executive_identity before appointment completion:', identityCheckError);
+      // Fail safe: do not block completion if the identity check itself fails; only block on explicit "missing" above
+    }
+
     // Check if all documents are signed
     const { data: documents } = await supabaseAdmin
       .from('board_documents')

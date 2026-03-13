@@ -92,13 +92,46 @@ serve(async (req) => {
       );
     }
 
-    // Fetch resolution if exists
+    // Resolve officer name, email, title from executive_id -> exec_users (+ user_profiles/auth)
+    let officerName = (appointment as any).proposed_officer_name;
+    let officerEmail = (appointment as any).proposed_officer_email;
+    let officerTitle = (appointment as any).proposed_title ?? appointment.position;
+    if (appointment.executive_id) {
+      const { data: execUser } = await supabaseAdmin
+        .from('exec_users')
+        .select('user_id, name, email, title')
+        .eq('id', appointment.executive_id)
+        .single();
+      if (execUser) {
+        officerTitle = officerTitle || execUser.title || appointment.position;
+        officerName = officerName || execUser.name;
+        officerEmail = officerEmail || execUser.email ?? null;
+        if (execUser.user_id) {
+          const { data: profile } = await supabaseAdmin
+            .from('user_profiles')
+            .select('full_name, email')
+            .eq('user_id', execUser.user_id)
+            .maybeSingle();
+          if (profile) {
+            officerName = officerName || profile.full_name;
+            officerEmail = officerEmail || profile.email ?? officerEmail;
+          }
+          if (!officerEmail) {
+            const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(execUser.user_id);
+            officerEmail = officerEmail || user?.email ?? null;
+          }
+        }
+      }
+    }
+
+    // Fetch resolution if exists (support both resolution_id and board_resolution_id)
     let resolution = null;
-    if (appointment.board_resolution_id) {
+    const resolutionId = appointment.resolution_id ?? (appointment as any).board_resolution_id;
+    if (resolutionId) {
       const { data: resData } = await supabaseAdmin
         .from('governance_board_resolutions')
         .select('*')
-        .eq('id', appointment.board_resolution_id)
+        .eq('id', resolutionId)
         .single();
       resolution = resData;
     }
@@ -143,49 +176,46 @@ serve(async (req) => {
     }
 
     let compensationStructure: CompensationStructure = {};
-    if (appointment.compensation_structure) {
-      if (typeof appointment.compensation_structure === 'string') {
+    const compensationRaw = appointment.compensation_structure ?? (appointment as any).compensation_structure;
+    if (compensationRaw) {
+      if (typeof compensationRaw === 'string') {
         try {
-          // Try to parse as JSON
-          compensationStructure = JSON.parse(appointment.compensation_structure);
+          compensationStructure = JSON.parse(compensationRaw);
         } catch (e) {
-          // If it's not valid JSON, treat it as plain text and wrap it
-          console.warn('compensation_structure is not valid JSON, treating as text:', appointment.compensation_structure);
-          compensationStructure = { description: appointment.compensation_structure };
+          console.warn('compensation_structure is not valid JSON, treating as text:', compensationRaw);
+          compensationStructure = { description: compensationRaw };
         }
       } else {
-        compensationStructure = appointment.compensation_structure as CompensationStructure;
+        compensationStructure = compensationRaw as CompensationStructure;
       }
     }
     
+    const equityDetailsRaw = appointment.equity_details ?? (appointment as any).equity_details;
     let equityDetails: EquityDetails = {};
-    if (appointment.equity_details) {
-      if (typeof appointment.equity_details === 'string') {
+    if (equityDetailsRaw) {
+      if (typeof equityDetailsRaw === 'string') {
         try {
-          // Try to parse as JSON
-          equityDetails = JSON.parse(appointment.equity_details);
+          equityDetails = JSON.parse(equityDetailsRaw);
         } catch (e) {
-          // If it's not valid JSON, treat it as plain text and wrap it
-          console.warn('equity_details is not valid JSON, treating as text:', appointment.equity_details);
-          equityDetails = { description: appointment.equity_details };
+          equityDetails = { description: equityDetailsRaw };
         }
       } else {
-        equityDetails = appointment.equity_details as EquityDetails;
+        equityDetails = equityDetailsRaw as EquityDetails;
       }
     }
 
     // Map appointment data to template placeholders - supporting multiple formats
     const templateData: Record<string, any> = {
-      // Name variations (all formats)
-      full_name: appointment.proposed_officer_name,
-      executive_name: appointment.proposed_officer_name,
-      officer_name: appointment.proposed_officer_name,
-      name: appointment.proposed_officer_name,
-      proposed_officer_name: appointment.proposed_officer_name,
-      EXECUTIVE_NAME: appointment.proposed_officer_name,
-      OFFICER_NAME: appointment.proposed_officer_name,
-      FULL_NAME: appointment.proposed_officer_name,
-      NAME: appointment.proposed_officer_name,
+      // Name variations (all formats) - from exec_users/user_profiles when using new schema
+      full_name: officerName,
+      executive_name: officerName,
+      officer_name: officerName,
+      name: officerName,
+      proposed_officer_name: officerName,
+      EXECUTIVE_NAME: officerName,
+      OFFICER_NAME: officerName,
+      FULL_NAME: officerName,
+      NAME: officerName,
       
       // Equity award specific fields (uppercase for [[]] format)
       'OPTION / RSU': equityDetails.share_count ? 'OPTION' : 'RSU',
@@ -203,25 +233,25 @@ serve(async (req) => {
       grantDate: appointment.effective_date ? formatDate(appointment.effective_date) : formatDate(new Date().toISOString().split('T')[0]),
       
       // Contact information (all formats)
-      proposed_officer_email: appointment.proposed_officer_email || '',
-      email: appointment.proposed_officer_email || '',
-      EMAIL: appointment.proposed_officer_email || '',
-      'officer.email': appointment.proposed_officer_email || '',
+      proposed_officer_email: officerEmail || '',
+      email: officerEmail || '',
+      EMAIL: officerEmail || '',
+      'officer.email': officerEmail || '',
       proposed_officer_phone: (appointment as any).proposed_officer_phone || '',
       phone: (appointment as any).proposed_officer_phone || '',
       PHONE: (appointment as any).proposed_officer_phone || '',
       
-      // Title variations (all formats)
-      role: appointment.proposed_title,
-      position: appointment.proposed_title,
-      title: appointment.proposed_title,
-      position_title: appointment.proposed_title,
-      executive_title: appointment.proposed_title,
-      proposed_title: appointment.proposed_title,
-      TITLE: appointment.proposed_title,
-      ROLE: appointment.proposed_title,
-      POSITION: appointment.proposed_title,
-      'officer.title': appointment.proposed_title,
+      // Title variations (all formats) - position is the new-schema column
+      role: officerTitle,
+      position: officerTitle,
+      title: officerTitle,
+      position_title: officerTitle,
+      executive_title: officerTitle,
+      proposed_title: officerTitle,
+      TITLE: officerTitle,
+      ROLE: officerTitle,
+      POSITION: officerTitle,
+      'officer.title': officerTitle,
       
       // Company and dates (all formats)
       company_name: companyName,
@@ -229,14 +259,14 @@ serve(async (req) => {
       'company.legalName': companyName,
       ceoName: 'Torrance Stroman',
       CEO_NAME: 'Torrance Stroman',
-      'officer.fullName': appointment.proposed_officer_name,
+      'officer.fullName': officerName,
       effective_date: appointment.effective_date,
       date: appointment.effective_date,
       appointment_date: appointment.effective_date,
-      board_meeting_date: appointment.board_meeting_date || appointment.effective_date,
+      board_meeting_date: (appointment as any).board_meeting_date || appointment.effective_date,
       
       // Appointment details
-      appointment_type: appointment.appointment_type || 'NEW',
+      appointment_type: appointment.appointment_type || 'initial',
       reporting_to: (appointment as any).reporting_to || 'Board of Directors',
       department: (appointment as any).department || '',
       
@@ -259,12 +289,12 @@ serve(async (req) => {
       number_of_shares: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
       vesting_schedule: equityDetails.vesting_schedule || '',
       exercise_price: equityDetails.exercise_price || '',
-      equity_included: appointment.equity_included ? 'Yes' : 'No',
+      equity_included: (appointment.equity_included ?? (appointment as any).equity_included) ? 'Yes' : 'No',
       
       // Authority and terms
-      authority_granted: appointment.authority_granted || 'Standard executive authority',
-      term_length_months: appointment.term_length_months ? String(appointment.term_length_months) : 'N/A',
-      term_end: appointment.term_end || null,
+      authority_granted: (appointment as any).authority_granted || 'Standard executive authority',
+      term_length_months: (appointment as any).term_length_months ? String((appointment as any).term_length_months) : 'N/A',
+      term_end: (appointment as any).term_end || null,
       
       // Resolution details
       resolution_number: resolution?.resolution_number || 'TBD',
@@ -310,10 +340,10 @@ serve(async (req) => {
       templateData.company_name = companyName;
       templateData.company_state = governingState;
       templateData.state_of_incorporation = governingState;
-      templateData.officer_name = appointment.proposed_officer_name || '';
-      templateData.officer_role = appointment.proposed_title || '';
-      templateData.board_meeting_date = appointment.board_meeting_date 
-        ? formatDate(appointment.board_meeting_date) 
+      templateData.officer_name = officerName || '';
+      templateData.officer_role = officerTitle || '';
+      templateData.board_meeting_date = (appointment as any).board_meeting_date 
+        ? formatDate((appointment as any).board_meeting_date) 
         : formatDate(new Date().toISOString());
       templateData.effective_date = appointment.effective_date 
         ? formatDate(appointment.effective_date) 
