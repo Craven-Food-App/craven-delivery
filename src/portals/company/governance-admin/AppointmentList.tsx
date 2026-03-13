@@ -1876,7 +1876,7 @@ const AppointmentList: React.FC = () => {
                       <Text size="sm" fw={600}>Compensation Structure</Text>
                     </Group>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                      {selectedAppointment.compensation_structure}
+                      {serializeDisplayValue(selectedAppointment.compensation_structure)}
                     </Text>
                   </Paper>
                 )}
