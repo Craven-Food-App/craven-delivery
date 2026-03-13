@@ -677,7 +677,7 @@ const AppointmentList: React.FC = () => {
       proposed_officer_email: '',
       proposed_officer_phone: '',
       proposed_title: '',
-      appointment_type: '',
+      appointment_type: 'initial',
       status: '',
       effective_date: null as Date | null,
       board_meeting_date: null as Date | null,
@@ -700,7 +700,9 @@ const AppointmentList: React.FC = () => {
       proposed_officer_email: appointment.proposed_officer_email || '',
       proposed_officer_phone: (appointment as any).proposed_officer_phone || '',
       proposed_title: appointment.proposed_title || (appointment as any).position || '',
-      appointment_type: appointment.appointment_type || 'executive',
+      appointment_type: ['initial', 'reappointment', 'promotion', 'lateral'].includes(appointment.appointment_type)
+        ? appointment.appointment_type
+        : 'initial',
       status: appointment.status || 'pending',
       effective_date: appointment.effective_date ? dayjs(appointment.effective_date).toDate() : null,
       board_meeting_date: appointment.board_meeting_date ? dayjs(appointment.board_meeting_date).toDate() : null,
@@ -725,10 +727,10 @@ const AppointmentList: React.FC = () => {
       const updateData: any = {
         proposed_officer_name: values.proposed_officer_name,
         proposed_officer_email: values.proposed_officer_email || null,
-        proposed_officer_phone: values.proposed_officer_phone || null,
         proposed_title: values.proposed_title,
-        position: values.proposed_title,
-        appointment_type: values.appointment_type,
+        appointment_type: ['initial', 'reappointment', 'promotion', 'lateral'].includes(values.appointment_type)
+          ? values.appointment_type
+          : 'initial',
         status: values.status || editingAppointment.status,
         effective_date: values.effective_date ? dayjs(values.effective_date).toISOString() : editingAppointment.effective_date,
         board_meeting_date: values.board_meeting_date ? dayjs(values.board_meeting_date).toISOString() : null,
@@ -739,10 +741,20 @@ const AppointmentList: React.FC = () => {
         equity_details: values.equity_details || null,
         notes: values.notes || null,
         formation_mode: values.formation_mode ?? false,
-        reporting_to: values.reporting_to || null,
-        department: values.department || null,
         updated_at: new Date().toISOString(),
       };
+      if ('proposed_officer_phone' in (editingAppointment as any)) {
+        updateData.proposed_officer_phone = values.proposed_officer_phone || null;
+      }
+      if ('reporting_to' in (editingAppointment as any)) {
+        updateData.reporting_to = values.reporting_to || null;
+      }
+      if ('department' in (editingAppointment as any)) {
+        updateData.department = values.department || null;
+      }
+      if ('position' in (editingAppointment as any)) {
+        updateData.position = values.proposed_title;
+      }
 
       const { error } = await supabase
         .from('executive_appointments')
@@ -2135,10 +2147,6 @@ const AppointmentList: React.FC = () => {
                       label="Appointment Type"
                       required
                       data={[
-                        { value: 'officer', label: 'Corporate Officer' },
-                        { value: 'director', label: 'Board Director' },
-                        { value: 'executive', label: 'Executive' },
-                        { value: 'advisor', label: 'Advisor' },
                         { value: 'initial', label: 'Initial' },
                         { value: 'reappointment', label: 'Reappointment' },
                         { value: 'promotion', label: 'Promotion' },
@@ -2215,11 +2223,95 @@ const AppointmentList: React.FC = () => {
                   {...editForm.getInputProps('equity_included', { type: 'checkbox' })}
                 />
                 {editForm.values.equity_included && (
-                  <Textarea
-                    label="Equity Details (text or JSON)"
-                    rows={3}
-                    {...editForm.getInputProps('equity_details')}
-                  />
+                  <Grid>
+                    <Grid.Col span={{ base: 12 }}>
+                      <Text fw={600} size="sm" mb="xs">Equity Details</Text>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <NumberInput
+                        label="Equity Percentage"
+                        placeholder="5.0"
+                        suffix="%"
+                        decimalScale={2}
+                        value={(() => {
+                          try {
+                            const d = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            return (d?.percentage ?? '') === '' ? '' : Number(d.percentage);
+                          } catch { return ''; }
+                        })()}
+                        onChange={(value) => {
+                          try {
+                            const current = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            editForm.setFieldValue('equity_details', JSON.stringify({ ...current, percentage: value === '' ? 0 : Number(value) }));
+                          } catch {
+                            editForm.setFieldValue('equity_details', JSON.stringify({ percentage: value === '' ? 0 : Number(value) }));
+                          }
+                        }}
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <NumberInput
+                        label="Share Count"
+                        placeholder="10000"
+                        thousandSeparator=","
+                        value={(() => {
+                          try {
+                            const d = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            return (d?.share_count ?? '') === '' ? '' : Number(d.share_count);
+                          } catch { return ''; }
+                        })()}
+                        onChange={(value) => {
+                          try {
+                            const current = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            editForm.setFieldValue('equity_details', JSON.stringify({ ...current, share_count: value === '' ? 0 : Number(value) }));
+                          } catch {
+                            editForm.setFieldValue('equity_details', JSON.stringify({ share_count: value === '' ? 0 : Number(value) }));
+                          }
+                        }}
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <Textarea
+                        label="Vesting Schedule"
+                        placeholder="e.g., 4-year vesting, 25% after 1 year, monthly thereafter"
+                        rows={2}
+                        value={(() => {
+                          try {
+                            const d = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            return d?.vesting_schedule ?? '';
+                          } catch { return ''; }
+                        })()}
+                        onChange={(e) => {
+                          try {
+                            const current = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            editForm.setFieldValue('equity_details', JSON.stringify({ ...current, vesting_schedule: e.target.value }));
+                          } catch {
+                            editForm.setFieldValue('equity_details', JSON.stringify({ vesting_schedule: e.target.value }));
+                          }
+                        }}
+                      />
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 12, md: 6 }}>
+                      <TextInput
+                        label="Exercise Price / Share Price"
+                        placeholder="e.g., 0.01 or $0.01 per share"
+                        value={(() => {
+                          try {
+                            const d = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            return d?.exercise_price ?? '';
+                          } catch { return ''; }
+                        })()}
+                        onChange={(e) => {
+                          try {
+                            const current = editForm.values.equity_details ? JSON.parse(editForm.values.equity_details) : {};
+                            editForm.setFieldValue('equity_details', JSON.stringify({ ...current, exercise_price: e.target.value }));
+                          } catch {
+                            editForm.setFieldValue('equity_details', JSON.stringify({ exercise_price: e.target.value }));
+                          }
+                        }}
+                      />
+                    </Grid.Col>
+                  </Grid>
                 )}
 
                 <Divider />

@@ -54,6 +54,23 @@ function injectTorranceSignatureEverywhere(html: string, sigUrl: string): string
   return html.replace(/Torrance\s+A\.?\s*Stroman|Torrance\s+Stroman/gi, img);
 }
 
+/** Stock certificate only: ensure signature areas show only the image (sized to fit) and plain name. */
+function fixStockCertificateSignatures(html: string, signatureUrl: string): string {
+  if (!html || !signatureUrl) return html;
+  let out = html;
+  // Fix img inside .signature-line: correct src and alt, constrained size (no HTML in alt).
+  out = out.replace(
+    /<img\s+[^>]*class="signature-img"[^>]*>/gi,
+    `<img class="signature-img" src="${signatureUrl}" alt="Torrance Stroman Signature" style="max-height:0.3in;object-fit:contain;" />`
+  );
+  // Replace .signer-name content with plain text so we don't render an image in the name line.
+  out = out.replace(
+    /<div class="signer-name"[^>]*>[\s\S]*?<\/div>/gi,
+    '<div class="signer-name">Torrance A. Stroman</div>'
+  );
+  return out;
+}
+
 // Nuclear approach: find the earliest signature/witness marker in the HTML,
 // CUT everything from that point to </body>, and APPEND a clean, hardcoded
 // signature block with Torrance's image ABOVE his name.
@@ -464,7 +481,9 @@ serve(async (req) => {
       share_class: 'Common',
       company_state: governingState,
       issue_date: appointment.effective_date,
-      // Torrance Stroman signature block - embed image when URL is configured
+      // URL only - for stock certificate img src (so we don't put HTML in src/alt)
+      signature_url: torranceSignatureUrl || TORRANCE_SIG_URL,
+      // Full img tag for templates that embed it inline; also used as printed name fallback
       company_signatory_name: `<img src="${torranceSignatureUrl || TORRANCE_SIG_URL}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" />`,
       company_signatory_title: 'Chief Executive Officer',
       secretary_name: 'Corporate Secretary',
@@ -901,6 +920,11 @@ serve(async (req) => {
 
     // Catch any remaining Torrance name text without an image
     html = injectTorranceSignatureEverywhere(html, torranceSignatureUrl || TORRANCE_SIG_URL);
+
+    // Stock certificate: signature areas must show only the image (sized to fit) and plain name
+    if (document_type === 'certificate') {
+      html = fixStockCertificateSignatures(html, torranceSignatureUrl || TORRANCE_SIG_URL);
+    }
 
     // Keep signature field tags in place - they will be replaced during signing
     // Format: {{SIGNATURE_FIELD:role:type}} - these are board-tagged signature fields
