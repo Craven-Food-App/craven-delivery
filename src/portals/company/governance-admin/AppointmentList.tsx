@@ -1943,7 +1943,7 @@ const AppointmentList: React.FC = () => {
           setDocumentContent('');
         }}
         title={selectedDocumentName}
-        size="xl"
+        size={1200}
       >
         {loadingDocument ? (
           <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -1977,7 +1977,7 @@ const AppointmentList: React.FC = () => {
           setDocumentContent('');
         }}
         title={selectedDocumentName}
-        size="xl"
+        size={1200}
       >
         {selectedDocumentUrl && (
           <Paper p="md">
