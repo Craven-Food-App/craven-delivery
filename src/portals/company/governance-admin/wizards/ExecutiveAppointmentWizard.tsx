@@ -186,9 +186,17 @@ const ExecutiveAppointmentWizard: React.FC = () => {
 
       navigate('/company/governance-admin?tab=appointments');
     } catch (error: any) {
+      const errorMessage = typeof error?.message === 'string'
+        ? error.message
+        : error?.message && typeof error.message === 'object'
+          ? JSON.stringify(error.message)
+          : error && typeof error === 'object'
+            ? JSON.stringify(error)
+            : 'Failed to create appointment';
+
       notifications.show({
         title: 'Error',
-        message: error.message || 'Failed to create appointment',
+        message: errorMessage,
         color: 'red',
       });
       throw error;

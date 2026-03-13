@@ -79,9 +79,9 @@ interface ExecutiveAppointment {
   effective_date: string;
   term_length_months?: number;
   authority_granted?: string;
-  compensation_structure?: string;
+  compensation_structure?: string | Record<string, any> | null;
   equity_included: boolean;
-  equity_details?: string;
+  equity_details?: string | Record<string, any> | null;
   notes?: string;
   status: string;
   board_resolution_id?: string;
@@ -138,6 +138,47 @@ const AppointmentList: React.FC = () => {
       fetchAppointmentDetails(selectedAppointment.id);
     }
   }, [viewModalOpen, selectedAppointment]);
+
+  const serializeDisplayValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  };
+
+  const formatEquityDisplay = (value: unknown): string => {
+    const parsed = (() => {
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    })();
+
+    if (!parsed || typeof parsed !== 'object') {
+      return serializeDisplayValue(parsed);
+    }
+
+    const equity = parsed as Record<string, any>;
+    const lines: string[] = [];
+
+    if (equity.percentage) lines.push(`Percentage: ${equity.percentage}%`);
+    if (equity.share_count) lines.push(`Share Count: ${Number(equity.share_count).toLocaleString()}`);
+    if (equity.exercise_price) lines.push(`Exercise Price: ${equity.exercise_price}`);
+    if (equity.vesting_schedule) lines.push(`Vesting Schedule: ${equity.vesting_schedule}`);
+
+    return lines.length > 0 ? lines.join('\n') : JSON.stringify(equity, null, 2);
+  };
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -654,9 +695,9 @@ const AppointmentList: React.FC = () => {
       board_meeting_date: appointment.board_meeting_date ? dayjs(appointment.board_meeting_date).toDate() : null,
       term_length_months: appointment.term_length_months || undefined,
       authority_granted: appointment.authority_granted || '',
-      compensation_structure: appointment.compensation_structure || '',
+      compensation_structure: serializeDisplayValue(appointment.compensation_structure),
       equity_included: appointment.equity_included || false,
-      equity_details: appointment.equity_details || '',
+      equity_details: serializeDisplayValue(appointment.equity_details),
       notes: appointment.notes || '',
       formation_mode: appointment.formation_mode || false,
     });
@@ -1817,7 +1858,7 @@ const AppointmentList: React.FC = () => {
                       </Group>
                       {selectedAppointment.equity_details && (
                         <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                          {selectedAppointment.equity_details}
+                          {formatEquityDisplay(selectedAppointment.equity_details)}
                         </Text>
                       )}
                     </Paper>
@@ -1835,7 +1876,7 @@ const AppointmentList: React.FC = () => {
                       <Text size="sm" fw={600}>Compensation Structure</Text>
                     </Group>
                     <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                      {selectedAppointment.compensation_structure}
+                      {serializeDisplayValue(selectedAppointment.compensation_structure)}
                     </Text>
                   </Paper>
                 )}

@@ -138,9 +138,17 @@ const NewAppointmentForm: React.FC = () => {
       navigate('/company/governance-admin/appointments');
     } catch (error: any) {
       console.error('Error creating appointment:', error);
+      const errorMessage = typeof error?.message === 'string'
+        ? error.message
+        : error?.message && typeof error.message === 'object'
+          ? JSON.stringify(error.message)
+          : error && typeof error === 'object'
+            ? JSON.stringify(error)
+            : 'Failed to create appointment';
+
       notifications.show({
         title: 'Error',
-        message: error.message || 'Failed to create appointment',
+        message: errorMessage,
         color: 'red',
       });
     } finally {
