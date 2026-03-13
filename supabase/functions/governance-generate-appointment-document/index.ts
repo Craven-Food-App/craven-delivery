@@ -2,6 +2,13 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from "../_shared/cors.ts";
 
+interface SignatureContext {
+  officerName?: string;
+  officerTitle?: string;
+  companyName: string;
+  torranceSignatureUrl: string;
+}
+
 // Helper function to format currency
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -71,6 +78,143 @@ function injectSecretarySignature(html: string, torranceSignatureUrl: string): s
     /(<p[^>]*>\s*)Secretary(\s*<\/p>)/gi,
     `$1<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Secretary$2`,
   );
+}
+
+// Brutally ensure Torrance's signature image is present anywhere his name appears,
+// for all roles he holds (CEO, Chief Executive Officer, Secretary, Board, Chairman).
+// If the image URL is already in the HTML, we assume templates handled it and skip.
+function injectTorranceSignatureEverywhere(html: string, torranceSignatureUrl: string): string {
+  if (!html || !torranceSignatureUrl) return html;
+  if (html.includes(torranceSignatureUrl)) return html;
+
+  const signatureImg = `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;" /><br />Torrance A. Stroman`;
+
+  return html.replace(/Torrance\s+A\.?\s*Stroman|Torrance\s+Stroman/gi, signatureImg);
+}
+
+// For the executive documents that are still rendering generic underline
+// signature lines, brutally overwrite the bottom signature block so that:
+// - Any CEO/Chair/Secretary/Board company-side signatures use Torrance's image
+// - The executive/appointee side is clearly labeled "Executive Signature"
+// This runs AFTER placeholder replacement but BEFORE generic line stripping.
+function forceExecutiveSignatureBlocks(
+  html: string,
+  documentType: string,
+  ctx: SignatureContext,
+): string {
+  if (!html) return html;
+
+  const {
+    officerName = '',
+    officerTitle = 'Executive',
+    companyName,
+    torranceSignatureUrl,
+  } = ctx;
+
+  const hasSignatureImage = !!torranceSignatureUrl;
+  const torranceImg = hasSignatureImage
+    ? `<img src="${torranceSignatureUrl}" alt="Torrance Stroman Signature" style="height:60px;object-fit:contain;margin-top:16px;" />`
+    : 'Torrance A. Stroman';
+
+  const execBlock = `
+<div style="width:45%;text-align:left;">
+  <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
+  <p><strong>Executive Signature</strong><br />${officerName || ''}<br />${officerTitle || 'Executive'}</p>
+</div>`;
+
+  const witnessRegex = /<p[^>]*>\s*IN WITNESS WHEREOF[\s\S]*?<\/p>[\s\S]*?(<\/body>|$)/i;
+
+  // Helper to brutally replace the tail of the document starting at the
+  // IN WITNESS WHEREOF paragraph with a custom signature section.
+  const replaceTail = (replacementBody: string): string => {
+    if (!witnessRegex.test(html)) return html;
+    return html.replace(
+      witnessRegex,
+      `<p>IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date first written above.</p>
+${replacementBody}
+$1`,
+    );
+  };
+
+  switch (documentType) {
+    case 'bylaws_acknowledgment':
+    case 'fiduciary_ethics_ack':
+    case 'conflict_disclosure': {
+      const body = `
+<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
+  <div style="width:45%;text-align:left;">
+    <p><strong>${companyName}</strong></p>
+    ${torranceImg}
+    <p>Torrance A. Stroman<br />Chief Executive Officer &amp; Corporate Secretary</p>
+  </div>
+  ${execBlock}
+</div>`;
+      return replaceTail(body);
+    }
+
+    case 'officer_indemnification': {
+      const body = `
+<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
+  <div style="width:45%;text-align:left;">
+    <p><strong>${companyName}</strong></p>
+    ${torranceImg}
+    <p>Torrance A. Stroman<br />Chief Executive Officer &amp; Corporate Secretary</p>
+  </div>
+  <div style="width:45%;text-align:left;">
+    <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
+    <p><strong>Executive Signature</strong><br />${officerName || ''}<br />${officerTitle || 'Executive'}</p>
+  </div>
+</div>`;
+      return replaceTail(body);
+    }
+
+    case 'equity_incentive_plan': {
+      if (!witnessRegex.test(html)) return html;
+      return html.replace(
+        witnessRegex,
+        `<p>IN WITNESS WHEREOF, this Plan is adopted by the Board of Directors as of the Effective Date.</p>
+<div style="margin-top:40px;display:flex;flex-direction:column;gap:40px;max-width:420px;">
+  <div>
+    ${torranceImg}
+    <p>Torrance A. Stroman<br />Board Chair &amp; Chief Executive Officer</p>
+  </div>
+  <div>
+    ${torranceImg}
+    <p>Torrance A. Stroman<br />Corporate Secretary</p>
+  </div>
+</div>
+$1`,
+      );
+    }
+
+    case 'option_rsu_award': {
+      if (!witnessRegex.test(html)) return html;
+      return html.replace(
+        witnessRegex,
+        `<p>IN WITNESS WHEREOF, the parties have executed this Equity Award Agreement as of the Effective Date.</p>
+<div style="margin-top:40px;display:flex;justify-content:space-between;gap:40px;">
+  <div style="width:45%;text-align:left;">
+    <p><strong>Company</strong></p>
+    <p>${companyName}</p>
+    ${torranceImg}
+    <p>Torrance A. Stroman, Chief Executive Officer</p>
+    <p>Date: ______________________</p>
+  </div>
+  <div style="width:45%;text-align:left;">
+    <p><strong>Participant</strong></p>
+    <p>${officerName || ''}</p>
+    <div style="border-bottom:1px solid #000;margin:30px 0 5px 0;"></div>
+    <p><strong>Executive Signature</strong></p>
+    <p>Date: ______________________</p>
+  </div>
+</div>
+$1`,
+      );
+    }
+
+    default:
+      return html;
+  }
 }
 
 serve(async (req) => {
@@ -785,6 +929,16 @@ serve(async (req) => {
       });
     }
 
+    // For specific executive documents, brutally overwrite the bottom
+    // signature block so Torrance's image is used for all company-side
+    // roles and the appointee side is clearly labeled "Executive Signature".
+    html = forceExecutiveSignatureBlocks(html, document_type, {
+      officerName,
+      officerTitle,
+      companyName,
+      torranceSignatureUrl,
+    });
+
     // Strip legacy company-side signature lines (underline + "By: ______")
     // so that Torrance's embedded image and title are the only signature mark.
     html = stripCompanySignatureLines(html);
@@ -792,6 +946,11 @@ serve(async (req) => {
     // Ensure Secretary signature also uses Torrance's image wherever a
     // standalone "Secretary" line appears.
     html = injectSecretarySignature(html, torranceSignatureUrl);
+
+    // Brutally ensure Torrance's signature image is injected anywhere his
+    // name appears, covering CEO, Chief Executive Officer, Secretary, Board,
+    // and Chairman roles tied to him.
+    html = injectTorranceSignatureEverywhere(html, torranceSignatureUrl);
 
     // Keep signature field tags in place - they will be replaced during signing
     // Format: {{SIGNATURE_FIELD:role:type}} - these are board-tagged signature fields
