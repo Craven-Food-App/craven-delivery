@@ -695,9 +695,9 @@ const AppointmentList: React.FC = () => {
       board_meeting_date: appointment.board_meeting_date ? dayjs(appointment.board_meeting_date).toDate() : null,
       term_length_months: appointment.term_length_months || undefined,
       authority_granted: appointment.authority_granted || '',
-      compensation_structure: appointment.compensation_structure || '',
+      compensation_structure: serializeDisplayValue(appointment.compensation_structure),
       equity_included: appointment.equity_included || false,
-      equity_details: appointment.equity_details || '',
+      equity_details: serializeDisplayValue(appointment.equity_details),
       notes: appointment.notes || '',
       formation_mode: appointment.formation_mode || false,
     });
