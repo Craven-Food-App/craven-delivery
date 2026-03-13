@@ -32,7 +32,7 @@ const NewAppointmentForm: React.FC = () => {
     proposed_title: '',
     appointment_type: 'NEW',
     board_meeting_date: '',
-    effective_date: '',
+    effective_date: dayjs().format('YYYY-MM-DD'),
     term_length_months: '',
     authority_granted: '',
     reporting_to: '',
@@ -197,6 +197,7 @@ const NewAppointmentForm: React.FC = () => {
                     label="Email"
                     type="email"
                     placeholder="john.doe@cravenusa.com"
+                    required
                     value={formData.proposed_officer_email}
                     onChange={(e) =>
                       setFormData({ ...formData, proposed_officer_email: e.target.value })

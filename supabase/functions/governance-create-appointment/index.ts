@@ -50,7 +50,7 @@ serve(async (req) => {
     const body = await req.json();
 
     // Validate required fields
-    const requiredFields = ['proposed_officer_name', 'proposed_title', 'effective_date'];
+    const requiredFields = ['proposed_officer_name', 'proposed_officer_email', 'proposed_title', 'effective_date'];
     for (const field of requiredFields) {
       if (!body[field]) {
         return new Response(
