@@ -124,22 +124,36 @@ serve(async (req) => {
       return 'board_member';
     }
 
+    const appointmentDate = body.effective_date
+      ? new Date(body.effective_date).toISOString().split('T')[0]
+      : null;
+
+    const executiveMetadata = {
+      proposed_officer_name: body.proposed_officer_name,
+      proposed_officer_email: body.proposed_officer_email || null,
+    };
+
     let executiveId: string;
     if (appointeeUserId) {
       const { data: existingExec } = await supabaseAdmin
         .from('exec_users')
-        .select('id')
+        .select('id, metadata')
         .eq('user_id', appointeeUserId)
         .maybeSingle();
+
       if (existingExec) {
         executiveId = existingExec.id;
         await supabaseAdmin
           .from('exec_users')
           .update({
             title: body.proposed_title,
-            name: body.proposed_officer_name,
-            email: body.proposed_officer_email || null,
+            role: titleToRole(body.proposed_title),
+            appointment_date: appointmentDate,
             updated_at: new Date().toISOString(),
+            metadata: {
+              ...(existingExec.metadata && typeof existingExec.metadata === 'object' ? existingExec.metadata : {}),
+              ...executiveMetadata,
+            },
           })
           .eq('id', executiveId);
       } else {
@@ -149,15 +163,15 @@ serve(async (req) => {
             user_id: appointeeUserId,
             role: titleToRole(body.proposed_title),
             title: body.proposed_title,
-            name: body.proposed_officer_name,
-            email: body.proposed_officer_email || null,
+            appointment_date: appointmentDate,
+            metadata: executiveMetadata,
           })
           .select('id')
           .single();
         if (execInsertErr || !newExec) {
           console.error('Error creating exec_users row:', execInsertErr);
           return new Response(
-            JSON.stringify({ error: 'Could not create executive record. Email may be required.' }),
+            JSON.stringify({ error: 'Could not create executive record.' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
