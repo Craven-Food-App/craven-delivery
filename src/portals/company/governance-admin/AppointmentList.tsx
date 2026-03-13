@@ -73,7 +73,9 @@ interface ExecutiveAppointment {
   id: string;
   proposed_officer_name: string;
   proposed_officer_email?: string;
+  proposed_officer_phone?: string;
   proposed_title: string;
+  position?: string;
   appointment_type: string;
   board_meeting_date?: string;
   effective_date: string;
@@ -84,7 +86,10 @@ interface ExecutiveAppointment {
   equity_details?: string | Record<string, any> | null;
   notes?: string;
   status: string;
+  reporting_to?: string;
+  department?: string;
   board_resolution_id?: string;
+  resolution_id?: string;
   appointment_letter_url?: string;
   board_resolution_url?: string;
   certificate_url?: string;
@@ -670,8 +675,10 @@ const AppointmentList: React.FC = () => {
     initialValues: {
       proposed_officer_name: '',
       proposed_officer_email: '',
+      proposed_officer_phone: '',
       proposed_title: '',
       appointment_type: '',
+      status: '',
       effective_date: null as Date | null,
       board_meeting_date: null as Date | null,
       term_length_months: undefined as number | undefined,
@@ -681,6 +688,8 @@ const AppointmentList: React.FC = () => {
       equity_details: '',
       notes: '',
       formation_mode: false,
+      reporting_to: '',
+      department: '',
     },
   });
 
@@ -689,8 +698,10 @@ const AppointmentList: React.FC = () => {
     editForm.setValues({
       proposed_officer_name: appointment.proposed_officer_name,
       proposed_officer_email: appointment.proposed_officer_email || '',
-      proposed_title: appointment.proposed_title,
-      appointment_type: appointment.appointment_type,
+      proposed_officer_phone: (appointment as any).proposed_officer_phone || '',
+      proposed_title: appointment.proposed_title || (appointment as any).position || '',
+      appointment_type: appointment.appointment_type || 'executive',
+      status: appointment.status || 'pending',
       effective_date: appointment.effective_date ? dayjs(appointment.effective_date).toDate() : null,
       board_meeting_date: appointment.board_meeting_date ? dayjs(appointment.board_meeting_date).toDate() : null,
       term_length_months: appointment.term_length_months || undefined,
@@ -700,29 +711,36 @@ const AppointmentList: React.FC = () => {
       equity_details: serializeDisplayValue(appointment.equity_details),
       notes: appointment.notes || '',
       formation_mode: appointment.formation_mode || false,
+      reporting_to: (appointment as any).reporting_to || '',
+      department: (appointment as any).department || '',
     });
     setEditModalOpen(true);
   };
 
   const handleUpdateAppointment = async (values: typeof editForm.values) => {
     if (!editingAppointment) return;
-    
+
     setUpdating(true);
     try {
       const updateData: any = {
         proposed_officer_name: values.proposed_officer_name,
         proposed_officer_email: values.proposed_officer_email || null,
+        proposed_officer_phone: values.proposed_officer_phone || null,
         proposed_title: values.proposed_title,
+        position: values.proposed_title,
         appointment_type: values.appointment_type,
+        status: values.status || editingAppointment.status,
         effective_date: values.effective_date ? dayjs(values.effective_date).toISOString() : editingAppointment.effective_date,
         board_meeting_date: values.board_meeting_date ? dayjs(values.board_meeting_date).toISOString() : null,
-        term_length_months: values.term_length_months || null,
+        term_length_months: values.term_length_months ?? null,
         authority_granted: values.authority_granted || null,
         compensation_structure: values.compensation_structure || null,
-        equity_included: values.equity_included || false,
+        equity_included: values.equity_included ?? false,
         equity_details: values.equity_details || null,
         notes: values.notes || null,
-        formation_mode: values.formation_mode || false,
+        formation_mode: values.formation_mode ?? false,
+        reporting_to: values.reporting_to || null,
+        department: values.department || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -2052,7 +2070,7 @@ const AppointmentList: React.FC = () => {
         )}
       </Modal>
 
-      {/* Edit Appointment Modal */}
+      {/* Edit Appointment Modal - full edit */}
       <Modal
         opened={editModalOpen}
         onClose={() => {
@@ -2060,122 +2078,187 @@ const AppointmentList: React.FC = () => {
           setEditingAppointment(null);
         }}
         title="Edit Executive Appointment"
-        size="xl"
+        size={1200}
       >
         {editingAppointment && (
           <form onSubmit={editForm.onSubmit(handleUpdateAppointment)}>
-            <Stack gap="md">
-              <TextInput
-                label="Officer Name"
-                required
-                {...editForm.getInputProps('proposed_officer_name')}
-              />
+            <ScrollArea h={600} type="auto" offsetScrollbars>
+              <Stack gap="md" pr="md">
+                <Title order={5}>Officer & contact</Title>
+                <Grid>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Officer Name"
+                      required
+                      {...editForm.getInputProps('proposed_officer_name')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Officer Email"
+                      type="email"
+                      {...editForm.getInputProps('proposed_officer_email')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Officer Phone"
+                      {...editForm.getInputProps('proposed_officer_phone')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Title / Position"
+                      required
+                      {...editForm.getInputProps('proposed_title')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Reporting To"
+                      {...editForm.getInputProps('reporting_to')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Department"
+                      {...editForm.getInputProps('department')}
+                    />
+                  </Grid.Col>
+                </Grid>
 
-              <TextInput
-                label="Officer Email"
-                type="email"
-                {...editForm.getInputProps('proposed_officer_email')}
-              />
+                <Divider />
+                <Title order={5}>Appointment type & status</Title>
+                <Grid>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <Select
+                      label="Appointment Type"
+                      required
+                      data={[
+                        { value: 'officer', label: 'Corporate Officer' },
+                        { value: 'director', label: 'Board Director' },
+                        { value: 'executive', label: 'Executive' },
+                        { value: 'advisor', label: 'Advisor' },
+                        { value: 'initial', label: 'Initial' },
+                        { value: 'reappointment', label: 'Reappointment' },
+                        { value: 'promotion', label: 'Promotion' },
+                        { value: 'lateral', label: 'Lateral' },
+                      ]}
+                      {...editForm.getInputProps('appointment_type')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <Select
+                      label="Status"
+                      data={[
+                        { value: 'DRAFT', label: 'Draft' },
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'SENT_TO_BOARD', label: 'Sent to Board' },
+                        { value: 'APPROVED', label: 'Approved' },
+                        { value: 'BOARD_ADOPTED', label: 'Board Adopted' },
+                        { value: 'AWAITING_SIGNATURES', label: 'Awaiting Signatures' },
+                        { value: 'READY_FOR_SECRETARY_REVIEW', label: 'Ready for Secretary Review' },
+                        { value: 'SECRETARY_APPROVED', label: 'Secretary Approved' },
+                        { value: 'ACTIVATING', label: 'Activating' },
+                        { value: 'ACTIVE', label: 'Active' },
+                        { value: 'REJECTED', label: 'Rejected' },
+                        { value: 'draft', label: 'draft' },
+                        { value: 'authorized_to_offer', label: 'authorized_to_offer' },
+                      ]}
+                      {...editForm.getInputProps('status')}
+                    />
+                  </Grid.Col>
+                </Grid>
 
-              <TextInput
-                label="Title/Position"
-                required
-                {...editForm.getInputProps('proposed_title')}
-              />
+                <Divider />
+                <Title order={5}>Dates & term</Title>
+                <Grid>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <DatePickerInput
+                      label="Effective Date"
+                      required
+                      value={editForm.values.effective_date}
+                      onChange={(value) => editForm.setFieldValue('effective_date', value as any)}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <DatePickerInput
+                      label="Board Meeting Date (Optional)"
+                      value={editForm.values.board_meeting_date}
+                      onChange={(value) => editForm.setFieldValue('board_meeting_date', value as any)}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <NumberInput
+                      label="Term Length (Months)"
+                      min={0}
+                      {...editForm.getInputProps('term_length_months')}
+                    />
+                  </Grid.Col>
+                </Grid>
 
-              <Select
-                label="Appointment Type"
-                required
-                data={[
-                  { value: 'officer', label: 'Corporate Officer' },
-                  { value: 'director', label: 'Board Director' },
-                  { value: 'executive', label: 'Executive' },
-                  { value: 'advisor', label: 'Advisor' },
-                ]}
-                {...editForm.getInputProps('appointment_type')}
-              />
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <DatePickerInput
-                  label="Effective Date"
-                  required
-                  value={editForm.values.effective_date}
-                  onChange={(value) => editForm.setFieldValue('effective_date', value as any)}
-                />
-
-                <DatePickerInput
-                  label="Board Meeting Date (Optional)"
-                  value={editForm.values.board_meeting_date}
-                  onChange={(value) => editForm.setFieldValue('board_meeting_date', value as any)}
-                />
-              </div>
-
-              <NumberInput
-                label="Term Length (Months)"
-                min={0}
-                {...editForm.getInputProps('term_length_months')}
-              />
-
-              <Textarea
-                label="Authority Granted"
-                rows={3}
-                {...editForm.getInputProps('authority_granted')}
-              />
-
-              <Textarea
-                label="Compensation Structure"
-                rows={3}
-                {...editForm.getInputProps('compensation_structure')}
-              />
-
-              <Checkbox
-                label="Equity Included"
-                {...editForm.getInputProps('equity_included', { type: 'checkbox' })}
-              />
-
-              {editForm.values.equity_included && (
+                <Divider />
+                <Title order={5}>Authority & compensation</Title>
                 <Textarea
-                  label="Equity Details"
+                  label="Authority Granted"
                   rows={3}
-                  {...editForm.getInputProps('equity_details')}
+                  {...editForm.getInputProps('authority_granted')}
                 />
-              )}
+                <Textarea
+                  label="Compensation Structure (text or JSON)"
+                  rows={3}
+                  {...editForm.getInputProps('compensation_structure')}
+                />
 
-              <Textarea
-                label="Notes"
-                rows={3}
-                {...editForm.getInputProps('notes')}
-              />
+                <Checkbox
+                  label="Equity Included"
+                  {...editForm.getInputProps('equity_included', { type: 'checkbox' })}
+                />
+                {editForm.values.equity_included && (
+                  <Textarea
+                    label="Equity Details (text or JSON)"
+                    rows={3}
+                    {...editForm.getInputProps('equity_details')}
+                  />
+                )}
 
-              <Checkbox
-                label="Formation Mode (Pre-Incorporation)"
-                {...editForm.getInputProps('formation_mode', { type: 'checkbox' })}
-              />
+                <Divider />
+                <Textarea
+                  label="Notes"
+                  rows={3}
+                  {...editForm.getInputProps('notes')}
+                />
 
-              <Alert color="blue" variant="light">
-                After updating, use the "Regenerate Documents" button to create new documents with the updated information.
-              </Alert>
+                <Checkbox
+                  label="Formation Mode (Pre-Incorporation)"
+                  {...editForm.getInputProps('formation_mode', { type: 'checkbox' })}
+                />
 
-              <Group justify="flex-end" mt="md">
-                <Button
-                  variant="subtle"
-                  onClick={() => {
-                    setEditModalOpen(false);
-                    setEditingAppointment(null);
-                    editForm.reset();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  loading={updating}
-                  leftSection={<IconCheck size={16} />}
-                >
-                  Update Appointment
-                </Button>
-              </Group>
-            </Stack>
+                <Alert color="blue" variant="light">
+                  After updating, use the &quot;Regenerate Documents&quot; button to create new documents with the updated information.
+                </Alert>
+
+                <Group justify="flex-end" mt="md">
+                  <Button
+                    variant="subtle"
+                    onClick={() => {
+                      setEditModalOpen(false);
+                      setEditingAppointment(null);
+                      editForm.reset();
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={updating}
+                    leftSection={<IconCheck size={16} />}
+                  >
+                    Update Appointment
+                  </Button>
+                </Group>
+              </Stack>
+            </ScrollArea>
           </form>
         )}
       </Modal>
