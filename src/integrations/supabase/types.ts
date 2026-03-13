@@ -4504,10 +4504,12 @@ export type Database = {
           created_at: string | null
           expires_at: string
           id: string
+          is_trial: boolean | null
           payment_provider: string | null
           payment_provider_transaction_id: string | null
           plan_id: string | null
           plan_key: string
+          preferred_payment_method: string | null
           processing_fee_cents: number
           status: string
           updated_at: string | null
@@ -4520,10 +4522,12 @@ export type Database = {
           created_at?: string | null
           expires_at: string
           id?: string
+          is_trial?: boolean | null
           payment_provider?: string | null
           payment_provider_transaction_id?: string | null
           plan_id?: string | null
           plan_key: string
+          preferred_payment_method?: string | null
           processing_fee_cents?: number
           status?: string
           updated_at?: string | null
@@ -4536,10 +4540,12 @@ export type Database = {
           created_at?: string | null
           expires_at?: string
           id?: string
+          is_trial?: boolean | null
           payment_provider?: string | null
           payment_provider_transaction_id?: string | null
           plan_id?: string | null
           plan_key?: string
+          preferred_payment_method?: string | null
           processing_fee_cents?: number
           status?: string
           updated_at?: string | null
@@ -12184,46 +12190,128 @@ export type Database = {
         Row: {
           appointed_by: string
           appointment_date: string
+          appointment_letter_url: string | null
           appointment_type: string
+          authority_granted: string | null
+          board_meeting_date: string | null
+          board_resolution_url: string | null
+          bylaws_acknowledgment_url: string | null
+          bylaws_url: string | null
+          certificate_of_incorporation_url: string | null
+          certificate_url: string | null
+          compensation_structure: string | null
+          confidentiality_ip_url: string | null
+          conflict_disclosure_url: string | null
           created_at: string | null
+          created_by: string | null
+          deferred_compensation_url: string | null
           effective_date: string
+          employment_agreement_url: string | null
+          equity_details: Json | null
+          equity_included: boolean | null
+          equity_plan_url: string | null
           executive_id: string
+          fiduciary_ethics_url: string | null
+          formation_mode: boolean | null
           id: string
           notes: string | null
+          officer_indemnification_url: string | null
+          option_rsu_award_url: string | null
           position: string
+          pre_incorporation_consent_url: string | null
           resolution_id: string | null
           status: string
+          stock_subscription_url: string | null
+          term_end: string | null
+          term_length_months: number | null
           updated_at: string | null
         }
         Insert: {
           appointed_by: string
           appointment_date?: string
+          appointment_letter_url?: string | null
           appointment_type: string
+          authority_granted?: string | null
+          board_meeting_date?: string | null
+          board_resolution_url?: string | null
+          bylaws_acknowledgment_url?: string | null
+          bylaws_url?: string | null
+          certificate_of_incorporation_url?: string | null
+          certificate_url?: string | null
+          compensation_structure?: string | null
+          confidentiality_ip_url?: string | null
+          conflict_disclosure_url?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deferred_compensation_url?: string | null
           effective_date: string
+          employment_agreement_url?: string | null
+          equity_details?: Json | null
+          equity_included?: boolean | null
+          equity_plan_url?: string | null
           executive_id: string
+          fiduciary_ethics_url?: string | null
+          formation_mode?: boolean | null
           id?: string
           notes?: string | null
+          officer_indemnification_url?: string | null
+          option_rsu_award_url?: string | null
           position: string
+          pre_incorporation_consent_url?: string | null
           resolution_id?: string | null
           status?: string
+          stock_subscription_url?: string | null
+          term_end?: string | null
+          term_length_months?: number | null
           updated_at?: string | null
         }
         Update: {
           appointed_by?: string
           appointment_date?: string
+          appointment_letter_url?: string | null
           appointment_type?: string
+          authority_granted?: string | null
+          board_meeting_date?: string | null
+          board_resolution_url?: string | null
+          bylaws_acknowledgment_url?: string | null
+          bylaws_url?: string | null
+          certificate_of_incorporation_url?: string | null
+          certificate_url?: string | null
+          compensation_structure?: string | null
+          confidentiality_ip_url?: string | null
+          conflict_disclosure_url?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deferred_compensation_url?: string | null
           effective_date?: string
+          employment_agreement_url?: string | null
+          equity_details?: Json | null
+          equity_included?: boolean | null
+          equity_plan_url?: string | null
           executive_id?: string
+          fiduciary_ethics_url?: string | null
+          formation_mode?: boolean | null
           id?: string
           notes?: string | null
+          officer_indemnification_url?: string | null
+          option_rsu_award_url?: string | null
           position?: string
+          pre_incorporation_consent_url?: string | null
           resolution_id?: string | null
           status?: string
+          stock_subscription_url?: string | null
+          term_end?: string | null
+          term_length_months?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "executive_appointments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "executive_appointments_executive_id_fkey"
             columns: ["executive_id"]
