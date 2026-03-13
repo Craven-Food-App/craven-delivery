@@ -45,19 +45,23 @@ serve(async (req) => {
     }
 
     const grantsFromLedger = allGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
-    const trustShares = Number(capTable.trust_shares || 0);
+    const trustShares = Number((capTable as any).holding_company_shares ?? (capTable as any).trust_shares ?? 0);
     const founderShares = Number(capTable.founder_shares || 0);
     const totalAuthorized = Number(capTable.total_authorized || 70000000);
     
-    // Total issued = Trust + Founder + Grants from ledger
-    const totalIssuedCalculated = trustShares + founderShares + grantsFromLedger;
-    const totalUnissuedCalculated = totalAuthorized - totalIssuedCalculated;
+    // Total issued (raw) = Trust + Founder + Grants from ledger
+    const totalIssuedRaw = trustShares + founderShares + grantsFromLedger;
+
+    // Clamp totals so we never show more issued than authorized
+    const totalIssuedCalculated = Math.min(totalIssuedRaw, totalAuthorized);
+    const totalUnissuedCalculated = Math.max(totalAuthorized - totalIssuedCalculated, 0);
 
     console.log('Recalculating cap table (corrected calculation):', {
       total_authorized: totalAuthorized,
       trust_shares: trustShares,
       founder_shares: founderShares,
       grants_from_ledger: grantsFromLedger,
+      total_issued_raw: totalIssuedRaw,
       total_issued_calculated: totalIssuedCalculated,
       total_unissued_calculated: totalUnissuedCalculated,
       grants_count: allGrants?.length || 0,

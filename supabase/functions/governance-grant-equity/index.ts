@@ -242,7 +242,7 @@ serve(async (req) => {
     }
 
     const grantsFromLedger = existingGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
-    const trustShares = Number(capTableData.trust_shares || 0);
+    const trustShares = Number((capTableData as any).holding_company_shares ?? (capTableData as any).trust_shares ?? 0);
     const founderShares = Number(capTableData.founder_shares || 0);
     const totalAuthorized = Number(capTableData.total_authorized || 70000000);
     
@@ -378,19 +378,23 @@ serve(async (req) => {
     }
 
     const grantsFromLedger = allGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
-    const trustShares = Number(capTableData.trust_shares || 0);
+    const trustShares = Number((capTableData as any).holding_company_shares ?? (capTableData as any).trust_shares ?? 0);
     const founderShares = Number(capTableData.founder_shares || 0);
-    const totalAuthorized = Number(capTableData.total_authorized || 100000000);
+    const totalAuthorized = Number(capTableData.total_authorized || 70000000);
     
-    // Total issued = Trust + Founder + Grants from ledger (now includes the new grant)
-    const totalIssuedCalculated = trustShares + founderShares + grantsFromLedger;
-    const totalUnissuedCalculated = totalAuthorized - totalIssuedCalculated;
+    // Total issued (raw) = Trust + Founder + Grants from ledger (now includes the new grant)
+    const totalIssuedRaw = trustShares + founderShares + grantsFromLedger;
+
+    // Clamp totals so we never show more issued than authorized
+    const totalIssuedCalculated = Math.min(totalIssuedRaw, totalAuthorized);
+    const totalUnissuedCalculated = Math.max(totalAuthorized - totalIssuedCalculated, 0);
 
     console.log('Recalculating cap table (corrected calculation):', {
       total_authorized: totalAuthorized,
       trust_shares: trustShares,
       founder_shares: founderShares,
       grants_from_ledger: grantsFromLedger,
+      total_issued_raw: totalIssuedRaw,
       total_issued_calculated: totalIssuedCalculated,
       total_unissued_calculated: totalUnissuedCalculated,
       grants_count: allGrants?.length || 0,
