@@ -221,7 +221,6 @@ export const ExecutiveAppointmentForm: React.FC = () => {
               <option>CMO</option>
               <option>CRO</option>
               <option>Chief Partnership Officer (CPO)</option>
-              <option>CPO</option>
               <option>CDO</option>
               <option>CISO</option>
               <option>CAO</option>

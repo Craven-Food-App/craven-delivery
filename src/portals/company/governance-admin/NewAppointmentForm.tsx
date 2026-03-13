@@ -227,7 +227,6 @@ const NewAppointmentForm: React.FC = () => {
                       { value: 'CIO', label: 'Chief Information Officer' },
                       { value: 'CMO', label: 'Chief Marketing Officer' },
                       { value: 'CRO', label: 'Chief Revenue Officer' },
-                      { value: 'Chief Partnership Officer (CPO)', label: 'Chief Partnership Officer (CPO)' },
                       { value: 'CPO', label: 'Chief Partnership Officer (CPO)' },
                       { value: 'CDO', label: 'Chief Data Officer' },
                       { value: 'CISO', label: 'Chief Information Security Officer' },
