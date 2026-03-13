@@ -94,12 +94,33 @@ serve(async (req) => {
     // --- Resolve or create exec_users; get executive_id ---
     function titleToRole(title: string): string {
       const t = (title || '').toLowerCase();
+
+      // Core C-suite
       if (t.includes('ceo') || t.includes('chief executive')) return 'ceo';
       if (t.includes('cfo') || t.includes('chief financial')) return 'cfo';
       if (t.includes('coo') || t.includes('chief operating')) return 'coo';
       if (t.includes('cto') || t.includes('chief technology')) return 'cto';
+
+      // Extended C-suite (mapping by function)
+      if (t.includes('chief partnership') || t.includes('cpo')) return 'cpo';
+      if (t.includes('chief marketing') || t.includes('cmo')) return 'cmo';
+      if (t.includes('chief revenue') || t.includes('cro')) return 'cro';
+      if (t.includes('chief legal') || t.includes('clo')) return 'clo';
+      if (t.includes('chief information security') || t.includes('ciso')) return 'ciso';
+      if (t.includes('chief information') || t.includes('cio')) return 'cio';
+      if (t.includes('chief data') || t.includes('cdo')) return 'cdo';
+      if (t.includes('chief administrative') || t.includes('cao')) return 'cao';
+      if (t.includes('chief strategy') || t.includes('cso')) return 'cso';
+      if (t.includes('chief compliance') || t.includes('cco')) return 'cco';
+      if (t.includes('chief brand') || t.includes('cbo')) return 'cbo';
+      if (t.includes('chief experience') || t.includes('cxo')) return 'cxo';
+      if (t.includes('chief people') || t.includes('chief human resources') || t.includes('chro')) return 'chro';
+
+      // Governance roles
       if (t.includes('advisor')) return 'advisor';
       if (t.includes('board')) return 'board_member';
+
+      // Default to board_member so constraint is always satisfied
       return 'board_member';
     }
 
