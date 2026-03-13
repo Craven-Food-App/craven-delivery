@@ -139,6 +139,47 @@ const AppointmentList: React.FC = () => {
     }
   }, [viewModalOpen, selectedAppointment]);
 
+  const serializeDisplayValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  };
+
+  const formatEquityDisplay = (value: unknown): string => {
+    const parsed = (() => {
+      if (value === null || value === undefined) return null;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+      return value;
+    })();
+
+    if (!parsed || typeof parsed !== 'object') {
+      return serializeDisplayValue(parsed);
+    }
+
+    const equity = parsed as Record<string, any>;
+    const lines: string[] = [];
+
+    if (equity.percentage) lines.push(`Percentage: ${equity.percentage}%`);
+    if (equity.share_count) lines.push(`Share Count: ${Number(equity.share_count).toLocaleString()}`);
+    if (equity.exercise_price) lines.push(`Exercise Price: ${equity.exercise_price}`);
+    if (equity.vesting_schedule) lines.push(`Vesting Schedule: ${equity.vesting_schedule}`);
+
+    return lines.length > 0 ? lines.join('\n') : JSON.stringify(equity, null, 2);
+  };
+
   const fetchAppointments = async () => {
     setLoading(true);
     try {
