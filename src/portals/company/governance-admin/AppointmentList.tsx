@@ -1858,7 +1858,7 @@ const AppointmentList: React.FC = () => {
                       </Group>
                       {selectedAppointment.equity_details && (
                         <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                          {selectedAppointment.equity_details}
+                          {formatEquityDisplay(selectedAppointment.equity_details)}
                         </Text>
                       )}
                     </Paper>
