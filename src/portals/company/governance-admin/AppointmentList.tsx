@@ -1450,7 +1450,7 @@ const AppointmentList: React.FC = () => {
             <Text fw={600} size="lg">Appointment Details</Text>
           </Group>
         }
-        size="xl"
+        size={1200}
         styles={{
           body: { padding: 0 },
         }}
