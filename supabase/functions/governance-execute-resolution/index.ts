@@ -168,7 +168,7 @@ serve(async (req) => {
         }
         const shareCount = Number(equityDetails.share_count) || 0;
         if (equityIncluded && shareCount > 0 && user?.id) {
-          const pricePerShare = (equityDetails.exercise_price && String(equityDetails.exercise_price).replace(/[^0-9.]/g, '')) || '0.0001';
+          const pricePerShare = (equityDetails.exercise_price && String(equityDetails.exercise_price).replace(/[^0-9.]/g, '')) || '0.001';
           const effectiveDate = execAppointment.effective_date
             ? new Date(execAppointment.effective_date).toISOString().split('T')[0]
             : new Date().toISOString().split('T')[0];
@@ -179,7 +179,7 @@ serve(async (req) => {
               recipient_user_id: user.id,
               shares_amount: shareCount,
               share_class: 'Common',
-              price_per_share: parseFloat(pricePerShare) || 0.0001,
+              price_per_share: parseFloat(pricePerShare) || 0.001,
               transaction_date: effectiveDate,
               effective_date: effectiveDate,
               resolution_id: resolution_id,

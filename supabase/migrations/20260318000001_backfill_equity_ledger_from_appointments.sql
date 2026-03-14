@@ -46,10 +46,10 @@ BEGIN
     BEGIN
       v_price := (regexp_replace(r.equity_details::jsonb->>'exercise_price', '[^0-9.]', '', 'g'))::numeric;
     EXCEPTION WHEN OTHERS THEN
-      v_price := 0.0001;
+      v_price := 0.001;
     END;
     IF v_price IS NULL OR v_price <= 0 THEN
-      v_price := 0.0001;
+      v_price := 0.001;
     END IF;
 
     -- Resolve user by email
