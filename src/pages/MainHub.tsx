@@ -1576,6 +1576,7 @@ const MainHub: React.FC = () => {
       case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
       case 'cpo': return canCEO || (user?.email && hasFullAccess(user.email));
+      case 'internal-comms': return canCEO || canCFO || canCOO || canCTO || (user?.email && hasFullAccess(user.email));
       case 'hr': return canHR;
       case 'foundational-invites': 
         const allowed = canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
