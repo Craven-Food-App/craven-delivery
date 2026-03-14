@@ -57,7 +57,7 @@ export const useRestaurantData = (restaurantId?: string) => {
         const { data, error } = await query;
 
         if (error) throw error;
-        setRestaurant(data?.[0] ?? null);
+        setRestaurant((data?.[0] as unknown as Restaurant) ?? null);
       } catch (error) {
         console.error('Error fetching restaurant:', error);
       } finally {
