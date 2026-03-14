@@ -1,101 +1,85 @@
 
 
-# Feeder Tier System -- Full Integration Plan
+## CPO Portal Enhancement Plan
 
-## Problem
+### Current Gaps Identified
 
-The tier system spec is defined in `ratingHelpers.ts` but **none of the mobile/feeder UI components actually use it**. There are 4 separate ratings/score components, each with their own hardcoded or mock data, and none query the real rolling metrics from `driver_profiles`.
+1. **No file upload** — The Contract Management "Add Document" modal only saves metadata. The `file_url` and `file_size_bytes` columns exist in `partnership_documents` but are never populated. No storage bucket exists for partnership files.
 
-### Current State (Broken)
-
-| Component | Data Source | Tier Logic |
-|---|---|---|
-| `FeederRatingsTab.tsx` (active in feeder app) | Mock data (all zeros) | None |
-| `DriverRatingsPage.tsx` | Hardcoded (score=95) | Wrong reward system |
-| `RatingsSection.tsx` | Real DB queries | Correct but unused |
-| `score.tsx` (feeder page) | `driver_scores` table | Wrong (0-100 scale) |
-| `ratingHelpers.ts` | N/A (utility) | Correct spec constants |
-
-### Database (Already Exists)
-
-`driver_profiles` already has: `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
-
-`tier_history` table already exists with `feeder_id`, `old_tier`, `new_tier`, `reason`, `created_at`
+2. **Missing CPO features:**
+   - No partner notes/meeting log UI (table exists: `partnership_activities`, but no way to add entries from the UI)
+   - No revenue tracking per partner (no revenue columns or tab)
+   - No task/action items for follow-ups
+   - No communication log or email integration
+   - No partner onboarding checklist
+   - Pipeline has no edit capability (only advance stage or delete)
 
 ---
 
-## Plan
+### What We Will Build
 
-### 1. Rewrite `FeederRatingsTab.tsx` to Use Real Data + Tier Spec
+#### 1. File Upload for Contract Documents
+- Create a `partnership-documents` storage bucket (public: false)
+- Add a file upload dropzone (Mantine `FileInput` or `Dropzone`) to the "Add Document" modal
+- Accept: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG
+- Upload to Supabase Storage, save `file_url` and `file_size_bytes` to the record
+- Add a "View/Download" button on the contracts table for documents with files
 
-Replace the mock data hook with a real Supabase query that pulls from `driver_profiles`:
-- `rolling_rating`, `rolling_completion_rate`, `rolling_on_time_rate`, `rolling_cancel_rate`, `rolling_deliveries`, `rating_tier`
+#### 2. Activity Log Tab (Notes & Meetings)
+- New tab: **Activity Log** in the CPO portal
+- Form to log activities: meeting notes, calls, emails, status updates
+- Links to a partner, includes date/time, description, and activity type
+- Timeline view of all activities across partners
 
-Use `evaluateFeederTier()` and `getNextTier()` from `ratingHelpers.ts` to determine the current tier and next tier requirements.
+#### 3. Partner Onboarding Checklist
+- Add an **Onboarding** tab with configurable checklist items per partner type
+- Default steps: NDA signed, contract executed, integration setup, first order, etc.
+- Track completion per partner
 
-Display:
-- Tier badge (color-coded per spec: white/gold gradient/silver-white/deep blue/black+orange)
-- Current rating with stars
-- Performance Pulse metrics (On-Time, Completion, Cancellation rates from rolling data)
-- Rating breakdown (keep existing star breakdown UI)
-- Next tier progress section showing requirements vs current values
-- Tier benefits list matching the spec exactly
+#### 4. Edit Partner Details
+- Add edit capability to the Pipeline cards (currently only advance/delete)
+- Click a partner card to open an edit modal with all fields
 
-### 2. Update `score.tsx` (Feeder Score Page)
-
-- Replace the `getTier` function (which uses a 0-100 score scale) with `evaluateFeederTier()` from `ratingHelpers.ts`
-- Query `driver_profiles` rolling metrics instead of `driver_scores`
-- Add cancellation rate display (missing from current UI)
-- Add next-tier progress section with deliveries remaining, rating required, etc.
-
-### 3. Consolidate: Remove `DriverRatingsPage.tsx` Usage
-
-- The feeder app already uses `FeederRatingsTab` -- confirm `DriverRatingsPage` is not referenced anywhere active and leave it as-is (no breakage risk)
-
-### 4. Add Tier Badge to Feeder Account Page and Dashboard
-
-- On the account page header, show the current tier badge (icon + name + color)
-- On the main dashboard (home tab), show a small tier indicator near the driver's name/status
-
-### 5. Ensure `RatingsSection.tsx` Stays in Sync
-
-- This component already has correct logic; add the missing `cancellation_rate` metric and ensure it imports thresholds from `ratingHelpers.ts` instead of duplicating them inline
+#### 5. Revenue Tracking
+- Add `revenue_ytd` and `revenue_mtd` columns to `partnerships` table
+- Show revenue metrics on Dashboard and Analytics tabs
+- Allow manual revenue entry per partner
 
 ---
 
-## Technical Details
+### Technical Approach
 
-### Shared Hook: `useFeederTier`
+**Database Migration:**
+- Create `partnership-documents` storage bucket with RLS
+- Add `partnership_onboarding_items` table (partnership_id, step_name, completed, completed_at)
+- Add `revenue_ytd`, `revenue_mtd` columns to `partnerships`
 
-Create a reusable hook that all components can share:
+**New/Updated Files:**
+- `src/portals/cpo/tabs/ContractManagement.tsx` — Add file upload dropzone, download/view buttons
+- `src/portals/cpo/tabs/ActivityLog.tsx` — New tab for logging and viewing activities
+- `src/portals/cpo/tabs/PartnerOnboarding.tsx` — New tab with checklist per partner
+- `src/portals/cpo/tabs/PartnerPipeline.tsx` — Add edit modal for partner details
+- `src/portals/cpo/CPOPortal.tsx` — Add 2 new tabs (Activity Log, Onboarding)
+- `src/portals/cpo/tabs/CPODashboard.tsx` — Add revenue KPIs
+- `src/portals/cpo/tabs/PartnershipAnalytics.tsx` — Add revenue charts
 
-```typescript
-// src/hooks/useFeederTier.ts
-function useFeederTier(userId: string) {
-  // Query driver_profiles for rolling metrics
-  // Call evaluateFeederTier() from ratingHelpers
-  // Return: { tier, metrics, nextTier, loading }
-}
+**Storage bucket SQL:**
+```sql
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('partnership-documents', 'partnership-documents', false);
+
+CREATE POLICY "Authenticated can upload partnership docs"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'partnership-documents');
+
+CREATE POLICY "Authenticated can read partnership docs"  
+  ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'partnership-documents');
 ```
 
-### Files to Modify
-
-1. **`src/hooks/useFeederTier.ts`** -- New shared hook (or update existing `useDriverTier.ts`)
-2. **`src/components/mobile/FeederRatingsTab.tsx`** -- Replace mock data with real queries + full tier UI
-3. **`src/pages/feeder/score.tsx`** -- Fix tier evaluation to use spec thresholds
-4. **`src/components/mobile/FeederAccountPage.tsx`** -- Add tier badge display
-5. **`src/components/mobile/RatingsSection.tsx`** -- Add cancellation rate, import from ratingHelpers
-6. **`src/components/mobile/MobileDriverDashboard.tsx`** -- Add tier indicator to home tab header
-
-### Badge Colors (from spec)
-
-- Feeder: White background, gray text, gray border
-- Gold: Gold gradient, dark gold text
-- Platinum: Silver-white gradient, gray text
-- Diamond: Deep blue gradient, white text
-- Ultimate: Black background, orange (#E8622A) text/border
-
-### No Database Changes Needed
-
-All required columns and tables already exist in the schema.
+**Upload flow in ContractManagement:**
+1. User selects file via `FileInput`
+2. On submit: upload to `partnership-documents/{timestamp}-{filename}`
+3. Get public URL, save to `partnership_documents.file_url`
+4. Display download icon on table rows with files
 
