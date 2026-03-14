@@ -414,6 +414,7 @@ const App = () => {
                   <Route path="/coo" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading COO Portal" />}><COOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/cto/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CTO Portal" />}><CTOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/cxo/*" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CXO Portal" />}><CXOPortal /></Suspense></BusinessAuthGuard>} />
+                  <Route path="/cpo-portal" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading CPO Portal" />}><CPOPortal /></Suspense></BusinessAuthGuard>} />
                   <Route path="/engineering-workspace" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Engineering Workspace" />}><EngineeringWorkspace /></Suspense></BusinessAuthGuard>} />
                   <Route path="/platform-infrastructure" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Platform Hub" />}><PlatformInfrastructureHub /></Suspense></BusinessAuthGuard>} />
                   <Route path="/product-command" element={<BusinessAuthGuard><Suspense fallback={<SuspenseLoader message="Loading Product Command" />}><ProductCommandCenter /></Suspense></BusinessAuthGuard>} />
