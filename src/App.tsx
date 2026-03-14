@@ -147,6 +147,7 @@ const HRPortal = lazy(() => import("./pages/HRPortal"));
 import MainHub from "./pages/MainHub";
 import DepartmentHub from "./pages/DepartmentHub";
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
+const CPOPortal = lazy(() => import("./portals/cpo/CPOPortal"));
 import BusinessAuth from "./pages/BusinessAuth";
 import BusinessAuthWrapper from "./components/BusinessAuthWrapper";
 import BusinessAuthGuard from "./components/BusinessAuthGuard";
