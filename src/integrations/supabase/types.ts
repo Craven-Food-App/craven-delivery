@@ -21057,6 +21057,47 @@ export type Database = {
           },
         ]
       }
+      partnership_onboarding_items: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          partnership_id: string
+          step_name: string
+          step_order: number
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          partnership_id: string
+          step_name: string
+          step_order?: number
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          partnership_id?: string
+          step_name?: string
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_onboarding_items_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnerships: {
         Row: {
           assigned_to: string | null
@@ -21079,7 +21120,9 @@ export type Database = {
           payment_terms: string | null
           priority: string | null
           renewal_date: string | null
+          revenue_mtd: number | null
           revenue_share_percentage: number | null
+          revenue_ytd: number | null
           status: Database["public"]["Enums"]["partnership_status"]
           tags: string[] | null
           updated_at: string
@@ -21106,7 +21149,9 @@ export type Database = {
           payment_terms?: string | null
           priority?: string | null
           renewal_date?: string | null
+          revenue_mtd?: number | null
           revenue_share_percentage?: number | null
+          revenue_ytd?: number | null
           status?: Database["public"]["Enums"]["partnership_status"]
           tags?: string[] | null
           updated_at?: string
@@ -21133,7 +21178,9 @@ export type Database = {
           payment_terms?: string | null
           priority?: string | null
           renewal_date?: string | null
+          revenue_mtd?: number | null
           revenue_share_percentage?: number | null
+          revenue_ytd?: number | null
           status?: Database["public"]["Enums"]["partnership_status"]
           tags?: string[] | null
           updated_at?: string
