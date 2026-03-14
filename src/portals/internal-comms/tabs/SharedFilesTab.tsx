@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Upload, Table, Input, Empty, Spin, message, Typography, Tag, Tooltip } from 'antd';
+import { Button, Upload, Table, Input, Empty, Spin, message, Typography, Tooltip } from 'antd';
 import { UploadOutlined, DownloadOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, FileExcelOutlined, SearchOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -14,7 +14,6 @@ interface SharedFile {
   uploaded_by: string;
   created_at: string;
   uploader_name?: string;
-  message_id: string;
 }
 
 const fileIcon = (type: string | null) => {
@@ -39,6 +38,19 @@ const SharedFilesTab: React.FC = () => {
   const [search, setSearch] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
+    if (userIds.length === 0) return new Map();
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+    const map = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      map.set(p.user_id, p.full_name || p.email || 'Unknown');
+    });
+    return map;
+  }, []);
+
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
@@ -52,11 +64,7 @@ const SharedFilesTab: React.FC = () => {
 
       if (data && data.length > 0) {
         const uploaderIds = [...new Set(data.map((f: any) => f.uploaded_by))];
-        const { data: profiles } = await supabase
-          .from('exec_users')
-          .select('user_id, full_name')
-          .in('user_id', uploaderIds);
-        const nameMap = new Map(profiles?.map((p: any) => [p.user_id, p.full_name]) || []);
+        const nameMap = await getNameMap(uploaderIds);
         setFiles(data.map((f: any) => ({ ...f, uploader_name: nameMap.get(f.uploaded_by) || 'Unknown' })));
       } else {
         setFiles([]);
@@ -66,7 +74,7 @@ const SharedFilesTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getNameMap]);
 
   useEffect(() => {
     const init = async () => {
@@ -94,26 +102,26 @@ const SharedFilesTab: React.FC = () => {
       // Create a placeholder message for standalone file uploads
       const { data: msgData, error: msgError } = await supabase
         .from('internal_messages')
-        .insert({
+        .insert([{
           sender_id: currentUser.id,
           body: `Shared file: ${file.name}`,
-          channel: 'direct',
+          channel: 'direct' as const,
           recipient_ids: [currentUser.id],
           read_by: [currentUser.id],
-        })
+        }])
         .select('id')
         .single();
 
       if (msgError) throw msgError;
 
-      const { error: attachError } = await supabase.from('internal_message_attachments').insert({
+      const { error: attachError } = await supabase.from('internal_message_attachments').insert([{
         message_id: msgData.id,
         file_name: file.name,
         file_url: urlData.publicUrl,
         file_size_bytes: file.size,
         file_type: file.type,
         uploaded_by: currentUser.id,
-      });
+      }]);
       if (attachError) throw attachError;
 
       message.success(`${file.name} uploaded`);
@@ -154,12 +162,14 @@ const SharedFilesTab: React.FC = () => {
       dataIndex: 'uploader_name',
       key: 'uploader',
       width: 150,
+      responsive: ['md'] as any,
     },
     {
       title: 'Date',
       dataIndex: 'created_at',
       key: 'date',
       width: 160,
+      responsive: ['md'] as any,
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
@@ -184,7 +194,7 @@ const SharedFilesTab: React.FC = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <Text strong style={{ fontSize: 16 }}>Shared Files</Text>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Input
             prefix={<SearchOutlined />}
             placeholder="Search files..."
@@ -193,7 +203,7 @@ const SharedFilesTab: React.FC = () => {
             style={{ width: 200 }}
           />
           <Upload
-            beforeUpload={(file) => { handleUpload(file); return false; }}
+            beforeUpload={(file) => { handleUpload(file as File); return false; }}
             showUploadList={false}
             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt"
           >

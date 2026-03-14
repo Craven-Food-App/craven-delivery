@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Input, List, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Card, Badge, Tooltip } from 'antd';
-import { NotificationOutlined, PushpinOutlined, PlusOutlined, EyeOutlined, CheckOutlined } from '@ant-design/icons';
+import { Button, Input, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Card, Badge, Tooltip } from 'antd';
+import { PushpinOutlined, PlusOutlined, EyeOutlined, CheckOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 
 const { TextArea } = Input;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface Announcement {
   id: string;
@@ -33,6 +33,19 @@ const AnnouncementsTab: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [form] = Form.useForm();
 
+  const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
+    if (userIds.length === 0) return new Map();
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+    const map = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      map.set(p.user_id, p.full_name || p.email || 'Unknown');
+    });
+    return map;
+  }, []);
+
   const fetchAnnouncements = useCallback(async () => {
     setLoading(true);
     try {
@@ -47,11 +60,7 @@ const AnnouncementsTab: React.FC = () => {
 
       if (data && data.length > 0) {
         const authorIds = [...new Set(data.map((a: any) => a.author_id))];
-        const { data: profiles } = await supabase
-          .from('exec_users')
-          .select('user_id, full_name')
-          .in('user_id', authorIds);
-        const nameMap = new Map(profiles?.map((p: any) => [p.user_id, p.full_name]) || []);
+        const nameMap = await getNameMap(authorIds);
         setAnnouncements(data.map((a: any) => ({ ...a, author_name: nameMap.get(a.author_id) || 'Unknown' })));
       } else {
         setAnnouncements([]);
@@ -61,7 +70,7 @@ const AnnouncementsTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getNameMap]);
 
   useEffect(() => {
     const init = async () => {
@@ -85,14 +94,14 @@ const AnnouncementsTab: React.FC = () => {
     if (!currentUser) return;
     setSending(true);
     try {
-      const { error } = await supabase.from('internal_announcements').insert({
+      const { error } = await supabase.from('internal_announcements').insert([{
         title: values.title,
         body: values.body,
-        priority: values.priority || 'normal',
+        priority: (values.priority || 'normal') as 'normal' | 'urgent' | 'critical',
         author_id: currentUser.id,
         pinned: values.pinned || false,
         read_by: [currentUser.id],
-      });
+      }]);
       if (error) throw error;
       message.success('Announcement published');
       form.resetFields();
@@ -143,7 +152,7 @@ const AnnouncementsTab: React.FC = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       {a.pinned && <PushpinOutlined style={{ color: '#FF6B35' }} />}
                       <Text strong style={{ fontSize: 15 }}>{a.title}</Text>
                       <Tag color={priorityColors[a.priority]}>{a.priority}</Tag>
@@ -152,7 +161,7 @@ const AnnouncementsTab: React.FC = () => {
                     <div style={{ color: '#4b5563', fontSize: 13, whiteSpace: 'pre-wrap', marginBottom: 8 }}>
                       {a.body}
                     </div>
-                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#9ca3af' }}>
+                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#9ca3af', flexWrap: 'wrap' }}>
                       <span>By {a.author_name}</span>
                       <span>{new Date(a.created_at).toLocaleString()}</span>
                       <Tooltip title="Read receipts">
@@ -168,13 +177,7 @@ const AnnouncementsTab: React.FC = () => {
         </div>
       )}
 
-      <Modal
-        title="New Announcement"
-        open={createOpen}
-        onCancel={() => setCreateOpen(false)}
-        footer={null}
-        width={600}
-      >
+      <Modal title="New Announcement" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={600}>
         <Form form={form} onFinish={handleCreate} layout="vertical">
           <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Enter title' }]}>
             <Input placeholder="Announcement title" />
@@ -190,7 +193,7 @@ const AnnouncementsTab: React.FC = () => {
                 { value: 'critical', label: '🚨 Critical' },
               ]} />
             </Form.Item>
-            <Form.Item name="pinned" label="Pinned" valuePropName="checked" style={{ flex: 1 }}>
+            <Form.Item name="pinned" label="Pinned" style={{ flex: 1 }}>
               <Select defaultValue={false} options={[
                 { value: false, label: 'No' },
                 { value: true, label: '📌 Yes' },

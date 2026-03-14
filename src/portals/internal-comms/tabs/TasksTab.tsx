@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Table, Tag, Modal, Form, Input, Select, DatePicker, Empty, Spin, message, Typography, Segmented } from 'antd';
-import { PlusOutlined, CheckOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 
 const { TextArea } = Input;
@@ -21,17 +21,10 @@ interface Task {
   assigner_name?: string;
 }
 
-interface ExecUser {
+interface Recipient {
   user_id: string;
-  full_name: string;
-  role: string;
+  label: string;
 }
-
-const statusColors: Record<string, string> = {
-  pending: 'default',
-  in_progress: 'processing',
-  completed: 'success',
-};
 
 const priorityColors: Record<string, string> = {
   low: 'default',
@@ -46,11 +39,24 @@ const TasksTab: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [execUsers, setExecUsers] = useState<ExecUser[]>([]);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [filter, setFilter] = useState<string>('assigned_to_me');
   const [form] = Form.useForm();
 
-  const fetchTasks = useCallback(async (userId?: string) => {
+  const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
+    if (userIds.length === 0) return new Map();
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+    const map = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      map.set(p.user_id, p.full_name || p.email || 'Unknown');
+    });
+    return map;
+  }, []);
+
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -63,11 +69,7 @@ const TasksTab: React.FC = () => {
 
       if (data && data.length > 0) {
         const userIds = [...new Set([...data.map((t: any) => t.assigned_to), ...data.map((t: any) => t.assigned_by)])];
-        const { data: profiles } = await supabase
-          .from('exec_users')
-          .select('user_id, full_name')
-          .in('user_id', userIds);
-        const nameMap = new Map(profiles?.map((p: any) => [p.user_id, p.full_name]) || []);
+        const nameMap = await getNameMap(userIds);
         setTasks(data.map((t: any) => ({
           ...t,
           assignee_name: nameMap.get(t.assigned_to) || 'Unknown',
@@ -81,40 +83,49 @@ const TasksTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getNameMap]);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
+      // Get exec users for assignee picker
       const { data: execs } = await supabase
         .from('exec_users')
-        .select('user_id, full_name, role');
-      setExecUsers(execs || []);
+        .select('user_id, role, title');
 
-      await fetchTasks(user?.id);
+      if (execs && execs.length > 0) {
+        const userIds = execs.map((e: any) => e.user_id);
+        const nameMap = await getNameMap(userIds);
+        setRecipients(execs.map((e: any) => ({
+          user_id: e.user_id,
+          label: `${nameMap.get(e.user_id) || e.role} (${e.title || e.role})`,
+        })));
+      }
+
+      await fetchTasks();
     };
     init();
-  }, [fetchTasks]);
+  }, [fetchTasks, getNameMap]);
 
   const handleCreate = async (values: any) => {
     if (!currentUser) return;
     setSaving(true);
     try {
-      const { error } = await supabase.from('internal_tasks').insert({
+      const { error } = await supabase.from('internal_tasks').insert([{
         title: values.title,
         description: values.description || null,
         assigned_to: values.assigned_to,
         assigned_by: currentUser.id,
-        priority: values.priority || 'medium',
+        priority: (values.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
-      });
+      }]);
       if (error) throw error;
       message.success('Task created');
       form.resetFields();
       setCreateOpen(false);
-      fetchTasks(currentUser.id);
+      fetchTasks();
     } catch (err: any) {
       message.error('Failed: ' + err.message);
     } finally {
@@ -129,8 +140,8 @@ const TasksTab: React.FC = () => {
       const { error } = await supabase.from('internal_tasks').update(updates).eq('id', taskId);
       if (error) throw error;
       message.success('Status updated');
-      fetchTasks(currentUser?.id);
-    } catch (err: any) {
+      fetchTasks();
+    } catch {
       message.error('Update failed');
     }
   };
@@ -199,7 +210,7 @@ const TasksTab: React.FC = () => {
       responsive: ['md'] as any,
       render: (d: string | null) => {
         if (!d) return '-';
-        const isOverdue = new Date(d) < new Date() ;
+        const isOverdue = new Date(d) < new Date();
         return <Text type={isOverdue ? 'danger' : undefined}>{new Date(d).toLocaleDateString()}</Text>;
       },
     },
@@ -238,13 +249,7 @@ const TasksTab: React.FC = () => {
         />
       )}
 
-      <Modal
-        title="Create Task"
-        open={createOpen}
-        onCancel={() => setCreateOpen(false)}
-        footer={null}
-        width={500}
-      >
+      <Modal title="Create Task" open={createOpen} onCancel={() => setCreateOpen(false)} footer={null} width={500}>
         <Form form={form} onFinish={handleCreate} layout="vertical">
           <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Enter title' }]}>
             <Input placeholder="Task title" />
@@ -259,7 +264,7 @@ const TasksTab: React.FC = () => {
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
               }
-              options={execUsers.map(e => ({ value: e.user_id, label: `${e.full_name} (${e.role})` }))}
+              options={recipients.map(r => ({ value: r.user_id, label: r.label }))}
             />
           </Form.Item>
           <div style={{ display: 'flex', gap: 12 }}>

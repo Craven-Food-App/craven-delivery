@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Upload, Empty, Spin, message, Typography, Badge } from 'antd';
-import { SendOutlined, PaperClipOutlined, UserOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
+import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge } from 'antd';
+import { SendOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 
 const { TextArea } = Input;
@@ -19,12 +19,9 @@ interface Message {
   sender_name?: string;
 }
 
-interface ExecUser {
-  id: string;
+interface Recipient {
   user_id: string;
-  full_name: string;
-  role: string;
-  email: string;
+  label: string;
 }
 
 const MessagesTab: React.FC = () => {
@@ -33,11 +30,25 @@ const MessagesTab: React.FC = () => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [execUsers, setExecUsers] = useState<ExecUser[]>([]);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [replyBody, setReplyBody] = useState('');
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
   const [form] = Form.useForm();
+
+  const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
+    if (userIds.length === 0) return new Map();
+    // Get names from user_profiles
+    const { data: profiles } = await supabase
+      .from('user_profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+    const map = new Map<string, string>();
+    (profiles || []).forEach((p: any) => {
+      map.set(p.user_id, p.full_name || p.email || 'Unknown');
+    });
+    return map;
+  }, []);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
@@ -51,20 +62,13 @@ const MessagesTab: React.FC = () => {
 
       if (error) throw error;
 
-      // Fetch sender names
       if (data && data.length > 0) {
         const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-        const { data: profiles } = await supabase
-          .from('exec_users')
-          .select('user_id, full_name')
-          .in('user_id', senderIds);
-
-        const nameMap = new Map(profiles?.map((p: any) => [p.user_id, p.full_name]) || []);
-        const enriched = data.map((m: any) => ({
+        const nameMap = await getNameMap(senderIds);
+        setMessages(data.map((m: any) => ({
           ...m,
           sender_name: nameMap.get(m.sender_id) || 'Unknown',
-        }));
-        setMessages(enriched);
+        })));
       } else {
         setMessages([]);
       }
@@ -73,23 +77,31 @@ const MessagesTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getNameMap]);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
+      // Get exec users for recipient picker
       const { data: execs } = await supabase
         .from('exec_users')
-        .select('id, user_id, full_name, role, email');
-      setExecUsers(execs || []);
+        .select('user_id, role, title');
+
+      if (execs && execs.length > 0) {
+        const userIds = execs.map((e: any) => e.user_id);
+        const nameMap = await getNameMap(userIds);
+        setRecipients(execs.map((e: any) => ({
+          user_id: e.user_id,
+          label: `${nameMap.get(e.user_id) || e.role} (${e.title || e.role})`,
+        })));
+      }
 
       await fetchMessages();
     };
     init();
 
-    // Realtime subscription
     const channel = supabase
       .channel('internal-messages-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'internal_messages' }, () => {
@@ -98,20 +110,20 @@ const MessagesTab: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchMessages]);
+  }, [fetchMessages, getNameMap]);
 
   const handleSend = async (values: any) => {
     if (!currentUser) return;
     setSending(true);
     try {
-      const { error } = await supabase.from('internal_messages').insert({
+      const { error } = await supabase.from('internal_messages').insert([{
         sender_id: currentUser.id,
         subject: values.subject || null,
         body: values.body,
-        channel: values.recipients?.length > 1 ? 'group' : 'direct',
+        channel: (values.recipients?.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
         recipient_ids: values.recipients,
         read_by: [currentUser.id],
-      });
+      }]);
       if (error) throw error;
       message.success('Message sent');
       form.resetFields();
@@ -126,41 +138,37 @@ const MessagesTab: React.FC = () => {
 
   const openThread = async (msg: Message) => {
     setSelectedMessage(msg);
-    // Mark as read
     if (currentUser && !msg.read_by.includes(currentUser.id)) {
       await supabase.from('internal_messages').update({
         read_by: [...msg.read_by, currentUser.id],
       }).eq('id', msg.id);
     }
-    // Fetch thread replies
     const { data } = await supabase
       .from('internal_messages')
       .select('*')
       .eq('parent_id', msg.id)
       .order('created_at', { ascending: true });
 
-    if (data) {
+    if (data && data.length > 0) {
       const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-      const { data: profiles } = await supabase
-        .from('exec_users')
-        .select('user_id, full_name')
-        .in('user_id', senderIds.length > 0 ? senderIds : ['none']);
-      const nameMap = new Map(profiles?.map((p: any) => [p.user_id, p.full_name]) || []);
+      const nameMap = await getNameMap(senderIds);
       setThreadMessages(data.map((m: any) => ({ ...m, sender_name: nameMap.get(m.sender_id) || 'Unknown' })));
+    } else {
+      setThreadMessages([]);
     }
   };
 
   const sendReply = async () => {
     if (!currentUser || !selectedMessage || !replyBody.trim()) return;
     try {
-      const { error } = await supabase.from('internal_messages').insert({
+      const { error } = await supabase.from('internal_messages').insert([{
         sender_id: currentUser.id,
         body: replyBody,
-        channel: selectedMessage.channel,
+        channel: selectedMessage.channel as 'direct' | 'group',
         parent_id: selectedMessage.id,
         recipient_ids: selectedMessage.recipient_ids,
         read_by: [currentUser.id],
-      });
+      }]);
       if (error) throw error;
       setReplyBody('');
       openThread(selectedMessage);
@@ -207,7 +215,7 @@ const MessagesTab: React.FC = () => {
                   </Avatar>
                 }
                 title={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     {isUnread(msg) && <Badge dot color="#FF6B35" />}
                     <Text strong={!!isUnread(msg)}>{msg.subject || '(No subject)'}</Text>
                     <Tag color={msg.channel === 'group' ? 'blue' : 'default'} style={{ fontSize: 10 }}>
@@ -233,21 +241,15 @@ const MessagesTab: React.FC = () => {
       )}
 
       {/* Compose Modal */}
-      <Modal
-        title="New Message"
-        open={composeOpen}
-        onCancel={() => setComposeOpen(false)}
-        footer={null}
-        width={600}
-      >
+      <Modal title="New Message" open={composeOpen} onCancel={() => setComposeOpen(false)} footer={null} width={600}>
         <Form form={form} onFinish={handleSend} layout="vertical">
           <Form.Item name="recipients" label="To" rules={[{ required: true, message: 'Select recipients' }]}>
             <Select
               mode="multiple"
               placeholder="Select recipients"
-              options={execUsers
-                .filter(e => e.user_id !== currentUser?.id)
-                .map(e => ({ value: e.user_id, label: `${e.full_name} (${e.role})` }))}
+              options={recipients
+                .filter(r => r.user_id !== currentUser?.id)
+                .map(r => ({ value: r.user_id, label: r.label }))}
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
               }
