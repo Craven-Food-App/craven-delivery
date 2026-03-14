@@ -581,9 +581,9 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_options").insert(
             optData.map((o: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              name: o.name,
-              position: o.position,
-              values: o.values,
+              name: o.name as string,
+              position: o.position as number,
+              values: o.values as string[],
             }))
           );
         }
