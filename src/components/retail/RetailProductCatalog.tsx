@@ -538,15 +538,11 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
       .update({ is_available: !product.is_available })
       .eq("id", product.id)
       .then(({ error }) => {
-        if (error) throw error;
+        if (error) { console.error(error); toast.error("Failed to update product"); return; }
         setProducts((prev) =>
           prev.map((p) => (p.id === productId ? { ...p, is_available: !p.is_available } : p))
         );
         toast.success(`${product.name} is now ${!product.is_available ? "active" : "hidden"}`);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to update product");
       });
   };
 
