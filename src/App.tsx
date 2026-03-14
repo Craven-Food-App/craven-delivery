@@ -203,6 +203,7 @@ const AdminGuide = lazy(() => import("./pages/AdminGuide"));
 const RestaurantGuide = lazy(() => import("./pages/RestaurantGuide"));
 const DriverGuide = lazy(() => import("./pages/DriverGuide"));
 const InviteFriends = lazy(() => import("./pages/InviteFriends"));
+const InternalCommsPortal = lazy(() => import("./portals/internal-comms/InternalCommsPortal"));
 
 const queryClient = new QueryClient();
 
