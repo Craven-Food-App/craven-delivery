@@ -226,10 +226,10 @@ const MenuManagerDashboard = ({ restaurantId }: MenuManagerDashboardProps) => {
           const { id: _id, created_at: _c, updated_at: _u, ...rest } = row as Record<string, unknown>;
           await supabase.from("menu_items").insert({
             ...rest,
-            name: `${row.name} (Copy)`,
+            name: `${(rest as any).name} (Copy)`,
             restaurant_id: restaurantId,
             category_id: newCat.id,
-          });
+          } as any);
         }
       }
       toast.success("Category duplicated");

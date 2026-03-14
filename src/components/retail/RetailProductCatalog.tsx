@@ -563,7 +563,7 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           ...rest,
           name: `${rest.name as string} (Copy)`,
           is_available: false,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -573,10 +573,10 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_images").insert(
             imgData.map((img: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              image_url: img.image_url,
-              alt_text: img.alt_text,
-              display_order: img.display_order,
-              is_primary: img.is_primary,
+              image_url: img.image_url as string,
+              alt_text: img.alt_text as string,
+              display_order: img.display_order as number,
+              is_primary: img.is_primary as boolean,
             }))
           );
         }

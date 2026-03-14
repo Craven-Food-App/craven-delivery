@@ -13,7 +13,7 @@ import SlideToConfirm from '@/components/SlideToConfirm';
 import FullscreenCamera from './FullscreenCamera';
 
 // Ensure BarcodeDetector is available; pre-load WASM when using polyfill.
-async function getBarcodeDetector(): Promise<{ new (opts: { formats: string[] }): any } | null> {
+async function getBarcodeDetector(): Promise<any> {
   const native = (window as any).BarcodeDetector;
   if (native) return native;
   try {

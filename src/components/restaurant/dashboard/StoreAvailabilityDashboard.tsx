@@ -174,7 +174,7 @@ const StoreAvailabilityDashboard = ({ restaurantId: restaurantIdProp }: StoreAva
         })
         .eq('id', restaurant.id);
       if (error) throw error;
-      await supabase.from('merchant_activity_log').insert({
+      await (supabase.from as any)('merchant_activity_log').insert({
         restaurant_id: restaurant.id,
         actor_id: user?.id ?? null,
         action: 'store_status_change',
