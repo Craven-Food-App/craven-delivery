@@ -71,7 +71,7 @@ interface HubSection {
 const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
   switch (deptId) {
     case "executive":
-      return ["ceo", "admin", "company", "investors", "cxo", "cfo"].includes(portalId);
+      return ["ceo", "admin", "company", "investors", "cxo", "cfo", "cpo"].includes(portalId);
     case "operations":
       return [
         "coo",
