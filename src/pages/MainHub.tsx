@@ -1714,6 +1714,21 @@ const MainHub: React.FC = () => {
               marginLeft: 16,
             }}
           >
+            <Tooltip title="Internal Communications">
+              <Button
+                type="text"
+                icon={<MessageOutlined style={{ fontSize: 18 }} />}
+                onClick={() => navigate('/hub/internal-comms')}
+                style={{
+                  color: '#FF6B35',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            </Tooltip>
             {employeeInfo && (
               <div
                 style={{
