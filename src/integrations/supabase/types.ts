@@ -16662,6 +16662,213 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_announcements: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          pinned: boolean
+          priority: Database["public"]["Enums"]["announcement_priority"]
+          read_by: string[]
+          title: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pinned?: boolean
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          read_by?: string[]
+          title: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pinned?: boolean
+          priority?: Database["public"]["Enums"]["announcement_priority"]
+          read_by?: string[]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_announcements_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      internal_message_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          message_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          message_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          message_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_message_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      internal_messages: {
+        Row: {
+          body: string
+          channel: Database["public"]["Enums"]["internal_message_channel"]
+          created_at: string
+          id: string
+          parent_id: string | null
+          read_by: string[]
+          recipient_ids: string[]
+          sender_id: string
+          subject: string | null
+        }
+        Insert: {
+          body: string
+          channel?: Database["public"]["Enums"]["internal_message_channel"]
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          read_by?: string[]
+          recipient_ids?: string[]
+          sender_id: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: Database["public"]["Enums"]["internal_message_channel"]
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          read_by?: string[]
+          recipient_ids?: string[]
+          sender_id?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "internal_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      internal_tasks: {
+        Row: {
+          assigned_by: string
+          assigned_to: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          message_id: string | null
+          priority: Database["public"]["Enums"]["internal_task_priority"]
+          status: Database["public"]["Enums"]["internal_task_status"]
+          title: string
+        }
+        Insert: {
+          assigned_by: string
+          assigned_to: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          message_id?: string | null
+          priority?: Database["public"]["Enums"]["internal_task_priority"]
+          status?: Database["public"]["Enums"]["internal_task_status"]
+          title: string
+        }
+        Update: {
+          assigned_by?: string
+          assigned_to?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          message_id?: string | null
+          priority?: Database["public"]["Enums"]["internal_task_priority"]
+          status?: Database["public"]["Enums"]["internal_task_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_tasks_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "internal_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "internal_tasks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "internal_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investment_opportunities: {
         Row: {
           banner_url: string | null
@@ -31553,6 +31760,7 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_priority: "normal" | "urgent" | "critical"
       cfo_eval_status: "active" | "completed" | "cancelled"
       cfo_gate_code:
         | "G1_FINANCIAL_SNAPSHOT"
@@ -31584,6 +31792,9 @@ export type Database = {
         | "failed"
         | "auto_failed"
       feeder_tier: "Feeder" | "Gold" | "Platinum" | "Diamond" | "Ultimate"
+      internal_message_channel: "direct" | "group"
+      internal_task_priority: "low" | "medium" | "high" | "urgent"
+      internal_task_status: "pending" | "in_progress" | "completed"
       menu_preparation_status: "not_started" | "in_progress" | "ready"
       merchant_category:
         | "restaurant"
@@ -31800,6 +32011,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_priority: ["normal", "urgent", "critical"],
       cfo_eval_status: ["active", "completed", "cancelled"],
       cfo_gate_code: [
         "G1_FINANCIAL_SNAPSHOT",
@@ -31835,6 +32047,9 @@ export const Constants = {
         "auto_failed",
       ],
       feeder_tier: ["Feeder", "Gold", "Platinum", "Diamond", "Ultimate"],
+      internal_message_channel: ["direct", "group"],
+      internal_task_priority: ["low", "medium", "high", "urgent"],
+      internal_task_status: ["pending", "in_progress", "completed"],
       menu_preparation_status: ["not_started", "in_progress", "ready"],
       merchant_category: [
         "restaurant",
