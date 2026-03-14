@@ -236,7 +236,7 @@ const ActivityLog: React.FC = () => {
           <DateTimePicker
             label="Date & Time"
             value={formData.performed_at}
-            onChange={v => setFormData(d => ({ ...d, performed_at: (v as Date) || new Date() }))}
+            onChange={v => setFormData(d => ({ ...d, performed_at: v ? new Date(v) : new Date() }))}
           />
           <Group justify="flex-end">
             <Button variant="default" onClick={close}>Cancel</Button>
