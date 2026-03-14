@@ -111,10 +111,10 @@ const PartnershipAnalytics: React.FC = () => {
               <div key={type}>
                 <Group justify="space-between" mb={4}>
                   <Text size="sm">{typeLabels[type] || type}</Text>
-                  <Text size="sm" fw={600}>{count}</Text>
+                  <Text size="sm" fw={600}>{count as number}</Text>
                 </Group>
                 <Progress
-                  value={partnerships.length > 0 ? (count / partnerships.length) * 100 : 0}
+                  value={partnerships.length > 0 ? ((count as number) / partnerships.length) * 100 : 0}
                   color="orange"
                   size="sm"
                 />
@@ -135,7 +135,7 @@ const PartnershipAnalytics: React.FC = () => {
                 <Badge color={statusColors[status] || 'gray'} variant="light">
                   {status.replace('_', ' ')}
                 </Badge>
-                <Text fw={600}>{count}</Text>
+                <Text fw={600}>{count as number}</Text>
               </Group>
             ))}
             {Object.keys(byStatus).length === 0 && (

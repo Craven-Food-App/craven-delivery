@@ -37,6 +37,7 @@
     "node_modules/playwright",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/__tests__/e2e/**"
   ]
 }

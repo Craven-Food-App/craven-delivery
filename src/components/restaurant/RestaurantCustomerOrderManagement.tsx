@@ -76,7 +76,7 @@ export const RestaurantCustomerOrderManagement = ({ restaurantId, playSoundForNe
     const subscription = supabase
       .channel('orders_changes')
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',

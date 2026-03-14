@@ -425,7 +425,7 @@ export default function RetailInventoryDashboard({ restaurantId, restaurantType 
         product_image_url: (row.menu_items as { image_url?: string | null } | null)?.image_url ?? null,
         product_is_available: (row.menu_items as { is_available?: boolean } | null)?.is_available,
         category_name: (row.menu_items as { menu_categories?: { name?: string } | null } | null)?.menu_categories?.name || "Uncategorized",
-      })) as InventoryItem;
+      })) as unknown as InventoryItem[];
 
       setItems(mapped);
 

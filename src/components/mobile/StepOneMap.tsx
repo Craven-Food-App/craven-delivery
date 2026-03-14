@@ -112,7 +112,7 @@ export const StepOneMap: React.FC<StepOneMapProps> = ({
         const destination = destCoords ?? fallbackCenter;
         const hasRealDestination = !!destCoords;
         const shouldFetchRoute = hasDriverLocation && destCoords && (
-          Math.abs((origin[0] - destination[0]) as number) > 0.01 || Math.abs((origin[1] - destination[1]) as number) > 0.01
+          Math.abs(Number(origin[0]) - Number(destination[0])) > 0.01 || Math.abs(Number(origin[1]) - Number(destination[1])) > 0.01
         );
 
         map.current = new mapboxgl.Map({

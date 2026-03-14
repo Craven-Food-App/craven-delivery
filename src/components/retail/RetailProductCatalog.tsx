@@ -538,15 +538,11 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
       .update({ is_available: !product.is_available })
       .eq("id", product.id)
       .then(({ error }) => {
-        if (error) throw error;
+        if (error) { console.error(error); toast.error("Failed to update product"); return; }
         setProducts((prev) =>
           prev.map((p) => (p.id === productId ? { ...p, is_available: !p.is_available } : p))
         );
         toast.success(`${product.name} is now ${!product.is_available ? "active" : "hidden"}`);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to update product");
       });
   };
 
@@ -563,7 +559,7 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           ...rest,
           name: `${rest.name as string} (Copy)`,
           is_available: false,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -573,10 +569,10 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_images").insert(
             imgData.map((img: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              image_url: img.image_url,
-              alt_text: img.alt_text,
-              display_order: img.display_order,
-              is_primary: img.is_primary,
+              image_url: img.image_url as string,
+              alt_text: img.alt_text as string,
+              display_order: img.display_order as number,
+              is_primary: img.is_primary as boolean,
             }))
           );
         }
@@ -585,9 +581,9 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_options").insert(
             optData.map((o: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              name: o.name,
-              position: o.position,
-              values: o.values,
+              name: o.name as string,
+              position: o.position as number,
+              values: o.values as string[],
             }))
           );
         }
@@ -596,21 +592,21 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_variants").insert(
             varData.map((v: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              title: v.title,
-              option1_name: v.option1_name,
-              option1_value: v.option1_value,
-              option2_name: v.option2_name,
-              option2_value: v.option2_value,
-              option3_name: v.option3_name,
-              option3_value: v.option3_value,
+              title: v.title as string,
+              option1_name: v.option1_name as string,
+              option1_value: v.option1_value as string,
+              option2_name: v.option2_name as string,
+              option2_value: v.option2_value as string,
+              option3_name: v.option3_name as string,
+              option3_value: v.option3_value as string,
               sku: (v.sku as string) ? `${v.sku}-COPY` : null,
               barcode: null,
-              price_cents: v.price_cents,
-              compare_at_price_cents: v.compare_at_price_cents,
-              cost_price_cents: v.cost_price_cents,
+              price_cents: v.price_cents as number,
+              compare_at_price_cents: v.compare_at_price_cents as number,
+              cost_price_cents: v.cost_price_cents as number,
               quantity_on_hand: 0,
-              is_available: v.is_available,
-              display_order: v.display_order,
+              is_available: v.is_available as boolean,
+              display_order: v.display_order as number,
             }))
           );
         }

@@ -13,9 +13,9 @@ import {
   Badge,
 } from '@mantine/core';
 import {
-  IconHandshake,
+  IconHeartHandshake,
   IconLayoutDashboard,
-  IconPipeline,
+  IconLine,
   IconFileText,
   IconChartBar,
   IconUsers,
@@ -99,7 +99,7 @@ const CPOPortal: React.FC = () => {
     return (
       <Center style={{ minHeight: '100vh', padding: '2rem' }}>
         <Stack align="center" gap="md" style={{ maxWidth: 500 }}>
-          <IconHandshake size={48} color="#e74c3c" />
+          <IconHeartHandshake size={48} color="#e74c3c" />
           <Title order={2}>Access Denied</Title>
           <Text c="dimmed" ta="center">
             You don't have access to the CPO Partnership Portal. This portal is restricted to the Chief Partnership Officer and Administrators.
@@ -139,7 +139,7 @@ const CPOPortal: React.FC = () => {
         </Button>
         <Group gap={12}>
           <Avatar color="orange" radius="xl" size={36}>
-            <IconHandshake size={20} />
+            <IconHeartHandshake size={20} />
           </Avatar>
           <div>
             <Title order={4} style={{ lineHeight: 1.2 }}>CPO Partnership Portal</Title>
@@ -157,7 +157,7 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
               Dashboard
             </Tabs.Tab>
-            <Tabs.Tab value="pipeline" leftSection={<IconPipeline size={16} />}>
+            <Tabs.Tab value="pipeline" leftSection={<IconLine size={16} />}>
               Partner Pipeline
             </Tabs.Tab>
             <Tabs.Tab value="contracts" leftSection={<IconFileText size={16} />}>

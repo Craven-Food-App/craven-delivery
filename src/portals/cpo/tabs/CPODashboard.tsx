@@ -13,7 +13,7 @@ import {
   Skeleton,
 } from '@mantine/core';
 import {
-  IconHandshake,
+  IconHeartHandshake,
   IconTrendingUp,
   IconAlertTriangle,
   IconClock,
@@ -113,7 +113,7 @@ const CPODashboard: React.FC = () => {
               <Title order={2}>{s.totalPartners}</Title>
             </div>
             <ThemeIcon size={48} radius="md" color="orange" variant="light">
-              <IconHandshake size={28} />
+              <IconHeartHandshake size={28} />
             </ThemeIcon>
           </Group>
           <Text size="sm" c="dimmed" mt="sm">
