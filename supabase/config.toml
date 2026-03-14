@@ -172,6 +172,9 @@ verify_jwt = false
 [functions.governance-grant-equity]
 verify_jwt = false
 
+[functions.governance-cast-vote]
+verify_jwt = false
+
 [functions.governance-revoke-equity]
 verify_jwt = false
 

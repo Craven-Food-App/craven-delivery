@@ -377,23 +377,23 @@ serve(async (req) => {
       throw grantsError;
     }
 
-    const grantsFromLedger = allGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
-    const trustShares = Number((capTableData as any).holding_company_shares ?? (capTableData as any).trust_shares ?? 0);
-    const founderShares = Number(capTableData.founder_shares || 0);
-    const totalAuthorized = Number(capTableData.total_authorized || 70000000);
+    const updatedGrantsFromLedger = allGrants?.reduce((sum, g) => sum + Number(g.shares_amount || 0), 0) || 0;
+    const updatedTrustShares = Number((capTableData as any).holding_company_shares ?? (capTableData as any).trust_shares ?? 0);
+    const updatedFounderShares = Number(capTableData.founder_shares || 0);
+    const updatedTotalAuthorized = Number(capTableData.total_authorized || 70000000);
     
     // Total issued (raw) = Trust + Founder + Grants from ledger (now includes the new grant)
-    const totalIssuedRaw = trustShares + founderShares + grantsFromLedger;
+    const totalIssuedRaw = updatedTrustShares + updatedFounderShares + updatedGrantsFromLedger;
 
     // Clamp totals so we never show more issued than authorized
-    const totalIssuedCalculated = Math.min(totalIssuedRaw, totalAuthorized);
-    const totalUnissuedCalculated = Math.max(totalAuthorized - totalIssuedCalculated, 0);
+    const totalIssuedCalculated = Math.min(totalIssuedRaw, updatedTotalAuthorized);
+    const totalUnissuedCalculated = Math.max(updatedTotalAuthorized - totalIssuedCalculated, 0);
 
     console.log('Recalculating cap table (corrected calculation):', {
-      total_authorized: totalAuthorized,
-      trust_shares: trustShares,
-      founder_shares: founderShares,
-      grants_from_ledger: grantsFromLedger,
+      total_authorized: updatedTotalAuthorized,
+      trust_shares: updatedTrustShares,
+      founder_shares: updatedFounderShares,
+      grants_from_ledger: updatedGrantsFromLedger,
       total_issued_raw: totalIssuedRaw,
       total_issued_calculated: totalIssuedCalculated,
       total_unissued_calculated: totalUnissuedCalculated,
@@ -505,4 +505,3 @@ serve(async (req) => {
     );
   }
 });
-
