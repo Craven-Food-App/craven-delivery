@@ -169,6 +169,9 @@ verify_jwt = false
 [functions.governance-execute-resolution]
 verify_jwt = false
 
+[functions.governance-grant-equity]
+verify_jwt = false
+
 [functions.governance-revoke-equity]
 verify_jwt = false
 
