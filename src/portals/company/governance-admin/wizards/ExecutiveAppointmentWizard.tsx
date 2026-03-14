@@ -27,6 +27,7 @@ import dayjs from 'dayjs';
 interface AppointmentFormData {
   proposed_officer_name: string;
   proposed_officer_email: string;
+  alternate_email: string;
   proposed_officer_phone: string;
   proposed_title: string;
   appointment_type: string;
@@ -58,6 +59,7 @@ const ExecutiveAppointmentWizard: React.FC = () => {
   const [formData, setFormData] = useState<AppointmentFormData>({
     proposed_officer_name: '',
     proposed_officer_email: '',
+    alternate_email: '',
     proposed_officer_phone: '',
     proposed_title: '',
     appointment_type: 'NEW',
@@ -156,6 +158,7 @@ const ExecutiveAppointmentWizard: React.FC = () => {
         body: {
           proposed_officer_name: formData.proposed_officer_name,
           proposed_officer_email: formData.proposed_officer_email,
+          alternate_email: formData.alternate_email?.trim() || null,
           proposed_officer_phone: formData.proposed_officer_phone || null,
           proposed_title: formData.proposed_title,
           appointment_type: formData.appointment_type,
@@ -232,6 +235,16 @@ const ExecutiveAppointmentWizard: React.FC = () => {
                 required
                 value={formData.proposed_officer_email}
                 onChange={(e) => setFormData({ ...formData, proposed_officer_email: e.target.value })}
+                size="md"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="Alternate email (optional)"
+                placeholder="Documents sent here too"
+                type="email"
+                value={formData.alternate_email}
+                onChange={(e) => setFormData({ ...formData, alternate_email: e.target.value })}
                 size="md"
               />
             </Grid.Col>

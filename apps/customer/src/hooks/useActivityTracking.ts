@@ -15,6 +15,7 @@ export const useActivityTracking = (portalType: string) => {
         if (!user || !mounted) return;
 
         const currentLocation = location.pathname;
+        const pt = (portalType && String(portalType).trim()) || 'company';
 
         // Get IP and user agent if available
         const userAgent = navigator.userAgent;
@@ -28,7 +29,7 @@ export const useActivityTracking = (portalType: string) => {
             .select('id')
             .eq('user_id', user.id)
             .eq('is_active', true)
-            .eq('portal_type', portalType)
+            .eq('portal_type', pt)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -54,13 +55,13 @@ export const useActivityTracking = (portalType: string) => {
               console.error('Error updating session:', updateError);
             }
           } else {
-            // Create new session
+            // Create new session (portal_type required and must be non-empty)
             const { data: session, error } = await supabase
               .from('user_sessions')
               .insert({
                 user_id: user.id,
                 session_token: crypto.randomUUID(),
-                portal_type: portalType,
+                portal_type: pt,
                 current_location: currentLocation,
                 is_active: true,
                 user_agent: userAgent,

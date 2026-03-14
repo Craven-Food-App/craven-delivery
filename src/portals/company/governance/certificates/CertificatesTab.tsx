@@ -216,8 +216,8 @@ const CertificatesTab: React.FC = () => {
             name = profile?.full_name || '';
             email = profile?.email || '';
 
-            // Try exec_users as fallback
-            if (!name) {
+            // Try exec_users as fallback (skip if recipient_user_id is empty to avoid 400)
+            if (!name && grant.recipient_user_id) {
               const { data: execUser } = await supabase
                 .from('exec_users')
                 .select('name, title')
@@ -270,7 +270,7 @@ const CertificatesTab: React.FC = () => {
           let name = profile?.full_name || '';
           let email = profile?.email || '';
 
-          if (!name) {
+          if (!name && cert.recipient_user_id) {
             const { data: execUser } = await supabase
               .from('exec_users')
               .select('name, title')

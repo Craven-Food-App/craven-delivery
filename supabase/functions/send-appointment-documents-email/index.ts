@@ -89,6 +89,13 @@ serve(async (req: Request) => {
       // Use executive_appointments data
       const appointeeEmail = execAppointment.proposed_officer_email;
       const appointeeName = execAppointment.proposed_officer_name;
+      const alternateEmail = execAppointment.alternate_email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(execAppointment.alternate_email)
+        ? execAppointment.alternate_email.trim()
+        : null;
+      const toEmails: string[] = [appointeeEmail];
+      if (alternateEmail && alternateEmail.toLowerCase() !== appointeeEmail?.toLowerCase()) {
+        toEmails.push(alternateEmail);
+      }
 
       if (!appointeeEmail) {
         return new Response(
@@ -262,7 +269,7 @@ serve(async (req: Request) => {
 
       const emailResult = await resend.emails.send({
         from: fromEmail,
-        to: [appointeeEmail],
+        to: toEmails,
         subject: documentTitle,
         html: emailHtml,
       });
@@ -271,7 +278,7 @@ serve(async (req: Request) => {
         throw new Error(`Failed to send email: ${emailResult.error.message || JSON.stringify(emailResult.error)}`);
       }
 
-      console.log(`Email sent successfully to ${appointeeEmail}, Resend ID: ${emailResult.data?.id}`);
+      console.log(`Email sent successfully to ${toEmails.join(', ')}, Resend ID: ${emailResult.data?.id}`);
 
       return new Response(
         JSON.stringify({ 
@@ -279,6 +286,7 @@ serve(async (req: Request) => {
           message: 'Email sent successfully',
           documentsCount: documents.length,
           recipient: appointeeEmail,
+          recipients: toEmails,
           emailId: emailResult.data?.id,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

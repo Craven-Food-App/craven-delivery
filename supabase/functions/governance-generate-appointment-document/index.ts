@@ -463,6 +463,7 @@ serve(async (req) => {
       share_count: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
       shares_issued: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
       number_of_shares: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0',
+      shares_amount: equityDetails.share_count ? formatNumber(equityDetails.share_count) : '0', // stock certificate template uses {{shares_amount}}
       vesting_schedule: equityDetails.vesting_schedule || '',
       exercise_price: equityDetails.exercise_price || '',
       equity_included: (appointment.equity_included ?? (appointment as any).equity_included) ? 'Yes' : 'No',

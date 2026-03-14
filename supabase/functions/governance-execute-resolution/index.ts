@@ -62,12 +62,23 @@ serve(async (req) => {
     let executionResult: any = {};
 
     if (resolutionType === 'EXECUTIVE_APPOINTMENT') {
-      // Find executive appointment linked to this resolution
-      const { data: execAppointment } = await supabaseAdmin
+      // Find executive appointment linked to this resolution (try both link columns)
+      let execAppointment: any = null;
+      const { data: byBoard } = await supabaseAdmin
         .from('executive_appointments')
         .select('*')
         .eq('board_resolution_id', resolution_id)
         .maybeSingle();
+      if (byBoard) {
+        execAppointment = byBoard;
+      } else {
+        const { data: byResolution } = await supabaseAdmin
+          .from('executive_appointments')
+          .select('*')
+          .eq('resolution_id', resolution_id)
+          .maybeSingle();
+        execAppointment = byResolution;
+      }
 
       if (execAppointment) {
         console.log(`Executing resolution for executive appointment ${execAppointment.id}`);
@@ -142,6 +153,43 @@ serve(async (req) => {
           console.warn('Document sync had issues, but continuing:', syncDocError);
         } else {
           console.log(`Synced ${syncData?.documents_synced || 0} documents for appointment ${appointmentId}`);
+        }
+
+        // Step 2.5: If appointment has equity, add grant to equity_ledger so cap table shows it
+        const equityIncluded = execAppointment.equity_included === true;
+        let equityDetails: { share_count?: number; exercise_price?: string; [k: string]: unknown } = {};
+        if (execAppointment.equity_details) {
+          try {
+            equityDetails = typeof execAppointment.equity_details === 'string'
+              ? JSON.parse(execAppointment.equity_details) : execAppointment.equity_details;
+          } catch {
+            // ignore
+          }
+        }
+        const shareCount = Number(equityDetails.share_count) || 0;
+        if (equityIncluded && shareCount > 0 && user?.id) {
+          const pricePerShare = (equityDetails.exercise_price && String(equityDetails.exercise_price).replace(/[^0-9.]/g, '')) || '0.0001';
+          const effectiveDate = execAppointment.effective_date
+            ? new Date(execAppointment.effective_date).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0];
+          const { error: ledgerErr } = await supabaseAdmin
+            .from('equity_ledger')
+            .insert({
+              transaction_type: 'grant',
+              recipient_user_id: user.id,
+              shares_amount: shareCount,
+              share_class: 'Common',
+              price_per_share: parseFloat(pricePerShare) || 0.0001,
+              transaction_date: effectiveDate,
+              effective_date: effectiveDate,
+              resolution_id: resolution_id,
+              notes: `Executive appointment grant: ${shareCount} shares for ${execAppointment.proposed_officer_name}`,
+            });
+          if (ledgerErr) {
+            console.warn('Equity ledger insert failed (cap table may not show grant):', ledgerErr.message);
+          } else {
+            console.log(`Equity ledger grant created: ${shareCount} shares for ${execAppointment.proposed_officer_name}`);
+          }
         }
 
         // Step 3: Send email notification to appointee with documents and login credentials

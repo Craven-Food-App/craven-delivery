@@ -28,6 +28,7 @@ const NewAppointmentForm: React.FC = () => {
   const [formData, setFormData] = useState({
     proposed_officer_name: '',
     proposed_officer_email: '',
+    alternate_email: '',
     proposed_officer_phone: '',
     proposed_title: '',
     appointment_type: 'NEW',
@@ -209,6 +210,18 @@ const NewAppointmentForm: React.FC = () => {
                     value={formData.proposed_officer_email}
                     onChange={(e) =>
                       setFormData({ ...formData, proposed_officer_email: e.target.value })
+                    }
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <TextInput
+                    label="Alternate email (optional)"
+                    type="email"
+                    placeholder="personal@example.com"
+                    description="Documents are sent to both this and the primary email."
+                    value={formData.alternate_email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, alternate_email: e.target.value })
                     }
                   />
                 </Grid.Col>

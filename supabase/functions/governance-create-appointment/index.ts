@@ -246,6 +246,9 @@ serve(async (req) => {
       .insert({
         executive_id: executiveId,
         position: body.proposed_title,
+        proposed_officer_name: body.proposed_officer_name || null,
+        proposed_officer_email: body.proposed_officer_email || null,
+        alternate_email: body.alternate_email && body.alternate_email.trim() ? body.alternate_email.trim() : null,
         appointment_type: appointmentType,
         effective_date: body.effective_date,
         appointed_by: appointedBy,

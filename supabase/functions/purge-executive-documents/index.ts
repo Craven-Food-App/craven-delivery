@@ -114,6 +114,15 @@ serve(async (req) => {
           }
         }
       }
+
+      // Fallback: match by proposed_officer_name on executive_appointments
+      const { data: aptsByName } = await supabase
+        .from("executive_appointments")
+        .select("id")
+        .ilike("proposed_officer_name", `%${officer_name}%`);
+      if (aptsByName && aptsByName.length > 0) {
+        appointmentIds.push(...aptsByName.map((a: any) => a.id));
+      }
     }
 
     if (executive_id) {
@@ -159,7 +168,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. Delete executive_documents + executive_signatures
+    // 3. Delete executive_documents + executive_signatures (by executive_id/officer_name OR by appointment_id)
     const filters: string[] = [];
     if (executive_id) filters.push(`executive_id.eq.${executive_id}`);
     if (officer_name) filters.push(`officer_name.ilike.%${officer_name}%`);
@@ -184,6 +193,24 @@ serve(async (req) => {
         const { error: docErr } = await supabase.from("executive_documents").delete().or(filters.join(","));
         if (docErr) console.warn("Doc delete warn:", docErr);
         else summary.executiveDocsPurged = docs.length;
+      }
+    }
+
+    if (appointmentIds.length > 0) {
+      const { data: docsByAppt } = await supabase
+        .from("executive_documents")
+        .select("id, file_url")
+        .in("appointment_id", appointmentIds);
+      if (docsByAppt && docsByAppt.length > 0) {
+        const docIds = docsByAppt.map((d: any) => d.id);
+        const { error: sigErr } = await supabase.from("executive_signatures").delete().in("document_id", docIds);
+        if (!sigErr) summary.signaturesPurged += docIds.length;
+        for (const doc of docsByAppt) {
+          const parsed = parseBucketAndPath(doc.file_url);
+          if (parsed) storageItems.push(parsed);
+        }
+        const { error: docErr } = await supabase.from("executive_documents").delete().in("appointment_id", appointmentIds);
+        if (!docErr) summary.executiveDocsPurged += docsByAppt.length;
       }
     }
 

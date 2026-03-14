@@ -73,6 +73,7 @@ interface ExecutiveAppointment {
   id: string;
   proposed_officer_name: string;
   proposed_officer_email?: string;
+  alternate_email?: string;
   proposed_officer_phone?: string;
   proposed_title: string;
   position?: string;
@@ -291,18 +292,19 @@ const AppointmentList: React.FC = () => {
         setDocumentStatuses(statusMap);
       }
 
-      // Fetch board resolution if exists
+      // Fetch board resolution if exists (support both resolution_id and board_resolution_id)
       const { data: appointment } = await supabase
         .from('executive_appointments')
-        .select('board_resolution_id')
+        .select('board_resolution_id, resolution_id')
         .eq('id', appointmentId)
-        .single();
+        .maybeSingle();
 
-      if (appointment?.board_resolution_id) {
+      const resolutionId = appointment?.board_resolution_id ?? (appointment as any)?.resolution_id;
+      if (resolutionId) {
         const { data: resolution, error: resError } = await supabase
           .from('governance_board_resolutions')
           .select('*')
-          .eq('id', appointment.board_resolution_id)
+          .eq('id', resolutionId)
           .single();
 
         if (!resError && resolution) {
@@ -675,6 +677,7 @@ const AppointmentList: React.FC = () => {
     initialValues: {
       proposed_officer_name: '',
       proposed_officer_email: '',
+      alternate_email: '',
       proposed_officer_phone: '',
       proposed_title: '',
       appointment_type: 'initial',
@@ -698,6 +701,7 @@ const AppointmentList: React.FC = () => {
     editForm.setValues({
       proposed_officer_name: appointment.proposed_officer_name,
       proposed_officer_email: appointment.proposed_officer_email || '',
+      alternate_email: (appointment as any).alternate_email || '',
       proposed_officer_phone: (appointment as any).proposed_officer_phone || '',
       proposed_title: appointment.proposed_title || (appointment as any).position || '',
       appointment_type: ['initial', 'reappointment', 'promotion', 'lateral'].includes(appointment.appointment_type)
@@ -727,6 +731,7 @@ const AppointmentList: React.FC = () => {
       const updateData: any = {
         proposed_officer_name: values.proposed_officer_name,
         proposed_officer_email: values.proposed_officer_email || null,
+        alternate_email: values.alternate_email?.trim() || null,
         proposed_title: values.proposed_title,
         appointment_type: ['initial', 'reappointment', 'promotion', 'lateral'].includes(values.appointment_type)
           ? values.appointment_type
@@ -1527,6 +1532,14 @@ const AppointmentList: React.FC = () => {
                           </Anchor>
                         </Group>
                       )}
+                      {(selectedAppointment as any).alternate_email && (
+                        <Group gap="xs" mt={2}>
+                          <Text size="xs" c="dimmed">Also: </Text>
+                          <Anchor href={`mailto:${(selectedAppointment as any).alternate_email}`} size="sm">
+                            {(selectedAppointment as any).alternate_email}
+                          </Anchor>
+                        </Group>
+                      )}
                     </Stack>
                     {getStatusBadge(selectedAppointment.status)}
                   </Group>
@@ -2110,6 +2123,14 @@ const AppointmentList: React.FC = () => {
                       label="Officer Email"
                       type="email"
                       {...editForm.getInputProps('proposed_officer_email')}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <TextInput
+                      label="Alternate email (optional)"
+                      type="email"
+                      placeholder="Documents sent here too"
+                      {...editForm.getInputProps('alternate_email')}
                     />
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, sm: 6 }}>

@@ -161,6 +161,10 @@ const EquityGrantWizard: React.FC = () => {
       });
       return false;
     }
+    return true;
+  };
+
+  const validateDatesAndResolution = (): boolean => {
     if (!formData.start_date) {
       notifications.show({
         title: 'Validation Error',
@@ -387,7 +391,7 @@ const EquityGrantWizard: React.FC = () => {
           </Grid>
         </Stack>
       ),
-      validate: validateGrantDetails,
+      validate: validateDatesAndResolution,
     },
     {
       label: 'Review & Submit',

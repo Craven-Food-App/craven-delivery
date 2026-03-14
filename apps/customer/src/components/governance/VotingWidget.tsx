@@ -124,7 +124,9 @@ export const VotingWidget: React.FC<VotingWidgetProps> = ({
       // Extract error message from various possible formats
       let errorMessage = 'Failed to submit vote. Please try again.';
       
-      if (error?.message) {
+      if (error?.name === 'SyntaxError' || (error?.message && String(error.message).includes('Unexpected token'))) {
+        errorMessage = 'Vote request could not reach the server (invalid response). Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set and the governance-cast-vote function is deployed.';
+      } else if (error?.message) {
         errorMessage = error.message;
       } else if (error?.error) {
         errorMessage = typeof error.error === 'string' ? error.error : error.error.message || 'Unknown error';
