@@ -29,7 +29,6 @@ const PartnershipAnalytics: React.FC = () => {
 
   if (loading) return <Stack gap="md">{[1, 2, 3].map(i => <Skeleton key={i} height={150} radius="md" />)}</Stack>;
 
-  // Analytics calculations
   const byType = partnerships.reduce((acc: Record<string, number>, p) => {
     acc[p.partner_type] = (acc[p.partner_type] || 0) + 1;
     return acc;
@@ -40,15 +39,13 @@ const PartnershipAnalytics: React.FC = () => {
     return acc;
   }, {});
 
-  const byPriority = partnerships.reduce((acc: Record<string, number>, p) => {
-    acc[p.priority || 'medium'] = (acc[p.priority || 'medium'] || 0) + 1;
-    return acc;
-  }, {});
-
   const totalValue = partnerships.reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
   const activeValue = partnerships
     .filter(p => p.status === 'active')
     .reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
+
+  const totalRevenueYTD = partnerships.reduce((sum, p) => sum + (Number(p.revenue_ytd) || 0), 0);
+  const totalRevenueMTD = partnerships.reduce((sum, p) => sum + (Number(p.revenue_mtd) || 0), 0);
 
   const typeLabels: Record<string, string> = {
     restaurant_merchant: 'Restaurant/Merchant',
@@ -61,14 +58,9 @@ const PartnershipAnalytics: React.FC = () => {
   };
 
   const statusColors: Record<string, string> = {
-    lead: 'gray',
-    prospect: 'blue',
-    negotiation: 'yellow',
-    contract_review: 'orange',
-    active: 'green',
-    on_hold: 'red',
-    churned: 'dark',
-    terminated: 'dark',
+    lead: 'gray', prospect: 'blue', negotiation: 'yellow',
+    contract_review: 'orange', active: 'green', on_hold: 'red',
+    churned: 'dark', terminated: 'dark',
   };
 
   const topPartners = [...partnerships]
@@ -76,12 +68,16 @@ const PartnershipAnalytics: React.FC = () => {
     .sort((a, b) => Number(b.deal_value) - Number(a.deal_value))
     .slice(0, 5);
 
+  const topRevenue = [...partnerships]
+    .filter(p => Number(p.revenue_ytd) > 0)
+    .sort((a, b) => Number(b.revenue_ytd) - Number(a.revenue_ytd))
+    .slice(0, 5);
+
   return (
     <Stack gap="lg">
       <Title order={3}>Partnership Analytics</Title>
 
-      {/* Value Summary */}
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Total Pipeline Value</Text>
           <Title order={2} mt="xs">${totalValue.toLocaleString()}</Title>
@@ -91,19 +87,19 @@ const PartnershipAnalytics: React.FC = () => {
           <Title order={2} mt="xs" c="green">${activeValue.toLocaleString()}</Title>
         </Card>
         <Card shadow="sm" radius="md" padding="lg" withBorder>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Conversion Rate</Text>
-          <Title order={2} mt="xs">
-            {partnerships.length > 0
-              ? `${Math.round((byStatus['active'] || 0) / partnerships.length * 100)}%`
-              : '0%'}
-          </Title>
-          <Text size="xs" c="dimmed">Lead to Active</Text>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Revenue YTD</Text>
+          <Title order={2} mt="xs" c="teal">${totalRevenueYTD.toLocaleString()}</Title>
+        </Card>
+        <Card shadow="sm" radius="md" padding="lg" withBorder>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Revenue MTD</Text>
+          <Title order={2} mt="xs">${totalRevenueMTD.toLocaleString()}</Title>
+          <Text size="xs" c="dimmed">Conversion: {partnerships.length > 0
+            ? `${Math.round((byStatus['active'] || 0) / partnerships.length * 100)}%`
+            : '0%'}</Text>
         </Card>
       </SimpleGrid>
 
-      {/* Breakdown Cards */}
       <SimpleGrid cols={{ base: 1, lg: 2 }}>
-        {/* By Type */}
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Title order={4} mb="md">By Partnership Type</Title>
           <Stack gap="sm">
@@ -126,7 +122,6 @@ const PartnershipAnalytics: React.FC = () => {
           </Stack>
         </Card>
 
-        {/* By Status */}
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Title order={4} mb="md">By Status</Title>
           <Stack gap="sm">
@@ -145,7 +140,7 @@ const PartnershipAnalytics: React.FC = () => {
         </Card>
       </SimpleGrid>
 
-      {/* Top Partners by Value */}
+      {/* Top by Deal Value */}
       <Card shadow="sm" radius="md" padding="lg" withBorder>
         <Title order={4} mb="md">Top Partners by Deal Value</Title>
         {topPartners.length === 0 ? (
@@ -175,6 +170,33 @@ const PartnershipAnalytics: React.FC = () => {
           </Table>
         )}
       </Card>
+
+      {/* Top by Revenue */}
+      {topRevenue.length > 0 && (
+        <Card shadow="sm" radius="md" padding="lg" withBorder>
+          <Title order={4} mb="md">Top Partners by Revenue (YTD)</Title>
+          <Table striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>#</Table.Th>
+                <Table.Th>Partner</Table.Th>
+                <Table.Th style={{ textAlign: 'right' }}>Revenue YTD</Table.Th>
+                <Table.Th style={{ textAlign: 'right' }}>Revenue MTD</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {topRevenue.map((p, i) => (
+                <Table.Tr key={p.id}>
+                  <Table.Td>{i + 1}</Table.Td>
+                  <Table.Td><Text fw={500}>{p.partner_name}</Text></Table.Td>
+                  <Table.Td style={{ textAlign: 'right' }}><Text fw={600} c="teal">${Number(p.revenue_ytd).toLocaleString()}</Text></Table.Td>
+                  <Table.Td style={{ textAlign: 'right' }}><Text fw={600}>${Number(p.revenue_mtd).toLocaleString()}</Text></Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Card>
+      )}
     </Stack>
   );
 };
