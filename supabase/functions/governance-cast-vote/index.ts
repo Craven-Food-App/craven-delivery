@@ -133,16 +133,6 @@ serve(async (req) => {
         }
 
         boardMember = newBoardMember;
-
-        if (createError || !newBoardMember) {
-          console.error('Error creating board member:', createError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to create board member record' }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        boardMember = newBoardMember;
       } else {
         return new Response(
           JSON.stringify({ error: 'User is not an active board member' }),

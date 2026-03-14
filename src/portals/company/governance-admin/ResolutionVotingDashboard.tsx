@@ -20,6 +20,12 @@ import { IconCheckbox, IconCheck, IconX, IconMinus, IconAlertCircle } from '@tab
 import { supabase } from '@/integrations/supabase/client';
 import { notifications } from '@mantine/notifications';
 
+const SUPABASE_FUNCTIONS_URL =
+  import.meta.env.VITE_SUPABASE_URL || 'https://xaxbucnjlrfkccsfiddq.supabase.co';
+const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhheGJ1Y25qbHJma2Njc2ZpZGRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcyODMyODAsImV4cCI6MjA3Mjg1OTI4MH0.3ETuLETgSEj6W8gYi7WAoUFDPNo4IwTjuSnVtt1BCFE';
+
 console.log('📦 [VOTING] ResolutionVotingDashboard module loaded');
 
 interface Resolution {
@@ -387,13 +393,13 @@ const ResolutionVotingDashboard: React.FC = () => {
       
       // Use fetch directly to get better error details
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/governance-cast-vote`,
+        `${SUPABASE_FUNCTIONS_URL}/functions/v1/governance-cast-vote`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+            'apikey': SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
             resolution_id: resolutionIdForVote,
@@ -403,7 +409,18 @@ const ResolutionVotingDashboard: React.FC = () => {
         }
       );
 
-      const responseData = await response.json();
+      const text = await response.text();
+      let responseData: Record<string, unknown> = {};
+      try {
+        responseData = text ? JSON.parse(text) : {};
+      } catch {
+        if (text.trimStart().startsWith('<')) {
+          throw new Error(
+            'Vote service returned an invalid response. Please try again or contact support.'
+          );
+        }
+        throw new Error('Invalid response from vote service.');
+      }
       console.log('Vote submission response:', { status: response.status, data: responseData });
 
       if (!response.ok) {
