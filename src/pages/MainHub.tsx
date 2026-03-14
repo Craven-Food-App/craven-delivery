@@ -71,7 +71,7 @@ interface HubSection {
 const isPortalInDepartment = (portalId: string, deptId: string): boolean => {
   switch (deptId) {
     case "executive":
-      return ["ceo", "admin", "company", "investors", "cxo", "cfo"].includes(portalId);
+      return ["ceo", "admin", "company", "investors", "cxo", "cfo", "cpo"].includes(portalId);
     case "operations":
       return [
         "coo",
@@ -1438,6 +1438,14 @@ const MainHub: React.FC = () => {
       path: "/intern/dashboard",
       color: "#6366f1",
     },
+    {
+      id: "cpo",
+      name: "CPO Partnership Portal",
+      description: "Partnership management, pipeline, contracts, and analytics",
+      icon: TeamOutlined,
+      path: "/cpo-portal",
+      color: "#e67e22",
+    },
   ];
 
   const hubSections: HubSection[] = [
@@ -1445,7 +1453,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "investors", "investor-demo"],
+      portalIds: ["ceo", "admin", "company", "investors", "investor-demo", "cpo"],
     },
     {
       id: "operations-delivery",
@@ -1558,6 +1566,7 @@ const MainHub: React.FC = () => {
       case 'quality-release': return canQuality;
       case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
+      case 'cpo': return canCEO || (user?.email && hasFullAccess(user.email));
       case 'hr': return canHR;
       case 'foundational-invites': 
         const allowed = canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
