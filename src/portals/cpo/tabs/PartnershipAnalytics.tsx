@@ -114,7 +114,7 @@ const PartnershipAnalytics: React.FC = () => {
                   <Text size="sm" fw={600}>{count as number}</Text>
                 </Group>
                 <Progress
-                  value={partnerships.length > 0 ? (count / partnerships.length) * 100 : 0}
+                  value={partnerships.length > 0 ? ((count as number) / partnerships.length) * 100 : 0}
                   color="orange"
                   size="sm"
                 />
