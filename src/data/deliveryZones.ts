@@ -65,7 +65,7 @@ function ensurePolygon(geom: unknown): Polygon | null {
   if (!geom) return null;
   const geo = geom as Record<string, unknown>;
   if (geo?.type === 'Polygon') {
-    return geo as Polygon;
+    return geo as unknown as Polygon;
   }
   if (geo?.type === 'MultiPolygon' && Array.isArray(geo.coordinates)) {
     const firstPolygon = geo.coordinates[0];
