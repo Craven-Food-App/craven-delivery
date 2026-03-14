@@ -1447,6 +1447,14 @@ const MainHub: React.FC = () => {
       path: "/cpo-portal",
       color: "#e67e22",
     },
+    {
+      id: "internal-comms",
+      name: "Internal Communications",
+      description: "Secure messaging, announcements, file sharing, and task assignments",
+      icon: MessageOutlined,
+      path: "/hub/internal-comms",
+      color: "#FF6B35",
+    },
   ];
 
   const hubSections: HubSection[] = [
