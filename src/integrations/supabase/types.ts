@@ -12188,6 +12188,7 @@ export type Database = {
       }
       executive_appointments: {
         Row: {
+          alternate_email: string | null
           appointed_by: string
           appointment_date: string
           appointment_letter_url: string | null
@@ -12205,6 +12206,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           deferred_compensation_url: string | null
+          department: string | null
           effective_date: string
           employment_agreement_url: string | null
           equity_details: Json | null
@@ -12219,6 +12221,11 @@ export type Database = {
           option_rsu_award_url: string | null
           position: string
           pre_incorporation_consent_url: string | null
+          proposed_officer_email: string | null
+          proposed_officer_name: string | null
+          proposed_officer_phone: string | null
+          proposed_title: string | null
+          reporting_to: string | null
           resolution_id: string | null
           status: string
           stock_subscription_url: string | null
@@ -12227,6 +12234,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alternate_email?: string | null
           appointed_by: string
           appointment_date?: string
           appointment_letter_url?: string | null
@@ -12244,6 +12252,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deferred_compensation_url?: string | null
+          department?: string | null
           effective_date: string
           employment_agreement_url?: string | null
           equity_details?: Json | null
@@ -12258,6 +12267,11 @@ export type Database = {
           option_rsu_award_url?: string | null
           position: string
           pre_incorporation_consent_url?: string | null
+          proposed_officer_email?: string | null
+          proposed_officer_name?: string | null
+          proposed_officer_phone?: string | null
+          proposed_title?: string | null
+          reporting_to?: string | null
           resolution_id?: string | null
           status?: string
           stock_subscription_url?: string | null
@@ -12266,6 +12280,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alternate_email?: string | null
           appointed_by?: string
           appointment_date?: string
           appointment_letter_url?: string | null
@@ -12283,6 +12298,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deferred_compensation_url?: string | null
+          department?: string | null
           effective_date?: string
           employment_agreement_url?: string | null
           equity_details?: Json | null
@@ -12297,6 +12313,11 @@ export type Database = {
           option_rsu_award_url?: string | null
           position?: string
           pre_incorporation_consent_url?: string | null
+          proposed_officer_email?: string | null
+          proposed_officer_name?: string | null
+          proposed_officer_phone?: string | null
+          proposed_title?: string | null
+          reporting_to?: string | null
           resolution_id?: string | null
           status?: string
           stock_subscription_url?: string | null
