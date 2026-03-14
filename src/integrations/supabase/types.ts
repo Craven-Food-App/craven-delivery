@@ -20905,6 +20905,257 @@ export type Database = {
         }
         Relationships: []
       }
+      partnership_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          partnership_id: string
+          performed_at: string
+          performed_by: string | null
+          title: string
+        }
+        Insert: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          partnership_id: string
+          performed_at?: string
+          performed_by?: string | null
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          partnership_id?: string
+          performed_at?: string
+          performed_by?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_activities_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_activities_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      partnership_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+          partnership_id: string
+          phone: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          partnership_id: string
+          phone?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          partnership_id?: string
+          phone?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_contacts_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnership_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          expires_at: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          partnership_id: string
+          status: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type?: string
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          partnership_id: string
+          status?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          partnership_id?: string
+          status?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_documents_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      partnerships: {
+        Row: {
+          assigned_to: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          created_by: string | null
+          deal_value: number | null
+          description: string | null
+          health_score: number | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          merchant_id: string | null
+          metadata: Json | null
+          notes: string | null
+          owner_user_id: string | null
+          partner_name: string
+          partner_type: Database["public"]["Enums"]["partnership_type"]
+          payment_terms: string | null
+          priority: string | null
+          renewal_date: string | null
+          revenue_share_percentage: number | null
+          status: Database["public"]["Enums"]["partnership_status"]
+          tags: string[] | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          description?: string | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          merchant_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          owner_user_id?: string | null
+          partner_name: string
+          partner_type?: Database["public"]["Enums"]["partnership_type"]
+          payment_terms?: string | null
+          priority?: string | null
+          renewal_date?: string | null
+          revenue_share_percentage?: number | null
+          status?: Database["public"]["Enums"]["partnership_status"]
+          tags?: string[] | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_value?: number | null
+          description?: string | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          merchant_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          owner_user_id?: string | null
+          partner_name?: string
+          partner_type?: Database["public"]["Enums"]["partnership_type"]
+          payment_terms?: string | null
+          priority?: string | null
+          renewal_date?: string | null
+          revenue_share_percentage?: number | null
+          status?: Database["public"]["Enums"]["partnership_status"]
+          tags?: string[] | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnerships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "partnerships_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "effective_permissions"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       pay_stubs: {
         Row: {
           created_at: string | null
@@ -31296,6 +31547,23 @@ export type Database = {
         | "pet_supplies"
         | "specialty_retail"
         | "marketplace"
+      partnership_status:
+        | "lead"
+        | "prospect"
+        | "negotiation"
+        | "contract_review"
+        | "active"
+        | "on_hold"
+        | "churned"
+        | "terminated"
+      partnership_type:
+        | "restaurant_merchant"
+        | "strategic_corporate"
+        | "technology_integration"
+        | "revenue_share"
+        | "co_marketing"
+        | "vendor"
+        | "other"
       role_name:
         | "admin"
         | "moderator"
@@ -31530,6 +31798,25 @@ export const Constants = {
         "pet_supplies",
         "specialty_retail",
         "marketplace",
+      ],
+      partnership_status: [
+        "lead",
+        "prospect",
+        "negotiation",
+        "contract_review",
+        "active",
+        "on_hold",
+        "churned",
+        "terminated",
+      ],
+      partnership_type: [
+        "restaurant_merchant",
+        "strategic_corporate",
+        "technology_integration",
+        "revenue_share",
+        "co_marketing",
+        "vendor",
+        "other",
       ],
       role_name: [
         "admin",
