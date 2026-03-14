@@ -1453,7 +1453,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "investors", "investor-demo"],
+      portalIds: ["ceo", "admin", "company", "investors", "investor-demo", "cpo"],
     },
     {
       id: "operations-delivery",
