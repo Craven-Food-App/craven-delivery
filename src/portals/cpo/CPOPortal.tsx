@@ -157,7 +157,7 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
               Dashboard
             </Tabs.Tab>
-            <Tabs.Tab value="pipeline" leftSection={<IconPipeline size={16} />}>
+            <Tabs.Tab value="pipeline" leftSection={<IconLine size={16} />}>
               Partner Pipeline
             </Tabs.Tab>
             <Tabs.Tab value="contracts" leftSection={<IconFileText size={16} />}>

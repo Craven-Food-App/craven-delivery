@@ -470,7 +470,7 @@ const RestaurantSetup = () => {
             : activeTab === 'orders' ? (
               <RestaurantCustomerOrderManagement
                 restaurantId={restaurant.id}
-                playSoundForNewOrders={(restaurant?.verification_notes as Record<string, boolean> | undefined)?.notif_newOrderSound !== false}
+                playSoundForNewOrders={((restaurant as any)?.verification_notes as Record<string, boolean> | undefined)?.notif_newOrderSound !== false}
               />
             )
             : activeTab === 'menu' ? <MenuDashboard restaurantId={restaurant.id} />

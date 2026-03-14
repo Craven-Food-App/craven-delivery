@@ -91,12 +91,12 @@ export const useRestaurantData = (restaurantId?: string) => {
           .limit(1);
       }
 
-      query
-        .then(({ data, error }) => {
+      (query as any)
+        .then(({ data, error }: any) => {
           if (error) console.error('Error refetching restaurant:', error);
           else setRestaurant((data?.[0] as unknown as Restaurant) ?? null);
         })
-        .finally(() => setLoading(false)) as any;
+        .finally(() => setLoading(false));
     });
   };
 
