@@ -417,7 +417,7 @@ const CapTableEquityPageEnhanced: React.FC = () => {
               Cap Table & Equity
             </Title>
             <Text c="dimmed" size="sm" mt={4}>
-              Crave'n Inc. - 70,000,000 Authorized Shares at ${capTable.par_value.toFixed(4)} par value
+              Crave'n Inc. - {capTable.total_authorized.toLocaleString()} Authorized Shares at ${capTable.par_value} par value
             </Text>
           </div>
           <Group>
