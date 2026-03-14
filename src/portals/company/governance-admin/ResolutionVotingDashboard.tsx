@@ -429,7 +429,7 @@ const ResolutionVotingDashboard: React.FC = () => {
       }
 
       if (responseData?.error) {
-        throw new Error(typeof responseData.error === 'string' ? responseData.error : responseData.error.message || 'Vote submission failed');
+        throw new Error(typeof responseData.error === 'string' ? responseData.error : (responseData.error as any)?.message || 'Vote submission failed');
       }
 
       notifications.show({

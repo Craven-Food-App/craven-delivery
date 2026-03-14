@@ -258,7 +258,7 @@ const ContractManagement: React.FC = () => {
           <DateInput
             label="Expiration Date"
             value={formData.expires_at}
-            onChange={v => setFormData(d => ({ ...d, expires_at: v }))}
+            onChange={v => setFormData(d => ({ ...d, expires_at: v as any }))}
             clearable
           />
           <Group justify="flex-end">

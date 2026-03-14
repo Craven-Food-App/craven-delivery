@@ -500,7 +500,7 @@ const RestaurantSetup = () => {
       >
         <Group gap={2} justify="center" wrap="wrap">
           {navItems.map(({ tab, icon: Icon, label }) => (
-            <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} size="compact-xs" leftSection={<Icon size={16} />} onClick={() => setActiveTab(tab)}>
+            <Button key={tab} variant={activeTab === tab ? 'light' : 'subtle'} color={activeTab === tab ? 'orange' : 'gray'} size="compact-xs" leftSection={<(Icon as any) size={16} />} onClick={() => setActiveTab(tab)}>
               {label}
             </Button>
           ))}

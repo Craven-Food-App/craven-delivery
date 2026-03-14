@@ -592,21 +592,21 @@ export default function RetailProductCatalog({ restaurantId, restaurantType }: R
           await supabase.from("product_variants").insert(
             varData.map((v: Record<string, unknown>) => ({
               menu_item_id: (newProd as { id: string }).id,
-              title: v.title,
-              option1_name: v.option1_name,
-              option1_value: v.option1_value,
-              option2_name: v.option2_name,
-              option2_value: v.option2_value,
-              option3_name: v.option3_name,
-              option3_value: v.option3_value,
+              title: v.title as string,
+              option1_name: v.option1_name as string,
+              option1_value: v.option1_value as string,
+              option2_name: v.option2_name as string,
+              option2_value: v.option2_value as string,
+              option3_name: v.option3_name as string,
+              option3_value: v.option3_value as string,
               sku: (v.sku as string) ? `${v.sku}-COPY` : null,
               barcode: null,
-              price_cents: v.price_cents,
-              compare_at_price_cents: v.compare_at_price_cents,
-              cost_price_cents: v.cost_price_cents,
+              price_cents: v.price_cents as number,
+              compare_at_price_cents: v.compare_at_price_cents as number,
+              cost_price_cents: v.cost_price_cents as number,
               quantity_on_hand: 0,
-              is_available: v.is_available,
-              display_order: v.display_order,
+              is_available: v.is_available as boolean,
+              display_order: v.display_order as number,
             }))
           );
         }

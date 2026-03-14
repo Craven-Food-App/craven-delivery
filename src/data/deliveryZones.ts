@@ -80,7 +80,7 @@ function ensurePolygon(geom: unknown): Polygon | null {
     try {
       const parsed = JSON.parse(geo) as Record<string, unknown>;
       if (parsed?.type === 'Polygon') {
-        return parsed as Polygon;
+        return parsed as unknown as Polygon;
       }
       if (parsed?.type === 'MultiPolygon' && Array.isArray(parsed.coordinates)) {
         const firstPolygon = parsed.coordinates[0];

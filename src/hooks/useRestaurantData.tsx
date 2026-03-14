@@ -94,9 +94,9 @@ export const useRestaurantData = (restaurantId?: string) => {
       query
         .then(({ data, error }) => {
           if (error) console.error('Error refetching restaurant:', error);
-          else setRestaurant(data?.[0] ?? null);
+          else setRestaurant((data?.[0] as unknown as Restaurant) ?? null);
         })
-        .finally(() => setLoading(false));
+        .finally(() => setLoading(false)) as any;
     });
   };
 

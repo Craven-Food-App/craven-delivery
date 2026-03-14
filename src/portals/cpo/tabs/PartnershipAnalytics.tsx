@@ -135,7 +135,7 @@ const PartnershipAnalytics: React.FC = () => {
                 <Badge color={statusColors[status] || 'gray'} variant="light">
                   {status.replace('_', ' ')}
                 </Badge>
-                <Text fw={600}>{count}</Text>
+                <Text fw={600}>{count as number}</Text>
               </Group>
             ))}
             {Object.keys(byStatus).length === 0 && (

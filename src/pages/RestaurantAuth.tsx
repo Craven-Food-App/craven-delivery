@@ -222,7 +222,7 @@ const RestaurantAuth: React.FC = () => {
           padding: 24,
         }}
       >
-        <Card size="sm">
+        <Card>
           <Stack align="center" gap="xl">
             <Group gap="sm" style={{ marginBottom: 8 }}>
               <img src={cravenCLogo} alt="Crave'n" style={{ height: 40, width: "auto" }} />

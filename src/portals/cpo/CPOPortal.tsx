@@ -13,9 +13,9 @@ import {
   Badge,
 } from '@mantine/core';
 import {
-  IconHandshake,
+  IconHeartHandshake,
   IconLayoutDashboard,
-  IconPipeline,
+  IconLine,
   IconFileText,
   IconChartBar,
   IconUsers,

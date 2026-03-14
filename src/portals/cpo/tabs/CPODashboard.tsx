@@ -13,7 +13,7 @@ import {
   Skeleton,
 } from '@mantine/core';
 import {
-  IconHandshake,
+  IconHeartHandshake,
   IconTrendingUp,
   IconAlertTriangle,
   IconClock,
