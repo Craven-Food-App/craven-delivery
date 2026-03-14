@@ -20,6 +20,8 @@ import {
   IconChartBar,
   IconUsers,
   IconArrowLeft,
+  IconTimeline,
+  IconChecklist,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +32,8 @@ import PartnerPipeline from './tabs/PartnerPipeline';
 import ContractManagement from './tabs/ContractManagement';
 import PartnershipAnalytics from './tabs/PartnershipAnalytics';
 import PartnerDirectory from './tabs/PartnerDirectory';
+import ActivityLog from './tabs/ActivityLog';
+import PartnerOnboarding from './tabs/PartnerOnboarding';
 
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -53,21 +57,18 @@ const CPOPortal: React.FC = () => {
       }
       setUserEmail(user.email || '');
 
-      // Full access users
       if (hasFullAccess(user.email)) {
         setAuthorized(true);
         setLoading(false);
         return;
       }
 
-      // Check exec_users for CPO role
       const { data: execUser } = await supabase
         .from('exec_users')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Check user_roles
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
@@ -153,27 +154,35 @@ const CPOPortal: React.FC = () => {
 
       <AppShell.Main>
         <Tabs value={activeTab} onChange={setActiveTab} color="orange" style={{ maxWidth: 1400, margin: '0 auto' }}>
-          <Tabs.List mb="lg">
+          <Tabs.List mb="lg" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
             <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
               Dashboard
             </Tabs.Tab>
             <Tabs.Tab value="pipeline" leftSection={<IconLine size={16} />}>
-              Partner Pipeline
+              Pipeline
             </Tabs.Tab>
             <Tabs.Tab value="contracts" leftSection={<IconFileText size={16} />}>
               Contracts
+            </Tabs.Tab>
+            <Tabs.Tab value="activity" leftSection={<IconTimeline size={16} />}>
+              Activity Log
+            </Tabs.Tab>
+            <Tabs.Tab value="onboarding" leftSection={<IconChecklist size={16} />}>
+              Onboarding
             </Tabs.Tab>
             <Tabs.Tab value="analytics" leftSection={<IconChartBar size={16} />}>
               Analytics
             </Tabs.Tab>
             <Tabs.Tab value="directory" leftSection={<IconUsers size={16} />}>
-              Partner Directory
+              Directory
             </Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="dashboard"><CPODashboard /></Tabs.Panel>
           <Tabs.Panel value="pipeline"><PartnerPipeline /></Tabs.Panel>
           <Tabs.Panel value="contracts"><ContractManagement /></Tabs.Panel>
+          <Tabs.Panel value="activity"><ActivityLog /></Tabs.Panel>
+          <Tabs.Panel value="onboarding"><PartnerOnboarding /></Tabs.Panel>
           <Tabs.Panel value="analytics"><PartnershipAnalytics /></Tabs.Panel>
           <Tabs.Panel value="directory"><PartnerDirectory /></Tabs.Panel>
         </Tabs>

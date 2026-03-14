@@ -7,7 +7,6 @@ import {
   Group,
   RingProgress,
   Stack,
-  Badge,
   Timeline,
   ThemeIcon,
   Skeleton,
@@ -20,6 +19,7 @@ import {
   IconCheck,
   IconFileText,
   IconUserPlus,
+  IconCash,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,6 +30,8 @@ interface DashboardStats {
   expiringContracts: number;
   totalDealValue: number;
   avgHealthScore: number;
+  totalRevenueYTD: number;
+  totalRevenueMTD: number;
 }
 
 const CPODashboard: React.FC = () => {
@@ -43,27 +45,25 @@ const CPODashboard: React.FC = () => {
 
   const loadDashboard = async () => {
     try {
-      // Fetch partnerships
-      const { data: partnerships } = await supabase
-        .from('partnerships')
-        .select('*');
-
+      const { data: partnerships } = await supabase.from('partnerships').select('*');
       const all = partnerships || [];
       const active = all.filter(p => p.status === 'active');
       const pipeline = all.filter(p => ['lead', 'prospect', 'negotiation', 'contract_review'].includes(p.status));
-      
-      // Contracts expiring in next 30 days
+
       const thirtyDaysOut = new Date();
       thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
-      const expiring = all.filter(p => 
+      const expiring = all.filter(p =>
         p.contract_end_date && new Date(p.contract_end_date) <= thirtyDaysOut && p.status === 'active'
       );
 
       const totalDealValue = all.reduce((sum, p) => sum + (Number(p.deal_value) || 0), 0);
       const healthScores = all.filter(p => p.health_score != null).map(p => p.health_score!);
-      const avgHealth = healthScores.length > 0 
-        ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length) 
+      const avgHealth = healthScores.length > 0
+        ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length)
         : 0;
+
+      const totalRevenueYTD = all.reduce((sum, p) => sum + (Number((p as any).revenue_ytd) || 0), 0);
+      const totalRevenueMTD = all.reduce((sum, p) => sum + (Number((p as any).revenue_mtd) || 0), 0);
 
       setStats({
         totalPartners: all.length,
@@ -72,9 +72,10 @@ const CPODashboard: React.FC = () => {
         expiringContracts: expiring.length,
         totalDealValue,
         avgHealthScore: avgHealth,
+        totalRevenueYTD,
+        totalRevenueMTD,
       });
 
-      // Recent activities
       const { data: activities } = await supabase
         .from('partnership_activities')
         .select('*, partnerships(partner_name)')
@@ -93,7 +94,7 @@ const CPODashboard: React.FC = () => {
     return (
       <Stack gap="md">
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} height={120} radius="md" />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} height={120} radius="md" />)}
         </SimpleGrid>
         <Skeleton height={300} radius="md" />
       </Stack>
@@ -104,8 +105,7 @@ const CPODashboard: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      {/* KPI Cards */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Group justify="space-between">
             <div>
@@ -116,9 +116,7 @@ const CPODashboard: React.FC = () => {
               <IconHeartHandshake size={28} />
             </ThemeIcon>
           </Group>
-          <Text size="sm" c="dimmed" mt="sm">
-            {s.activePartners} active
-          </Text>
+          <Text size="sm" c="dimmed" mt="sm">{s.activePartners} active</Text>
         </Card>
 
         <Card shadow="sm" radius="md" padding="lg" withBorder>
@@ -131,9 +129,7 @@ const CPODashboard: React.FC = () => {
               <IconTrendingUp size={28} />
             </ThemeIcon>
           </Group>
-          <Text size="sm" c="dimmed" mt="sm">
-            Leads through contract review
-          </Text>
+          <Text size="sm" c="dimmed" mt="sm">Leads through contract review</Text>
         </Card>
 
         <Card shadow="sm" radius="md" padding="lg" withBorder>
@@ -146,9 +142,20 @@ const CPODashboard: React.FC = () => {
               <IconTrendingUp size={28} />
             </ThemeIcon>
           </Group>
-          <Text size="sm" c="dimmed" mt="sm">
-            Total partnership value
-          </Text>
+          <Text size="sm" c="dimmed" mt="sm">Total partnership value</Text>
+        </Card>
+
+        <Card shadow="sm" radius="md" padding="lg" withBorder>
+          <Group justify="space-between">
+            <div>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Revenue YTD</Text>
+              <Title order={2} c="green">${s.totalRevenueYTD.toLocaleString()}</Title>
+            </div>
+            <ThemeIcon size={48} radius="md" color="teal" variant="light">
+              <IconCash size={28} />
+            </ThemeIcon>
+          </Group>
+          <Text size="sm" c="dimmed" mt="sm">MTD: ${s.totalRevenueMTD.toLocaleString()}</Text>
         </Card>
 
         <Card shadow="sm" radius="md" padding="lg" withBorder>
@@ -163,13 +170,10 @@ const CPODashboard: React.FC = () => {
               <IconAlertTriangle size={28} />
             </ThemeIcon>
           </Group>
-          <Text size="sm" c="dimmed" mt="sm">
-            Contracts expiring in 30 days
-          </Text>
+          <Text size="sm" c="dimmed" mt="sm">Contracts expiring in 30 days</Text>
         </Card>
       </SimpleGrid>
 
-      {/* Health Score + Recent Activity */}
       <SimpleGrid cols={{ base: 1, lg: 2 }}>
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Title order={4} mb="md">Partner Health Score</Title>

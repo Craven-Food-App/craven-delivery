@@ -14,11 +14,13 @@ import {
   Skeleton,
   ActionIcon,
   Tooltip,
+  FileInput,
+  Progress,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconEye, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertTriangle, IconDownload, IconUpload, IconFile } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Document {
@@ -27,11 +29,14 @@ interface Document {
   document_name: string;
   document_type: string;
   file_url: string | null;
+  file_size_bytes: number | null;
   status: string;
   expires_at: string | null;
   created_at: string;
   partnerships?: { partner_name: string };
 }
+
+const ACCEPTED_TYPES = '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg';
 
 const ContractManagement: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -39,6 +44,7 @@ const ContractManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [opened, { open, close }] = useDisclosure(false);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [filter, setFilter] = useState<string | null>('all');
 
   const [formData, setFormData] = useState({
@@ -47,6 +53,7 @@ const ContractManagement: React.FC = () => {
     document_type: 'contract',
     status: 'draft',
     expires_at: null as Date | null,
+    file: null as File | null,
   });
 
   useEffect(() => {
@@ -69,8 +76,35 @@ const ContractManagement: React.FC = () => {
       return;
     }
     setSaving(true);
+    setUploadProgress(0);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      let fileUrl: string | null = null;
+      let fileSize: number | null = null;
+
+      // Upload file if selected
+      if (formData.file) {
+        setUploadProgress(20);
+        const timestamp = Date.now();
+        const safeName = formData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const filePath = `${timestamp}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('partnership-documents')
+          .upload(filePath, formData.file);
+
+        if (uploadError) throw uploadError;
+        setUploadProgress(70);
+
+        const { data: urlData } = supabase.storage
+          .from('partnership-documents')
+          .getPublicUrl(filePath);
+
+        fileUrl = urlData.publicUrl;
+        fileSize = formData.file.size;
+        setUploadProgress(90);
+      }
+
       const { error } = await supabase.from('partnership_documents').insert({
         partnership_id: formData.partnership_id,
         document_name: formData.document_name,
@@ -78,21 +112,33 @@ const ContractManagement: React.FC = () => {
         status: formData.status,
         expires_at: formData.expires_at?.toISOString() || null,
         uploaded_by: user?.id,
+        file_url: fileUrl,
+        file_size_bytes: fileSize,
       });
       if (error) throw error;
+      setUploadProgress(100);
       notifications.show({ title: 'Success', message: 'Document added', color: 'green' });
       close();
+      setFormData({ partnership_id: '', document_name: '', document_type: 'contract', status: 'draft', expires_at: null, file: null });
       loadData();
     } catch (err: any) {
       notifications.show({ title: 'Error', message: err.message, color: 'red' });
     } finally {
       setSaving(false);
+      setUploadProgress(0);
     }
   };
 
   const deleteDoc = async (id: string) => {
     await supabase.from('partnership_documents').delete().eq('id', id);
     loadData();
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const getStatusColor = (status: string) => {
@@ -113,9 +159,9 @@ const ContractManagement: React.FC = () => {
     return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
   };
 
-  const filteredDocs = filter === 'all' 
-    ? documents 
-    : filter === 'expiring' 
+  const filteredDocs = filter === 'all'
+    ? documents
+    : filter === 'expiring'
       ? documents.filter(d => isExpiringSoon(d.expires_at))
       : documents.filter(d => d.status === filter);
 
@@ -151,67 +197,84 @@ const ContractManagement: React.FC = () => {
       </Group>
 
       <Card shadow="sm" radius="md" withBorder padding={0}>
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Document</Table.Th>
-              <Table.Th>Partner</Table.Th>
-              <Table.Th>Type</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Expires</Table.Th>
-              <Table.Th>Actions</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredDocs.length === 0 ? (
+        <div style={{ overflowX: 'auto' }}>
+          <Table striped highlightOnHover>
+            <Table.Thead>
               <Table.Tr>
-                <Table.Td colSpan={6}>
-                  <Text ta="center" c="dimmed" py="xl">No documents found</Text>
-                </Table.Td>
+                <Table.Th>Document</Table.Th>
+                <Table.Th>Partner</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>File</Table.Th>
+                <Table.Th>Expires</Table.Th>
+                <Table.Th>Actions</Table.Th>
               </Table.Tr>
-            ) : (
-              filteredDocs.map(doc => (
-                <Table.Tr key={doc.id}>
-                  <Table.Td>
-                    <Text fw={500} size="sm">{doc.document_name}</Text>
+            </Table.Thead>
+            <Table.Tbody>
+              {filteredDocs.length === 0 ? (
+                <Table.Tr>
+                  <Table.Td colSpan={7}>
+                    <Text ta="center" c="dimmed" py="xl">No documents found</Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{doc.partnerships?.partner_name || '-'}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge variant="light" size="sm">{doc.document_type}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color={getStatusColor(doc.status)} size="sm">{doc.status.replace('_', ' ')}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4}>
-                      {doc.expires_at ? (
-                        <>
-                          <Text size="sm">{new Date(doc.expires_at).toLocaleDateString()}</Text>
-                          {isExpiringSoon(doc.expires_at) && (
-                            <Tooltip label="Expiring soon">
-                              <IconAlertTriangle size={14} color="orange" />
-                            </Tooltip>
-                          )}
-                        </>
+                </Table.Tr>
+              ) : (
+                filteredDocs.map(doc => (
+                  <Table.Tr key={doc.id}>
+                    <Table.Td>
+                      <Text fw={500} size="sm">{doc.document_name}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{doc.partnerships?.partner_name || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" size="sm">{doc.document_type}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color={getStatusColor(doc.status)} size="sm">{doc.status.replace('_', ' ')}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      {doc.file_url ? (
+                        <Tooltip label={`Download (${formatFileSize(doc.file_size_bytes)})`}>
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            size="sm"
+                            onClick={() => window.open(doc.file_url!, '_blank')}
+                          >
+                            <IconDownload size={14} />
+                          </ActionIcon>
+                        </Tooltip>
                       ) : (
-                        <Text size="sm" c="dimmed">—</Text>
+                        <Text size="xs" c="dimmed">No file</Text>
                       )}
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4}>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        {doc.expires_at ? (
+                          <>
+                            <Text size="sm">{new Date(doc.expires_at).toLocaleDateString()}</Text>
+                            {isExpiringSoon(doc.expires_at) && (
+                              <Tooltip label="Expiring soon">
+                                <IconAlertTriangle size={14} color="orange" />
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          <Text size="sm" c="dimmed">—</Text>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
                       <ActionIcon variant="subtle" color="red" size="sm" onClick={() => deleteDoc(doc.id)}>
                         <IconTrash size={14} />
                       </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))
-            )}
-          </Table.Tbody>
-        </Table>
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              )}
+            </Table.Tbody>
+          </Table>
+        </div>
       </Card>
 
       <Modal opened={opened} onClose={close} title="Add Document" size="md">
@@ -261,9 +324,29 @@ const ContractManagement: React.FC = () => {
             onChange={v => setFormData(d => ({ ...d, expires_at: v as any }))}
             clearable
           />
+          <FileInput
+            label="Upload File"
+            placeholder="Select PDF, DOC, XLS, or image"
+            accept={ACCEPTED_TYPES}
+            leftSection={<IconUpload size={16} />}
+            value={formData.file}
+            onChange={file => setFormData(d => ({ ...d, file: file }))}
+            clearable
+          />
+          {formData.file && (
+            <Group gap="xs">
+              <IconFile size={14} />
+              <Text size="xs" c="dimmed">{formData.file.name} ({formatFileSize(formData.file.size)})</Text>
+            </Group>
+          )}
+          {saving && uploadProgress > 0 && (
+            <Progress value={uploadProgress} color="orange" size="sm" animated />
+          )}
           <Group justify="flex-end">
             <Button variant="default" onClick={close}>Cancel</Button>
-            <Button color="orange" loading={saving} onClick={handleCreate}>Add Document</Button>
+            <Button color="orange" loading={saving} onClick={handleCreate}>
+              {formData.file ? 'Upload & Add' : 'Add Document'}
+            </Button>
           </Group>
         </Stack>
       </Modal>
