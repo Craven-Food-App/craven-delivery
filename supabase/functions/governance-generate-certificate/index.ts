@@ -3,23 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 // Brand asset URLs for executive stock certificates
-// Update these if you move assets to a different bucket/path.
 const CRAVEN_LOGO_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/Craven-LogoV2.png';
 const CRAVEN_C_WATERMARK_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/craven-c-new.png';
 const CEO_SIGNATURE_URL =
   'https://xaxbucnjlrfkccsfiddq.supabase.co/storage/v1/object/public/brand-assets/torrance_stroman_signature.png';
-
-function getCorsHeaders(origin: string | null) {
-  const allowedOrigin = origin || '*';
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers':
-      'authorization, x-client-info, apikey, content-type',
-  };
-}
 
 // Local HTML → PDF helper (mirrors foundational-generate-docs implementation)
 async function convertHtmlToPdf(htmlContent: string): Promise<Uint8Array> {

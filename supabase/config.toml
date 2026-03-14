@@ -175,6 +175,12 @@ verify_jwt = false
 [functions.governance-cast-vote]
 verify_jwt = false
 
+[functions.governance-issue-shares]
+verify_jwt = false
+
+[functions.governance-generate-certificate]
+verify_jwt = false
+
 [functions.governance-revoke-equity]
 verify_jwt = false
 
