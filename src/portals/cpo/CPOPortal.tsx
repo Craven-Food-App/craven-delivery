@@ -99,7 +99,7 @@ const CPOPortal: React.FC = () => {
     return (
       <Center style={{ minHeight: '100vh', padding: '2rem' }}>
         <Stack align="center" gap="md" style={{ maxWidth: 500 }}>
-          <IconHandshake size={48} color="#e74c3c" />
+          <IconHeartHandshake size={48} color="#e74c3c" />
           <Title order={2}>Access Denied</Title>
           <Text c="dimmed" ta="center">
             You don't have access to the CPO Partnership Portal. This portal is restricted to the Chief Partnership Officer and Administrators.
