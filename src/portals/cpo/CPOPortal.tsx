@@ -139,7 +139,7 @@ const CPOPortal: React.FC = () => {
         </Button>
         <Group gap={12}>
           <Avatar color="orange" radius="xl" size={36}>
-            <IconHandshake size={20} />
+            <IconHeartHandshake size={20} />
           </Avatar>
           <div>
             <Title order={4} style={{ lineHeight: 1.2 }}>CPO Partnership Portal</Title>
