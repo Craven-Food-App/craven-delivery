@@ -1438,6 +1438,14 @@ const MainHub: React.FC = () => {
       path: "/intern/dashboard",
       color: "#6366f1",
     },
+    {
+      id: "cpo",
+      name: "CPO Partnership Portal",
+      description: "Partnership management, pipeline, contracts, and analytics",
+      icon: TeamOutlined,
+      path: "/cpo-portal",
+      color: "#e67e22",
+    },
   ];
 
   const hubSections: HubSection[] = [
