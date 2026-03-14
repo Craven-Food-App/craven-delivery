@@ -27,6 +27,7 @@ import {
   CheckCircleOutlined,
   DesktopOutlined,
   EyeOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import { ConfigProvider } from "antd";
 import { cravenDriverTheme } from "@/config/antd-theme";
@@ -1446,6 +1447,14 @@ const MainHub: React.FC = () => {
       path: "/cpo-portal",
       color: "#e67e22",
     },
+    {
+      id: "internal-comms",
+      name: "Internal Communications",
+      description: "Secure messaging, announcements, file sharing, and task assignments",
+      icon: MessageOutlined,
+      path: "/hub/internal-comms",
+      color: "#FF6B35",
+    },
   ];
 
   const hubSections: HubSection[] = [
@@ -1453,7 +1462,7 @@ const MainHub: React.FC = () => {
       id: "executive-leadership",
       title: "Executive & Leadership",
       subtitle: "Strategic leadership and corporate governance",
-      portalIds: ["ceo", "admin", "company", "investors", "investor-demo", "cpo"],
+      portalIds: ["ceo", "admin", "company", "investors", "investor-demo", "cpo", "internal-comms"],
     },
     {
       id: "operations-delivery",
@@ -1567,6 +1576,7 @@ const MainHub: React.FC = () => {
       case 'internal-it': return canITOps;
       case 'cxo': return canCEO;
       case 'cpo': return canCEO || (user?.email && hasFullAccess(user.email));
+      case 'internal-comms': return canCEO || canCFO || canCOO || canCTO || (user?.email && hasFullAccess(user.email));
       case 'hr': return canHR;
       case 'foundational-invites': 
         const allowed = canAdmin || canCEO || (user?.email && hasFullAccess(user.email));
@@ -1704,6 +1714,21 @@ const MainHub: React.FC = () => {
               marginLeft: 16,
             }}
           >
+            <Tooltip title="Internal Communications">
+              <Button
+                type="text"
+                icon={<MessageOutlined style={{ fontSize: 18 }} />}
+                onClick={() => navigate('/hub/internal-comms')}
+                style={{
+                  color: '#FF6B35',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            </Tooltip>
             {employeeInfo && (
               <div
                 style={{
