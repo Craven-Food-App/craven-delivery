@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge, Upload, Tooltip } from 'antd';
-import { SendOutlined, UserOutlined, PlusOutlined, PaperClipOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, DownloadOutlined } from '@ant-design/icons';
+import { SendOutlined, UserOutlined, PlusOutlined, PaperClipOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
 import type { UploadFile } from 'antd/es/upload/interface';
 
