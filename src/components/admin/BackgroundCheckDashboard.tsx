@@ -47,7 +47,9 @@ type FilterTab = 'needs_review' | 'approved' | 'rejected' | 'all';
 type SortField = 'name' | 'date' | 'location' | 'status';
 type SortDir = 'asc' | 'desc';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: IconComponent }> = {
   needs_review: { label: 'Needs Review', color: 'text-amber-700', bgColor: 'bg-amber-50 border-amber-200', icon: Clock },
   approved: { label: 'Cleared', color: 'text-emerald-700', bgColor: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
   rejected: { label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-50 border-red-200', icon: XCircle },
