@@ -10,8 +10,11 @@ import {
   Progress,
   Skeleton,
   Table,
+  Button,
 } from '@mantine/core';
+import { IconDownload, IconFileText } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
 
 const PartnershipAnalytics: React.FC = () => {
   const [partnerships, setPartnerships] = useState<any[]>([]);
