@@ -25,8 +25,11 @@ import {
   IconEdit,
   IconTrash,
   IconArrowRight,
+  IconDownload,
+  IconFileText,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
 
 const STAGES = [
   { value: 'lead', label: 'Lead', color: 'gray' },
