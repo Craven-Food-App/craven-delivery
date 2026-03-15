@@ -260,7 +260,7 @@ const PartnerScorecards: React.FC = () => {
                         <Table.Td><Text size="sm" fw={600}>{kpi.actual_value}{kpi.unit ? ` ${kpi.unit}` : ''}</Text></Table.Td>
                         <Table.Td style={{ minWidth: 120 }}>
                           <Progress value={Math.min(pct, 100)} color={status.color} size="sm" radius="xl" />
-                          <Text size={10} c="dimmed" ta="center">{pct}%</Text>
+                          <Text size="xs" c="dimmed" ta="center">{pct}%</Text>
                         </Table.Td>
                         <Table.Td><Badge size="xs" color={status.color}>{status.label}</Badge></Table.Td>
                         <Table.Td>

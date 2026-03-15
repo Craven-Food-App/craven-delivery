@@ -184,11 +184,11 @@ const RenewalCalendar: React.FC = () => {
                 <Text size="xs" fw={isToday ? 700 : 400} c={isToday ? 'orange' : undefined}>{day}</Text>
                 {dayItems.slice(0, 2).map(item => (
                   <Badge key={item.id} size="xs" color={getUrgencyColor(item.expiresAt)} variant="light" fullWidth style={{ marginTop: 2 }}>
-                    <Text size={10} truncate>{item.partnerName}</Text>
+                    <Text size="xs" truncate>{item.partnerName}</Text>
                   </Badge>
                 ))}
                 {dayItems.length > 2 && (
-                  <Text size={10} c="dimmed" ta="center">+{dayItems.length - 2} more</Text>
+                  <Text size="xs" c="dimmed" ta="center">+{dayItems.length - 2} more</Text>
                 )}
               </div>
             );
