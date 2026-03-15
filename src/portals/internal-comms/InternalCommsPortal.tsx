@@ -36,8 +36,8 @@ const InternalCommsPortal: React.FC = () => {
             onClick={() => navigate('/hub')}
             style={{ color: '#374151' }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <img src={cravenCLogo} alt="C" style={{ height: 22, width: 'auto' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            <img src={cravenCLogo} alt="C" style={{ height: 28, width: 'auto' }} />
             <Title level={4} style={{ margin: 0, fontSize: 18 }}>
               Comms
             </Title>
