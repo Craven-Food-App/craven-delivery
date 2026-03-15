@@ -480,6 +480,13 @@ const MessagesTab: React.FC = () => {
                   <Text type="secondary" style={{ fontSize: 10 }}>
                     {new Date(reply.created_at).toLocaleString()}
                   </Text>
+                  {reply.sender_id === currentUser?.id && (
+                    <Tooltip title="Delete reply">
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(reply.id, false)}
+                        style={{ marginLeft: 'auto', padding: 0, height: 20 }} />
+                    </Tooltip>
+                  )}
                 </div>
                 <div style={{ fontSize: 13 }}>{reply.body}</div>
                 <AttachmentList attachments={reply.attachments || []} />
