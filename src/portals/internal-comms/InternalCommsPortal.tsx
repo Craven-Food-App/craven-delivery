@@ -1,9 +1,10 @@
 import React from 'react';
 import { Layout, Typography, Button, ConfigProvider } from 'antd';
 import { Tabs } from 'antd';
-import { ArrowLeftOutlined, MessageOutlined, NotificationOutlined, FileOutlined, CheckSquareOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, NotificationOutlined, FileOutlined, CheckSquareOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { cravenDriverTheme } from '@/config/antd-theme';
+import cravenCLogo from '@/assets/craven-c-new.png';
 import MessagesTab from './tabs/MessagesTab';
 import AnnouncementsTab from './tabs/AnnouncementsTab';
 import SharedFilesTab from './tabs/SharedFilesTab';
@@ -36,9 +37,9 @@ const InternalCommsPortal: React.FC = () => {
             style={{ color: '#374151' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <MessageOutlined style={{ fontSize: 20, color: '#FF6B35' }} />
+            <img src={cravenCLogo} alt="C" style={{ height: 22, width: 'auto' }} />
             <Title level={4} style={{ margin: 0, fontSize: 18 }}>
-              Internal Communications
+              Comms
             </Title>
           </div>
         </Header>
@@ -53,7 +54,7 @@ const InternalCommsPortal: React.FC = () => {
                 key: 'messages',
                 label: (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MessageOutlined /> Messages
+                    <img src={cravenCLogo} alt="C" style={{ height: 16, width: 'auto' }} /> Messages
                   </span>
                 ),
                 children: <MessagesTab />,
