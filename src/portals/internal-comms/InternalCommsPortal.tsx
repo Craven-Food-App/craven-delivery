@@ -37,9 +37,9 @@ const InternalCommsPortal: React.FC = () => {
             style={{ color: '#374151' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <MessageOutlined style={{ fontSize: 20, color: '#FF6B35' }} />
+            <img src={cravenCLogo} alt="C" style={{ height: 22, width: 'auto' }} />
             <Title level={4} style={{ margin: 0, fontSize: 18 }}>
-              Internal Communications
+              Comms
             </Title>
           </div>
         </Header>
