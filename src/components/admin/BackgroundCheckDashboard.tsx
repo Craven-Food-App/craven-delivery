@@ -240,7 +240,7 @@ export default function BackgroundCheckDashboard() {
     );
   }
 
-  const kpiCards: { key: FilterTab; label: string; count: number; icon: React.ElementType; color: string; accent: string }[] = [
+  const kpiCards: { key: FilterTab; label: string; count: number; icon: IconComponent; color: string; accent: string }[] = [
     { key: 'needs_review', label: 'Needs Review', count: counts.needs_review, icon: Clock, color: 'text-amber-600', accent: 'border-l-amber-500' },
     { key: 'approved', label: 'Cleared', count: counts.approved, icon: Shield, color: 'text-emerald-600', accent: 'border-l-emerald-500' },
     { key: 'rejected', label: 'Rejected', count: counts.rejected, icon: XCircle, color: 'text-red-600', accent: 'border-l-red-500' },
