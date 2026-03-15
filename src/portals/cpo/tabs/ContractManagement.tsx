@@ -20,8 +20,9 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconTrash, IconAlertTriangle, IconDownload, IconUpload, IconFile } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconAlertTriangle, IconDownload, IconUpload, IconFile, IconFileText } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
 
 interface Document {
   id: string;
