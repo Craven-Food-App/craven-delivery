@@ -455,6 +455,14 @@ const MessagesTab: React.FC = () => {
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   {new Date(selectedMessage.created_at).toLocaleString()}
                 </Text>
+                <div style={{ marginLeft: 'auto' }}>
+                  {selectedMessage.sender_id === currentUser?.id && (
+                    <Tooltip title="Delete conversation">
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(selectedMessage.id, true)} />
+                    </Tooltip>
+                  )}
+                </div>
               </div>
               <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{selectedMessage.body}</div>
               <AttachmentList attachments={selectedMessage.attachments || []} />
