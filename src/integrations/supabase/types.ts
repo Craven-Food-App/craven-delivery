@@ -21264,6 +21264,50 @@ export type Database = {
           },
         ]
       }
+      partnership_kpis: {
+        Row: {
+          actual_value: number | null
+          created_at: string | null
+          id: string
+          kpi_name: string
+          partnership_id: string
+          period: string | null
+          target_value: number | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          created_at?: string | null
+          id?: string
+          kpi_name: string
+          partnership_id: string
+          period?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          created_at?: string | null
+          id?: string
+          kpi_name?: string
+          partnership_id?: string
+          period?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_kpis_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_onboarding_items: {
         Row: {
           completed: boolean
