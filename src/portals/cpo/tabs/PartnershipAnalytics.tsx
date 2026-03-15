@@ -78,7 +78,20 @@ const PartnershipAnalytics: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Title order={3}>Partnership Analytics</Title>
+      <Group justify="space-between" wrap="wrap">
+        <Title order={3}>Partnership Analytics</Title>
+        <Group>
+          <Button variant="light" color="gray" leftSection={<IconDownload size={16} />} onClick={() => {
+            exportToCSV(partnerships.map(p => ({
+              Partner: p.partner_name, Type: p.partner_type, Status: p.status, 'Deal Value': Number(p.deal_value) || 0, 'Revenue YTD': Number(p.revenue_ytd) || 0, 'Revenue MTD': Number(p.revenue_mtd) || 0,
+            })), 'partnership-analytics');
+          }}>CSV</Button>
+          <Button variant="light" color="gray" leftSection={<IconFileText size={16} />} onClick={() => {
+            const rows = partnerships.map(p => `<tr><td>${p.partner_name}</td><td>${p.partner_type}</td><td>${p.status}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td><td>$${Number(p.revenue_ytd || 0).toLocaleString()}</td></tr>`).join('');
+            exportToPrintPDF('Partnership Analytics', `<table><tr><th>Partner</th><th>Type</th><th>Status</th><th>Deal Value</th><th>Revenue YTD</th></tr>${rows}</table>`);
+          }}>PDF</Button>
+        </Group>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
         <Card shadow="sm" radius="md" padding="lg" withBorder>

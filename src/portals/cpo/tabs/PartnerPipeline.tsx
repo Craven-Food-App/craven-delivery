@@ -289,9 +289,20 @@ const PartnerPipeline: React.FC = () => {
     <Stack gap="lg">
       <Group justify="space-between">
         <Title order={3}>Partner Pipeline</Title>
-        <Button leftSection={<IconPlus size={16} />} color="orange" onClick={open}>
-          Add Partner
-        </Button>
+        <Group>
+          <Button variant="light" color="gray" leftSection={<IconDownload size={16} />} onClick={() => {
+            exportToCSV(partnerships.map(p => ({
+              Name: p.partner_name, Type: p.partner_type, Stage: p.status, 'Deal Value': p.deal_value || 0, Priority: p.priority, Industry: p.industry || '',
+            })), 'partner-pipeline');
+          }}>CSV</Button>
+          <Button variant="light" color="gray" leftSection={<IconFileText size={16} />} onClick={() => {
+            const rows = partnerships.map(p => `<tr><td>${p.partner_name}</td><td>${p.partner_type}</td><td>${p.status}</td><td>$${Number(p.deal_value || 0).toLocaleString()}</td></tr>`).join('');
+            exportToPrintPDF('Partner Pipeline', `<table><tr><th>Name</th><th>Type</th><th>Stage</th><th>Deal Value</th></tr>${rows}</table>`);
+          }}>PDF</Button>
+          <Button leftSection={<IconPlus size={16} />} color="orange" onClick={open}>
+            Add Partner
+          </Button>
+        </Group>
       </Group>
 
       <div style={{ overflowX: 'auto' }}>

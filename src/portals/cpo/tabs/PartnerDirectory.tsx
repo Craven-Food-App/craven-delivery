@@ -136,15 +136,28 @@ const PartnerDirectory: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <Title order={3}>Partner Directory</Title>
-        <TextInput
-          placeholder="Search partners or contacts..."
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ minWidth: 280 }}
-        />
+        <Group>
+          <Button variant="light" color="gray" leftSection={<IconDownload size={16} />} onClick={() => {
+            const rows = partners.flatMap(p => p.contacts.length > 0
+              ? p.contacts.map(c => ({ Partner: p.partner_name, Status: p.status, Contact: c.full_name, Title: c.title || '', Email: c.email || '', Phone: c.phone || '' }))
+              : [{ Partner: p.partner_name, Status: p.status, Contact: '', Title: '', Email: '', Phone: '' }]
+            );
+            exportToCSV(rows, 'partner-directory');
+          }}>CSV</Button>
+          <Button variant="light" color="gray" leftSection={<IconFileText size={16} />} onClick={() => {
+            const rows = partners.map(p => `<tr><td>${p.partner_name}</td><td>${p.status}</td><td>${p.industry || ''}</td><td>${p.contacts.length}</td></tr>`).join('');
+            exportToPrintPDF('Partner Directory', `<table><tr><th>Partner</th><th>Status</th><th>Industry</th><th>Contacts</th></tr>${rows}</table>`);
+          }}>PDF</Button>
+          <TextInput
+            placeholder="Search partners or contacts..."
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ minWidth: 280 }}
+          />
+        </Group>
       </Group>
 
       {filtered.length === 0 ? (

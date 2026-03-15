@@ -170,11 +170,22 @@ const ContractManagement: React.FC = () => {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <Title order={3}>Contract Management</Title>
-        <Button leftSection={<IconPlus size={16} />} color="orange" onClick={open}>
-          Add Document
-        </Button>
+        <Group>
+          <Button variant="light" color="gray" leftSection={<IconDownload size={16} />} onClick={() => {
+            exportToCSV(documents.map(d => ({
+              Document: d.document_name, Partner: d.partnerships?.partner_name || '', Type: d.document_type, Status: d.status, Expires: d.expires_at || '',
+            })), 'contracts');
+          }}>CSV</Button>
+          <Button variant="light" color="gray" leftSection={<IconFileText size={16} />} onClick={() => {
+            const rows = documents.map(d => `<tr><td>${d.document_name}</td><td>${d.partnerships?.partner_name || ''}</td><td>${d.document_type}</td><td>${d.status}</td><td>${d.expires_at ? new Date(d.expires_at).toLocaleDateString() : '—'}</td></tr>`).join('');
+            exportToPrintPDF('Contract Management', `<table><tr><th>Document</th><th>Partner</th><th>Type</th><th>Status</th><th>Expires</th></tr>${rows}</table>`);
+          }}>PDF</Button>
+          <Button leftSection={<IconPlus size={16} />} color="orange" onClick={open}>
+            Add Document
+          </Button>
+        </Group>
       </Group>
 
       <Group>

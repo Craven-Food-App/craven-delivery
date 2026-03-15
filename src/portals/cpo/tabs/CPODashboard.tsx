@@ -103,8 +103,30 @@ const CPODashboard: React.FC = () => {
 
   const s = stats!;
 
+  // Compute expiring partner names for banner
+  const thirtyDaysOut = new Date();
+  thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+  const sevenDaysOut = new Date();
+  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+
   return (
     <Stack gap="lg">
+      {/* Renewal Alert Banner */}
+      {s.expiringContracts > 0 && (
+        <Card shadow="sm" radius="md" padding="md" withBorder style={{ borderLeft: '4px solid #e03131', backgroundColor: '#fff5f5' }}>
+          <Group gap="sm">
+            <IconAlertTriangle size={20} color="#e03131" />
+            <div>
+              <Text fw={600} size="sm" c="red">
+                {s.expiringContracts} contract{s.expiringContracts > 1 ? 's' : ''} expiring in the next 30 days
+              </Text>
+              <Text size="xs" c="dimmed">
+                Check the Calendar tab for details and renewal deadlines.
+              </Text>
+            </div>
+          </Group>
+        </Card>
+      )}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         <Card shadow="sm" radius="md" padding="lg" withBorder>
           <Group justify="space-between">

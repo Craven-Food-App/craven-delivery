@@ -174,6 +174,12 @@ const CPOPortal: React.FC = () => {
             <Tabs.Tab value="onboarding" leftSection={<IconChecklist size={16} />}>
               Onboarding
             </Tabs.Tab>
+            <Tabs.Tab value="calendar" leftSection={<IconCalendar size={16} />}>
+              Calendar
+            </Tabs.Tab>
+            <Tabs.Tab value="scorecards" leftSection={<IconTargetArrow size={16} />}>
+              Scorecards
+            </Tabs.Tab>
             <Tabs.Tab value="analytics" leftSection={<IconChartBar size={16} />}>
               Analytics
             </Tabs.Tab>
@@ -187,6 +193,8 @@ const CPOPortal: React.FC = () => {
           <Tabs.Panel value="contracts"><ContractManagement /></Tabs.Panel>
           <Tabs.Panel value="activity"><ActivityLog /></Tabs.Panel>
           <Tabs.Panel value="onboarding"><PartnerOnboarding /></Tabs.Panel>
+          <Tabs.Panel value="calendar"><RenewalCalendar /></Tabs.Panel>
+          <Tabs.Panel value="scorecards"><PartnerScorecards /></Tabs.Panel>
           <Tabs.Panel value="analytics"><PartnershipAnalytics /></Tabs.Panel>
           <Tabs.Panel value="directory"><PartnerDirectory /></Tabs.Panel>
         </Tabs>
