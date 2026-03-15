@@ -36,6 +36,8 @@ import PartnershipAnalytics from './tabs/PartnershipAnalytics';
 import PartnerDirectory from './tabs/PartnerDirectory';
 import ActivityLog from './tabs/ActivityLog';
 import PartnerOnboarding from './tabs/PartnerOnboarding';
+import RenewalCalendar from './tabs/RenewalCalendar';
+import PartnerScorecards from './tabs/PartnerScorecards';
 
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
