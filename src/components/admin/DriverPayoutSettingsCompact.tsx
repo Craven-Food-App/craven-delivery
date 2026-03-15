@@ -1,5 +1,5 @@
 /**
- * Driver Payout Settings - Compact Enterprise UI
+ * Driver Payout Settings - Enterprise UI
  * Real-time calculation with scenario analysis
  */
 import React, { useEffect, useState, useMemo } from 'react';
@@ -8,44 +8,48 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { DollarSign, Save, RotateCcw, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-import { 
-  calculateScenarios, 
-  calculateMetrics, 
-  type PayoutSettings, 
-  type ScenarioResult 
+import { cn } from '@/lib/utils';
+import {
+  DollarSign,
+  Save,
+  RotateCcw,
+  AlertTriangle,
+  TrendingUp,
+  Percent,
+  Coins,
+  BarChart3,
+  Info,
+} from 'lucide-react';
+import {
+  calculateScenarios,
+  calculateMetrics,
+  type PayoutSettings,
 } from '@/utils/payoutCalculations';
 import { payoutSettingsService } from '@/services/payoutSettingsService';
 
 export const DriverPayoutSettingsCompact: React.FC = () => {
-  const [settings, setSettings] = useState<PayoutSettings>({
-    basePayCents: 250,
-    shareBps: 7000,
-  });
+  const [settings, setSettings] = useState<PayoutSettings>({ basePayCents: 250, shareBps: 7000 });
+  const [savedSettings, setSavedSettings] = useState<PayoutSettings>({ basePayCents: 250, shareBps: 7000 });
   const [hasChanges, setHasChanges] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const { toast } = useToast();
 
-  // Computed values
   const scenarios = useMemo(() => calculateScenarios(settings), [settings]);
   const metrics = useMemo(() => calculateMetrics(scenarios), [scenarios]);
   const percentageShare = settings.shareBps / 100;
 
-  // Load existing settings
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const data = await payoutSettingsService.getSettings();
         setSettings(data);
+        setSavedSettings(data);
       } catch (error) {
-        console.error('Failed to load settings:', error);
-        toast({
-          title: 'Failed to load settings',
-          description: (error as Error).message,
-          variant: 'destructive',
-        });
+        toast({ title: 'Failed to load settings', description: (error as Error).message, variant: 'destructive' });
       } finally {
         setInitialLoading(false);
       }
@@ -53,49 +57,42 @@ export const DriverPayoutSettingsCompact: React.FC = () => {
     loadSettings();
   }, [toast]);
 
-  const handleBasePayChange = (value: string) => {
-    const cents = parseInt(value) || 0;
-    setSettings({ ...settings, basePayCents: cents });
-    setHasChanges(true);
-  };
-
-  const handleShareChange = (value: number) => {
-    setSettings({ ...settings, shareBps: value });
-    setHasChanges(true);
+  const updateSettings = (patch: Partial<PayoutSettings>) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    setHasChanges(next.basePayCents !== savedSettings.basePayCents || next.shareBps !== savedSettings.shareBps);
   };
 
   const handleSave = async () => {
     try {
       setLoading(true);
       await payoutSettingsService.saveSettings(settings);
+      setSavedSettings(settings);
       setHasChanges(false);
       toast({
         title: 'Settings saved',
-        description: `Drivers now earn max($${(settings.basePayCents/100).toFixed(2)}, ${percentageShare}% of delivery fees) + 100% tips.`,
+        description: `Drivers now earn max($${(settings.basePayCents / 100).toFixed(2)}, ${percentageShare}% of delivery fees) + 100% tips.`,
       });
     } catch (error) {
-      toast({
-        title: 'Save failed',
-        description: (error as Error).message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Save failed', description: (error as Error).message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = () => {
-    setSettings({ basePayCents: 250, shareBps: 7000 });
+    setSettings(savedSettings);
     setHasChanges(false);
   };
 
   if (initialLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Loading settings...</div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-32">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading payout settings…</p>
+        </div>
+      </div>
     );
   }
 
@@ -104,155 +101,164 @@ export const DriverPayoutSettingsCompact: React.FC = () => {
   const totalPlatformShare = scenarios.reduce((sum, s) => sum + s.platformShare, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <DollarSign className="h-6 w-6" />
-            Driver Payout Configuration
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Configure driver earnings based on delivery fees. Changes apply to new orders only.
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <DollarSign className="h-6 w-6 text-primary" />
+            Payout Configuration
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Configure driver earnings. Changes apply to new orders only.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={!hasChanges || loading}
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2">
+          {hasChanges && (
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-200 text-xs">
+              Unsaved Changes
+            </Badge>
+          )}
+          <Button variant="outline" onClick={handleReset} disabled={!hasChanges || loading} className="shadow-sm">
+            <RotateCcw className="h-4 w-4 mr-1.5" />
             Reset
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!hasChanges || loading}
-          >
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave} disabled={!hasChanges || loading} className="shadow-sm">
+            <Save className="h-4 w-4 mr-1.5" />
             Save Changes
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column - Controls */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Base Pay Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Base Pay (Minimum Guarantee)</CardTitle>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Avg Driver Payout', value: `$${metrics.avgDriverPayout.toFixed(2)}`, icon: Coins, color: 'text-green-600' },
+          { label: 'Avg Platform Share', value: `$${metrics.avgPlatformShare.toFixed(2)}`, icon: BarChart3, color: 'text-blue-600' },
+          { label: 'Driver Margin', value: `${metrics.driverMargin.toFixed(1)}%`, icon: TrendingUp, color: 'text-primary' },
+          { label: 'Base Pay Floor', value: `$${(settings.basePayCents / 100).toFixed(2)}`, icon: DollarSign, color: 'text-amber-600' },
+        ].map(kpi => (
+          <Card key={kpi.label} className="shadow-sm">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className={cn('p-2.5 rounded-lg bg-muted', kpi.color)}>
+                <kpi.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{kpi.label}</p>
+                <p className="text-2xl font-bold text-foreground tabular-nums">{kpi.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Left - Controls */}
+        <div className="xl:col-span-5 space-y-4">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Base Pay (Minimum Guarantee)
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label className="mb-2 block">Amount in Cents</Label>
-                <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Amount in Cents</Label>
                   <Input
                     type="number"
                     min={0}
                     step={10}
                     value={settings.basePayCents}
-                    onChange={(e) => handleBasePayChange(e.target.value)}
-                    className="w-32"
+                    onChange={e => updateSettings({ basePayCents: parseInt(e.target.value) || 0 })}
+                    className="mt-1.5"
                   />
-                  <span className="text-sm text-muted-foreground">
+                </div>
+                <div className="pt-5">
+                  <span className="text-2xl font-bold text-foreground tabular-nums">
                     = ${(settings.basePayCents / 100).toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Minimum amount driver earns per delivery (before tip). Acts as a floor, not additive.
-                </p>
+              </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>Minimum amount drivers earn per delivery (before tip). Acts as a floor, not additive.</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Fee Distribution Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Driver Share of Delivery Fees</CardTitle>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Percent className="h-4 w-4 text-primary" />
+                Driver Share of Delivery Fees
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label>Percentage Share</Label>
-                  <span className="text-sm font-medium">{percentageShare}%</span>
-                </div>
-                <div className="relative">
-                  <Slider
-                    value={[settings.shareBps]}
-                    onValueChange={(v) => handleShareChange(v[0])}
-                    min={0}
-                    max={10000}
-                    step={100}
-                    className="w-full"
-                  />
-                  <div
-                    className="absolute top-0 left-0 h-2 bg-blue-500 rounded-full pointer-events-none"
-                    style={{ width: `${percentageShare}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-4 mt-4">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={10000}
-                    step={100}
-                    value={settings.shareBps}
-                    onChange={(e) => handleShareChange(Math.max(0, Math.min(10000, Number(e.target.value))))}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-muted-foreground">basis points</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Formula: Earnings = max(base pay, {percentageShare}% of delivery fees) + 100% of tip
-                </p>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Percentage</Label>
+                <span className="text-2xl font-bold text-foreground tabular-nums">{percentageShare}%</span>
+              </div>
+              <Slider
+                value={[settings.shareBps]}
+                onValueChange={v => updateSettings({ shareBps: v[0] })}
+                min={0}
+                max={10000}
+                step={100}
+                className="w-full"
+              />
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={0}
+                  max={10000}
+                  step={100}
+                  value={settings.shareBps}
+                  onChange={e => updateSettings({ shareBps: Math.max(0, Math.min(10000, Number(e.target.value))) })}
+                  className="w-28"
+                />
+                <span className="text-xs text-muted-foreground">basis points</span>
+              </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>Formula: Earnings = max(base pay, {percentageShare}% of delivery fees) + 100% of tip</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Metrics Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Aggregate Metrics</CardTitle>
+          {/* Financial Summary */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                Financial Summary
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Avg Driver Payout</span>
-                <span className="font-medium">${metrics.avgDriverPayout.toFixed(2)}</span>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Revenue (scenarios)</span>
+                <span className="font-semibold tabular-nums">${totalDeliveryFees.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Avg Platform Share</span>
-                <span className="font-medium">${metrics.avgPlatformShare.toFixed(2)}</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Driver Payout</span>
+                <span className="font-semibold text-green-600 tabular-nums">${totalDriverPayout.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Driver Margin</span>
-                <span className="font-medium">{metrics.driverMargin.toFixed(1)}%</span>
-              </div>
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Revenue</span>
-                  <span className="font-bold">${totalDeliveryFees.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-sm font-medium">Total Driver Payout</span>
-                  <span className="font-bold text-green-600">${totalDriverPayout.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-sm font-medium">Total Platform Share</span>
-                  <span className="font-bold text-blue-600">${totalPlatformShare.toFixed(2)}</span>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Platform Share</span>
+                <span className="font-semibold text-blue-600 tabular-nums">${totalPlatformShare.toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Warning Card */}
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-yellow-900 mb-1">Important Notes</p>
-                  <ul className="text-yellow-800 space-y-1 list-disc list-inside">
+          {/* Important Notes */}
+          <Card className="shadow-sm border-amber-200 bg-amber-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold text-amber-900">Important Notes</p>
+                  <ul className="text-amber-800 space-y-0.5 list-disc list-inside">
                     <li>Drivers get 0% of food subtotal</li>
                     <li>Base pay is a floor, not additive</li>
                     <li>Tips pass through 100% to drivers</li>
@@ -264,75 +270,64 @@ export const DriverPayoutSettingsCompact: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right Column - Scenarios Table */}
-        <div className="lg:col-span-7">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Scenario Analysis</CardTitle>
-              <p className="text-sm text-muted-foreground">
+        {/* Right - Scenario Table */}
+        <div className="xl:col-span-7">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                Scenario Analysis
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
                 Real-time payout calculations for different delivery scenarios
               </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2 font-medium">Scenario</th>
-                      <th className="text-right p-2 font-medium">Distance</th>
-                      <th className="text-right p-2 font-medium">Delivery Fees</th>
-                      <th className="text-right p-2 font-medium">Tip</th>
-                      <th className="text-right p-2 font-medium">Driver Fee Share</th>
-                      <th className="text-right p-2 font-medium">Driver Before Tip</th>
-                      <th className="text-right p-2 font-medium">Driver Payout</th>
-                      <th className="text-right p-2 font-medium">Platform Share</th>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Scenario</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Distance</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Fees</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Tip</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Fee Share</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Before Tip</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Payout</th>
+                      <th className="text-right p-3 font-medium text-xs uppercase tracking-wide text-muted-foreground">Platform</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {scenarios.map((scenario, idx) => {
-                      const basePayApplied = scenario.driverBeforeTip === (settings.basePayCents / 100);
+                    {scenarios.map((s, idx) => {
+                      const basePayApplied = s.driverBeforeTip === settings.basePayCents / 100;
                       return (
-                        <tr key={idx} className="border-b hover:bg-muted/50">
-                          <td className="p-2 font-medium">{scenario.label}</td>
-                          <td className="p-2 text-right text-muted-foreground">{scenario.distance}</td>
-                          <td className="p-2 text-right">${scenario.deliveryFees.toFixed(2)}</td>
-                          <td className="p-2 text-right">${scenario.tip.toFixed(2)}</td>
-                          <td className="p-2 text-right text-muted-foreground">
-                            ${scenario.driverFeeShare.toFixed(2)}
-                          </td>
-                          <td className="p-2 text-right">
-                            <span className={basePayApplied ? "text-orange-600 font-medium" : ""}>
-                              ${scenario.driverBeforeTip.toFixed(2)}
+                        <tr key={idx} className="border-b hover:bg-accent/50 transition-colors">
+                          <td className="p-3 font-medium text-foreground">{s.label}</td>
+                          <td className="p-3 text-right text-muted-foreground">{s.distance}</td>
+                          <td className="p-3 text-right tabular-nums">${s.deliveryFees.toFixed(2)}</td>
+                          <td className="p-3 text-right tabular-nums">${s.tip.toFixed(2)}</td>
+                          <td className="p-3 text-right tabular-nums text-muted-foreground">${s.driverFeeShare.toFixed(2)}</td>
+                          <td className="p-3 text-right tabular-nums">
+                            <span className={cn(basePayApplied && 'text-amber-600 font-semibold')}>
+                              ${s.driverBeforeTip.toFixed(2)}
                             </span>
-                            {basePayApplied && (
-                              <TrendingUp className="h-3 w-3 inline ml-1 text-orange-600" />
-                            )}
+                            {basePayApplied && <TrendingUp className="h-3 w-3 inline ml-1 text-amber-600" />}
                           </td>
-                          <td className="p-2 text-right font-medium text-green-600">
-                            ${scenario.driverPayout.toFixed(2)}
-                          </td>
-                          <td className="p-2 text-right text-blue-600">
-                            ${scenario.platformShare.toFixed(2)}
-                          </td>
+                          <td className="p-3 text-right font-semibold text-green-600 tabular-nums">${s.driverPayout.toFixed(2)}</td>
+                          <td className="p-3 text-right text-blue-600 tabular-nums">${s.platformShare.toFixed(2)}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 font-bold bg-muted/30">
-                      <td colSpan={2} className="p-2">Totals</td>
-                      <td className="p-2 text-right">${totalDeliveryFees.toFixed(2)}</td>
-                      <td className="p-2 text-right">
-                        ${scenarios.reduce((sum, s) => sum + s.tip, 0).toFixed(2)}
-                      </td>
-                      <td className="p-2 text-right">
-                        ${scenarios.reduce((sum, s) => sum + s.driverFeeShare, 0).toFixed(2)}
-                      </td>
-                      <td className="p-2 text-right">
-                        ${scenarios.reduce((sum, s) => sum + s.driverBeforeTip, 0).toFixed(2)}
-                      </td>
-                      <td className="p-2 text-right text-green-600">${totalDriverPayout.toFixed(2)}</td>
-                      <td className="p-2 text-right text-blue-600">${totalPlatformShare.toFixed(2)}</td>
+                      <td colSpan={2} className="p-3 text-foreground">Totals</td>
+                      <td className="p-3 text-right tabular-nums">${totalDeliveryFees.toFixed(2)}</td>
+                      <td className="p-3 text-right tabular-nums">${scenarios.reduce((sum, s) => sum + s.tip, 0).toFixed(2)}</td>
+                      <td className="p-3 text-right tabular-nums">${scenarios.reduce((sum, s) => sum + s.driverFeeShare, 0).toFixed(2)}</td>
+                      <td className="p-3 text-right tabular-nums">${scenarios.reduce((sum, s) => sum + s.driverBeforeTip, 0).toFixed(2)}</td>
+                      <td className="p-3 text-right text-green-600 tabular-nums">${totalDriverPayout.toFixed(2)}</td>
+                      <td className="p-3 text-right text-blue-600 tabular-nums">${totalPlatformShare.toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -346,41 +341,3 @@ export const DriverPayoutSettingsCompact: React.FC = () => {
 };
 
 export default DriverPayoutSettingsCompact;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
