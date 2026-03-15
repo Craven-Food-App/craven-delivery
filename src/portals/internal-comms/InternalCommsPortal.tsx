@@ -54,7 +54,7 @@ const InternalCommsPortal: React.FC = () => {
                 key: 'messages',
                 label: (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MessageOutlined /> Messages
+                    <img src={cravenCLogo} alt="C" style={{ height: 16, width: 'auto' }} /> Messages
                   </span>
                 ),
                 children: <MessagesTab />,
