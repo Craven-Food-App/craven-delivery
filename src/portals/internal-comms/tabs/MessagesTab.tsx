@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge } from 'antd';
-import { SendOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Input, List, Avatar, Tag, Modal, Form, Select, Empty, Spin, message, Typography, Badge, Upload, Tooltip } from 'antd';
+import { SendOutlined, UserOutlined, PlusOutlined, PaperClipOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, DownloadOutlined } from '@ant-design/icons';
 import { supabase } from '@/integrations/supabase/client';
+import type { UploadFile } from 'antd/es/upload/interface';
 
 const { TextArea } = Input;
 const { Text } = Typography;
+
+interface Attachment {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_size_bytes: number | null;
+  file_type: string | null;
+}
 
 interface Message {
   id: string;
@@ -17,12 +26,56 @@ interface Message {
   read_by: string[];
   created_at: string;
   sender_name?: string;
+  attachments?: Attachment[];
 }
 
 interface Recipient {
   user_id: string;
   label: string;
 }
+
+const fileIcon = (type: string | null) => {
+  if (!type) return <FileOutlined />;
+  if (type.includes('pdf')) return <FilePdfOutlined style={{ color: '#ef4444' }} />;
+  if (type.includes('image')) return <FileImageOutlined style={{ color: '#3b82f6' }} />;
+  return <FileOutlined />;
+};
+
+const formatSize = (bytes: number | null) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+const AttachmentList: React.FC<{ attachments: Attachment[] }> = ({ attachments }) => {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+      {attachments.map((a) => (
+        <a
+          key={a.id}
+          href={a.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            background: '#f3f4f6', borderRadius: 6, padding: '4px 8px',
+            fontSize: 12, color: '#374151', textDecoration: 'none',
+            border: '1px solid #e5e7eb',
+          }}
+        >
+          {fileIcon(a.file_type)}
+          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {a.file_name}
+          </span>
+          {a.file_size_bytes && <span style={{ color: '#9ca3af' }}>({formatSize(a.file_size_bytes)})</span>}
+          <DownloadOutlined style={{ color: '#FF6B35' }} />
+        </a>
+      ))}
+    </div>
+  );
+};
 
 const MessagesTab: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,11 +87,12 @@ const MessagesTab: React.FC = () => {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [replyBody, setReplyBody] = useState('');
   const [threadMessages, setThreadMessages] = useState<Message[]>([]);
+  const [composeFiles, setComposeFiles] = useState<UploadFile[]>([]);
+  const [replyFiles, setReplyFiles] = useState<UploadFile[]>([]);
   const [form] = Form.useForm();
 
   const getNameMap = useCallback(async (userIds: string[]): Promise<Map<string, string>> => {
     if (userIds.length === 0) return new Map();
-    // Get names from user_profiles
     const { data: profiles } = await supabase
       .from('user_profiles')
       .select('user_id, full_name, email')
@@ -46,6 +100,21 @@ const MessagesTab: React.FC = () => {
     const map = new Map<string, string>();
     (profiles || []).forEach((p: any) => {
       map.set(p.user_id, p.full_name || p.email || 'Unknown');
+    });
+    return map;
+  }, []);
+
+  const fetchAttachments = useCallback(async (messageIds: string[]): Promise<Map<string, Attachment[]>> => {
+    const map = new Map<string, Attachment[]>();
+    if (messageIds.length === 0) return map;
+    const { data } = await supabase
+      .from('internal_message_attachments')
+      .select('id, message_id, file_name, file_url, file_size_bytes, file_type')
+      .in('message_id', messageIds);
+    (data || []).forEach((a: any) => {
+      const list = map.get(a.message_id) || [];
+      list.push(a);
+      map.set(a.message_id, list);
     });
     return map;
   }, []);
@@ -64,10 +133,12 @@ const MessagesTab: React.FC = () => {
 
       if (data && data.length > 0) {
         const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-        const nameMap = await getNameMap(senderIds);
+        const msgIds = data.map((m: any) => m.id);
+        const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
         setMessages(data.map((m: any) => ({
           ...m,
           sender_name: nameMap.get(m.sender_id) || 'Unknown',
+          attachments: attachMap.get(m.id) || [],
         })));
       } else {
         setMessages([]);
@@ -77,14 +148,13 @@ const MessagesTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [getNameMap]);
+  }, [getNameMap, fetchAttachments]);
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      // Get exec users for recipient picker
       const { data: execs } = await supabase
         .from('exec_users')
         .select('user_id, role, title');
@@ -112,21 +182,53 @@ const MessagesTab: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchMessages, getNameMap]);
 
+  const uploadFiles = async (files: UploadFile[], messageId: string, userId: string) => {
+    for (const f of files) {
+      const file = f.originFileObj as File;
+      if (!file) continue;
+      const filePath = `${userId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('internal-comms-files')
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('internal-comms-files')
+        .getPublicUrl(filePath);
+
+      const { error: attachError } = await supabase.from('internal_message_attachments').insert([{
+        message_id: messageId,
+        file_name: file.name,
+        file_url: urlData.publicUrl,
+        file_size_bytes: file.size,
+        file_type: file.type,
+        uploaded_by: userId,
+      }]);
+      if (attachError) throw attachError;
+    }
+  };
+
   const handleSend = async (values: any) => {
     if (!currentUser) return;
     setSending(true);
     try {
-      const { error } = await supabase.from('internal_messages').insert([{
+      const { data: msgData, error } = await supabase.from('internal_messages').insert([{
         sender_id: currentUser.id,
         subject: values.subject || null,
         body: values.body,
         channel: (values.recipients?.length > 1 ? 'group' : 'direct') as 'direct' | 'group',
         recipient_ids: values.recipients,
         read_by: [currentUser.id],
-      }]);
+      }]).select('id').single();
       if (error) throw error;
+
+      if (composeFiles.length > 0) {
+        await uploadFiles(composeFiles, msgData.id, currentUser.id);
+      }
+
       message.success('Message sent');
       form.resetFields();
+      setComposeFiles([]);
       setComposeOpen(false);
       fetchMessages();
     } catch (err: any) {
@@ -151,26 +253,37 @@ const MessagesTab: React.FC = () => {
 
     if (data && data.length > 0) {
       const senderIds = [...new Set(data.map((m: any) => m.sender_id))];
-      const nameMap = await getNameMap(senderIds);
-      setThreadMessages(data.map((m: any) => ({ ...m, sender_name: nameMap.get(m.sender_id) || 'Unknown' })));
+      const msgIds = data.map((m: any) => m.id);
+      const [nameMap, attachMap] = await Promise.all([getNameMap(senderIds), fetchAttachments(msgIds)]);
+      setThreadMessages(data.map((m: any) => ({
+        ...m,
+        sender_name: nameMap.get(m.sender_id) || 'Unknown',
+        attachments: attachMap.get(m.id) || [],
+      })));
     } else {
       setThreadMessages([]);
     }
   };
 
   const sendReply = async () => {
-    if (!currentUser || !selectedMessage || !replyBody.trim()) return;
+    if (!currentUser || !selectedMessage || (!replyBody.trim() && replyFiles.length === 0)) return;
     try {
-      const { error } = await supabase.from('internal_messages').insert([{
+      const { data: msgData, error } = await supabase.from('internal_messages').insert([{
         sender_id: currentUser.id,
-        body: replyBody,
+        body: replyBody || '📎 Attachment',
         channel: selectedMessage.channel as 'direct' | 'group',
         parent_id: selectedMessage.id,
         recipient_ids: selectedMessage.recipient_ids,
         read_by: [currentUser.id],
-      }]);
+      }]).select('id').single();
       if (error) throw error;
+
+      if (replyFiles.length > 0) {
+        await uploadFiles(replyFiles, msgData.id, currentUser.id);
+      }
+
       setReplyBody('');
+      setReplyFiles([]);
       openThread(selectedMessage);
     } catch (err: any) {
       message.error('Failed to reply');
@@ -178,6 +291,8 @@ const MessagesTab: React.FC = () => {
   };
 
   const isUnread = (msg: Message) => currentUser && !msg.read_by.includes(currentUser.id);
+
+  const hasAttachments = (msg: Message) => msg.attachments && msg.attachments.length > 0;
 
   return (
     <div>
@@ -221,6 +336,11 @@ const MessagesTab: React.FC = () => {
                     <Tag color={msg.channel === 'group' ? 'blue' : 'default'} style={{ fontSize: 10 }}>
                       {msg.channel}
                     </Tag>
+                    {hasAttachments(msg) && (
+                      <Tooltip title={`${msg.attachments!.length} attachment(s)`}>
+                        <PaperClipOutlined style={{ color: '#FF6B35', fontSize: 14 }} />
+                      </Tooltip>
+                    )}
                   </div>
                 }
                 description={
@@ -241,7 +361,7 @@ const MessagesTab: React.FC = () => {
       )}
 
       {/* Compose Modal */}
-      <Modal title="New Message" open={composeOpen} onCancel={() => setComposeOpen(false)} footer={null} width={600}>
+      <Modal title="New Message" open={composeOpen} onCancel={() => { setComposeOpen(false); setComposeFiles([]); }} footer={null} width={600}>
         <Form form={form} onFinish={handleSend} layout="vertical">
           <Form.Item name="recipients" label="To" rules={[{ required: true, message: 'Select recipients' }]}>
             <Select
@@ -261,8 +381,21 @@ const MessagesTab: React.FC = () => {
           <Form.Item name="body" label="Message" rules={[{ required: true, message: 'Enter a message' }]}>
             <TextArea rows={5} placeholder="Type your message..." />
           </Form.Item>
+          <Form.Item label="Attachments">
+            <Upload
+              multiple
+              beforeUpload={() => false}
+              fileList={composeFiles}
+              onChange={({ fileList }) => setComposeFiles(fileList)}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
+            >
+              <Button icon={<PaperClipOutlined />} style={{ borderColor: '#FF6B35', color: '#FF6B35' }}>
+                Attach Files
+              </Button>
+            </Upload>
+          </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setComposeOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setComposeOpen(false); setComposeFiles([]); }}>Cancel</Button>
             <Button type="primary" htmlType="submit" loading={sending}
               icon={<SendOutlined />} style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
               Send
@@ -275,7 +408,7 @@ const MessagesTab: React.FC = () => {
       <Modal
         title={selectedMessage?.subject || 'Message Thread'}
         open={!!selectedMessage}
-        onCancel={() => { setSelectedMessage(null); setThreadMessages([]); }}
+        onCancel={() => { setSelectedMessage(null); setThreadMessages([]); setReplyFiles([]); }}
         footer={null}
         width={650}
       >
@@ -292,6 +425,7 @@ const MessagesTab: React.FC = () => {
                 </Text>
               </div>
               <div style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{selectedMessage.body}</div>
+              <AttachmentList attachments={selectedMessage.attachments || []} />
             </div>
 
             {threadMessages.map((reply) => (
@@ -308,22 +442,53 @@ const MessagesTab: React.FC = () => {
                   </Text>
                 </div>
                 <div style={{ fontSize: 13 }}>{reply.body}</div>
+                <AttachmentList attachments={reply.attachments || []} />
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <TextArea
-                rows={2}
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                placeholder="Type a reply..."
-                style={{ flex: 1 }}
-              />
-              <Button type="primary" icon={<SendOutlined />} onClick={sendReply}
-                disabled={!replyBody.trim()}
-                style={{ background: '#FF6B35', borderColor: '#FF6B35', alignSelf: 'flex-end' }}>
-                Reply
-              </Button>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <TextArea
+                  rows={2}
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  placeholder="Type a reply..."
+                  style={{ flex: 1 }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignSelf: 'flex-end' }}>
+                  <Upload
+                    multiple
+                    beforeUpload={() => false}
+                    fileList={replyFiles}
+                    onChange={({ fileList }) => setReplyFiles(fileList)}
+                    showUploadList={false}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.csv,.txt,.zip"
+                  >
+                    <Tooltip title="Attach files">
+                      <Button icon={<PaperClipOutlined />} style={{ borderColor: '#FF6B35', color: '#FF6B35' }} />
+                    </Tooltip>
+                  </Upload>
+                  <Button type="primary" icon={<SendOutlined />} onClick={sendReply}
+                    disabled={!replyBody.trim() && replyFiles.length === 0}
+                    style={{ background: '#FF6B35', borderColor: '#FF6B35' }}>
+                    Reply
+                  </Button>
+                </div>
+              </div>
+              {replyFiles.length > 0 && (
+                <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {replyFiles.map((f, i) => (
+                    <Tag
+                      key={i}
+                      closable
+                      onClose={() => setReplyFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      style={{ fontSize: 11 }}
+                    >
+                      <PaperClipOutlined /> {f.name}
+                    </Tag>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
