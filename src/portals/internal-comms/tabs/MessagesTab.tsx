@@ -290,6 +290,38 @@ const MessagesTab: React.FC = () => {
     }
   };
 
+  const handleDelete = async (msgId: string, isParent: boolean) => {
+    Modal.confirm({
+      title: 'Delete message?',
+      content: isParent ? 'This will delete the message and all replies.' : 'This reply will be permanently deleted.',
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          if (isParent) {
+            // Delete child replies first, then parent
+            await supabase.from('internal_message_attachments')
+              .delete().in('message_id',
+                [msgId, ...(threadMessages.map(t => t.id))]
+              );
+            await supabase.from('internal_messages').delete().eq('parent_id', msgId);
+            await supabase.from('internal_messages').delete().eq('id', msgId);
+            setSelectedMessage(null);
+            setThreadMessages([]);
+          } else {
+            await supabase.from('internal_message_attachments').delete().eq('message_id', msgId);
+            await supabase.from('internal_messages').delete().eq('id', msgId);
+            if (selectedMessage) openThread(selectedMessage);
+          }
+          message.success('Message deleted');
+          fetchMessages();
+        } catch (err: any) {
+          message.error('Delete failed: ' + err.message);
+        }
+      },
+    });
+  };
+
   const isUnread = (msg: Message) => currentUser && !msg.read_by.includes(currentUser.id);
 
   const hasAttachments = (msg: Message) => msg.attachments && msg.attachments.length > 0;
