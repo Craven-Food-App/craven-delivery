@@ -26,8 +26,11 @@ import {
   IconExternalLink,
   IconMail,
   IconPhone,
+  IconDownload,
+  IconFileText,
 } from '@tabler/icons-react';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCSV, exportToPrintPDF } from '../utils/exportHelpers';
 
 interface Contact {
   id: string;
