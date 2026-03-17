@@ -94,7 +94,7 @@ const MerchantOperationsPortal: React.FC = () => {
           </div>
         </main>
       </div>
-    </AdminAccessGuard>
+    </MerchantOpsAccessGuard>
   );
 };
 
