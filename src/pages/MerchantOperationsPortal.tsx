@@ -44,7 +44,7 @@ const MerchantOperationsPortal: React.FC = () => {
   };
 
   return (
-    <AdminAccessGuard>
+    <MerchantOpsAccessGuard>
       <div className="flex h-screen w-full bg-background">
         {/* Sidebar */}
         <aside className="w-64 border-r bg-card flex flex-col">
