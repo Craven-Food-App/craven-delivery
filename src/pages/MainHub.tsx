@@ -1560,6 +1560,13 @@ const MainHub: React.FC = () => {
       return true;
     }
 
+    // JASON PARCELL (CPO): Limited access to specific portals only
+    const isJasonParcell = userEmail === 'jparcell2022@gmail.com';
+    if (isJasonParcell) {
+      const jasonAllowedPortals = ['cpo', 'merchant-operations', 'driver-operations', 'internal-comms'];
+      return jasonAllowedPortals.includes(id);
+    }
+
     switch (id) {
       case 'company': return hasCompanyAccess;
       case 'admin': return canAdmin;
