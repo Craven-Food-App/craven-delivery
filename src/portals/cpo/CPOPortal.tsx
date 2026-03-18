@@ -38,6 +38,7 @@ import ActivityLog from './tabs/ActivityLog';
 import PartnerOnboarding from './tabs/PartnerOnboarding';
 import RenewalCalendar from './tabs/RenewalCalendar';
 import PartnerScorecards from './tabs/PartnerScorecards';
+import MerchantMetrics from './tabs/MerchantMetrics';
 
 const CPOPortal: React.FC = () => {
   const navigate = useNavigate();
