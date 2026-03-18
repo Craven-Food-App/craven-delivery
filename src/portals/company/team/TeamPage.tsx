@@ -230,9 +230,11 @@ const TeamPage: React.FC = () => {
               Executive directory and contact information
             </Text>
           </div>
-          <Button leftSection={<IconPlus size={16} />}>
-            Add Executive
-          </Button>
+          {!isReadOnly && (
+            <Button leftSection={<IconPlus size={16} />}>
+              Add Executive
+            </Button>
+          )}
         </Group>
 
         <Grid>
